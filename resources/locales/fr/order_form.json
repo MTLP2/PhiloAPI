@@ -1,0 +1,11 @@
+{
+  "order_form": "Bon de commande",
+  "cat_number": "CAT. NUMBER",
+  "detail_order_form": "Détails du bon de commande",
+  "description": "Description",
+  "quantity": "Quantité",
+  "amount": "Montant",
+  "total_ht": "Total HT",
+  "total_ttc": "Total TTC",
+  "sign_customer": "Signature du client"
+}

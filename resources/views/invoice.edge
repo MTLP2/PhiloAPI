@@ -1,0 +1,355 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * {
+      -webkit-print-color-adjust: exact;
+    }
+    body,
+    html {
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font-size: 10px;
+      padding: 0px;
+      margin: 0px;
+    }
+    .invoice {
+      padding: 20px;
+    }
+    img {
+      width: 150px;
+    }
+    p {
+      line-height: 1.7em;
+    }
+    table.table {
+      @if(daudin)
+        padding: 5px;
+      @else
+        padding: 20px;
+      @endif
+    }
+    table.table th {
+      text-align: right;
+    }
+    table tr.header th {
+      font-size: 90%;
+    }
+    table.table td, table.table th {
+      vertical-align: top;
+      padding: 5px;
+    }
+    table.table td {
+      color: #888;
+    }
+    table.border {
+      border-collapse: collapse;
+      background: #F5F5F5;
+      text-align: left;
+    }
+    table.border td, table.border th {
+      padding: 7px 20px;
+    }
+    tr.header {
+      background: #ffd21e;
+      color: #000;
+      text-transform: uppercase;
+      text-align: center;
+      white-space: nowrap;
+    }
+    table.lines td.color {
+      background: #ffd21e;
+      padding: 5px;
+    }
+    .clear {
+      clear: both;
+    }
+    table.lines {
+      border-collapse: collapse;
+      background: #F5F5F5;
+      width: 100%;
+      text-align: left;
+    }
+    table.lines th {
+      text-align: left;
+      padding: 7px 15px;
+    }
+    table.lines td {
+      padding: 7px 15px;
+    }
+    .nowrap {
+      white-space: nowrap;
+    }
+    .small {
+      font-size: 80%;
+    }
+    .medium {
+      font-size: 100%;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="invoice">
+  <img src="https://storage.diggersfactory.com/assets/images/logo_black.png" />
+
+  <table class="border" align="right">
+    <tr class="header">
+      <th colspan="2">{{ t(type === 'invoice' ? 'invoice.invoice' : 'invoice.credit_note') }}</th>
+    </tr>
+    <tr>
+      <th nowrap>{{ t('invoice.number') }}</th>
+      <td nowrap>{{ code }}</td>
+    </tr>
+    @if(order_number)
+    <tr>
+      <th nowrap>{{ t('invoice.order_number') }}</th>
+      <td nowrap>{{ order_number }}</td>
+    </tr>
+    @endif
+    <tr>
+      <th nowrap>{{ t('invoice.date') }}</th>
+      <td nowrap>{{ date.substring(0, 10) }}</td>
+    </tr>
+  </table>
+
+  <br class="clear" />
+  <table style="width: 100%">
+    <tr>
+      @if(daudin)
+      <td>
+        <p style="margin: 0;"><strong>Address for return</strong></p>
+        <table class="table">
+          <tr>
+            <th>{{ t('invoice.name') }}</th>
+            <td>Daudin Services</td>
+          </tr>
+          <tr>
+            <th>{{ t('invoice.address') }}</th>
+            <td>
+              Entrepot 2<br />
+              628 avenur du grand d'or<br />
+              41350 Vineuil, France
+            </td>
+          </tr>
+          <tr>
+            <th>{{ t('invoice.phone') }}</th>
+            <td>01.49.72.00.68</td>
+          </tr>
+        </table>
+      </td>
+      @else
+      <td>
+        <table class="table">
+          <tr>
+            <th>{{ t('invoice.name') }}</th>
+            <td>{{ from.name }}</td>
+          </tr>
+          <tr>
+            <th>{{ t('invoice.address') }}</th>
+            <td>
+              {{ from.address }}<br />
+              {{ from.zip_code }} {{ from.city }}<br />
+              {{ from.country }}
+            </td>
+          </tr>
+          @if(from.phone)
+          <tr>
+            <th>{{ t('invoice.phone') }}</th>
+            <td>{{ from.phone }}</td>
+          </tr>
+          @endif
+          @if(from.number)
+          <tr>
+            <th>{{ t('invoice.tva_intra') }}</th>
+            <td>{{ from.number }}</td>
+          </tr>
+          @endif
+        </table>
+      </td>
+      @endif
+      <td>
+        <table class="table" align="right">
+          <tr>
+            <th>{{ t('invoice.name') }}</th>
+          <td>
+            @if(customer.name)
+              {{ customer.name }}
+            @else
+              {{ customer.firstname }} {{ customer.lastname }}
+            @endif
+          </td>
+          </tr>
+          <tr>
+            <th>{{ t('invoice.address') }}</th>
+            <td>
+              {{ customer.address }}<br />
+              {{ customer.zip_code }} {{ customer.city }}<br />
+              {{ customer.country }}
+            </td>
+          </tr>
+          <tr>
+            <th>{{ t('invoice.phone') }}</th>
+            <td>{{ customer.phone }}</td>
+          </tr>
+          @if(customer.tax_intra)
+          <tr>
+            <th>{{ t('invoice.tva_intra') }}</th>
+            <td>{{ customer.tax_intra }}</td>
+          </tr>
+          @endif
+        </table>
+      </td>
+    </tr>
+  </table>
+
+  <br />
+  <br />
+  <table class="lines">
+    @if(ean)
+    <tr class="header">
+      <th>{{ t('invoice.ean13') }}</th>
+      <th>{{ t('invoice.wording') }}</th>
+      <th>{{ t('invoice.quantity') }}</th>
+      <th>{{ t('invoice.price_brut') }}</th>
+      <th>{{ t('invoice.discount_rate') }}</th>
+      <th>{{ t('invoice.price_unit') }}</th>
+      <th>{{ t('invoice.amount') }}</th>
+    </tr>
+    @else
+    <tr class="header">
+      <th width="70%">{{ t('invoice.operations') }}</th>
+      <th>{{ t('invoice.unit_price') }}</th>
+      <th>{{ t('invoice.quantity') }}</th>
+      @if(order.shops)
+        <th>{{ t('invoice.donation') }}</th>
+      @endif
+      <th>{{ t('invoice.total') }}</th>
+    </tr>
+    @endif
+
+    @each(line in lines)
+      @if(ean)
+      <tr>
+          <td>{{line.ean13}}</td>
+          <td>{{line.name}}</td>
+          <td class="nowrap">{{line.quantity}}</td>
+          <td class="nowrap">{{line.price_brut}} {{currency}}</td>
+          <td class="nowrap">{{line.discount_rate}} %</td>
+          <td class="nowrap">{{line.price_unit}} {{currency}}</td>
+          <td class="nowrap">{{line.amount}} {{currency}}</td>
+      </tr>
+      @else
+      <tr>
+          <td>{{line.name}}</td>
+          <td class="nowrap">{{line.price}} {{currency}}</td>
+          <td class="nowrap">{{line.quantity}}</td>
+          <td class="nowrap">{{line.total}} {{currency}}</td>
+      </tr>
+      @endif
+    @endeach
+    @each(shop in order.shops)
+      @each(item in shop.items)
+      <tr>
+          <td>{{item.name}} - {{item.artist_name}}</td>
+          <td class="nowrap">{{item.price}} {{currency}}</td>
+          <td class="nowrap">{{item.quantity}}</td>
+          <td class="nowrap">{{item.tips}} {{currency}}</td>
+          <td class="nowrap">{{item.total}} {{currency}}</td>
+      </tr>
+      @endeach
+    @endeach
+    @if(order.shipping || shipping)
+    <tr>
+      <td>{{ t('invoice.shipping_costs') }}</td>
+      <td class="nowrap">{{order.shipping || shipping}} {{currency}}</td>
+      <td>1</td>
+      @if(order.shops)
+        <td></td>
+      @endif
+      <td class="nowrap">{{order.shipping || shipping}} {{currency}}</td>
+    </tr>
+    @endif
+  </table>
+
+  <br />
+  <p align="right" class="medium">{{ t('invoice.tva_rate') }} : {{tax_rate || 0}}%
+    @if(!tax_rate)
+      <br />
+      {{ t('invoice.exempt_vat') }}
+    @endif
+  </p>
+  <p align="right" class="medium">Code SH = 85238090<br />
+    EORI = FR81364871400018
+  </p>
+
+  <table class="border" align="right">
+    <tr class="header">
+      <th>{{ t('invoice.total_ht') }}</th>
+      <th>{{ t('invoice.total_tva') }}</th>
+      <th>{{ t('invoice.total_ttc') }}</th>
+    </tr>
+    <tr>
+      <td class="nowrap"><strong>{{sub_total || 0}} {{currency}}</strong></td>
+      <td class="nowrap"><strong>{{tax || 0}} {{currency}}</strong></td>
+      <td class="nowrap"><strong>{{total || 0}} {{currency}}</strong></td>
+    </tr>
+  </table>
+
+  @if(from.bank)
+  <p>
+    <strong>{{ t('invoice.bank') }}:</strong> Société Générale<br />
+    <strong>IBAN:</strong> FR76 3000 3018 8300 0206 6940 824<br />
+    <strong>Siret:</strong> 813 648 714 00018<br />
+    SAS Diggers Factory<br />
+    www.diggersfactory.com<br /><br />
+
+    @if(type === 'invoice')
+    {{ t('invoice.payment_date') }}
+    @endif
+  </p>
+  @endif
+
+  
+  @if(comment)
+    <p>
+    @each(com in comment)
+     {{ com }}<br />
+    @endeach
+    </p>
+  @endif
+
+  @if(daudin)
+  <p><strong>{{from.name}}</strong>, {{ from.address }}, {{ from.zip_code }} {{ from.city }}, {{ from.country }}<br /></p>
+  @endif
+
+  @if(customer.country_id === 'GB')
+    <p class="small">The exporter of the products covered by this document declares that, except where otherwise clearly indicated, these products are of CEE preferential origin.</p>
+  @endif
+
+
+  @if(lang === 'fr')
+  <p class="small">
+    Conformément aux articles L.441-6 et D.441-5 du Code de commerce,
+    tout retard de paiement entraînera l'exigibilité des pénalités de retard
+    équivalent au taux BCE (Banque Centrale Européenne), majoré de 10 points,
+    et d'une indemnité forfaitaire de (40) quarante euros pour frais de recouvrement.
+    Si les frais de recouvrement réellement engagés sont supérieurs au montant forfaitaire
+    de 40 €, une indemnisation complémentaire sur justification peut être demandée.
+  </p>
+  @endif
+
+  @if(lang === 'en')
+  <p class="small">
+    In accordance with Articles L.441-6 and D.441-5 of the Code of Commerce, any
+    delay in payment will result in the penalty of late penalties equivalent to
+    the ECB rate (European Central Bank),ten percent increase and a lump sum payment of (40)
+    forty euros for collection costs. If the recovery costs actually incurred are higher
+    than the lump sum of 40 euros, an additional compensation justification may be requested.
+  </p>
+  @endif
+</div>
+<div style="page-break-before:always"></div>
+</body>
+</html>

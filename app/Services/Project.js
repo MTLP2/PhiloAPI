@@ -1,0 +1,1485 @@
+const Song = require('./Song')
+const Comment = require('./Comment')
+const ApiError = use('App/ApiError')
+const DB = use('App/DB')
+const PromoCode = use('App/Services/PromoCode')
+const Storage = use('App/Services/Storage')
+const Statement = use('App/Services/Statement')
+const Bid = use('App/Services/Bid')
+const Utils = use('App/Utils')
+const Project = DB('project')
+
+Project.setInfos = (p, currencies, sales, styles) => {
+  const project = p
+  const oneDay = 24 * 60 * 60 * 1000
+  const firstDate = new Date()
+  const startProject = new Date(project.start)
+  const secondDate = new Date(project.end)
+
+  project.styles = p.styles
+    ? p.styles.split(',').map(s => {
+      return styles ? styles[s] : s
+    })
+    : []
+
+  project.count = project.count + project.count_other + project.count_distrib + project.count_bundle
+
+  project.days_left = Math.ceil(Math.abs((firstDate.getTime() - secondDate.getTime()) / (oneDay)))
+  project.nb_days = Math.ceil(Math.abs((startProject.getTime() - secondDate.getTime()) / (oneDay)))
+  project.idx_day = project.nb_days - project.days_left
+
+  if (project.is_shop) {
+    project.stock_daudin = project.stock_daudin < 0 ? 0 : project.stock_daudin
+    project.stock_whiplash = project.stock_whiplash < 0 ? 0 : project.stock_whiplash
+    project.stock_whiplash_uk = project.stock_whiplash_uk < 0 ? 0 : project.stock_whiplash_uk
+    project.copies_left = project.stock_daudin + project.stock_whiplash + project.stock_whiplash_uk + project.stock_diggers
+    project.sold_out = project.copies_left < 1
+  } else {
+    project.copies_left = project.goal - project.count
+    project.sold_out = ['limited_edition', 'test_pressing'].includes(project.type) && project.copies_left < 1
+  }
+  delete project.count
+  delete project.count_distrib
+  delete project.count_bundle
+  delete project.count_other
+  delete project.stock_whiplash
+  delete project.stock_whiplash_uk
+  delete project.stock_daudin
+
+  project.step = project.sold_out ? 'successful' : project.step
+
+  if (project.sold_out && project.item_stock > 0) {
+    project.copies_left = project.item_stock
+    project.price = project.item_price
+    project.sold_out = false
+    project.step = 'in_progress'
+  }
+
+  if (project.discount) {
+    project.price_discount = Utils.round(project.price - (project.price * (project.discount / 100)), 2)
+  }
+  project.price_discounts = {}
+
+  if (!project.partner_distribution) {
+    project.price_distribution = null
+  } else if (project.price_distribution) {
+    project.prices_distribution = Utils.getPrices({ price: project.price_distribution, currencies, currency: project.currency })
+  }
+
+  if (sales) {
+    let discount = false
+
+    if (!sales.projects) {
+      discount = true
+    } else if (sales.projects.split(',').indexOf(project.id.toString()) !== -1) {
+      discount = true
+    }
+
+    if (discount) {
+      project.promo = sales.value
+      const discount = Utils.round(project.price * (sales.value / 100))
+      project.prices_discount = Utils.getPrices({ price: Utils.round(project.price - discount), currencies, currency: project.currency })
+    }
+  }
+
+  project.currency_project = project.currency
+  if (currencies) {
+    project.prices = Utils.getPrices({ price: project.price, currencies, currency: project.currency })
+  }
+
+  return project
+}
+
+Project.setInfo = (p, currencies, sales) => {
+  const project = p
+  const oneDay = 24 * 60 * 60 * 1000
+  const firstDate = new Date()
+  const startProject = new Date(project.start)
+  const secondDate = new Date(project.end)
+
+  project.days_left = Math.ceil(Math.abs((firstDate.getTime() - secondDate.getTime()) / (oneDay)))
+  project.nb_days = Math.ceil(Math.abs((startProject.getTime() - secondDate.getTime()) / (oneDay)))
+  project.idx_day = project.nb_days - project.days_left
+  if (project.date_shipping) {
+    project.estimated_shipping = new Date(project.date_shipping)
+  } else {
+    project.estimated_shipping = new Date(project.end)
+    project.estimated_shipping.setDate(project.estimated_shipping.getDate() + 150)
+  }
+  project.count = project.count + project.count_other + project.count_distrib + project.count_bundle
+
+  project.next_goal = project.stage1
+  project.styles = project.styles ? project.styles.split(',') : []
+  project.styles = project.styles.map(s => parseInt(s, 10))
+  project.rating = project.rating ? project.rating : 0
+
+  if (project.is_shop) {
+    project.stock_daudin = project.stock_daudin < 0 ? 0 : project.stock_daudin
+    project.stock_whiplash = project.stock_whiplash < 0 ? 0 : project.stock_whiplash
+    project.stock_whiplash_uk = project.stock_whiplash_uk < 0 ? 0 : project.stock_whiplash_uk
+    project.copies_left = project.stock_daudin + project.stock_whiplash + project.stock_whiplash_uk + project.stock_diggers
+    project.sold_out = project.copies_left < 1
+  } else {
+    project.copies_left = project.goal - project.count
+    project.sold_out = ['limited_edition', 'test_pressing'].includes(project.type) && project.copies_left < 1
+  }
+  delete project.stock_whiplash
+  delete project.stock_whiplash_uk
+  delete project.stock_daudin
+  delete project.count
+  delete project.count_distrib
+  delete project.count_bundle
+  delete project.count_other
+
+  project.step = project.sold_out ? 'successful' : project.step
+
+  project.sizes = project.sizes
+    ? Object.keys(JSON.parse(project.sizes)).filter(k => {
+      const sizes = JSON.parse(project.sizes)
+      return sizes[k]
+    })
+    : []
+
+  if (!project.partner_distribution) {
+    project.price_distribution = null
+  } else if (project.price_distribution) {
+    project.prices_distribution = Utils.getPrices({ price: project.price_distribution, currencies, currency: project.currency })
+  }
+
+  project.currency_project = project.currency
+  if (currencies) {
+    project.prices = Utils.getPrices({ price: project.price, currencies, currency: project.currency })
+    if (project.items) {
+      for (const i in project.items) {
+        const price = project.items[i].related_price || project.items[i].price
+        const currency = project.items[i].related_currency || project.currency
+        project.items[i].prices = Utils.getPrices({ price: price, currencies, currency: currency })
+        project.items[i].sizes = project.items[i].sizes
+          ? Object.keys(JSON.parse(project.items[i].sizes)).filter(k => {
+            const sizes = JSON.parse(project.items[i].sizes)
+            return sizes[k]
+          })
+          : []
+      }
+    }
+  }
+
+  if (sales) {
+    let discount = false
+
+    if (!sales.projects) {
+      discount = true
+    } else if (sales.projects.split(',').indexOf(project.id.toString()) !== -1) {
+      discount = true
+    }
+
+    if (discount) {
+      project.promo = sales.value
+      const discount = Utils.round(project.price * (sales.value / 100))
+      project.prices_discount = Utils.getPrices({ price: Utils.round(project.price - discount), currencies, currency: project.currency })
+      project.discount = discount
+      project.discount_artist = sales.artist_pay
+    }
+  }
+
+  return project
+}
+
+Project.getProjects = async (params) => {
+  params.limit = 300
+  return Project.findAll(params)
+}
+
+Project.getBarcode = async (code) => {
+  const res = await DB('project')
+    .select('project.id', 'name', 'artist_name', 'picture')
+    .join('vod', 'vod.project_id', 'project.id')
+    .where('vod.barcode', code)
+    .first()
+
+  return res || {}
+}
+
+Project.findAll = async (params) => {
+  const selects = [
+    'p.id',
+    'p.name',
+    'p.slug',
+    'p.artist_name',
+    'p.color',
+    'p.picture',
+    'p.styles',
+    'p.banner',
+    'p.banner_mobile',
+    'v.type',
+    'v.start',
+    'v.end',
+    'v.goal',
+    'p.category',
+    'v.price',
+    'v.price_distribution',
+    'v.partner_distribution',
+    'v.discount',
+    'v.currency',
+    'v.sleeve',
+    'v.splatter1',
+    'v.splatter2',
+    'p.likes',
+    'v.count',
+    'v.count_other',
+    'v.count_distrib',
+    'v.count_bundle',
+    'v.stock_whiplash',
+    'v.stock_whiplash_uk',
+    'v.stock_daudin',
+    'v.stock_diggers',
+    'v.step',
+    'v.user_id',
+    'v.created_at',
+    'p.country_id',
+    'v.is_shop',
+    'v.color_vinyl',
+    'v.show_stock',
+    'item.stock as item_stock',
+    'item.price as item_price'
+  ]
+  if (params.type === 'banner') {
+    selects.push('v.description_fr', 'v.description_en')
+  }
+
+  const projects = DB()
+    .selects(selects)
+    .from('project as p')
+    .join('vod as v', 'p.id', 'v.project_id')
+    .leftJoin('item', 'item.id', 'v.related_item_id')
+    .where('p.is_visible', true)
+
+  if (params.type === 'liked') {
+    params.liked = params.user_id
+    params.user_id = null
+  }
+  if (params.type === 'supported') {
+    params.supported = params.user_id
+    params.user_id = null
+  }
+
+  const filters = params.filters ? JSON.parse(params.filters) : null
+
+  if (params.type === 'illustrations') {
+    projects.where('category', 'illustration')
+    projects.where('v.step', 'in_progress')
+  } else if (params.type === 'bids') {
+    projects.where('category', 'bid')
+    projects.where('v.step', 'in_progress')
+  } else if (params.type === 'accessories') {
+    projects.where('category', 'accessory')
+    projects.where('v.step', 'in_progress')
+  } else if (params.type === 'pro') {
+    projects.where('partner_distribution', '1')
+    projects.where('v.step', 'in_progress')
+  } else if (params.type === 'ondemand' || params.type === 'vinyl-on-demand') {
+    projects.where('v.type', 'vod')
+    projects.where('v.step', 'in_progress')
+  } else if (params.type === 'produced') {
+    projects.where('v.type', 'vod')
+    projects.where('v.step', 'successful')
+  } else if (params.type === 'shop') {
+    projects.where('v.is_shop', '1')
+    projects.where('v.step', 'in_progress')
+  } else if (params.type === 'limited-edition') {
+    projects.where('v.type', 'limited_edition')
+    projects.where('v.step', 'in_progress')
+  } else if (params.type === 'test_pressing') {
+    projects.where('v.type', 'test_pressing')
+    projects.where('v.step', 'in_progress')
+  } else if (params.type === 'crowdfunding' || params.type === 'funding') {
+    projects.where('v.type', 'funding')
+    projects.where('v.step', 'in_progress')
+  } else if (params.type === 'banner') {
+    projects.whereNotNull('p.banner')
+    projects.where('p.home', '1')
+  } else if (params.type === 'discount') {
+    projects.where('v.discount', '>', '0')
+  } else if (params.search || (filters && filters.some(f => f.type === 'category'))) {
+    projects.where(function () {
+      this.where('v.step', 'successful')
+        .orWhere('v.step', 'in_progress')
+    })
+  } else if (filters && filters.find(f => f.type === 'category' && parseInt(f.value) === 30)) {
+    projects.where('v.step', 'contest')
+  } else if (params.type === 'all' || params.type === 'vinyl_shop') {
+    projects.where('category', 'vinyl')
+    projects.where('v.step', 'in_progress')
+  }
+  if (params.home) {
+    projects.where('home', '1')
+  }
+  if (params.user_id) {
+    projects.where('v.user_id', params.user_id)
+      .where('v.step', 'in_progress')
+  }
+  if (params.supported) {
+    projects.whereIn('p.id', DB.raw(`
+      SELECT project_id
+      FROM \`order\` o, order_shop os, order_item oi
+      WHERE
+        o.user_id = ${params.supported}
+        AND os.order_id = o.id
+        AND oi.order_id = o.id
+        AND oi.project_id = p.id
+        AND os.is_paid = 1
+    `))
+  }
+
+  if (params.filters) {
+    params.genres = []
+
+    const categories = []
+    for (const filter of filters) {
+      if (filter.type === 'type') {
+        projects.where('v.type', filter.value)
+      } else if (filter.type === 'genre') {
+        params.genres.push(filter.value)
+      } else if (filter.type === 'format') {
+        projects.where('p.format', 'like', `%${filter.value}%`)
+      } else if (filter.type === 'availability') {
+        projects.where('is_shop', filter.value === 'immediate')
+      } else if (filter.type === 'currency') {
+        projects.where('currency', filter.value)
+      } else if (filter.type === 'category') {
+        categories.push(filter.value)
+      }
+    }
+
+    if (categories.length > 0) {
+      projects.join('category_project', 'category_project.project_id', 'p.id')
+      projects.whereIn('category_id', categories)
+      params.sort = 'add'
+    }
+    params.genres = params.genres.join(',')
+  }
+
+  if (params.genres || params.styles) {
+    projects.where(function () {
+      if (params.genres) {
+        params.genres.split(',').map(genre => {
+          this.orWhereExists(DB.raw(`
+            SELECT style.id
+            FROM project_style, style
+            WHERE p.id = project_id
+              AND style.id = project_style.style_id
+              AND genre_id = ${genre}
+          `))
+        })
+      }
+      if (params.styles) {
+        params.styles.split(',').map(style => {
+          this.orWhereExists(DB.raw(`
+            SELECT id
+            FROM project_style
+            WHERE p.id = project_id
+              AND project_style.style_id = ${style}
+          `))
+        })
+      }
+    })
+  }
+
+  if (params.formats) {
+    const formats = params.formats.split(',')
+    projects.where(function () {
+      formats.map(format => {
+        if (format === '12') {
+          this.orWhereNotIn('p.id',
+            DB('marketplace_item')
+              .select('project_id')
+              .where('format', 'LIKE', '%7%')
+              .orWhere('format', 'LIKE', '%7%')
+              .query()
+          )
+        } else {
+          this.orWhereIn('p.id', DB('marketplace_item').select('project_id').where('format', 'LIKE', `%${format}%`).query())
+        }
+      })
+    })
+  }
+  if (params.conditions) {
+    const conditions = params.conditions.split(',')
+    projects.whereIn('p.id', DB('marketplace_item').select('project_id').whereIn('media_condition', conditions).query())
+  }
+
+  if (params.ids) {
+    projects.whereIn('p.id', params.ids)
+  }
+  if (params.liked) {
+    projects.join('like', 'p.id', 'like.project_id')
+      .where('like.user_id', params.liked)
+  }
+  if (params.search) {
+    params.search = params.search.replace('\\', '')
+    params.search = params.search.replace('\'', '\\\'')
+    projects.where(function () {
+      this.where('p.name', 'like', `%${params.search}%`)
+        .orWhere('artist_name', 'like', `%${params.search}%`)
+        .orWhere(DB().raw('CONCAT(artist_name, " ", p.name)'), 'like', `%${params.search}%`)
+        .orWhere('label_name', 'like', `%${params.search}%`)
+        .orWhere(DB().raw('REPLACE(v.type, "_", " ")'), 'like', `%${params.search}%`)
+    })
+  }
+
+  if (params.order) {
+    projects.orderBy(params.order, params.sort)
+  } else if (params.sort) {
+    if (params.sort === 'popularity') {
+      projects.orderBy('likes', 'desc')
+    } else if (params.sort === 'progress') {
+      projects.orderBy('progress', 'desc')
+    } else if (params.sort === 'date_add') {
+      projects.orderBy('p.created_at', 'desc')
+    } else if (params.sort === 'date_end') {
+      projects.where('ps.step', 'in_progress')
+      projects.orderBy('end', 'ASC')
+    } else if (params.sort === 'alpha') {
+      projects.orderBy('artist_name', 'ASC')
+      projects.orderBy('name', 'ASC')
+    } else if (params.sort === 'random') {
+      projects.orderBy(DB.raw('RAND()'))
+    } else if (params.sort === 'price_asc') {
+      projects.whereNotNull('price')
+      projects.orderBy('price', 'ASC')
+    } else if (params.sort === 'price_desc') {
+      projects.whereNotNull('price')
+      projects.orderBy('price', 'DESC')
+    }
+  } else if (params.type === 'produced') {
+    projects
+      .orderBy(DB.raw('field(p.id, 1278)'), 'desc')
+      .orderBy(DB.raw('field(p.id, 335)'), 'desc')
+      .orderBy(DB.raw('field(p.id, 1573)'), 'desc')
+      .orderBy(DB.raw('field(p.id, 643)'), 'desc')
+      .orderBy(DB.raw('field(p.id, 529)'), 'desc')
+      .orderBy(DB.raw('field(p.id, 1172)'), 'desc')
+      .orderBy(DB.raw('field(p.id, 782)'), 'desc')
+      .orderBy(DB.raw('field(p.id, 953)'), 'desc')
+      .orderBy(DB.raw('field(p.id, 578)'), 'desc')
+      .orderBy(DB.raw('p.created_at'), 'desc')
+  } else {
+    projects
+      .orderBy('home', 'desc')
+      .orderBy(DB.raw('RAND()'))
+  }
+
+  if (params.filter === 'preorder') {
+    projects.where('v.is_shop', '0')
+    projects.where('v.step', 'in_progress')
+  } else if (params.filter === 'immediate-delivery') {
+    projects.where('v.is_shop', '1')
+    projects.where('v.step', 'in_progress')
+  }
+  if (params.page) {
+    projects.offset(params.limit * (params.page - 1))
+  }
+
+  if (params.limit) {
+    projects.limit(params.limit)
+  }
+
+  const styles = await Project.listStyles()
+  const sales = await PromoCode.getSales({ vod: true })
+  const currencies = await Utils.getCurrenciesDb()
+
+  return projects.all().then(res => {
+    return res.map(project => Project.setInfos(project, currencies, sales, styles))
+  })
+}
+
+Project.getAll = (search, type) => {
+  const projects = DB()
+    .select(
+      'p.id',
+      'p.name',
+      'p.slug',
+      'p.artist_name'
+    )
+    .from('project as p')
+    .leftJoin('vod as v', 'p.id', 'v.project_id')
+    .leftJoin('wishlist as w', 'p.id', 'w.project_id')
+    .where('name', '!=', '')
+    .where('is_delete', 0)
+    .orderBy('artist_name', 'asc')
+    .where(function () {
+      this.where('p.name', 'like', `%${search}%`)
+        .orWhere('artist_name', 'like', `%${search}%`)
+        .orWhere(DB().raw('CONCAT(artist_name, " ", p.name)'), 'like', `%${search}%`)
+        .orWhere('p.id', 'like', `%${search}%`)
+    })
+    .limit(20)
+
+  if (type === 'vod') {
+    projects.whereNotNull('v.id')
+  }
+  return projects.all()
+}
+
+Project.find = async (id, params) => {
+  const vod = await DB()
+    .select('related_id', 'related_item_id')
+    .from('vod')
+    .where('project_id', id)
+    .first()
+
+  const related = (vod && vod.related_id) || id
+
+  const projectPromise = DB()
+    .select(
+      'p.id',
+      'p.name',
+      'p.slug',
+      'u.id as user_id',
+      'u.name as user_name',
+      'u.slug as user_slug',
+      'u.color as user_color',
+      'u.country_id as user_country_id',
+      'u.facebook as user_facebook',
+      'u.soundcloud as user_soundcloud',
+      'u.twitter as user_twitter',
+      'u.about_me as user_about_me',
+      'u.picture as user_picture',
+      DB.raw(`(
+        select count(*)
+        from \`follower\`
+        where user_id = u.id and follower = ${params.user_id}
+      ) as user_followed
+      `),
+      'w.id as wishlist_id',
+      'w.step as wishlist_step',
+      'v.id as vod_id',
+      'artist_name',
+      'artist_website',
+      'p.label_name',
+      'p.label_website',
+      'p.cat_number',
+      'p.category',
+      'p.tags',
+      'numbered',
+      'year',
+      'v.description',
+      'v.description_fr_long',
+      'p.inverse_name',
+      'p.color',
+      'v.splatter1',
+      'v.splatter2',
+      'v.sleeve',
+      'v.is_shop',
+      'v.color_vinyl',
+      'v.color_vinyl_str',
+      'v.picture_project',
+      'vinyl_weight',
+      'v.weight',
+      'v.barcode',
+      'url_vinyl',
+      'picture_disc',
+      'p.bg',
+      'youtube',
+      'p.show_info',
+      'p.format',
+      'p.country_id',
+      'cat_number',
+      'p.nb_vinyl',
+      'p.gatefold',
+      'type_vinyl',
+      'signed_id',
+      'v.type',
+      'v.show_stock',
+      'v.show_prod',
+      'v.sizes',
+      'v.is_size',
+      'show_image_bar',
+      'show_countdown',
+      'v.bonus',
+      // DB.raw('GROUP_CONCAT(ps.style_id SEPARATOR \',\') as styles'),
+      DB.raw('DATE_FORMAT(end, \'%Y-%m-%d %H:%i\') as end'),
+      DB.raw('DATE_FORMAT(start, \'%Y-%m-%d %H:%i\') as start'),
+      'goal',
+      DB.raw('ceil((v.count / v.goal)*100) as progress'),
+      'diggers',
+      'price',
+      'discount',
+      'date_shipping',
+      'disabled_cover',
+      'paypal as pa',
+      'v.stripe as st',
+      'price_distribution',
+      'partner_distribution',
+      'quantity_distribution',
+      'v.currency',
+      'p.picture',
+      'p.banner',
+      'cu.value as currencyRate',
+      'v.partner_transport',
+      'v.transporter',
+      'v.transporters',
+      'likes',
+      DB.raw(`(
+        select count(*)
+        from \`like\`
+        where project_id = p.id and user_id = ${params.user_id}
+      ) as liked
+      `),
+      DB.raw(`(
+        select count(*)
+        from \`wishlist_user\`
+        where project_id = p.id and user_id = ${params.user_id}
+      ) as wished
+      `),
+      DB.raw(`(
+        select round(avg(rate),1)
+        from \`rating\`
+        where project_id = p.id
+      ) as rating
+      `),
+      DB.raw(`(
+        select count(rate)
+        from \`rating\`
+        where project_id = p.id
+      ) as nb_rating
+      `),
+      DB.raw(`(
+        select rate
+        from \`rating\`
+        where project_id = p.id and user_id = ${params.user_id}
+      ) as my_rate
+      `),
+      'count',
+      'count_other',
+      'count_distrib',
+      'count_bundle',
+      'stock_daudin',
+      'stock_whiplash',
+      'stock_whiplash_uk',
+      'stock_diggers',
+      'stage1',
+      'stage2',
+      'stage3',
+      'only_country',
+      'exclude_country',
+      'v.step'
+    )
+    .from('project as p')
+    .leftJoin('vod as v', 'p.id', 'v.project_id')
+    .leftJoin('user as u', 'u.id', 'v.user_id')
+    .leftJoin('wishlist as w', 'p.id', 'w.project_id')
+    .leftOuterJoin('customer as c', 'c.id', 'v.customer_id')
+    .leftOuterJoin('currency as cu', 'cu.id', 'v.currency')
+    .where('p.id', related)
+    .first()
+
+  const stylesPromise = DB()
+    .select('*')
+    .from('project_style')
+    .join('style', 'style.id', 'project_style.style_id')
+    .where('project_style.project_id', id)
+    .all()
+
+  const songsPromise = Song.byProject({ project_id: id, user_id: params.user_id, disabled: true })
+
+  const itemsPromise = DB('item')
+    .select(
+      'item.*',
+      'project.picture as related_picture',
+      'project.name as related_name',
+      'project.artist_name as related_artist',
+      'vod.type',
+      'vod.user_id as related_user',
+      'vod.price as related_price',
+      'vod.currency as related_currency',
+      'vod.is_size',
+      'vod.sizes',
+      'vod.step',
+      DB.raw('vod.goal - vod.count - vod.count_other - vod.count_distrib - vod.count_bundle as related_stock'),
+      DB.raw('vod.stock_daudin + vod.stock_whiplash - vod.stock_whiplash_uk - vod.stock_diggers as related_stock_shop')
+    )
+    .where('item.project_id', id)
+    .where('is_active', 1)
+    .leftJoin('project', 'project.id', 'item.related_id')
+    .leftJoin('vod', 'vod.project_id', 'item.related_id')
+    .all()
+
+  const salesPromise = PromoCode.getSales({ vod: true })
+  const currenciesPromise = Utils.getCurrenciesDb()
+
+  const [project, songs, styles, sales, items, currencies] = await Promise.all([
+    projectPromise,
+    songsPromise,
+    stylesPromise,
+    salesPromise,
+    itemsPromise,
+    currenciesPromise
+  ])
+
+  if (!project) {
+    return { error: 404 }
+  }
+
+  project.items = items
+  const p = Project.setInfo(project, currencies, sales)
+
+  let item = null
+  p.group_shipment = []
+  for (const it of p.items) {
+    if (it.id === vod.related_item_id) {
+      item = it
+    }
+  }
+  if (p.items) {
+    p.items = p.items.filter(p => p.is_active)
+  }
+  if (p.picture_project) {
+    p.picture_project = `projects/${p.picture || p.id}/${p.picture_project}.png`
+  }
+  if (item) {
+    p.item_id = item.id
+    p.picture_project = `${item.picture}.${item.picture_trans ? 'png' : 'jpg'}`
+    p.prices = item.prices
+    p.copies_left = item.stock
+    p.step = item.stock <= 0 ? 'successful' : 'in_progress'
+    p.sold_out = item.stock <= 0
+    p.prices_distribution = null
+    p.goal = item.stock
+    p.count = 0
+  }
+
+  if (p && p.category === 'bid') {
+    p.bid = await Bid.find(p.id)
+  }
+
+  if (!['in_progress', 'successful', 'private', 'promo', 'coming_soon', 'contest', 'failed'].includes(p.step)) {
+    if (params.user_id !== p.user_id && !await Utils.isTeam(params.user_id)) {
+      return {
+        id: p.id,
+        name: p.name,
+        artist_name: p.artist_name,
+        status: p.step,
+        pa: p.pa,
+        songs: songs,
+        error: 403
+      }
+    }
+  }
+
+  p.songs = songs
+  p.styles = styles
+
+  p.user = {
+    id: p.user_id,
+    name: p.user_name,
+    picture: p.user_picture,
+    slug: p.user_slug,
+    color: p.user_color,
+    country_id: p.user_country_id,
+    facebook: p.user_facebook,
+    twitter: p.user_twitter,
+    soundcloud: p.user_soundcloud,
+    about_me: p.user_about_me,
+    followed: p.user_followed
+  }
+
+  return p
+}
+
+Project.getMore = async (id, userId) => {
+  const comments = Comment.byProject(id)
+  return Promise.all([comments])
+    .then(data => {
+      return {
+        comments: data[0]
+      }
+    })
+}
+
+Project.getGroupShipment = async (id) => {
+  const items = await DB('item')
+    .select(
+      'item.project_id',
+      'vod.user_id as project_user_id',
+      'item.related_id',
+      'vod2.user_id as related_user_id'
+    )
+    .join('vod', 'vod.project_id', 'item.project_id')
+    .join('vod as vod2', 'vod2.project_id', 'item.related_id')
+    .where('group_shipment', true)
+    .where(query => {
+      query.where('item.project_id', id)
+      query.orWhere('item.related_id', id)
+    })
+    .all()
+  const res = []
+  for (const item of items) {
+    res.push(`${item.project_user_id}_${item.project_id}`)
+    res.push(`${item.related_user_id}_${item.related_id}`)
+  }
+
+  return res
+}
+
+Project.like = async (projectId, userId) => {
+  const like = await DB()
+    .from('like')
+    .where('project_id', projectId)
+    .where('user_id', userId)
+    .first()
+
+  if (like) {
+    await like
+      .where('project_id', projectId)
+      .where('user_id', userId)
+      .delete()
+  } else {
+    await DB('like')
+      .insert({
+        project_id: projectId,
+        user_id: userId,
+        created_at: Utils.date(),
+        updated_at: Utils.date()
+      })
+  }
+
+  const likes = await DB('like')
+    .select(DB.raw('count(project_id) as count'))
+    .where('project_id', projectId)
+    .first()
+
+  await DB('project')
+    .where({
+      id: projectId
+    })
+    .update({
+      likes: likes.count
+    })
+
+  return 1
+}
+
+Project.wish = async (projectId, userId) => {
+  const wish = await DB()
+    .from('wishlist_user')
+    .where('project_id', projectId)
+    .where('user_id', userId)
+    .first()
+
+  if (wish) {
+    await wish
+      .where('project_id', projectId)
+      .where('user_id', userId)
+      .delete()
+  } else {
+    await DB('wishlist_user')
+      .insert({
+        project_id: projectId,
+        user_id: userId,
+        created_at: Utils.date(),
+        updated_at: Utils.date()
+      })
+  }
+
+  const wishes = await DB('wishlist_user')
+    .select(DB.raw('count(project_id) as count'))
+    .where('project_id', projectId)
+    .first()
+
+  await DB('project')
+    .where({
+      id: projectId
+    })
+    .update({
+      wishes: wishes.count
+    })
+
+  return 1
+}
+
+Project.forceLike = async (projectId, userId) => {
+  DB().execute(`REPLACE INTO \`like\` SET project_id = ${projectId}, user_id = ${userId}`)
+
+  const likes = await DB('like')
+    .select(DB.raw('count(project_id) as count'))
+    .where('project_id', projectId)
+    .first()
+
+  await DB('project')
+    .where({
+      id: projectId
+    })
+    .update({
+      likes: likes.count
+    })
+
+  return 1
+}
+
+Project.saveNews = async (params) => {
+  let news = null
+
+  Utils.checkProjectOwner(params)
+
+  if (params.id === 0) {
+    news = DB('news')
+    news.user_id = params.user.user_id
+    news.project_id = params.project_id
+    news.created_at = Utils.date()
+  } else {
+    news = await DB('news').find(params.id)
+
+    if (!news) {
+      throw new ApiError(404)
+    }
+  }
+
+  news.title = params.title
+  news.text = params.text
+  news.updated_at = Utils.date()
+  await news.save()
+
+  return true
+}
+
+Project.removeNews = async (params) => {
+  const news = await DB('news').find(params.id)
+
+  if (!news) {
+    throw new ApiError(404)
+  } else if (news.user_id !== params.user.user_id) {
+    throw new ApiError(403)
+  }
+
+  await DB('news').where('id', params.id).delete()
+
+  return true
+}
+
+Project.rate = async (params) => {
+  const rate = await DB('rating')
+    .where('project_id', params.project_id)
+    .where('user_id', params.user.user_id)
+    .first()
+
+  if (rate) {
+    await DB('rating')
+      .where('project_id', params.project_id)
+      .where('user_id', params.user.user_id)
+      .update({
+        rate: params.rate,
+        updated_at: Utils.date()
+      })
+  } else {
+    await DB('rating')
+      .insert({
+        project_id: params.project_id,
+        user_id: params.user.user_id,
+        rate: params.rate,
+        created_at: Utils.date(),
+        updated_at: Utils.date()
+      })
+  }
+
+  return true
+}
+
+Project.checkCode = async (params) => {
+  const code = await DB('download')
+    .belongsTo('project', ['id', 'name', 'picture', 'artist_name', 'slug'])
+    .where('code', params.code).first()
+
+  if (!code) {
+    return { success: false }
+  }
+  return code
+}
+
+Project.download = async (params) => {
+  const p = params
+  const code = await DB('download')
+    .where('code', params.code).first()
+
+  if (!code || code.used) {
+    return false
+  }
+
+  p.project_id = code.project_id
+
+  await DB('download')
+    .where('code', params.code)
+    .update({
+      email: params.email,
+      user_id: (params.user && params.user.user_id) ? params.user.user_id : null,
+      used: Utils.date(),
+      updated_at: Utils.date()
+    })
+
+  const url = await Song.downloadProject(params.project_id, false)
+
+  return { url: url }
+}
+
+Project.deleteDownload = async () => {
+  const files = await DB('download')
+    .where('is_delete', 0)
+    .where('used', '<=', DB.raw('NOW() - INTERVAL 30 MINUTE'))
+    .all()
+
+  for (const file of files) {
+    await Storage.delete(`download/${file.file}`)
+    await DB('download')
+      .where('id', file.id)
+      .update({
+        is_delete: 1
+      })
+  }
+}
+
+Project.getSoundcloud = async (params) => {
+  return Project.findAll({
+    ids: [
+      226643, // Braxton Cook
+      226073, // Siames
+      226801, // Radnor & Lee
+      226672, // Solstice
+      226636, //  Ewon12bit
+      226604, // Poordream
+      226601, // Po-la-ri-ty
+      226585, // Richard Spaven
+      226383, // Napkey
+      224186, // Sync24
+      212952, // Housemeister
+      1837, // Horace Andy, Phillippe Cohen
+      1278, // Dj Pierre (wild pitch)
+      953 // Hilight Tribe
+    ],
+    sort: 'random'
+  })
+}
+
+Project.codeDownload = async (projectId) => {
+  let found = true
+  let code = null
+  while (found) {
+    code = Math.random().toString(36).substring(7) + Math.random().toString(36).substring(7)
+    found = await DB('download').where('code', code).first()
+  }
+  await DB('download').insert({
+    project_id: projectId,
+    code: code,
+    created_at: new Date(),
+    updated_at: new Date()
+  })
+
+  return code
+}
+
+Project.recommendations = async (params) => {
+  if (!params.refs) return []
+
+  const styles = (await DB('project_style')
+    .select('style_id')
+    .whereIn('project_id', params.refs)
+    .all())
+    .map(s => s.style_id)
+
+  if (styles.length === 0) return []
+
+  const selects = [
+    'p.id',
+    'p.picture',
+    'p.name',
+    'slug',
+    'artist_name',
+    'color',
+    'is_shop',
+    'styles',
+    'v.type',
+    'v.is_shop',
+    'v.step',
+    'v.sleeve',
+    'v.splatter1',
+    'v.splatter2',
+    'v.color_vinyl',
+    'v.price',
+    'v.currency',
+    'v.goal',
+    'v.count',
+    'v.count_other',
+    'v.count_distrib',
+    'v.count_bundle',
+    'v.goal',
+    'v.end'
+  ]
+
+  const currencies = await Utils.getCurrenciesDb()
+  const ss = await Project.listStyles()
+
+  const reco = (await DB('project as p')
+    .select(...selects)
+    .join('vod as v', 'v.project_id', 'p.id')
+    .join('item', 'item.related_id', 'p.id')
+    .where('item.project_id', params.refs)
+    .where('v.step', 'in_progress')
+    .where(query => {
+      query.where('is_shop', false)
+      query.orWhere(query => {
+        query.where('stock_daudin', '>', 0)
+        query.orWhere('stock_whiplash', '>', 0)
+      })
+    })
+    .limit(6)
+    .all())
+    .map(project => Project.setInfos(project, currencies, null, ss))
+
+  const refs0 = (await DB('project as p')
+    .select(...selects)
+    .join('vod as v', 'v.project_id', 'p.id')
+    .whereNotIn('p.id', params.refs)
+    .where('v.step', 'in_progress')
+    .whereNotIn('p.id', reco.map(r => r.id))
+    .where('v.user_id', '=', DB.raw(`(SELECT user_id FROM vod WHERE project_id = '${params.refs[0]}')`))
+    .where(query => {
+      query.where('is_shop', false)
+      query.orWhere(query => {
+        query.where('stock_daudin', '>', 0)
+        query.orWhere('stock_whiplash', '>', 0)
+      })
+    })
+    .limit(6)
+    .all())
+    .map(project => Project.setInfos(project, currencies, null, ss))
+
+  const refs1 = (await DB('project as p')
+    .select(...selects)
+    .join('vod as v', 'v.project_id', 'p.id')
+    .whereNotIn('p.id', params.refs)
+    .whereNotIn('p.id', refs0.map(r => r.id))
+    .where(query => {
+      query.where('is_shop', false)
+      query.orWhere(query => {
+        query.where('stock_daudin', '>', 0)
+        query.orWhere('stock_whiplash', '>', 0)
+      })
+    })
+    .where('v.step', 'in_progress')
+    // .where('v.is_shop', params.shop)
+    .whereExists(DB.raw(`
+      SELECT 1
+      FROM project_style
+      WHERE p.id = project_id
+        AND style_id IN (${styles.join(',')})
+    `))
+    .limit(6)
+    .all())
+    .map(project => Project.setInfos(project, currencies, null, ss))
+
+  const refs = refs0.concat(refs1)
+
+  const refs2 = (await DB('project as p')
+    .select(...selects)
+    .join('vod as v', 'v.project_id', 'p.id')
+    .where('v.step', 'in_progress')
+    .where(query => {
+      query.where('is_shop', false)
+      query.orWhere(query => {
+        query.where('stock_daudin', '>', 0)
+        query.orWhere('stock_whiplash', '>', 0)
+      })
+    })
+    .where('v.is_shop', params.shop)
+    .whereNotIn('p.id', params.refs)
+    .whereNotIn('p.id', refs.map(r => r.id))
+    .limit(6)
+    .orderBy(DB.raw('RAND()'))
+    .all())
+    .map(project => Project.setInfos(project, currencies, null, ss))
+
+  return refs0.concat(reco).concat(refs1).concat(refs2).slice(0, 6)
+}
+
+Project.generateDownload = async (params) => {
+  let found = true
+  let code = null
+  while (found) {
+    code = Math.random().toString(36).substring(7) + Math.random().toString(36).substring(7)
+    found = await DB('download').where('code', code).first()
+  }
+  await DB('download').insert({
+    project_id: params.project_id,
+    code: code,
+    created_at: Utils.date(),
+    updated_at: Utils.date()
+  })
+
+  return code
+}
+
+Project.getStats = async (params) => {
+  const names = []
+  const promises = []
+
+  let pp = DB('project')
+    .select('project.name', 'project.id', 'vod.currency', 'vod.fee_date')
+    .join('vod', 'vod.project_id', 'project.id')
+    .where('is_delete', '!=', '1')
+
+  if (params.id === 'all') {
+    pp.where('user_id', params.user.id)
+  } else {
+    pp.where('project.id', params.id)
+  }
+
+  pp = await pp.all()
+
+  const projects = {}
+  for (const p of pp) {
+    projects[p.id] = p
+  }
+
+  names.push('orders')
+  params.size = 0
+  promises.push(Project.getOrders(params, projects))
+
+  for (const p of pp) {
+    names.push(`stats_${p.id}`)
+    promises.push(Statement.getStatement({ id: p.id }))
+  }
+
+  return Promise.all(promises).then(async d => {
+    const res = {
+      quantity: {
+        site: 0,
+        distrib: 0,
+        box: 0,
+        total: 0
+      },
+      income: 0,
+      costs: 0,
+      net: 0,
+      currency: pp[0].currency
+    }
+    const data = {}
+
+    for (const dd in d) {
+      const p = d[dd]
+      data[names[dd]] = p
+    }
+
+    for (let i = 1; i < d.length; i++) {
+      const stats = d[i]
+      if (stats) {
+        res.quantity.site += stats.site_quantity ? stats.site_quantity.total : 0
+        res.quantity.box += stats.box_quantity ? stats.box_quantity.total : 0
+        res.quantity.distrib += stats.distrib_quantity ? stats.distrib_quantity.total : 0
+        res.quantity.total = res.quantity.site + res.quantity.distrib + res.quantity.box
+
+        res.income += stats.total_income.total
+        res.costs += stats.total_cost.total
+        res.net = res.income - res.costs
+      }
+    }
+
+    res.stats = data.stats
+
+    res.countries = {
+      quantity: [],
+      turnover: []
+    }
+    const countries = {}
+
+    for (const oo in data.orders.data) {
+      const o = data.orders.data[oo]
+
+      if (!countries[o.country_id]) {
+        countries[o.country_id] = {
+          country_id: o.country_id,
+          quantity: 0,
+          turnover: 0
+        }
+      }
+
+      const feeDate = JSON.parse(projects[o.project_id].fee_date)
+      const fee = 1 - (Utils.getFee(feeDate, o.created_at) / 100)
+
+      const tax = o.ue ? 1.2 : 1
+      const turnover = ((o.quantity * (o.price * o.currency_rate_project)) / tax) * fee
+
+      countries[o.country_id].quantity += o.quantity
+      countries[o.country_id].turnover += turnover
+      countries[o.country_id].turnover = Utils.round(countries[o.country_id].turnover)
+    }
+    res.countries = Object.values(countries)
+    res.country_quantity = {
+      total: res.countries.length > 0 ? res.countries.map(c => c.quantity).reduce((a, c) => a + c) : 0,
+      list: [...res.countries.sort((a, b) => { return b.quantity - a.quantity })]
+    }
+    res.country_turnover = {
+      total: res.countries.length > 0 ? res.countries.map(c => c.turnover).reduce((a, c) => a + c) : 0,
+      list: [...res.countries.sort((a, b) => { return b.turnover - a.turnover })]
+    }
+
+    return res
+  })
+}
+
+Project.getOrdersForTable = async (params) => {
+  let pp = DB('project')
+    .select('project.name', 'project.id', 'vod.currency', 'vod.fee_date')
+    .join('vod', 'vod.project_id', 'project.id')
+
+  if (params.id === 'all') {
+    pp.where('user_id', params.user.id)
+  } else {
+    pp.where('project.id', params.id)
+  }
+
+  pp = await pp.all()
+
+  const projects = {}
+  for (const p of pp) {
+    projects[p.id] = p
+  }
+
+  return Project.getOrders(params, projects)
+}
+
+Project.getOrders = async (params, projects) => {
+  params.query = DB('order_shop')
+    .select('order_item.*', 'project.name as project_name', 'project.picture',
+      'country.ue', 'country.id as country_id', 'order_shop.currency_rate', 'order_shop.tax_rate',
+      'user.name as user')
+    .join('order_item', 'order_item.order_shop_id', 'order_shop.id')
+    .join('customer', 'customer.id', 'order_shop.customer_id')
+    .join('country', 'country.id', 'customer.country_id')
+    .join('user', 'user.id', 'order_shop.user_id')
+    .join('project', 'project.id', 'order_item.project_id')
+    .join('vod', 'vod.project_id', 'project.id')
+    .where('project.is_delete', '!=', '1')
+    .where('country.lang', 'en')
+    .where('is_paid', true)
+
+  if (params.id === 'all') {
+    params.query.where('vod.user_id', params.user.id)
+  } else {
+    params.query.where('order_item.project_id', params.id)
+  }
+
+  if (!params.sort) {
+    params.sort = 'id'
+    params.order = 'desc'
+  }
+  const res = await Utils.getRows(params)
+
+  for (const oo in res.data) {
+    const o = res.data[oo]
+
+    const feeDate = JSON.parse(projects[o.project_id].fee_date)
+    const fee = 1 - (Utils.getFee(feeDate, o.created_at) / 100)
+
+    res.data[oo].tax = Utils.round(o.ue ? o.total * 0.2 : 0)
+    res.data[oo].fee = Utils.round((1 - fee) * (o.total - res.data[oo].tax))
+    res.data[oo].net = Utils.round(o.total - res.data[oo].tax - res.data[oo].fee)
+  }
+
+  return res
+}
+
+Project.duplicate = async (id) => {
+  let project = await DB('project')
+    .where('id', id)
+    .first()
+
+  const uid = Utils.uuid()
+
+  Storage.copyFolder(`projects/${project.picture || project.id}`, `projects/${uid}`)
+    .catch(() => {})
+
+  project.id = null
+  project.picture = uid
+  project.created_at = Utils.date()
+  project.updated_at = Utils.date()
+  project = JSON.parse(JSON.stringify(project))
+  const insert = await DB('project')
+    .insert(project)
+
+  project.id = insert[0]
+
+  let vod = await DB('vod')
+    .where('project_id', id)
+    .first()
+
+  vod = JSON.parse(JSON.stringify(vod))
+  vod.id = null
+  vod.date_export_order = null
+  vod.daudin_export = null
+  vod.whiplash_export = null
+  vod.stock_daudin = 0
+  vod.stock_whiplash = 0
+  vod.stock_whiplash_uk = 0
+  vod.stock_sna = 0
+  vod.count = 0
+  vod.step = 'creating'
+  vod.created_at = Utils.date()
+  vod.updated_at = Utils.date()
+  vod.project_id = project.id
+
+  await DB('vod')
+    .insert(vod)
+
+  const styles = await DB('project_style')
+    .where('project_id', id)
+    .all()
+
+  for (const style of styles) {
+    await DB('project_style')
+      .insert({
+        project_id: project.id,
+        style_id: style.style_id
+      })
+  }
+
+  const items = await DB('item')
+    .where('project_id', id)
+    .all()
+
+  for (const item of items) {
+    await DB('item')
+      .insert({
+        ...item,
+        id: null,
+        project_id: project.id
+      })
+  }
+
+  const tracks = await DB('song')
+    .where('project_id', id)
+    .all()
+
+  for (const track of tracks) {
+    const t = await DB('song')
+      .insert({
+        ...track,
+        id: null,
+        project_id: project.id
+      })
+
+    Storage.copy(`songs/${track.id}.mp3`, `songs/${t[0]}.mp3`).catch(() => {})
+    Storage.copy(`songs/${track.id}.json`, `songs/${t[0]}.json`).catch(() => {})
+  }
+
+  return project
+}
+
+Project.listStyles = async () => {
+  const styles = await DB('style').all()
+  const s = {}
+  for (const style of styles) {
+    s[style.id] = style.name
+  }
+  return s
+}
+
+module.exports = Project
