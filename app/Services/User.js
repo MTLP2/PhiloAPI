@@ -590,11 +590,15 @@ User.getOrders = async (params) => {
 }
 
 User.getOrderShop = async (params) => {
-  const orderShop = await DB('order_shop').join('customer', 'customer.id', 'order_shop.customer_id').where('order_id', +params.id).all()
+  const orderShop = await DB('order_shop as os')
+    .select('os.id', 'os.customer_id', 'os.user_id', 'c.address', 'os.address_pickup', 'c.city')
+    .join('customer as c', 'c.id', 'os.customer_id')
+    .where('order_id', +params.id)
+    .first()
 
-  // if (params.user_id !== orderShop.user_id) {
-  //   throw new ApiError(403)
-  // }
+  if (params.user_id !== orderShop.user_id) {
+    throw new ApiError(403)
+  }
 
   return orderShop
 }
