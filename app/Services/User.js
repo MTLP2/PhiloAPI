@@ -589,6 +589,16 @@ User.getOrders = async (params) => {
   return Order.getOrders(params)
 }
 
+User.getOrderShop = async (params) => {
+  const orderShop = await DB('order_shop').join('customer', 'customer.id', 'order_shop.customer_id').where('order_id', +params.id).all()
+
+  // if (params.user_id !== orderShop.user_id) {
+  //   throw new ApiError(403)
+  // }
+
+  return orderShop
+}
+
 User.updateOrderCustomer = async (params) => {
   const order = await DB()
     .select('os.user_id', 'order_id', 'pickup_not_found', 'customer_id')

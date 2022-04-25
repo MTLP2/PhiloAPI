@@ -98,6 +98,11 @@ class UserController {
     return User.getOrders(params)
   }
 
+  getOrderShop ({ user, params }) {
+    params.user_id = user.id
+    return User.getOrderShop(params)
+  }
+
   getBoxes ({ user, params }) {
     params.user_id = user.id
     return User.getBoxes(params)
