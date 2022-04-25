@@ -2427,22 +2427,8 @@ Admin.getBusiness = async (params) => {
   if (!admin.includes(params.user_id)) {
     query += `AND vod.com_id = '${params.user_id}' `
   }
-  const sent = await DB().execute(query)
 
-  const com = {}
-  for (const item of sent) {
-    if (!com[item.com_id]) {
-      com[item.com_id] = {
-        id: item.com_id,
-        sent: 0,
-        turnover: 0,
-        projects: 0,
-        success: 0,
-        prospects: 0
-      }
-    }
-    com[item.com_id].sent += (item.total * item.currency_rate) / (1 + item.tax_rate)
-  }
+  const sentPromise = DB().execute(query)
 
   let query2 = `
     select com_id, order_item.total, order_item.currency_rate, tax_rate
@@ -2455,22 +2441,7 @@ Admin.getBusiness = async (params) => {
   if (!admin.includes(params.user_id)) {
     query2 += `AND vod.com_id = '${params.user_id}' `
   }
-  console.log(query2)
-  const turnover = await DB().execute(query2)
-
-  for (const item of turnover) {
-    if (!com[item.com_id]) {
-      com[item.com_id] = {
-        id: item.com_id,
-        sent: 0,
-        turnover: 0,
-        projects: 0,
-        success: 0,
-        prospects: 0
-      }
-    }
-    com[item.com_id].turnover += (item.total * item.currency_rate) / (1 + item.tax_rate)
-  }
+  const turnoverPromise = DB().execute(query2)
 
   let query3 = `
     select com_id
@@ -2480,43 +2451,18 @@ Admin.getBusiness = async (params) => {
   if (!admin.includes(params.user_id)) {
     query3 += `AND vod.com_id = '${params.user_id}' `
   }
-  const projects = await DB().execute(query3)
-  for (const item of projects) {
-    if (!com[item.com_id]) {
-      com[item.com_id] = {
-        id: item.com_id,
-        sent: 0,
-        turnover: 0,
-        projects: 0,
-        success: 0,
-        prospects: 0
-      }
-    }
-    com[item.com_id].projects++
-  }
+  const projectsPromise = DB().execute(query3)
 
   let query4 = `
     select com_id
     from vod
-    where vod.daudin_export between '${params.start}' and '${params.end} 23:59'
+    where (vod.daudin_export between '${params.start}' and '${params.end} 23:59'
+      OR whiplash_export between '${params.start}' and '${params.end} 23:59')
   `
   if (!admin.includes(params.user_id)) {
     query4 += `AND vod.com_id = '${params.user_id}' `
   }
-  const success = await DB().execute(query4)
-  for (const item of success) {
-    if (!com[item.com_id]) {
-      com[item.com_id] = {
-        id: item.com_id,
-        sent: 0,
-        turnover: 0,
-        projects: 0,
-        success: 0,
-        prospects: 0
-      }
-    }
-    com[item.com_id].success++
-  }
+  const successPromise = DB().execute(query4)
 
   let query5 = `
     select user_id
@@ -2526,22 +2472,98 @@ Admin.getBusiness = async (params) => {
   if (!admin.includes(params.user_id)) {
     query5 += `AND user_id = '${params.user_id}' `
   }
-  const prospects = await DB().execute(query5)
+  const prospectsPromise = DB().execute(query5)
+
+  let query6 = `
+    select vod.com_id, vod.currency, total
+    from statement, statement_distributor, vod
+    where statement.project_id = vod.project_id
+      AND statement.id = statement_distributor.statement_id
+      AND statement.date between '${params.start}' and '${params.end} 23:59'
+  `
+  if (!admin.includes(params.user_id)) {
+    query6 += `AND com_id = '${params.user_id}' `
+  }
+  const statementsPromise = DB().execute(query6)
+
+  const currenciesPromise = Utils.getCurrenciesDb()
+
+  const [sent, turnover, projects, success, prospects, statements, currenciesDb] = await Promise.all([
+    sentPromise,
+    turnoverPromise,
+    projectsPromise,
+    successPromise,
+    prospectsPromise,
+    statementsPromise,
+    currenciesPromise
+  ])
+
+  const com = {}
+
+  const setDefault = id => {
+    return {
+      id: id,
+      sent: 0,
+      turnover: 0,
+      projects: 0,
+      success: 0,
+      prospects: 0,
+      distrib: 0
+    }
+  }
+
+  for (const item of sent) {
+    if (!com[item.com_id]) {
+      com[item.com_id] = setDefault(item.com_id)
+    }
+    com[item.com_id].sent += (item.total * item.currency_rate) / (1 + item.tax_rate)
+  }
+
+  for (const item of turnover) {
+    if (!com[item.com_id]) {
+      com[item.com_id] = setDefault(item.com_id)
+    }
+    com[item.com_id].turnover += (item.total * item.currency_rate) / (1 + item.tax_rate)
+  }
+
   for (const item of prospects) {
     if (!com[item.user_id]) {
-      com[item.user_id] = {
-        id: item.user_id,
-        sent: 0,
-        turnover: 0,
-        projects: 0,
-        success: 0,
-        prospects: 0
-      }
+      com[item.user_id] = setDefault(item.user_id)
     }
     com[item.user_id].prospects++
   }
 
-  return Object.values(com)
+  for (const item of success) {
+    if (!com[item.com_id]) {
+      com[item.com_id] = setDefault(item.com_id)
+    }
+    com[item.com_id].success++
+  }
+
+  for (const item of projects) {
+    if (!com[item.com_id]) {
+      com[item.com_id] = setDefault(item.com_id)
+    }
+    com[item.com_id].projects++
+  }
+
+  const currencies = await Utils.getCurrencies('EUR', currenciesDb)
+  for (const item of statements) {
+    if (!com[item.com_id]) {
+      com[item.com_id] = setDefault(item.com_id)
+    }
+    com[item.com_id].distrib += item.total / currencies[item.currency]
+  }
+
+  const res = Object.values(com)
+
+  res.sort((a, b) => {
+    if (a.turnover < b.turnover) { return 1 }
+    if (a.turnover > b.turnover) { return -1 }
+    return 0
+  })
+
+  return res
 }
 
 Admin.getRespProd = async (params) => {
