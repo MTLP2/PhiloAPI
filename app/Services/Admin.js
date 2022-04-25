@@ -2475,11 +2475,11 @@ Admin.getBusiness = async (params) => {
   const prospectsPromise = DB().execute(query5)
 
   let query6 = `
-    select vod.com_id, vod.currency, total
+    select vod.com_id, vod.currency, statement.date, total
     from statement, statement_distributor, vod
     where statement.project_id = vod.project_id
       AND statement.id = statement_distributor.statement_id
-      AND statement.date between '${params.start}' and '${params.end} 23:59'
+      AND STR_TO_DATE(CONCAT(statement.date, '-01'), '%Y-%m-%d') between '${params.start}' and '${params.end} 23:59'
   `
   if (!admin.includes(params.user_id)) {
     query6 += `AND com_id = '${params.user_id}' `
