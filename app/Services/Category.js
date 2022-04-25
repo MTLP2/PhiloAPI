@@ -133,7 +133,7 @@ class Category {
     }
 
     // Get project items that matches both params.type and params.step
-    const items = DB()
+    const rawItems = DB()
       .select('project.id', 'project.name', 'vod.type', 'vod.step', 'project_style.style_id as style_id')
       .from('project')
       .join('vod', 'project.id', 'vod.project_id')
@@ -142,16 +142,26 @@ class Category {
     // Filters
     for (const filter in params.filters) {
       if (params.filters[filter].length) {
-        items.whereIn(filter === 'styles' ? 'project_style.style_id' : `vod.${filter}`, params.filters[filter])
+        rawItems.whereIn(filter === 'styles' ? 'project_style.style_id' : `vod.${filter}`, params.filters[filter])
       }
     }
 
     // Order & Limit by user with defaults
-    items.orderBy('project.created_at', params.order || 'asc')
-    items.limit(params.limit || 10)
+    rawItems.orderBy('project.created_at', params.order || 'asc')
+    rawItems.limit(params.limit || 10)
 
     const res = {}
-    res.items = await items.all()
+    const duplicates = []
+    const items = await rawItems.all()
+
+    res.items = items.filter(item => {
+      const isDuplicate = duplicates.includes(item.id)
+      if (!isDuplicate) {
+        duplicates.push(item.id)
+        return true
+      }
+      return false
+    })
 
     // Get all projects linked to this category
     const projects = await DB('category_project')
