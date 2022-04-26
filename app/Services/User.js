@@ -589,6 +589,20 @@ User.getOrders = async (params) => {
   return Order.getOrders(params)
 }
 
+User.getOrderShop = async (params) => {
+  const orderShop = await DB('order_shop as os')
+    .select('os.id', 'os.customer_id', 'os.user_id', 'c.address', 'os.address_pickup', 'c.city', 'c.zip_code', 'c.country_id')
+    .join('customer as c', 'c.id', 'os.customer_id')
+    .where('order_id', +params.id)
+    .first()
+
+  if (params.user_id !== orderShop.user_id) {
+    throw new ApiError(403)
+  }
+
+  return orderShop
+}
+
 User.updateOrderCustomer = async (params) => {
   const order = await DB()
     .select('os.user_id', 'order_id', 'pickup_not_found', 'customer_id')
