@@ -591,7 +591,7 @@ User.getOrders = async (params) => {
 
 User.getOrderShop = async (params) => {
   const orderShop = await DB('order_shop as os')
-    .select('os.id', 'os.customer_id', 'os.user_id', 'c.address', 'os.address_pickup', 'c.city')
+    .select('os.id', 'os.customer_id', 'os.user_id', 'c.address', 'os.address_pickup', 'c.city', 'c.zip_code', 'c.country_id')
     .join('customer as c', 'c.id', 'os.customer_id')
     .where('order_id', +params.id)
     .first()
