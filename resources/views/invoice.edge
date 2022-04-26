@@ -13,6 +13,7 @@
       font-size: 10px;
       padding: 0px;
       margin: 0px;
+      zoom: 0.95;
     }
     .invoice {
       padding: 20px;
@@ -56,7 +57,6 @@
       color: #000;
       text-transform: uppercase;
       text-align: center;
-      white-space: nowrap;
     }
     table.lines td.color {
       background: #ffd21e;
@@ -79,13 +79,15 @@
       padding: 7px 15px;
     }
     .nowrap {
-      white-space: nowrap;
     }
     .small {
       font-size: 80%;
     }
     .medium {
       font-size: 100%;
+    }
+    .price {
+      max-width: 80px;
     }
   </style>
 </head>
@@ -211,11 +213,11 @@
     <tr class="header">
       <th>{{ t('invoice.ean13') }}</th>
       <th>{{ t('invoice.wording') }}</th>
-      <th>{{ t('invoice.quantity') }}</th>
-      <th>{{ t('invoice.price_brut') }}</th>
-      <th>{{ t('invoice.discount_rate') }}</th>
-      <th>{{ t('invoice.price_unit') }}</th>
-      <th>{{ t('invoice.amount') }}</th>
+      <th class="price">{{ t('invoice.quantity') }}</th>
+      <th class="price">{{ t('invoice.price_brut') }}</th>
+      <th class="price">{{ t('invoice.discount_rate') }}</th>
+      <th class="price">{{ t('invoice.price_unit') }}</th>
+      <th class="price">{{ t('invoice.amount') }}</th>
     </tr>
     @else
     <tr class="header">
