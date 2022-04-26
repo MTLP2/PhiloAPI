@@ -1197,7 +1197,7 @@ Project.recommendations = async (params) => {
     .all())
     .map(project => Project.setInfos(project, currencies, null, ss))
 
-  return refs0.concat(reco).concat(refs1).concat(refs2).slice(0, 6)
+  return reco.concat(refs0).concat(refs1).concat(refs2).slice(0, 6)
 }
 
 Project.generateDownload = async (params) => {
