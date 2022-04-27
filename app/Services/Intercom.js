@@ -245,13 +245,6 @@ const generateOrderCard = async (order, lang, single = false) => {
     })
   }
 
-  // Add payment info
-  // infoTable.items.push({
-  //   type: 'field-value',
-  //   field: translate('paid', lang),
-  //   value: order.is_paid ? '✅' : '❌'
-  // })
-
   // Add refund info (if refunded)
   if (order.step === 'refund' || order.step === 'refunded') {
     infoTable.items.push({
