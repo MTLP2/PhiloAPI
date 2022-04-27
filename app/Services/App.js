@@ -1249,7 +1249,10 @@ App.alertStock = async () => {
   <tbody>`
   for (const project of projects) {
     if (project.is_shop) {
-      project.copies_left = project.stock
+      project.stock_daudin = project.stock_daudin < 0 ? 0 : project.stock_daudin
+      project.stock_whiplash = project.stock_whiplash < 0 ? 0 : project.stock_whiplash
+      project.stock_whiplash_uk = project.stock_whiplash_uk < 0 ? 0 : project.stock_whiplash_uk
+      project.copies_left = project.stock_daudin + project.stock_whiplash + project.stock_whiplash_uk + project.stock_diggers
     } else {
       project.copies_left = project.goal - project.count
     }

@@ -856,10 +856,8 @@ class Daudin {
     }
 
     const projects = await DB('vod')
-      .select('is_shop', 'barcode', 'goal', 'count', 'count_distrib', 'count_other', 'stock.stock as stock_daudin')
+      .select('is_shop', 'barcode', 'stock_daudin', 'goal', 'count', 'count_distrib', 'count_other')
       .join('project', 'project.id', 'vod.project_id')
-      .join('stock', 'stock.project_id', 'vod.project_id')
-      .where('stock.type', 'daudin')
       .whereIn('barcode', stock.map(s => s.code))
       .all()
 

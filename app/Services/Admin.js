@@ -15,7 +15,6 @@ const ApiError = use('App/ApiError')
 const Excel = require('exceljs')
 const Storage = use('App/Services/Storage')
 const Order = use('App/Services/Order')
-const Stock = use('App/Services/Stock')
 const cio = use('App/Services/CIO')
 const Env = use('Env')
 const moment = require('moment')
@@ -205,11 +204,9 @@ Admin.getProject = async (id) => {
     .where('project_id', id)
     .all()
 
-  const stocksQuery = Stock.getProject(id)
-
-  const stocksHistoricQuery = DB('stock_historic')
-    .select('stock_historic.*', 'user.name')
-    .leftJoin('user', 'user.id', 'stock_historic.user_id')
+  const stocksQuery = DB('vod_stock')
+    .select('vod_stock.*', 'user.name')
+    .leftJoin('user', 'user.id', 'vod_stock.user_id')
     .where('project_id', id)
     .orderBy('id', 'desc')
     .all()
@@ -248,12 +245,11 @@ Admin.getProject = async (id) => {
     .where('is_paid', 1)
     .all()
 
-  const [project, codes, costs, stocks, stocksHistoric, items, orders] = await Promise.all([
+  const [project, codes, costs, stocks, items, orders] = await Promise.all([
     projectQuery,
     codesQuery,
     costsQuery,
     stocksQuery,
-    stocksHistoricQuery,
     itemsQuery,
     ordersQuery
   ])
@@ -265,13 +261,9 @@ Admin.getProject = async (id) => {
   project.codes = codes
   project.costs = costs
   project.items = items
-  project.stocks_historic = stocksHistoric
+  project.stocks = stocks
 
-  for (const [key, value] of Object.entries(stocks)) {
-    project[`stock_${key}`] = value
-  }
-
-  project.stock_preorder = project.goal - project.count - project.count_other - project.count_distrib
+  project.stock = project.goal - project.count - project.count_other - project.count_distrib
 
   project.com = project.com ? JSON.parse(project.com) : {}
   project.sizes = project.sizes ? JSON.parse(project.sizes) : {}
@@ -760,21 +752,32 @@ Admin.saveVod = async (params) => {
     if (params.transporter_soundmerch) {
       vod.transporters.soundmerch = true
     }
+
     vod.transporters = JSON.stringify(vod.transporters)
     vod.count_other = params.count_other
     vod.count_distrib = params.count_distrib
-
-    for (const trans of ['daudin', 'sna', 'whiplash', 'whiplash_uk', 'diggers', 'shipehype']) {
-      await Stock.save({
-        project_id: params.id,
-        type: trans,
-        stock: params[`stock_${trans}`],
+    if (vod.stock_whiplash !== params.stock_whiplash_us) {
+      await DB('vod_stock').insert({
+        project_id: vod.project_id,
         user_id: params.user.id,
-        comment: 'sheraf'
+        type: 'whiplash',
+        old: vod.stock_whiplash,
+        new: params.stock_whiplash_us
       })
     }
-    vod.stock = +params.stock_daudin + +params.stock_sna + +params.stock_whiplash +
-      +params.stock_whiplash_uk + +params.stock_diggers + +params.stock_shipehype
+    vod.stock_whiplash = params.stock_whiplash_us
+    vod.stock_whiplash_uk = params.stock_whiplash_uk
+    if (vod.stock_daudin !== params.stock_daudin) {
+      await DB('vod_stock').insert({
+        project_id: vod.project_id,
+        user_id: params.user.id,
+        type: 'daudin',
+        old: vod.stock_daudin,
+        new: params.stock_daudin
+      })
+    }
+    vod.stock_daudin = params.stock_daudin
+    vod.stock_diggers = params.stock_diggers
 
     vod.is_size = params.is_size
     vod.sizes = JSON.stringify(params.sizes)
