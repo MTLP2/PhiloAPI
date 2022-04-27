@@ -267,7 +267,7 @@ Admin.getProject = async (id) => {
   project.costs = costs
   project.items = items
   project.stocks = stocks
-  project.projectImages = projectImages
+  project.project_images = projectImages
 
   project.stock = project.goal - project.count - project.count_other - project.count_distrib
 
@@ -649,6 +649,36 @@ Admin.saveProjectItem = async (params) => {
 
 Admin.removeProjectItem = async (params) => {
   return DB('item').where('id', params.id).delete()
+}
+
+Admin.saveProjectImage = async (params) => {
+  const project = await Admin.getProject(params.project_id)
+
+  // Upload image
+  const file = Utils.uuid()
+  Storage.uploadImage(
+        `projects/${project.picture}/images/${file}`,
+        Buffer.from(params.image, 'base64'),
+        { type: 'png', width: 1000, quality: 100 }
+  )
+
+  await DB('project_images')
+    .insert({
+      project_id: params.project_id,
+      image: file,
+      created_at: Utils.date(),
+      name: params.name,
+      color: params.color,
+      position: params.position
+    })
+
+  return { success: true }
+}
+
+Admin.deleteProjectImage = async (params) => {
+  console.log(params)
+  await DB('project_images').where('id', params.iid).delete()
+  return { success: true }
 }
 
 Admin.saveWishlist = async (params) => {

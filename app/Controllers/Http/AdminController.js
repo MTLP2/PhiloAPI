@@ -214,6 +214,15 @@ class AdminController {
     return Statement.download(params)
   }
 
+  saveProjectImage ({ params }) {
+    // console.log(params)
+    return Admin.saveProjectImage(params)
+  }
+
+  deleteProjectImage ({ params }) {
+    return Admin.deleteProjectImage(params)
+  }
+
   deleteProject ({ params }) {
     return Admin.deleteProject(params.id)
   }

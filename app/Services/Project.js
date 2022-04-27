@@ -1485,4 +1485,8 @@ Project.listStyles = async () => {
   return s
 }
 
+Project.getProjectImage = async (id) => {
+  return await DB('project_images').where('id', id).first()
+}
+
 module.exports = Project
