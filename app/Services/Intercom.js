@@ -71,6 +71,7 @@ const translate = (key, lang = 'EN') => {
     test_pressing_ok: lang === 'EN' ? ['Your vinyl record’s pressing is in progress!', 'The next steps are: order preparation, and delivery (please check your address).', 'Thank you!'] : ['Le pressage de votre vinyle suit son cours !', 'Les prochaines étapes sont : préparation de votre commande puis la livraison (merci de vérifier votre adresse).', 'Merci !'],
     preparation: lang === 'EN' ? ['Only two more little steps! Your order is being prepared in our logistics center. It will be delivered to you as soon as possible, depending on the distance between our warehouses and your address.', 'Emails will be sent to inform you of the delivery. Thank you!'] : ['Nous sommes à l’avant-dernière étape ! Votre commande est en cours de préparation dans notre centre logistique.', 'Elle vous sera transmise au plus vite, selon la distance entre nos entrepôts et votre adresse. Des e-mails vous seront envoyés pour vous informer de la livraison. Merci !'],
     test_pressing_ko: lang === 'EN' ? ['We are sorry, the "Test Pressing" vinyl record which is the basis for the whole production has not been approved by everyone because it is not satisfactory.', 'We will produce a new "Test Pressing" in order to make the project as good as possible so that it meets our quality standards.', 'Thank you for your patience.'] : ['Nous sommes désolés, le vinyle “Test Pressing” qui sert de base à toute la production n’a pas été validé par les différentes parties car il n’est pas satisfaisant.', 'Nous allons produire un nouveau “Test Pressing” afin que le projet soit aussi réussi que possible et qu’il corresponde à nos standards de qualité.', 'Merci pour votre patience.'],
+    date_shipping_description: lang === 'EN' ? 'You should receive your vinyl on the indicated date. You will be informed if any incidents occur and extend this delay (factory malfunction, lack of raw material, etc.)' : 'Vous devriez recevoir votre vinyle à la date indiquée. Vous serez informé si des incidents allongent ce délai (dysfonctionnement de l’usine, manque de matière première, etc.).',
 
     // Account - Common
     account_header: lang === 'EN' ? 'Let’s try to find your account! 😊' : 'Nous allons essayer de retrouver votre compte ensemble 😊',
@@ -282,7 +283,7 @@ const generateOrderCard = async (order, lang, single = false) => {
   // Display order status (if not launched, never used)
   if (order.step !== 'launched') {
     // If only one item and date_shipping is set on in_production, display shipping date
-    if (order.step === 'in_progress' && order.items.length === 1 && order.items[0].date_shipping) {
+    if ((order.step === 'in_progress' || order.step === 'confirmed') && order.items.length === 1 && order.items[0].date_shipping) {
       cardComponent.push({
         type: 'list',
         items: [
@@ -290,7 +291,7 @@ const generateOrderCard = async (order, lang, single = false) => {
             type: 'item',
             id: 'preprod',
             title: `🟢 ${translate('date_shipping', lang)} : ${getLocaleDateFromString(order.items[0].date_shipping, lang)}`,
-            subtitle: translate('preprod_description', lang)
+            subtitle: translate('date_shipping_description', lang)
           }
         ]
       })
