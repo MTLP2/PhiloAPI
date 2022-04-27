@@ -199,12 +199,15 @@ const generateOrderCard = async (order, lang, single = false) => {
 
     // Add items to the list (make sure id is a string since it's required by canvas kit)
     for (const item of order.items) {
+      // Tertiary text changes if item has date_shipping or not
+      const tertiaryText = (order.step === 'in_progress' || order.step === 'confirmed') && order.items.length === 1 && item.date_shipping ? `x${item.quantity} - ${item.price} ${item.currency}` : `🟢 ${translate('date_shipping', lang)} : ${getLocaleDateFromString(item.date_shipping, lang)}`
+
       listItems.items.push({
         type: 'item',
         id: `order-card-${item.id}`,
         title: item.name,
         subtitle: item.artist_name,
-        tertiary_text: `x${item.quantity} - ${item.price} ${item.currency}`,
+        tertiary_text: tertiaryText,
         image: `${Env.get('STORAGE_URL')}/projects/${item.picture || item.project_id}/cover.jpg`,
         image_width: 48,
         image_height: 48
