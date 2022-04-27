@@ -521,7 +521,7 @@ Whiplash.syncStocks = async (params) => {
         })
 
       if (us !== project.stock_whiplash) {
-        await DB('vod_stock')
+        await DB('stock_historic')
           .insert({
             project_id: project.project_id,
             type: 'whiplash',
@@ -532,7 +532,7 @@ Whiplash.syncStocks = async (params) => {
           })
       }
       if (uk !== project.stock_whiplash_uk) {
-        await DB('vod_stock')
+        await DB('stock_historic')
           .insert({
             project_id: project.project_id,
             type: 'whiplash_uk',

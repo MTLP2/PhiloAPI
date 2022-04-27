@@ -270,7 +270,7 @@ Vod.calculStock = async ({ id, isShop, quantity, transporter, recursive = true }
     }
     p.updated_at = Utils.date()
 
-    DB('vod_stock')
+    DB('stock_historic')
       .insert({
         project_id: id,
         type: transporter,
@@ -1043,7 +1043,7 @@ Vod.changeStock = async (params) => {
 
   await vod.save()
 
-  await DB('vod_stock')
+  await DB('stock_historic')
     .insert({
       project_id: params.project_id,
       type: params.transporter,

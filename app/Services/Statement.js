@@ -960,9 +960,7 @@ class StatementService {
     for (const v of vod) {
       const currencies = Utils.getCurrencies(v.currency, currenciesDb)
 
-      const stocks = v.stock_daudin + v.stock_whiplash + v.stock_whiplash_uk
-
-      if (stocks < 1) {
+      if (v.stock < 1) {
         continue
       }
       i++
@@ -985,7 +983,7 @@ class StatementService {
 
       const unitPrice = v.category === 'vinyl' ? price : 0.05
 
-      statement.storage = (stocks * unitPrice) / currencies.EUR
+      statement.storage = (v.stock * unitPrice) / currencies.EUR
       statement.updated_at = Utils.date()
 
       await statement.save()
