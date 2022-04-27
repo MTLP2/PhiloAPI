@@ -274,9 +274,6 @@ Project.findAll = async (params) => {
   } else if (params.type === 'accessories') {
     projects.where('category', 'accessory')
     projects.where('v.step', 'in_progress')
-  } else if (params.type === 'merch') {
-    projects.where('category', 'merch')
-    projects.where('v.step', 'in_progress')
   } else if (params.type === 'pro') {
     projects.where('partner_distribution', '1')
     projects.where('v.step', 'in_progress')
