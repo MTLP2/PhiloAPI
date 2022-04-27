@@ -204,10 +204,6 @@ Admin.getProject = async (id) => {
     .where('project_id', id)
     .all()
 
-  const projectImagesQuery = DB('project_images')
-    .where('project_id', id)
-    .all()
-
   const stocksQuery = DB('vod_stock')
     .select('vod_stock.*', 'user.name')
     .leftJoin('user', 'user.id', 'vod_stock.user_id')
@@ -249,14 +245,13 @@ Admin.getProject = async (id) => {
     .where('is_paid', 1)
     .all()
 
-  const [project, codes, costs, stocks, items, orders, projectImages] = await Promise.all([
+  const [project, codes, costs, stocks, items, orders] = await Promise.all([
     projectQuery,
     codesQuery,
     costsQuery,
     stocksQuery,
     itemsQuery,
-    ordersQuery,
-    projectImagesQuery
+    ordersQuery
   ])
 
   if (!project) {
@@ -267,7 +262,6 @@ Admin.getProject = async (id) => {
   project.costs = costs
   project.items = items
   project.stocks = stocks
-  project.projectImages = projectImages
 
   project.stock = project.goal - project.count - project.count_other - project.count_distrib
 
