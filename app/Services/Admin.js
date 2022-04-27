@@ -204,9 +204,7 @@ Admin.getProject = async (id) => {
     .where('project_id', id)
     .all()
 
-  const projectImagesQuery = DB('project_images')
-    .where('project_id', id)
-    .all()
+  const projectImagesQuery = Project.getProjectImages({ projectId: id })
 
   const stocksQuery = DB('vod_stock')
     .select('vod_stock.*', 'user.name')
