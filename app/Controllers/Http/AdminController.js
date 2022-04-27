@@ -8,7 +8,7 @@ const Payment = use('App/Services/Payment')
 const Customer = use('App/Services/Customer')
 const Blog = use('App/Services/Blog')
 const Quote = use('App/Services/Quote')
-const Box = use('App/Services/Box')
+const Stock = use('App/Services/Stock')
 const Invoice = use('App/Services/Invoice')
 const Whiplash = use('App/Services/Whiplash')
 const Song = use('App/Services/Song')
@@ -149,7 +149,7 @@ class AdminController {
   }
 
   calculStock ({ params }) {
-    return Vod.calculStock(params.id)
+    return Stock.calcul(params.id)
   }
 
   getBusiness ({ params, user }) {

@@ -12,8 +12,8 @@ class TestController {
       return 'test'
     }
 
-    return App.alertStock()
-    // return Stock.convert()
+    // return App.alertStock()
+    return Stock.convert()
   }
 }
 

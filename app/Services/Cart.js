@@ -224,7 +224,6 @@ Cart.calculate = async (params) => {
           is_shop: 1,
           stock: true,
           weight: weight,
-          stocks,
           stock_daudin: project.stock_daudin,
           stock_whiplash: project.stock_whiplash,
           stock_whiplash_uk: project.stock_whiplash_uk,
@@ -1668,7 +1667,8 @@ Cart.validPayment = async (orderId, transactionId, status = 'confirmed') => {
           i.updated_at = Utils.date()
           await i.save()
         }
-        await Vod.calculStock({
+
+        await Stock.calcul({
           id: project.id,
           isShop: shop.type === 'shop',
           quantity: item.quantity,

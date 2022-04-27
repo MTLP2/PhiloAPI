@@ -6,7 +6,7 @@ const Project = use('App/Services/Project')
 const Customer = use('App/Services/Customer')
 const PromoCode = use('App/Services/PromoCode')
 const Order = use('App/Services/Order')
-const Vod = use('App/Services/Vod')
+const Stock = use('App/Services/Vod')
 const Payment = require('./Payment')
 const moment = require('moment')
 const config = require('../../config')
@@ -1146,6 +1146,7 @@ class Box {
     }
 
     console.log(goods)
+
     for (const g of Object.keys(goods)) {
       await DB('goodie')
         .where('barcode', g)
@@ -1164,10 +1165,10 @@ class Box {
     }
 
     for (const s of Object.keys(selected)) {
-      Vod.changeStock({
+      Stock.save({
         project_id: s,
-        transporter: 'daudin',
-        sub: selected[s],
+        type: 'daudin',
+        quantity: -selected[s],
         comment: 'boxes'
       })
     }

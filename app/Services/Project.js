@@ -1386,10 +1386,7 @@ Project.duplicate = async (id) => {
   vod.date_export_order = null
   vod.daudin_export = null
   vod.whiplash_export = null
-  vod.stock_daudin = 0
-  vod.stock_whiplash = 0
-  vod.stock_whiplash_uk = 0
-  vod.stock_sna = 0
+  vod.stock = 0
   vod.count = 0
   vod.step = 'creating'
   vod.created_at = Utils.date()
