@@ -22,6 +22,7 @@ const translate = (key, lang = 'EN') => {
     paid: lang === 'EN' ? 'Paid' : 'Payé',
     total: lang === 'EN' ? 'Total (incl. ship.)' : 'Total (livr. incluse)',
     refund_text: lang === 'EN' ? 'Refunded' : 'Remboursé',
+    date_shipping: lang === 'EN' ? 'Estimated shipping date' : 'Date de livraison estimée',
     cancelled: lang === 'EN' ? 'Cancelled' : 'Annulé',
     tracking_link_available: lang === 'EN' ? 'Tracking Link' : 'Lien de tracking',
     yes: lang === 'EN' ? 'Yes' : 'Oui',
@@ -161,6 +162,7 @@ const generateOrderButtons = (orders, lang) => {
 
 // Generates a complete canvas component for order data display
 const generateOrderCard = async (order, lang, single = false) => {
+  console.log(order)
   // Get rid of mispelled cancel
   order.step = order.step === 'cancelled' ? 'canceled' : order.step
 
@@ -279,20 +281,35 @@ const generateOrderCard = async (order, lang, single = false) => {
 
   // Display order status (if not launched, never used)
   if (order.step !== 'launched') {
-    // Create paragraphs if array, single text if string
-    const stepMessage = getMultiParagraph(order.step, lang)
+    // If only one item and date_shipping is set on in_production, display shipping date
+    if (order.step === 'in_progress' && order.items.length === 1 && order.items[0].date_shipping) {
+      cardComponent.push({
+        type: 'list',
+        items: [
+          {
+            type: 'item',
+            id: 'preprod',
+            title: `🟢 ${translate('date_shipping', lang)} : ${getLocaleDateFromString(order.items[0].date_shipping, lang)}`,
+            subtitle: translate('preprod_description', lang)
+          }
+        ]
+      })
+    } else {
+      // Create paragraphs if array, single text if string
+      const stepMessage = getMultiParagraph(order.step, lang)
 
-    cardComponent.push(
-      {
-        type: 'spacer',
-        size: 'm'
-      }, {
-        type: 'text',
-        text: translate('order_step', lang),
-        bottom_margin: 'none'
-      },
-      ...stepMessage
-    )
+      cardComponent.push(
+        {
+          type: 'spacer',
+          size: 'm'
+        }, {
+          type: 'text',
+          text: translate('order_step', lang),
+          bottom_margin: 'none'
+        },
+        ...stepMessage
+      )
+    }
   }
 
   // If in production, fetch production data to get any estimated date of progress.
@@ -311,7 +328,7 @@ const generateOrderCard = async (order, lang, single = false) => {
       datesProd.items.push({
         type: 'item',
         id: 'preprod',
-        title: `🟢 ${translate('preprod', lang)} - ${getLocaleDateFromString(datePreProd, lang)}`,
+        title: `🟢 ${getLocaleDateFromString(datePreProd, lang)} - ${translate('preprod', lang)}`,
         subtitle: translate('preprod_description', lang)
       })
     }
@@ -320,7 +337,7 @@ const generateOrderCard = async (order, lang, single = false) => {
       datesProd.items.push({
         type: 'item',
         id: 'prod',
-        title: `🟢 ${translate('prod', lang)} - ${getLocaleDateFromString(dateProd, lang)}`,
+        title: `🟢 ${getLocaleDateFromString(dateProd, lang)} - ${translate('prod', lang)}`,
         subtitle: translate('prod_description', lang)
       })
     }
@@ -329,7 +346,7 @@ const generateOrderCard = async (order, lang, single = false) => {
       datesProd.items.push({
         type: 'item',
         id: 'postprod',
-        title: `🟢 ${translate('postprod', lang)} - ${getLocaleDateFromString(datePostProd, lang)}`,
+        title: `🟢${getLocaleDateFromString(datePostProd, lang)} - ${translate('postprod', lang)}`,
         subtitle: translate('postprod_description', lang)
       })
     }
@@ -338,7 +355,7 @@ const generateOrderCard = async (order, lang, single = false) => {
       datesProd.items.push({
         type: 'item',
         id: 'shipping',
-        title: `🟢 ${translate('prod_shipping', lang)} - ${getLocaleDateFromString(dateShipping, lang)}`,
+        title: `🟢 ${getLocaleDateFromString(dateShipping, lang)} - ${translate('prod_shipping', lang)}`,
         subtitle: translate('prod_shipping_description', lang)
       })
     }
