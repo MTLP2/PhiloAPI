@@ -215,8 +215,11 @@ class AdminController {
   }
 
   saveProjectImage ({ params }) {
-    // console.log(params)
     return Admin.saveProjectImage(params)
+  }
+
+  updateProjectImage ({ params }) {
+    return Admin.updateProjectImage(params)
   }
 
   deleteProjectImage ({ params }) {

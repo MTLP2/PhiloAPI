@@ -679,6 +679,48 @@ Admin.saveProjectImage = async (params) => {
     }
   }
 }
+Admin.updateProjectImage = async (params) => {
+  console.log(params)
+  const project = await DB('project as p').select('p.picture', 'pi.image').join('project_images as pi', 'pi.project_id', 'p.id').where('pi.id', params.id).first()
+
+  console.log(project)
+
+  const file = Utils.uuid()
+
+  // Only if image has changed
+  if (params.image) {
+    console.log(project.picture, project.image)
+    // Delete old image
+    await Storage.deleteImage(`projects/${project.picture}/images/${project.image}`)
+
+    // Upload new image
+    Storage.uploadImage(
+        `projects/${project.picture}/images/${file}`,
+        Buffer.from(params.image, 'base64'),
+        { type: 'png', width: 1000, quality: 100 }
+    )
+  }
+
+  await DB('project_images')
+    .where('id', params.id)
+    .update({
+      image: file,
+      name: params.name,
+      position: params.position,
+      created_at: Utils.date()
+    })
+
+  return {
+    success: true,
+    item: {
+      id: +params.iid,
+      image: params.image ? file : project.image,
+      name: params.name,
+      position: params.position,
+      created_at: new Date().toISOString()
+    }
+  }
+}
 
 Admin.deleteProjectImage = async (params) => {
   const projectImage = await DB('project_images as pi').select('pi.project_id', 'pi.image', 'p.picture').join('project as p', 'p.id', 'pi.project_id').where('pi.id', params.iid).first()
