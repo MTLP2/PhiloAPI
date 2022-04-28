@@ -680,16 +680,12 @@ Admin.saveProjectImage = async (params) => {
   }
 }
 Admin.updateProjectImage = async (params) => {
-  console.log(params)
   const project = await DB('project as p').select('p.picture', 'pi.image').join('project_images as pi', 'pi.project_id', 'p.id').where('pi.id', params.id).first()
-
-  console.log(project)
 
   const file = Utils.uuid()
 
   // Only if image has changed
   if (params.image) {
-    console.log(project.picture, project.image)
     // Delete old image
     await Storage.deleteImage(`projects/${project.picture}/images/${project.image}`)
 
