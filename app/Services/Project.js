@@ -431,6 +431,7 @@ Project.findAll = async (params) => {
     projects.orderBy(params.order, params.sort)
   } else if (params.sort) {
     if (params.sort === 'popularity') {
+      projects.orderBy('home', 'desc')
       projects.orderBy('likes', 'desc')
     } else if (params.sort === 'progress') {
       projects.orderBy('progress', 'desc')
@@ -468,6 +469,7 @@ Project.findAll = async (params) => {
       .orderBy('home', 'desc')
       .orderBy(DB.raw('RAND()'))
   }
+  projects.orderBy('id', 'DESC')
 
   if (params.filter === 'preorder') {
     projects.where('v.is_shop', '0')
@@ -475,6 +477,10 @@ Project.findAll = async (params) => {
   } else if (params.filter === 'immediate-delivery') {
     projects.where('v.is_shop', '1')
     projects.where('v.step', 'in_progress')
+  }
+
+  if (!params.limit) {
+    params.limit = 9
   }
   if (params.page) {
     projects.offset(params.limit * (params.page - 1))
