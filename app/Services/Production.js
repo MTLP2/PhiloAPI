@@ -939,6 +939,29 @@ class Production {
 
     await pfile.save()
 
+    if (action.type === 'pressing_proof') {
+      if (pfile.status_artist && pfile.status) {
+        const notValid = await DB('production_file')
+          .where('action', 'pressing_proof')
+          .where('production_id', pfile.production_id)
+          .where(query => {
+            query.where('status_artist', '!=', 'valid')
+              .orWhere('status', '!=', 'valid')
+          })
+          .all()
+
+        if (notValid.length === 0) {
+          Production.saveAction({
+            production_id: pfile.production_id,
+            status: 'valid',
+            type: 'pressing_proof',
+            user_id: 1,
+            user: { id: 1 }
+          })
+        }
+      }
+    }
+
     return { success: true }
   }
 
