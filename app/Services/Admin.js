@@ -654,7 +654,7 @@ Admin.saveProjectImage = async (params) => {
 
   // Upload image
   const file = Utils.uuid()
-  Storage.uploadImage(
+  await Storage.uploadImage(
         `projects/${project.picture}/images/${file}`,
         Buffer.from(params.image, 'base64'),
         { type: 'png', width: 1000, quality: 100 }
@@ -690,7 +690,7 @@ Admin.updateProjectImage = async (params) => {
     await Storage.deleteImage(`projects/${project.picture}/images/${project.image}`)
 
     // Upload new image
-    Storage.uploadImage(
+    await Storage.uploadImage(
         `projects/${project.picture}/images/${file}`,
         Buffer.from(params.image, 'base64'),
         { type: 'png', width: 1000, quality: 100 }
