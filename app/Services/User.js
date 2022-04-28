@@ -597,6 +597,9 @@ User.getOrderShop = async (params) => {
     .where('order_id', +params.id)
     .first()
 
+  if (!orderShop) {
+    throw new ApiError(404)
+  }
   if (params.user_id !== orderShop.user_id) {
     throw new ApiError(403)
   }
