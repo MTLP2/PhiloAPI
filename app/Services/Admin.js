@@ -666,7 +666,6 @@ Admin.saveProjectImage = async (params) => {
       image: file,
       created_at: Utils.date(),
       name: params.name,
-      color: params.color,
       position: params.position
     })
 
@@ -676,7 +675,6 @@ Admin.saveProjectImage = async (params) => {
       id: newProjectImageId[0],
       image: file,
       name: params.name,
-      color: params.color,
       position: params.position
     }
   }
@@ -684,7 +682,8 @@ Admin.saveProjectImage = async (params) => {
 
 Admin.deleteProjectImage = async (params) => {
   console.log(params)
-  await DB('project_images').where('id', params.iid).delete()
+  // TODO Storage delete
+  // await DB('project_images').where('id', params.iid).delete()
   return { success: true }
 }
 
