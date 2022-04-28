@@ -660,7 +660,7 @@ Admin.saveProjectImage = async (params) => {
         { type: 'png', width: 1000, quality: 100 }
   )
 
-  await DB('project_images')
+  const newProjectImageId = await DB('project_images')
     .insert({
       project_id: params.project_id,
       image: file,
@@ -670,7 +670,16 @@ Admin.saveProjectImage = async (params) => {
       position: params.position
     })
 
-  return { success: true }
+  return {
+    success: true,
+    item: {
+      id: newProjectImageId[0],
+      image: file,
+      name: params.name,
+      color: params.color,
+      position: params.position
+    }
+  }
 }
 
 Admin.deleteProjectImage = async (params) => {
