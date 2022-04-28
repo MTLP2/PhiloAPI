@@ -681,9 +681,10 @@ Admin.saveProjectImage = async (params) => {
 }
 
 Admin.deleteProjectImage = async (params) => {
-  console.log(params)
-  // TODO Storage delete
-  // await DB('project_images').where('id', params.iid).delete()
+  const projectImage = await DB('project_images as pi').select('pi.project_id', 'pi.image', 'p.picture').join('project as p', 'p.id', 'pi.project_id').where('pi.id', params.iid).first()
+
+  Storage.deleteImage(`projects/${projectImage.picture}/images/${projectImage.image}`)
+  await DB('project_images').where('id', params.iid).delete()
   return { success: true }
 }
 
