@@ -22,6 +22,7 @@ const translate = (key, lang = 'EN') => {
     paid: lang === 'EN' ? 'Paid' : 'Payé',
     total: lang === 'EN' ? 'Total (incl. ship.)' : 'Total (livr. incluse)',
     refund_text: lang === 'EN' ? 'Refunded' : 'Remboursé',
+    date_shipping: lang === 'EN' ? 'Estimated shipping date' : 'Date d\'expédition estimée',
     cancelled: lang === 'EN' ? 'Cancelled' : 'Annulé',
     tracking_link_available: lang === 'EN' ? 'Tracking Link' : 'Lien de tracking',
     yes: lang === 'EN' ? 'Yes' : 'Oui',
@@ -42,7 +43,7 @@ const translate = (key, lang = 'EN') => {
     preprod: lang === 'EN' ? 'Pre-production' : 'Production en attente',
     preprod_description: lang === 'EN' ? 'Your purchase has been confirmed and the project will begin, thank you! We are gathering all the elements provided by the artist in order to start the pressing phase in the factory as soon as possible. You will receive emails to inform you of the project’s progress. Thank you!' : 'Votre achat a été confirmé, le projet va débuter, merci ! Nous rassemblons tous les éléments fournis par l’artiste afin de pouvoir débuter la phase de pressage en usine au plus vite. Vous recevrez des emails pour vous informer de son évolution. Merci !',
     prod: lang === 'EN' ? 'Production in progress' : 'Production en cours',
-    prod_description: lang === 'EN' ? 'The pressing of your vinyl record has started, thanks to your purchase! In a few weeks we will send you an email to let you know when this step is over. Next steps are: delivery preparation, and delivery. Thank you!' : 'Le pressage en usine a débuté, grâce à votre achat ! Dans quelques semaines, nous vous enverrons un email pour vous informer de la fin de cette étape. Les prochaines étapes sont: préparation logistique, puis livraison. Merci !',
+    prod_description: lang === 'EN' ? 'The pressing of your vinyl record is in progress, thanks to your purchase! In a few weeks we will send you an email to let you know when this step is over. Next steps are: order preparation, and delivery. Thank you!' : 'Le pressage en usine suit son cours grâce à votre achat ! Dans quelques semaines, nous vous enverrons un email pour vous informer de la fin de cette étape. Les prochaines étapes sont : préparation de votre commande, puis livraison. Merci !',
     postprod: lang === 'EN' ? 'Post-production' : 'Post-production',
     postprod_description: lang === 'EN' ? 'Here we are, the pressing of your vinyl record is almost over or already done! You will receive an email to ask you to confirm your postal address soon, and then to inform you of the delivery. Thank you!' : 'On y est, le pressage en usine de votre commande touche bientôt à sa fin ou est déjà terminé ! Vous recevrez un e-mail prochainement pour vous demander de confirmer votre adresse postale, puis pour vous informer de la livraison. Merci !',
     // prodend: lang === 'EN' ? 'Production ended' : 'Production terminée',
@@ -63,13 +64,14 @@ const translate = (key, lang = 'EN') => {
     failed: lang === 'EN' ? 'The payment of your order has failed, unfortunately. We invite you to try again or contact your bank for more information.' : 'Le paiement de votre commande a malheureusement échoué. Nous vous invitons à essayer de nouveau ou à vous tourner vers votre banque pour plus d\'informations.',
     canceled: lang === 'EN' ? ['Your order has been canceled 😢.', 'If it’s an error, please contact our customer support.'] : ['Votre commande a été annulée 😢.', 'Si cela est une erreur, merci de contacter notre service client.'],
     check_address: lang === 'EN' ? ['Your order has left the factory, and is almost ready for delivery!', 'To avoid a delivery failure, we have sent you an email to confirm your address. Thank you for your reactivity. It is possible to change your address for 2 days maximum after the reception of the email.', 'Without any answer from you, we will send your parcel to the address you provided.', 'Thank you for your cooperation! 😊'] : ['Votre commande est sortie de l\'usine, et est presque prête pour la livraison !', 'Pour éviter un échec de livraison, nous vous avons envoyé un e-mail afin que vous nous confirmiez votre adresse. Merci pour votre réactivité, il est possible de changer votre adresse pendant 2 jours maximum après la réception de cet email.', 'Sans réponse de votre part, nous enverrons votre colis à l’adresse que vous avez renseignée.', 'Merci pour votre collaboration ! 😊'],
-    confirmed: lang === 'EN' ? ['Your payment has been successfully completed, thank you!', 'If your product is in immediate delivery, we will soon ask you to confirm your postal address before delivery.', 'If your product is at the pre-order stage, you will be notified when the project is launched or if it is canceled.', 'If the project is launched, the next steps are: pressing in the factory, delivery preparation, and delivery.', 'Thank you for your patience! 💪'] : ['Votre paiement a été réalisé avec succès, merci !', 'Si votre produit est en livraison immédiate, nous vous demanderons prochainement de confirmer votre adresse avant livraison.', 'Si votre produit est à l’étape de pré-commande, vous serez informé du lancement du projet ou de son annulation.', 'Si le projet est lancé, les prochaines étapes sont : le pressage en usine, la préparation logistique, et la livraison.', 'Merci pour votre patience ! 💪'],
-    in_production: lang === 'EN' ? ['Thanks to your purchase this project is in production!', 'As soon as the pressing step is complete, your order will be prepared in our logistics center and then shipped. You will receive emails to inform you of its status.', 'Thank you!'] : ['Grâce à votre achat ce projet est en cours de production !', 'Dès que le pressage en usine sera terminé, votre commande sera préparée en centre logistique, puis expédiée. Vous recevrez des emails pour vous informer de l’évolution de son statut.', 'Merci !'],
-    returned: lang === 'EN' ? ['Your order is being returned to our logistics center because it stayed too long at the pickup point or because your address was wrong, unfortunately.', 'You can check the tracking link for more information. You will receive an email as soon as we receive it.', 'You will receive an email as soon as we receive it.'] : ['Votre commande est en retour vers notre centre logistique, car elle est restée trop longtemps au point de retrait ou parce que votre adresse était erronée, malheureusement.', 'Vous pouvez consulter le lien de suivi pour plus d\'informations.', 'Vous recevrez un e-mail dès que celle-ci sera réceptionnée.'],
-    refund: lang === 'EN' ? ['We have refunded your order.', 'This follows either a request from you or a project cancellation because it unfortunately did not reach its funding goal.', 'The amount will appear on your bank account within a few days.'] : ['Nous avons procédé au remboursement de votre commande.', 'Ceci fait suite soit à une demande de votre part, soit parce que le projet a été annulé car il n’a malheureusement pas atteint son objectif de financement.', 'Le montant apparaîtra sur votre compte bancaire dans les jours qui suivent.'],
-    test_pressing_ok: lang === 'EN' ? ['Good news, everything is OK and your vinyl is ready to go into production!', 'Next steps are: production, delivery preparation and delivery (please verify your postal address).', 'Thank you!'] : ['Bonne nouvelle, tout a été validé et votre vinyle sera bientôt pressé !', 'Les prochaines étapes sont : la production, la préparation logistique, puis la livraison (merci de vérifier votre adresse).', 'Merci !'],
+    confirmed: lang === 'EN' ? ['Your payment has been successfully completed, thank you!', 'If your product is in immediate delivery, you will soon receive an email to confirm your address before delivery.', 'If your product is in the pre-order stage, you will be notified either when the project is launched or when it is cancelled. If the project is launched, the next steps are: factory pressing, logistic preparation, and delivery.', 'Thank you for your patience! 💪'] : ['Votre paiement a été réalisé avec succès, merci !', 'Si votre produit est en livraison immédiate, vous recevrez bientôt un email pour confirmer votre adresse avant livraison.', 'Si votre produit est à l’étape de pré-commande, vous serez informé soit du lancement du projet soit de son annulation. Si le projet est lancé, les prochaines étapes sont : le pressage en usine, la préparation logistique, et la livraison.', 'Merci pour votre patience ! 💪'],
+    in_production: lang === 'EN' ? ['Thanks to your purchase this project is in production!', 'Thank you!'] : ['Grâce à votre achat ce projet est en cours de production !', 'Merci !'],
+    returned: lang === 'EN' ? ['Unfortunately, your order is being returned to our logistics center. Several reasons can explain this:: the parcel stayed too long at the pickup point, your address was wrong, or you were absent.', 'You can check the tracking link for more information.', 'You will receive an e-mail as soon as the order is received by our logistics center.'] : ['Malheureusement, votre commande est en retour vers notre centre logistique pour plusieurs raisons : elle est restée trop longtemps au point de retrait, votre adresse était erronée, ou vous étiez absent(e).', 'Vous pouvez consulter le lien de suivi pour plus d\'informations.', 'Vous recevrez un e-mail dès que celle-ci sera réceptionnée par notre centre logistique.'],
+    refund: lang === 'EN' ? ['We have refunded your order.', 'This follows either a request from you or a project cancellation because it unfortunately did not reach its funding goal.', 'The amount appears on your bank account within a few days.'] : ['Nous avons procédé au remboursement de votre commande.', 'Ceci fait suite soit à une demande de votre part, soit parce que le projet a été annulé car il n’a malheureusement pas atteint son objectif de financement.', 'Le montant apparaît sur votre compte bancaire dans les jours qui suivent.'],
+    test_pressing_ok: lang === 'EN' ? ['Your vinyl record’s pressing is in progress!', 'The next steps are: order preparation, and delivery (please check your address).', 'Thank you!'] : ['Le pressage de votre vinyle suit son cours !', 'Les prochaines étapes sont : préparation de votre commande puis la livraison (merci de vérifier votre adresse).', 'Merci !'],
     preparation: lang === 'EN' ? ['Only two more little steps! Your order is being prepared in our logistics center. It will be delivered to you as soon as possible, depending on the distance between our warehouses and your address.', 'Emails will be sent to inform you of the delivery. Thank you!'] : ['Nous sommes à l’avant-dernière étape ! Votre commande est en cours de préparation dans notre centre logistique.', 'Elle vous sera transmise au plus vite, selon la distance entre nos entrepôts et votre adresse. Des e-mails vous seront envoyés pour vous informer de la livraison. Merci !'],
     test_pressing_ko: lang === 'EN' ? ['We are sorry, the "Test Pressing" vinyl record which is the basis for the whole production has not been approved by everyone because it is not satisfactory.', 'We will produce a new "Test Pressing" in order to make the project as good as possible so that it meets our quality standards.', 'Thank you for your patience.'] : ['Nous sommes désolés, le vinyle “Test Pressing” qui sert de base à toute la production n’a pas été validé par les différentes parties car il n’est pas satisfaisant.', 'Nous allons produire un nouveau “Test Pressing” afin que le projet soit aussi réussi que possible et qu’il corresponde à nos standards de qualité.', 'Merci pour votre patience.'],
+    date_shipping_description: lang === 'EN' ? 'You should receive your vinyl on the indicated date. You will be informed if any incidents occur and extend this delay (factory malfunction, lack of raw material, etc.)' : 'Vous devriez recevoir votre vinyle à la date indiquée. Vous serez informé si des incidents allongent ce délai (dysfonctionnement de l’usine, manque de matière première, etc.).',
 
     // Account - Common
     account_header: lang === 'EN' ? 'Let’s try to find your account! 😊' : 'Nous allons essayer de retrouver votre compte ensemble 😊',
@@ -196,12 +198,15 @@ const generateOrderCard = async (order, lang, single = false) => {
 
     // Add items to the list (make sure id is a string since it's required by canvas kit)
     for (const item of order.items) {
+      // Tertiary text changes if item has date_shipping or not
+      const tertiaryText = (order.step === 'in_progress' || order.step === 'confirmed') && order.items.length === 1 && item.date_shipping ? `x${item.quantity} - ${item.price} ${item.currency}` : `🟢 ${translate('date_shipping', lang)} : ${getLocaleDateFromString(item.date_shipping, lang)}`
+
       listItems.items.push({
         type: 'item',
         id: `order-card-${item.id}`,
         title: item.name,
         subtitle: item.artist_name,
-        tertiary_text: `x${item.quantity} - ${item.price} ${item.currency}`,
+        tertiary_text: tertiaryText,
         image: `${Env.get('STORAGE_URL')}/projects/${item.picture || item.project_id}/cover.jpg`,
         image_width: 48,
         image_height: 48
@@ -242,13 +247,6 @@ const generateOrderCard = async (order, lang, single = false) => {
     })
   }
 
-  // Add payment info
-  // infoTable.items.push({
-  //   type: 'field-value',
-  //   field: translate('paid', lang),
-  //   value: order.is_paid ? '✅' : '❌'
-  // })
-
   // Add refund info (if refunded)
   if (order.step === 'refund' || order.step === 'refunded') {
     infoTable.items.push({
@@ -279,20 +277,35 @@ const generateOrderCard = async (order, lang, single = false) => {
 
   // Display order status (if not launched, never used)
   if (order.step !== 'launched') {
-    // Create paragraphs if array, single text if string
-    const stepMessage = getMultiParagraph(order.step, lang)
+    // If only one item and date_shipping is set on in_production, display shipping date
+    if ((order.step === 'in_progress' || order.step === 'confirmed') && order.items.length === 1 && order.items[0].date_shipping) {
+      cardComponent.push({
+        type: 'list',
+        items: [
+          {
+            type: 'item',
+            id: 'preprod',
+            title: `🟢 ${translate('date_shipping', lang)} : ${getLocaleDateFromString(order.items[0].date_shipping, lang)}`,
+            subtitle: translate('date_shipping_description', lang)
+          }
+        ]
+      })
+    } else {
+      // Create paragraphs if array, single text if string
+      const stepMessage = getMultiParagraph(order.step, lang)
 
-    cardComponent.push(
-      {
-        type: 'spacer',
-        size: 'm'
-      }, {
-        type: 'text',
-        text: translate('order_step', lang),
-        bottom_margin: 'none'
-      },
-      ...stepMessage
-    )
+      cardComponent.push(
+        {
+          type: 'spacer',
+          size: 'm'
+        }, {
+          type: 'text',
+          text: translate('order_step', lang),
+          bottom_margin: 'none'
+        },
+        ...stepMessage
+      )
+    }
   }
 
   // If in production, fetch production data to get any estimated date of progress.
@@ -311,7 +324,7 @@ const generateOrderCard = async (order, lang, single = false) => {
       datesProd.items.push({
         type: 'item',
         id: 'preprod',
-        title: `🟢 ${translate('preprod', lang)} - ${getLocaleDateFromString(datePreProd, lang)}`,
+        title: `🟢 ${getLocaleDateFromString(datePreProd, lang)} - ${translate('preprod', lang)}`,
         subtitle: translate('preprod_description', lang)
       })
     }
@@ -320,7 +333,7 @@ const generateOrderCard = async (order, lang, single = false) => {
       datesProd.items.push({
         type: 'item',
         id: 'prod',
-        title: `🟢 ${translate('prod', lang)} - ${getLocaleDateFromString(dateProd, lang)}`,
+        title: `🟢 ${getLocaleDateFromString(dateProd, lang)} - ${translate('prod', lang)}`,
         subtitle: translate('prod_description', lang)
       })
     }
@@ -329,7 +342,7 @@ const generateOrderCard = async (order, lang, single = false) => {
       datesProd.items.push({
         type: 'item',
         id: 'postprod',
-        title: `🟢 ${translate('postprod', lang)} - ${getLocaleDateFromString(datePostProd, lang)}`,
+        title: `🟢${getLocaleDateFromString(datePostProd, lang)} - ${translate('postprod', lang)}`,
         subtitle: translate('postprod_description', lang)
       })
     }
@@ -338,7 +351,7 @@ const generateOrderCard = async (order, lang, single = false) => {
       datesProd.items.push({
         type: 'item',
         id: 'shipping',
-        title: `🟢 ${translate('prod_shipping', lang)} - ${getLocaleDateFromString(dateShipping, lang)}`,
+        title: `🟢 ${getLocaleDateFromString(dateShipping, lang)} - ${translate('prod_shipping', lang)}`,
         subtitle: translate('prod_shipping_description', lang)
       })
     }
