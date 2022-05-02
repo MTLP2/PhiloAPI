@@ -22,7 +22,7 @@ const translate = (key, lang = 'EN') => {
     paid: lang === 'EN' ? 'Paid' : 'Payé',
     total: lang === 'EN' ? 'Total (incl. ship.)' : 'Total (livr. incluse)',
     refund_text: lang === 'EN' ? 'Refunded' : 'Remboursé',
-    date_shipping: lang === 'EN' ? 'Estimated shipping date' : 'Date de livraison estimée',
+    date_shipping: lang === 'EN' ? 'Estimated shipping date' : 'Date d\'expédition estimée',
     cancelled: lang === 'EN' ? 'Cancelled' : 'Annulé',
     tracking_link_available: lang === 'EN' ? 'Tracking Link' : 'Lien de tracking',
     yes: lang === 'EN' ? 'Yes' : 'Oui',
