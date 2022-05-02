@@ -163,7 +163,6 @@ const generateOrderButtons = (orders, lang) => {
 
 // Generates a complete canvas component for order data display
 const generateOrderCard = async (order, lang, single = false) => {
-  console.log(order)
   // Get rid of mispelled cancel
   order.step = order.step === 'cancelled' ? 'canceled' : order.step
 
