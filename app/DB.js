@@ -307,6 +307,11 @@ const DB = (tablee, idd) => {
       return db
     },
 
+    orWhereNotNull (arg1) {
+      p.query.orWhereNotNull(arg1)
+      return db
+    },
+
     whereExists (arg1) {
       p.query.whereExists(arg1)
       return db
