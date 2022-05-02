@@ -235,7 +235,7 @@ Route.group(() => {
   Route.get('/projects/:id/orders/extract', 'AdminController.extractOrders')
   Route.get('/projects/:id/check-sync', 'AdminController.checkSync')
   Route.get('/projects/:id/orders/sync-whiplash', 'AdminController.syncWhiplash')
-  Route.post('/projects/:id/orders/sync-daudin', 'AdminController.syncDaudin')
+  Route.post('/projects/:id/orders/sync-project', 'AdminController.syncProject')
   Route.get('/projects/:id/calcul-stock', 'AdminController.calculStock')
   Route.get('/projects/:id/songs', 'AdminController.downloadProject')
   Route.post('/projects/:id/duplicate', 'AdminController.duplicateProject')

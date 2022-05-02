@@ -23,7 +23,7 @@ const Daudin = use('App/Services/Daudin')
 const Artwork = use('App/Services/Artwork')
 const Stats = use('App/Services/Stats')
 const MailJet = use('App/Services/MailJet')
-const Vod = use('App/Services/Vod')
+const Sna = use('App/Services/Sna')
 const ProjectService = use('App/Services/Project')
 const Database = use('Database')
 
@@ -236,8 +236,8 @@ class AdminController {
     return Whiplash.syncProject(params)
   }
 
-  async syncDaudin ({ params }) {
-    return Admin.syncProjectDaudin(params.id, params)
+  async syncProject ({ params }) {
+    return Admin.syncProject(params)
   }
 
   getBalanceProject ({ params }) {

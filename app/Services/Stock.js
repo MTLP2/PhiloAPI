@@ -254,6 +254,39 @@ class Stock {
 
     return { success: true }
   }
+
+  static async saveExports () {
+    const vod = await DB('vod')
+      .where(query => {
+        query.whereNotNull('daudin_export')
+          .orWhereNotNull('whiplash_export')
+      })
+      .all()
+
+    for (const v of vod) {
+      const exp = []
+      if (v.daudin_export) {
+        exp.push({ type: 'daudin', date: v.daudin_export })
+      }
+      if (v.whiplash_export) {
+        exp.push({ type: 'whiplash', date: v.whiplash_export })
+      }
+
+      exp.sort(function (a, b) {
+        return new Date(a.date) - new Date(b.date)
+      })
+
+      if (exp.length > 0) {
+        await DB('vod')
+          .where('project_id', v.project_id)
+          .update({
+            exports: JSON.stringify(exp)
+          })
+      }
+    }
+
+    return { success: true }
+  }
 }
 
 module.exports = Stock

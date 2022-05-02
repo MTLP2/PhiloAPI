@@ -348,6 +348,7 @@ Admin.getProject = async (id) => {
     }
   }
   project.barcodes = barcodes
+  project.exports = JSON.parse(project.exports)
   project.historic = JSON.parse(project.historic)
 
   return project
@@ -777,7 +778,14 @@ Admin.saveVod = async (params) => {
       +params.stock_whiplash_uk + +params.stock_diggers + +params.stock_shipehype
 
     vod.is_size = params.is_size
-    vod.sizes = JSON.stringify(params.sizes)
+
+    const sizes = {
+      s: false, m: false, l: false, xl: false, '2xl': false, '3xl': false, '4xl': false
+    }
+    for (const s of params.sizes) {
+      sizes[s] = true
+    }
+    vod.sizes = JSON.stringify(sizes)
 
     vod.alert_stock = params.alert_stock || null
     vod.only_country = params.only_country
@@ -1034,6 +1042,85 @@ Admin.downloadInvoiceCost = async (params) => {
     .find(params.cid)
 
   return Storage.get(item.invoice, true)
+}
+
+Admin.syncProject = async (params) => {
+  const vod = await DB('vod')
+    .where('project_id', params.id).first()
+  if (!vod) {
+    return false
+  }
+
+  const exports = vod.daudin_export ? JSON.parse(vod.daudin_export) : []
+
+  let date = new Date()
+  if (params.type === 'daudin') {
+    date = new Date(new Date().getTime() + 24 * 60 * 60 * 1000)
+  }
+  date = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`
+
+  exports.push({ type: params.type, date: date })
+  if (params.type === 'daudin') {
+    vod.daudin_export = date
+  }
+  vod.exports = JSON.stringify(exports)
+  vod.updated_at = Utils.date()
+
+  await vod.save()
+
+  const orders = await DB()
+    .from('order_item as oi')
+    .join('order_shop as os', 'os.id', 'oi.order_shop_id')
+    .where('os.type', 'vod')
+    .whereNull('date_export')
+    .where('os.transporter', 'daudin')
+    .where('oi.project_id', params.id)
+    .where('is_paid', 1)
+    .orderBy('oi.created_at')
+    .where('sending', false)
+    .all()
+
+  let qty = 0
+  for (const order of orders) {
+    if (qty + order.quantity <= params.quantity) {
+      if (order.shipping_type === 'pickup') {
+        const pickup = JSON.parse(order.address_pickup)
+        const available = await MondialRelay.checkPickupAvailable(pickup.number)
+
+        if (!available) {
+          const around = await MondialRelay.findPickupAround(pickup)
+
+          if (around) {
+            await DB('order_shop')
+              .where('id', order.order_shop_id)
+              .update({
+                address_pickup: JSON.stringify(around)
+              })
+
+            await Notification.add({
+              type: 'my_order_pickup_changed',
+              order_id: order.order_id,
+              order_shop_id: order.id,
+              user_id: order.user_id
+            })
+          } else {
+            continue
+          }
+        }
+      }
+
+      await DB('order_shop')
+        .where('id', order.order_shop_id)
+        .update({
+          sending: true,
+          transporter: params.type
+        })
+
+      qty = qty + order.quantity
+    }
+  }
+
+  return vod
 }
 
 Admin.syncProjectDaudin = async (id, params) => {
