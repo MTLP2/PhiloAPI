@@ -32,14 +32,13 @@ class Sna {
             stateCode: order.state || '',
             countryCode: order.country_id,
             mail: order.email,
-            phoneNumber: order.phone,
+            phoneNumber: order.phone || '123',
             corporate: false,
             deliveryInstruction: '',
             idPointRelay: pickup ? pickup.number : ''
           },
           orderLines: []
         }
-        console.log(data)
 
         for (const item of order.items) {
           const barcodes = item.barcode.split(',')
