@@ -11,9 +11,7 @@ class ProjectsController {
   async getProjects ({ params }) {
     return {
       categories: (
-        await Category.all({
-          filters: JSON.stringify([{ name: 'category.is_visible', value: '1' }])
-        })
+        await Category.all({})
       ).data,
       data: await Project.findAll(params)
     }
