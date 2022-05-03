@@ -988,7 +988,7 @@ Utils.getTransporterLink = (shop) => {
     return `https://suivi.imxpostal.fr/colis/suivi/${shop.tracking_number}/html/`
   } else if (shop.tracking_transporter === 'COL' || shop.tracking_transporter === 'LTS') {
     return `https://www.laposte.fr/outils/suivre-vos-envois?code=${shop.tracking_number}`
-  } else if (shop.tracking_transporter === 'MDR') {
+  } else if (shop.tracking_transporter === 'MDR' || shop.tracking_transporter === 'MONDIAL RELAY') {
     return `https://www.mondialrelay.fr/suivi-de-colis?codeMarque=F2&nexp=${shop.tracking_number}`
   } else if (shop.tracking_transporter === 'GLS') {
     return `https://gls-group.eu/FR/fr/suivi-colis?match=${shop.tracking_number}`
