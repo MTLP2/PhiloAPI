@@ -16,6 +16,7 @@ const Excel = require('exceljs')
 const Storage = use('App/Services/Storage')
 const Order = use('App/Services/Order')
 const Stock = use('App/Services/Stock')
+const Sna = use('App/Services/Sna')
 const cio = use('App/Services/CIO')
 const Env = use('Env')
 const moment = require('moment')
@@ -1051,7 +1052,97 @@ Admin.syncProject = async (params) => {
     return false
   }
 
-  const exports = vod.daudin_export ? JSON.parse(vod.daudin_export) : []
+  const orders = await DB()
+    .select('customer.*', 'os.*', 'user.email')
+    .from('order_shop as os')
+    .join('customer', 'customer.id', 'os.customer_id')
+    .join('user', 'user.id', 'os.user_id')
+    .whereIn('os.id', query => {
+      query.select('order_shop_id')
+        .from('order_item')
+        .where('project_id', params.id)
+    })
+    // .where('os.transporter', 'daudin')
+    .where('os.type', 'vod')
+    .whereNull('date_export')
+    .where('is_paid', 1)
+    // .where('sending', false)
+    .orderBy('os.created_at')
+    .where('os.id', 80475)
+    .all()
+
+  const items = await DB()
+    .select('order_shop_id', 'oi.project_id', 'oi.quantity', 'oi.price', 'vod.barcode')
+    .from('order_item as oi')
+    .whereIn('order_shop_id', orders.map(o => o.id))
+    .join('vod', 'vod.project_id', 'oi.project_id')
+    .all()
+
+  for (const item of items) {
+    const idx = orders.findIndex(o => o.id === item.order_shop_id)
+    orders[idx].items = orders[idx].items ? [...orders[idx].items, item] : [item]
+  }
+
+  const dispatchs = []
+
+  let qty = 0
+  for (const order of orders) {
+    if (qty >= params.quantity) {
+      break
+    }
+    if (order.shipping_type === 'pickup') {
+      const pickup = JSON.parse(order.address_pickup)
+      const available = await MondialRelay.checkPickupAvailable(pickup.number)
+
+      if (!available) {
+        const around = await MondialRelay.findPickupAround(pickup)
+
+        if (around) {
+          order.address_pickup = JSON.stringify(around)
+          await DB('order_shop')
+            .where('id', order.id)
+            .update({
+              address_pickup: JSON.stringify(around)
+            })
+
+          await Notification.add({
+            type: 'my_order_pickup_changed',
+            order_id: order.order_id,
+            order_shop_id: order.id,
+            user_id: order.user_id
+          })
+        } else {
+          continue
+        }
+      }
+    }
+
+    await DB('order_shop')
+      .where('id', order.id)
+      .update({
+        sending: true,
+        transporter: params.type
+      })
+
+    dispatchs.push(order)
+
+    for (const item of order.items) {
+      if (item.project_id === +params.id) {
+        qty = qty + item.quantity
+      }
+    }
+  }
+
+  if (dispatchs.length === 0) {
+    return { success: false }
+  }
+
+  let res
+  if (params.type === 'sna') {
+    res = await Sna.sync(dispatchs)
+  }
+
+  const exports = vod.exports ? JSON.parse(vod.exports) : []
 
   let date = new Date()
   if (params.type === 'daudin') {
@@ -1059,7 +1150,7 @@ Admin.syncProject = async (params) => {
   }
   date = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`
 
-  exports.push({ type: params.type, date: date })
+  exports.push({ type: params.type, date: date, quantity: params.quantity })
   if (params.type === 'daudin') {
     vod.daudin_export = date
   }
@@ -1068,59 +1159,7 @@ Admin.syncProject = async (params) => {
 
   await vod.save()
 
-  const orders = await DB()
-    .from('order_item as oi')
-    .join('order_shop as os', 'os.id', 'oi.order_shop_id')
-    .where('os.type', 'vod')
-    .whereNull('date_export')
-    .where('os.transporter', 'daudin')
-    .where('oi.project_id', params.id)
-    .where('is_paid', 1)
-    .orderBy('oi.created_at')
-    .where('sending', false)
-    .all()
-
-  let qty = 0
-  for (const order of orders) {
-    if (qty + order.quantity <= params.quantity) {
-      if (order.shipping_type === 'pickup') {
-        const pickup = JSON.parse(order.address_pickup)
-        const available = await MondialRelay.checkPickupAvailable(pickup.number)
-
-        if (!available) {
-          const around = await MondialRelay.findPickupAround(pickup)
-
-          if (around) {
-            await DB('order_shop')
-              .where('id', order.order_shop_id)
-              .update({
-                address_pickup: JSON.stringify(around)
-              })
-
-            await Notification.add({
-              type: 'my_order_pickup_changed',
-              order_id: order.order_id,
-              order_shop_id: order.id,
-              user_id: order.user_id
-            })
-          } else {
-            continue
-          }
-        }
-      }
-
-      await DB('order_shop')
-        .where('id', order.order_shop_id)
-        .update({
-          sending: true,
-          transporter: params.type
-        })
-
-      qty = qty + order.quantity
-    }
-  }
-
-  return vod
+  return { success: true }
 }
 
 Admin.syncProjectDaudin = async (id, params) => {
