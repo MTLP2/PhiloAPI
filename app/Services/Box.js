@@ -859,8 +859,7 @@ class Box {
   static async cleanDispatchs () {
     const dispatchs = await DB('box_dispatch')
       .whereNull('box_project_id')
-      // .whereNull('date_export')
-      .where('id', '>=', 7562)
+      .whereNull('date_export')
       .all()
 
     const bb = {}
