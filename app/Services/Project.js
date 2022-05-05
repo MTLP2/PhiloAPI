@@ -461,13 +461,14 @@ Project.findAll = async (params) => {
     projects.where('v.is_shop', '1')
     projects.where('v.step', 'in_progress')
   }
-  if (params.page) {
-    projects.offset(params.limit * (params.page - 1))
+  if (!params.limit) {
+    params.limit = 9
   }
-
-  if (params.limit) {
-    projects.limit(params.limit)
+  if (!params.page) {
+    params.page = 1
   }
+  projects.limit(params.limit)
+  projects.offset(params.limit * (params.page - 1))
 
   const styles = await Project.listStyles()
   const sales = await PromoCode.getSales({ vod: true })
