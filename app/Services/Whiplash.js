@@ -201,6 +201,10 @@ Whiplash.syncProject = async (params) => {
 
   let count = 0
   for (const order of Object.values(orders)) {
+    if (count + order.quantity > params.quantity) {
+      break
+    }
+
     if (order.transporter === params.type && !order.whiplash_id) {
       count += order.quantity
       const params = {
