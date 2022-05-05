@@ -230,14 +230,16 @@ class AdminController {
     return Admin.checkSync(params.id, params.type)
   }
 
-  async syncWhiplash ({ params, user }) {
+  async syncProject ({ params, user }) {
     params.project_id = params.id
     params.user = user
-    return Whiplash.syncProject(params)
-  }
-
-  async syncProject ({ params }) {
-    return Admin.syncProject(params)
+    if (params.type === 'daudin') {
+      return Admin.syncProjectDaudin(params)
+    } else if (params.type === 'sna') {
+      return Admin.syncProjectSna(params)
+    } else if (params.type === 'whiplash') {
+      return Whiplash.syncProject(params)
+    }
   }
 
   getBalanceProject ({ params }) {
