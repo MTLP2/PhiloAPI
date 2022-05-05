@@ -1332,23 +1332,14 @@ Admin.getOrder = async (id) => {
     .all()
 
   order.shipping = 0
-  orderShops.map(shop => {
-    // For every group of orderNotifications with the same order_shop_id, create a new array with with its notifications. Store in an object
-    shop.notifications = orderNotifications.filter(notification => notification.project_id !== null).reduce((acc, notification) => {
-      if (notification.order_shop_id === shop.id) {
-        if (!acc[notification.project_id]) {
-          acc[notification.project_id] = []
-        }
-        acc[notification.project_id].push(notification)
-      }
-      return acc
-    }, {})
+  for (const shop of orderShops) {
+    shop.notifications = orderNotifications.filter(notification => notification.order_shop_id === shop.id)
 
     shop.items = []
     shop.address_pickup = shop.shipping_type === 'pickup' ? JSON.parse(shop.address_pickup) : {}
     order.shipping += shop.shipping
     order.shops.push(shop)
-  })
+  }
 
   const orderItems = await DB('order_item')
     .select('order_item.*', 'project.name', 'project.artist_name', 'project.picture', 'project.slug',
