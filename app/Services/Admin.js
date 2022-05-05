@@ -236,6 +236,7 @@ Admin.getProject = async (id) => {
       'quantity',
       'item_id',
       'item.barcode as item_barcode',
+      'oi.size',
       'item.name as item_name',
       'os.transporter'
     )
@@ -276,8 +277,14 @@ Admin.getProject = async (id) => {
   project.to_daudin_sent = 0
   project.to_diggers = 0
   project.to_diggers_sent = 0
+  project.to_sizes = {}
   const barcodes = {}
   for (const order of orders) {
+    if (!project.to_sizes[order.size]) {
+      project.to_sizes[order.size] = 0
+    }
+    project.to_sizes[order.size]++
+
     if (order.transporter === 'whiplash') {
       project.to_whiplash += order.quantity
       if (!order.whiplash_id && order.type === 'vod') {
