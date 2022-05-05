@@ -281,7 +281,6 @@ Utils.getRows = async (params) => {
   const res = {}
   res.count = await query.count()
 
-  console.log(query.toString())
   const page = params.page > 0 ? params.page : 1
   const size = params.size > 0 ? params.size : 50
 
