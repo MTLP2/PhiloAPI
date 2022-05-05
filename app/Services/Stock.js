@@ -205,6 +205,13 @@ class Stock {
   }
 
   static async convert () {
+    await DB().execute('TRUNCATE TABLE stock_historic')
+    const histo = await DB('vod_stock')
+      .all()
+
+    await DB('stock_historic')
+      .insert(histo)
+
     await DB().execute('TRUNCATE TABLE stock')
     const vod = await DB('vod')
       .where('is_shop', true)
