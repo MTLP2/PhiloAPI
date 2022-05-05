@@ -863,32 +863,36 @@ User.decodeUnsubscribeNewseletter = (id) => {
 }
 
 User.event = async (params) => {
-  await cio.track(params.user_id, {
-    name: params.type,
-    data: {
+  if (params.type === 'page_view') {
+    cio.track(params.user_id, {
+      name: params.url,
+      type: 'page'
+    })
+  } else {
+    await DB('event').insert({
+      type: params.type,
+      user_id: params.user_id,
       project_id: params.project_id,
-      quantity: params.quantity,
-      artist: params.artist,
-      name: params.name,
-      price: params.price,
-      currency: params.currency,
-      picture: params.picture
-    }
-  })
+      created_at: Utils.date()
+    })
+    await cio.track(params.user_id, {
+      name: params.type,
+      data: {
+        project_id: params.project_id,
+        quantity: params.quantity,
+        artist: params.artist,
+        name: params.name,
+        price: params.price,
+        currency: params.currency,
+        picture: params.picture
+      }
+    })
+  }
 
-  return DB('event').insert({
-    type: params.type,
-    user_id: params.user_id,
-    project_id: params.project_id,
-    created_at: Utils.date()
-  })
+  return { success: true }
 }
 
 User.lastVisit = (id) => {
-  cio.track(id, {
-    name: 'https://www.diggersfactory.com',
-    type: 'page'
-  })
   return DB('user')
     .where('id', id)
     .update({
