@@ -1045,7 +1045,7 @@ Admin.downloadInvoiceCost = async (params) => {
   return Storage.get(item.invoice, true)
 }
 
-Admin.syncProject = async (params) => {
+Admin.syncProjectSna = async (params) => {
   const vod = await DB('vod')
     .where('project_id', params.id).first()
   if (!vod) {
@@ -1062,13 +1062,11 @@ Admin.syncProject = async (params) => {
         .from('order_item')
         .where('project_id', params.id)
     })
-    // .where('os.transporter', 'daudin')
+    .where('os.transporter', 'daudin')
     .where('os.type', 'vod')
     .whereNull('date_export')
     .where('is_paid', 1)
-    // .where('sending', false)
     .orderBy('os.created_at')
-    .where('os.id', 80475)
     .all()
 
   const items = await DB()
@@ -1117,13 +1115,6 @@ Admin.syncProject = async (params) => {
       }
     }
 
-    await DB('order_shop')
-      .where('id', order.id)
-      .update({
-        sending: true,
-        transporter: params.type
-      })
-
     dispatchs.push(order)
 
     for (const item of order.items) {
@@ -1137,34 +1128,30 @@ Admin.syncProject = async (params) => {
     return { success: false }
   }
 
-  let res
   if (params.type === 'sna') {
-    res = await Sna.sync(dispatchs)
+    await Sna.sync(dispatchs)
   }
 
   const exports = vod.exports ? JSON.parse(vod.exports) : []
 
-  let date = new Date()
-  if (params.type === 'daudin') {
-    date = new Date(new Date().getTime() + 24 * 60 * 60 * 1000)
-  }
-  date = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`
-
-  exports.push({ type: params.type, date: date, quantity: params.quantity })
-  if (params.type === 'daudin') {
-    vod.daudin_export = date
-  }
+  exports.push({ type: params.type, date: Utils.date(), quantity: params.quantity })
   vod.exports = JSON.stringify(exports)
   vod.updated_at = Utils.date()
-
   await vod.save()
 
-  return { success: true }
+  await DB('order_shop')
+    .whereIn('id', dispatchs.map(d => d.id))
+    .update({
+      date_export: Utils.date(),
+      transporter: params.type
+    })
+
+  return qty
 }
 
-Admin.syncProjectDaudin = async (id, params) => {
+Admin.syncProjectDaudin = async (params) => {
   const vod = await DB('vod')
-    .where('project_id', id).first()
+    .where('project_id', params.id).first()
   if (!vod) {
     return false
   }
@@ -1182,7 +1169,7 @@ Admin.syncProjectDaudin = async (id, params) => {
     .where('os.type', 'vod')
     .whereNull('date_export')
     .where('os.transporter', 'daudin')
-    .where('oi.project_id', id)
+    .where('oi.project_id', params.id)
     .where('is_paid', 1)
     .orderBy('oi.created_at')
     .where('sending', false)
@@ -1227,7 +1214,7 @@ Admin.syncProjectDaudin = async (id, params) => {
     }
   }
 
-  return vod
+  return qty
 }
 
 Admin.sendProjectNotif = async (projectId, success) => {
@@ -3682,6 +3669,9 @@ Admin.exportCatalog = async (params) => {
 }
 
 Admin.checkSync = async (id, transporter) => {
+  if (transporter === 'sna') {
+    transporter = 'daudin'
+  }
   const shops = await DB()
     .select(
       'quantity',
