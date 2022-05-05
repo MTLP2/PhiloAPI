@@ -245,27 +245,31 @@ Utils.getRows = async (params) => {
           const values = filter.value.split(',')
           for (const value of values) {
             if (value) {
+              let column = filter.name
+              if (filter.name && filter.name.includes(' ')) {
+                column = DB.raw(`CONCAT(${column.split(' ').join(',\' \',')})`)
+              }
               if (value.indexOf('!=null') !== -1) {
-                q.orWhereNotNull(filter.name)
+                q.orWhereNotNull(column)
               } else if (value.indexOf('=null') !== -1) {
-                q.orWhereNull(filter.name)
+                q.orWhereNull(column)
               } else if (value.indexOf('<=') !== -1) {
                 const f = value.replace('<=', '')
-                q.orWhere(filter.name, '<=', f)
+                q.orWhere(column, '<=', f)
               } else if (value.indexOf('>=') !== -1) {
                 const f = value.replace('>=', '')
-                q.orWhere(filter.name, '>=', f)
+                q.orWhere(column, '>=', f)
               } else if (value.indexOf('<') !== -1) {
                 const f = value.replace('<', '')
-                q.orwhere(filter.name, '<', f)
+                q.orwhere(column, '<', f)
               } else if (value.indexOf('>') !== -1) {
                 const f = value.replace('>', '')
-                q.orWhere(filter.name, '>', f)
+                q.orWhere(column, '>', f)
               } else if (value.indexOf('=') !== -1) {
                 const f = value.replace('=', '')
-                q.orWhere(filter.name, '=', f)
+                q.orWhere(column, '=', f)
               } else {
-                q.orWhere(filter.name, 'LIKE', `%${value}%`)
+                q.orWhere(column, 'LIKE', `%${value}%`)
               }
             }
           }
@@ -277,6 +281,7 @@ Utils.getRows = async (params) => {
   const res = {}
   res.count = await query.count()
 
+  console.log(query.toString())
   const page = params.page > 0 ? params.page : 1
   const size = params.size > 0 ? params.size : 50
 
