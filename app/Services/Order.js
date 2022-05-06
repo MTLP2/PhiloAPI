@@ -791,4 +791,13 @@ Order.deleteManual = (params) => {
     .delete()
 }
 
+Order.addRefund = async (params) => {
+  params.order_id = params.id
+  delete params.id
+  return DB('refund').insert({
+    ...params,
+    created_at: Utils.date()
+  })
+}
+
 module.exports = Order
