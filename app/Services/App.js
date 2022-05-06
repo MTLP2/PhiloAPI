@@ -101,8 +101,6 @@ App.hourly = async () => {
   }
 
   try {
-    await MondialRelay.checkSent()
-    await MondialRelay.checkDelivered()
     await Storage.cleanTmp('storage')
 
     cron.status = 'complete'
@@ -134,6 +132,8 @@ App.cron = async () => {
     }
     await App.checkNotifications()
     await Project.deleteDownload()
+    await MondialRelay.checkSent()
+    await MondialRelay.checkDelivered()
     await User.syncCIOs()
     await User.syncEvents()
 
