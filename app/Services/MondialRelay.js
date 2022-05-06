@@ -8,7 +8,8 @@ class MondialRelay {
 
       soap.createClient(url, function (err, client) {
         if (err) {
-          console.log(err)
+          reject(err)
+          return
         }
         const privateKey = 'SKuHmWzZ'
 
@@ -37,7 +38,8 @@ class MondialRelay {
 
       soap.createClient(url, function (err, client) {
         if (err) {
-          console.log(err)
+          reject(err)
+          return
         }
         const privateKey = 'SKuHmWzZ'
 
@@ -71,7 +73,8 @@ class MondialRelay {
 
       soap.createClient(url, function (err, client) {
         if (err) {
-          console.log(err)
+          reject(err)
+          return
         }
         const privateKey = 'SKuHmWzZ'
 

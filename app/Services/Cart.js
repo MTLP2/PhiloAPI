@@ -1673,7 +1673,8 @@ Cart.validPayment = async (orderId, transactionId, status = 'confirmed') => {
           i.updated_at = Utils.date()
           await i.save()
         }
-        await Vod.calculStock({
+
+        await Stock.calcul({
           id: project.id,
           isShop: shop.type === 'shop',
           quantity: item.quantity,

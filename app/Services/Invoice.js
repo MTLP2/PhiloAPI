@@ -8,7 +8,7 @@ const moment = require('moment')
 
 class Invoice {
   static async all (params) {
-    const invoices = DB()
+    params.query = DB()
       .select(
         'invoice.*',
         'c.name as company',
@@ -23,40 +23,7 @@ class Invoice {
       .orderBy('invoice.created_at', 'desc')
       .orderBy('number', 'desc')
 
-    let filters
-    try {
-      filters = params.filters ? JSON.parse(params.filters) : null
-    } catch (e) {
-      filters = []
-    }
-
-    if (filters) {
-      filters.map(filter => {
-        if (filter) {
-          if (filter.name === 'customer') {
-            invoices.where(function () {
-              this.where(DB.raw(`CONCAT(c.firstname, ' ', c.lastname) LIKE '%${filter.value}%'`))
-              this.orWhere(DB.raw(`c.name LIKE '%${filter.value}%'`))
-            })
-          } else if (filter && filter.value.charAt(0) === '=') {
-            invoices.where(filter.name, 'LIKE', `${filter.value.substring(1)}`)
-          } else if (filter) {
-            invoices.where(filter.name, 'LIKE', `%${filter.value}%`)
-          }
-        }
-      })
-    }
-
-    const page = params.page ? params.page : 1
-    const size = params.size ? params.size : 50
-
-    return {
-      count: await invoices.count(),
-      data: await invoices
-        .limit(size)
-        .offset((page - 1) * size)
-        .all()
-    }
+    return Utils.getRows(params)
   }
 
   static async find (id) {
