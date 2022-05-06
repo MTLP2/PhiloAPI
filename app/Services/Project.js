@@ -248,7 +248,12 @@ Project.findAll = async (params) => {
     params.user_id = null
   }
 
-  const filters = params.filters ? JSON.parse(params.filters) : null
+  let filters = []
+  if (params.filters) {
+    try {
+      filters = JSON.parse(params.filters)
+    } catch {}
+  }
 
   if (params.type === 'illustrations') {
     projects.where('category', 'illustration')
