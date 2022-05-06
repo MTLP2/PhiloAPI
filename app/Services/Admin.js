@@ -1439,6 +1439,9 @@ Admin.getOrder = async (id) => {
     .belongsTo('customer')
     .all()
 
+  const orderRefunds = await Order.getRefunds({ id: id })
+  order.refunds = orderRefunds
+
   order.shipping = 0
   for (const shop of orderShops) {
     shop.notifications = orderNotifications.filter(notification => notification.order_shop_id === shop.id)
@@ -1530,6 +1533,28 @@ Admin.extractOrders = async (params) => {
 
   params.project_id = params.id
   const data = await Admin.getOrders(params)
+
+  if (params.only_refunds === 'true') {
+    const refunds = await DB('refund')
+      .select('refund.*', 'order.currency', 'order.user_id')
+      .join('order', 'order.id', 'refund.order_id')
+      .join('order_shop as os', 'os.order_id', 'refund.order_id')
+      .where('os.created_at', '>=', params.start)
+      .where('os.created_at', '<=', `${params.end} 23:59`)
+      .all()
+
+    return Utils.toCsv([
+      { name: 'ID', index: 'id' },
+      { name: 'Order ID', index: 'order_id' },
+      { name: 'User ID', index: 'user_id' },
+      { name: 'OShop ID', index: 'order_shop_id' },
+      { name: 'Date', index: 'created_at' },
+      { name: 'Amount', index: 'amount' },
+      { name: 'Currency', index: 'currency' },
+      { name: 'Reason', index: 'reason' },
+      { name: 'Comment', index: 'comment' }
+    ], refunds)
+  }
 
   return Utils.toCsv([
     { name: 'ID', index: 'order_shop_id' },
@@ -1655,6 +1680,8 @@ Admin.refundOrder = async (params) => {
       ...order,
       total: params.amount
     })
+
+    await Order.addRefund(params)
   }
 
   order.refunded = parseFloat(order.refunded || 0) + parseFloat(params.amount)

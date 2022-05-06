@@ -5,7 +5,7 @@ const Utils = use('App/Utils')
 const DB = use('App/DB')
 const Order = DB('order')
 const Customer = use('App/Services/Customer')
-const Stock = use('App/Services/Stock')
+const ProjectEdit = use('App/Services/ProjectEdit')
 const Notification = use('App/Services/Notification')
 const Invoice = use('App/Services/Invoice')
 const Whiplash = use('App/Services/Whiplash')
@@ -581,7 +581,7 @@ Order.refundOrderShop = async (id, type) => {
 
   await Invoice.insertRefund(order)
   if (order.project_id) {
-    await Stock.calcul({ id: order.project_id })
+    await Vod.calculStock({ id: order.project_id })
   }
 
   if (type === 'cancel') {
@@ -789,6 +789,19 @@ Order.deleteManual = (params) => {
   return DB('order_manual')
     .where('id', params.id)
     .delete()
+}
+
+Order.getRefunds = async (params) => {
+  return DB('refund').where('order_id', params.id).all()
+}
+
+Order.addRefund = async (params) => {
+  params.order_id = params.id
+  delete params.id
+  return DB('refund').insert({
+    ...params,
+    created_at: Utils.date()
+  })
 }
 
 module.exports = Order
