@@ -1426,6 +1426,20 @@ Admin.extractOrders = async (params) => {
   params.project_id = params.id
   const data = await Admin.getOrders(params)
 
+  if (params.only_refunds === 'true') {
+    const refunds = await DB('refund').select('refund.*', 'order.currency').join('order', 'order.id', 'refund.order_id').all()
+    return Utils.toCsv([
+      { name: 'ID', index: 'id' },
+      { name: 'Order ID', index: 'order_id' },
+      { name: 'OShop ID', index: 'order_shop_id' },
+      { name: 'Date', index: 'created_at' },
+      { name: 'Amount', index: 'amount' },
+      { name: 'Currency', index: 'currency' },
+      { name: 'Reason', index: 'reason' },
+      { name: 'Comment', index: 'comment' }
+    ], refunds)
+  }
+
   return Utils.toCsv([
     { name: 'ID', index: 'order_shop_id' },
     { name: 'Project', index: 'project_name' },
