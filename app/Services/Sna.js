@@ -15,6 +15,10 @@ class Sna {
 
         const address = order.address.match(/.{1,35}(\s|$)/g)
 
+        if (process.env.NODE_ENV !== 'production') {
+          order.id = Utils.randomString(10, '#')
+        }
+
         const data = {
           customerOrderNumber: order.id.toString(),
           orderLabel: '',
@@ -43,7 +47,10 @@ class Sna {
         for (const item of order.items) {
           const barcodes = item.barcode.split(',')
           for (let barcode of barcodes) {
-            barcode = '1111111111111'
+            if (process.env.NODE_ENV !== 'production') {
+              barcode = '1111111111111'
+            }
+
             data.orderLines.push({
               itemRef: barcode,
               itemQty: item.quantity,
