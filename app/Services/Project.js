@@ -263,7 +263,7 @@ Project.findAll = async (params) => {
     params.user_id = null
   }
 
-  let filters = null
+  let filters = []
   if (params.filters) {
     try {
       filters = JSON.parse(params.filters)
