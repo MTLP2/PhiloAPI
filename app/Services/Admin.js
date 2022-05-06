@@ -1546,10 +1546,10 @@ Admin.refundOrder = async (params) => {
     .first()
 
   if (params.refund_payment !== false) {
-    // await Order.refundPayment({
-    //   ...order,
-    //   total: params.amount
-    // })
+    await Order.refundPayment({
+      ...order,
+      total: params.amount
+    })
 
     await Order.addRefund(params)
   }
