@@ -215,6 +215,8 @@ class Stock {
     await DB().execute('TRUNCATE TABLE stock')
     const vod = await DB('vod')
       .where('is_shop', true)
+      .orWhereNotNull('daudin_export')
+      .orWhereNotNull('whiplash_export')
       .all()
 
     for (const v of vod) {
@@ -250,11 +252,20 @@ class Stock {
           created_at: Utils.date(),
           updated_at: Utils.date()
         })
+
+      const exports = []
+      if (v.daudin_export) {
+        exports.push({ type: 'daudin', date: v.daudin_export })
+      }
+      if (v.whiplash_export) {
+        exports.push({ type: 'daudin', date: v.daudin_export })
+      }
       await DB('vod')
         .where({
           project_id: v.project_id
         })
         .update({
+          exports: JSON.stringify(exports),
           stock: v.stock_daudin + v.stock_whiplash + v.stock_whiplash_uk + v.stock_diggers
         })
     }
