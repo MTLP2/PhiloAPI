@@ -7,7 +7,7 @@ const Storage = use('App/Services/Storage')
 class Category {
   static async all (params) {
     params.query = DB('category')
-      .select('id', 'name_en', 'name_fr', 'sub_title_fr', 'sub_title_en', 'is_visible')
+      .select('id', 'name_en', 'name_fr', 'sub_title_fr', 'sub_title_en')
       .orderBy('position', 'asc')
     return Utils.getRows(params)
   }
@@ -53,10 +53,7 @@ class Category {
         'v.count_other',
         'v.count_distrib',
         'v.count_bundle',
-        'stock_whiplash',
-        'stock_whiplash_uk',
-        'stock_daudin',
-        'stock_diggers',
+        'v.stock',
         'v.step',
         'v.user_id',
         'v.created_at',
