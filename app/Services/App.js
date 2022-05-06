@@ -12,6 +12,7 @@ const CronJobs = use('App/Models/CronJobs')
 const Statement = use('App/Services/Statement')
 const Production = use('App/Services/Production')
 const Storage = use('App/Services/Storage')
+const MondialRelay = use('App/Services/MondialRelay')
 const Excel = require('exceljs')
 const Antl = use('Antl')
 const marked = require('marked')
@@ -100,6 +101,8 @@ App.hourly = async () => {
   }
 
   try {
+    await MondialRelay.checkSent()
+    await MondialRelay.checkDelivered()
     await Storage.cleanTmp('storage')
 
     cron.status = 'complete'
