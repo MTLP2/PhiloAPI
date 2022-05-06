@@ -1331,6 +1331,9 @@ Admin.getOrder = async (id) => {
     .belongsTo('customer')
     .all()
 
+  const orderRefunds = await Order.getRefunds({ id: id })
+  order.refunds = orderRefunds
+
   order.shipping = 0
   for (const shop of orderShops) {
     shop.notifications = orderNotifications.filter(notification => notification.order_shop_id === shop.id)

@@ -791,6 +791,10 @@ Order.deleteManual = (params) => {
     .delete()
 }
 
+Order.getRefunds = async (params) => {
+  return DB('refund').where('order_id', params.id).all()
+}
+
 Order.addRefund = async (params) => {
   params.order_id = params.id
   delete params.id
