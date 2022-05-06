@@ -213,10 +213,23 @@ class Stock {
       .insert(histo)
 
     await DB().execute('TRUNCATE TABLE stock')
+
     const vod = await DB('vod')
       .where('is_shop', true)
       .orWhereNotNull('daudin_export')
       .orWhereNotNull('whiplash_export')
+      .orWhere(query => {
+        query.where(query => {
+          query.where('stock_daudin', '!=', 0)
+            .orWhere('stock_whiplash', '!=', 0)
+            .orWhere('stock_whiplash_uk', '!=', 0)
+            .orWhere('stock_diggers', '!=', 0)
+        })
+          .whereNotExists(query => {
+            query.from('stock')
+              .whereRaw('project_id = vod.project_id')
+          })
+      })
       .all()
 
     for (const v of vod) {
