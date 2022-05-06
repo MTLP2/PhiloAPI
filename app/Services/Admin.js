@@ -1428,7 +1428,7 @@ Admin.extractOrders = async (params) => {
 
   if (params.only_refunds === 'true') {
     const refunds = await DB('refund')
-      .select('refund.*', 'order.currency')
+      .select('refund.*', 'order.currency', 'order.user_id')
       .join('order', 'order.id', 'refund.order_id')
       .join('order_shop as os', 'os.order_id', 'refund.order_id')
       .where('os.created_at', '>=', params.start)
@@ -1438,6 +1438,7 @@ Admin.extractOrders = async (params) => {
     return Utils.toCsv([
       { name: 'ID', index: 'id' },
       { name: 'Order ID', index: 'order_id' },
+      { name: 'User ID', index: 'user_id' },
       { name: 'OShop ID', index: 'order_shop_id' },
       { name: 'Date', index: 'created_at' },
       { name: 'Amount', index: 'amount' },
