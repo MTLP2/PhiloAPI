@@ -15,12 +15,10 @@ class Sna {
 
         const address = order.address.match(/.{1,35}(\s|$)/g)
 
-        if (process.env.NODE_ENV !== 'production') {
-          order.id = Utils.randomString(10, '#')
-        }
-
         const data = {
-          customerOrderNumber: order.id.toString(),
+          customerOrderNumber: process.env.NODE_ENV !== 'production'
+            ? Utils.randomString(10, '#')
+            : order.id.toString(),
           orderLabel: '',
           orderDate: order.created_at,
           carrierServiceCode: pickup ? 'mondial_relay' : 'colis_prive',
@@ -31,7 +29,7 @@ class Sna {
             ad1: address[0],
             ad2: address[1] || '',
             ad3: address[2] || '',
-            postalCode: order.zip_code,
+            postalCode: order.zip_code.substring(0, 11),
             city: order.city,
             stateCode: order.state || '',
             countryCode: order.country_id,
