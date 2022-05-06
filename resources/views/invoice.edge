@@ -177,7 +177,8 @@
             <th>{{ t('invoice.name') }}</th>
           <td>
             @if(customer.name)
-              {{ customer.name }}
+              {{ customer.name }}<br />
+              {{ customer.firstname }} {{ customer.lastname }}
             @else
               {{ customer.firstname }} {{ customer.lastname }}
             @endif

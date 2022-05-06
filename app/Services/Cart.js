@@ -14,6 +14,7 @@ const DB = use('App/DB')
 const Payment = use('App/Services/Payment')
 const Invoice = use('App/Services/Invoice')
 const Whiplash = use('App/Services/Whiplash')
+const Stock = use('App/Services/Stock')
 const cio = use('App/Services/CIO')
 const Antl = use('Antl')
 
@@ -207,19 +208,12 @@ Cart.calculate = async (params) => {
           .where('project_id', item.project_id)
           .join('project', 'project.id', 'vod.project_id')
           .first()
-        if (item.item_id) {
-          const ii = await DB('item').where('id', item.item_id).first()
-          project.stock_daudin = 0
-          project.stock_whiplash = 0
-          project.stock_whiplash_uk = 0
-          project.stock_diggers = 0
 
-          if (ii.transporter) {
-            project[`stock_${ii.transporter}`] = ii.stock
-          } else {
-            project[`stock_${project.transporter}`] = ii.stock
-          }
+        const stocks = await Stock.getProject(item.project_id)
+        for (const [key, value] of Object.entries(stocks)) {
+          project[`stock_${key}`] = value
         }
+
         const weight = item.quantity * (project.weight || Vod.calculateWeight(project))
 
         const shipping = await Cart.calculateShipping({
@@ -1673,7 +1667,8 @@ Cart.validPayment = async (orderId, transactionId, status = 'confirmed') => {
           i.updated_at = Utils.date()
           await i.save()
         }
-        await Vod.calculStock({
+
+        await Stock.calcul({
           id: project.id,
           isShop: shop.type === 'shop',
           quantity: item.quantity,
@@ -1819,11 +1814,7 @@ Cart.related = async (cart) => {
     .join('vod', 'vod.project_id', 'item.related_id')
     .whereNotNull('item.related_id')
     .whereIn('item.project_id', projects.map(p => p.id))
-    .where(query => {
-      for (const t of Object.keys(transporters)) {
-        query.orWhere(`stock_${t}`, '>', 0)
-      }
-    })
+    .where('vod.stock', '>', 0)
     .all()
 
   const accessories = await DB('project as p')
@@ -1831,11 +1822,7 @@ Cart.related = async (cart) => {
     .join('vod', 'vod.project_id', 'p.id')
     .where('category', 'accessory')
     .where('step', 'in_progress')
-    .where(query => {
-      for (const t of Object.keys(transporters)) {
-        query.orWhere(`stock_${t}`, '>', 0)
-      }
-    })
+    .where('vod.stock', '>', 0)
     .all()
 
   const res = await DB('project as p')

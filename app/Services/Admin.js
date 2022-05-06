@@ -15,6 +15,8 @@ const ApiError = use('App/ApiError')
 const Excel = require('exceljs')
 const Storage = use('App/Services/Storage')
 const Order = use('App/Services/Order')
+const Stock = use('App/Services/Stock')
+const Sna = use('App/Services/Sna')
 const cio = use('App/Services/CIO')
 const Env = use('Env')
 const moment = require('moment')
@@ -204,9 +206,11 @@ Admin.getProject = async (id) => {
     .where('project_id', id)
     .all()
 
-  const stocksQuery = DB('vod_stock')
-    .select('vod_stock.*', 'user.name')
-    .leftJoin('user', 'user.id', 'vod_stock.user_id')
+  const stocksQuery = Stock.getProject(id)
+
+  const stocksHistoricQuery = DB('stock_historic')
+    .select('stock_historic.*', 'user.name')
+    .leftJoin('user', 'user.id', 'stock_historic.user_id')
     .where('project_id', id)
     .orderBy('id', 'desc')
     .all()
@@ -236,7 +240,6 @@ Admin.getProject = async (id) => {
       'quantity',
       'item_id',
       'item.barcode as item_barcode',
-      'oi.size',
       'item.name as item_name',
       'os.transporter'
     )
@@ -246,11 +249,12 @@ Admin.getProject = async (id) => {
     .where('is_paid', 1)
     .all()
 
-  const [project, codes, costs, stocks, items, orders] = await Promise.all([
+  const [project, codes, costs, stocks, stocksHistoric, items, orders] = await Promise.all([
     projectQuery,
     codesQuery,
     costsQuery,
     stocksQuery,
+    stocksHistoricQuery,
     itemsQuery,
     ordersQuery
   ])
@@ -262,9 +266,13 @@ Admin.getProject = async (id) => {
   project.codes = codes
   project.costs = costs
   project.items = items
-  project.stocks = stocks
+  project.stocks_historic = stocksHistoric
 
-  project.stock = project.goal - project.count - project.count_other - project.count_distrib
+  for (const [key, value] of Object.entries(stocks)) {
+    project[`stock_${key}`] = value
+  }
+
+  project.stock_preorder = project.goal - project.count - project.count_other - project.count_distrib
 
   project.com = project.com ? JSON.parse(project.com) : {}
   project.sizes = project.sizes ? JSON.parse(project.sizes) : {}
@@ -277,8 +285,8 @@ Admin.getProject = async (id) => {
   project.to_daudin_sent = 0
   project.to_diggers = 0
   project.to_diggers_sent = 0
-  project.to_sizes = {}
   const barcodes = {}
+  project.to_sizes = {}
   for (const order of orders) {
     if (!project.to_sizes[order.size]) {
       project.to_sizes[order.size] = 0
@@ -347,6 +355,7 @@ Admin.getProject = async (id) => {
     }
   }
   project.barcodes = barcodes
+  project.exports = JSON.parse(project.exports)
   project.historic = JSON.parse(project.historic)
 
   return project
@@ -759,35 +768,31 @@ Admin.saveVod = async (params) => {
     if (params.transporter_soundmerch) {
       vod.transporters.soundmerch = true
     }
-
     vod.transporters = JSON.stringify(vod.transporters)
     vod.count_other = params.count_other
     vod.count_distrib = params.count_distrib
-    if (vod.stock_whiplash !== params.stock_whiplash_us) {
-      await DB('vod_stock').insert({
-        project_id: vod.project_id,
+
+    for (const trans of ['daudin', 'sna', 'whiplash', 'whiplash_uk', 'diggers', 'shipehype']) {
+      await Stock.save({
+        project_id: params.id,
+        type: trans,
+        stock: params[`stock_${trans}`],
         user_id: params.user.id,
-        type: 'whiplash',
-        old: vod.stock_whiplash,
-        new: params.stock_whiplash_us
+        comment: 'sheraf'
       })
     }
-    vod.stock_whiplash = params.stock_whiplash_us
-    vod.stock_whiplash_uk = params.stock_whiplash_uk
-    if (vod.stock_daudin !== params.stock_daudin) {
-      await DB('vod_stock').insert({
-        project_id: vod.project_id,
-        user_id: params.user.id,
-        type: 'daudin',
-        old: vod.stock_daudin,
-        new: params.stock_daudin
-      })
-    }
-    vod.stock_daudin = params.stock_daudin
-    vod.stock_diggers = params.stock_diggers
+    vod.stock = +params.stock_daudin + +params.stock_sna + +params.stock_whiplash +
+      +params.stock_whiplash_uk + +params.stock_diggers + +params.stock_shipehype
 
     vod.is_size = params.is_size
-    vod.sizes = JSON.stringify(params.sizes)
+
+    const sizes = {
+      s: false, m: false, l: false, xl: false, '2xl': false, '3xl': false, '4xl': false
+    }
+    for (const s of params.sizes) {
+      sizes[s] = true
+    }
+    vod.sizes = JSON.stringify(sizes)
 
     vod.alert_stock = params.alert_stock || null
     vod.only_country = params.only_country
@@ -882,7 +887,6 @@ Admin.saveVod = async (params) => {
   status.in_production = 'my_order_in_production'
   status.test_pressing_ok = 'my_order_test_pressing_ok'
   status.test_pressing_ko = 'my_order_test_pressing_ko'
-  status.dispatched = 'my_order_dispatched'
   status.check_address = 'my_order_check_address'
   // status.preparation = 'my_order_in_preparation'
   // status.sent = 'my_order_sent'
@@ -1047,9 +1051,113 @@ Admin.downloadInvoiceCost = async (params) => {
   return Storage.get(item.invoice, true)
 }
 
-Admin.syncProjectDaudin = async (id, params) => {
+Admin.syncProjectSna = async (params) => {
   const vod = await DB('vod')
-    .where('project_id', id).first()
+    .where('project_id', params.id).first()
+  if (!vod) {
+    return false
+  }
+
+  const orders = await DB()
+    .select('customer.*', 'os.*', 'user.email')
+    .from('order_shop as os')
+    .join('customer', 'customer.id', 'os.customer_id')
+    .join('user', 'user.id', 'os.user_id')
+    .whereIn('os.id', query => {
+      query.select('order_shop_id')
+        .from('order_item')
+        .where('project_id', params.id)
+    })
+    .where('os.transporter', 'daudin')
+    .where('os.type', 'vod')
+    .whereNull('date_export')
+    .where('is_paid', 1)
+    .orderBy('os.created_at')
+    .all()
+
+  const items = await DB()
+    .select('order_shop_id', 'oi.project_id', 'oi.quantity', 'oi.price', 'vod.barcode')
+    .from('order_item as oi')
+    .whereIn('order_shop_id', orders.map(o => o.id))
+    .join('vod', 'vod.project_id', 'oi.project_id')
+    .all()
+
+  for (const item of items) {
+    const idx = orders.findIndex(o => o.id === item.order_shop_id)
+    orders[idx].items = orders[idx].items ? [...orders[idx].items, item] : [item]
+  }
+
+  const dispatchs = []
+
+  let qty = 0
+  for (const order of orders) {
+    if (qty >= params.quantity) {
+      break
+    }
+    if (order.shipping_type === 'pickup') {
+      const pickup = JSON.parse(order.address_pickup)
+      const available = await MondialRelay.checkPickupAvailable(pickup.number)
+
+      if (!available) {
+        const around = await MondialRelay.findPickupAround(pickup)
+
+        if (around) {
+          order.address_pickup = JSON.stringify(around)
+          await DB('order_shop')
+            .where('id', order.id)
+            .update({
+              address_pickup: JSON.stringify(around)
+            })
+
+          await Notification.add({
+            type: 'my_order_pickup_changed',
+            order_id: order.order_id,
+            order_shop_id: order.id,
+            user_id: order.user_id
+          })
+        } else {
+          continue
+        }
+      }
+    }
+
+    dispatchs.push(order)
+
+    for (const item of order.items) {
+      if (item.project_id === +params.id) {
+        qty = qty + item.quantity
+      }
+    }
+  }
+
+  if (dispatchs.length === 0) {
+    return { success: false }
+  }
+
+  if (params.type === 'sna') {
+    await Sna.sync(dispatchs)
+  }
+
+  const exports = vod.exports ? JSON.parse(vod.exports) : []
+
+  exports.push({ type: params.type, date: Utils.date(), quantity: params.quantity })
+  vod.exports = JSON.stringify(exports)
+  vod.updated_at = Utils.date()
+  await vod.save()
+
+  await DB('order_shop')
+    .whereIn('id', dispatchs.map(d => d.id))
+    .update({
+      date_export: Utils.date(),
+      transporter: params.type
+    })
+
+  return qty
+}
+
+Admin.syncProjectDaudin = async (params) => {
+  const vod = await DB('vod')
+    .where('project_id', params.id).first()
   if (!vod) {
     return false
   }
@@ -1067,7 +1175,7 @@ Admin.syncProjectDaudin = async (id, params) => {
     .where('os.type', 'vod')
     .whereNull('date_export')
     .where('os.transporter', 'daudin')
-    .where('oi.project_id', id)
+    .where('oi.project_id', params.id)
     .where('is_paid', 1)
     .orderBy('oi.created_at')
     .where('sending', false)
@@ -1112,7 +1220,7 @@ Admin.syncProjectDaudin = async (id, params) => {
     }
   }
 
-  return vod
+  return qty
 }
 
 Admin.sendProjectNotif = async (projectId, success) => {
@@ -3585,6 +3693,9 @@ Admin.exportCatalog = async (params) => {
 }
 
 Admin.checkSync = async (id, transporter) => {
+  if (transporter === 'sna') {
+    transporter = 'daudin'
+  }
   const shops = await DB()
     .select(
       'quantity',
