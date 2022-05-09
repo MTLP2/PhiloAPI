@@ -350,7 +350,7 @@ class AdminController {
   }
 
   refundOrderShop ({ params }) {
-    return Admin.cancelOrderShop(params.id, 'refund')
+    return Admin.cancelOrderShop(params.id, 'refund', params)
   }
 
   cancelOrderShop ({ params }) {

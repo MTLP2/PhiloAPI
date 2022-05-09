@@ -549,9 +549,9 @@ Order.exportSales = async (params) => {
   return workbook.xlsx.writeBuffer()
 }
 
-Order.refundOrderShop = async (id, type) => {
+Order.refundOrderShop = async (id, type, params) => {
   const order = await DB('order_shop')
-    .select('order_shop.*', 'order.refunded', 'order.payment_id', 'order.transaction_id', 'order.payment_type', 'order_item.project_id')
+    .select('order_shop.*', 'order.refunded', 'order.payment_id', 'order.transaction_id', 'order.payment_type', 'order_item.project_id', 'order.id as order_id')
     .join('order', 'order.id', 'order_shop.order_id')
     .join('order_item', 'order.id', 'order_item.order_id')
     .where('order_shop.id', id)
@@ -564,6 +564,14 @@ Order.refundOrderShop = async (id, type) => {
     return false
   }
   await Order.refundPayment(order)
+
+  // Add to refund history
+  if (type === 'refund') {
+    await Order.addRefund({
+      ...params,
+      id: order.order_id
+    })
+  }
 
   await DB('order_shop')
     .where('id', id)

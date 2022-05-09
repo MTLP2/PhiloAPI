@@ -1721,8 +1721,8 @@ Admin.orderCreditNote = async (params) => {
   return { success: true }
 }
 
-Admin.cancelOrderShop = async (id, type) => {
-  return Order.refundOrderShop(id, type)
+Admin.cancelOrderShop = async (id, type, params) => {
+  return Order.refundOrderShop(id, type, params)
 }
 
 Admin.countOrdersErrors = async () => {
