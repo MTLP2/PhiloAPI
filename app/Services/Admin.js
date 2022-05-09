@@ -1669,8 +1669,6 @@ Admin.refundProject = async (id) => {
 }
 
 Admin.refundOrder = async (params) => {
-  console.log('🚀 ~ file: Admin.js ~ line 1672 ~ Admin.refundOrder= ~ params', params)
-
   const order = await DB('order').find(params.id)
   const customer = await DB('order_shop')
     .select('customer_id')
