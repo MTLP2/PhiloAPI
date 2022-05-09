@@ -563,9 +563,15 @@ Order.refundOrderShop = async (id, type, params) => {
   if (order.total <= 0) {
     return false
   }
-  await Order.refundPayment(order)
 
-  // Add to refund history
+  if (params && params.only_history) {
+    return Order.addRefund({
+      ...params,
+      id: order.order_id
+    })
+  }
+
+  await Order.refundPayment(order)
   if (type === 'refund') {
     await Order.addRefund({
       ...params,
@@ -806,6 +812,7 @@ Order.getRefunds = async (params) => {
 Order.addRefund = async (params) => {
   params.order_id = params.id
   delete params.id
+  delete params.only_history
   return DB('refund').insert({
     ...params,
     created_at: Utils.date()
