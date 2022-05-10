@@ -1113,6 +1113,54 @@ class Daudin {
 
     return orders
   }
+
+  static async setCosts () {
+    const files = await Storage.list('shippings/daudin', true)
+
+    const dispatchs = []
+    for (const file of files) {
+      if (file.size === 0) {
+        continue
+      }
+      const buffer = await Storage.get(file.path, true)
+
+      const workbook = new Excel.Workbook()
+      await workbook.xlsx.load(buffer)
+      const worksheet = workbook.getWorksheet(1)
+
+      worksheet.eachRow(async row => {
+        const dispatch = {
+          id: row.getCell('C').value,
+          shipping: row.getCell('G').value
+        }
+        if (!dispatch.id || !dispatch.shipping || isNaN(dispatch.shipping)) {
+          return
+        }
+        if (dispatch.id[0] === 'M') {
+          await DB('order_manual')
+            .where('id', dispatch.id.substring(1))
+            .update({
+              shipping_cost: dispatch.shipping
+            })
+        } else if (dispatch.id[0] === 'B') {
+          await DB('box_dispatch')
+            .where('id', dispatch.id.substring(1))
+            .update({
+              shipping_cost: dispatch.shipping
+            })
+        } else {
+          await DB('order_shop')
+            .where('id', dispatch.id)
+            .update({
+              shipping_cost: dispatch.shipping
+            })
+        }
+        console.log(dispatch)
+        dispatchs.push(dispatch)
+      })
+    }
+    return dispatchs.length
+  }
 }
 
 module.exports = Daudin
