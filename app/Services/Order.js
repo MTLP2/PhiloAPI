@@ -564,14 +564,11 @@ Order.refundOrderShop = async (id, type, params) => {
     return false
   }
 
-  if (params && params.only_history) {
-    return Order.addRefund({
-      ...params,
-      id: order.order_id
-    })
+  // Proceed to transaction refund if order is not only history (or if params are not set)
+  if (!params || (params && params.only_history === 'false')) {
+    await Order.refundPayment(order)
   }
 
-  await Order.refundPayment(order)
   if (type === 'refund') {
     await Order.addRefund({
       ...params,
@@ -579,23 +576,27 @@ Order.refundOrderShop = async (id, type, params) => {
     })
   }
 
-  await DB('order_shop')
-    .where('id', id)
-    .update({
-      is_paid: 0,
-      ask_cancel: 0,
-      step: (type === 'cancel') ? 'canceled' : 'refunded'
-    })
+  if (params && params.only_history === 'false') {
+    await DB('order_shop')
+      .where('id', id)
+      .update({
+        is_paid: 0,
+        ask_cancel: 0,
+        step: (type === 'cancel') ? 'canceled' : 'refunded'
+      })
 
-  await DB('order')
-    .where('id', order.order_id)
-    .update({
-      refunded: (order.refunded || 0) + order.total
-    })
+    await DB('order')
+      .where('id', order.order_id)
+      .update({
+        refunded: (order.refunded || 0) + order.total
+      })
+  }
 
-  await Invoice.insertRefund(order)
-  if (order.project_id) {
-    await Stock.calcul({ id: order.project_id })
+  if ((params && params.credit_note === 'true') || !params) {
+    await Invoice.insertRefund(order)
+    if (order.project_id) {
+      await Stock.calcul({ id: order.project_id })
+    }
   }
 
   if (type === 'cancel') {
