@@ -1136,23 +1136,35 @@ class Daudin {
           return
         }
         if (dispatch.id[0] === 'M') {
-          await DB('order_manual')
-            .where('id', dispatch.id.substring(1))
-            .update({
-              shipping_cost: dispatch.shipping
-            })
+          const order = await DB('order_manual')
+            .where('id', dispatch.id.substring(1).replace('b', ''))
+            .whereNull('shipping_cost')
+            .first()
+          if (!order) {
+            return
+          }
+          order.shipping_cost = dispatch.shipping
+          await order.save()
         } else if (dispatch.id[0] === 'B') {
-          await DB('box_dispatch')
+          const order = await DB('box_dispatch')
             .where('id', dispatch.id.replace(/B/g, ''))
-            .update({
-              shipping_cost: dispatch.shipping
-            })
+            .whereNull('shipping_cost')
+            .first()
+          if (!order) {
+            return
+          }
+          order.shipping_cost = dispatch.shipping
+          await order.save()
         } else {
-          await DB('order_shop')
+          const order = await DB('order_shop')
             .where('id', dispatch.id.toString().replace('A', ''))
-            .update({
-              shipping_cost: DB.raw(`${dispatch.shipping} / currency_rate `)
-            })
+            .whereNull('shipping_cost')
+            .first()
+          if (!order) {
+            return
+          }
+          order.shipping_cost = dispatch.shipping
+          await order.save()
         }
         dispatchs.push(dispatch)
       })
