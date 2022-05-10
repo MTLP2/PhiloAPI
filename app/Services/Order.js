@@ -811,10 +811,16 @@ Order.getRefunds = async (params) => {
 
 Order.addRefund = async (params) => {
   params.order_id = params.id
-  delete params.id
-  delete params.only_history
+  // delete params.id
+  // delete params.only_history
+  // delete params.credit_note
+
   return DB('refund').insert({
-    ...params,
+    amount: params.amount,
+    reason: params.reason,
+    order_id: params.order_id,
+    comment: params.comment,
+    order_shop_id: params.order_shop_id,
     created_at: Utils.date()
   })
 }
