@@ -719,7 +719,7 @@ class Invoice {
       invoices.push(data)
     }
 
-    return Utils.toCsv([
+    return Utils.arrayToCsv([
       { name: 'N°Facture', index: 'number' },
       { name: 'Nature', index: 'nature' },
       { name: 'Statut', index: 'status' },

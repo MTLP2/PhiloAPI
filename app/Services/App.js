@@ -1319,7 +1319,7 @@ App.checkZipCode = async () => {
     }
   }
 
-  return Utils.toCsv([
+  return Utils.arrayToCsv([
     { index: 'id', name: 'order_shop_id' },
     { index: 'step', name: 'step' },
     { index: 'country_id', name: 'country_id' },
@@ -1630,7 +1630,7 @@ App.exportNoTracking = async (transporter) => {
     }
   })
 
-  return Utils.toCsv(
+  return Utils.arrayToCsv(
     [
       { name: 'id', index: 'id' },
       { name: 'date', index: 'date_export' }],

@@ -2693,7 +2693,7 @@ class Box {
       }
     }
 
-    return Utils.toCsv([
+    return Utils.arrayToCsv([
       { index: 'date', name: 'Date' },
       { index: 'barcode', name: 'Barcode' },
       { index: 'ref', name: 'Ref' },

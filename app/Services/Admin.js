@@ -1543,7 +1543,7 @@ Admin.extractOrders = async (params) => {
       .where('os.created_at', '<=', `${params.end} 23:59`)
       .all()
 
-    return Utils.toCsv([
+    return Utils.arrayToCsv([
       { name: 'ID', index: 'id' },
       { name: 'Order ID', index: 'order_id' },
       { name: 'User ID', index: 'user_id' },
@@ -1556,7 +1556,7 @@ Admin.extractOrders = async (params) => {
     ], refunds)
   }
 
-  return Utils.toCsv([
+  return Utils.arrayToCsv([
     { name: 'ID', index: 'order_shop_id' },
     { name: 'Project', index: 'project_name' },
     { name: 'Artist', index: 'artist_name' },
@@ -3189,7 +3189,7 @@ Admin.extractUsers = async (params) => {
   params.size = 0
   const data = await Admin.getUsers(params)
 
-  return Utils.toCsv([
+  return Utils.arrayToCsv([
     { name: 'ID', index: 'id' },
     { name: 'Origin', index: 'origin' },
     { name: 'User', index: 'name' },
@@ -4107,7 +4107,7 @@ Admin.exportBoxesComptability = async () => {
     boxes[payment.box_id].total = Utils.round(b.sub_total * boxes[payment.box_id].ratio)
   }
 
-  return Utils.toCsv([
+  return Utils.arrayToCsv([
     { index: 'id', name: 'id' },
     { index: 'total', name: 'total' }
   ], Object.values(boxes).filter(b => b.total > 0))
@@ -4121,7 +4121,7 @@ Admin.exportOrdersComptability = async () => {
     .orderBy('id', 'asc')
     .all()
 
-  return Utils.toCsv([
+  return Utils.arrayToCsv([
     { index: 'id', name: 'id' },
     { index: 'sub_total', name: 'total' },
     { index: 'currency', name: 'currency' },

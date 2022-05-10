@@ -1391,7 +1391,7 @@ class Production {
     params.size = 0
     const data = await Production.all(params)
 
-    return Utils.toCsv([
+    return Utils.arrayToCsv([
       { name: 'ID', index: 'id' },
       { name: 'Project', index: 'project' },
       { name: 'Artist', index: 'artist_name' },

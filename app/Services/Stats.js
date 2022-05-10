@@ -1627,7 +1627,7 @@ class Stats {
       data[promises[i].name] = d[i]
     }
 
-    return Utils.toCsv([
+    return Utils.arrayToCsv([
       { index: 'user_id', name: 'id' },
       { index: 'name', name: 'name' },
       { index: 'email', name: 'email' },

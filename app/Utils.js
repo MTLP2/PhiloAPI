@@ -869,7 +869,7 @@ Utils.getFee = (dates, date) => {
   return value
 }
 
-Utils.toCsv = (columns, array, del = ',') => {
+Utils.arrayToCsv = (columns, array, del = ',') => {
   let csv = ''
 
   let line = ''
@@ -898,6 +898,27 @@ Utils.toCsv = (columns, array, del = ',') => {
   }
 
   return csv
+}
+
+Utils.csvToArray = (file) => {
+  const lines = file.toString().split('\n')
+
+  const columns = lines[0].split(',')
+
+  const data = []
+  for (let i = 1; i < lines.length; i++) {
+    const value = {}
+    const values = lines[i].split(/,(?=(?:[^\"]*\"[^\"]*\")*(?![^\"]*\"))/)
+
+    if (values) {
+      for (let c = 0; c < columns.length; c++) {
+        value[columns[c]] = values[c]
+      }
+
+      data.push(value)
+    }
+  }
+  return data
 }
 
 Utils.upload = async (params) => {
