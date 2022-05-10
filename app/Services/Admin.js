@@ -1690,8 +1690,8 @@ Admin.refundOrder = async (params) => {
   order.refunded = parseFloat(order.refunded || 0) + parseFloat(params.amount)
   order.updated_at = Utils.date()
 
-  // Don't update the DB if we only want to add a refund history without payment
-  if (!params.only_history) {
+  // Don't update the DB if we only want to add a refund history without payment. A credit note forces refund amount to increment.
+  if (!params.only_history || (params.credit_note || params.credit_note === undefined)) {
     order.save()
   }
 
