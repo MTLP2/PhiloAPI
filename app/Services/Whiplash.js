@@ -3,6 +3,7 @@ const DB = use('App/DB')
 const Env = use('Env')
 const Order = use('App/Services/Order')
 const Notification = use('App/Services/Notification')
+const Storage = use('App/Services/Storage')
 const ApiError = use('App/ApiError')
 const config = require('../../config')
 const Utils = use('App/Utils')
@@ -550,6 +551,55 @@ Whiplash.syncStocks = async (params) => {
   }
 
   return projects
+}
+
+Whiplash.setCosts = async () => {
+  const files = await Storage.list('shippings/whiplash', true)
+
+  const currencies = await Utils.getCurrenciesDb()
+
+  const uk = await Utils.getCurrencies('GBP', currencies)
+  const us = await Utils.getCurrencies('USD', currencies)
+
+  let i = 0
+  const dispatchs = []
+  for (const file of files) {
+    if (file.size === 0) {
+      continue
+    }
+
+    const buffer = await Storage.get(file.path, true)
+    const dispatchs = Utils.csvToArray(buffer)
+    const date = dispatchs[0].transaction_date
+    console.log(i, date, file)
+
+    for (const dispatch of dispatchs) {
+      if (dispatch.creator_id) {
+        const shop = await DB('order_shop')
+          .where('whiplash_id', dispatch.creator_id)
+          .whereNull('shipping_cost')
+          .first()
+
+        if (!shop) {
+          continue
+        }
+        if (+dispatch.warehouse_id === 3) {
+          shop.shipping_cost = -dispatch.total * uk[shop.currency]
+          await shop.save()
+          i++
+        } else if (+dispatch.warehouse_id === 4) {
+          shop.shipping_cost = -dispatch.total * us[shop.currency]
+          await shop.save()
+          i++
+        } else if (+dispatch.warehouse_id !== 0) {
+          throw new Error('bas_warehouse')
+        }
+        // console.log(shop.order_id, dispatch.creator_id, dispatch.warehouse_id, -dispatch.total, shop.shipping_cost)
+      }
+    }
+  }
+
+  return dispatchs.length
 }
 
 module.exports = Whiplash

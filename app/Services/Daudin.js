@@ -4,7 +4,6 @@ const Dig = use('App/Services/Dig')
 const Notification = use('App/Services/Notification')
 const Invoice = use('App/Services/Invoice')
 const Storage = use('App/Services/Storage')
-const Order = use('App/Services/Order')
 const Excel = require('exceljs')
 const moment = require('moment')
 const JSZip = require('jszip')
@@ -1144,18 +1143,17 @@ class Daudin {
             })
         } else if (dispatch.id[0] === 'B') {
           await DB('box_dispatch')
-            .where('id', dispatch.id.substring(1))
+            .where('id', dispatch.id.replace(/B/g, ''))
             .update({
               shipping_cost: dispatch.shipping
             })
         } else {
           await DB('order_shop')
-            .where('id', dispatch.id)
+            .where('id', dispatch.id.toString().replace('A', ''))
             .update({
-              shipping_cost: dispatch.shipping
+              shipping_cost: DB.raw(`${dispatch.shipping} / currency_rate `)
             })
         }
-        console.log(dispatch)
         dispatchs.push(dispatch)
       })
     }
