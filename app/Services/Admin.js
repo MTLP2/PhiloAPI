@@ -1152,6 +1152,15 @@ Admin.syncProjectSna = async (params) => {
       transporter: params.type
     })
 
+  for (const dispatch of dispatchs) {
+    await Notification.add({
+      type: 'my_order_in_preparation',
+      user_id: dispatch.user_id,
+      order_id: dispatch.order_id,
+      order_shop_id: dispatch.id
+    })
+  }
+
   return qty
 }
 
