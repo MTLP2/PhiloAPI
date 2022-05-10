@@ -1675,28 +1675,38 @@ Admin.refundOrder = async (params) => {
     .where('order_id', params.id)
     .first()
 
+  // Only history means we add a refund history without making actual payment. Choosen when a refund is made in the Sheraf.
   if (params.refund_payment !== false) {
-    await Order.refundPayment({
-      ...order,
-      total: params.amount
-    })
+    if (!params.only_history) {
+      await Order.refundPayment({
+        ...order,
+        total: params.amount
+      })
+    }
 
     await Order.addRefund(params)
   }
 
   order.refunded = parseFloat(order.refunded || 0) + parseFloat(params.amount)
   order.updated_at = Utils.date()
-  order.save()
+
+  // Don't update the DB if we only want to add a refund history without payment. A credit note forces refund amount to increment.
+  if (!params.only_history || (params.credit_note || params.credit_note === undefined)) {
+    order.save()
+  }
 
   order.total = params.amount
   order.tax = Utils.round(params.amount * order.tax_rate)
   order.sub_total = Utils.round(params.amount - order.tax)
 
-  await Invoice.insertRefund({
-    ...order,
-    customer_id: customer.customer_id,
-    order_id: order.id
-  })
+  // params.credit_note means we want to edit a credit note / invoice. A CN is emmitted by default if the method is called without params.credit_note. Choosen when a refund is made in the Sheraf.
+  if (params.credit_note || params.credit_note === undefined) {
+    await Invoice.insertRefund({
+      ...order,
+      customer_id: customer.customer_id,
+      order_id: order.id
+    })
+  }
 
   return order
 }
@@ -1721,8 +1731,8 @@ Admin.orderCreditNote = async (params) => {
   return { success: true }
 }
 
-Admin.cancelOrderShop = async (id, type) => {
-  return Order.refundOrderShop(id, type)
+Admin.cancelOrderShop = async (id, type, params) => {
+  return Order.refundOrderShop(id, type, params)
 }
 
 Admin.countOrdersErrors = async () => {

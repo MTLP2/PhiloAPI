@@ -1855,7 +1855,7 @@ class Box {
       Utils.shuffle(months[project.date])
     }
     months.selection = await DB('vod')
-      .select('p.id', 'artist_name', 'name', 'picture', 'stock.stock as stock_daudin', 'description_fr', 'description_en')
+      .select('p.id', 'artist_name', 'name', 'picture', 'stock.stock', 'description_fr', 'description_en')
       .join('project as p', 'p.id', 'project_id')
       .join('stock', 'stock.project_id', 'p.id')
       .where('stock.type', 'daudin')

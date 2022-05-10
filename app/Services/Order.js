@@ -549,9 +549,9 @@ Order.exportSales = async (params) => {
   return workbook.xlsx.writeBuffer()
 }
 
-Order.refundOrderShop = async (id, type) => {
+Order.refundOrderShop = async (id, type, params) => {
   const order = await DB('order_shop')
-    .select('order_shop.*', 'order.refunded', 'order.payment_id', 'order.transaction_id', 'order.payment_type', 'order_item.project_id')
+    .select('order_shop.*', 'order.refunded', 'order.payment_id', 'order.transaction_id', 'order.payment_type', 'order_item.project_id', 'order.id as order_id')
     .join('order', 'order.id', 'order_shop.order_id')
     .join('order_item', 'order.id', 'order_item.order_id')
     .where('order_shop.id', id)
@@ -563,25 +563,40 @@ Order.refundOrderShop = async (id, type) => {
   if (order.total <= 0) {
     return false
   }
-  await Order.refundPayment(order)
 
-  await DB('order_shop')
-    .where('id', id)
-    .update({
-      is_paid: 0,
-      ask_cancel: 0,
-      step: (type === 'cancel') ? 'canceled' : 'refunded'
+  // Proceed to transaction refund if order is not only history (or if params are not set)
+  if (!params || (params && params.only_history === 'false')) {
+    await Order.refundPayment(order)
+  }
+
+  if (type === 'refund') {
+    await Order.addRefund({
+      ...params,
+      id: order.order_id
     })
+  }
 
-  await DB('order')
-    .where('id', order.order_id)
-    .update({
-      refunded: (order.refunded || 0) + order.total
-    })
+  if ((params && params.only_history === 'false') || (params && params.credit_note === 'true')) {
+    await DB('order_shop')
+      .where('id', id)
+      .update({
+        is_paid: 0,
+        ask_cancel: 0,
+        step: (type === 'cancel') ? 'canceled' : 'refunded'
+      })
 
-  await Invoice.insertRefund(order)
-  if (order.project_id) {
-    await Stock.calcul({ id: order.project_id })
+    await DB('order')
+      .where('id', order.order_id)
+      .update({
+        refunded: (order.refunded || 0) + order.total
+      })
+  }
+
+  if ((params && params.credit_note === 'true') || !params) {
+    await Invoice.insertRefund(order)
+    if (order.project_id) {
+      await Stock.calcul({ id: order.project_id })
+    }
   }
 
   if (type === 'cancel') {
@@ -797,9 +812,16 @@ Order.getRefunds = async (params) => {
 
 Order.addRefund = async (params) => {
   params.order_id = params.id
-  delete params.id
+  // delete params.id
+  // delete params.only_history
+  // delete params.credit_note
+
   return DB('refund').insert({
-    ...params,
+    amount: params.amount,
+    reason: params.reason,
+    order_id: params.order_id,
+    comment: params.comment,
+    order_shop_id: params.order_shop_id,
     created_at: Utils.date()
   })
 }
