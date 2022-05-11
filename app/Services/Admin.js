@@ -1653,13 +1653,21 @@ Admin.getOrderShopInvoice = async (id) => {
   return pdf.data
 }
 
-Admin.refundProject = async (id) => {
+Admin.refundProject = async (id, params) => {
   const orders = await Admin.getOrders({ project_id: id, size: 1000 })
 
   let refunds = 0
   for (const i in orders.data) {
-    if (orders.data[i].is_paid) {
-      await Admin.cancelOrderShop(orders.data[i].order_shop_id, 'refund')
+    if (orders.data[i]) {
+      await Admin.cancelOrderShop(orders.data[i].order_shop_id, 'refund', {
+        reason: 'project_failed',
+        comment: params.comment,
+        order_id: orders.data[i].order_id,
+        order_shop_id: orders.data[i].order_shop_id,
+        amount: orders.data[i].os_total,
+        only_history: 'false',
+        credit_note: 'true'
+      })
       refunds++
     }
   }

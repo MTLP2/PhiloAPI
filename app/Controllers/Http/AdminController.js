@@ -291,7 +291,7 @@ class AdminController {
   }
 
   refundProject ({ params }) {
-    return Admin.refundProject(params.id)
+    return Admin.refundProject(params.id, params)
   }
 
   getWishlists ({ params }) {
