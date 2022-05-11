@@ -261,7 +261,7 @@ Utils.getRows = async (params) => {
                 q.orWhere(column, '>=', f)
               } else if (value.indexOf('<') !== -1) {
                 const f = value.replace('<', '')
-                q.orwhere(column, '<', f)
+                q.orWhere(column, '<', f)
               } else if (value.indexOf('>') !== -1) {
                 const f = value.replace('>', '')
                 q.orWhere(column, '>', f)
