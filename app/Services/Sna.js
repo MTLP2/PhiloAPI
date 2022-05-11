@@ -24,6 +24,7 @@ class Sna {
           carrierServiceCode: pickup ? 'MR' : Sna.getTransporter(order.country_id),
           requestedDeliveryDate: Utils.date({ time: false }),
           shippingCost: order.shipping,
+          currency: order.currency,
           shipTo: {
             recepientName: `${order.firstname} ${order.lastname}`,
             contactName: order.name || '',
