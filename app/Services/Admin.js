@@ -1538,9 +1538,8 @@ Admin.extractOrders = async (params) => {
     const refunds = await DB('refund')
       .select('refund.*', 'order.currency', 'order.user_id')
       .join('order', 'order.id', 'refund.order_id')
-      .join('order_shop as os', 'os.order_id', 'refund.order_id')
-      .where('os.created_at', '>=', params.start)
-      .where('os.created_at', '<=', `${params.end} 23:59`)
+      .where('refund.created_at', '>=', params.start)
+      .where('refund.created_at', '<=', `${params.end} 23:59`)
       .all()
 
     return Utils.toCsv([
