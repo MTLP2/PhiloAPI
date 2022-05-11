@@ -576,7 +576,7 @@ Order.refundOrderShop = async (id, type, params) => {
     })
   }
 
-  if ((params && params.only_history === 'false') || (params && params.credit_note === 'true')) {
+  if ((params && params.only_history === 'false') || (params && params.credit_note === 'true') || !params) {
     await DB('order_shop')
       .where('id', id)
       .update({

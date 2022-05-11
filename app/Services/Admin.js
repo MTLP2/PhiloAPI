@@ -1693,6 +1693,17 @@ Admin.refundOrder = async (params) => {
       })
     }
 
+    const { total: totalOrderShop } = await DB('order_shop').select('total').where('id', params.order_shop_id).first()
+    if (params.order_shop_id && (params.amount >= totalOrderShop)) {
+      await DB('order_shop')
+        .where('id', params.order_shop_id)
+        .update({
+          is_paid: 0,
+          ask_cancel: 0,
+          step: 'refunded'
+        })
+    }
+
     await Order.addRefund(params)
   }
 
