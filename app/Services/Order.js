@@ -566,7 +566,7 @@ Order.refundOrderShop = async (id, type, params) => {
 
   // Proceed to transaction refund if order is not only history (or if params are not set)
   if (!params || (params && params.only_history === 'false')) {
-    await Order.refundPayment(order)
+    // await Order.refundPayment(order)
   }
 
   if (type === 'refund') {
@@ -576,7 +576,7 @@ Order.refundOrderShop = async (id, type, params) => {
     })
   }
 
-  if ((params && params.only_history === 'false') || (params && params.credit_note === 'true')) {
+  if ((params && params.only_history === 'false') || (params && params.credit_note === 'true') || !params) {
     await DB('order_shop')
       .where('id', id)
       .update({
