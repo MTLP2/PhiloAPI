@@ -1,10 +1,7 @@
 const Utils = use('App/Utils')
 const request = require('request')
 const ApiError = use('App/ApiError')
-
-const customer = 901701
-const user = 'GdsTb$£G5845G!hJUlF5487$ht'
-const password = 'Vf84$Gp45£Jgyt14jGtmF8!7'
+const Env = use('Env')
 
 class Sna {
   static sync (orders) {
@@ -59,14 +56,20 @@ class Sna {
           }
         }
 
+        console.log(data)
         dispatchs.push(data)
       }
 
+      console.log({
+        CustomerAccount: Env.get('SNA_CUSTOMER'),
+        User: Env.get('SNA_USER'),
+        Password: Env.get('SNA_PASSWORD')
+      })
       request('https://api.snagz.fr/order', {
         qs: {
-          CustomerAccount: customer,
-          User: user,
-          Password: password
+          CustomerAccount: Env.get('SNA_CUSTOMER'),
+          User: Env.get('SNA_USER'),
+          Password: Env.get('SNA_PASSWORD')
         },
         method: 'POST',
         json: true,
@@ -89,9 +92,9 @@ class Sna {
     return new Promise((resolve, reject) => {
       request('https://api.snagz.fr/stock', {
         qs: {
-          CustomerAccount: customer,
-          User: user,
-          Password: password
+          CustomerAccount: Env.get('SNA_CUSTOMER'),
+          User: Env.get('SNA_USER'),
+          Password: Env.get('SNA_PASSWORD')
         },
         json: true
       }, (error, res, body) => {

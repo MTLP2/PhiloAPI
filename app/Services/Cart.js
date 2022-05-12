@@ -15,6 +15,7 @@ const Payment = use('App/Services/Payment')
 const Invoice = use('App/Services/Invoice')
 const Whiplash = use('App/Services/Whiplash')
 const Stock = use('App/Services/Stock')
+const Sna = use('App/Services/Sna')
 const cio = use('App/Services/CIO')
 const Antl = use('Antl')
 
@@ -228,6 +229,7 @@ Cart.calculate = async (params) => {
           stock_whiplash: project.stock_whiplash,
           stock_whiplash_uk: project.stock_whiplash_uk,
           stock_diggers: project.stock_diggers,
+          stock_sna: project.stock_sna,
           country_id: params.country_id
         })
         if (shipping.error) {
@@ -859,6 +861,13 @@ Cart.calculateShipping = async (params) => {
     const whiplashUk = await Cart.calculateShippingWhiplash(params, 'whiplash_uk')
     if (whiplashUk) {
       shippings.push(whiplashUk)
+    }
+  }
+  if (transporters.all || transporters.sna) {
+    const trans = await Cart.calculateShippingDaudin(params)
+    trans.transporter = 'sna'
+    if (trans) {
+      shippings.push(trans)
     }
   }
   if (transporters.soundmerch) {
@@ -1573,6 +1582,15 @@ Cart.validPayment = async (orderId, transactionId, status = 'confirmed') => {
 
       if (shop.type === 'shop' && ['whiplash', 'whiplash_uk'].includes(shop.transporter)) {
         await Whiplash.validOrder(shop, user, items)
+      }
+      if (shop.type === 'shop' && ['sna'].includes(shop.transporter)) {
+        const customer = await DB('customer').find(shop.customer_id)
+        console.log(shop)
+        await Sna.sync([{
+          ...customer,
+          ...shop,
+          items: items
+        }])
       }
       if (shop.type === 'shop' && shop.transporter === 'diggers') {
         await Notification.sendEmail({
