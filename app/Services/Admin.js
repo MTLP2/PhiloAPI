@@ -1625,7 +1625,7 @@ Admin.extractOrders = async (params) => {
 
   if (params.only_refunds === 'true') {
     const refunds = await DB('refund')
-      .select('refund.*', 'order.currency', 'order.user_id')
+      .select('refund.*', 'order.currency', 'order.user_id', 'order.payment_type')
       .join('order', 'order.id', 'refund.order_id')
       .where('refund.created_at', '>=', params.start)
       .where('refund.created_at', '<=', `${params.end} 23:59`)
@@ -1636,6 +1636,7 @@ Admin.extractOrders = async (params) => {
       { name: 'Order ID', index: 'order_id' },
       { name: 'User ID', index: 'user_id' },
       { name: 'OShop ID', index: 'order_shop_id' },
+      { name: 'Payment Type', index: 'payment_type' },
       { name: 'Date', index: 'created_at' },
       { name: 'Amount', index: 'amount' },
       { name: 'Currency', index: 'currency' },
@@ -1746,23 +1747,28 @@ Admin.refundProject = async (id, params) => {
   const orders = await Admin.getOrders({ project_id: id, size: 1000 })
 
   let refunds = 0
+  const ordersFailed = []
   for (const i in orders.data) {
     if (orders.data[i].is_paid) {
-      await Admin.cancelOrderShop(orders.data[i].order_shop_id, 'refund', {
-        reason: 'project_failed',
-        comment: params.comment,
-        order_id: orders.data[i].order_id,
-        order_shop_id: orders.data[i].order_shop_id,
-        amount: orders.data[i].os_total,
-        only_history: 'false',
-        credit_note: 'true',
-        cancel_notification: 'true'
-      })
-      refunds++
+      try {
+        await Admin.cancelOrderShop(orders.data[i].order_shop_id, 'refund', {
+          reason: 'project_failed',
+          comment: params.comment,
+          order_id: orders.data[i].order_id,
+          order_shop_id: orders.data[i].order_shop_id,
+          amount: orders.data[i].os_total,
+          only_history: 'false',
+          credit_note: 'true',
+          cancel_notification: 'true'
+        })
+        refunds++
+      } catch (err) {
+        ordersFailed.push({ order_shop_id: orders.data[i].order_shop_id, order_id: orders.data[i].order_id, error: err.response.message || err.message })
+      }
     }
   }
 
-  return refunds
+  return { refunds, ordersFailed }
 }
 
 Admin.refundOrder = async (params) => {
@@ -1771,6 +1777,14 @@ Admin.refundOrder = async (params) => {
     .select('customer_id')
     .where('order_id', params.id)
     .first()
+
+  // Check if order.date_payment is older than 6 months from now, ordered by paypal, with a payment to make. If so, return with an error.
+  const orderOlderThanSixMonths = moment(order.date_payment).isBefore(
+    moment().subtract(6, 'months')
+  )
+  if (!params.only_history && order.payment_type === 'paypal' && orderOlderThanSixMonths) {
+    return { error: 'You\'re trying to refund a paypal order older than 6 months. Please tick "Create a refund history without payment" and manually refund the client.' }
+  }
 
   // Only history means we add a refund history without making actual payment. Choosen when a refund is made in the Sheraf.
   if (params.refund_payment !== false) {
