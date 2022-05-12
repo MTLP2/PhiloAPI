@@ -214,6 +214,18 @@ class AdminController {
     return Statement.download(params)
   }
 
+  saveProjectImage ({ params }) {
+    return Admin.saveProjectImage(params)
+  }
+
+  updateProjectImage ({ params }) {
+    return Admin.updateProjectImage(params)
+  }
+
+  deleteProjectImage ({ params }) {
+    return Admin.deleteProjectImage(params)
+  }
+
   deleteProject ({ params }) {
     return Admin.deleteProject(params.id)
   }
@@ -291,7 +303,7 @@ class AdminController {
   }
 
   refundProject ({ params }) {
-    return Admin.refundProject(params.id)
+    return Admin.refundProject(params.id, params)
   }
 
   getWishlists ({ params }) {

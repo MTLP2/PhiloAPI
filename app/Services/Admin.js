@@ -206,6 +206,7 @@ Admin.getProject = async (id) => {
     .where('project_id', id)
     .all()
 
+  const projectImagesQuery = Project.getProjectImages({ projectId: id })
   const stocksQuery = Stock.getProject(id)
 
   const stocksHistoricQuery = DB('stock_historic')
@@ -249,14 +250,15 @@ Admin.getProject = async (id) => {
     .where('is_paid', 1)
     .all()
 
-  const [project, codes, costs, stocks, stocksHistoric, items, orders] = await Promise.all([
+  const [project, codes, costs, stocks, stocksHistoric, items, orders, projectImages] = await Promise.all([
     projectQuery,
     codesQuery,
     costsQuery,
     stocksQuery,
     stocksHistoricQuery,
     itemsQuery,
-    ordersQuery
+    ordersQuery,
+    projectImagesQuery
   ])
 
   if (!project) {
@@ -266,6 +268,7 @@ Admin.getProject = async (id) => {
   project.codes = codes
   project.costs = costs
   project.items = items
+  project.project_images = projectImages
   project.stocks_historic = stocksHistoric
 
   for (const [key, value] of Object.entries(stocks)) {
@@ -659,6 +662,83 @@ Admin.saveProjectItem = async (params) => {
 
 Admin.removeProjectItem = async (params) => {
   return DB('item').where('id', params.id).delete()
+}
+
+Admin.saveProjectImage = async (params) => {
+  const project = await Admin.getProject(params.project_id)
+
+  // Upload image
+  const file = Utils.uuid()
+  await Storage.uploadImage(
+        `projects/${project.picture}/images/${file}`,
+        Buffer.from(params.image, 'base64'),
+        { type: 'png', width: 1000, quality: 100 }
+  )
+
+  const newProjectImageId = await DB('project_images')
+    .insert({
+      project_id: params.project_id,
+      image: file,
+      created_at: Utils.date(),
+      name: params.name,
+      position: params.position
+    })
+
+  return {
+    success: true,
+    item: {
+      id: newProjectImageId[0],
+      image: file,
+      name: params.name,
+      position: params.position
+    }
+  }
+}
+Admin.updateProjectImage = async (params) => {
+  const project = await DB('project as p').select('p.picture', 'pi.image').join('project_images as pi', 'pi.project_id', 'p.id').where('pi.id', params.id).first()
+
+  const file = Utils.uuid()
+
+  // Only if image has changed
+  if (params.image) {
+    // Delete old image
+    await Storage.deleteImage(`projects/${project.picture}/images/${project.image}`)
+
+    // Upload new image
+    await Storage.uploadImage(
+        `projects/${project.picture}/images/${file}`,
+        Buffer.from(params.image, 'base64'),
+        { type: 'png', width: 1000, quality: 100 }
+    )
+  }
+
+  await DB('project_images')
+    .where('id', params.id)
+    .update({
+      image: file,
+      name: params.name,
+      position: params.position,
+      created_at: Utils.date()
+    })
+
+  return {
+    success: true,
+    item: {
+      id: +params.iid,
+      image: params.image ? file : project.image,
+      name: params.name,
+      position: params.position,
+      created_at: new Date().toISOString()
+    }
+  }
+}
+
+Admin.deleteProjectImage = async (params) => {
+  const projectImage = await DB('project_images as pi').select('pi.project_id', 'pi.image', 'p.picture').join('project as p', 'p.id', 'pi.project_id').where('pi.id', params.iid).first()
+
+  Storage.deleteImage(`projects/${projectImage.picture}/images/${projectImage.image}`)
+  await DB('project_images').where('id', params.iid).delete()
+  return { success: true }
 }
 
 Admin.saveWishlist = async (params) => {
@@ -1547,9 +1627,8 @@ Admin.extractOrders = async (params) => {
     const refunds = await DB('refund')
       .select('refund.*', 'order.currency', 'order.user_id')
       .join('order', 'order.id', 'refund.order_id')
-      .join('order_shop as os', 'os.order_id', 'refund.order_id')
-      .where('os.created_at', '>=', params.start)
-      .where('os.created_at', '<=', `${params.end} 23:59`)
+      .where('refund.created_at', '>=', params.start)
+      .where('refund.created_at', '<=', `${params.end} 23:59`)
       .all()
 
     return Utils.arrayToCsv([
@@ -1663,13 +1742,22 @@ Admin.getOrderShopInvoice = async (id) => {
   return pdf.data
 }
 
-Admin.refundProject = async (id) => {
+Admin.refundProject = async (id, params) => {
   const orders = await Admin.getOrders({ project_id: id, size: 1000 })
 
   let refunds = 0
   for (const i in orders.data) {
     if (orders.data[i].is_paid) {
-      await Admin.cancelOrderShop(orders.data[i].order_shop_id, 'refund')
+      await Admin.cancelOrderShop(orders.data[i].order_shop_id, 'refund', {
+        reason: 'project_failed',
+        comment: params.comment,
+        order_id: orders.data[i].order_id,
+        order_shop_id: orders.data[i].order_shop_id,
+        amount: orders.data[i].os_total,
+        only_history: 'false',
+        credit_note: 'true',
+        cancel_notification: 'true'
+      })
       refunds++
     }
   }
@@ -1694,14 +1782,24 @@ Admin.refundOrder = async (params) => {
     }
 
     const { total: totalOrderShop } = await DB('order_shop').select('total').where('id', params.order_shop_id).first()
+
+    // If amount is greater than total order shop, update the DB and make a notification call.
     if (params.order_shop_id && (params.amount >= totalOrderShop)) {
       await DB('order_shop')
         .where('id', params.order_shop_id)
         .update({
           is_paid: 0,
           ask_cancel: 0,
-          step: 'refunded'
+          step: 'canceled'
         })
+
+      await Notification.new({
+        type: 'my_order_canceled',
+        user_id: order.user_id,
+        order_id: params.id,
+        order_shop_id: params.order_shop_id,
+        alert: 0
+      })
     }
 
     await Order.addRefund(params)
