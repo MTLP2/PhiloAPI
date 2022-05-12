@@ -251,6 +251,8 @@ class AdminController {
       return Admin.syncProjectSna(params)
     } else if (params.type === 'whiplash') {
       return Whiplash.syncProject(params)
+    } else if (params.type === 'whiplash_uk') {
+      return Whiplash.syncProject(params)
     }
   }
 
