@@ -1,11 +1,10 @@
-const utils = require('stripe/lib/utils')
-
 const Utils = use('App/Utils')
 const DB = use('App/DB')
 const Dig = use('App/Services/Dig')
 const Notification = use('App/Services/Notification')
 const Payment = use('App/Services/Payment')
 const Order = use('App/Services/Order')
+const Stock = use('App/Services/Stock')
 const ApiError = use('App/ApiError')
 
 const Dispatch = {}
@@ -280,20 +279,32 @@ Dispatch.changeStock = async (params) => {
     throw new ApiError(400, '`barcode` is missing')
   }
 
-  const vod = await DB('vod')
+  const project = await DB('vod')
     .where('barcode', params.barcode)
     .first()
 
-  if (vod && vod.stock_sna !== params.quantity) {
-    vod.stock_sna = params.quantity
-    vod.update_at = Utils.date()
-    await vod.save()
+  if (!project) {
+    throw new Error('not_found')
+  }
+
+  const stocks = await Stock.getProject(project.project_id)
+  for (const [key, value] of Object.entries(stocks)) {
+    project[`stock_${key}`] = value
+  }
+
+  if (project && project.stock_sna !== params.quantity) {
+    Stock.save({
+      project_id: project.project_id,
+      type: 'sna',
+      stock: params.quantity,
+      comment: 'api'
+    })
 
     const html = `<ul>
     <li><strong>Transporter:</strong> ${params.transporter || ''}</li>
     <li><strong>Barcode:</strong> ${params.barcode || ''}</li>
     <li><strong>Name:</strong> ${params.name || ''}</li>
-    <li><strong>Old:</strong> ${vod.stock_sna}</li>
+    <li><strong>Old:</strong> ${project.stock_sna}</li>
     <li><strong>Quantity:</strong> ${params.quantity || ''}</li>
     <li><strong>Comment:</strong> ${params.comment || ''}</li>
   </ul>`
