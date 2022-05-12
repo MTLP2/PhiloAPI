@@ -1658,7 +1658,7 @@ Admin.refundProject = async (id, params) => {
 
   let refunds = 0
   for (const i in orders.data) {
-    if (orders.data[i]) {
+    if (orders.data[i].is_paid) {
       await Admin.cancelOrderShop(orders.data[i].order_shop_id, 'refund', {
         reason: 'project_failed',
         comment: params.comment,
