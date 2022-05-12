@@ -695,14 +695,16 @@ Project.find = async (id, params) => {
 
   const salesPromise = PromoCode.getSales({ vod: true })
   const currenciesPromise = Utils.getCurrenciesDb()
+  const projectImagesPromise = Project.getProjectImages({ projectId: id })
 
-  const [project, songs, styles, sales, items, currencies] = await Promise.all([
+  const [project, songs, styles, sales, items, currencies, projectImages] = await Promise.all([
     projectPromise,
     songsPromise,
     stylesPromise,
     salesPromise,
     itemsPromise,
-    currenciesPromise
+    currenciesPromise,
+    projectImagesPromise
   ])
 
   if (!project) {
@@ -770,6 +772,11 @@ Project.find = async (id, params) => {
     soundcloud: p.user_soundcloud,
     about_me: p.user_about_me,
     followed: p.user_followed
+  }
+
+  // Adding project images if any
+  if (projectImages.length) {
+    p.project_images = projectImages
   }
 
   return p
@@ -1453,6 +1460,10 @@ Project.listStyles = async () => {
     s[style.id] = style.name
   }
   return s
+}
+
+Project.getProjectImages = async (params) => {
+  return await DB('project_images').where('project_id', +params.projectId).orderBy('position', 'asc').all()
 }
 
 module.exports = Project
