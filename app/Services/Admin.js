@@ -408,7 +408,7 @@ Admin.getProjectStats = async (params) => {
     const barcodes = JSON.parse(m.barcodes)
     for (const barcode of barcodes) {
       if (barcode.barcode === project.barcode) {
-        stats.quantity_manual += barcode.quantity
+        stats.quantity_manual += +barcode.quantity
       }
     }
   }
