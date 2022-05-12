@@ -13,6 +13,7 @@ const Statement = use('App/Services/Statement')
 const Production = use('App/Services/Production')
 const Storage = use('App/Services/Storage')
 const MondialRelay = use('App/Services/MondialRelay')
+const Cio = use('App/Services/Cio')
 const Excel = require('exceljs')
 const Antl = use('Antl')
 const marked = require('marked')
@@ -57,22 +58,8 @@ App.daily = async () => {
       await App.alertStock()
     }
     if (moment().format('DD') === '28') {
-      await Box.setDispatchs()
-    }
-    if (moment().format('DD') === '28') {
       await Statement.setStorageCosts()
       await Statement.sendStatements()
-    }
-    await App.currencies()
-    await App.checkFinishedProjects()
-    await Box.checkReminder()
-    await Box.checkFinishedBox()
-    await App.check5DaysLeftProjects()
-    await Whiplash.syncStocks()
-    await Production.checkNotif()
-    await Whiplash.setTrackingLinks()
-
-    if (moment().format('DD') === '31') {
       await Box.setDispatchs()
     }
 
@@ -101,6 +88,22 @@ App.hourly = async () => {
   }
 
   try {
+    const hour = (new Date()).getHours()
+
+    if (hour === 4) {
+      await App.currencies()
+      await Whiplash.syncStocks()
+      await Whiplash.setTrackingLinks()
+    } else if (hour === 7) {
+      await App.checkFinishedProjects()
+      await Production.checkNotif()
+      await Box.checkReminder()
+      await Box.checkFinishedBox()
+      await App.check5DaysLeftProjects()
+    } else if (hour === 5) {
+      await Cio.syncNewsletterNoAccount()
+    }
+
     await Storage.cleanTmp('storage')
 
     cron.status = 'complete'
