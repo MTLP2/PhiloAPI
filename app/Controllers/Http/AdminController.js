@@ -23,7 +23,7 @@ const Daudin = use('App/Services/Daudin')
 const Artwork = use('App/Services/Artwork')
 const Stats = use('App/Services/Stats')
 const MailJet = use('App/Services/MailJet')
-const Sna = use('App/Services/Sna')
+const ApiError = use('App/ApiError')
 const ProjectService = use('App/Services/Project')
 const Database = use('Database')
 
@@ -53,6 +53,9 @@ class AdminController {
   }
 
   getProject ({ params }) {
+    if (isNaN(params.id)) {
+      throw new ApiError(400)
+    }
     return Admin.getProject(params.id)
   }
 
