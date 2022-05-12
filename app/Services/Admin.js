@@ -675,7 +675,7 @@ Admin.saveProjectImage = async (params) => {
         { type: 'png', width: 1000, quality: 100 }
   )
 
-  const newProjectImageId = await DB('project_images')
+  const newProjectImageId = await DB('project_image')
     .insert({
       project_id: params.project_id,
       image: file,
@@ -695,7 +695,7 @@ Admin.saveProjectImage = async (params) => {
   }
 }
 Admin.updateProjectImage = async (params) => {
-  const project = await DB('project as p').select('p.picture', 'pi.image').join('project_images as pi', 'pi.project_id', 'p.id').where('pi.id', params.id).first()
+  const project = await DB('project as p').select('p.picture', 'pi.image').join('project_image as pi', 'pi.project_id', 'p.id').where('pi.id', params.id).first()
 
   const file = Utils.uuid()
 
@@ -712,7 +712,7 @@ Admin.updateProjectImage = async (params) => {
     )
   }
 
-  await DB('project_images')
+  await DB('project_image')
     .where('id', params.id)
     .update({
       image: file,
@@ -734,10 +734,10 @@ Admin.updateProjectImage = async (params) => {
 }
 
 Admin.deleteProjectImage = async (params) => {
-  const projectImage = await DB('project_images as pi').select('pi.project_id', 'pi.image', 'p.picture').join('project as p', 'p.id', 'pi.project_id').where('pi.id', params.iid).first()
+  const projectImage = await DB('project_image as pi').select('pi.project_id', 'pi.image', 'p.picture').join('project as p', 'p.id', 'pi.project_id').where('pi.id', params.iid).first()
 
   Storage.deleteImage(`projects/${projectImage.picture}/images/${projectImage.image}`)
-  await DB('project_images').where('id', params.iid).delete()
+  await DB('project_image').where('id', params.iid).delete()
   return { success: true }
 }
 
