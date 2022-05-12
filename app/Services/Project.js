@@ -1463,7 +1463,7 @@ Project.listStyles = async () => {
 }
 
 Project.getProjectImages = async (params) => {
-  return await DB('project_images').where('project_id', +params.projectId).orderBy('position', 'asc').all()
+  return await DB('project_image').where('project_id', +params.projectId).orderBy('position', 'asc').all()
 }
 
 module.exports = Project
