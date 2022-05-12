@@ -40,4 +40,16 @@ cio.convertProfiles = async () => {
   }
 }
 
+cio.syncNewsletterNoAccount = async () => {
+  const emails = await DB('newsletter_no_account')
+    .all()
+
+  for (const email of emails) {
+    cio.identify(email.email, {
+      newsletter: true,
+      unsubscribed: email.unsubscribed
+    })
+  }
+}
+
 module.exports = cio
