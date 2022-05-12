@@ -85,6 +85,27 @@ class Sna {
     })
   }
 
+  static getStock () {
+    return new Promise((resolve, reject) => {
+      request('https://api.snagz.fr/stock', {
+        qs: {
+          CustomerAccount: customer,
+          User: user,
+          Password: password
+        },
+        json: true
+      }, (error, res, body) => {
+        if (error) {
+          reject(new ApiError(500, error))
+        } else if (res.statusCode !== 200) {
+          reject(new ApiError(res.statusCode, body.message))
+        } else {
+          resolve(body.data)
+        }
+      })
+    })
+  }
+
   static getTransporter (country) {
     const transporters = {
       FR: 'CP',
