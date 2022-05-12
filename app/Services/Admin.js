@@ -1536,7 +1536,7 @@ Admin.extractOrders = async (params) => {
 
   if (params.only_refunds === 'true') {
     const refunds = await DB('refund')
-      .select('refund.*', 'order.currency', 'order.user_id')
+      .select('refund.*', 'order.currency', 'order.user_id', 'order.payment_type')
       .join('order', 'order.id', 'refund.order_id')
       .where('refund.created_at', '>=', params.start)
       .where('refund.created_at', '<=', `${params.end} 23:59`)
@@ -1547,6 +1547,7 @@ Admin.extractOrders = async (params) => {
       { name: 'Order ID', index: 'order_id' },
       { name: 'User ID', index: 'user_id' },
       { name: 'OShop ID', index: 'order_shop_id' },
+      { name: 'Payment Type', index: 'payment_type' },
       { name: 'Date', index: 'created_at' },
       { name: 'Amount', index: 'amount' },
       { name: 'Currency', index: 'currency' },
