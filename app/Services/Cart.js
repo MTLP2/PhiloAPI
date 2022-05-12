@@ -1585,12 +1585,28 @@ Cart.validPayment = async (orderId, transactionId, status = 'confirmed') => {
       }
       if (shop.type === 'shop' && ['sna'].includes(shop.transporter)) {
         const customer = await DB('customer').find(shop.customer_id)
-        console.log(shop)
-        await Sna.sync([{
-          ...customer,
-          ...shop,
-          items: items
-        }])
+        try {
+          await Sna.sync([{
+            ...customer,
+            ...shop,
+            items: items
+          }])
+          await DB('order_shop')
+            .where('id', shop.id)
+            .update({
+              date_export: Utils.date()
+            })
+        } catch (err) {
+          await Notification.sendEmail({
+            to: 'victor@diggersfactory.com',
+            subject: `Problem with SNA : ${shop.id}`,
+            html: `<ul>
+              <li>Order Id : https://www.diggersfactory.com/sheraf/order/${shop.id}</li>
+              <li>Shop Id : ${shop.id}</li>
+              <li>Error: ${err}</li>
+            </ul>`
+          })
+        }
       }
       if (shop.type === 'shop' && shop.transporter === 'diggers') {
         await Notification.sendEmail({

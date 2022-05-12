@@ -60,11 +60,6 @@ class Sna {
         dispatchs.push(data)
       }
 
-      console.log({
-        CustomerAccount: Env.get('SNA_CUSTOMER'),
-        User: Env.get('SNA_USER'),
-        Password: Env.get('SNA_PASSWORD')
-      })
       request('https://api.snagz.fr/order', {
         qs: {
           CustomerAccount: Env.get('SNA_CUSTOMER'),
