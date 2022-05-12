@@ -15,6 +15,8 @@ const ApiError = use('App/ApiError')
 const Excel = require('exceljs')
 const Storage = use('App/Services/Storage')
 const Order = use('App/Services/Order')
+const Stock = use('App/Services/Stock')
+const Sna = use('App/Services/Sna')
 const cio = use('App/Services/CIO')
 const Env = use('Env')
 const moment = require('moment')
@@ -205,10 +207,11 @@ Admin.getProject = async (id) => {
     .all()
 
   const projectImagesQuery = Project.getProjectImages({ projectId: id })
+  const stocksQuery = Stock.getProject(id)
 
-  const stocksQuery = DB('vod_stock')
-    .select('vod_stock.*', 'user.name')
-    .leftJoin('user', 'user.id', 'vod_stock.user_id')
+  const stocksHistoricQuery = DB('stock_historic')
+    .select('stock_historic.*', 'user.name')
+    .leftJoin('user', 'user.id', 'stock_historic.user_id')
     .where('project_id', id)
     .orderBy('id', 'desc')
     .all()
@@ -247,11 +250,12 @@ Admin.getProject = async (id) => {
     .where('is_paid', 1)
     .all()
 
-  const [project, codes, costs, stocks, items, orders, projectImages] = await Promise.all([
+  const [project, codes, costs, stocks, stocksHistoric, items, orders, projectImages] = await Promise.all([
     projectQuery,
     codesQuery,
     costsQuery,
     stocksQuery,
+    stocksHistoricQuery,
     itemsQuery,
     ordersQuery,
     projectImagesQuery
@@ -264,10 +268,14 @@ Admin.getProject = async (id) => {
   project.codes = codes
   project.costs = costs
   project.items = items
-  project.stocks = stocks
   project.project_images = projectImages
+  project.stocks_historic = stocksHistoric
 
-  project.stock = project.goal - project.count - project.count_other - project.count_distrib
+  for (const [key, value] of Object.entries(stocks)) {
+    project[`stock_${key}`] = value
+  }
+
+  project.stock_preorder = project.goal - project.count - project.count_other - project.count_distrib
 
   project.com = project.com ? JSON.parse(project.com) : {}
   project.sizes = project.sizes ? JSON.parse(project.sizes) : {}
@@ -281,7 +289,13 @@ Admin.getProject = async (id) => {
   project.to_diggers = 0
   project.to_diggers_sent = 0
   const barcodes = {}
+  project.to_sizes = {}
   for (const order of orders) {
+    if (!project.to_sizes[order.size]) {
+      project.to_sizes[order.size] = 0
+    }
+    project.to_sizes[order.size]++
+
     if (order.transporter === 'whiplash') {
       project.to_whiplash += order.quantity
       if (!order.whiplash_id && order.type === 'vod') {
@@ -344,6 +358,7 @@ Admin.getProject = async (id) => {
     }
   }
   project.barcodes = barcodes
+  project.exports = JSON.parse(project.exports)
   project.historic = JSON.parse(project.historic)
 
   return project
@@ -833,35 +848,31 @@ Admin.saveVod = async (params) => {
     if (params.transporter_soundmerch) {
       vod.transporters.soundmerch = true
     }
-
     vod.transporters = JSON.stringify(vod.transporters)
     vod.count_other = params.count_other
     vod.count_distrib = params.count_distrib
-    if (vod.stock_whiplash !== params.stock_whiplash_us) {
-      await DB('vod_stock').insert({
-        project_id: vod.project_id,
+
+    for (const trans of ['daudin', 'sna', 'whiplash', 'whiplash_uk', 'diggers', 'shipehype']) {
+      await Stock.save({
+        project_id: params.id,
+        type: trans,
+        stock: params[`stock_${trans}`],
         user_id: params.user.id,
-        type: 'whiplash',
-        old: vod.stock_whiplash,
-        new: params.stock_whiplash_us
+        comment: 'sheraf'
       })
     }
-    vod.stock_whiplash = params.stock_whiplash_us
-    vod.stock_whiplash_uk = params.stock_whiplash_uk
-    if (vod.stock_daudin !== params.stock_daudin) {
-      await DB('vod_stock').insert({
-        project_id: vod.project_id,
-        user_id: params.user.id,
-        type: 'daudin',
-        old: vod.stock_daudin,
-        new: params.stock_daudin
-      })
-    }
-    vod.stock_daudin = params.stock_daudin
-    vod.stock_diggers = params.stock_diggers
+    vod.stock = +params.stock_daudin + +params.stock_sna + +params.stock_whiplash +
+      +params.stock_whiplash_uk + +params.stock_diggers + +params.stock_shipehype
 
     vod.is_size = params.is_size
-    vod.sizes = JSON.stringify(params.sizes)
+
+    const sizes = {
+      s: false, m: false, l: false, xl: false, '2xl': false, '3xl': false, '4xl': false
+    }
+    for (const s of params.sizes) {
+      sizes[s] = true
+    }
+    vod.sizes = JSON.stringify(sizes)
 
     vod.alert_stock = params.alert_stock || null
     vod.only_country = params.only_country
@@ -1120,9 +1131,122 @@ Admin.downloadInvoiceCost = async (params) => {
   return Storage.get(item.invoice, true)
 }
 
-Admin.syncProjectDaudin = async (id, params) => {
+Admin.syncProjectSna = async (params) => {
   const vod = await DB('vod')
-    .where('project_id', id).first()
+    .where('project_id', params.id).first()
+  if (!vod) {
+    return false
+  }
+
+  const orders = await DB()
+    .select('customer.*', 'os.*', 'user.email')
+    .from('order_shop as os')
+    .join('customer', 'customer.id', 'os.customer_id')
+    .join('user', 'user.id', 'os.user_id')
+    .whereIn('os.id', query => {
+      query.select('order_shop_id')
+        .from('order_item')
+        .where('project_id', params.id)
+    })
+    .where('os.transporter', 'daudin')
+    .where('os.type', 'vod')
+    .whereNull('date_export')
+    .where('is_paid', 1)
+    .orderBy('os.created_at')
+    .all()
+
+  const items = await DB()
+    .select('order_shop_id', 'oi.project_id', 'oi.quantity', 'oi.price', 'vod.barcode')
+    .from('order_item as oi')
+    .whereIn('order_shop_id', orders.map(o => o.id))
+    .join('vod', 'vod.project_id', 'oi.project_id')
+    .all()
+
+  for (const item of items) {
+    const idx = orders.findIndex(o => o.id === item.order_shop_id)
+    orders[idx].items = orders[idx].items ? [...orders[idx].items, item] : [item]
+  }
+
+  const dispatchs = []
+
+  let qty = 0
+  for (const order of orders) {
+    if (qty >= params.quantity) {
+      break
+    }
+    if (order.shipping_type === 'pickup') {
+      const pickup = JSON.parse(order.address_pickup)
+      const available = await MondialRelay.checkPickupAvailable(pickup.number)
+
+      if (!available) {
+        const around = await MondialRelay.findPickupAround(pickup)
+
+        if (around) {
+          order.address_pickup = JSON.stringify(around)
+          await DB('order_shop')
+            .where('id', order.id)
+            .update({
+              address_pickup: JSON.stringify(around)
+            })
+
+          await Notification.add({
+            type: 'my_order_pickup_changed',
+            order_id: order.order_id,
+            order_shop_id: order.id,
+            user_id: order.user_id
+          })
+        } else {
+          continue
+        }
+      }
+    }
+
+    dispatchs.push(order)
+
+    for (const item of order.items) {
+      if (item.project_id === +params.id) {
+        qty = qty + item.quantity
+      }
+    }
+  }
+
+  if (dispatchs.length === 0) {
+    return { success: false }
+  }
+
+  if (params.type === 'sna') {
+    await Sna.sync(dispatchs)
+  }
+
+  const exports = vod.exports ? JSON.parse(vod.exports) : []
+
+  exports.push({ type: params.type, date: Utils.date(), quantity: params.quantity })
+  vod.exports = JSON.stringify(exports)
+  vod.updated_at = Utils.date()
+  await vod.save()
+
+  await DB('order_shop')
+    .whereIn('id', dispatchs.map(d => d.id))
+    .update({
+      date_export: Utils.date(),
+      transporter: params.type
+    })
+
+  for (const dispatch of dispatchs) {
+    await Notification.add({
+      type: 'my_order_in_preparation',
+      user_id: dispatch.user_id,
+      order_id: dispatch.order_id,
+      order_shop_id: dispatch.id
+    })
+  }
+
+  return qty
+}
+
+Admin.syncProjectDaudin = async (params) => {
+  const vod = await DB('vod')
+    .where('project_id', params.id).first()
   if (!vod) {
     return false
   }
@@ -1140,7 +1264,7 @@ Admin.syncProjectDaudin = async (id, params) => {
     .where('os.type', 'vod')
     .whereNull('date_export')
     .where('os.transporter', 'daudin')
-    .where('oi.project_id', id)
+    .where('oi.project_id', params.id)
     .where('is_paid', 1)
     .orderBy('oi.created_at')
     .where('sending', false)
@@ -1185,7 +1309,7 @@ Admin.syncProjectDaudin = async (id, params) => {
     }
   }
 
-  return vod
+  return qty
 }
 
 Admin.sendProjectNotif = async (projectId, success) => {
@@ -1404,24 +1528,18 @@ Admin.getOrder = async (id) => {
     .belongsTo('customer')
     .all()
 
+  const orderRefunds = await Order.getRefunds({ id: id })
+  order.refunds = orderRefunds
+
   order.shipping = 0
-  orderShops.map(shop => {
-    // For every group of orderNotifications with the same order_shop_id, create a new array with with its notifications. Store in an object
-    shop.notifications = orderNotifications.filter(notification => notification.project_id !== null).reduce((acc, notification) => {
-      if (notification.order_shop_id === shop.id) {
-        if (!acc[notification.project_id]) {
-          acc[notification.project_id] = []
-        }
-        acc[notification.project_id].push(notification)
-      }
-      return acc
-    }, {})
+  for (const shop of orderShops) {
+    shop.notifications = orderNotifications.filter(notification => notification.order_shop_id === shop.id)
 
     shop.items = []
     shop.address_pickup = shop.shipping_type === 'pickup' ? JSON.parse(shop.address_pickup) : {}
     order.shipping += shop.shipping
     order.shops.push(shop)
-  })
+  }
 
   const orderItems = await DB('order_item')
     .select('order_item.*', 'project.name', 'project.artist_name', 'project.picture', 'project.slug',
@@ -1505,7 +1623,29 @@ Admin.extractOrders = async (params) => {
   params.project_id = params.id
   const data = await Admin.getOrders(params)
 
-  return Utils.toCsv([
+  if (params.only_refunds === 'true') {
+    const refunds = await DB('refund')
+      .select('refund.*', 'order.currency', 'order.user_id')
+      .join('order', 'order.id', 'refund.order_id')
+      .join('order_shop as os', 'os.order_id', 'refund.order_id')
+      .where('os.created_at', '>=', params.start)
+      .where('os.created_at', '<=', `${params.end} 23:59`)
+      .all()
+
+    return Utils.arrayToCsv([
+      { name: 'ID', index: 'id' },
+      { name: 'Order ID', index: 'order_id' },
+      { name: 'User ID', index: 'user_id' },
+      { name: 'OShop ID', index: 'order_shop_id' },
+      { name: 'Date', index: 'created_at' },
+      { name: 'Amount', index: 'amount' },
+      { name: 'Currency', index: 'currency' },
+      { name: 'Reason', index: 'reason' },
+      { name: 'Comment', index: 'comment' }
+    ], refunds)
+  }
+
+  return Utils.arrayToCsv([
     { name: 'ID', index: 'order_shop_id' },
     { name: 'Project', index: 'project_name' },
     { name: 'Artist', index: 'artist_name' },
@@ -1624,26 +1764,49 @@ Admin.refundOrder = async (params) => {
     .where('order_id', params.id)
     .first()
 
+  // Only history means we add a refund history without making actual payment. Choosen when a refund is made in the Sheraf.
   if (params.refund_payment !== false) {
-    await Order.refundPayment({
-      ...order,
-      total: params.amount
-    })
+    if (!params.only_history) {
+      await Order.refundPayment({
+        ...order,
+        total: params.amount
+      })
+    }
+
+    const { total: totalOrderShop } = await DB('order_shop').select('total').where('id', params.order_shop_id).first()
+    if (params.order_shop_id && (params.amount >= totalOrderShop)) {
+      await DB('order_shop')
+        .where('id', params.order_shop_id)
+        .update({
+          is_paid: 0,
+          ask_cancel: 0,
+          step: 'refunded'
+        })
+    }
+
+    await Order.addRefund(params)
   }
 
   order.refunded = parseFloat(order.refunded || 0) + parseFloat(params.amount)
   order.updated_at = Utils.date()
-  order.save()
+
+  // Don't update the DB if we only want to add a refund history without payment. A credit note forces refund amount to increment.
+  if (!params.only_history || (params.credit_note || params.credit_note === undefined)) {
+    order.save()
+  }
 
   order.total = params.amount
   order.tax = Utils.round(params.amount * order.tax_rate)
   order.sub_total = Utils.round(params.amount - order.tax)
 
-  await Invoice.insertRefund({
-    ...order,
-    customer_id: customer.customer_id,
-    order_id: order.id
-  })
+  // params.credit_note means we want to edit a credit note / invoice. A CN is emmitted by default if the method is called without params.credit_note. Choosen when a refund is made in the Sheraf.
+  if (params.credit_note || params.credit_note === undefined) {
+    await Invoice.insertRefund({
+      ...order,
+      customer_id: customer.customer_id,
+      order_id: order.id
+    })
+  }
 
   return order
 }
@@ -1668,8 +1831,8 @@ Admin.orderCreditNote = async (params) => {
   return { success: true }
 }
 
-Admin.cancelOrderShop = async (id, type) => {
-  return Order.refundOrderShop(id, type)
+Admin.cancelOrderShop = async (id, type, params) => {
+  return Order.refundOrderShop(id, type, params)
 }
 
 Admin.countOrdersErrors = async () => {
@@ -3136,7 +3299,7 @@ Admin.extractUsers = async (params) => {
   params.size = 0
   const data = await Admin.getUsers(params)
 
-  return Utils.toCsv([
+  return Utils.arrayToCsv([
     { name: 'ID', index: 'id' },
     { name: 'Origin', index: 'origin' },
     { name: 'User', index: 'name' },
@@ -3640,6 +3803,9 @@ Admin.exportCatalog = async (params) => {
 }
 
 Admin.checkSync = async (id, transporter) => {
+  if (transporter === 'sna') {
+    transporter = 'daudin'
+  }
   const shops = await DB()
     .select(
       'quantity',
@@ -4051,7 +4217,7 @@ Admin.exportBoxesComptability = async () => {
     boxes[payment.box_id].total = Utils.round(b.sub_total * boxes[payment.box_id].ratio)
   }
 
-  return Utils.toCsv([
+  return Utils.arrayToCsv([
     { index: 'id', name: 'id' },
     { index: 'total', name: 'total' }
   ], Object.values(boxes).filter(b => b.total > 0))
@@ -4065,7 +4231,7 @@ Admin.exportOrdersComptability = async () => {
     .orderBy('id', 'asc')
     .all()
 
-  return Utils.toCsv([
+  return Utils.arrayToCsv([
     { index: 'id', name: 'id' },
     { index: 'sub_total', name: 'total' },
     { index: 'currency', name: 'currency' },

@@ -341,7 +341,7 @@ Dispatch.getCountriesForDispatch = async () => {
   }
 
   console.log(Object.values(projects)[0])
-  return Utils.toCsv([
+  return Utils.arrayToCsv([
     { name: 'Project', index: 'name' },
     ...Object.keys(contries).map(c => { return { name: c, index: c } })
   ], Object.values(projects))

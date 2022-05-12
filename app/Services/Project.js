@@ -29,10 +29,7 @@ Project.setInfos = (p, currencies, sales, styles) => {
   project.idx_day = project.nb_days - project.days_left
 
   if (project.is_shop) {
-    project.stock_daudin = project.stock_daudin < 0 ? 0 : project.stock_daudin
-    project.stock_whiplash = project.stock_whiplash < 0 ? 0 : project.stock_whiplash
-    project.stock_whiplash_uk = project.stock_whiplash_uk < 0 ? 0 : project.stock_whiplash_uk
-    project.copies_left = project.stock_daudin + project.stock_whiplash + project.stock_whiplash_uk + project.stock_diggers
+    project.copies_left = project.stock
     project.sold_out = project.copies_left < 1
   } else {
     project.copies_left = project.goal - project.count
@@ -42,9 +39,6 @@ Project.setInfos = (p, currencies, sales, styles) => {
   delete project.count_distrib
   delete project.count_bundle
   delete project.count_other
-  delete project.stock_whiplash
-  delete project.stock_whiplash_uk
-  delete project.stock_daudin
 
   project.step = project.sold_out ? 'successful' : project.step
 
@@ -114,18 +108,12 @@ Project.setInfo = (p, currencies, sales) => {
   project.rating = project.rating ? project.rating : 0
 
   if (project.is_shop) {
-    project.stock_daudin = project.stock_daudin < 0 ? 0 : project.stock_daudin
-    project.stock_whiplash = project.stock_whiplash < 0 ? 0 : project.stock_whiplash
-    project.stock_whiplash_uk = project.stock_whiplash_uk < 0 ? 0 : project.stock_whiplash_uk
-    project.copies_left = project.stock_daudin + project.stock_whiplash + project.stock_whiplash_uk + project.stock_diggers
+    project.copies_left = project.stock
     project.sold_out = project.copies_left < 1
   } else {
     project.copies_left = project.goal - project.count
     project.sold_out = ['limited_edition', 'test_pressing'].includes(project.type) && project.copies_left < 1
   }
-  delete project.stock_whiplash
-  delete project.stock_whiplash_uk
-  delete project.stock_daudin
   delete project.count
   delete project.count_distrib
   delete project.count_bundle
@@ -229,10 +217,7 @@ Project.findAll = async (params) => {
     'v.count_other',
     'v.count_distrib',
     'v.count_bundle',
-    'v.stock_whiplash',
-    'v.stock_whiplash_uk',
-    'v.stock_daudin',
-    'v.stock_diggers',
+    'v.stock',
     'v.step',
     'v.user_id',
     'v.created_at',
@@ -263,7 +248,12 @@ Project.findAll = async (params) => {
     params.user_id = null
   }
 
-  const filters = params.filters ? JSON.parse(params.filters) : null
+  let filters = []
+  if (params.filters) {
+    try {
+      filters = JSON.parse(params.filters)
+    } catch {}
+  }
 
   if (params.type === 'illustrations') {
     projects.where('category', 'illustration')
@@ -273,9 +263,6 @@ Project.findAll = async (params) => {
     projects.where('v.step', 'in_progress')
   } else if (params.type === 'accessories') {
     projects.where('category', 'accessory')
-    projects.where('v.step', 'in_progress')
-  } else if (params.type === 'merch') {
-    projects.where('category', 'merch')
     projects.where('v.step', 'in_progress')
   } else if (params.type === 'pro') {
     projects.where('partner_distribution', '1')
@@ -479,13 +466,14 @@ Project.findAll = async (params) => {
     projects.where('v.is_shop', '1')
     projects.where('v.step', 'in_progress')
   }
-  if (params.page) {
-    projects.offset(params.limit * (params.page - 1))
+  if (!params.limit) {
+    params.limit = 9
   }
-
-  if (params.limit) {
-    projects.limit(params.limit)
+  if (!params.page) {
+    params.page = 1
   }
+  projects.limit(params.limit)
+  projects.offset(params.limit * (params.page - 1))
 
   const styles = await Project.listStyles()
   const sales = await PromoCode.getSales({ vod: true })
@@ -657,10 +645,7 @@ Project.find = async (id, params) => {
       'count_other',
       'count_distrib',
       'count_bundle',
-      'stock_daudin',
-      'stock_whiplash',
-      'stock_whiplash_uk',
-      'stock_diggers',
+      'stock',
       'stage1',
       'stage2',
       'stage3',
@@ -699,8 +684,8 @@ Project.find = async (id, params) => {
       'vod.is_size',
       'vod.sizes',
       'vod.step',
-      DB.raw('vod.goal - vod.count - vod.count_other - vod.count_distrib - vod.count_bundle as related_stock'),
-      DB.raw('vod.stock_daudin + vod.stock_whiplash - vod.stock_whiplash_uk - vod.stock_diggers as related_stock_shop')
+      'vod.stock as related_stock_shop',
+      DB.raw('vod.goal - vod.count - vod.count_other - vod.count_distrib - vod.count_bundle as related_stock')
     )
     .where('item.project_id', id)
     .where('is_active', 1)
@@ -1135,10 +1120,7 @@ Project.recommendations = async (params) => {
     .where('v.step', 'in_progress')
     .where(query => {
       query.where('is_shop', false)
-      query.orWhere(query => {
-        query.where('stock_daudin', '>', 0)
-        query.orWhere('stock_whiplash', '>', 0)
-      })
+      query.orWhere('v.stock', '>', 0)
     })
     .limit(6)
     .all())
@@ -1153,10 +1135,7 @@ Project.recommendations = async (params) => {
     .where('v.user_id', '=', DB.raw(`(SELECT user_id FROM vod WHERE project_id = '${params.refs[0]}')`))
     .where(query => {
       query.where('is_shop', false)
-      query.orWhere(query => {
-        query.where('stock_daudin', '>', 0)
-        query.orWhere('stock_whiplash', '>', 0)
-      })
+      query.orWhere('v.stock', '>', 0)
     })
     .limit(6)
     .all())
@@ -1169,10 +1148,7 @@ Project.recommendations = async (params) => {
     .whereNotIn('p.id', refs0.map(r => r.id))
     .where(query => {
       query.where('is_shop', false)
-      query.orWhere(query => {
-        query.where('stock_daudin', '>', 0)
-        query.orWhere('stock_whiplash', '>', 0)
-      })
+      query.orWhere('v.stock', '>', 0)
     })
     .where('v.step', 'in_progress')
     // .where('v.is_shop', params.shop)
@@ -1194,10 +1170,7 @@ Project.recommendations = async (params) => {
     .where('v.step', 'in_progress')
     .where(query => {
       query.where('is_shop', false)
-      query.orWhere(query => {
-        query.where('stock_daudin', '>', 0)
-        query.orWhere('stock_whiplash', '>', 0)
-      })
+      query.orWhere('v.stock', '>', 0)
     })
     .where('v.is_shop', params.shop)
     .whereNotIn('p.id', params.refs)
@@ -1207,7 +1180,7 @@ Project.recommendations = async (params) => {
     .all())
     .map(project => Project.setInfos(project, currencies, null, ss))
 
-  return refs0.concat(reco).concat(refs1).concat(refs2).slice(0, 6)
+  return reco.concat(refs0).concat(refs1).concat(refs2).slice(0, 6)
 }
 
 Project.generateDownload = async (params) => {
@@ -1426,10 +1399,7 @@ Project.duplicate = async (id) => {
   vod.date_export_order = null
   vod.daudin_export = null
   vod.whiplash_export = null
-  vod.stock_daudin = 0
-  vod.stock_whiplash = 0
-  vod.stock_whiplash_uk = 0
-  vod.stock_sna = 0
+  vod.stock = 0
   vod.count = 0
   vod.step = 'creating'
   vod.created_at = Utils.date()

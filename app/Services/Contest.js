@@ -168,7 +168,7 @@ class Contest {
       .where('contest_id', params.id)
       .all()
 
-    return Utils.toCsv([
+    return Utils.arrayToCsv([
       { index: 'id', name: 'user_id' },
       { index: 'name', name: 'name' },
       { index: 'email', name: 'email' },

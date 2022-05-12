@@ -589,6 +589,24 @@ User.getOrders = async (params) => {
   return Order.getOrders(params)
 }
 
+User.getOrderShop = async (params) => {
+  const orderShop = await DB('order_shop as os')
+    .select('os.id', 'os.customer_id', 'os.user_id', 'c.address', 'os.address_pickup',
+      'c.state', 'c.city', 'c.zip_code', 'c.country_id')
+    .join('customer as c', 'c.id', 'os.customer_id')
+    .where('order_id', +params.id)
+    .first()
+
+  if (!orderShop) {
+    throw new ApiError(404)
+  }
+  if (params.user_id !== orderShop.user_id) {
+    throw new ApiError(403)
+  }
+
+  return orderShop
+}
+
 User.updateOrderCustomer = async (params) => {
   const order = await DB()
     .select('os.user_id', 'order_id', 'pickup_not_found', 'customer_id')
@@ -845,32 +863,36 @@ User.decodeUnsubscribeNewseletter = (id) => {
 }
 
 User.event = async (params) => {
-  await cio.track(params.user_id, {
-    name: params.type,
-    data: {
+  if (params.type === 'page_view') {
+    cio.track(params.user_id, {
+      name: params.url,
+      type: 'page'
+    })
+  } else {
+    await DB('event').insert({
+      type: params.type,
+      user_id: params.user_id,
       project_id: params.project_id,
-      quantity: params.quantity,
-      artist: params.artist,
-      name: params.name,
-      price: params.price,
-      currency: params.currency,
-      picture: params.picture
-    }
-  })
+      created_at: Utils.date()
+    })
+    await cio.track(params.user_id, {
+      name: params.type,
+      data: {
+        project_id: params.project_id,
+        quantity: params.quantity,
+        artist: params.artist,
+        name: params.name,
+        price: params.price,
+        currency: params.currency,
+        picture: params.picture
+      }
+    })
+  }
 
-  return DB('event').insert({
-    type: params.type,
-    user_id: params.user_id,
-    project_id: params.project_id,
-    created_at: Utils.date()
-  })
+  return { success: true }
 }
 
 User.lastVisit = (id) => {
-  cio.track(id, {
-    name: 'https://www.diggersfactory.com',
-    type: 'page'
-  })
   return DB('user')
     .where('id', id)
     .update({

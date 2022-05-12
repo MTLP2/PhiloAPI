@@ -12,6 +12,7 @@ const CronJobs = use('App/Models/CronJobs')
 const Statement = use('App/Services/Statement')
 const Production = use('App/Services/Production')
 const Storage = use('App/Services/Storage')
+const MondialRelay = use('App/Services/MondialRelay')
 const Excel = require('exceljs')
 const Antl = use('Antl')
 const marked = require('marked')
@@ -131,6 +132,8 @@ App.cron = async () => {
     }
     await App.checkNotifications()
     await Project.deleteDownload()
+    await MondialRelay.checkSent()
+    await MondialRelay.checkDelivered()
     await User.syncCIOs()
     await User.syncEvents()
 
@@ -1316,7 +1319,7 @@ App.checkZipCode = async () => {
     }
   }
 
-  return Utils.toCsv([
+  return Utils.arrayToCsv([
     { index: 'id', name: 'order_shop_id' },
     { index: 'step', name: 'step' },
     { index: 'country_id', name: 'country_id' },
@@ -1627,7 +1630,7 @@ App.exportNoTracking = async (transporter) => {
     }
   })
 
-  return Utils.toCsv(
+  return Utils.arrayToCsv(
     [
       { name: 'id', index: 'id' },
       { name: 'date', index: 'date_export' }],

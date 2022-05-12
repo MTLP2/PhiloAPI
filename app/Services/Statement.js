@@ -114,6 +114,7 @@ class StatementService {
       data[d].project = Project.query()
         .select('project.id', 'project.name', 'artist_name', 'fee_distrib', 'currency')
         .join('vod', 'vod.project_id', 'project.id')
+        .where('is_delete', false)
 
       if (data[d].barcode) {
         data[d].project.where('vod.barcode', 'like', data[d].barcode)

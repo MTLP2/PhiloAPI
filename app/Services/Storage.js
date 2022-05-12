@@ -26,9 +26,9 @@ class StorageService {
 
   static async copyFolder (path1, path2, isPrivate) {
     const files = await Storage.list(path1)
-    for (const file of files.Contents) {
-      const fileName = file.Key.split('/').pop()
-      await this.copy(file.Key, `${path2}/${fileName}`, isPrivate)
+    for (const file of files) {
+      const fileName = file.path.split('/').pop()
+      await this.copy(file.path, `${path2}/${fileName}`, isPrivate)
     }
     return true
   }
@@ -89,8 +89,8 @@ class StorageService {
 
   static async deleteFolder (path, isPrivate) {
     const files = await Storage.list(path, isPrivate)
-    for (const file of files.Contents) {
-      await Storage.delete(file.Key, isPrivate)
+    for (const file of files) {
+      await Storage.delete(file.path, isPrivate)
     }
     return true
   }

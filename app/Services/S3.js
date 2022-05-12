@@ -16,7 +16,13 @@ class S3 {
         if (err) {
           reject(err)
         } else {
-          resolve(data)
+          resolve(data.Contents.map(f => {
+            return {
+              path: f.Key,
+              size: f.Size,
+              updated_at: f.LastModified
+            }
+          }))
         }
       })
     })

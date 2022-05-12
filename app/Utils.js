@@ -245,27 +245,31 @@ Utils.getRows = async (params) => {
           const values = filter.value.split(',')
           for (const value of values) {
             if (value) {
+              let column = filter.name
+              if (filter.name && filter.name.includes(' ')) {
+                column = DB.raw(`CONCAT(${column.split(' ').join(',\' \',')})`)
+              }
               if (value.indexOf('!=null') !== -1) {
-                q.orWhereNotNull(filter.name)
+                q.orWhereNotNull(column)
               } else if (value.indexOf('=null') !== -1) {
-                q.orWhereNull(filter.name)
+                q.orWhereNull(column)
               } else if (value.indexOf('<=') !== -1) {
                 const f = value.replace('<=', '')
-                q.orWhere(filter.name, '<=', f)
+                q.orWhere(column, '<=', f)
               } else if (value.indexOf('>=') !== -1) {
                 const f = value.replace('>=', '')
-                q.orWhere(filter.name, '>=', f)
+                q.orWhere(column, '>=', f)
               } else if (value.indexOf('<') !== -1) {
                 const f = value.replace('<', '')
-                q.orwhere(filter.name, '<', f)
+                q.orWhere(column, '<', f)
               } else if (value.indexOf('>') !== -1) {
                 const f = value.replace('>', '')
-                q.orWhere(filter.name, '>', f)
+                q.orWhere(column, '>', f)
               } else if (value.indexOf('=') !== -1) {
                 const f = value.replace('=', '')
-                q.orWhere(filter.name, '=', f)
+                q.orWhere(column, '=', f)
               } else {
-                q.orWhere(filter.name, 'LIKE', `%${value}%`)
+                q.orWhere(column, 'LIKE', `%${value}%`)
               }
             }
           }
@@ -865,7 +869,7 @@ Utils.getFee = (dates, date) => {
   return value
 }
 
-Utils.toCsv = (columns, array, del = ',') => {
+Utils.arrayToCsv = (columns, array, del = ',') => {
   let csv = ''
 
   let line = ''
@@ -894,6 +898,27 @@ Utils.toCsv = (columns, array, del = ',') => {
   }
 
   return csv
+}
+
+Utils.csvToArray = (file) => {
+  const lines = file.toString().split('\n')
+
+  const columns = lines[0].split(',')
+
+  const data = []
+  for (let i = 1; i < lines.length; i++) {
+    const value = {}
+    const values = lines[i].split(/,(?=(?:[^\"]*\"[^\"]*\")*(?![^\"]*\"))/)
+
+    if (values) {
+      for (let c = 0; c < columns.length; c++) {
+        value[columns[c]] = values[c]
+      }
+
+      data.push(value)
+    }
+  }
+  return data
 }
 
 Utils.upload = async (params) => {
@@ -988,7 +1013,7 @@ Utils.getTransporterLink = (shop) => {
     return `https://suivi.imxpostal.fr/colis/suivi/${shop.tracking_number}/html/`
   } else if (shop.tracking_transporter === 'COL' || shop.tracking_transporter === 'LTS') {
     return `https://www.laposte.fr/outils/suivre-vos-envois?code=${shop.tracking_number}`
-  } else if (shop.tracking_transporter === 'MDR') {
+  } else if (shop.tracking_transporter === 'MDR' || shop.tracking_transporter === 'MONDIAL RELAY') {
     return `https://www.mondialrelay.fr/suivi-de-colis?codeMarque=F2&nexp=${shop.tracking_number}`
   } else if (shop.tracking_transporter === 'GLS') {
     return `https://gls-group.eu/FR/fr/suivi-colis?match=${shop.tracking_number}`

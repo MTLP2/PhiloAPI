@@ -6,7 +6,7 @@ const Project = use('App/Services/Project')
 const Customer = use('App/Services/Customer')
 const PromoCode = use('App/Services/PromoCode')
 const Order = use('App/Services/Order')
-const Vod = use('App/Services/Vod')
+const Stock = use('App/Services/Stock')
 const Payment = require('./Payment')
 const moment = require('moment')
 const config = require('../../config')
@@ -859,8 +859,7 @@ class Box {
   static async cleanDispatchs () {
     const dispatchs = await DB('box_dispatch')
       .whereNull('box_project_id')
-      // .whereNull('date_export')
-      .where('id', '>=', 7562)
+      .whereNull('date_export')
       .all()
 
     const bb = {}
@@ -883,11 +882,12 @@ class Box {
 
       if (vod) {
         console.log('vod =>', bb[b], b)
-        await DB('vod')
-          .where('barcode', b)
-          .update({
-            stock_daudin: DB.raw(`stock_daudin + ${bb[b]}`)
-          })
+        Stock.save({
+          project_id: vod.project_id,
+          type: 'daudin',
+          quantity: +bb[b],
+          comment: 'boxes'
+        })
         await DB('box_month')
           .where('project_id', vod.project_id)
           .update({
@@ -979,11 +979,13 @@ class Box {
       .all()
 
     const projects = await DB().execute(`
-      SELECT project.id, box_month.project_id, barcode, project.styles, stock_base as stock, stock_daudin
+      SELECT project.id, box_month.project_id, barcode, project.styles, stock_base as stock, stock.stock as stock_daudin
       FROM box_month
       JOIN project ON project.id = box_month.project_id
+      JOIN stock ON stock.project_id = project.id
       JOIN vod ON vod.project_id = box_month.project_id
       WHERE DATE_FORMAT(date, "%Y-%m") = DATE_FORMAT(NOW(), "%Y-%m")
+        AND stock.type = 'daudin'
     `)
     const stocks = {}
     const selected = {}
@@ -998,8 +1000,10 @@ class Box {
     }
 
     const selections = await DB().execute(`
-      SELECT project.id, barcode, project.styles, stock_daudin
+      SELECT project.id, barcode, project.styles, stock.stock as stock_daudin
       FROM vod JOIN project ON project.id = vod.project_id
+        JOIN stock ON stock.project_id = vod.project_id
+        AND stock.type = 'daudin'
       WHERE vod.is_box = 1
     `)
     for (const p in selections) {
@@ -1102,7 +1106,7 @@ class Box {
         }
       }
       if (Object.keys(already).length > 0) {
-        console.log(`Client already have: ${box.id} ${box.user_id} : ${Object.keys(already).join(',')}`)
+        // console.log(`Client already have: ${box.id} ${box.user_id} : ${Object.keys(already).join(',')}`)
       }
 
       if (new Set(barcodes).size !== barcodes.length) {
@@ -1114,11 +1118,9 @@ class Box {
 
       barcodes.push('BOXDIGGERS')
 
-      /**
       if (!boxDispatchs[box.id] && ['3_months', '6_months', '12_months'].includes(box.periodicity)) {
         barcodes.push('TOTEBAGBLANC')
       }
-      **/
 
       const gg = await Box.getMyGoodie(box, goodies, boxDispatchs[box.id] ? Object.keys(boxDispatchs[box.id]) : [])
       if (gg.length === 0) {
@@ -1146,6 +1148,7 @@ class Box {
     }
 
     console.log(goods)
+
     for (const g of Object.keys(goods)) {
       await DB('goodie')
         .where('barcode', g)
@@ -1163,11 +1166,12 @@ class Box {
         })
     }
 
+    console.log(selected)
     for (const s of Object.keys(selected)) {
-      Vod.changeStock({
+      Stock.save({
         project_id: s,
-        transporter: 'daudin',
-        sub: selected[s],
+        type: 'daudin',
+        quantity: -selected[s],
         comment: 'boxes'
       })
     }
@@ -1540,6 +1544,8 @@ class Box {
       for (const barcode of barcodes) {
         const vod = await DB('vod')
           .where('barcode', barcode)
+          .join('stock', 'stock.project_id', 'vod.project_id')
+          .where('stock.type', 'daudin')
           .first()
         if (vod && (vod.stock_daudin) < 1) {
           return { error: 'No quantity' }
@@ -1823,9 +1829,11 @@ class Box {
 
   static async getLastBoxes (params) {
     let projects = DB('box_month')
-      .select('box_month.*', 'p.*', 'v.stock_daudin', 'v.description_fr', 'v.description_en')
+      .select('box_month.*', 'p.*', 'stock.stock as stock_daudin', 'v.description_fr', 'v.description_en')
       .join('project as p', 'p.id', 'project_id')
       .join('vod as v', 'v.project_id', 'p.id')
+      .join('stock', 'stock.project_id', 'v.project_id')
+      .where('stock.type', 'daudin')
       .orderBy('box_month.date', 'desc')
       .limit(100)
 
@@ -1847,10 +1855,12 @@ class Box {
       Utils.shuffle(months[project.date])
     }
     months.selection = await DB('vod')
-      .select('p.id', 'artist_name', 'name', 'picture', 'stock_daudin as stock', 'description_fr', 'description_en')
+      .select('p.id', 'artist_name', 'name', 'picture', 'stock.stock', 'description_fr', 'description_en')
       .join('project as p', 'p.id', 'project_id')
+      .join('stock', 'stock.project_id', 'p.id')
+      .where('stock.type', 'daudin')
       .where('is_shop', true)
-      .where('stock_daudin', '>', 0)
+      .where('stock.stock', '>', 0)
       .where('is_box', true)
       .orderBy(DB.raw('RAND()'))
       .all()
@@ -2038,8 +2048,10 @@ class Box {
           .where('date', params.month)
           .first()
         const vod = await DB('vod')
-          .select('is_box', 'stock_daudin as stock', 'barcode')
-          .where('project_id', p)
+          .select('is_box', 'stock.stock', 'barcode')
+          .join('stock', 'stock.project_id', 'vod.project_id')
+          .where('vod.project_id', p)
+          .where('stock.type', 'daudin')
           .first()
 
         if (!project && !vod.is_box) {
@@ -2073,9 +2085,14 @@ class Box {
         await DB('vod')
           .where('project_id', a)
           .update({
-            stock_daudin: DB.raw('stock_daudin - 1'),
             count_box: DB.raw('count_box + 1')
           })
+        await Stock.save({
+          project_id: a,
+          type: 'daudin',
+          quantity: -1,
+          comment: 'box'
+        })
       }
     }
     for (const s of sub) {
@@ -2083,9 +2100,14 @@ class Box {
         await DB('vod')
           .where('project_id', s)
           .update({
-            stock_daudin: DB.raw('stock_daudin + 1'),
             count_box: DB.raw('count_box - 1')
           })
+        await Stock.save({
+          project_id: s,
+          type: 'daudin',
+          quantity: +1,
+          comment: 'box'
+        })
       }
     }
 
@@ -2671,7 +2693,7 @@ class Box {
       }
     }
 
-    return Utils.toCsv([
+    return Utils.arrayToCsv([
       { index: 'date', name: 'Date' },
       { index: 'barcode', name: 'Barcode' },
       { index: 'ref', name: 'Ref' },
