@@ -1547,9 +1547,8 @@ Admin.extractOrders = async (params) => {
     const refunds = await DB('refund')
       .select('refund.*', 'order.currency', 'order.user_id')
       .join('order', 'order.id', 'refund.order_id')
-      .join('order_shop as os', 'os.order_id', 'refund.order_id')
-      .where('os.created_at', '>=', params.start)
-      .where('os.created_at', '<=', `${params.end} 23:59`)
+      .where('refund.created_at', '>=', params.start)
+      .where('refund.created_at', '<=', `${params.end} 23:59`)
       .all()
 
     return Utils.arrayToCsv([
@@ -1663,13 +1662,22 @@ Admin.getOrderShopInvoice = async (id) => {
   return pdf.data
 }
 
-Admin.refundProject = async (id) => {
+Admin.refundProject = async (id, params) => {
   const orders = await Admin.getOrders({ project_id: id, size: 1000 })
 
   let refunds = 0
   for (const i in orders.data) {
     if (orders.data[i].is_paid) {
-      await Admin.cancelOrderShop(orders.data[i].order_shop_id, 'refund')
+      await Admin.cancelOrderShop(orders.data[i].order_shop_id, 'refund', {
+        reason: 'project_failed',
+        comment: params.comment,
+        order_id: orders.data[i].order_id,
+        order_shop_id: orders.data[i].order_shop_id,
+        amount: orders.data[i].os_total,
+        only_history: 'false',
+        credit_note: 'true',
+        cancel_notification: 'true'
+      })
       refunds++
     }
   }
@@ -1694,14 +1702,24 @@ Admin.refundOrder = async (params) => {
     }
 
     const { total: totalOrderShop } = await DB('order_shop').select('total').where('id', params.order_shop_id).first()
+
+    // If amount is greater than total order shop, update the DB and make a notification call.
     if (params.order_shop_id && (params.amount >= totalOrderShop)) {
       await DB('order_shop')
         .where('id', params.order_shop_id)
         .update({
           is_paid: 0,
           ask_cancel: 0,
-          step: 'refunded'
+          step: 'canceled'
         })
+
+      await Notification.new({
+        type: 'my_order_canceled',
+        user_id: order.user_id,
+        order_id: params.id,
+        order_shop_id: params.order_shop_id,
+        alert: 0
+      })
     }
 
     await Order.addRefund(params)
