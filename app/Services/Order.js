@@ -599,7 +599,7 @@ Order.refundOrderShop = async (id, type, params) => {
     }
   }
 
-  if (type === 'cancel') {
+  if (type === 'cancel' || (params && params.cancel_notification === 'true')) {
     const data = {}
     data.type = 'my_order_canceled'
     data.user_id = order.user_id

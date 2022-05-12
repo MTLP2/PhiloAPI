@@ -1666,7 +1666,8 @@ Admin.refundProject = async (id, params) => {
         order_shop_id: orders.data[i].order_shop_id,
         amount: orders.data[i].os_total,
         only_history: 'false',
-        credit_note: 'true'
+        credit_note: 'true',
+        cancel_notification: 'true'
       })
       refunds++
     }
@@ -1692,14 +1693,24 @@ Admin.refundOrder = async (params) => {
     }
 
     const { total: totalOrderShop } = await DB('order_shop').select('total').where('id', params.order_shop_id).first()
+
+    // If amount is greater than total order shop, update the DB and make a notification call.
     if (params.order_shop_id && (params.amount >= totalOrderShop)) {
       await DB('order_shop')
         .where('id', params.order_shop_id)
         .update({
           is_paid: 0,
           ask_cancel: 0,
-          step: 'refunded'
+          step: 'canceled'
         })
+
+      await Notification.new({
+        type: 'my_order_canceled',
+        user_id: order.user_id,
+        order_id: params.id,
+        order_shop_id: params.order_shop_id,
+        alert: 0
+      })
     }
 
     await Order.addRefund(params)
