@@ -435,9 +435,11 @@ Order.exportSales = async (params) => {
   const allLines = {}
   allLines.funding = []
   allLines.limited_edition = []
-  Object.keys(projects).map(p => {
+  allLines.direct_pressing = []
+  allLines.test_pressing = []
+  for (const p of Object.keys(projects)) {
     allLines[projects[p].type].push(projects[p])
-  })
+  }
 
   allLines.limited_edition.sort((a, b) => {
     if (a.name < b.name) { return -1 }
