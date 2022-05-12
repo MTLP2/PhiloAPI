@@ -42,6 +42,10 @@ Whiplash.saveOrder = (params) => {
   })
 }
 
+Whiplash.getItems = () => {
+  return whiplash('items')
+}
+
 Whiplash.validOrder = async (shop, user, items) => {
   const customer = await DB('customer').find(shop.customer_id)
 
