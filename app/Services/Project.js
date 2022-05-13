@@ -8,6 +8,7 @@ const Statement = use('App/Services/Statement')
 const Bid = use('App/Services/Bid')
 const Utils = use('App/Utils')
 const Project = DB('project')
+const JSZip = require('jszip')
 
 Project.setInfos = (p, currencies, sales, styles) => {
   const project = p
@@ -1464,6 +1465,36 @@ Project.listStyles = async () => {
 
 Project.getProjectImages = async (params) => {
   return await DB('project_image').where('project_id', +params.projectId).orderBy('position', 'asc').all()
+}
+
+Project.downloadPromoKit = async (id, force = true) => {
+  const path = `promo-kit/${id}.zip`
+
+  const project = await DB()
+    .table('project')
+    .where('id', id)
+    .first()
+
+  const fileExists = await Storage.fileExists(path, true)
+  if (fileExists) {
+    return Storage.url(path, `Promokit (${project.artist_name} - ${project.name}).zip`)
+  }
+
+  const storageList = await Storage.list(`projects/${project.picture || project.id}`)
+  // Keep only jpg/png files and excluse mini&low images
+  const imagesToZip = storageList.filter(item => !item.path.endsWith('.webp') && !['mini', 'low'].some(i => item.path.includes(i)))
+
+  const zip = new JSZip()
+  for (const image of imagesToZip) {
+    const buffer = await Storage.get(image.path)
+    const fileName = image.path.split('/').pop()
+    zip.file(fileName, buffer)
+  }
+
+  const buffer = await zip.generateAsync({ type: 'nodebuffer' })
+  await Storage.upload(`promo-kit/${id}.zip`, buffer, true)
+
+  return Storage.url(path, `Promokit (${project.artist_name} - ${project.name}).zip`)
 }
 
 module.exports = Project
