@@ -9,6 +9,7 @@ class Category {
     params.query = DB('category')
       .select('id', 'name_en', 'name_fr', 'sub_title_fr', 'sub_title_en', 'is_visible')
       .orderBy('position', 'asc')
+    params.size = 200
     return Utils.getRows(params)
   }
 
