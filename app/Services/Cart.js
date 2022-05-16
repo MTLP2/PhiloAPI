@@ -1589,6 +1589,7 @@ Cart.validPayment = async (orderId, transactionId, status = 'confirmed') => {
           await Sna.sync([{
             ...customer,
             ...shop,
+            email: user.email,
             items: items
           }])
           await DB('order_shop')
