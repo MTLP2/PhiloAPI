@@ -28,7 +28,7 @@ class Invoice {
 
   static async find (id) {
     const invoice = await DB()
-      .select('invoice.*', 'user.name as user_name', 'user.email', 'project.name as project_name', 'project.artist_name')
+      .select('invoice.*', 'user.name as user_name', 'project.name as project_name', 'project.artist_name')
       .from('invoice')
       .leftJoin('user', 'user.id', 'invoice.user_id')
       .leftJoin('project', 'project.id', 'invoice.project_id')
@@ -137,6 +137,8 @@ class Invoice {
     invoice.name = params.name
     invoice.date = params.date
     invoice.status = params.status
+    invoice.email = params.email
+    invoice.payment_days = params.payment_days
     invoice.compatibility = params.compatibility
     invoice.sub_total = params.sub_total || 0
     invoice.margin = params.margin || 0
@@ -737,6 +739,25 @@ class Invoice {
       { name: 'Pays', index: 'country' },
       { name: 'Devise', index: 'currency' }
     ], invoices)
+  }
+
+  static async followUp (params) {
+    const invoices = DB('invoice')
+      .select('*')
+      .whereNotNull('email')
+      .where('status', 'invoiced')
+      .whereNotExists(query =>
+        query.from('notification')
+          .where('type', 'follow_up')
+          .whereRaw('invoice_id = invoice.id')
+          .whereRaw('DATE_ADD(date, INTERVAL 7 DAY) > NOW()')
+      )
+      .whereRaw('DATE_ADD(date, INTERVAL (payment_days + 7) DAY) < NOW()')
+
+    console.log(invoices.toString())
+
+    const res = await invoices.all()
+    return res
   }
 }
 
