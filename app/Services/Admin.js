@@ -848,6 +848,9 @@ Admin.saveVod = async (params) => {
     if (params.transporter_soundmerch) {
       vod.transporters.soundmerch = true
     }
+    if (params.transporter_sna) {
+      vod.transporters.sna = true
+    }
     vod.transporters = JSON.stringify(vod.transporters)
     vod.count_other = params.count_other
     vod.count_distrib = params.count_distrib
