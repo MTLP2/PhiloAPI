@@ -56,7 +56,6 @@ class Sna {
           }
         }
 
-        console.log(data)
         dispatchs.push(data)
       }
 
