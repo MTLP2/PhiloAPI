@@ -257,7 +257,7 @@ class Daudin {
     }
 
     const shops = await DB('order_shop')
-      .select('order_shop.id', 'shipping', 'shipping_type', 'order_shop.currency', 'sub_total', 'tax', 'tax_rate', 'total',
+      .select('order_shop.id', 'order_shop.order_id', 'shipping', 'shipping_type', 'order_shop.currency', 'sub_total', 'tax', 'tax_rate', 'total',
         'email', 'address', 'customer.name as customer_name', 'firstname', 'lastname', 'user_id',
         'city', 'zip_code', 'ue', 'state', 'customer.country_id', 'phone', 'address_pickup', 'user.email',
         'promo_code.gift')
@@ -296,6 +296,18 @@ class Daudin {
           order.address2 = split.length > 1 ? split[1] : pickup.number
         }
 
+        if (!(item.item_barcode || item.barcode)) {
+          await Notification.sendEmail({
+            to: 'victor@diggersfactory.com',
+            subject: `Problem with Daudin : ${order.id}`,
+            html: `<ul>
+              <li>Order Id : https://www.diggersfactory.com/sheraf/order/${order.order_id}</li>
+              <li>Shop Id : ${order.id}</li>
+              <li>Error: No barcode</li>
+            </ul>`
+          })
+          continue
+        }
         const barcodes = (item.item_barcode || item.barcode).split(',')
         for (const barcode of barcodes) {
           lines.push({
