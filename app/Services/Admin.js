@@ -1523,12 +1523,19 @@ Admin.getOrder = async (id) => {
     .all()
 
   const orderShops = await DB('order_shop')
-    .select('order_shop.*', 'user.name', 'payment.code as shipping_payment_id', DB.raw('CONCAT(\'M\', order_manual.id) as order_manual_id'))
+    .select('order_shop.*', 'user.name')
     .join('user', 'user.id', 'order_shop.shop_id')
-    .leftJoin('order_manual', 'order_manual.order_shop_id', 'order_shop.id')
     .leftJoin('payment', 'payment.id', 'order_shop.shipping_payment_id')
     .where('order_id', id)
     .belongsTo('customer')
+    .all()
+
+  const orderManuals = await DB('order_manual')
+    .whereIn('order_shop_id', orderShops.map(s => s.id))
+    .all()
+
+  const payments = await DB('payment')
+    .whereIn('order_shop_id', orderShops.map(s => s.id))
     .all()
 
   const orderRefunds = await Order.getRefunds({ id: id })
@@ -1537,6 +1544,8 @@ Admin.getOrder = async (id) => {
   order.shipping = 0
   for (const shop of orderShops) {
     shop.notifications = orderNotifications.filter(notification => notification.order_shop_id === shop.id)
+    shop.payments = payments.filter(p => p.order_shop_id === shop.id)
+    shop.order_manual = orderManuals.filter(o => o.order_shop_id === shop.id)
 
     shop.items = []
     shop.address_pickup = shop.shipping_type === 'pickup' ? JSON.parse(shop.address_pickup) : {}
