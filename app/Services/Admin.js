@@ -1766,7 +1766,7 @@ Admin.refundProject = async (id, params) => {
         })
         refunds++
       } catch (err) {
-        ordersFailed.push({ order_shop_id: orders.data[i].order_shop_id, order_id: orders.data[i].order_id, error: err.response.message || err.message })
+        ordersFailed.push({ order_shop_id: orders.data[i].order_shop_id, order_id: orders.data[i].order_id, error: (err.response && err.response.message) || err.message })
       }
     }
   }
