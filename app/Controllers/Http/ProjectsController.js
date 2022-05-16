@@ -5,6 +5,7 @@ const Vod = use('App/Services/Vod')
 const Song = use('App/Services/Song')
 const Category = use('App/Services/Category')
 const Statement = use('App/Services/Statement')
+const ApiError = use('App/ApiError')
 const Utils = use('App/Utils')
 
 class ProjectsController {
@@ -43,6 +44,9 @@ class ProjectsController {
   }
 
   find ({ params, user }) {
+    if (isNaN(params.id)) {
+      throw new ApiError(400)
+    }
     return Project.find(params.id, { ...params, ...user })
   }
 
