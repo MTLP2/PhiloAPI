@@ -818,6 +818,7 @@ User.unsubscribeNewsletter = async (params) => {
 
   if (user) {
     user.unsubscribed = true
+    user.date_unsub = Utils.date({ time: false })
     await user.save()
 
     // update customer.io
