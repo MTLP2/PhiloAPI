@@ -2073,7 +2073,8 @@ Admin.saveUser = async (params) => {
   }
 
   if (params.image) {
-    await User.updatePicture(params.id, params)
+    const buffer = Buffer.from(params.image, 'base64')
+    await User.updatePicture(params.id, buffer)
   }
 
   await DB('notifications')
