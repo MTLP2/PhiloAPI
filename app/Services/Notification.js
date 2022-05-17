@@ -37,6 +37,7 @@ Notification.new = (params) => {
       order_box_id: (params.order_box_id !== undefined) ? params.order_box_id : null,
       box_dispatch_id: (params.box_dispatch_id !== undefined) ? params.box_dispatch_id : null,
       payment_id: (params.payment_id !== undefined) ? params.payment_id : null,
+      invoice_id: (params.invoice_id !== undefined) ? params.invoice_id : null,
       date: (params.date !== undefined) ? params.date : null,
       alert: (params.alert !== undefined) ? params.alert : 1,
       email: (params.email !== undefined) ? params.email : 1,
@@ -64,9 +65,14 @@ Notification.exist = (params) =>
 Notification.email = async (params, send = true) => {
   const p = params
 
-  p.to = p.user.email
+  if (p.user.email) {
+    p.to = p.user.email
+  }
   if (p.user.emails) {
     p.to += ',' + p.user.emails
+  }
+  if (params.to) {
+    p.to = params.to
   }
 
   if (!p.to) {
@@ -75,7 +81,7 @@ Notification.email = async (params, send = true) => {
   if (p.type) {
     const template = await DB('email')
       .where('type', params.type)
-      .where('lang', p.user.lang)
+      .where('lang', p.lang)
       .first()
 
     p.subject = template.subject
@@ -111,6 +117,7 @@ Notification.email = async (params, send = true) => {
       message_order: params.message_order,
       days_left: params.days_left,
       order: params.order,
+      invoice: params.invoice,
       tracking_link: params.tracking_link,
       order_items: params.order_items,
       order_refused_items: params.order_refused_items,
