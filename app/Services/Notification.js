@@ -12,14 +12,17 @@ const api = new APIClient(Env.get('CIO_APP_KEY'), { region: RegionEU })
 Notification.add = async (params) => {
   const exist = await Notification.exist(params)
   if (!exist) {
+    console.log('doesnot exist')
     return Notification.new(params)
   } else {
+    console.log('exist')
     return false
   }
 }
 
-Notification.new = (params) => {
-  return DB('notification')
+Notification.new = async (params) => {
+  console.log('🚀 ~ file: Notification.js ~ line 24 ~ params', params)
+  const res = await DB('notification')
     .insert({
       type: params.type,
       user_id: params.user_id,
@@ -45,6 +48,9 @@ Notification.new = (params) => {
       updated_at: Utils.date(),
       new: 1
     })
+  console.log('🚀 ~ file: Notification.js ~ line 26 ~ Notification.new= ~ res', res)
+
+  return res
 }
 
 Notification.exist = (params) =>

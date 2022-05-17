@@ -1204,13 +1204,13 @@ class Production {
           query.where('prod.order_form', '=', true)
         })
       })
-      .whereRaw('production_action.created_at < (NOW() - INTERVAL 7 DAY)')
+      .whereRaw('production_action.created_at < (NOW() - INTERVAL 4 DAY)')
       .where('prod.notif', true)
       .whereNotExists(query => {
         query.from('notification')
           .whereRaw('prod_id = prod.id')
           .where('type', 'production_preprod_todo')
-          .whereRaw('created_at > (NOW() - INTERVAL 7 DAY)')
+          .whereRaw('created_at > (NOW() - INTERVAL 4 DAY)')
       })
       .all()
     for (const prod of prods2) {

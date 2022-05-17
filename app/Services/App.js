@@ -335,6 +335,20 @@ App.notification = async (notif, test = false) => {
       .join('user', 'user.id', 'production.resp_id')
       .first()
 
+    const toDoActions = await DB('production_action as pa')
+      .select('pa.type')
+      .where('pa.production_id', n.prod_id)
+      .where('pa.for', 'artist')
+      .where('pa.status', 'to_do')
+      .where('pa.category', 'preprod')
+      .all()
+
+    data.to_do_preprod = '<ul>'
+    for (const { type } of toDoActions) {
+      data.to_do_preprod += `<li>${Antl.forLocale(data.user.lang).formatMessage(`production.${type}`)}</li>`
+    }
+    data.to_do_preprod += '</ul>'
+
     data.resp = `<a href="mailto:${prod.resp_email}">${prod.resp}</a>`
   }
   if (n.order_id) {
