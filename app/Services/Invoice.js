@@ -1,6 +1,7 @@
 const DB = use('App/DB')
 const Utils = use('App/Utils')
 const Customer = use('App/Services/Customer')
+const Notification = use('App/Services/Notification')
 const Antl = use('Antl')
 const ApiError = use('App/ApiError')
 const View = use('View')
@@ -741,23 +742,54 @@ class Invoice {
     ], invoices)
   }
 
-  static async followUp (params) {
-    const invoices = DB('invoice')
+  static async reminder (params) {
+    const first = await DB('invoice')
       .select('*')
       .whereNotNull('email')
       .where('status', 'invoiced')
+      .whereRaw('DATE_ADD(date, INTERVAL (payment_days + 7) DAY) < NOW()')
       .whereNotExists(query =>
         query.from('notification')
-          .where('type', 'follow_up')
+          .where('type', 'like', 'invoice_reminder%')
+          .whereRaw('invoice_id = invoice.id')
+      )
+      .all()
+
+    for (const f of first) {
+      await Notification.add({
+        type: 'invoice_reminder_first',
+        date: Utils.date({ time: false }),
+        invoice_id: f.id
+      })
+    }
+
+    const second = await DB('invoice')
+      .select('*')
+      .whereNotNull('email')
+      .where('status', 'invoiced')
+      .whereExists(query =>
+        query.from('notification')
+          .where('type', 'like', 'invoice_reminder%')
+          .whereRaw('invoice_id = invoice.id')
+      )
+      .whereNotExists(query =>
+        query.from('notification')
+          .where('type', 'like', 'invoice_reminder%')
           .whereRaw('invoice_id = invoice.id')
           .whereRaw('DATE_ADD(date, INTERVAL 7 DAY) > NOW()')
       )
       .whereRaw('DATE_ADD(date, INTERVAL (payment_days + 7) DAY) < NOW()')
+      .all()
 
-    console.log(invoices.toString())
+    for (const f of second) {
+      await Notification.add({
+        type: 'invoice_reminder_second',
+        date: Utils.date({ time: false }),
+        invoice_id: f.id
+      })
+    }
 
-    const res = await invoices.all()
-    return res
+    return { success: true }
   }
 }
 
