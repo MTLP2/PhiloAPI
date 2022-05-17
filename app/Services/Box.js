@@ -2882,7 +2882,7 @@ class Box {
         cost.shipping = Utils.round(cost.shipping * 1.2)
         cost.price = Utils.round(cost.price * 1.2)
         cost.total = Utils.round(+box.periodicity.split('_')[0] * (cost.shipping + cost.price))
-        cost.tax = Utils.round(cost.total * 0.2)
+        cost.tax = Utils.round(cost.total - cost.total / 1.2)
 
         await DB('box')
           .where('id', box.id)
