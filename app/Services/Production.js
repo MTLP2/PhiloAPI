@@ -233,7 +233,7 @@ class Production {
     item.prod_actions = item.prod.filter(a => a.status === 'to_do').length
     item.postprod_actions = item.postprod.filter(a => a.status === 'to_do').length
 
-    item.dispatches = await DB('production_dispatch').select('type', 'logistician', 'quantity', 'quantity_received', 'tracking', 'date_receipt', 'created_at', 'updated_at').where('production_id', params.id).where('is_delete', 0).all()
+    item.dispatches = await DB('production_dispatch').select('id', 'type', 'logistician', 'quantity', 'quantity_received', 'tracking', 'date_receipt', 'created_at', 'updated_at', 'transporter').where('production_id', params.id).where('is_delete', 0).all()
 
     return item
   }
@@ -549,6 +549,9 @@ class Production {
     let testPressingCustomer
 
     for (const type of ['test_pressing', 'personal_stock']) {
+      if (!params[type]) {
+        continue
+      }
       for (const address of params[type]) {
         let item
 
