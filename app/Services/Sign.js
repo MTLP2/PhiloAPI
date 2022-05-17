@@ -282,6 +282,7 @@ Sign.sendConfirmEmail = (user) =>
     to: user.email,
     type: 'sign_up',
     user,
+    lang: user.lang,
     link: `${config.app.url}/confirmation/${user.confirmCode}`
   })
 
@@ -339,6 +340,7 @@ Sign.forgotPassword = async (params) => {
     to: user.email,
     type: 'forget_password',
     user,
+    lang: user.lang,
     link: `${config.app.url}/reset-password/${user.token_password}`
   })
 
