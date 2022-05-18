@@ -166,7 +166,9 @@ class Production {
 
   static async find (params) {
     const item = await DB('production')
-      .where('id', params.id)
+      .select('production.*', 'vod.currency as vod_currency')
+      .join('vod', 'vod.project_id', 'production.project_id')
+      .where('production.id', params.id)
       .first()
 
     await Utils.checkProjectOwner({ project_id: item.project_id, user: params.user })
@@ -329,6 +331,7 @@ class Production {
     item.date_shipping = params.date_shipping || null
     item.quantity = params.quantity || null
     item.quantity_pressed = params.quantity_pressed || null
+    item.currency = params.currency || null
     item.quote_price = params.quote_price || null
     item.form_price = params.form_price || null
     item.final_price = params.final_price || null
