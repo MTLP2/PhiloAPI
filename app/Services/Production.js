@@ -451,7 +451,11 @@ class Production {
     }
 
     const prod = await DB('production')
-      .where('id', item.production_id)
+      .select('production.project_id', 'resp.email', 'project.name as project_name', 'project.artist_name as artist_name')
+      .join('project', 'project.id', 'production.project_id')
+      .join('vod', 'vod.project_id', 'project.id')
+      .join('user as resp', 'resp.id', 'production.resp_id')
+      .where('production.id', item.production_id)
       .first()
 
     await Utils.checkProjectOwner({ project_id: prod.project_id, user: params.user })
@@ -514,6 +518,18 @@ class Production {
             cat_number: params.cat_number
           })
       }
+    }
+
+    if (params.type === 'payment' && params.status === 'valid') {
+      const html = `<p>The payment for project ${prod.project_name} is now validated.</p>
+      <p>Please click on the link below for production status :</p>
+      <p><a href="https://www.diggersfactory.com/sheraf/project/${prod.project_id}/prod?prod=${prod.id}">Link to the project</a></p>`
+
+      await Notification.sendEmail({
+        to: prod.email,
+        subject: `The payment for project ${prod.project_name} - ${prod.artist_name} has been validated`,
+        html: html
+      })
     }
 
     return { success: true }
