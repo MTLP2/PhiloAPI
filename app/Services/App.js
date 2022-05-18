@@ -336,7 +336,7 @@ App.notification = async (notif, test = false) => {
       .first()
 
     const toDoActions = await DB('production_action as pa')
-      .select('pa.type')
+      // .select('pa.type')
       .where('pa.production_id', n.prod_id)
       .where('pa.for', 'artist')
       .where('pa.status', 'to_do')

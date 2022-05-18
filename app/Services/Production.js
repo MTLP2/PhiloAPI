@@ -1204,20 +1204,69 @@ class Production {
           query.where('prod.order_form', '=', true)
         })
       })
-      .whereRaw('production_action.created_at < (NOW() - INTERVAL 4 DAY)')
+      .whereRaw('production_action.created_at < (NOW() - INTERVAL 5 DAY)')
       .where('prod.notif', true)
       .whereNotExists(query => {
         query.from('notification')
           .whereRaw('prod_id = prod.id')
           .where('type', 'production_preprod_todo')
-          .whereRaw('created_at > (NOW() - INTERVAL 4 DAY)')
+          .whereRaw('created_at > (NOW() - INTERVAL 5 DAY)')
       })
       .all()
+
     for (const prod of prods2) {
       Production.addNotif({
         id: prod.id,
         type: 'preprod_todo',
         date: Utils.date({ time: false })
+      })
+    }
+
+    /**
+     * Lorsqu’une des étapes de préprod n’est pas validée au bout d'un mois
+    **/
+    const prodOneMonth = await DB('production as prod')
+      .select(DB.raw('distinct(prod.id)'), 'project.id as project_id', 'project.name', 'project.artist_name', 'com.email as com_email', 'com.name as com_name', 'resp.email as resp_email', 'resp.name as resp_name')
+      .where('prod.notif', true)
+      .join('production_action', 'production_action.production_id', 'prod.id')
+      .join('project', 'project.id', 'prod.project_id')
+      .join('vod', 'vod.project_id', 'project.id')
+      .join('user as resp', 'resp.id', 'prod.resp_id')
+      .join('user as com', 'com.id', 'vod.com_id')
+      .where('prod.step', 'preprod')
+      .where('production_action.for', 'artist')
+      .where('production_action.status', 'to_do')
+      .where('production_action.category', 'preprod')
+      .where(query => {
+        query.where('production_action.type', '!=', 'order_form')
+        query.orWhere(query => {
+          query.where('production_action.type', '=', 'order_form')
+          query.where('prod.order_form', '=', true)
+        })
+      })
+      .whereRaw('production_action.created_at < (NOW() - INTERVAL 30 DAY)')
+      .whereNotExists(query => {
+        query.from('notification')
+          .whereRaw('prod_id = prod.id')
+          .where('type', 'production_preprod_month_alert')
+      })
+      .all()
+
+    for (const prod of prodOneMonth) {
+      const html = `<p>The project ${prod.name} is in preproduction for for than a month.</p>
+      <p>Please give a deadline of two weeks to the label for the elements before cancellation of the project.</p>
+      <p>
+        <ul>
+          <li>Biz: ${prod.com_name}</li>
+          <li>Prod: ${prod.resp_name}</li>
+        </ul>
+      </p>
+      <p><a href="https://www.diggersfactory.com/sheraf/project/${prod.project_id}/prod?prod=${prod.id}">Link to the project</a></p>`
+
+      await Notification.sendEmail({
+        to: `${prod.com_email},${prod.resp_email}`,
+        subject: `The project ${prod.name} - ${prod.artist_name} is in preprod for more than 30 days`,
+        html: html
       })
     }
 
