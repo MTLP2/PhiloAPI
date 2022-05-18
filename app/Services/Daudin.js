@@ -406,10 +406,10 @@ class Daudin {
       }
 
       if (box.partner === 'passculture') {
-        box.customer_name = 'Rupture Record Store'
-        box.address = '11 rue du Vertbois'
+        box.customer_name = 'Diggers Factory - pass Culture'
+        box.address = '4bis rue du dahomey'
         box.city = 'Paris'
-        box.zip_code = '75003'
+        box.zip_code = '75011'
         box.country = 'FR'
       }
       barcodes.map(code => {
