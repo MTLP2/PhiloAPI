@@ -437,8 +437,10 @@ class Production {
 
   static async saveAction (params) {
     let item = await DB('production_action')
+      .select('production_action.*', 'user.is_admin as user_is_admin')
+      .join('user', 'user.id', params.user.id)
       .where('production_id', params.production_id)
-      .where('type', params.type)
+      .where('production_action.type', params.type)
       .first()
 
     if (!item) {
@@ -461,7 +463,7 @@ class Production {
     await Utils.checkProjectOwner({ project_id: prod.project_id, user: params.user })
 
     if (item.status === 'to_do') {
-      item.status = 'pending'
+      item.status = item.user_is_admin ? params.status : 'pending'
     } else {
       item.status = params.valid === 0 ? 'refused' : params.status
     }
@@ -499,6 +501,7 @@ class Production {
     }
 
     item.updated_at = Utils.date()
+    console.log('item status', item.status)
     await item.save()
 
     if (params.type === 'information' && params.barcode_creation !== undefined) {
