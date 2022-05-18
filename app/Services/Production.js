@@ -333,12 +333,16 @@ class Production {
     item.quantity_pressed = params.quantity_pressed || null
     item.currency = params.currency || null
     item.quote_price = params.quote_price || null
+    item.quote_com = params.quote_com || null
     item.form_price = params.form_price || null
+    item.form_com = params.form_com || null
     item.final_price = params.final_price || null
     item.shipping_final = params.shipping_final || null
+    item.shipping_com = params.shipping_com || null
     item.shipping_estimation = params.shipping_estimation || null
     item.rest_pay_preprod = params.rest_pay_preprod || null
     item.rest_pay_prod = params.rest_pay_prod || null
+    item.cost_comment = params.cost_comment || null
     item.notif = params.notif
     item.updated_at = Utils.date()
 
