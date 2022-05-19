@@ -1,5 +1,5 @@
 {
-  "name": "adonis-fullstack-app",
+  "name": "diggersfactory-api",
   "version": "4.1.0",
   "adonis-version": "4.1.0",
   "description": "Diggers Factory",
@@ -11,10 +11,6 @@
     "lint": "eslint .",
     "fix": "eslint . --fix"
   },
-  "keywords": [
-    "adonisjs",
-    "adonis-app"
-  ],
   "author": "",
   "license": "UNLICENSED",
   "private": true,
