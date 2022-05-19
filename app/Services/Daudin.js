@@ -433,7 +433,7 @@ class Daudin {
     console.log(lines.length)
     const lines2 = []
     for (const line of lines) {
-      if (oo.findIndex(v => parseInt(v) === line.id) === -1) {
+      if (line.country_id !== 'RU' && oo.findIndex(v => parseInt(v) === line.id) === -1) {
         lines2.push(line)
       }
     }
