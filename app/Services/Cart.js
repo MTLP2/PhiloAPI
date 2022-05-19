@@ -1610,7 +1610,7 @@ Cart.validPayment = async (orderId, transactionId, status = 'confirmed') => {
         }
       }
       if (shop.type === 'shop' && shop.transporter === 'diggers') {
-        await ({
+        await Notification.sendEmail({
           to: config.emails.send_vinyl,
           subject: `${shop.id} : Nouvelle commande à envoyer depuis Diggers`,
           html: `<p>OrderShopId : https://www.diggersfactory.com/sheraf/order/${shop.order_id}</p>`
