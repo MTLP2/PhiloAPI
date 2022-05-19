@@ -2,6 +2,7 @@ const Utils = use('App/Utils')
 const request = require('request')
 const ApiError = use('App/ApiError')
 const Env = use('Env')
+const DB = use('App/DB')
 
 class Sna {
   static sync (orders) {
@@ -82,7 +83,7 @@ class Sna {
     })
   }
 
-  static getStock () {
+  static getStockApi () {
     return new Promise((resolve, reject) => {
       request('https://api.snagz.fr/stock', {
         qs: {
@@ -101,6 +102,21 @@ class Sna {
         }
       })
     })
+  }
+
+  static async getStock () {
+    const stock = await Sna.getStockApi()
+    const projects = await DB('project as p')
+      .select('p.id', 'p.artist_name', 'p.name', 'p.picture', 'vod.barcode')
+      .join('vod', 'vod.project_id', 'p.id')
+      .whereIn('barcode', stock.map(s => s.item))
+      .all()
+
+    for (const s in stock) {
+      stock[s].project = projects.find(p => p.barcode === stock[s].item)
+    }
+
+    return stock
   }
 
   static getTransporter (country) {
