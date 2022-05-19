@@ -309,7 +309,7 @@ class Invoice {
       case 'USD':
         invoice.currency = '$'
         break
-      case 'GPD':
+      case 'GBP':
         invoice.currency = '£'
         break
       case 'AUD':
