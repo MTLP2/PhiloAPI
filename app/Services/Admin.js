@@ -1510,7 +1510,10 @@ Admin.getOrder = async (id) => {
     .where('order.id', id)
     .first()
 
-  if (!order) return null
+  if (!order) {
+    throw new ApiError(404)
+  }
+
   order.shops = []
 
   order.invoice = await DB('invoice').where('order_id', id).first()
