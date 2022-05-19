@@ -18,7 +18,7 @@ Notification.add = async (params) => {
   }
 }
 
-Notification.new = async (params) => {
+Notification.new = (params) => {
   return DB('notification')
     .insert({
       type: params.type,
