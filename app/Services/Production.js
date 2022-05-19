@@ -436,6 +436,7 @@ class Production {
   }
 
   static async saveAction (params) {
+    console.log('🚀 ~ file: Production.js ~ line 439 ~ Production ~ saveAction ~ params', params)
     let item = await DB('production_action')
       .select('production_action.*', 'user.is_admin as user_is_admin')
       .join('user', 'user.id', params.user.id)
@@ -462,9 +463,8 @@ class Production {
 
     await Utils.checkProjectOwner({ project_id: prod.project_id, user: params.user })
 
-    if (item.status === 'to_do') {
-      item.status = item.user_is_admin ? params.status : 'pending'
-    } else {
+    item.status = item.user_is_admin ? params.status : 'pending'
+    if (params.type === 'test_pressing') {
       item.status = params.valid === 0 ? 'refused' : params.status
     }
 
@@ -501,7 +501,6 @@ class Production {
     }
 
     item.updated_at = Utils.date()
-    console.log('item status', item.status)
     await item.save()
 
     if (params.type === 'information' && params.barcode_creation !== undefined) {
