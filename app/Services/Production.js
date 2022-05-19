@@ -436,13 +436,14 @@ class Production {
   }
 
   static async saveAction (params) {
-    console.log('🚀 ~ file: Production.js ~ line 439 ~ Production ~ saveAction ~ params', params)
     let item = await DB('production_action')
       .select('production_action.*', 'user.is_admin as user_is_admin')
       .join('user', 'user.id', params.user.id)
       .where('production_id', params.production_id)
       .where('production_action.type', params.type)
       .first()
+
+    console.log('🚀 ~ file: Production.js ~ line 440 ~ Production ~ saveAction ~ item', item)
 
     if (!item) {
       const actions = Production.listActions()
@@ -522,16 +523,25 @@ class Production {
       }
     }
 
-    if (params.type === 'payment' && params.status === 'valid') {
-      const html = `<p>The payment for project ${prod.project_name} is now validated.</p>
+    if (params.status === 'valid') {
+      // Template for email respo prod
+      const sendRespoProdNotif = async () => {
+        const actionType = params.type.replace(/_/g, ' ')
+        const html = `<p>The ${actionType} for project ${prod.project_name} is now validated.</p>
       <p>Please click on the link below for production status :</p>
-      <p><a href="https://www.diggersfactory.com/sheraf/project/${prod.project_id}/prod?prod=${prod.id}">Link to the project</a></p>`
+      <p><a href="https://www.diggersfactory.com/sheraf/project/${prod.project_id}/prod?prod=${item.production_id}">Link to the project</a></p>`
 
-      await Notification.sendEmail({
-        to: prod.email,
-        subject: `The payment for project ${prod.project_name} - ${prod.artist_name} has been validated`,
-        html: html
-      })
+        await Notification.sendEmail({
+          to: prod.email,
+          subject: `The ${actionType} for project ${prod.project_name} - ${prod.artist_name} has been validated`,
+          html: html
+        })
+      }
+
+      // Send valid notif to respo prod for some types
+      if (['payment', 'pressing_proof'].includes(params.type)) {
+        sendRespoProdNotif()
+      }
     }
 
     return { success: true }
