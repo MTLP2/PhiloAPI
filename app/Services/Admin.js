@@ -1472,9 +1472,7 @@ Admin.getOrders = async (params) => {
   }
 
   if (!params.sort) {
-    orders
-      .orderBy('ask_cancel', 'desc')
-      .orderBy('oi.created_at', 'desc')
+    orders.orderBy('order.id', 'desc')
   } else {
     orders.orderBy(params.sort, params.order)
   }
