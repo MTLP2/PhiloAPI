@@ -1299,8 +1299,6 @@ class Production {
       })
     }
 
-    return { prodOneMonth }
-
     /**
      * A envoyer 2 semaines après la validation des TP et validation du BAT
      */
