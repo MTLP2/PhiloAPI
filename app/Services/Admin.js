@@ -280,14 +280,7 @@ Admin.getProject = async (id) => {
   project.com = project.com ? JSON.parse(project.com) : {}
   project.sizes = project.sizes ? JSON.parse(project.sizes) : {}
   project.transporters = project.transporters ? JSON.parse(project.transporters) : {}
-  project.to_whiplash = 0
-  project.to_whiplash_sent = 0
-  project.to_whiplash_uk = 0
-  project.to_whiplash_uk_sent = 0
-  project.to_daudin = 0
-  project.to_daudin_sent = 0
-  project.to_diggers = 0
-  project.to_diggers_sent = 0
+  project.trans = {}
   const barcodes = {}
   project.to_sizes = {}
   for (const order of orders) {
@@ -296,26 +289,19 @@ Admin.getProject = async (id) => {
     }
     project.to_sizes[order.size]++
 
-    if (order.transporter === 'whiplash') {
-      project.to_whiplash += order.quantity
-      if (!order.whiplash_id && order.type === 'vod') {
-        project.to_whiplash_sent += order.quantity
+    if (!order.transporter) {
+      order.transporter = 'daudin'
+    }
+
+    if (!project.trans[order.transporter]) {
+      project.trans[order.transporter] = {
+        orders: 0,
+        to_send: 0
       }
-    } else if (order.transporter === 'whiplash_uk') {
-      project.to_whiplash_uk += order.quantity
-      if (!order.whiplash_id && order.type === 'vod') {
-        project.to_whiplash_uk_sent += order.quantity
-      }
-    } else if (order.transporter === 'daudin' || !order.transporter) {
-      project.to_daudin += order.quantity
-      if (!order.sending && !order.date_export && order.type === 'vod') {
-        project.to_daudin_sent += order.quantity
-      }
-    } else if (order.transporter === 'diggers') {
-      project.to_diggers += order.quantity
-      if (!order.tracking_number) {
-        project.to_diggers_sent += order.quantity
-      }
+    }
+    project.trans[order.transporter].orders += order.quantity
+    if (!order.sending && !order.date_export && order.type === 'vod') {
+      project.trans[order.transporter].to_send += order.quantity
     }
     if (order.item_id) {
       if (!order.item_barcode) {
