@@ -343,6 +343,24 @@ App.notification = async (notif, test = false) => {
       .first()
 
     data.resp = `<a href="mailto:${prod.resp_email}">${prod.resp}</a>`
+
+    if (notif.type === 'production_preprod_todo') {
+      const toDoActions = await DB('production_action as pa')
+        .where('pa.production_id', n.prod_id)
+        .where('pa.for', 'artist')
+        .where('pa.status', 'to_do')
+        .where('pa.category', 'preprod')
+        .where('pa.type', '!=', 'order_form')
+        .all()
+
+      if (toDoActions.length) {
+        data.to_do_preprod = '<ul>'
+        for (const { type } of toDoActions) {
+          data.to_do_preprod += `<li>${Antl.forLocale(data.user.lang).formatMessage(`production.${type}`)}</li>`
+        }
+        data.to_do_preprod += '</ul>'
+      }
+    }
   }
   if (n.order_id) {
     data.order_id = n.order_id

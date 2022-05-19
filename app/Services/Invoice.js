@@ -134,6 +134,7 @@ class Invoice {
     invoice.category = params.category
     invoice.user_id = params.user_id || null
     invoice.project_id = params.project_id || null
+    invoice.production_id = params.production_id || null
     invoice.order_number = params.order_number
     invoice.name = params.name
     invoice.date = params.date
