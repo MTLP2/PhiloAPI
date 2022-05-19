@@ -453,10 +453,11 @@ class Production {
     }
 
     const prod = await DB('production')
-      .select('production.project_id', 'resp.email', 'project.name as project_name', 'project.artist_name as artist_name')
+      .select('production.project_id', 'resp.email as resp_email', 'com.email as com_email', 'project.name as project_name', 'project.artist_name as artist_name')
       .join('project', 'project.id', 'production.project_id')
       .join('vod', 'vod.project_id', 'project.id')
       .join('user as resp', 'resp.id', 'production.resp_id')
+      .join('user as com', 'com.id', 'vod.com_id')
       .where('production.id', item.production_id)
       .first()
 
@@ -470,18 +471,41 @@ class Production {
     item.text = params.text
     item.comment = params.comment
 
-    if (!item.check_user && params.status === 'valid') {
-      item.check_date = Utils.date()
-      item.check_user = params.user.id
+    if (params.status === 'valid') {
+      // Only one notif for owner
+      if (!item.check_user) {
+        item.check_date = Utils.date()
+        item.check_user = params.user.id
 
-      Production.notif({
-        production_id: params.id,
-        user_id: params.user.id,
-        type: 'production_valid_action',
-        data: params.type,
-        artist: true
-      })
+        Production.notif({
+          production_id: params.id,
+          user_id: params.user.id,
+          type: 'production_valid_action',
+          data: params.type,
+          artist: true
+        })
+      }
+
+      // Email respo prod / biz
+      const sendRespoProdNotif = async () => {
+        const actionType = params.type.replace(/_/g, ' ')
+        const html = `<p>The ${actionType} for project ${prod.project_name} is now validated.</p>
+      <p>Please click on the link below for production status :</p>
+      <p><a href="https://www.diggersfactory.com/sheraf/project/${prod.project_id}/prod?prod=${item.production_id}">Link to the project</a></p>`
+
+        await Notification.sendEmail({
+          to: params.type === 'payment' ? `${prod.resp_email},${prod.com_email}` : prod.resp_email,
+          subject: `The ${actionType} for project ${prod.project_name} - ${prod.artist_name} has been validated`,
+          html: html
+        })
+      }
+
+      // Send valid notif to respo prod for some types
+      if (['payment', 'pressing_proof', 'artwork'].includes(params.type)) {
+        sendRespoProdNotif()
+      }
     }
+
     if (params.status === 'refused') {
       Production.notif({
         production_id: params.id,
@@ -530,7 +554,7 @@ class Production {
       <p><a href="https://www.diggersfactory.com/sheraf/project/${prod.project_id}/prod?prod=${item.production_id}">Link to the project</a></p>`
 
         await Notification.sendEmail({
-          to: prod.email,
+          to: params.type === 'payment' ? `${prod.resp_email},${prod.com_email}` : prod.resp_email,
           subject: `The ${actionType} for project ${prod.project_name} - ${prod.artist_name} has been validated`,
           html: html
         })
