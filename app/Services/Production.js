@@ -443,8 +443,6 @@ class Production {
       .where('production_action.type', params.type)
       .first()
 
-    console.log('🚀 ~ file: Production.js ~ line 440 ~ Production ~ saveAction ~ item', item)
-
     if (!item) {
       const actions = Production.listActions()
       const action = actions.find(action => action.type === params.type)

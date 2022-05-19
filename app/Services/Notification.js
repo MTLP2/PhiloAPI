@@ -19,7 +19,7 @@ Notification.add = async (params) => {
 }
 
 Notification.new = async (params) => {
-  const res = await DB('notification')
+  return DB('notification')
     .insert({
       type: params.type,
       user_id: params.user_id,
@@ -45,8 +45,6 @@ Notification.new = async (params) => {
       updated_at: Utils.date(),
       new: 1
     })
-
-  return res
 }
 
 Notification.exist = (params) =>
