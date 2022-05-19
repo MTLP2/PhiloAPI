@@ -537,7 +537,7 @@ class Production {
       }
 
       // Send valid notif to respo prod for some types
-      if (['payment', 'pressing_proof'].includes(params.type)) {
+      if (['payment', 'pressing_proof', 'artwork'].includes(params.type)) {
         sendRespoProdNotif()
       }
     }
