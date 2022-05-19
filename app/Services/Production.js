@@ -1259,7 +1259,7 @@ class Production {
      * Lorsqu’une des étapes de préprod n’est pas validée au bout d'un mois
     **/
     const prodOneMonth = await DB('production as prod')
-      .select(DB.raw('distinct(prod.id)'), 'project.id as project_id', 'project.name', 'project.artist_name', 'com.email as com_email', 'com.name as com_name', 'resp.email as resp_email', 'resp.name as resp_name')
+      .select(DB.raw('distinct(prod.id)'), 'project.id as project_id', 'project.name', 'project.artist_name', 'com.id as com_id', 'com.email as com_email', 'com.name as com_name', 'resp.id as resp_id', 'resp.email as resp_email', 'resp.name as resp_name')
       .where('prod.notif', true)
       .join('production_action', 'production_action.production_id', 'prod.id')
       .join('project', 'project.id', 'prod.project_id')
@@ -1286,22 +1286,20 @@ class Production {
       .all()
 
     for (const prod of prodOneMonth) {
-      const html = `<p>The project ${prod.name} is in preproduction for for than a month.</p>
-      <p>Please give a deadline of two weeks to the label for the elements before cancellation of the project.</p>
-      <p>
-        <ul>
-          <li>Biz: ${prod.com_name}</li>
-          <li>Prod: ${prod.resp_name}</li>
-        </ul>
-      </p>
-      <p><a href="https://www.diggersfactory.com/sheraf/project/${prod.project_id}/prod?prod=${prod.id}">Link to the project</a></p>`
+      await Notification.add({
+        type: 'production_preprod_month_alert',
+        user_id: prod.resp_id,
+        project_id: prod.project_id
+      })
 
-      await Notification.sendEmail({
-        to: `${prod.com_email},${prod.resp_email}`,
-        subject: `The project ${prod.name} - ${prod.artist_name} is in preprod for more than 30 days`,
-        html: html
+      await Notification.add({
+        type: 'production_preprod_month_alert',
+        user_id: prod.com_id,
+        project_id: prod.project_id
       })
     }
+
+    return { prodOneMonth }
 
     /**
      * A envoyer 2 semaines après la validation des TP et validation du BAT
