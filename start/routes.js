@@ -249,6 +249,7 @@ Route.group(() => {
   Route.post('/projects/:id/costs', 'AdminController.storeCosts')
   Route.delete('/projects/:id/picture', 'AdminController.removePicture')
   Route.delete('/projects/:id/costs', 'AdminController.deleteCost')
+  Route.get('/projects/:id/productions', 'AdminController.getProjectProductions')
   Route.get('/projects/:id/costs/:cid/download', 'AdminController.downloadInvoiceCost')
   Route.get('/projects/facebook', 'AdminController.exportFacebookProjects')
   Route.post('/statements', 'AdminController.uploadStatement')

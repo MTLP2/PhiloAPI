@@ -16,6 +16,7 @@ const Excel = require('exceljs')
 const Storage = use('App/Services/Storage')
 const Order = use('App/Services/Order')
 const Stock = use('App/Services/Stock')
+const Production = use('App/Services/Production')
 const Sna = use('App/Services/Sna')
 const cio = use('App/Services/CIO')
 const Env = use('Env')
@@ -4303,6 +4304,11 @@ Admin.removePictureProject = async (id) => {
     })
 
   return { success: true }
+}
+
+Admin.getProjectProductions = async (params) => {
+  const { data: productions } = await Production.all({ project_id: params.id, user: { is_team: false } })
+  return productions
 }
 
 module.exports = Admin

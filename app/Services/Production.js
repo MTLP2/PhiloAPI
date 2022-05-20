@@ -29,7 +29,7 @@ class Production {
     } else {
       params.query.select('production.id', 'production.step', 'production.date_preprod', 'production.date_prod',
         'production.date_postprod', 'project.artist_name', 'project.name as project', 'vod.barcode',
-        'project.picture', 'project.country_id', 'user.name as user')
+        'project.picture', 'project.country_id', 'user.name as user', 'production.name as prod_name', 'production.quantity as prod_quantity')
     }
 
     if (params.type && params.type !== 'all') {
@@ -544,27 +544,6 @@ class Production {
           })
       }
     }
-
-    // if (params.status === 'valid') {
-    //   // Template for email respo prod
-    //   const sendRespoProdNotif = async () => {
-    //     const actionType = params.type.replace(/_/g, ' ')
-    //     const html = `<p>The ${actionType} for project ${prod.project_name} is now validated.</p>
-    //   <p>Please click on the link below for production status :</p>
-    //   <p><a href="https://www.diggersfactory.com/sheraf/project/${prod.project_id}/prod?prod=${item.production_id}">Link to the project</a></p>`
-
-    //     await Notification.sendEmail({
-    //       to: params.type === 'payment' ? `${prod.resp_email},${prod.com_email}` : prod.resp_email,
-    //       subject: `The ${actionType} for project ${prod.project_name} - ${prod.artist_name} has been validated`,
-    //       html: html
-    //     })
-    //   }
-
-    //   // Send valid notif to respo prod for some types
-    //   if (['payment', 'pressing_proof', 'artwork'].includes(params.type)) {
-    //     sendRespoProdNotif()
-    //   }
-    // }
 
     return { success: true }
   }
