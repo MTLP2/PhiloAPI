@@ -1581,12 +1581,21 @@ class Box {
     } else {
       for (const barcode of barcodes) {
         const vod = await DB('vod')
+          .select('stock.project_id', 'stock.stock')
           .where('barcode', barcode)
           .join('stock', 'stock.project_id', 'vod.project_id')
           .where('stock.type', 'daudin')
           .first()
-        if (vod && (vod.stock_daudin) < 1) {
+
+        if (vod && vod.stock < 1) {
           return { error: 'No quantity' }
+        } else {
+          Stock.save({
+            project_id: vod.project_id,
+            type: 'daudin',
+            quantity: -1,
+            comment: 'box'
+          })
         }
       }
       dispatch.step = 'confirmed'
