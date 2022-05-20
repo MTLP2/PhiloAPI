@@ -1289,12 +1289,11 @@ class Production {
     **/
     const prodOneMonth = await DB('production as prod')
       .select(DB.raw('distinct(prod.id)'), 'project.id as project_id', 'project.name', 'project.artist_name', 'com.id as com_id', 'com.email as com_email', 'com.name as com_name', 'resp.id as resp_id', 'resp.email as resp_email', 'resp.name as resp_name')
-      .where('prod.notif', true)
       .join('production_action', 'production_action.production_id', 'prod.id')
       .join('project', 'project.id', 'prod.project_id')
       .join('vod', 'vod.project_id', 'project.id')
       .join('user as resp', 'resp.id', 'prod.resp_id')
-      .join('user as com', 'com.id', 'vod.com_id')
+      .leftJoin('user as com', 'com.id', 'vod.com_id')
       .where('prod.step', 'preprod')
       .where('production_action.for', 'artist')
       .where('production_action.status', 'to_do')
@@ -1321,11 +1320,14 @@ class Production {
         project_id: prod.project_id
       })
 
-      await Notification.add({
-        type: 'production_preprod_month_alert',
-        user_id: prod.com_id,
-        project_id: prod.project_id
-      })
+      // Production can be missing com_id
+      if (prod.com_id) {
+        await Notification.add({
+          type: 'production_preprod_month_alert',
+          user_id: prod.com_id,
+          project_id: prod.project_id
+        })
+      }
     }
 
     /**
