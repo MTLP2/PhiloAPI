@@ -457,7 +457,7 @@ class Production {
       .join('project', 'project.id', 'production.project_id')
       .join('vod', 'vod.project_id', 'project.id')
       .join('user as resp', 'resp.id', 'production.resp_id')
-      .join('user as com', 'com.id', 'vod.com_id')
+      .leftJoin('user as com', 'com.id', 'vod.com_id')
       .where('production.id', item.production_id)
       .first()
 
@@ -477,13 +477,16 @@ class Production {
         item.check_date = Utils.date()
         item.check_user = params.user.id
 
-        Production.notif({
-          production_id: params.id,
-          user_id: params.user.id,
-          type: 'production_valid_action',
-          data: params.type,
-          artist: true
-        })
+        // No notification if pressing_proof
+        if (params.type !== 'pressing_proof') {
+          Production.notif({
+            production_id: params.id,
+            user_id: params.user.id,
+            type: 'production_valid_action',
+            data: params.type,
+            artist: true
+          })
+        }
       }
 
       // Email respo prod / biz for some types
