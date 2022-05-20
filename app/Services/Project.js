@@ -1309,6 +1309,33 @@ Project.getStats = async (params) => {
   })
 }
 
+Project.getStats2 = async (params) => {
+  let projects = DB('project')
+    .select('project.name', 'project.id', 'vod.currency', 'vod.fee_date')
+    .join('vod', 'vod.project_id', 'project.id')
+    .where('is_delete', '!=', '1')
+
+  if (params.id === 'all') {
+    projects.where('user_id', params.user.id)
+  } else {
+    projects.where('project.id', params.id)
+  }
+
+  projects = Utils.arrayToObject(await projects.all(), 'id')
+
+  const ids = Object.keys(projects)
+
+  const ordersPromise = Project.getOrders({ ids }, projects)
+
+  const [orders] = await Promise.all([ordersPromise])
+  const [orders] = await Promise.all([ordersPromise])
+
+  for (const order of orders) {
+
+  }
+  return { success: true }
+}
+
 Project.getOrdersForTable = async (params) => {
   let pp = DB('project')
     .select('project.name', 'project.id', 'vod.currency', 'vod.fee_date')
@@ -1347,6 +1374,8 @@ Project.getOrders = async (params, projects) => {
 
   if (params.id === 'all') {
     params.query.where('vod.user_id', params.user.id)
+  } else if (params.ids) {
+    params.query.whereIn('order_item.project_id', params.ids)
   } else {
     params.query.where('order_item.project_id', params.id)
   }
