@@ -1325,15 +1325,79 @@ Project.getStats2 = async (params) => {
 
   const ids = Object.keys(projects)
 
-  const ordersPromise = Project.getOrders({ ids }, projects)
+  const ordersPromise = Project.getOrders({ ids, size: 0 }, projects)
 
   const [orders] = await Promise.all([ordersPromise])
-  const [orders] = await Promise.all([ordersPromise])
 
-  for (const order of orders) {
+  const s = {
+    outstanding: {
+      dates: [],
+      all_dates: 0,
+      all: 0
+    },
+    balance: {
+      dates: [],
+      all_dates: 0,
+      all: 0
+    },
+    income: {
+      dates: [],
+      all_dates: 0,
+      all: 0
+    },
+    costs: {
+      dates: [],
+      details: {
+        production: 0,
+        sdrm: 0,
+        mastering: 0,
+        logisitic: 0,
+        storage: 0
+      },
+      all_dates: 0,
+      all: 0
+    },
+    turnover: {
+      site: {
+        dates: [],
+        all_dates: 0,
+        all: 0
+      },
+      box: {
+        dates: [],
+        all_dates: 0,
+        all: 0
+      },
+      distrib: {
+        dates: [],
+        all_dates: 0,
+        all: 0
+      }
+    },
+    quantity: {
+      site: {
+        dates: [],
+        all_dates: 0,
+        all: 0
+      },
+      box: {
+        dates: [],
+        all_dates: 0,
+        all: 0
+      },
+      distrib: {
+        dates: [],
+        all_dates: 0,
+        all: 0
+      }
+    }
+  }
+
+  console.log(orders.data.length)
+  for (const order of orders.data) {
 
   }
-  return { success: true }
+  return s
 }
 
 Project.getOrdersForTable = async (params) => {
