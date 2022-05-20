@@ -1587,7 +1587,7 @@ class Box {
           .where('stock.type', 'daudin')
           .first()
 
-        if (vod && vod.stock < 1) {
+        if (params.force_quantity !== 'true' && vod && vod.stock < 1) {
           return { error: 'No quantity' }
         } else {
           Stock.save({
