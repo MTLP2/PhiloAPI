@@ -1,6 +1,7 @@
 const DB = use('App/DB')
 const Utils = use('App/Utils')
 const Customer = use('App/Services/Customer')
+const Notification = use('App/Services/Notification')
 const Antl = use('Antl')
 const ApiError = use('App/ApiError')
 const View = use('View')
@@ -28,7 +29,7 @@ class Invoice {
 
   static async find (id) {
     const invoice = await DB()
-      .select('invoice.*', 'user.name as user_name', 'user.email', 'project.name as project_name', 'project.artist_name')
+      .select('invoice.*', 'user.name as user_name', 'project.name as project_name', 'project.artist_name')
       .from('invoice')
       .leftJoin('user', 'user.id', 'invoice.user_id')
       .leftJoin('project', 'project.id', 'invoice.project_id')
@@ -133,10 +134,13 @@ class Invoice {
     invoice.category = params.category
     invoice.user_id = params.user_id || null
     invoice.project_id = params.project_id || null
+    invoice.production_id = params.production_id || null
     invoice.order_number = params.order_number
     invoice.name = params.name
     invoice.date = params.date
     invoice.status = params.status
+    invoice.email = params.email
+    invoice.payment_days = params.payment_days
     invoice.compatibility = params.compatibility
     invoice.sub_total = params.sub_total || 0
     invoice.margin = params.margin || 0
@@ -306,7 +310,7 @@ class Invoice {
       case 'USD':
         invoice.currency = '$'
         break
-      case 'GPD':
+      case 'GBP':
         invoice.currency = '£'
         break
       case 'AUD':
@@ -737,6 +741,56 @@ class Invoice {
       { name: 'Pays', index: 'country' },
       { name: 'Devise', index: 'currency' }
     ], invoices)
+  }
+
+  static async reminder (params) {
+    const first = await DB('invoice')
+      .select('*')
+      .whereNotNull('email')
+      .where('status', 'invoiced')
+      .whereRaw('DATE_ADD(date, INTERVAL (payment_days + 7) DAY) < NOW()')
+      .whereNotExists(query =>
+        query.from('notification')
+          .where('type', 'like', 'invoice_reminder%')
+          .whereRaw('invoice_id = invoice.id')
+      )
+      .all()
+
+    for (const f of first) {
+      await Notification.add({
+        type: 'invoice_reminder_first',
+        date: Utils.date({ time: false }),
+        invoice_id: f.id
+      })
+    }
+
+    const second = await DB('invoice')
+      .select('*')
+      .whereNotNull('email')
+      .where('status', 'invoiced')
+      .whereExists(query =>
+        query.from('notification')
+          .where('type', 'like', 'invoice_reminder%')
+          .whereRaw('invoice_id = invoice.id')
+      )
+      .whereNotExists(query =>
+        query.from('notification')
+          .where('type', 'like', 'invoice_reminder%')
+          .whereRaw('invoice_id = invoice.id')
+          .whereRaw('DATE_ADD(date, INTERVAL 7 DAY) > NOW()')
+      )
+      .whereRaw('DATE_ADD(date, INTERVAL (payment_days + 7) DAY) < NOW()')
+      .all()
+
+    for (const f of second) {
+      await Notification.add({
+        type: 'invoice_reminder_second',
+        date: Utils.date({ time: false }),
+        invoice_id: f.id
+      })
+    }
+
+    return { success: true }
   }
 }
 

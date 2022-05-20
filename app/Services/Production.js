@@ -166,7 +166,9 @@ class Production {
 
   static async find (params) {
     const item = await DB('production')
-      .where('id', params.id)
+      .select('production.*', 'vod.currency as vod_currency')
+      .join('vod', 'vod.project_id', 'production.project_id')
+      .where('production.id', params.id)
       .first()
 
     await Utils.checkProjectOwner({ project_id: item.project_id, user: params.user })
@@ -232,6 +234,8 @@ class Production {
     item.preprod_actions = item.preprod.filter(a => a.status === 'to_do').length
     item.prod_actions = item.prod.filter(a => a.status === 'to_do').length
     item.postprod_actions = item.postprod.filter(a => a.status === 'to_do').length
+
+    item.dispatches = await DB('production_dispatch').select('id', 'type', 'logistician', 'quantity', 'quantity_received', 'tracking', 'date_receipt', 'created_at', 'updated_at', 'transporter').where('production_id', params.id).where('is_delete', 0).all()
 
     return item
   }
@@ -327,13 +331,18 @@ class Production {
     item.date_shipping = params.date_shipping || null
     item.quantity = params.quantity || null
     item.quantity_pressed = params.quantity_pressed || null
+    item.currency = params.currency || null
     item.quote_price = params.quote_price || null
+    item.quote_com = params.quote_com || null
     item.form_price = params.form_price || null
+    item.form_com = params.form_com || null
     item.final_price = params.final_price || null
     item.shipping_final = params.shipping_final || null
+    item.shipping_com = params.shipping_com || null
     item.shipping_estimation = params.shipping_estimation || null
     item.rest_pay_preprod = params.rest_pay_preprod || null
     item.rest_pay_prod = params.rest_pay_prod || null
+    item.cost_comment = params.cost_comment || null
     item.notif = params.notif
     item.updated_at = Utils.date()
 
@@ -428,8 +437,10 @@ class Production {
 
   static async saveAction (params) {
     let item = await DB('production_action')
+      .select('production_action.*', 'user.is_admin as user_is_admin')
+      .join('user', 'user.id', params.user.id)
       .where('production_id', params.production_id)
-      .where('type', params.type)
+      .where('production_action.type', params.type)
       .first()
 
     if (!item) {
@@ -442,14 +453,17 @@ class Production {
     }
 
     const prod = await DB('production')
-      .where('id', item.production_id)
+      .select('production.project_id', 'resp.email', 'project.name as project_name', 'project.artist_name as artist_name')
+      .join('project', 'project.id', 'production.project_id')
+      .join('vod', 'vod.project_id', 'project.id')
+      .join('user as resp', 'resp.id', 'production.resp_id')
+      .where('production.id', item.production_id)
       .first()
 
     await Utils.checkProjectOwner({ project_id: prod.project_id, user: params.user })
 
-    if (item.status === 'to_do') {
-      item.status = 'pending'
-    } else {
+    item.status = item.user_is_admin ? params.status : 'pending'
+    if (params.type === 'test_pressing') {
       item.status = params.valid === 0 ? 'refused' : params.status
     }
 
@@ -507,6 +521,27 @@ class Production {
       }
     }
 
+    if (params.status === 'valid') {
+      // Template for email respo prod
+      const sendRespoProdNotif = async () => {
+        const actionType = params.type.replace(/_/g, ' ')
+        const html = `<p>The ${actionType} for project ${prod.project_name} is now validated.</p>
+      <p>Please click on the link below for production status :</p>
+      <p><a href="https://www.diggersfactory.com/sheraf/project/${prod.project_id}/prod?prod=${item.production_id}">Link to the project</a></p>`
+
+        await Notification.sendEmail({
+          to: prod.email,
+          subject: `The ${actionType} for project ${prod.project_name} - ${prod.artist_name} has been validated`,
+          html: html
+        })
+      }
+
+      // Send valid notif to respo prod for some types
+      if (['payment', 'pressing_proof', 'artwork'].includes(params.type)) {
+        sendRespoProdNotif()
+      }
+    }
+
     return { success: true }
   }
 
@@ -547,6 +582,9 @@ class Production {
     let testPressingCustomer
 
     for (const type of ['test_pressing', 'personal_stock']) {
+      if (!params[type]) {
+        continue
+      }
       for (const address of params[type]) {
         let item
 
@@ -1199,20 +1237,65 @@ class Production {
           query.where('prod.order_form', '=', true)
         })
       })
-      .whereRaw('production_action.created_at < (NOW() - INTERVAL 7 DAY)')
+      .whereRaw('production_action.created_at < (NOW() - INTERVAL 5 DAY)')
       .where('prod.notif', true)
       .whereNotExists(query => {
         query.from('notification')
           .whereRaw('prod_id = prod.id')
           .where('type', 'production_preprod_todo')
-          .whereRaw('created_at > (NOW() - INTERVAL 7 DAY)')
+          .whereRaw('created_at > (NOW() - INTERVAL 5 DAY)')
       })
       .all()
+
     for (const prod of prods2) {
       Production.addNotif({
         id: prod.id,
         type: 'preprod_todo',
         date: Utils.date({ time: false })
+      })
+    }
+
+    /**
+     * Lorsqu’une des étapes de préprod n’est pas validée au bout d'un mois
+    **/
+    const prodOneMonth = await DB('production as prod')
+      .select(DB.raw('distinct(prod.id)'), 'project.id as project_id', 'project.name', 'project.artist_name', 'com.id as com_id', 'com.email as com_email', 'com.name as com_name', 'resp.id as resp_id', 'resp.email as resp_email', 'resp.name as resp_name')
+      .where('prod.notif', true)
+      .join('production_action', 'production_action.production_id', 'prod.id')
+      .join('project', 'project.id', 'prod.project_id')
+      .join('vod', 'vod.project_id', 'project.id')
+      .join('user as resp', 'resp.id', 'prod.resp_id')
+      .join('user as com', 'com.id', 'vod.com_id')
+      .where('prod.step', 'preprod')
+      .where('production_action.for', 'artist')
+      .where('production_action.status', 'to_do')
+      .where('production_action.category', 'preprod')
+      .where(query => {
+        query.where('production_action.type', '!=', 'order_form')
+        query.orWhere(query => {
+          query.where('production_action.type', '=', 'order_form')
+          query.where('prod.order_form', '=', true)
+        })
+      })
+      .whereRaw('production_action.created_at < (NOW() - INTERVAL 30 DAY)')
+      .whereNotExists(query => {
+        query.from('notification')
+          .whereRaw('prod_id = prod.id')
+          .where('type', 'production_preprod_month_alert')
+      })
+      .all()
+
+    for (const prod of prodOneMonth) {
+      await Notification.add({
+        type: 'production_preprod_month_alert',
+        user_id: prod.resp_id,
+        project_id: prod.project_id
+      })
+
+      await Notification.add({
+        type: 'production_preprod_month_alert',
+        user_id: prod.com_id,
+        project_id: prod.project_id
       })
     }
 

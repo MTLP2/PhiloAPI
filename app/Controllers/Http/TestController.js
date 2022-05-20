@@ -3,7 +3,8 @@ const DB = use('App/DB')
 const Utils = use('App/Utils')
 const Vod = use('App/Services/Vod')
 const Stock = use('App/Services/Stock')
-const Daudin = use('App/Services/Daudin')
+const Production = use('App/Services/Production')
+const Notification = use('App/Services/Notification')
 const App = use('App/Services/App')
 
 class TestController {
@@ -12,8 +13,7 @@ class TestController {
       return 'test'
     }
 
-    // return App.alertStock()
-    return Stock.convert()
+    return App.alertStock()
   }
 }
 

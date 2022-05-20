@@ -1,5 +1,5 @@
 {
-  "name": "adonis-fullstack-app",
+  "name": "diggersfactory-api",
   "version": "4.1.0",
   "adonis-version": "4.1.0",
   "description": "Diggers Factory",
@@ -11,10 +11,6 @@
     "lint": "eslint .",
     "fix": "eslint . --fix"
   },
-  "keywords": [
-    "adonisjs",
-    "adonis-app"
-  ],
   "author": "",
   "license": "UNLICENSED",
   "private": true,
@@ -59,7 +55,7 @@
     "paypal-rest-sdk": "^1.8.1",
     "postcode-validator": "^3.3.0",
     "request": "^2.88.2",
-    "sharp": "^0.30.0",
+    "sharp": "^0.30.4",
     "sitemap": "^2.2.0",
     "soap": "^0.33.0",
     "stripe": "^7.15.0",

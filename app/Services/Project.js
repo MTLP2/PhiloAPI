@@ -1456,7 +1456,7 @@ Project.getOrders = async (params, projects) => {
     const feeDate = JSON.parse(projects[o.project_id].fee_date)
     const fee = 1 - (Utils.getFee(feeDate, o.created_at) / 100)
 
-    res.data[oo].tax = Utils.round(o.ue ? o.total * 0.2 : 0)
+    res.data[oo].tax = Utils.round(o.ue ? o.total - o.total / 1.2 : 0)
     res.data[oo].fee = Utils.round((1 - fee) * (o.total - res.data[oo].tax))
     res.data[oo].net = Utils.round(o.total - res.data[oo].tax - res.data[oo].fee)
   }

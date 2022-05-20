@@ -13,6 +13,7 @@ const Statement = use('App/Services/Statement')
 const Production = use('App/Services/Production')
 const Storage = use('App/Services/Storage')
 const MondialRelay = use('App/Services/MondialRelay')
+const Invoice = use('App/Services/Invoice')
 const Cio = use('App/Services/CIO')
 const Excel = require('exceljs')
 const Antl = use('Antl')
@@ -286,9 +287,15 @@ App.notification = async (notif, test = false) => {
     }
   }
 
-  const data = {}
-  data.user = await DB('user').find(n.user_id)
-  const url = data.user.lang === 'fr' ? `${config.app.url}/fr` : config.app.url
+  const data = {
+    lang: 'en',
+    user: {}
+  }
+  if (n.user_id) {
+    data.user = await DB('user').find(n.user_id)
+    data.lang = data.user.lang
+  }
+  const url = data.lang === 'fr' ? `${config.app.url}/fr` : config.app.url
   data.type = n.type
   data.user_id = n.user_id
   data.person = n.person_name
@@ -303,7 +310,7 @@ App.notification = async (notif, test = false) => {
     'production_valid_action',
     'production_refuse_action'
   ].includes(notif.type)) {
-    data.action = Antl.forLocale(data.user.lang).formatMessage(`production.${JSON.parse(notif.data)}`)
+    data.action = Antl.forLocale(data.lang).formatMessage(`production.${JSON.parse(notif.data)}`)
     n.order_id = null
   }
   if ([
@@ -336,6 +343,24 @@ App.notification = async (notif, test = false) => {
       .first()
 
     data.resp = `<a href="mailto:${prod.resp_email}">${prod.resp}</a>`
+
+    if (notif.type === 'production_preprod_todo') {
+      const toDoActions = await DB('production_action as pa')
+        .where('pa.production_id', n.prod_id)
+        .where('pa.for', 'artist')
+        .where('pa.status', 'to_do')
+        .where('pa.category', 'preprod')
+        .where('pa.type', '!=', 'order_form')
+        .all()
+
+      if (toDoActions.length) {
+        data.to_do_preprod = '<ul>'
+        for (const { type } of toDoActions) {
+          data.to_do_preprod += `<li>${Antl.forLocale(data.user.lang).formatMessage(`production.${type}`)}</li>`
+        }
+        data.to_do_preprod += '</ul>'
+      }
+    }
   }
   if (n.order_id) {
     data.order_id = n.order_id
@@ -353,9 +378,9 @@ App.notification = async (notif, test = false) => {
       .all()
 
     for (const i in items) {
-      items[i].date_shipping = moment(items[i].end).locale(data.user.lang).format('MMMM YYYY')
+      items[i].date_shipping = moment(items[i].end).locale(data.lang).format('MMMM YYYY')
       if (!items[i].date_shipping) {
-        items[i].date_shipping = moment(items[i].end).locale(data.user.lang).add(80, 'days').format('MMMM YYYY')
+        items[i].date_shipping = moment(items[i].end).locale(data.lang).add(80, 'days').format('MMMM YYYY')
       }
     }
 
@@ -375,7 +400,6 @@ App.notification = async (notif, test = false) => {
         data.address = Customer.toAddress(customer)
       }
     }
-
     const boxes = await DB('order_box as ob')
       .select('*')
       .where('ob.order_id', n.order_id)
@@ -398,6 +422,7 @@ App.notification = async (notif, test = false) => {
       }
     })
   }
+
   if (n.box_id) {
     data.box = await DB('box').where('id', n.box_id).first()
     data.box.type = data.box.jazz ? 'Jazz Box' : 'Discovery'
@@ -418,7 +443,7 @@ App.notification = async (notif, test = false) => {
 
       data.attachments = [
         {
-          filename: data.user.lang === 'fr' ? 'LaBoxVinyle.pdf' : 'TheVinylBox.pdf',
+          filename: data.lang === 'fr' ? 'LaBoxVinyle.pdf' : 'TheVinylBox.pdf',
           content: card
         }
       ]
@@ -558,6 +583,20 @@ App.notification = async (notif, test = false) => {
           end: moment(n.date).subtract(1, 'months').endOf('month').format('YYYY-MM-DD'),
           auto: true
         })
+      }
+    ]
+  }
+  if (n.invoice_id) {
+    data.from_address = 'nelly@diggersfactory.com'
+    data.invoice = await DB('invoice')
+      .where('id', n.invoice_id)
+      .first()
+    data.lang = data.invoice.lang
+    data.to = data.invoice.email
+    data.attachments = [
+      {
+        filename: `${data.invoice.code}.pdf`,
+        content: await Invoice.download({ params: { id: n.invoice_id, lang: data.lang } })
       }
     ]
   }
