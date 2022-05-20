@@ -8,6 +8,7 @@ const Statement = use('App/Services/Statement')
 const Bid = use('App/Services/Bid')
 const Utils = use('App/Utils')
 const Project = DB('project')
+const moment = require('moment')
 const JSZip = require('jszip')
 
 Project.setInfos = (p, currencies, sales, styles) => {
@@ -1325,78 +1326,133 @@ Project.getStats2 = async (params) => {
 
   const ids = Object.keys(projects)
 
-  const ordersPromise = Project.getOrders({ ids, size: 0 }, projects)
+  const ordersPromise = Project.getOrders({
+    ids: ids,
+    sort: 'id',
+    order: 'asc',
+    size: 0
+  }, projects)
 
   const [orders] = await Promise.all([ordersPromise])
 
+  params.start = '2021-01-01'
+  params.end = moment().format('YYYY-MM-DD 23:59')
+
+  const format = 'YYYY-MM'
+
   const s = {
+    currency: 'EUR',
     outstanding: {
-      dates: [],
-      all_dates: 0,
-      all: 0
+      dates: {},
+      all: 0,
+      total: 0
     },
     balance: {
-      dates: [],
-      all_dates: 0,
-      all: 0
-    },
-    income: {
-      dates: [],
-      all_dates: 0,
-      all: 0
+      dates: {},
+      all: 0,
+      total: 0
     },
     costs: {
-      dates: [],
-      details: {
-        production: 0,
-        sdrm: 0,
-        mastering: 0,
-        logisitic: 0,
-        storage: 0
+      all: {
+        dates: {},
+        all: 0,
+        total: 0
       },
-      all_dates: 0,
-      all: 0
+      production: {
+        dates: {},
+        all: 0,
+        total: 0
+      },
+      sdrm: {
+        dates: {},
+        all: 0,
+        total: 0
+      },
+      mastering: {
+        dates: {},
+        all: 0,
+        total: 0
+      },
+      logistic: {
+        dates: {},
+        all: 0,
+        total: 0
+      },
+      storage: {
+        dates: {},
+        all: 0,
+        total: 0
+      }
     },
-    turnover: {
+    income: {
+      all: {
+        dates: {},
+        all: 0,
+        total: 0
+      },
       site: {
-        dates: [],
-        all_dates: 0,
-        all: 0
+        dates: {},
+        all: 0,
+        total: 0
       },
       box: {
-        dates: [],
-        all_dates: 0,
-        all: 0
+        dates: {},
+        all: 0,
+        total: 0
       },
       distrib: {
-        dates: [],
-        all_dates: 0,
-        all: 0
+        dates: {},
+        all: 0,
+        total: 0
       }
     },
     quantity: {
+      all: {
+        dates: {},
+        all: 0,
+        total: 0
+      },
       site: {
-        dates: [],
-        all_dates: 0,
-        all: 0
+        dates: {},
+        all: 0,
+        total: 0
       },
       box: {
-        dates: [],
-        all_dates: 0,
-        all: 0
+        dates: {},
+        all: 0,
+        total: 0
       },
       distrib: {
-        dates: [],
-        all_dates: 0,
-        all: 0
+        dates: {},
+        all: 0,
+        total: 0
       }
     }
   }
 
-  console.log(orders.data.length)
   for (const order of orders.data) {
+    const date = moment(order.created_at).format(format)
 
+    const value = order.net * order.currency_rate_project
+    if (moment(order.created_at).isBetween(params.start, params.end)) {
+      if (!s.income.site.dates[date]) {
+        s.income.site.dates[date] = 0
+      }
+      s.income.site.dates[date] += value
+      s.income.site.total += value
+
+      if (!s.income.all.dates[date]) {
+        s.income.all.dates[date] = 0
+      }
+      s.income.all.dates[date] += value
+      s.income.all.total += value
+    }
+
+    s.income.site.all += value
+    s.income.all.all += value
   }
+
+  console.log(s)
   return s
 }
 
@@ -1455,6 +1511,10 @@ Project.getOrders = async (params, projects) => {
 
     const feeDate = JSON.parse(projects[o.project_id].fee_date)
     const fee = 1 - (Utils.getFee(feeDate, o.created_at) / 100)
+
+    if (oo.discount_artist) {
+      oo.total -= oo.discount
+    }
 
     res.data[oo].tax = Utils.round(o.ue ? o.total - o.total / 1.2 : 0)
     res.data[oo].fee = Utils.round((1 - fee) * (o.total - res.data[oo].tax))
