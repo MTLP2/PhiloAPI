@@ -501,7 +501,7 @@ class Production {
       }
 
       // Send valid notif to respo prod for some types
-      if (['payment', 'pressing_proof', 'artwork'].includes(params.type)) {
+      if (['payment', 'pressing_proof'].includes(params.type)) {
         sendRespoProdNotif()
       }
     }
@@ -938,6 +938,18 @@ class Production {
           artist: true
         })
       }
+
+      // If artwork file, send an email to respo prod (valid or refused)
+      if (action.type === 'artwork') {
+        Production.notif({
+          production_id: pfile.production_id,
+          user_id: params.user.id,
+          type: params.status === 'valid' ? 'production_valid_file' : 'production_refuse_file',
+          data: file.name,
+          artist: true,
+          resp: true
+        })
+      }
     }
 
     // if its from the team
@@ -1091,6 +1103,17 @@ class Production {
     const user = await DB('user')
       .where('id', params.user_id)
       .first()
+
+    // Bypass Production.notif for resp
+    if (params.resp) {
+      await Notification.add({
+        type: params.type,
+        user_id: prod.resp_id,
+        data: params.data,
+        project_id: prod.project_id,
+        date: Utils.date()
+      })
+    }
 
     if (!user.is_admin || params.type === 'production_step_changed') {
       // prod
