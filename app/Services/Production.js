@@ -486,7 +486,7 @@ class Production {
         })
       }
 
-      // Email respo prod / biz
+      // Email respo prod / biz for some types
       const sendRespoProdNotif = async () => {
         const actionType = params.type.replace(/_/g, ' ')
         const html = `<p>The ${actionType} for project ${prod.project_name} is now validated.</p>
@@ -545,26 +545,26 @@ class Production {
       }
     }
 
-    if (params.status === 'valid') {
-      // Template for email respo prod
-      const sendRespoProdNotif = async () => {
-        const actionType = params.type.replace(/_/g, ' ')
-        const html = `<p>The ${actionType} for project ${prod.project_name} is now validated.</p>
-      <p>Please click on the link below for production status :</p>
-      <p><a href="https://www.diggersfactory.com/sheraf/project/${prod.project_id}/prod?prod=${item.production_id}">Link to the project</a></p>`
+    // if (params.status === 'valid') {
+    //   // Template for email respo prod
+    //   const sendRespoProdNotif = async () => {
+    //     const actionType = params.type.replace(/_/g, ' ')
+    //     const html = `<p>The ${actionType} for project ${prod.project_name} is now validated.</p>
+    //   <p>Please click on the link below for production status :</p>
+    //   <p><a href="https://www.diggersfactory.com/sheraf/project/${prod.project_id}/prod?prod=${item.production_id}">Link to the project</a></p>`
 
-        await Notification.sendEmail({
-          to: params.type === 'payment' ? `${prod.resp_email},${prod.com_email}` : prod.resp_email,
-          subject: `The ${actionType} for project ${prod.project_name} - ${prod.artist_name} has been validated`,
-          html: html
-        })
-      }
+    //     await Notification.sendEmail({
+    //       to: params.type === 'payment' ? `${prod.resp_email},${prod.com_email}` : prod.resp_email,
+    //       subject: `The ${actionType} for project ${prod.project_name} - ${prod.artist_name} has been validated`,
+    //       html: html
+    //     })
+    //   }
 
-      // Send valid notif to respo prod for some types
-      if (['payment', 'pressing_proof', 'artwork'].includes(params.type)) {
-        sendRespoProdNotif()
-      }
-    }
+    //   // Send valid notif to respo prod for some types
+    //   if (['payment', 'pressing_proof', 'artwork'].includes(params.type)) {
+    //     sendRespoProdNotif()
+    //   }
+    // }
 
     return { success: true }
   }
@@ -1178,6 +1178,7 @@ class Production {
     }
 
     if (params.artist && prod.notif) {
+      console.log('here in double check in notif?')
       await Notification.add({
         type: params.type,
         user_id: prod.user_id,
