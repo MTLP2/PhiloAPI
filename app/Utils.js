@@ -321,6 +321,16 @@ Utils.id = async (table) => {
   }
 }
 
+Utils.arrayToObject = (array, key) => {
+  const initialValue = {}
+  return array.reduce((obj, item) => {
+    return {
+      ...obj,
+      [item[key]]: item
+    }
+  }, initialValue)
+}
+
 Utils.getCells = (worksheet, r) => {
   const splitColumn = (column) => {
     let char = ''
