@@ -1178,7 +1178,6 @@ class Production {
     }
 
     if (params.artist && prod.notif) {
-      console.log('here in double check in notif?')
       await Notification.add({
         type: params.type,
         user_id: prod.user_id,
