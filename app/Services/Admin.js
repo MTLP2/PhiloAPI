@@ -23,11 +23,6 @@ const moment = require('moment')
 const Admin = {}
 
 Admin.getProjects = async (params) => {
-  const page = params.page ? params.page : 1
-  const size = params.size ? params.size : 50
-
-  const res = {}
-
   const projects = DB('project')
     .select(
       'vod.*',
@@ -77,45 +72,13 @@ Admin.getProjects = async (params) => {
     projects.whereIn('vod.step', ['in_progress', 'failed', 'successful'])
   }
 
-  let filters
-  try {
-    filters = params.filters ? JSON.parse(params.filters) : null
-  } catch (e) {
-    filters = []
-  }
-
-  if (filters) {
-    filters.map(filter => {
-      if (filter) {
-        if (filter && filter.value.charAt(0) === '=') {
-          projects.where(filter.name, 'LIKE', `${filter.value.substring(1)}`)
-        } else if (filter) {
-          projects.where(filter.name, 'LIKE', `%${filter.value}%`)
-        }
-      }
-    })
-  }
-
-  res.count = await projects.count()
-
   if (!params.sort) {
     projects
-      .orderBy(DB.raw('field(is_notif, 1)'), 'desc')
       .orderBy('project.id', 'desc')
-  } else {
-    projects.orderBy(params.sort, params.order)
   }
-  res.data = await projects
-    .limit(size)
-    .offset((page - 1) * size)
-    .all()
 
-  res.data = res.data.map(p => {
-    const todo = (p.todo) ? JSON.parse(p.todo) : null
-    return Object.assign(p, todo)
-  })
-
-  return res
+  params.query = projects
+  return Utils.getRows(params)
 }
 
 Admin.getWishlists = async (params) => {
