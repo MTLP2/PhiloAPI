@@ -221,12 +221,31 @@ class Box {
     const start = moment().subtract(1, 'years')
     const end = moment()
     const stats = {
+      all: 0,
+      monthly: 0,
+      months_1: 0,
+      months_3: 0,
+      months_6: 0,
+      months_12: 0,
+      selections: 0,
+      vinyl_1: 0,
+      vinyl_2: 0,
       actives: {},
       inactives: {},
       end: {},
       purchaces_site: {},
       purchaces_shop: {}
     }
+
+    stats.selections = await DB('vod')
+      .select('p.id', 'artist_name', 'name', 'picture', 'stock.stock', 'description_fr', 'description_en')
+      .join('project as p', 'p.id', 'project_id')
+      .join('stock', 'stock.project_id', 'p.id')
+      .where('stock.type', 'daudin')
+      .where('is_shop', true)
+      .where('stock.stock', '>', 0)
+      .where('is_box', true)
+      .count()
 
     while (end > start || start.format('M') === end.format('M')) {
       stats.end[start.format('YYYY-MM')] = 0
@@ -241,6 +260,25 @@ class Box {
       const created = moment(box.created_at).format('YYYY-MM')
       const ended = moment(box.end).format('YYYY-MM')
 
+      if (box.step === 'confirmed') {
+        stats.all++
+        if (box.type === 'one') {
+          stats.vinyl_1++
+        } else if (box.type === 'two') {
+          stats.vinyl_2++
+        }
+        if (box.periodicity === 'monthly') {
+          stats.monthly++
+        } if (box.periodicity === '1_month' || box.periodicity === '1_months') {
+          stats.months_1++
+        } else if (box.periodicity === '3_months') {
+          stats.months_3++
+        } else if (box.periodicity === '6_months') {
+          stats.months_6++
+        } else if (box.periodicity === '12_months') {
+          stats.months_12++
+        }
+      }
       if (box.step !== 'confirmed' && box.end && stats.end[ended] !== undefined) {
         stats.end[ended]++
       }
@@ -1543,12 +1581,21 @@ class Box {
     } else {
       for (const barcode of barcodes) {
         const vod = await DB('vod')
+          .select('stock.project_id', 'stock.stock')
           .where('barcode', barcode)
           .join('stock', 'stock.project_id', 'vod.project_id')
           .where('stock.type', 'daudin')
           .first()
-        if (vod && (vod.stock_daudin) < 1) {
+
+        if (params.force_quantity !== 'true' && vod && vod.stock < 1) {
           return { error: 'No quantity' }
+        } else {
+          Stock.save({
+            project_id: vod.project_id,
+            type: 'daudin',
+            quantity: -1,
+            comment: 'box'
+          })
         }
       }
       dispatch.step = 'confirmed'
@@ -2882,7 +2929,7 @@ class Box {
         cost.shipping = Utils.round(cost.shipping * 1.2)
         cost.price = Utils.round(cost.price * 1.2)
         cost.total = Utils.round(+box.periodicity.split('_')[0] * (cost.shipping + cost.price))
-        cost.tax = Utils.round(cost.total * 0.2)
+        cost.tax = Utils.round(cost.total - cost.total / 1.2)
 
         await DB('box')
           .where('id', box.id)

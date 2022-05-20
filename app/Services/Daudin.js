@@ -406,10 +406,10 @@ class Daudin {
       }
 
       if (box.partner === 'passculture') {
-        box.customer_name = 'Rupture Record Store'
-        box.address = '11 rue du Vertbois'
+        box.customer_name = 'Diggers Factory - pass Culture'
+        box.address = '4bis rue du dahomey'
         box.city = 'Paris'
-        box.zip_code = '75003'
+        box.zip_code = '75011'
         box.country = 'FR'
       }
       barcodes.map(code => {
@@ -433,7 +433,7 @@ class Daudin {
     console.log(lines.length)
     const lines2 = []
     for (const line of lines) {
-      if (oo.findIndex(v => parseInt(v) === line.id) === -1) {
+      if (line.country_id !== 'RU' && oo.findIndex(v => parseInt(v) === line.id) === -1) {
         lines2.push(line)
       }
     }

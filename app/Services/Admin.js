@@ -24,11 +24,6 @@ const moment = require('moment')
 const Admin = {}
 
 Admin.getProjects = async (params) => {
-  const page = params.page ? params.page : 1
-  const size = params.size ? params.size : 50
-
-  const res = {}
-
   const projects = DB('project')
     .select(
       'vod.*',
@@ -78,45 +73,13 @@ Admin.getProjects = async (params) => {
     projects.whereIn('vod.step', ['in_progress', 'failed', 'successful'])
   }
 
-  let filters
-  try {
-    filters = params.filters ? JSON.parse(params.filters) : null
-  } catch (e) {
-    filters = []
-  }
-
-  if (filters) {
-    filters.map(filter => {
-      if (filter) {
-        if (filter && filter.value.charAt(0) === '=') {
-          projects.where(filter.name, 'LIKE', `${filter.value.substring(1)}`)
-        } else if (filter) {
-          projects.where(filter.name, 'LIKE', `%${filter.value}%`)
-        }
-      }
-    })
-  }
-
-  res.count = await projects.count()
-
   if (!params.sort) {
     projects
-      .orderBy(DB.raw('field(is_notif, 1)'), 'desc')
       .orderBy('project.id', 'desc')
-  } else {
-    projects.orderBy(params.sort, params.order)
   }
-  res.data = await projects
-    .limit(size)
-    .offset((page - 1) * size)
-    .all()
 
-  res.data = res.data.map(p => {
-    const todo = (p.todo) ? JSON.parse(p.todo) : null
-    return Object.assign(p, todo)
-  })
-
-  return res
+  params.query = projects
+  return Utils.getRows(params)
 }
 
 Admin.getWishlists = async (params) => {
@@ -281,14 +244,7 @@ Admin.getProject = async (id) => {
   project.com = project.com ? JSON.parse(project.com) : {}
   project.sizes = project.sizes ? JSON.parse(project.sizes) : {}
   project.transporters = project.transporters ? JSON.parse(project.transporters) : {}
-  project.to_whiplash = 0
-  project.to_whiplash_sent = 0
-  project.to_whiplash_uk = 0
-  project.to_whiplash_uk_sent = 0
-  project.to_daudin = 0
-  project.to_daudin_sent = 0
-  project.to_diggers = 0
-  project.to_diggers_sent = 0
+  project.trans = {}
   const barcodes = {}
   project.to_sizes = {}
   for (const order of orders) {
@@ -297,26 +253,19 @@ Admin.getProject = async (id) => {
     }
     project.to_sizes[order.size]++
 
-    if (order.transporter === 'whiplash') {
-      project.to_whiplash += order.quantity
-      if (!order.whiplash_id && order.type === 'vod') {
-        project.to_whiplash_sent += order.quantity
+    if (!order.transporter) {
+      order.transporter = 'daudin'
+    }
+
+    if (!project.trans[order.transporter]) {
+      project.trans[order.transporter] = {
+        orders: 0,
+        to_send: 0
       }
-    } else if (order.transporter === 'whiplash_uk') {
-      project.to_whiplash_uk += order.quantity
-      if (!order.whiplash_id && order.type === 'vod') {
-        project.to_whiplash_uk_sent += order.quantity
-      }
-    } else if (order.transporter === 'daudin' || !order.transporter) {
-      project.to_daudin += order.quantity
-      if (!order.sending && !order.date_export && order.type === 'vod') {
-        project.to_daudin_sent += order.quantity
-      }
-    } else if (order.transporter === 'diggers') {
-      project.to_diggers += order.quantity
-      if (!order.tracking_number) {
-        project.to_diggers_sent += order.quantity
-      }
+    }
+    project.trans[order.transporter].orders += order.quantity
+    if (!order.sending && !order.date_export && order.type === 'vod') {
+      project.trans[order.transporter].to_send += order.quantity
     }
     if (order.item_id) {
       if (!order.item_barcode) {
@@ -1487,9 +1436,7 @@ Admin.getOrders = async (params) => {
   }
 
   if (!params.sort) {
-    orders
-      .orderBy('ask_cancel', 'desc')
-      .orderBy('oi.created_at', 'desc')
+    orders.orderBy('order.id', 'desc')
   } else {
     orders.orderBy(params.sort, params.order)
   }
@@ -1511,7 +1458,10 @@ Admin.getOrder = async (id) => {
     .where('order.id', id)
     .first()
 
-  if (!order) return null
+  if (!order) {
+    throw new ApiError(404)
+  }
+
   order.shops = []
 
   order.invoice = await DB('invoice').where('order_id', id).first()
@@ -2074,7 +2024,8 @@ Admin.saveUser = async (params) => {
   }
 
   if (params.image) {
-    await User.updatePicture(params.id, params)
+    const buffer = Buffer.from(params.image, 'base64')
+    await User.updatePicture(params.id, buffer)
   }
 
   await DB('notifications')
