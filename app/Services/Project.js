@@ -1312,8 +1312,8 @@ Project.getStats = async (params) => {
 
 Project.getStats2 = async (params) => {
   let projects = DB('project')
-    .select('project.name', 'project.id', 'storage_costs',
-      'vod.currency', 'vod.fee_date', 'vod.fee_distrib_date', 'payback_distrib')
+    .select('project.name', 'project.id', 'vod.start', 'storage_costs', 'vod.barcode', 'vod.currency',
+      'vod.fee_date', 'vod.fee_distrib_date', 'payback_distrib', 'payback_box')
     .join('vod', 'vod.project_id', 'project.id')
     .where('is_delete', '!=', '1')
 
@@ -1327,24 +1327,12 @@ Project.getStats2 = async (params) => {
 
   const ids = Object.keys(projects)
 
-  /**
-  const ordersPromise = Project.getOrders({
-    ids: ids,
-    sort: 'id',
-    order: 'asc',
-    size: 0
-  }, projects)
-  **/
-
   const ordersPromise = DB('order_item as oi')
-    .select('project_id', 'quantity', 'tips', 'price', 'currency_rate_project',
-      'discount_artist', 'country.ue', 'os.created_at')
+    .select('project_id', 'quantity', 'tips', 'os.tax_rate', 'price',
+      'currency_rate_project', 'discount_artist', 'os.created_at')
     .join('order_shop as os', 'os.id', 'oi.order_shop_id')
-    .join('customer', 'customer.id', 'os.customer_id')
-    .join('country', 'country.id', 'customer.country_id')
     .whereIn('project_id', ids)
     .where('is_paid', true)
-    .where('country.lang', 'en')
     .all()
 
   const statementsPromise = DB('statement')
@@ -1353,126 +1341,108 @@ Project.getStats2 = async (params) => {
     .orderBy('date')
     .all()
 
-  const [orders, statements] = await Promise.all([ordersPromise, statementsPromise])
+  const boxesPromise = DB('box_dispatch')
+    .select('barcodes', 'created_at')
+    .from('box_dispatch')
+    .where(query => {
+      for (const p of Object.values(projects)) {
+        query.orWhere('barcodes', 'like', `%${p.barcode}%`)
+      }
+    })
+    .all()
 
-  params.start = '2018-01-01'
+  const [orders, statements, boxes] = await Promise.all([ordersPromise, statementsPromise, boxesPromise])
+
+  params.start = Object.values(projects)
+    .reduce(function (p, v) {
+      return (p.start < v.start ? p.start : v.start)
+    }).start
   params.end = moment().format('YYYY-MM-DD 23:59')
 
+  const periodicity = 'months'
   const format = 'YYYY-MM'
+
+  const dates = {}
+  const now = moment(params.start)
+  while (now.isSameOrBefore(moment(params.end))) {
+    dates[now.format(format)] = 0
+    now.add(1, periodicity)
+  }
 
   const s = {
     currency: 'EUR',
     outstanding: {
-      dates: {},
-      all: 0,
-      total: 0
+      all: 0, total: 0, dates
     },
     balance: {
-      dates: {},
-      all: 0,
-      total: 0
+      all: 0, total: 0, dates
     },
     payments: {
       all: {
-        dates: {},
-        all: 0,
-        total: 0
+        all: 0, total: 0, dates
       },
       diggers: {
-        dates: {},
-        all: 0,
-        total: 0
+        all: 0, total: 0, dates
       },
       artist: {
-        dates: {},
-        all: 0,
-        total: 0
+        all: 0, total: 0, dates
       }
     },
     costs: {
       all: {
-        dates: {},
-        all: 0,
-        total: 0
+        all: 0, total: 0, dates
       },
       production: {
-        dates: {},
-        all: 0,
-        total: 0
+        all: 0, total: 0, dates
       },
       sdrm: {
-        dates: {},
-        all: 0,
-        total: 0
+        all: 0, total: 0, dates
       },
       mastering: {
-        dates: {},
-        all: 0,
-        total: 0
+        all: 0, total: 0, dates
       },
       logistic: {
-        dates: {},
-        all: 0,
-        total: 0
+        all: 0, total: 0, dates
       },
       distribution: {
-        dates: {},
-        all: 0,
-        total: 0
+        all: 0, total: 0, dates
       },
       storage: {
-        dates: {},
-        all: 0,
-        total: 0
+        all: 0, total: 0, dates
       },
       other: {
-        dates: {},
-        all: 0,
-        total: 0
+        all: 0, total: 0, dates
       }
     },
     income: {
       all: {
-        dates: {},
-        all: 0,
-        total: 0
+        all: 0, total: 0, dates
       },
       site: {
-        dates: {},
-        all: 0,
-        total: 0
+        all: 0, total: 0, dates
+      },
+      tips: {
+        all: 0, total: 0, dates
       },
       box: {
-        dates: {},
-        all: 0,
-        total: 0
+        all: 0, total: 0, dates
       },
       distrib: {
-        dates: {},
-        all: 0,
-        total: 0
+        all: 0, total: 0, dates
       }
     },
     quantity: {
       all: {
-        dates: {},
-        all: 0,
-        total: 0
+        all: 0, total: 0, dates
       },
       site: {
-        dates: {},
-        all: 0,
-        total: 0
+        all: 0, total: 0, dates
       },
       box: {
-        dates: {},
-        all: 0,
-        total: 0
+        all: 0, total: 0, dates
       },
       distrib: {
-        dates: {},
-        all: 0,
-        total: 0
+        all: 0, total: 0, dates
       }
     }
   }
@@ -1480,12 +1450,14 @@ Project.getStats2 = async (params) => {
   s.set = function (type, cat, date, value) {
     if (value) {
       if (moment(date).isBetween(params.start, params.end)) {
+        /**
         if (!s[cat][type].dates[date]) {
           this[cat][type].dates[date] = 0
         }
         if (!s[cat].all.dates[date]) {
           this[cat].all.dates[date] = 0
         }
+        **/
         this[cat][type].dates[date] += value
         this[cat].all.dates[date] += value
         this[cat][type].total += value
@@ -1496,25 +1468,31 @@ Project.getStats2 = async (params) => {
     }
   }
 
-  console.log(ordersPromise)
-
   for (const order of orders) {
     const date = moment(order.created_at).format(format)
 
     const feeDate = JSON.parse(projects[order.project_id].fee_date)
     const fee = 1 - (Utils.getFee(feeDate, order.created_at) / 100)
 
+    order.tax_rate = 1 + order.tax_rate
+    order.total = order.quantity * order.price
+
     if (order.discount_artist) {
       order.total -= order.discount
     }
 
-    order.tax = order.ue ? order.total - order.total / 1.2 : 0
-    order.fee = (1 - fee) * (order.total - order.tax)
-    order.net = order.total - order.tax - order.fee
-
-    const value = order.net * order.currency_rate_project
+    const value = (order.total / order.tax_rate) * order.currency_rate_project * fee
+    const tips = (order.tips / order.tax_rate) * order.currency_rate_project * fee
 
     s.set('site', 'income', date, value)
+    s.set('tips', 'income', date, tips)
+  }
+
+  for (const box of boxes) {
+    const date = moment(box.created_at).format(format)
+    const project = Object.values(projects).find(p => box.barcodes.split(',').includes(p.barcode))
+
+    s.set('box', 'income', date, project.payback_box)
   }
 
   for (const stat of statements) {
@@ -1554,40 +1532,18 @@ Project.getStats2 = async (params) => {
 
       // Distributor storage cost
       s.set('distribution', 'costs', date, dist.storage)
-
-      /**
-      data[`${dist.name}_${dist.item}_quantity`][stat.date] += parseInt(dist.quantity)
-      data[`${dist.name}_${dist.item}_returned`][stat.date] += parseInt(dist.returned)
-
-      let value
-      if (project.payback_distrib) {
-        value = project.payback_distrib * dist.quantity
-      } else {
-        value = parseFloat(dist.total * feeDistrib)
-      }
-
-      data[`${dist.name}_${dist.item}_total`][stat.date] += value
-
-      if (data[`${dist.name}_${dist.item}_digital`] && parseFloat(dist.digital)) {
-        data[`${dist.name}_${dist.item}_digital`][stat.date] += parseFloat(dist.digital * feeDistrib)
-
-        data.distrib_total[stat.date] += parseFloat(dist.digital * feeDistrib)
-        data.distrib_total.total += parseFloat(dist.digital * feeDistrib)
-      }
-
-      data.distrib_quantity[stat.date] += parseInt(dist.quantity)
-      data.distrib_quantity.total += parseInt(dist.quantity)
-
-      data.distrib_returned[stat.date] += parseInt(dist.returned)
-      data.distrib_returned.total += parseInt(dist.returned)
-
-      data.distrib_total[stat.date] += value
-      data.distrib_total.total += value
-      **/
     }
   }
 
-  // console.log(s)
+  s.balance.all = s.income.all.all - s.costs.all.all
+  s.balance.total = s.income.all.total - s.costs.all.total
+  s.outstanding.all = s.balance.all + s.payments.diggers.all - s.payments.artist.all
+
+  for (const date of Object.keys(dates)) {
+    s.balance.dates[date] = s.income.all.dates[date] - s.costs.all.dates[date]
+    // this.balance.dates[date] = this.income.all.dates[date] || 0 - this.costs.all.dates[date] || 0
+  }
+
   return s
 }
 
