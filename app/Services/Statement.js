@@ -119,7 +119,7 @@ class StatementService {
       if (data[d].barcode) {
         data[d].project.where('vod.barcode', 'like', data[d].barcode)
       } else if (data[d].cat_number) {
-        data[d].project.where('project.cat_number', 'like', data[d].cat_number)
+        data[d].project.where('project.cat_number', 'like', data[d].cat_number.split('#')[0])
       }
       data[d].project = await data[d].project.first()
       data[d].total = Utils.round(data[d].total)
@@ -176,11 +176,11 @@ class StatementService {
             name: params.distributor,
             date: params.year + '-' + params.month,
             quantity: ref.quantity,
+            country_id: ref.country_id,
             returned: ref.returned,
             digital: ref.digital,
             total: ref.total,
             storage: ref.storage,
-            // country_id: ref.country_id,
             created_at: Utils.date(),
             updated_at: Utils.date()
           })
@@ -248,10 +248,9 @@ class StatementService {
         columns.barcode = Utils.columnToLetter(colNumber)
       } else if (cell.value === 'CAT NO') {
         columns.catnumber = Utils.columnToLetter(colNumber)
-      } /**
-       else if (cell.value === 'TERRITORY') {
+      } else if (cell.value === 'TERRITORY') {
         columns.country = Utils.columnToLetter(colNumber)
-      } **/
+      }
     }
     if (worksheet.getCell('A10').value === 'ITEM CODE') {
       worksheet.getRow(10).eachCell(getColumns)
@@ -265,17 +264,20 @@ class StatementService {
     worksheet.eachRow(row => {
       const catNumber = row.getCell(columns.catnumber).value
       if (catNumber && catNumber !== 'CAT NO') {
-        if (!data[`${catNumber}`]) {
-          data[`${catNumber}`] = {
+        const country = row.getCell(columns.country).value.trim()
+        const idx = `${catNumber}#${country}`
+        if (!data[idx]) {
+          data[idx] = {
+            country_id: country,
             cat_number: catNumber,
             quantity: 0,
             returned: 0,
             total: 0
           }
         }
-        data[`${catNumber}`].quantity += +row.getCell(columns.quantity).value
-        data[`${catNumber}`].returned += +row.getCell(columns.returned).value
-        data[`${catNumber}`].total += +row.getCell(columns.total).value
+        data[idx].quantity += +row.getCell(columns.quantity).value
+        data[idx].returned += +row.getCell(columns.returned).value
+        data[idx].total += +row.getCell(columns.total).value
       }
     })
 
@@ -381,6 +383,7 @@ class StatementService {
       if (barcode && barcode !== 'UPC') {
         if (!data[barcode]) {
           data[barcode] = {
+            country_id: 'US',
             barcode: barcode,
             quantity: 0,
             returned: 0,
@@ -408,6 +411,7 @@ class StatementService {
       if (barcode && !isNaN(barcode)) {
         if (!data[barcode]) {
           data[barcode] = {
+            country_id: 'US',
             barcode: barcode,
             quantity: 0,
             returned: 0,
@@ -437,6 +441,7 @@ class StatementService {
       if (barcode && barcode !== 'Barcode') {
         if (!data[barcode]) {
           data[barcode] = {
+            country_id: 'AU',
             barcode: barcode,
             quantity: 0,
             returned: 0,
