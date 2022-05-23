@@ -1312,7 +1312,8 @@ Project.getStats = async (params) => {
 
 Project.getStats2 = async (params) => {
   let projects = DB('project')
-    .select('project.name', 'project.id', 'vod.currency', 'vod.fee_date')
+    .select('project.name', 'project.id', 'storage_costs',
+      'vod.currency', 'vod.fee_date', 'vod.fee_distrib_date', 'payback_distrib')
     .join('vod', 'vod.project_id', 'project.id')
     .where('is_delete', '!=', '1')
 
@@ -1326,16 +1327,35 @@ Project.getStats2 = async (params) => {
 
   const ids = Object.keys(projects)
 
+  /**
   const ordersPromise = Project.getOrders({
     ids: ids,
     sort: 'id',
     order: 'asc',
     size: 0
   }, projects)
+  **/
 
-  const [orders] = await Promise.all([ordersPromise])
+  const ordersPromise = DB('order_item as oi')
+    .select('project_id', 'quantity', 'tips', 'price', 'currency_rate_project',
+      'discount_artist', 'country.ue', 'os.created_at')
+    .join('order_shop as os', 'os.id', 'oi.order_shop_id')
+    .join('customer', 'customer.id', 'os.customer_id')
+    .join('country', 'country.id', 'customer.country_id')
+    .whereIn('project_id', ids)
+    .where('is_paid', true)
+    .where('country.lang', 'en')
+    .all()
 
-  params.start = '2021-01-01'
+  const statementsPromise = DB('statement')
+    .whereIn('project_id', ids)
+    .hasMany('statement_distributor', 'distributors')
+    .orderBy('date')
+    .all()
+
+  const [orders, statements] = await Promise.all([ordersPromise, statementsPromise])
+
+  params.start = '2018-01-01'
   params.end = moment().format('YYYY-MM-DD 23:59')
 
   const format = 'YYYY-MM'
@@ -1351,6 +1371,23 @@ Project.getStats2 = async (params) => {
       dates: {},
       all: 0,
       total: 0
+    },
+    payments: {
+      all: {
+        dates: {},
+        all: 0,
+        total: 0
+      },
+      diggers: {
+        dates: {},
+        all: 0,
+        total: 0
+      },
+      artist: {
+        dates: {},
+        all: 0,
+        total: 0
+      }
     },
     costs: {
       all: {
@@ -1378,7 +1415,17 @@ Project.getStats2 = async (params) => {
         all: 0,
         total: 0
       },
+      distribution: {
+        dates: {},
+        all: 0,
+        total: 0
+      },
       storage: {
+        dates: {},
+        all: 0,
+        total: 0
+      },
+      other: {
         dates: {},
         all: 0,
         total: 0
@@ -1430,29 +1477,117 @@ Project.getStats2 = async (params) => {
     }
   }
 
-  for (const order of orders.data) {
-    const date = moment(order.created_at).format(format)
-
-    const value = order.net * order.currency_rate_project
-    if (moment(order.created_at).isBetween(params.start, params.end)) {
-      if (!s.income.site.dates[date]) {
-        s.income.site.dates[date] = 0
+  s.set = function (type, cat, date, value) {
+    if (value) {
+      if (moment(date).isBetween(params.start, params.end)) {
+        if (!s[cat][type].dates[date]) {
+          this[cat][type].dates[date] = 0
+        }
+        if (!s[cat].all.dates[date]) {
+          this[cat].all.dates[date] = 0
+        }
+        this[cat][type].dates[date] += value
+        this[cat].all.dates[date] += value
+        this[cat][type].total += value
+        this[cat].all.total += value
       }
-      s.income.site.dates[date] += value
-      s.income.site.total += value
-
-      if (!s.income.all.dates[date]) {
-        s.income.all.dates[date] = 0
-      }
-      s.income.all.dates[date] += value
-      s.income.all.total += value
+      this[cat][type].all += value
+      this[cat].all.all += value
     }
-
-    s.income.site.all += value
-    s.income.all.all += value
   }
 
-  console.log(s)
+  console.log(ordersPromise)
+
+  for (const order of orders) {
+    const date = moment(order.created_at).format(format)
+
+    const feeDate = JSON.parse(projects[order.project_id].fee_date)
+    const fee = 1 - (Utils.getFee(feeDate, order.created_at) / 100)
+
+    if (order.discount_artist) {
+      order.total -= order.discount
+    }
+
+    order.tax = order.ue ? order.total - order.total / 1.2 : 0
+    order.fee = (1 - fee) * (order.total - order.tax)
+    order.net = order.total - order.tax - order.fee
+
+    const value = order.net * order.currency_rate_project
+
+    s.set('site', 'income', date, value)
+  }
+
+  for (const stat of statements) {
+    const date = moment(stat.date).format(format)
+
+    s.set('production', 'costs', date, stat.production)
+    s.set('sdrm', 'costs', date, stat.sdrm)
+    s.set('mastering', 'costs', date, stat.mastering)
+    s.set('logistic', 'costs', date, stat.logistic)
+    s.set('distribution', 'costs', date, stat.distribution_cost)
+
+    if (projects[stat.project_id].storage_costs) {
+      s.set('storage', 'costs', date, stat.storage)
+    }
+
+    const custom = stat.custom
+      ? JSON.parse(stat.custom).reduce(function (prev, cur) {
+        return prev + +cur.total
+      }, 0)
+      : null
+    s.set('other', 'costs', date, custom)
+
+    s.set('diggers', 'payments', date, stat.payment_diggers)
+    s.set('artist', 'payments', date, stat.payment_artist)
+
+    const feeDistribDate = JSON.parse(projects[stat.project_id].fee_distrib_date)
+    const feeDistrib = 1 - Utils.getFee(feeDistribDate, stat.date) / 100
+
+    for (const dist of stat.distributors) {
+      let value
+      if (projects[stat.project_id].payback_distrib) {
+        value = projects[stat.project_id].payback_distrib * dist.quantity
+      } else {
+        value = dist.total * feeDistrib
+      }
+      s.set('distrib', 'income', date, value)
+
+      // Distributor storage cost
+      s.set('distribution', 'costs', date, dist.storage)
+
+      /**
+      data[`${dist.name}_${dist.item}_quantity`][stat.date] += parseInt(dist.quantity)
+      data[`${dist.name}_${dist.item}_returned`][stat.date] += parseInt(dist.returned)
+
+      let value
+      if (project.payback_distrib) {
+        value = project.payback_distrib * dist.quantity
+      } else {
+        value = parseFloat(dist.total * feeDistrib)
+      }
+
+      data[`${dist.name}_${dist.item}_total`][stat.date] += value
+
+      if (data[`${dist.name}_${dist.item}_digital`] && parseFloat(dist.digital)) {
+        data[`${dist.name}_${dist.item}_digital`][stat.date] += parseFloat(dist.digital * feeDistrib)
+
+        data.distrib_total[stat.date] += parseFloat(dist.digital * feeDistrib)
+        data.distrib_total.total += parseFloat(dist.digital * feeDistrib)
+      }
+
+      data.distrib_quantity[stat.date] += parseInt(dist.quantity)
+      data.distrib_quantity.total += parseInt(dist.quantity)
+
+      data.distrib_returned[stat.date] += parseInt(dist.returned)
+      data.distrib_returned.total += parseInt(dist.returned)
+
+      data.distrib_total[stat.date] += value
+      data.distrib_total.total += value
+      **/
+    }
+  }
+
+  // console.log(s)
   return s
 }
 
