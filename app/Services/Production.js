@@ -8,7 +8,6 @@ const Storage = use('App/Services/Storage')
 const View = use('View')
 const Antl = use('Antl')
 const moment = require('moment')
-const Env = use('Env')
 
 class Production {
   static async all (params) {
