@@ -1064,36 +1064,14 @@ class Production {
     //   }
     // }), true)
 
-    const storageFiles = []
-    //! URLs
-    for (const file of files) {
+    return Promise.all(files.map(async file => {
       const filePath = `files/${file.uuid}`
       const url = await Storage.url(filePath, file.name, 3600)
-      storageFiles.push({
+      return {
         name: file.name,
-        file: url
-      })
-    }
-
-    //! File
-    // let i = 0
-    // for (const file of files) {
-    //   if (i < 1) {
-    //     const filePath = `files/${file.uuid}`
-    //     const storageFile = await Storage.get(filePath, true)
-    //     console.log('🚀 ~ file: Production.js ~ line 1079 ~ Production ~ zipFiles ~ storageFile', storageFile)
-
-    //     // Push the file to the storageFiles array as a nodebuffer
-    //     storageFiles.push(storageFile)
-    //     console.log('done')
-    //     i++
-    //   }
-    // }
-
-    console.log('🚀 ~ file: Production.js ~ line 1068 ~ Production ~ zipFiles ~ storageFiles', storageFiles)
-    console.log('------ END OF THING')
-
-    return storageFiles
+        url: url
+      }
+    }))
   }
 
   static async fileDispatch (params) {
