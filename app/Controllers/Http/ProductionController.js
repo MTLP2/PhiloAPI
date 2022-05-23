@@ -80,7 +80,7 @@ class ProductionController {
     return Production.downloadFile(params)
   }
 
-  async zipFiles ({ params, user }) {
+  async zipFiles ({ params, user, response }) {
     params.user = user
     return Production.zipFiles(params)
   }
