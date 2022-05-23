@@ -29,7 +29,7 @@ class Production {
     } else {
       params.query.select('production.id', 'production.step', 'production.date_preprod', 'production.date_prod',
         'production.date_postprod', 'project.artist_name', 'project.name as project', 'vod.barcode',
-        'project.picture', 'project.country_id', 'user.name as user')
+        'project.picture', 'project.country_id', 'user.name as user', 'production.name as prod_name', 'production.quantity as prod_quantity')
     }
 
     if (params.type && params.type !== 'all') {
@@ -453,10 +453,11 @@ class Production {
     }
 
     const prod = await DB('production')
-      .select('production.project_id', 'resp.email', 'project.name as project_name', 'project.artist_name as artist_name')
+      .select('production.project_id', 'resp.email as resp_email', 'com.email as com_email', 'project.name as project_name', 'project.artist_name as artist_name')
       .join('project', 'project.id', 'production.project_id')
       .join('vod', 'vod.project_id', 'project.id')
       .join('user as resp', 'resp.id', 'production.resp_id')
+      .leftJoin('user as com', 'com.id', 'vod.com_id')
       .where('production.id', item.production_id)
       .first()
 
@@ -470,18 +471,44 @@ class Production {
     item.text = params.text
     item.comment = params.comment
 
-    if (!item.check_user && params.status === 'valid') {
-      item.check_date = Utils.date()
-      item.check_user = params.user.id
+    if (params.status === 'valid') {
+      // Only one notif for owner
+      if (!item.check_user) {
+        item.check_date = Utils.date()
+        item.check_user = params.user.id
 
-      Production.notif({
-        production_id: params.id,
-        user_id: params.user.id,
-        type: 'production_valid_action',
-        data: params.type,
-        artist: true
-      })
+        // No notification if pressing_proof
+        if (params.type !== 'pressing_proof') {
+          Production.notif({
+            production_id: params.id,
+            user_id: params.user.id,
+            type: 'production_valid_action',
+            data: params.type,
+            artist: true
+          })
+        }
+      }
+
+      // Email respo prod / biz for some types
+      const sendRespoProdNotif = async () => {
+        const actionType = params.type.replace(/_/g, ' ')
+        const html = `<p>The ${actionType} for project ${prod.project_name} is now validated.</p>
+      <p>Please click on the link below for production status :</p>
+      <p><a href="https://www.diggersfactory.com/sheraf/project/${prod.project_id}/prod?prod=${item.production_id}">Link to the project</a></p>`
+
+        await Notification.sendEmail({
+          to: params.type === 'payment' ? `${prod.resp_email},${prod.com_email}` : prod.resp_email,
+          subject: `The ${actionType} for project ${prod.project_name} - ${prod.artist_name} has been validated`,
+          html: html
+        })
+      }
+
+      // Send valid notif to respo prod for some types
+      if (['payment', 'pressing_proof'].includes(params.type)) {
+        sendRespoProdNotif()
+      }
     }
+
     if (params.status === 'refused') {
       Production.notif({
         production_id: params.id,
@@ -518,27 +545,6 @@ class Production {
           .update({
             cat_number: params.cat_number
           })
-      }
-    }
-
-    if (params.status === 'valid') {
-      // Template for email respo prod
-      const sendRespoProdNotif = async () => {
-        const actionType = params.type.replace(/_/g, ' ')
-        const html = `<p>The ${actionType} for project ${prod.project_name} is now validated.</p>
-      <p>Please click on the link below for production status :</p>
-      <p><a href="https://www.diggersfactory.com/sheraf/project/${prod.project_id}/prod?prod=${item.production_id}">Link to the project</a></p>`
-
-        await Notification.sendEmail({
-          to: prod.email,
-          subject: `The ${actionType} for project ${prod.project_name} - ${prod.artist_name} has been validated`,
-          html: html
-        })
-      }
-
-      // Send valid notif to respo prod for some types
-      if (['payment', 'pressing_proof', 'artwork'].includes(params.type)) {
-        sendRespoProdNotif()
       }
     }
 
@@ -935,6 +941,18 @@ class Production {
           artist: true
         })
       }
+
+      // If artwork file, send an email to respo prod (valid or refused)
+      if (action.type === 'artwork') {
+        Production.notif({
+          production_id: pfile.production_id,
+          user_id: params.user.id,
+          type: params.status === 'valid' ? 'production_valid_file' : 'production_refuse_file',
+          data: file.name,
+          artist: true,
+          resp: true
+        })
+      }
     }
 
     // if its from the team
@@ -1088,6 +1106,17 @@ class Production {
     const user = await DB('user')
       .where('id', params.user_id)
       .first()
+
+    // Bypass Production.notif for resp
+    if (params.resp) {
+      await Notification.add({
+        type: params.type,
+        user_id: prod.resp_id,
+        data: params.data,
+        project_id: prod.project_id,
+        date: Utils.date()
+      })
+    }
 
     if (!user.is_admin || params.type === 'production_step_changed') {
       // prod
@@ -1260,12 +1289,11 @@ class Production {
     **/
     const prodOneMonth = await DB('production as prod')
       .select(DB.raw('distinct(prod.id)'), 'project.id as project_id', 'project.name', 'project.artist_name', 'com.id as com_id', 'com.email as com_email', 'com.name as com_name', 'resp.id as resp_id', 'resp.email as resp_email', 'resp.name as resp_name')
-      .where('prod.notif', true)
       .join('production_action', 'production_action.production_id', 'prod.id')
       .join('project', 'project.id', 'prod.project_id')
       .join('vod', 'vod.project_id', 'project.id')
       .join('user as resp', 'resp.id', 'prod.resp_id')
-      .join('user as com', 'com.id', 'vod.com_id')
+      .leftJoin('user as com', 'com.id', 'vod.com_id')
       .where('prod.step', 'preprod')
       .where('production_action.for', 'artist')
       .where('production_action.status', 'to_do')
@@ -1292,11 +1320,14 @@ class Production {
         project_id: prod.project_id
       })
 
-      await Notification.add({
-        type: 'production_preprod_month_alert',
-        user_id: prod.com_id,
-        project_id: prod.project_id
-      })
+      // Production can be missing com_id
+      if (prod.com_id) {
+        await Notification.add({
+          type: 'production_preprod_month_alert',
+          user_id: prod.com_id,
+          project_id: prod.project_id
+        })
+      }
     }
 
     /**

@@ -793,6 +793,10 @@ class AdminController {
   getShippingRevenues ({ params }) {
     return Admin.getShippingRevenues(params)
   }
+
+  getProjectProductions ({ params }) {
+    return Admin.getProjectProductions(params)
+  }
 }
 
 module.exports = AdminController
