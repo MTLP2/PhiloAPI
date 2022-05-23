@@ -1312,7 +1312,7 @@ Project.getStats = async (params) => {
 
 Project.getStats2 = async (params) => {
   let projects = DB('project')
-    .select('project.name', 'project.id', 'vod.start', 'storage_costs', 'vod.barcode', 'vod.currency',
+    .select('project.name', 'project.id', 'storage_costs', 'vod.barcode', 'vod.currency',
       'vod.fee_date', 'vod.fee_distrib_date', 'payback_distrib', 'payback_box')
     .join('vod', 'vod.project_id', 'project.id')
     .where('is_delete', '!=', '1')
@@ -1353,14 +1353,17 @@ Project.getStats2 = async (params) => {
 
   const [orders, statements, boxes] = await Promise.all([ordersPromise, statementsPromise, boxesPromise])
 
-  params.start = Object.values(projects)
-    .reduce(function (p, v) {
-      return (p.start < v.start ? p.start : v.start)
-    }).start
-  params.end = moment().format('YYYY-MM-DD 23:59')
-
   const periodicity = 'months'
   const format = 'YYYY-MM'
+
+  if (orders.length > 0) {
+    params.start = orders[0].created_at.substring(0, 10)
+  }
+  if (statements.length > 0 && `${statements[0].date}-01` < params.start) {
+    params.start = `${statements[0].date}-01`
+  }
+  params.start = moment(params.start).subtract(1, 'months').format('YYYY-MM-DD')
+  params.end = moment().format('YYYY-MM-DD 23:59')
 
   const dates = {}
   const now = moment(params.start)
@@ -1372,77 +1375,77 @@ Project.getStats2 = async (params) => {
   const s = {
     currency: 'EUR',
     outstanding: {
-      all: 0, total: 0, dates
+      all: 0, total: 0, dates: { ...dates }
     },
     balance: {
-      all: 0, total: 0, dates
+      all: 0, total: 0, dates: { ...dates }
     },
     payments: {
       all: {
-        all: 0, total: 0, dates
+        all: 0, total: 0, dates: { ...dates }
       },
       diggers: {
-        all: 0, total: 0, dates
+        all: 0, total: 0, dates: { ...dates }
       },
       artist: {
-        all: 0, total: 0, dates
+        all: 0, total: 0, dates: { ...dates }
       }
     },
     costs: {
       all: {
-        all: 0, total: 0, dates
+        all: 0, total: 0, dates: { ...dates }
       },
       production: {
-        all: 0, total: 0, dates
+        all: 0, total: 0, dates: { ...dates }
       },
       sdrm: {
-        all: 0, total: 0, dates
+        all: 0, total: 0, dates: { ...dates }
       },
       mastering: {
-        all: 0, total: 0, dates
+        all: 0, total: 0, dates: { ...dates }
       },
       logistic: {
-        all: 0, total: 0, dates
+        all: 0, total: 0, dates: { ...dates }
       },
       distribution: {
-        all: 0, total: 0, dates
+        all: 0, total: 0, dates: { ...dates }
       },
       storage: {
-        all: 0, total: 0, dates
+        all: 0, total: 0, dates: { ...dates }
       },
       other: {
-        all: 0, total: 0, dates
+        all: 0, total: 0, dates: { ...dates }
       }
     },
     income: {
       all: {
-        all: 0, total: 0, dates
+        all: 0, total: 0, dates: { ...dates }
       },
       site: {
-        all: 0, total: 0, dates
+        all: 0, total: 0, dates: { ...dates }
       },
       tips: {
-        all: 0, total: 0, dates
+        all: 0, total: 0, dates: { ...dates }
       },
       box: {
-        all: 0, total: 0, dates
+        all: 0, total: 0, dates: { ...dates }
       },
       distrib: {
-        all: 0, total: 0, dates
+        all: 0, total: 0, dates: { ...dates }
       }
     },
     quantity: {
       all: {
-        all: 0, total: 0, dates
+        all: 0, total: 0, dates: { ...dates }
       },
       site: {
-        all: 0, total: 0, dates
+        all: 0, total: 0, dates: { ...dates }
       },
       box: {
-        all: 0, total: 0, dates
+        all: 0, total: 0, dates: { ...dates }
       },
       distrib: {
-        all: 0, total: 0, dates
+        all: 0, total: 0, dates: { ...dates }
       }
     }
   }
@@ -1450,14 +1453,6 @@ Project.getStats2 = async (params) => {
   s.set = function (type, cat, date, value) {
     if (value) {
       if (moment(date).isBetween(params.start, params.end)) {
-        /**
-        if (!s[cat][type].dates[date]) {
-          this[cat][type].dates[date] = 0
-        }
-        if (!s[cat].all.dates[date]) {
-          this[cat].all.dates[date] = 0
-        }
-        **/
         this[cat][type].dates[date] += value
         this[cat].all.dates[date] += value
         this[cat][type].total += value
@@ -1486,6 +1481,7 @@ Project.getStats2 = async (params) => {
 
     s.set('site', 'income', date, value)
     s.set('tips', 'income', date, tips)
+    s.set('site', 'quantity', date, order.quantity)
   }
 
   for (const box of boxes) {
@@ -1493,6 +1489,7 @@ Project.getStats2 = async (params) => {
     const project = Object.values(projects).find(p => box.barcodes.split(',').includes(p.barcode))
 
     s.set('box', 'income', date, project.payback_box)
+    s.set('box', 'quantity', date, 1)
   }
 
   for (const stat of statements) {
@@ -1532,6 +1529,8 @@ Project.getStats2 = async (params) => {
 
       // Distributor storage cost
       s.set('distribution', 'costs', date, dist.storage)
+
+      s.set('distrib', 'quantity', date, dist.quantity)
     }
   }
 
@@ -1539,9 +1538,14 @@ Project.getStats2 = async (params) => {
   s.balance.total = s.income.all.total - s.costs.all.total
   s.outstanding.all = s.balance.all + s.payments.diggers.all - s.payments.artist.all
 
+  let balance = 0
+  let outstanding = 0
   for (const date of Object.keys(dates)) {
-    s.balance.dates[date] = s.income.all.dates[date] - s.costs.all.dates[date]
-    // this.balance.dates[date] = this.income.all.dates[date] || 0 - this.costs.all.dates[date] || 0
+    balance += s.income.all.dates[date] - s.costs.all.dates[date]
+    s.balance.dates[date] = balance
+
+    outstanding += s.income.all.dates[date] - s.costs.all.dates[date] - s.payments.diggers.dates[date] - s.payments.artist.dates[date]
+    s.outstanding.dates[date] = outstanding
   }
 
   return s
