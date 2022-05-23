@@ -8,6 +8,7 @@ const Storage = use('App/Services/Storage')
 const View = use('View')
 const Antl = use('Antl')
 const moment = require('moment')
+const Env = use('Env')
 
 class Production {
   static async all (params) {
@@ -1055,12 +1056,24 @@ class Production {
       .where('production_id', params.id)
       .all()
 
-    return Storage.zip(files.map(file => {
-      return {
+    // return Storage.zip(files.map(file => {
+    //   return {
+    //     name: file.name,
+    //     path: `files/${file.uuid}`
+    //   }
+    // }), true)
+
+    const storageFiles = []
+    for (const file of files) {
+      const filePath = `files/${file.uuid}`
+      const url = await Storage.url(filePath, file.name)
+      storageFiles.push({
         name: file.name,
-        path: `files/${file.uuid}`
-      }
-    }), true)
+        file: url
+      })
+    }
+
+    return storageFiles
   }
 
   static async fileDispatch (params) {
