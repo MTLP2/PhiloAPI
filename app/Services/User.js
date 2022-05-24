@@ -686,7 +686,7 @@ User.cancelOrder = async (params) => {
           ask_cancel: 1
         })
       await Notification.sendEmail({
-        to: 'alexis@diggersfactory.com',
+        to: 'support@diggersfactory.com',
         subject: `Demande de remboursement - Commande N°${order.id}`,
         html: `<p>Utilisateur : ${order.user_name}</p>
               <p>Commande : ${order.order_id}</p>
@@ -818,6 +818,7 @@ User.unsubscribeNewsletter = async (params) => {
 
   if (user) {
     user.unsubscribed = true
+    user.date_unsub = Utils.date({ time: false })
     await user.save()
 
     // update customer.io
