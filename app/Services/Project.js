@@ -1328,9 +1328,10 @@ Project.getStats2 = async (params) => {
   const ids = Object.keys(projects)
 
   const ordersPromise = DB('order_item as oi')
-    .select('project_id', 'quantity', 'tips', 'os.tax_rate', 'price',
+    .select('project_id', 'quantity', 'tips', 'os.tax_rate', 'price', 'customer.country_id',
       'currency_rate_project', 'discount_artist', 'os.created_at')
     .join('order_shop as os', 'os.id', 'oi.order_shop_id')
+    .join('customer', 'customer.id', 'os.customer_id')
     .whereIn('project_id', ids)
     .where('is_paid', true)
     .all()
@@ -1342,8 +1343,10 @@ Project.getStats2 = async (params) => {
     .all()
 
   const boxesPromise = DB('box_dispatch')
-    .select('barcodes', 'created_at')
+    .select('barcodes', 'customer.country_id', 'box_dispatch.created_at')
     .from('box_dispatch')
+    .join('box', 'box_dispatch.box_id', 'box.id')
+    .join('customer', 'customer.id', 'box.customer_id')
     .where(query => {
       for (const p of Object.values(projects)) {
         query.orWhere('barcodes', 'like', `%${p.barcode}%`)
@@ -1404,6 +1407,9 @@ Project.getStats2 = async (params) => {
       mastering: {
         all: 0, total: 0, dates: { ...dates }
       },
+      marketing: {
+        all: 0, total: 0, dates: { ...dates }
+      },
       logistic: {
         all: 0, total: 0, dates: { ...dates }
       },
@@ -1419,38 +1425,38 @@ Project.getStats2 = async (params) => {
     },
     income: {
       all: {
-        all: 0, total: 0, dates: { ...dates }
+        all: 0, total: 0, dates: { ...dates }, countries: {}
       },
       site: {
-        all: 0, total: 0, dates: { ...dates }
+        all: 0, total: 0, dates: { ...dates }, countries: {}
       },
       tips: {
         all: 0, total: 0, dates: { ...dates }
       },
       box: {
-        all: 0, total: 0, dates: { ...dates }
+        all: 0, total: 0, dates: { ...dates }, countries: {}
       },
       distrib: {
-        all: 0, total: 0, dates: { ...dates }
+        all: 0, total: 0, dates: { ...dates }, countries: {}
       }
     },
     quantity: {
       all: {
-        all: 0, total: 0, dates: { ...dates }
+        all: 0, total: 0, dates: { ...dates }, countries: {}
       },
       site: {
-        all: 0, total: 0, dates: { ...dates }
+        all: 0, total: 0, dates: { ...dates }, countries: {}
       },
       box: {
-        all: 0, total: 0, dates: { ...dates }
+        all: 0, total: 0, dates: { ...dates }, countries: {}
       },
       distrib: {
-        all: 0, total: 0, dates: { ...dates }
+        all: 0, total: 0, dates: { ...dates }, countries: {}
       }
     }
   }
 
-  s.set = function (type, cat, date, value) {
+  s.setDate = function (type, cat, date, value) {
     if (value) {
       if (moment(date).isBetween(params.start, params.end)) {
         this[cat][type].dates[date] += value
@@ -1461,6 +1467,18 @@ Project.getStats2 = async (params) => {
       this[cat][type].all += value
       this[cat].all.all += value
     }
+  }
+
+  s.setCountry = function (type, cat, country, quantity) {
+    if (!s[cat].all.countries[country]) {
+      s[cat].all.countries[country] = 0
+    }
+    s[cat].all.countries[country] += quantity
+
+    if (!s[cat][type].countries[country]) {
+      s[cat][type].countries[country] = 0
+    }
+    s[cat][type].countries[country] += quantity
   }
 
   for (const order of orders) {
@@ -1479,30 +1497,37 @@ Project.getStats2 = async (params) => {
     const value = (order.total / order.tax_rate) * order.currency_rate_project * fee
     const tips = (order.tips / order.tax_rate) * order.currency_rate_project * fee
 
-    s.set('site', 'income', date, value)
-    s.set('tips', 'income', date, tips)
-    s.set('site', 'quantity', date, order.quantity)
+    s.setDate('site', 'income', date, value)
+    s.setDate('tips', 'income', date, tips)
+    s.setDate('site', 'quantity', date, order.quantity)
+
+    s.setCountry('site', 'income', order.country_id, value)
+    s.setCountry('site', 'quantity', order.country_id, order.quantity)
   }
 
   for (const box of boxes) {
     const date = moment(box.created_at).format(format)
     const project = Object.values(projects).find(p => box.barcodes.split(',').includes(p.barcode))
 
-    s.set('box', 'income', date, project.payback_box)
-    s.set('box', 'quantity', date, 1)
+    s.setDate('box', 'income', date, project.payback_box)
+    s.setDate('box', 'quantity', date, 1)
+
+    s.setCountry('box', 'income', box.country_id, project.payback_box)
+    s.setCountry('box', 'quantity', box.country_id, 1)
   }
 
   for (const stat of statements) {
     const date = moment(stat.date).format(format)
 
-    s.set('production', 'costs', date, stat.production)
-    s.set('sdrm', 'costs', date, stat.sdrm)
-    s.set('mastering', 'costs', date, stat.mastering)
-    s.set('logistic', 'costs', date, stat.logistic)
-    s.set('distribution', 'costs', date, stat.distribution_cost)
+    s.setDate('production', 'costs', date, stat.production)
+    s.setDate('sdrm', 'costs', date, stat.sdrm)
+    s.setDate('marketing', 'costs', date, stat.marketing)
+    s.setDate('mastering', 'costs', date, stat.mastering)
+    s.setDate('logistic', 'costs', date, stat.logistic)
+    s.setDate('distribution', 'costs', date, stat.distribution_cost)
 
     if (projects[stat.project_id].storage_costs) {
-      s.set('storage', 'costs', date, stat.storage)
+      s.setDate('storage', 'costs', date, stat.storage)
     }
 
     const custom = stat.custom
@@ -1510,10 +1535,10 @@ Project.getStats2 = async (params) => {
         return prev + +cur.total
       }, 0)
       : null
-    s.set('other', 'costs', date, custom)
+    s.setDate('other', 'costs', date, custom)
 
-    s.set('diggers', 'payments', date, stat.payment_diggers)
-    s.set('artist', 'payments', date, stat.payment_artist)
+    s.setDate('diggers', 'payments', date, stat.payment_diggers)
+    s.setDate('artist', 'payments', date, stat.payment_artist)
 
     const feeDistribDate = JSON.parse(projects[stat.project_id].fee_distrib_date)
     const feeDistrib = 1 - Utils.getFee(feeDistribDate, stat.date) / 100
@@ -1525,12 +1550,14 @@ Project.getStats2 = async (params) => {
       } else {
         value = dist.total * feeDistrib
       }
-      s.set('distrib', 'income', date, value)
+      s.setDate('distrib', 'income', date, value)
+      s.setCountry('distrib', 'income', dist.country_id, value)
 
       // Distributor storage cost
-      s.set('distribution', 'costs', date, dist.storage)
+      s.setDate('distribution', 'costs', date, dist.storage)
 
-      s.set('distrib', 'quantity', date, dist.quantity)
+      s.setDate('distrib', 'quantity', date, dist.quantity)
+      s.setCountry('distrib', 'quantity', dist.country_id, dist.quantity)
     }
   }
 
