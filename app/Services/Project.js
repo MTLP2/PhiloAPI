@@ -8,6 +8,7 @@ const Statement = use('App/Services/Statement')
 const Bid = use('App/Services/Bid')
 const Utils = use('App/Utils')
 const Project = DB('project')
+const moment = require('moment')
 const JSZip = require('jszip')
 
 Project.setInfos = (p, currencies, sales, styles) => {
@@ -1309,6 +1310,274 @@ Project.getStats = async (params) => {
   })
 }
 
+Project.getStats2 = async (params) => {
+  let projects = DB('project')
+    .select('project.name', 'project.id', 'storage_costs', 'vod.barcode', 'vod.currency',
+      'vod.fee_date', 'vod.fee_distrib_date', 'payback_distrib', 'payback_box')
+    .join('vod', 'vod.project_id', 'project.id')
+    .where('is_delete', '!=', '1')
+
+  if (params.id === 'all') {
+    projects.where('user_id', params.user.id)
+  } else {
+    projects.where('project.id', params.id)
+  }
+
+  projects = Utils.arrayToObject(await projects.all(), 'id')
+
+  const ids = Object.keys(projects)
+
+  const ordersPromise = DB('order_item as oi')
+    .select('project_id', 'quantity', 'tips', 'os.tax_rate', 'price', 'customer.country_id',
+      'currency_rate_project', 'discount_artist', 'os.created_at')
+    .join('order_shop as os', 'os.id', 'oi.order_shop_id')
+    .join('customer', 'customer.id', 'os.customer_id')
+    .whereIn('project_id', ids)
+    .where('is_paid', true)
+    .all()
+
+  const statementsPromise = DB('statement')
+    .whereIn('project_id', ids)
+    .hasMany('statement_distributor', 'distributors')
+    .orderBy('date')
+    .all()
+
+  const boxesPromise = DB('box_dispatch')
+    .select('barcodes', 'customer.country_id', 'box_dispatch.created_at')
+    .from('box_dispatch')
+    .join('box', 'box_dispatch.box_id', 'box.id')
+    .join('customer', 'customer.id', 'box.customer_id')
+    .where(query => {
+      for (const p of Object.values(projects)) {
+        query.orWhere('barcodes', 'like', `%${p.barcode}%`)
+      }
+    })
+    .all()
+
+  const [orders, statements, boxes] = await Promise.all([ordersPromise, statementsPromise, boxesPromise])
+
+  const periodicity = 'months'
+  const format = 'YYYY-MM'
+
+  if (orders.length > 0) {
+    params.start = orders[0].created_at.substring(0, 10)
+  }
+  if (statements.length > 0 && `${statements[0].date}-01` < params.start) {
+    params.start = `${statements[0].date}-01`
+  }
+  params.start = moment(params.start).subtract(1, 'months').format('YYYY-MM-DD')
+  params.end = moment().format('YYYY-MM-DD 23:59')
+
+  const dates = {}
+  const now = moment(params.start)
+  while (now.isSameOrBefore(moment(params.end))) {
+    dates[now.format(format)] = 0
+    now.add(1, periodicity)
+  }
+
+  const s = {
+    currency: 'EUR',
+    outstanding: {
+      all: 0, total: 0, dates: { ...dates }
+    },
+    balance: {
+      all: 0, total: 0, dates: { ...dates }
+    },
+    payments: {
+      all: {
+        all: 0, total: 0, dates: { ...dates }
+      },
+      diggers: {
+        all: 0, total: 0, dates: { ...dates }
+      },
+      artist: {
+        all: 0, total: 0, dates: { ...dates }
+      }
+    },
+    costs: {
+      all: {
+        all: 0, total: 0, dates: { ...dates }
+      },
+      production: {
+        all: 0, total: 0, dates: { ...dates }
+      },
+      sdrm: {
+        all: 0, total: 0, dates: { ...dates }
+      },
+      mastering: {
+        all: 0, total: 0, dates: { ...dates }
+      },
+      marketing: {
+        all: 0, total: 0, dates: { ...dates }
+      },
+      logistic: {
+        all: 0, total: 0, dates: { ...dates }
+      },
+      distribution: {
+        all: 0, total: 0, dates: { ...dates }
+      },
+      storage: {
+        all: 0, total: 0, dates: { ...dates }
+      },
+      other: {
+        all: 0, total: 0, dates: { ...dates }
+      }
+    },
+    income: {
+      all: {
+        all: 0, total: 0, dates: { ...dates }, countries: {}
+      },
+      site: {
+        all: 0, total: 0, dates: { ...dates }, countries: {}
+      },
+      tips: {
+        all: 0, total: 0, dates: { ...dates }
+      },
+      box: {
+        all: 0, total: 0, dates: { ...dates }, countries: {}
+      },
+      distrib: {
+        all: 0, total: 0, dates: { ...dates }, countries: {}
+      }
+    },
+    quantity: {
+      all: {
+        all: 0, total: 0, dates: { ...dates }, countries: {}
+      },
+      site: {
+        all: 0, total: 0, dates: { ...dates }, countries: {}
+      },
+      box: {
+        all: 0, total: 0, dates: { ...dates }, countries: {}
+      },
+      distrib: {
+        all: 0, total: 0, dates: { ...dates }, countries: {}
+      }
+    }
+  }
+
+  s.setDate = function (type, cat, date, value) {
+    if (value) {
+      if (moment(date).isBetween(params.start, params.end)) {
+        this[cat][type].dates[date] += value
+        this[cat].all.dates[date] += value
+        this[cat][type].total += value
+        this[cat].all.total += value
+      }
+      this[cat][type].all += value
+      this[cat].all.all += value
+    }
+  }
+
+  s.setCountry = function (type, cat, country, quantity) {
+    if (!s[cat].all.countries[country]) {
+      s[cat].all.countries[country] = 0
+    }
+    s[cat].all.countries[country] += quantity
+
+    if (!s[cat][type].countries[country]) {
+      s[cat][type].countries[country] = 0
+    }
+    s[cat][type].countries[country] += quantity
+  }
+
+  for (const order of orders) {
+    const date = moment(order.created_at).format(format)
+
+    const feeDate = JSON.parse(projects[order.project_id].fee_date)
+    const fee = 1 - (Utils.getFee(feeDate, order.created_at) / 100)
+
+    order.tax_rate = 1 + order.tax_rate
+    order.total = order.quantity * order.price
+
+    if (order.discount_artist) {
+      order.total -= order.discount
+    }
+
+    const value = (order.total / order.tax_rate) * order.currency_rate_project * fee
+    const tips = (order.tips / order.tax_rate) * order.currency_rate_project * fee
+
+    s.setDate('site', 'income', date, value)
+    s.setDate('tips', 'income', date, tips)
+    s.setDate('site', 'quantity', date, order.quantity)
+
+    s.setCountry('site', 'income', order.country_id, value)
+    s.setCountry('site', 'quantity', order.country_id, order.quantity)
+  }
+
+  for (const box of boxes) {
+    const date = moment(box.created_at).format(format)
+    const project = Object.values(projects).find(p => box.barcodes.split(',').includes(p.barcode))
+
+    s.setDate('box', 'income', date, project.payback_box)
+    s.setDate('box', 'quantity', date, 1)
+
+    s.setCountry('box', 'income', box.country_id, project.payback_box)
+    s.setCountry('box', 'quantity', box.country_id, 1)
+  }
+
+  for (const stat of statements) {
+    const date = moment(stat.date).format(format)
+
+    s.setDate('production', 'costs', date, stat.production)
+    s.setDate('sdrm', 'costs', date, stat.sdrm)
+    s.setDate('marketing', 'costs', date, stat.marketing)
+    s.setDate('mastering', 'costs', date, stat.mastering)
+    s.setDate('logistic', 'costs', date, stat.logistic)
+    s.setDate('distribution', 'costs', date, stat.distribution_cost)
+
+    if (projects[stat.project_id].storage_costs) {
+      s.setDate('storage', 'costs', date, stat.storage)
+    }
+
+    const custom = stat.custom
+      ? JSON.parse(stat.custom).reduce(function (prev, cur) {
+        return prev + +cur.total
+      }, 0)
+      : null
+    s.setDate('other', 'costs', date, custom)
+
+    s.setDate('diggers', 'payments', date, stat.payment_diggers)
+    s.setDate('artist', 'payments', date, stat.payment_artist)
+
+    const feeDistribDate = JSON.parse(projects[stat.project_id].fee_distrib_date)
+    const feeDistrib = 1 - Utils.getFee(feeDistribDate, stat.date) / 100
+
+    for (const dist of stat.distributors) {
+      let value
+      if (projects[stat.project_id].payback_distrib) {
+        value = projects[stat.project_id].payback_distrib * dist.quantity
+      } else {
+        value = dist.total * feeDistrib
+      }
+      s.setDate('distrib', 'income', date, value)
+      s.setCountry('distrib', 'income', dist.country_id, value)
+
+      // Distributor storage cost
+      s.setDate('distribution', 'costs', date, dist.storage)
+
+      s.setDate('distrib', 'quantity', date, dist.quantity)
+      s.setCountry('distrib', 'quantity', dist.country_id, dist.quantity)
+    }
+  }
+
+  s.balance.all = s.income.all.all - s.costs.all.all
+  s.balance.total = s.income.all.total - s.costs.all.total
+  s.outstanding.all = s.balance.all + s.payments.diggers.all - s.payments.artist.all
+
+  let balance = 0
+  let outstanding = 0
+  for (const date of Object.keys(dates)) {
+    balance += s.income.all.dates[date] - s.costs.all.dates[date]
+    s.balance.dates[date] = balance
+
+    outstanding += s.income.all.dates[date] - s.costs.all.dates[date] - s.payments.diggers.dates[date] - s.payments.artist.dates[date]
+    s.outstanding.dates[date] = outstanding
+  }
+
+  return s
+}
+
 Project.getOrdersForTable = async (params) => {
   let pp = DB('project')
     .select('project.name', 'project.id', 'vod.currency', 'vod.fee_date')
@@ -1347,6 +1616,8 @@ Project.getOrders = async (params, projects) => {
 
   if (params.id === 'all') {
     params.query.where('vod.user_id', params.user.id)
+  } else if (params.ids) {
+    params.query.whereIn('order_item.project_id', params.ids)
   } else {
     params.query.where('order_item.project_id', params.id)
   }
@@ -1362,6 +1633,10 @@ Project.getOrders = async (params, projects) => {
 
     const feeDate = JSON.parse(projects[o.project_id].fee_date)
     const fee = 1 - (Utils.getFee(feeDate, o.created_at) / 100)
+
+    if (oo.discount_artist) {
+      oo.total -= oo.discount
+    }
 
     res.data[oo].tax = Utils.round(o.ue ? o.total - o.total / 1.2 : 0)
     res.data[oo].fee = Utils.round((1 - fee) * (o.total - res.data[oo].tax))

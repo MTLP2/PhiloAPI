@@ -141,6 +141,14 @@ class ProjectsController {
     return Project.getStats(params)
   }
 
+  async getStats2 ({ params, user }) {
+    params.user = user
+    if (params.id !== 'all') {
+      await Utils.checkProjectOwner({ project_id: params.id, user: user })
+    }
+    return Project.getStats2(params)
+  }
+
   async getOrders ({ params, user }) {
     params.user = user
     if (params.id !== 'all') {

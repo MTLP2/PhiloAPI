@@ -12,6 +12,7 @@ class StatementService {
     const items = (await DB('statement')
       .where('project_id', params.id)
       .hasMany('statement_distributor', 'distributors')
+      .orderBy('date', 'desc')
       .all()
     ).map(d => {
       d.custom = d.custom ? JSON.parse(d.custom) : null
@@ -35,6 +36,7 @@ class StatementService {
     item.production = params.production
     item.sdrm = params.sdrm
     item.mastering = params.mastering
+    item.marketing = params.marketing
     item.logistic = params.logistic
     item.distribution_cost = params.distribution_cost
     item.payment_artist = params.payment_artist
@@ -119,7 +121,7 @@ class StatementService {
       if (data[d].barcode) {
         data[d].project.where('vod.barcode', 'like', data[d].barcode)
       } else if (data[d].cat_number) {
-        data[d].project.where('project.cat_number', 'like', data[d].cat_number)
+        data[d].project.where('project.cat_number', 'like', data[d].cat_number.split('#')[0])
       }
       data[d].project = await data[d].project.first()
       data[d].total = Utils.round(data[d].total)
@@ -161,6 +163,7 @@ class StatementService {
             stat.production = 0
             stat.sdrm = 0
             stat.mastering = 0
+            stat.marketing = 0
             stat.logistic = 0
             stat.distribution_cost = 0
             stat.storage = 0
@@ -176,11 +179,11 @@ class StatementService {
             name: params.distributor,
             date: params.year + '-' + params.month,
             quantity: ref.quantity,
+            country_id: ref.country_id,
             returned: ref.returned,
             digital: ref.digital,
             total: ref.total,
             storage: ref.storage,
-            // country_id: ref.country_id,
             created_at: Utils.date(),
             updated_at: Utils.date()
           })
@@ -248,10 +251,9 @@ class StatementService {
         columns.barcode = Utils.columnToLetter(colNumber)
       } else if (cell.value === 'CAT NO') {
         columns.catnumber = Utils.columnToLetter(colNumber)
-      } /**
-       else if (cell.value === 'TERRITORY') {
+      } else if (cell.value === 'TERRITORY') {
         columns.country = Utils.columnToLetter(colNumber)
-      } **/
+      }
     }
     if (worksheet.getCell('A10').value === 'ITEM CODE') {
       worksheet.getRow(10).eachCell(getColumns)
@@ -265,17 +267,20 @@ class StatementService {
     worksheet.eachRow(row => {
       const catNumber = row.getCell(columns.catnumber).value
       if (catNumber && catNumber !== 'CAT NO') {
-        if (!data[`${catNumber}`]) {
-          data[`${catNumber}`] = {
+        const country = row.getCell(columns.country).value.trim()
+        const idx = `${catNumber}#${country}`
+        if (!data[idx]) {
+          data[idx] = {
+            country_id: country,
             cat_number: catNumber,
             quantity: 0,
             returned: 0,
             total: 0
           }
         }
-        data[`${catNumber}`].quantity += +row.getCell(columns.quantity).value
-        data[`${catNumber}`].returned += +row.getCell(columns.returned).value
-        data[`${catNumber}`].total += +row.getCell(columns.total).value
+        data[idx].quantity += +row.getCell(columns.quantity).value
+        data[idx].returned += +row.getCell(columns.returned).value
+        data[idx].total += +row.getCell(columns.total).value
       }
     })
 
@@ -327,6 +332,7 @@ class StatementService {
             storage: 0
           }
         }
+        data[barcode].country_id = row.getCell('O').value
         data[barcode].quantity += row.getCell('R').value
         data[barcode].returned += -row.getCell('S').value
         data[barcode].total += row.getCell('AC').value / currencies.GBP
@@ -381,6 +387,7 @@ class StatementService {
       if (barcode && barcode !== 'UPC') {
         if (!data[barcode]) {
           data[barcode] = {
+            country_id: 'US',
             barcode: barcode,
             quantity: 0,
             returned: 0,
@@ -408,6 +415,7 @@ class StatementService {
       if (barcode && !isNaN(barcode)) {
         if (!data[barcode]) {
           data[barcode] = {
+            country_id: 'US',
             barcode: barcode,
             quantity: 0,
             returned: 0,
@@ -437,6 +445,7 @@ class StatementService {
       if (barcode && barcode !== 'Barcode') {
         if (!data[barcode]) {
           data[barcode] = {
+            country_id: 'AU',
             barcode: barcode,
             quantity: 0,
             returned: 0,
@@ -1177,6 +1186,7 @@ class StatementService {
     data.production = { name: 'Production', type: 'expense' }
     data.sdrm = { name: 'SDRM', type: 'expense' }
     data.mastering = { name: 'Mastering', type: 'expense' }
+    data.marketing = { name: 'Marketing', type: 'expense' }
     data.logistic = { name: 'Logistic', type: 'expense' }
     data.distribution_cost = { name: 'Distribution cost', type: 'expense' }
     // ata.distribution_quantity = {}
@@ -1246,6 +1256,7 @@ class StatementService {
       data.production[stat.date] += stat.production
       data.sdrm[stat.date] += stat.sdrm
       data.mastering[stat.date] += stat.mastering
+      data.marketing[stat.date] += stat.marketing
       data.logistic[stat.date] += stat.logistic
       data.distribution_cost[stat.date] += stat.distribution_cost
       if (project.storage_costs) {
@@ -1352,6 +1363,82 @@ class StatementService {
     data.final_revenue.total = data.total_income.total - data.total_cost.total + data.payment_artist.total + data.payment_diggers.total
 
     return data
+  }
+
+  static async convert (params) {
+    const stats = await DB('statement')
+      .select('*')
+      .all()
+
+    const data = {}
+
+    for (const s of stats) {
+      if (!data[s.project_id]) {
+        data[s.project_id] = {}
+      }
+      if (!data[s.project_id][s.date]) {
+        data[s.project_id][s.date] = []
+      }
+
+      data[s.project_id][s.date].push(s)
+    }
+
+    const duplicate = {}
+    const ids = []
+    for (const p of Object.keys(data)) {
+      for (const d of Object.keys(data[p])) {
+        if (data[p][d].length > 1) {
+          const stat = data[p][d][0]
+          stat.custom = stat.custom ? JSON.parse(stat.custom) : []
+          for (let i = 1; i < data[p][d].length; i++) {
+            stat.production += data[p][d][i].production
+            stat.sdrm += data[p][d][i].sdrm
+            stat.mastering += data[p][d][i].mastering
+            stat.marketing += data[p][d][i].marketing
+            stat.logistic += data[p][d][i].logistic
+            stat.distribution_cost += data[p][d][i].distribution_cost
+            stat.payment_diggers += data[p][d][i].payment_diggers
+            stat.payment_artist += data[p][d][i].payment_artist
+            stat.storage += data[p][d][i].storage
+            stat.distributors = null
+
+            if (data[p][d][i].comment) {
+              if (stat.comment) {
+                stat.comment += '\n'
+              } else {
+                stat.comment = ''
+              }
+              stat.comment += `${data[p][d][i].comment}`
+            }
+            if (data[p][d][i].custom) {
+              stat.custom.push(...JSON.parse(data[p][d][i].custom))
+            }
+
+            try {
+              await DB('statement_distributor')
+                .where('statement_id', data[p][d][i].id)
+                .update({
+                  statement_id: data[p][d][0].id
+                })
+              ids.push(data[p][d][i].id)
+            } catch (err) {
+              console.log('error', p, d, data[p][d][i].id)
+            }
+          }
+          stat.custom = stat.custom.length > 0 ? JSON.stringify(stat.custom) : null
+          await DB('statement')
+            .where('id', stat.id)
+            .update(stat)
+          duplicate[`${p}_${d}`] = data[p][d]
+        }
+      }
+    }
+
+    await DB('statement')
+      .whereIn('id', ids)
+      .delete()
+
+    return ids
   }
 }
 

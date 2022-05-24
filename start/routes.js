@@ -94,6 +94,7 @@ Route.group(() => {
   Route.get('/projects/:id/songs', 'ProjectsController.getSongs')
   Route.get('/projects/:id/edit', 'ProjectsController.findEdit')
   Route.get('/projects/:id/stats', 'ProjectsController.getStats')
+  Route.get('/projects/:id/stats2', 'ProjectsController.getStats2')
   Route.get('/projects/:id/orders', 'ProjectsController.getOrders')
   Route.get('/projects/:id/statement', 'ProjectsController.downloadStatement')
   Route.post('/projects', 'ProjectsController.saveProject')
