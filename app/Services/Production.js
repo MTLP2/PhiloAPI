@@ -1098,12 +1098,22 @@ class Production {
       .where('production_id', params.id)
       .all()
 
-    return Storage.zip(files.map(file => {
+    //! Original
+    // return Storage.zip(files.map(file => {
+    //   return {
+    //     name: file.name,
+    //     path: `files/${file.uuid}`
+    //   }
+    // }), true)
+
+    return Promise.all(files.map(async file => {
+      const filePath = `files/${file.uuid}`
+      const url = await Storage.url(filePath, file.name, 3600)
       return {
         name: file.name,
-        path: `files/${file.uuid}`
+        url: url
       }
-    }), true)
+    }))
   }
 
   static async fileDispatch (params) {
