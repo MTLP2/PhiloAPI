@@ -1323,6 +1323,8 @@ class Production {
       .where('production_action.for', 'artist')
       .where('production_action.status', 'to_do')
       .where('production_action.category', 'preprod')
+      .where('prod.is_delete', 0)
+      .whereIn('vod.step', ['in_progress', 'successful'])
       .where(query => {
         query.where('production_action.type', '!=', 'order_form')
         query.orWhere(query => {
