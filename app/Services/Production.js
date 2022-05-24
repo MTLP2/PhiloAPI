@@ -21,19 +21,42 @@ class Production {
       params.query.where('production.project_id', params.project_id)
     }
 
+    let selects
+
     if (params.user.is_team) {
-      params.query.select(
-        'production.*', 'project.artist_name', 'project.name as project', 'vod.barcode',
-        'project.picture', 'project.country_id', 'user.name as user'
-      )
+      selects = ['production.*', 'project.artist_name', 'project.name as project', 'vod.barcode',
+        'project.picture', 'project.country_id', 'user.name as user']
+      // params.query.select(
+      //   'production.*', 'project.artist_name', 'project.name as project', 'vod.barcode',
+      //   'project.picture', 'project.country_id', 'user.name as user',
+      // )
     } else {
-      params.query.select('production.id', 'production.step', 'production.date_preprod', 'production.date_prod',
+      selects = ['production.id', 'production.step', 'production.date_preprod', 'production.date_prod',
         'production.date_postprod', 'project.artist_name', 'project.name as project', 'vod.barcode',
-        'project.picture', 'project.country_id', 'user.name as user', 'production.name as prod_name', 'production.quantity as prod_quantity')
+        'project.picture', 'project.country_id', 'user.name as user', 'production.name as prod_name', 'production.quantity as prod_quantity']
+      // params.query.select('production.id', 'production.step', 'production.date_preprod', 'production.date_prod',
+      //   'production.date_postprod', 'project.artist_name', 'project.name as project', 'vod.barcode',
+      //   'project.picture', 'project.country_id', 'user.name as user', 'production.name as prod_name', 'production.quantity as prod_quantity')
     }
 
     if (params.type && params.type !== 'all') {
       if (params.type === 'artwork') {
+        // Display type in front admin
+        selects.push('production_action.type as production_action_type')
+        params.query.join('production_action', 'production_action.production_id', 'production.id')
+
+        // params.query.whereIn('production_action.type', ['artwork', 'pressing_proof'])
+        params.query.where(function () {
+          this.where('production_action.type', 'artwork')
+          this.whereIn('production_action.status', ['to_check', 'pending'])
+          this.where('production.step', 'preprod')
+        })
+        params.query.orWhere(function () {
+          this.where('production_action.type', 'pressing_proof')
+          this.whereIn('production_action.status', ['to_check', 'pending'])
+          this.where('production.step', 'prod')
+        })
+
         params.query.where(function () {
           this.orWhereExists(function () {
             this.from('production_action')
@@ -65,6 +88,8 @@ class Production {
         })
       }
     }
+
+    params.query.select(...selects)
 
     if (!params.sort) {
       params.sort = 'id'
@@ -1298,6 +1323,8 @@ class Production {
       .where('production_action.for', 'artist')
       .where('production_action.status', 'to_do')
       .where('production_action.category', 'preprod')
+      .where('prod.is_delete', 0)
+      .whereIn('vod.step', ['in_progress', 'successful'])
       .where(query => {
         query.where('production_action.type', '!=', 'order_form')
         query.orWhere(query => {
