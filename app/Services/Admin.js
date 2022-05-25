@@ -1365,7 +1365,7 @@ Admin.getOrders = async (params) => {
       'order.transaction_id', 'oi.order_id', 'oi.order_shop_id', 'oi.quantity', 'oi.size', 'order.status',
       'order.payment_id', 'user.name as user_name', 'user.email as user_email', 'user.picture as user_picture',
       's.id as shop_id', 's.name as shop_name', 'order.user_agent', 'c.country_id', 'c.name', 'c.firstname', 'c.lastname',
-      'c.address', 'c.zip_code', 'c.city', 'user.is_pro', 'project.artist_name', 'project.name as project_name',
+      'c.address', 'c.zip_code', 'c.city', 'c.state', 'user.is_pro', 'project.artist_name', 'project.name as project_name',
       'project.picture', 'item.name as item', 'item.picture as item_picture', 'user.facebook_id', 'user.soundcloud_id', 'vod.barcode',
       DB.raw('CONCAT(c.firstname, \' \', c.lastname) AS user_infos')
     )
@@ -1632,6 +1632,7 @@ Admin.extractOrders = async (params) => {
     { name: 'Address', index: 'address' },
     { name: 'City', index: 'city' },
     { name: 'Zip code', index: 'zip_code' },
+    { name: 'State', index: 'state' },
     { name: 'Country', index: 'country_id' }
   ], data.data)
 }
