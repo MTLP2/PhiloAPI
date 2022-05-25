@@ -703,7 +703,7 @@ User.cancelOrder = async (params) => {
 User.getProjects = async (userId, params) => {
   let projects = DB()
     .select(
-      'p.id', 'name', 'picture', 'artist_name', 'slug', 'styles',
+      'p.id', 'name', 'picture', 'artist_name', 'slug', 'styles', 'user_id',
       'v.created_at', 'type', 'step', 'count', 'stage1',
       DB.raw('(select max(id) from production where project_id = p.id) as prod_id')
     )
