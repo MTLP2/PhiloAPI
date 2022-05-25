@@ -141,12 +141,18 @@ class ProjectsController {
     return Project.getStats(params)
   }
 
-  async getStats2 ({ params, user }) {
+  async getStatements ({ params, user }) {
     params.user = user
-    if (params.id !== 'all') {
-      await Utils.checkProjectOwner({ project_id: params.id, user: user })
+
+    if (user.id !== +params.u && !await Utils.isTeam(user.id)) {
+      throw new ApiError(403)
     }
-    return Project.getStats2(params)
+
+    if (params.p !== 'all') {
+      await Utils.checkProjectOwner({ project_id: params.p, user: user })
+    }
+
+    return Project.getStatements(params)
   }
 
   async getOrders ({ params, user }) {

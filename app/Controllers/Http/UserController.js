@@ -4,7 +4,10 @@ const Order = use('App/Services/Order')
 const Payment = use('App/Services/Payment')
 const Whiplash = use('App/Services/Whiplash')
 const Box = use('App/Services/Box')
+const DB = use('App/Db')
+const Utils = use('App/Utils')
 const { validateAll } = use('Validator')
+const ApiError = use('App/ApiError')
 
 class UserController {
   async updateProfile ({ params, user, response }) {
@@ -78,8 +81,23 @@ class UserController {
     return User.getMessagesByUser(user.id, params)
   }
 
-  getProjects ({ user, params }) {
-    return User.getProjects(user.id, params)
+  async getProjects ({ user, params }) {
+    if (params.user_id && user.id !== +params.u && !await Utils.isTeam(user.id)) {
+      throw new ApiError(403)
+    }
+    if (params.project_id) {
+      await Utils.checkProjectOwner({ project_id: params.project_id, user: user })
+      const p = await DB('vod')
+        .where('project_id', params.project_id)
+        .first()
+
+      if (!p) return []
+      params.user_id = p.user_id
+    }
+    if (!params.user_id) {
+      params.user_id = user.id
+    }
+    return User.getProjects(params.user_id, params)
   }
 
   getProjectOrders ({ user, params }) {

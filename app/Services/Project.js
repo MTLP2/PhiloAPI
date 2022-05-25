@@ -1310,22 +1310,26 @@ Project.getStats = async (params) => {
   })
 }
 
-Project.getStats2 = async (params) => {
+Project.getStatements = async (params) => {
   let projects = DB('project')
     .select('project.name', 'project.id', 'storage_costs', 'vod.barcode', 'vod.currency',
       'vod.fee_date', 'vod.fee_distrib_date', 'payback_distrib', 'payback_box')
     .join('vod', 'vod.project_id', 'project.id')
     .where('is_delete', '!=', '1')
 
-  if (params.id === 'all') {
-    projects.where('user_id', params.user.id)
+  if (params.u) {
+    projects.where('user_id', params.u)
   } else {
-    projects.where('project.id', params.id)
+    projects.where('project.id', params.p)
   }
 
   projects = Utils.arrayToObject(await projects.all(), 'id')
 
   const ids = Object.keys(projects)
+
+  if (ids.length === 0) {
+    return {}
+  }
 
   const ordersPromise = DB('order_item as oi')
     .select('project_id', 'quantity', 'tips', 'os.tax_rate', 'price', 'customer.country_id',
@@ -1356,17 +1360,25 @@ Project.getStats2 = async (params) => {
 
   const [orders, statements, boxes] = await Promise.all([ordersPromise, statementsPromise, boxesPromise])
 
-  const periodicity = 'months'
-  const format = 'YYYY-MM'
+  let periodicity = 'months'
+  let format = 'YYYY-MM'
 
-  if (orders.length > 0) {
-    params.start = orders[0].created_at.substring(0, 10)
+  if (params.period === 'last_month') {
+    params.start = moment().subtract('1', 'months').format('YYYY-MM-DD 23:59')
+    params.end = moment().format('YYYY-MM-DD 23:59')
+    format = 'YYYY-MM-DD'
+    periodicity = 'days'
+  } else if (params.period === 'all_time') {
+    if (orders.length > 0) {
+      params.start = orders[0].created_at.substring(0, 10)
+    }
+    if (statements.length > 0 && `${statements[0].date}-01` < params.start) {
+      params.start = `${statements[0].date}-01`
+    }
   }
-  if (statements.length > 0 && `${statements[0].date}-01` < params.start) {
-    params.start = `${statements[0].date}-01`
+  if (!params.end) {
+    params.end = moment().format('YYYY-MM-DD 23:59')
   }
-  params.start = moment(params.start).subtract(1, 'months').format('YYYY-MM-DD')
-  params.end = moment().format('YYYY-MM-DD 23:59')
 
   const dates = {}
   const now = moment(params.start)
@@ -1509,6 +1521,9 @@ Project.getStats2 = async (params) => {
     const date = moment(box.created_at).format(format)
     const project = Object.values(projects).find(p => box.barcodes.split(',').includes(p.barcode))
 
+    if (!project) {
+      continue
+    }
     s.setDate('box', 'income', date, project.payback_box)
     s.setDate('box', 'quantity', date, 1)
 
