@@ -33,7 +33,7 @@ class Production {
     } else {
       selects = ['production.id', 'production.step', 'production.date_preprod', 'production.date_prod',
         'production.date_postprod', 'project.artist_name', 'project.name as project', 'vod.barcode',
-        'project.picture', 'project.country_id', 'user.name as user', 'production.name as prod_name', 'production.quantity as prod_quantity']
+        'project.picture', 'project.country_id', 'user.name as user', 'production.name as prod_name', 'production.quantity as prod_quantity', 'production.created_at']
       // params.query.select('production.id', 'production.step', 'production.date_preprod', 'production.date_prod',
       //   'production.date_postprod', 'project.artist_name', 'project.name as project', 'vod.barcode',
       //   'project.picture', 'project.country_id', 'user.name as user', 'production.name as prod_name', 'production.quantity as prod_quantity')
