@@ -198,6 +198,7 @@ Project.findAll = async (params) => {
     'p.artist_name',
     'p.color',
     'p.picture',
+    'v.picture_project',
     'p.styles',
     'p.banner',
     'p.banner_mobile',
@@ -309,6 +310,7 @@ Project.findAll = async (params) => {
   if (params.user_id) {
     projects.where('v.user_id', params.user_id)
       .where('v.step', 'in_progress')
+    params.limit = 1000
   }
   if (params.supported) {
     projects.whereIn('p.id', DB.raw(`
