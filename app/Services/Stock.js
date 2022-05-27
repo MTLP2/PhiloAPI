@@ -326,7 +326,6 @@ class Stock {
     await workbook.xlsx.load(file)
 
     const stocks = []
-
     const worksheet = workbook.getWorksheet(1)
 
     worksheet.eachRow(row => {
@@ -334,13 +333,64 @@ class Stock {
       stock.barcode = row.getCell(params.barcode).value
       stock.quantity = row.getCell(params.quantity).value
 
-      if (!isNaN(stock.barcode) && !isNaN(stock.quantity)) {
-        console.log(stock)
+      if (stock.barcode && !isNaN(stock.barcode) && !isNaN(stock.quantity)) {
         stocks.push(stock)
       }
     })
 
-    return stocks
+    if (params.save) {
+      for (const stock of stocks) {
+        const exists = DB('stock')
+          .where('project_id', stock.project_id)
+          .where('type', params.distributor)
+          .first()
+
+        if (exists) {
+          exists.stock = stock.quantity
+          exists.updated_at = Utils.date()
+          await exists.save()
+        } else {
+          await DB('stock_historic')
+            .insert({
+              user_id: params.user_id,
+              project_id: stock.project_id,
+              type: params.distributor,
+              new: stock.quantity,
+              created_at: `${params.year}-${params.month}-${params.day}`,
+              updated_at: Utils.date()
+            })
+        }
+
+        /**
+        const historic = DB('stock')
+          .where('project_id', stock.project_id)
+          .where('type', params.distributor)
+          .all()
+        if (!historic) {
+          await DB('stock')
+            .insert({
+              project_id: stock.project_id,
+              type: params.distributor,
+              stock: stock.quantity,
+              is_distrib: true
+            })
+        }
+        const s = DB('stock')
+          .where('project_id', stock.project_id)
+          .where('type', params.distributor)
+          .first()
+        await DB('stock')
+          .insert({
+            project_id: stock.project_id,
+            type: params.distributor,
+            stock: stock.quantity,
+            is_distrib: true
+          })
+        **/
+      }
+    } else {
+      return stocks
+    }
   }
 }
 
