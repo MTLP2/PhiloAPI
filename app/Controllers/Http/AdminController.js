@@ -213,6 +213,10 @@ class AdminController {
     return Statement.upload(params)
   }
 
+  uploadStocks ({ params }) {
+    return Stock.upload(params)
+  }
+
   downloadStatement ({ params }) {
     return Statement.download(params)
   }

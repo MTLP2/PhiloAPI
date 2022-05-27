@@ -1,5 +1,6 @@
 const DB = use('App/DB')
 const Utils = use('App/Utils')
+const Excel = require('exceljs')
 
 class Stock {
   static async getProject (id) {
@@ -317,6 +318,29 @@ class Stock {
     }
 
     return { success: true }
+  }
+
+  static async upload (params) {
+    const file = Buffer.from(params.file, 'base64')
+    const workbook = new Excel.Workbook()
+    await workbook.xlsx.load(file)
+
+    const stocks = []
+
+    const worksheet = workbook.getWorksheet(1)
+
+    worksheet.eachRow(row => {
+      const stock = {}
+      stock.barcode = row.getCell(params.barcode).value
+      stock.quantity = row.getCell(params.quantity).value
+
+      if (!isNaN(stock.barcode) && !isNaN(stock.quantity)) {
+        console.log(stock)
+        stocks.push(stock)
+      }
+    })
+
+    return stocks
   }
 }
 
