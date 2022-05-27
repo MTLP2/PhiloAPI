@@ -1589,7 +1589,7 @@ class Box {
 
         if (params.force_quantity !== 'true' && vod && vod.stock < 1) {
           return { error: 'No quantity' }
-        } else {
+        } else if (vod) {
           Stock.save({
             project_id: vod.project_id,
             type: 'daudin',
