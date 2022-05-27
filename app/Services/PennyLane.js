@@ -1,7 +1,7 @@
 const Env = use('Env')
 const Utils = use('App/Utils')
 const Invoice = use('App/Services/Invoice')
-const DB = use('App/Db')
+const DB = use('App/DB')
 
 class PennyLane {
   static async execute (url, params = { method: 'GET', params: null }) {
