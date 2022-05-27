@@ -1454,7 +1454,7 @@ Admin.getOrder = async (id) => {
     .select('order.*', 'user.name', 'user.email', 'user.points', 'notification.id as notification_id', 'notification.type as notification_type', DB.raw('CONCAT(customer.firstname, \' \', customer.lastname) AS customer_name'))
     .join('user', 'user.id', 'order.user_id')
     .join('customer', 'customer.id', 'user.customer_id')
-    .join('notification', 'notification.order_id', 'order.id')
+    .leftJoin('notification', 'notification.order_id', 'order.id')
     .where('order.id', id)
     .first()
 
