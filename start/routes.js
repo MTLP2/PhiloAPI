@@ -279,6 +279,7 @@ Route.group(() => {
   Route.delete('/orders/:id/refund', 'AdminController.refundOrderShop')
   Route.delete('/orders/:id', 'AdminController.cancelOrderShop')
   Route.get('/feedbacks', 'AdminController.getFeedbacks')
+  Route.get('/feedbacks/export', 'AdminController.exportFeedbacks')
   Route.get('/boxes', 'BoxController.getBoxes')
   Route.get('/boxes/export', 'BoxController.exportBoxes')
   Route.get('/boxes/dispatchs', 'BoxController.statsDispatchs')
