@@ -801,6 +801,10 @@ class AdminController {
   getProjectProductions ({ params }) {
     return Admin.getProjectProductions(params)
   }
+
+  exportOrdersCommercial ({ params }) {
+    return Admin.exportOrdersCommercial(params)
+  }
 }
 
 module.exports = AdminController
