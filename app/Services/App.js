@@ -13,6 +13,7 @@ const Statement = use('App/Services/Statement')
 const Production = use('App/Services/Production')
 const Storage = use('App/Services/Storage')
 const MondialRelay = use('App/Services/MondialRelay')
+const Review = use('App/Services/Review')
 const Invoice = use('App/Services/Invoice')
 const Cio = use('App/Services/CIO')
 const Excel = require('exceljs')
@@ -49,11 +50,6 @@ App.daily = async () => {
     if (moment().format('DD') === '1') {
       await Box.checkPayments()
     }
-    /**
-    if (moment().format('DD') === '26') {
-      await Box.confirmDispatchs()
-    }
-    **/
     if (moment().format('E') !== '6' && moment().format('E') !== '7') {
       await Daudin.export()
     }
@@ -114,6 +110,8 @@ App.hourly = async () => {
       await App.checkFinishedProjects()
     } else if (hour === 12) {
       await App.checkFinishedProjects()
+    } else if (hour === 13) {
+      await Review.checkNotif()
     }
 
     await Storage.cleanTmp('storage')
