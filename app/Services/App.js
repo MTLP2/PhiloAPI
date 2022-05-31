@@ -58,6 +58,7 @@ App.daily = async () => {
       await Daudin.export()
       await App.alertStock()
     }
+
     if (moment().format('DD') === '28') {
       await Statement.setStorageCosts()
       await Statement.sendStatements()
@@ -91,18 +92,20 @@ App.hourly = async () => {
   try {
     const hour = (new Date()).getHours()
 
-    if (hour === 4) {
+    if (hour === 3) {
       await App.currencies()
+    } else if (hour === 4) {
       await Whiplash.syncStocks()
       await Whiplash.setTrackingLinks()
+    } else if (hour === 5) {
+      await Cio.syncNewsletterNoAccount()
     } else if (hour === 7) {
       await App.checkFinishedProjects()
       await Production.checkNotif()
+      await App.check5DaysLeftProjects()
+    } else if (hour === 8) {
       await Box.checkReminder()
       await Box.checkFinishedBox()
-      await App.check5DaysLeftProjects()
-    } else if (hour === 5) {
-      await Cio.syncNewsletterNoAccount()
     }
 
     await Storage.cleanTmp('storage')
