@@ -1786,6 +1786,7 @@ Admin.refundProject = async (id, params) => {
 }
 
 Admin.refundOrder = async (params) => {
+  console.log('🚀 ~ file: Admin.js ~ line 1789 ~ Admin.refundOrder= ~ params', params)
   const order = await DB('order').find(params.id)
   const customer = await DB('order_shop')
     .select('customer_id')
@@ -1821,13 +1822,15 @@ Admin.refundOrder = async (params) => {
           step: 'canceled'
         })
 
-      await Notification.new({
-        type: 'my_order_canceled',
-        user_id: order.user_id,
-        order_id: params.id,
-        order_shop_id: params.order_shop_id,
-        alert: 0
-      })
+      if (params.cancel_notification) {
+        await Notification.new({
+          type: 'my_order_canceled',
+          user_id: order.user_id,
+          order_id: params.id,
+          order_shop_id: params.order_shop_id,
+          alert: 0
+        })
+      }
     }
 
     await Order.addRefund(params)
