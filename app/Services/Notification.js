@@ -37,6 +37,7 @@ Notification.new = (params) => {
       order_box_id: (params.order_box_id !== undefined) ? params.order_box_id : null,
       box_dispatch_id: (params.box_dispatch_id !== undefined) ? params.box_dispatch_id : null,
       payment_id: (params.payment_id !== undefined) ? params.payment_id : null,
+      review_id: (params.review_id !== undefined) ? params.review_id : null,
       invoice_id: (params.invoice_id !== undefined) ? params.invoice_id : null,
       date: (params.date !== undefined) ? params.date : null,
       alert: (params.alert !== undefined) ? params.alert : 1,
@@ -249,6 +250,10 @@ Notification.template = (params) => {
               ${item.tracks
               ? `<br /><br />
                 <a class="button" href="${item.tracks}" target="_blank">Download tracks</a>`
+              : ''}
+              ${params.type === 'review_request'
+              ? `<br /><br />
+                <a class="button" href="${Env.get('APP_URL')}/review/${item.project_id}" target="_blank">Review this item</a>`
               : ''}
               ${item.message_order
               ? `<br />
