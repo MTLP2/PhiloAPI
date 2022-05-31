@@ -698,14 +698,17 @@ Order.saveManual = async (params) => {
         .orderBy(`stock_${params.transporter}`, 'desc')
         .first()
 
-      const stocks = await Stock.getProject(vod.project_id)
-      for (const [key, value] of Object.entries(stocks)) {
-        vod[`stock_${key}`] = value
+      if (vod) {
+        const stocks = await Stock.getProject(vod.project_id)
+        for (const [key, value] of Object.entries(stocks)) {
+          vod[`stock_${key}`] = value
+        }
+
+        if (vod[`stock_${params.transporter}`] < b.quantity) {
+          return { error: 'No quantity' }
+        }
       }
 
-      if (vod && vod[`stock_${params.transporter}`] < b.quantity) {
-        return { error: 'No quantity' }
-      }
       if (['whiplash', 'whiplash_uk'].includes(params.transporter)) {
         const exists = await Whiplash.findItem(b.barcode)
         if (!exists) {
