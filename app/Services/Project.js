@@ -241,7 +241,6 @@ Project.findAll = async (params) => {
     .from('project as p')
     .join('vod as v', 'p.id', 'v.project_id')
     .leftJoin('item', 'item.id', 'v.related_item_id')
-    .where('p.is_visible', true)
 
   if (params.type === 'liked') {
     params.liked = params.user_id
@@ -312,7 +311,10 @@ Project.findAll = async (params) => {
     projects.where('v.user_id', params.user_id)
       .where('v.step', 'in_progress')
     params.limit = 1000
+  } else {
+    projects.where('p.is_visible', true)
   }
+
   if (params.supported) {
     projects.whereIn('p.id', DB.raw(`
       SELECT project_id
