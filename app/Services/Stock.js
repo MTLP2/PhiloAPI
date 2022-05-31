@@ -5,7 +5,7 @@ const Excel = require('exceljs')
 class Stock {
   static async getProject (id) {
     const stocks = await DB('stock')
-      .select('type', 'stock')
+      .select('type', 'quantity')
       .where('project_id', id)
       .all()
 
@@ -19,7 +19,7 @@ class Stock {
     }
 
     for (const s of stocks) {
-      stock[s.type] = s.stock
+      stock[s.type] = s.quantity
     }
 
     return stock
@@ -36,26 +36,26 @@ class Stock {
       stock.project_id = params.project_id
       stock.type = params.type
       stock.is_distrib = params.is_distrib || false
-      stock.stock = 0
+      stock.quantity = 0
       stock.created_at = Utils.date()
     }
 
     if (params.quantity) {
-      params.stock = stock.stock + params.quantity
+      params.quantity = stock.quantity + params.quantity
     }
 
-    if (stock.stock !== +params.stock) {
+    if (stock.quantity !== +params.stock) {
       await DB('stock_historic').insert({
         project_id: params.project_id,
         user_id: params.user_id,
         type: params.type,
-        old: stock.stock,
+        old: stock.quantity,
         new: params.stock,
         comment: params.comment
       })
     }
 
-    stock.stock = params.stock
+    stock.quantity = params.stock
     stock.updated_at = Utils.date()
 
     await stock.save()

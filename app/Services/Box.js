@@ -238,12 +238,12 @@ class Box {
     }
 
     stats.selections = await DB('vod')
-      .select('p.id', 'artist_name', 'name', 'picture', 'stock.stock', 'description_fr', 'description_en')
+      .select('p.id', 'artist_name', 'name', 'picture', 'stock.quantity as stock', 'description_fr', 'description_en')
       .join('project as p', 'p.id', 'project_id')
       .join('stock', 'stock.project_id', 'p.id')
       .where('stock.type', 'daudin')
       .where('is_shop', true)
-      .where('stock.stock', '>', 0)
+      .where('stock.quantity', '>', 0)
       .where('is_box', true)
       .count()
 
@@ -1017,7 +1017,7 @@ class Box {
       .all()
 
     const projects = await DB().execute(`
-      SELECT project.id, box_month.project_id, barcode, project.styles, stock_base as stock, stock.stock as stock_daudin
+      SELECT project.id, box_month.project_id, barcode, project.styles, stock_base as stock, stock.quantity as stock_daudin
       FROM box_month
       JOIN project ON project.id = box_month.project_id
       JOIN stock ON stock.project_id = project.id
@@ -1038,7 +1038,7 @@ class Box {
     }
 
     const selections = await DB().execute(`
-      SELECT project.id, barcode, project.styles, stock.stock as stock_daudin
+      SELECT project.id, barcode, project.styles, stock.quantity as stock_daudin
       FROM vod JOIN project ON project.id = vod.project_id
         JOIN stock ON stock.project_id = vod.project_id
         AND stock.type = 'daudin'
@@ -1581,7 +1581,7 @@ class Box {
     } else {
       for (const barcode of barcodes) {
         const vod = await DB('vod')
-          .select('stock.project_id', 'stock.stock')
+          .select('stock.project_id', 'stock.quantity as stock')
           .where('barcode', barcode)
           .join('stock', 'stock.project_id', 'vod.project_id')
           .where('stock.type', 'daudin')
@@ -1876,7 +1876,7 @@ class Box {
 
   static async getLastBoxes (params) {
     let projects = DB('box_month')
-      .select('box_month.*', 'p.*', 'stock.stock as stock_daudin', 'v.description_fr', 'v.description_en')
+      .select('box_month.*', 'p.*', 'stock.quantity as stock_daudin', 'v.description_fr', 'v.description_en')
       .join('project as p', 'p.id', 'project_id')
       .join('vod as v', 'v.project_id', 'p.id')
       .join('stock', 'stock.project_id', 'v.project_id')
@@ -1902,12 +1902,12 @@ class Box {
       Utils.shuffle(months[project.date])
     }
     months.selection = await DB('vod')
-      .select('p.id', 'artist_name', 'name', 'picture', 'stock.stock', 'description_fr', 'description_en')
+      .select('p.id', 'artist_name', 'name', 'picture', 'stock.quantity as stock', 'description_fr', 'description_en')
       .join('project as p', 'p.id', 'project_id')
       .join('stock', 'stock.project_id', 'p.id')
       .where('stock.type', 'daudin')
       .where('is_shop', true)
-      .where('stock.stock', '>', 0)
+      .where('stock.quantity', '>', 0)
       .where('is_box', true)
       .orderBy(DB.raw('RAND()'))
       .all()
@@ -2095,7 +2095,7 @@ class Box {
           .where('date', params.month)
           .first()
         const vod = await DB('vod')
-          .select('is_box', 'stock.stock', 'barcode')
+          .select('is_box', 'stock.quantity as stock', 'barcode')
           .join('stock', 'stock.project_id', 'vod.project_id')
           .where('vod.project_id', p)
           .where('stock.type', 'daudin')

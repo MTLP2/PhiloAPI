@@ -242,15 +242,15 @@ Admin.getProject = async (id) => {
   stocks.unshift({
     type: 'distrib',
     is_distrib: true,
-    stock: stocks.filter(s => s.is_distrib).map(c => c.stock).reduce((a, c) => a + c, 0)
+    quantity: stocks.filter(s => s.is_distrib).map(c => c.quantity).reduce((a, c) => a + c, 0)
   })
   stocks.unshift({
     type: 'site',
     is_distrib: false,
-    stock: stocks.filter(s => !s.is_distrib).map(c => c.stock).reduce((a, c) => a + c, 0)
+    quantity: stocks.filter(s => !s.is_distrib).map(c => c.quantity).reduce((a, c) => a + c, 0)
   })
   for (const stock of stocks) {
-    project[`stock_${stock.type}`] = stock.stock
+    project[`stock_${stock.type}`] = stock.quantity
   }
 
   project.stock_preorder = project.goal - project.count - project.count_other - project.count_distrib
