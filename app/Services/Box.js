@@ -817,7 +817,7 @@ class Box {
         if (box.step !== 'confirmed' && dispatch) {
           end = dispatch.created_at
         }
-        if (!dispatch || (dispatch.created_at < payment.created_at && moment(payment.created_at).format('YYYY-MM') === moment().format('YYYY-MM'))) {
+        if (payment && (!dispatch || (dispatch.created_at < payment.created_at && moment(payment.created_at).format('YYYY-MM') === moment().format('YYYY-MM')))) {
           left = 1
         } else {
           left = 0
@@ -1165,14 +1165,14 @@ class Box {
         errors.push({ id: box.id, type: 'no_goodie' })
       }
       for (const g of gg) {
-        if (!goods[g]) {
-          goods[g] = 0
+        if (!goods[g.id]) {
+          goods[g.id] = 0
         }
-        const idx = goodies.findIndex(ggg => g === ggg.barcode)
+        const idx = goodies.findIndex(ggg => g.id === ggg.id)
         goodies[idx].stock--
-        goods[g]++
+        goods[g.id]++
       }
-      barcodes.push(...gg)
+      barcodes.push(...gg.map(g => g.barcode.split(',')))
 
       await DB('box_dispatch')
         .insert({
@@ -1185,11 +1185,11 @@ class Box {
         })
     }
 
-    console.log(goods)
+    console.log('// Goodies', goods)
 
     for (const g of Object.keys(goods)) {
       await DB('goodie')
-        .where('barcode', g)
+        .where('id', g)
         .update({
           stock: DB.raw(`stock - ${goods[g]}`)
         })
@@ -1204,7 +1204,7 @@ class Box {
         })
     }
 
-    console.log(selected)
+    console.log('selected', selected)
     for (const s of Object.keys(selected)) {
       Stock.save({
         project_id: s,
@@ -2202,7 +2202,8 @@ class Box {
     }
     **/
 
-    barcodes.push(...await Box.getMyGoodie(box, goodies, dispatchs))
+    const myGoodies = await Box.getMyGoodie(box, goodies, dispatchs)
+    barcodes.push(...myGoodies.map(g => g.barcode.split(',')))
 
     if (dispatch) {
       dispatch.barcodes = barcodes.join(',')
@@ -3098,7 +3099,7 @@ class Box {
         .filter(g => gg.indexOf(g.barcode) === -1)
         .filter(g => g.lang === 'all' || g.lang === box.lang)) {
         if (goodie.stock > 0 && dispatchs.indexOf(goodie.barcode) === -1) {
-          gg.push(...goodie.barcode.split(','))
+          gg.push(goodie)
           break
         }
       }
