@@ -1616,12 +1616,18 @@ Admin.extractOrders = async (params) => {
   const data = await Admin.getOrders(params)
 
   if (params.only_refunds === 'true') {
-    const refunds = await DB('refund')
+    const refundsRaw = await DB('refund')
       .select('refund.*', 'order.currency', 'order.user_id', 'order.payment_type')
       .join('order', 'order.id', 'refund.order_id')
       .where('refund.created_at', '>=', params.start)
       .where('refund.created_at', '<=', `${params.end} 23:59`)
       .all()
+
+    // Change refund.amount dots to commas (otherwise numbers are treated as dates by Drive)
+    const refunds = refundsRaw.map(refund => {
+      refund.amount = refund.amount.toString().replace('.', ',')
+      return refund
+    })
 
     return Utils.arrayToCsv([
       { name: 'ID', index: 'id' },
@@ -1782,6 +1788,7 @@ Admin.refundProject = async (id, params) => {
 }
 
 Admin.refundOrder = async (params) => {
+  console.log('🚀 ~ file: Admin.js ~ line 1789 ~ Admin.refundOrder= ~ params', params)
   const order = await DB('order').find(params.id)
   const customer = await DB('order_shop')
     .select('customer_id')
@@ -1817,13 +1824,15 @@ Admin.refundOrder = async (params) => {
           step: 'canceled'
         })
 
-      await Notification.new({
-        type: 'my_order_canceled',
-        user_id: order.user_id,
-        order_id: params.id,
-        order_shop_id: params.order_shop_id,
-        alert: 0
-      })
+      if (params.cancel_notification) {
+        await Notification.new({
+          type: 'my_order_canceled',
+          user_id: order.user_id,
+          order_id: params.id,
+          order_shop_id: params.order_shop_id,
+          alert: 0
+        })
+      }
     }
 
     await Order.addRefund(params)
