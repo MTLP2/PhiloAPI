@@ -23,6 +23,8 @@ const Daudin = use('App/Services/Daudin')
 const Artwork = use('App/Services/Artwork')
 const Stats = use('App/Services/Stats')
 const MailJet = use('App/Services/MailJet')
+const Vod = use('App/Services/Vod')
+const Review = use('App/Services/Review')
 const ApiError = use('App/ApiError')
 const ProjectService = use('App/Services/Project')
 const Database = use('Database')
@@ -135,6 +137,7 @@ class AdminController {
     project.is_visible = params.is_visible
     project.show_info = params.show_info
     project.show_image_bar = params.show_image_bar
+    project.show_reviews = params.show_reviews
     project.nb_vinyl = params.nb_vinyl
 
     await project.save()
@@ -243,6 +246,10 @@ class AdminController {
 
   async extractOrders ({ params, user }) {
     return Admin.extractOrders(params)
+  }
+
+  async exportReviews ({ params }) {
+    return Admin.exportReviews(params)
   }
 
   async checkSync ({ params }) {
@@ -796,6 +803,26 @@ class AdminController {
 
   getShippingRevenues ({ params }) {
     return Admin.getShippingRevenues(params)
+  }
+
+  getReviews ({ params }) {
+    return Review.all(params)
+  }
+
+  getProjectReviews ({ params }) {
+    return Review.find({ projectId: params.id, onlyVisible: false })
+  }
+
+  getPendingReviews ({ params }) {
+    return Review.getPending(params)
+  }
+
+  updateReview ({ params }) {
+    return Admin.updateReview(params)
+  }
+
+  deleteReview ({ params }) {
+    return Review.delete({ id: params.rid })
   }
 
   getProjectProductions ({ params }) {

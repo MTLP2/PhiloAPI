@@ -4,6 +4,7 @@ const Order = use('App/Services/Order')
 const Payment = use('App/Services/Payment')
 const Whiplash = use('App/Services/Whiplash')
 const Box = use('App/Services/Box')
+const Review = use('App/Services/Review')
 const DB = use('App/DB')
 const Utils = use('App/Utils')
 const { validateAll } = use('Validator')
@@ -200,6 +201,33 @@ class UserController {
   event ({ params, user }) {
     params.user_id = user.id
     return User.event(params)
+  }
+
+  async getProjectReviews ({ user, params }) {
+    params.user_id = user.id
+    return Review.getUserProjectReview(params)
+  }
+
+  async postReview ({ user, params, response }) {
+    // Validation differs if it's a bad review or not
+    const validation = !params.is_bad_review
+      ? await validateAll(params, {
+        title: 'required',
+        rate: 'required'
+      })
+      : await validateAll(params, {
+        message: 'required',
+        order_id: 'required',
+        order_shop_id: 'required',
+        project_id: 'required'
+      })
+
+    if (validation.fails()) {
+      return response.status(400).send({ error: validation.messages() })
+    }
+
+    params.user_id = user.id
+    return Review.save(params)
   }
 }
 

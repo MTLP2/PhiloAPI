@@ -6,6 +6,7 @@ const PromoCode = use('App/Services/PromoCode')
 const Storage = use('App/Services/Storage')
 const Statement = use('App/Services/Statement')
 const Bid = use('App/Services/Bid')
+const Review = use('App/Services/Review')
 const Utils = use('App/Utils')
 const Project = DB('project')
 const moment = require('moment')
@@ -591,6 +592,7 @@ Project.find = async (id, params) => {
       'v.is_size',
       'show_image_bar',
       'show_countdown',
+      'show_reviews',
       'v.bonus',
       // DB.raw('GROUP_CONCAT(ps.style_id SEPARATOR \',\') as styles'),
       DB.raw('DATE_FORMAT(end, \'%Y-%m-%d %H:%i\') as end'),
@@ -629,20 +631,20 @@ Project.find = async (id, params) => {
       `),
       DB.raw(`(
         select round(avg(rate),1)
-        from \`rating\`
-        where project_id = p.id
+        from \`review\`
+        where project_id = p.id AND is_visible = 1
       ) as rating
       `),
       DB.raw(`(
         select count(rate)
-        from \`rating\`
-        where project_id = p.id
+        from \`review\`
+        where project_id = p.id AND is_visible = 1
       ) as nb_rating
       `),
       DB.raw(`(
         select rate
-        from \`rating\`
-        where project_id = p.id and user_id = ${params.user_id}
+        from \`review\`
+        where project_id = p.id AND user_id = ${params.user_id}
       ) as my_rate
       `),
       'count',
@@ -699,15 +701,17 @@ Project.find = async (id, params) => {
 
   const salesPromise = PromoCode.getSales({ vod: true })
   const currenciesPromise = Utils.getCurrenciesDb()
+  const reviewPromise = Review.find({ projectId: id })
   const projectImagesPromise = Project.getProjectImages({ projectId: id })
 
-  const [project, songs, styles, sales, items, currencies, projectImages] = await Promise.all([
+  const [project, songs, styles, sales, items, currencies, reviews, projectImages] = await Promise.all([
     projectPromise,
     songsPromise,
     stylesPromise,
     salesPromise,
     itemsPromise,
     currenciesPromise,
+    reviewPromise,
     projectImagesPromise
   ])
 
@@ -763,6 +767,7 @@ Project.find = async (id, params) => {
 
   p.songs = songs
   p.styles = styles
+  p.reviews = reviews
 
   p.user = {
     id: p.user_id,
@@ -957,13 +962,13 @@ Project.removeNews = async (params) => {
 }
 
 Project.rate = async (params) => {
-  const rate = await DB('rating')
+  const rate = await DB('review')
     .where('project_id', params.project_id)
     .where('user_id', params.user.user_id)
     .first()
 
   if (rate) {
-    await DB('rating')
+    await DB('review')
       .where('project_id', params.project_id)
       .where('user_id', params.user.user_id)
       .update({
@@ -971,7 +976,7 @@ Project.rate = async (params) => {
         updated_at: Utils.date()
       })
   } else {
-    await DB('rating')
+    await DB('review')
       .insert({
         project_id: params.project_id,
         user_id: params.user.user_id,

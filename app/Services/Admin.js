@@ -15,6 +15,7 @@ const ApiError = use('App/ApiError')
 const Excel = require('exceljs')
 const Storage = use('App/Services/Storage')
 const Order = use('App/Services/Order')
+const Review = use('App/Services/Review')
 const Stock = use('App/Services/Stock')
 const Production = use('App/Services/Production')
 const Sna = use('App/Services/Sna')
@@ -214,7 +215,9 @@ Admin.getProject = async (id) => {
     .where('is_paid', 1)
     .all()
 
-  const [project, codes, costs, stocks, stocksHistoric, items, orders, projectImages] = await Promise.all([
+  const reviewsQuery = Review.find({ projectId: id, onlyVisible: false })
+
+  const [project, codes, costs, stocks, stocksHistoric, items, orders, projectImages, reviews] = await Promise.all([
     projectQuery,
     codesQuery,
     costsQuery,
@@ -222,6 +225,7 @@ Admin.getProject = async (id) => {
     stocksHistoricQuery,
     itemsQuery,
     ordersQuery,
+    reviewsQuery,
     projectImagesQuery
   ])
 
@@ -310,6 +314,7 @@ Admin.getProject = async (id) => {
   project.barcodes = barcodes
   project.exports = JSON.parse(project.exports)
   project.historic = JSON.parse(project.historic)
+  project.reviews = reviews
 
   return project
 }
@@ -1513,14 +1518,22 @@ Admin.getOrder = async (id) => {
     .leftJoin('item', 'item.id', 'order_item.item_id')
     .all()
 
-  orderItems.map(item => {
+  for (const item of orderItems) {
     const shop = order.shops
       .find(shop => shop.id === item.order_shop_id)
 
     if (shop) {
+      const review = await Review.find({
+        projectId: item.project_id,
+        userId: order.user_id,
+        onlyVisible: false
+      })
+      if (review) {
+        item.review = review[0]
+      }
       shop.items.push(item)
     }
-  })
+  }
 
   return order
 }
@@ -1634,6 +1647,23 @@ Admin.extractOrders = async (params) => {
     { name: 'Zip code', index: 'zip_code' },
     { name: 'State', index: 'state' },
     { name: 'Country', index: 'country_id' }
+  ], data.data)
+}
+
+Admin.exportReviews = async (params) => {
+  params.size = 0
+  const data = await Review.all(params)
+
+  return Utils.toCsv([
+    { name: 'ID', index: 'id' },
+    { name: 'User ID', index: 'user_id' },
+    { name: 'Project ID', index: 'project_id' },
+    { name: 'Project Name', index: 'name' },
+    { name: 'Status', index: 'is_visible' },
+    { name: 'Rate', index: 'rate' },
+    { name: 'Title', index: 'title' },
+    { name: 'Date', index: 'created_at' },
+    { name: 'Lang', index: 'lang' }
   ], data.data)
 }
 
@@ -1977,6 +2007,11 @@ Admin.getUser = async (id) => {
     .join('notifications', 'notifications.user_id', 'user.id')
     .belongsTo('customer')
     .first()
+
+  const reviews = await Review.find({ userId: id, onlyVisible: false })
+  if (reviews.length) {
+    user.reviews = reviews
+  }
 
   user.styles = user.styles ? JSON.parse(user.styles) : []
   user.digs = await Dig.byUser(id)
@@ -4255,6 +4290,47 @@ Admin.removePictureProject = async (id) => {
       picture_project: null
     })
 
+  return { success: true }
+}
+
+Admin.getReviews = async (params) => {
+  return await Review.all(params)
+}
+
+Admin.updateReview = async (params) => {
+  // If a review is -2 / complaint, admin can't change its status
+  const review = await Review.find({ reviewId: +params.rid })
+  if (review.is_visible === -2) {
+    throw new Error('You can\'t change the status of a complaint.')
+  }
+
+  // Admin must choose a lang if is_visible is 1|public
+  if (params.is_visible === 1 && (!params.lang && !review.lang)) throw new Error('You must choose a language if review is public.')
+
+  // A project can only have one is_starred
+  if (params.is_starred === 1) {
+    if (params.is_visible !== 1) {
+      throw new Error('A starred project can only be approved')
+    }
+
+    if (!params.lang) {
+      throw new Error('A starred project must have a language')
+    }
+
+    // Update all reviews linked to this project with same lang to 0
+    await DB('review')
+      .where('project_id', +params.id)
+      .where('lang', params.lang)
+      .update({ is_starred: 0 })
+  }
+
+  // Then update the selected review
+  await Review.update({ id: params.rid, params })
+  return { newTab: params.is_visible }
+}
+
+Admin.deleteReview = async (params) => {
+  await Review.delete({ id: params.rid })
   return { success: true }
 }
 
