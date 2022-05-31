@@ -94,17 +94,21 @@ App.hourly = async () => {
     if (hour === 3) {
       await App.currencies()
     } else if (hour === 4) {
-      await Whiplash.syncStocks()
       await Whiplash.setTrackingLinks()
     } else if (hour === 5) {
       await Cio.syncNewsletterNoAccount()
     } else if (hour === 7) {
-      await App.checkFinishedProjects()
-      await Production.checkNotif()
       await App.check5DaysLeftProjects()
     } else if (hour === 8) {
       await Box.checkReminder()
-      await Box.checkFinishedBox()
+    } else if (hour === 9) {
+      await Whiplash.syncStocks()
+    } else if (hour === 10) {
+      await Production.checkNotif()
+    } else if (hour === 11) {
+      await App.checkFinishedProjects()
+    } else if (hour === 12) {
+      await App.checkFinishedProjects()
     }
 
     await Storage.cleanTmp('storage')
