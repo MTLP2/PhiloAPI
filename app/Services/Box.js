@@ -952,7 +952,7 @@ class Box {
     const boxes = await DB().execute(`
       SELECT box.id, box.styles, box.step, box.periodicity, box.date_stop, box.type, d1.created_at as last_dispatch,
         box_project.gifts, project1, project2, project3, project4, project5, project6, user.email,
-        box_project.created_at, user.lang, box.user_id, (SELECT count(*) FROM box_sponsor where box_id = box.id AND used IS NULL) as vinyl_gift
+        box_project.created_at, user.email, user.lang, box.user_id, (SELECT count(*) FROM box_sponsor where box_id = box.id AND used IS NULL) as vinyl_gift
       FROM user, box
       LEFT OUTER JOIN box_project ON (box.id = box_project.box_id AND box_project.date = DATE_FORMAT(NOW(), "%Y-%m-01"))
       LEFT OUTER JOIN box_dispatch d1 ON (box.id = d1.box_id)
@@ -1027,6 +1027,7 @@ class Box {
     `)
     const stocks = {}
     const selected = {}
+    const success = []
     const errors = []
     for (const p in projects) {
       const project = projects[p]
@@ -1174,7 +1175,7 @@ class Box {
       }
       barcodes.push(...gg.map(g => g.barcode.split(',')))
 
-      await DB('box_dispatch')
+      const [id] = await DB('box_dispatch')
         .insert({
           box_id: box.id,
           barcodes: barcodes.join(','),
@@ -1183,6 +1184,14 @@ class Box {
           created_at: Utils.date(),
           updated_at: Utils.date()
         })
+
+      success.push({
+        id: id,
+        box_id: box.id,
+        user_id: box.user_id,
+        email: box.email,
+        barcodes: barcodes
+      })
     }
 
     console.log('// Goodies', goods)
@@ -1220,7 +1229,7 @@ class Box {
       to: 'box@diggersfactory.com,victor@diggersfactory.com',
       subject: 'Box - Dispatch',
       html: `
-        <p>${boxes.length} dispatch créés.</p>
+        <p>${success.length} dispatch créés.</p>
         <p>${errors.length} erreur(s).</p>
         ${errors.length > 0
           ? `<table>
@@ -1230,6 +1239,25 @@ class Box {
             </tr>
             ${errors.map(error =>
               `<tr><td>${error.id}</td><td>${error.type}</td></tr>`
+            ).join('')}
+          </table>`
+          : ''
+        }
+        ${success.length > 0
+          ? `<table>
+            <tr>
+              <th>Dispatch</th>
+              <th>Box</th>
+              <th>User</th>
+              <th>Barcodes</th>
+            </tr>
+            ${success.map(d =>
+              `<tr>
+                <td>${d.id}</td>
+                <td><a href="https://www.diggersfactory.com/sheraf/box/${d.box_id}">${d.box_id}</a></td>
+                <td><a href="https://www.diggersfactory.com/sheraf/user/${d.user_id}">${d.email}</a></td>
+                <td>${d.barcodes.map(b => b)}</td>
+              </tr>`
             ).join('')}
           </table>`
           : ''
