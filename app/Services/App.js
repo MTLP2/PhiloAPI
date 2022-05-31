@@ -12,7 +12,6 @@ const CronJobs = use('App/Models/CronJobs')
 const Statement = use('App/Services/Statement')
 const Production = use('App/Services/Production')
 const Storage = use('App/Services/Storage')
-const Review = use('App/Services/Review')
 const MondialRelay = use('App/Services/MondialRelay')
 const Invoice = use('App/Services/Invoice')
 const Cio = use('App/Services/CIO')
@@ -60,23 +59,6 @@ App.daily = async () => {
     }
 
     if (moment().format('DD') === '28') {
-      await Box.setDispatchs()
-    }
-    if (moment().format('DD') === '28') {
-      await Statement.setStorageCosts()
-      await Statement.sendStatements()
-    }
-    await App.currencies()
-    await App.checkFinishedProjects()
-    await Box.checkReminder()
-    await Box.checkFinishedBox()
-    await App.check5DaysLeftProjects()
-    await Whiplash.syncStocks()
-    await Production.checkNotif()
-    await Whiplash.setTrackingLinks()
-    await Review.checkNotif()
-
-    if (moment().format('DD') === '31') {
       await Statement.setStorageCosts()
       await Statement.sendStatements()
       await Box.setDispatchs()
@@ -442,6 +424,7 @@ App.notification = async (notif, test = false) => {
       }
     })
   }
+
   if (n.box_id) {
     data.box = await DB('box').where('id', n.box_id).first()
     data.box.type = data.box.jazz ? 'Jazz Box' : 'Discovery'
@@ -605,18 +588,6 @@ App.notification = async (notif, test = false) => {
       }
     ]
   }
-
-  if (n.type === 'user_bad_review') {
-    const review = await Review.find({ reviewId: n.review_id })
-    data.message = review.message.replace(/\n/g, '<br><br>')
-    data.user_name = review.user_name
-    data.project_name = review.name
-  }
-
-  if (n.type === 'review_request') {
-    data.address = null
-  }
-
   if (n.invoice_id) {
     data.from_address = 'nelly@diggersfactory.com'
     data.invoice = await DB('invoice')
