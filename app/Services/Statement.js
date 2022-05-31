@@ -130,7 +130,7 @@ class StatementService {
       if (!data[d].project) {
         data[d].project = Project.query()
           .select('project.id', 'project.name', 'artist_name', 'fee_distrib',
-            'currency', 'item.name as item_name')
+            'currency', 'item.name as item_name', 'project.picture')
           .join('vod', 'vod.project_id', 'project.id')
           .join('item', 'item.project_id', 'project.id')
 
