@@ -609,7 +609,7 @@ User.getOrderShop = async (params) => {
 
 User.updateOrderCustomer = async (params) => {
   const order = await DB()
-    .select('os.user_id', 'order_id', 'pickup_not_found', 'customer_id')
+    .select('os.user_id', 'order_id', 'date_export', 'pickup_not_found', 'customer_id')
     .from('order_shop as os')
     .join('order', 'order.id', 'os.order_id')
     .where('os.id', params.shop_id)
@@ -627,7 +627,8 @@ User.updateOrderCustomer = async (params) => {
         pickup_not_found: false,
         updated_at: Utils.date()
       })
-    if (order.pickup_not_found) {
+
+    if (order.date_export && order.pickup_not_found) {
       await Notification.sendEmail({
         to: 'support@diggersfactory.com,victor@diggersfactory.com',
         subject: 'Changmenet point relais effectué',
