@@ -896,8 +896,8 @@ class Box {
 
   static async cleanDispatchs () {
     const dispatchs = await DB('box_dispatch')
-      .whereNull('box_project_id')
       .whereNull('date_export')
+      .where('is_generate', true)
       .all()
 
     const bb = {}
@@ -1180,7 +1180,8 @@ class Box {
           box_id: box.id,
           barcodes: barcodes.join(','),
           step: 'confirmed',
-          is_daudin: 1,
+          is_daudin: true,
+          is_generate: true,
           created_at: Utils.date(),
           updated_at: Utils.date()
         })
