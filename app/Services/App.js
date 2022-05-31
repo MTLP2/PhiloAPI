@@ -71,6 +71,11 @@ App.daily = async () => {
   } catch (err) {
     cron.status = 'error'
     await cron.save()
+    await Notification.sendEmail({
+      to: 'victor@diggersfactory.com',
+      subject: 'Error daily task',
+      html: err
+    })
     throw err
   }
 }
@@ -120,6 +125,11 @@ App.hourly = async () => {
   } catch (err) {
     cron.status = 'error'
     await cron.save()
+    await Notification.sendEmail({
+      to: 'victor@diggersfactory.com',
+      subject: 'Error hourly task',
+      html: err
+    })
     throw err
   }
 }
@@ -140,6 +150,7 @@ App.cron = async () => {
     if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'staging') {
       await App.checkReminderLabels()
     }
+
     await App.checkNotifications()
     await Project.deleteDownload()
     await MondialRelay.checkSent()
@@ -154,6 +165,11 @@ App.cron = async () => {
   } catch (err) {
     cron.status = 'error'
     await cron.save()
+    await Notification.sendEmail({
+      to: 'victor@diggersfactory.com',
+      subject: 'Error minutely task',
+      html: err.message
+    })
     throw err
   }
 }
