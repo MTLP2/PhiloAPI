@@ -1614,12 +1614,18 @@ Admin.extractOrders = async (params) => {
   const data = await Admin.getOrders(params)
 
   if (params.only_refunds === 'true') {
-    const refunds = await DB('refund')
+    const refundsRaw = await DB('refund')
       .select('refund.*', 'order.currency', 'order.user_id', 'order.payment_type')
       .join('order', 'order.id', 'refund.order_id')
       .where('refund.created_at', '>=', params.start)
       .where('refund.created_at', '<=', `${params.end} 23:59`)
       .all()
+
+    // Change refund.amount dots to commas (otherwise numbers are treated as dates by Drive)
+    const refunds = refundsRaw.map(refund => {
+      refund.amount = refund.amount.toString().replace('.', ',')
+      return refund
+    })
 
     return Utils.arrayToCsv([
       { name: 'ID', index: 'id' },
