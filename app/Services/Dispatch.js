@@ -310,7 +310,7 @@ Dispatch.changeStock = async (params) => {
   </ul>`
 
     await Notification.sendEmail({
-      to: 'alexis@diggersfactory.com,victor@diggersfactory.com,ismail@diggersfactory.com,prod@diggersfactory.com',
+      to: 'alexis@diggersfactory.com,victor@diggersfactory.com,ismail@diggersfactory.com',
       subject: `${params.transporter} - new stock : ${params.barcode}`,
       html: html
     })
