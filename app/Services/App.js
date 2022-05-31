@@ -57,7 +57,6 @@ App.daily = async () => {
     **/
     if (moment().format('E') !== '6' && moment().format('E') !== '7') {
       await Daudin.export()
-      await App.alertStock()
     }
 
     if (moment().format('DD') === '28') {
