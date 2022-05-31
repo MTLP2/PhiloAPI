@@ -247,7 +247,7 @@ Utils.getRows = async (params) => {
             if (value) {
               let column = filter.name
               if (filter.name && filter.name.includes(' ')) {
-                column = DB.raw(`CONCAT(${column.split(' ').join(',\' \',')})`)
+                column = DB.raw(`CONCAT(${column.split(' ').map(c => `COALESCE(${c}, '')`).join(',\' \',')})`)
               }
               if (value.indexOf('!=null') !== -1) {
                 q.orWhereNotNull(column)
