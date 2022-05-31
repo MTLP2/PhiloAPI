@@ -1495,7 +1495,7 @@ Admin.getOrder = async (id) => {
     .all()
 
   const orderShops = await DB('order_shop')
-    .select('order_shop.*', 'user.name')
+    .select('order_shop.*', 'user.name', 'payment.code as payment_code')
     .join('user', 'user.id', 'order_shop.shop_id')
     .leftJoin('payment', 'payment.id', 'order_shop.shipping_payment_id')
     .where('order_id', id)
