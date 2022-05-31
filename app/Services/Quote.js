@@ -245,6 +245,8 @@ class Quote {
       quote[c] = Math.round(quote[c] * (1 + feeProd / 100))
       if (data.factory === 'sna') {
         quote[c] = Math.round(quote[c] * 1.02)
+      } else if (data.factory === 'vdp') {
+        quote[c] = Math.round(quote[c] * 1.14)
       }
     }
 
