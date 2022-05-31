@@ -220,7 +220,7 @@ Admin.getProject = async (id) => {
 
   const reviewsQuery = Review.find({ projectId: id, onlyVisible: false })
 
-  const [project, codes, costs, stocks, stocksHistoric, items, orders, projectImages, reviews] = await Promise.all([
+  const [project, codes, costs, stocks, stocksHistoric, items, orders, reviews, projectImages] = await Promise.all([
     projectQuery,
     codesQuery,
     costsQuery,
