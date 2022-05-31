@@ -201,6 +201,7 @@ Admin.getProject = async (id) => {
       'os.id',
       'type',
       'quantity',
+      'size',
       'date_export',
       'whiplash_id',
       'os.transporter',
@@ -266,11 +267,12 @@ Admin.getProject = async (id) => {
   const barcodes = {}
   project.to_sizes = {}
   for (const order of orders) {
-    if (!project.to_sizes[order.size]) {
-      project.to_sizes[order.size] = 0
+    if (order.size) {
+      if (!project.to_sizes[order.size]) {
+        project.to_sizes[order.size] = 0
+      }
+      project.to_sizes[order.size]++
     }
-    project.to_sizes[order.size]++
-
     if (!order.transporter) {
       order.transporter = 'daudin'
     }
