@@ -171,7 +171,9 @@ Admin.getProject = async (id) => {
     .all()
 
   const projectImagesQuery = Project.getProjectImages({ projectId: id })
-  const stocksQuery = Stock.getProject(id)
+  const stocksQuery = DB('stock')
+    .where('project_id', id)
+    .all()
 
   const stocksHistoricQuery = DB('stock_historic')
     .select('stock_historic.*', 'user.name')
@@ -235,8 +237,20 @@ Admin.getProject = async (id) => {
   project.project_images = projectImages
   project.stocks_historic = stocksHistoric
 
-  for (const [key, value] of Object.entries(stocks)) {
-    project[`stock_${key}`] = value
+  project.stocks = stocks
+
+  stocks.unshift({
+    type: 'distrib',
+    is_distrib: true,
+    stock: stocks.filter(s => s.is_distrib).map(c => c.stock).reduce((a, c) => a + c, 0)
+  })
+  stocks.unshift({
+    type: 'site',
+    is_distrib: false,
+    stock: stocks.filter(s => !s.is_distrib).map(c => c.stock).reduce((a, c) => a + c, 0)
+  })
+  for (const stock of stocks) {
+    project[`stock_${stock.type}`] = stock.stock
   }
 
   project.stock_preorder = project.goal - project.count - project.count_other - project.count_distrib

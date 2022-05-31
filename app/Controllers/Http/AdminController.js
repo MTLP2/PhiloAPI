@@ -213,7 +213,8 @@ class AdminController {
     return Statement.upload(params)
   }
 
-  uploadStocks ({ params }) {
+  uploadStocks ({ params, user }) {
+    params.user_id = user.id
     return Stock.upload(params)
   }
 

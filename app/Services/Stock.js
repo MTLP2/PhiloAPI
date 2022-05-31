@@ -35,6 +35,7 @@ class Stock {
       stock = DB('stock')
       stock.project_id = params.project_id
       stock.type = params.type
+      stock.is_distrib = params.is_distrib || false
       stock.stock = 0
       stock.created_at = Utils.date()
     }
@@ -59,18 +60,19 @@ class Stock {
 
     await stock.save()
 
-    const stocks = await Stock.getProject(params.project_id)
-
-    await DB('vod')
-      .where('project_id', params.project_id)
-      .update({
-        stock: Object.values(stocks).reduce((a, b) => {
-          if (b < 0) {
-            b = 0
-          }
-          return a + b
-        }, 0)
-      })
+    if (!params.is_distrib) {
+      const stocks = await Stock.getProject(params.project_id)
+      await DB('vod')
+        .where('project_id', params.project_id)
+        .update({
+          stock: Object.values(stocks).reduce((a, b) => {
+            if (b < 0) {
+              b = 0
+            }
+            return a + b
+          }, 0)
+        })
+    }
   }
 
   static async calcul ({ id, isShop, quantity, transporter, recursive = true }) {
@@ -338,56 +340,30 @@ class Stock {
       }
     })
 
-    if (params.save) {
+    const projects = await DB('vod')
+      .select('project.id', 'artist_name', 'picture', 'name', 'vod.barcode')
+      .join('project', 'project.id', 'vod.project_id')
+      .whereIn('barcode', stocks.map(s => s.barcode))
+      .all()
+
+    for (const [i, stock] of Object.entries(stocks)) {
+      stocks[i].project = projects.find(p => +p.barcode === +stock.barcode)
+    }
+
+    if (params.type === 'save') {
       for (const stock of stocks) {
-        const exists = DB('stock')
-          .where('project_id', stock.project_id)
-          .where('type', params.distributor)
-          .first()
-
-        if (exists) {
-          exists.stock = stock.quantity
-          exists.updated_at = Utils.date()
-          await exists.save()
-        } else {
-          await DB('stock_historic')
-            .insert({
-              user_id: params.user_id,
-              project_id: stock.project_id,
-              type: params.distributor,
-              new: stock.quantity,
-              created_at: `${params.year}-${params.month}-${params.day}`,
-              updated_at: Utils.date()
-            })
-        }
-
-        /**
-        const historic = DB('stock')
-          .where('project_id', stock.project_id)
-          .where('type', params.distributor)
-          .all()
-        if (!historic) {
-          await DB('stock')
-            .insert({
-              project_id: stock.project_id,
-              type: params.distributor,
-              stock: stock.quantity,
-              is_distrib: true
-            })
-        }
-        const s = DB('stock')
-          .where('project_id', stock.project_id)
-          .where('type', params.distributor)
-          .first()
-        await DB('stock')
-          .insert({
-            project_id: stock.project_id,
+        if (stock.project) {
+          await Stock.save({
+            project_id: stock.project.id,
             type: params.distributor,
             stock: stock.quantity,
+            comment: 'uplaod',
+            user_id: params.user_id,
             is_distrib: true
           })
-        **/
+        }
       }
+      return { success: true }
     } else {
       return stocks
     }
