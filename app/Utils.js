@@ -204,12 +204,16 @@ Utils.strdecode = data => {
   return JSON.parse(unescape(decodeURIComponent(data)))
 }
 
-Utils.hashid = (id) => {
+Utils.hashId = (id) => {
   return hashids.encode(id)
 }
 
-Utils.unhashid = (id) => {
-  return hashids.decode(id)[0]
+Utils.unhashId = (id) => {
+  try {
+    return hashids.decode(id)[0]
+  } catch (err) {
+    return null
+  }
 }
 
 Utils.toPdf = async (html) => {
