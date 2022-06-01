@@ -16,7 +16,6 @@ const bwipjs = require('bwip-js')
 const JSZip = require('jszip')
 const soap = require('soap')
 const Env = use('Env')
-const Hashids = require('hashids')
 
 class Box {
   static all (params) {
@@ -522,7 +521,7 @@ class Box {
 
     let sponsor = null
     if (box.sponsor) {
-      const decode = Box.decodeSponsor(box.sponsor)
+      const decode = Utils.unhashId(box.sponsor)
       if (decode) {
         const sponsorBox = await DB('box')
           .where('id', decode)
@@ -736,22 +735,8 @@ class Box {
     }
   }
 
-  static encodeSponsor (box) {
-    const hashids = new Hashids('diggers', 5)
-    return hashids.encode(box.id)
-  }
-
-  static decodeSponsor (code) {
-    const hashids = new Hashids('diggers', 5)
-    try {
-      return hashids.decode(code)
-    } catch (err) {
-      return ''
-    }
-  }
-
   static async checkSponsor (params) {
-    const boxId = Box.decodeSponsor(params.sponsor)
+    const boxId = Utils.unhashId(params.sponsor)
     if (boxId.length === 0) {
       return { error: 'box_not_found' }
     } else {
@@ -2577,7 +2562,7 @@ class Box {
         duration = Math.round(moment.duration(moment(box.end).diff(moment(box.start))).asMonths()) + 1
       }
 
-      box.sponsor = Box.encodeSponsor(box)
+      box.sponsor = Utils.hashId(box)
 
       csv += `${box.id},`
       csv += `${box.type},`

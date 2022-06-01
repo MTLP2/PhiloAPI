@@ -4,6 +4,8 @@ const config = require('../config')
 const fs = require('fs')
 const DB = use('App/DB')
 const { v4: uuidv4 } = require('uuid')
+const Hashids = require('hashids')
+const hashids = new Hashids('diggers', 5)
 
 const Utils = {}
 
@@ -200,6 +202,14 @@ Utils.strencode = data => {
 
 Utils.strdecode = data => {
   return JSON.parse(unescape(decodeURIComponent(data)))
+}
+
+Utils.hashid = (id) => {
+  return hashids.encode(id)
+}
+
+Utils.unhashid = (id) => {
+  return hashids.decode(id)[0]
 }
 
 Utils.toPdf = async (html) => {

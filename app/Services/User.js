@@ -5,7 +5,6 @@ const Notification = require('./Notification')
 const ApiError = use('App/ApiError')
 const Customer = require('./Customer')
 const Order = require('./Order')
-const ProjectEdit = require('./ProjectEdit')
 const Artwork = require('./Artwork')
 const Box = require('./Box')
 const DB = use('App/DB')
@@ -15,7 +14,6 @@ const moment = require('moment')
 const cio = use('App/Services/CIO')
 const User = DB('user')
 const config = require('../../config')
-const Hashids = require('hashids')
 
 User.me = (id) => {
   const user = DB()
@@ -851,17 +849,11 @@ User.unsubscribeNewsletter = async (params) => {
 }
 
 User.encodeUnsubscribeNewseletter = (id) => {
-  const hashids = new Hashids('diggers', 10)
-  return hashids.encode(id)
+  return Utils.hashId(id)
 }
 
 User.decodeUnsubscribeNewseletter = (id) => {
-  const hashids = new Hashids('diggers', 10)
-  try {
-    return hashids.decode(id)
-  } catch (err) {
-    return ''
-  }
+  return Utils.unhashId(id)
 }
 
 User.event = async (params) => {
