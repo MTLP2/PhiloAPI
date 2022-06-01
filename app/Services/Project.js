@@ -1369,14 +1369,9 @@ Project.getStatements = async (params) => {
 
   const [orders, statements, boxes] = await Promise.all([ordersPromise, statementsPromise, boxesPromise])
 
-  let periodicity = 'months'
-  let format = 'YYYY-MM'
-
   if (params.period === 'last_month') {
     params.start = moment().subtract('1', 'months').format('YYYY-MM-DD 23:59')
     params.end = moment().format('YYYY-MM-DD 23:59')
-    format = 'YYYY-MM-DD'
-    periodicity = 'days'
   } else if (params.period === 'all_time') {
     if (orders.length > 0) {
       params.start = orders[0].created_at.substring(0, 10)
@@ -1389,6 +1384,17 @@ Project.getStatements = async (params) => {
     params.end = moment().format('YYYY-MM-DD 23:59')
   }
 
+  const diff = moment(params.end).diff(moment(params.start), 'days')
+  let format
+  let periodicity
+  if (diff < 50) {
+    periodicity = 'days'
+    format = 'YYYY-MM-DD'
+  } else {
+    periodicity = 'months'
+    format = 'YYYY-MM'
+  }
+
   const dates = {}
   const now = moment(params.start)
   while (now.isSameOrBefore(moment(params.end))) {
@@ -1398,6 +1404,7 @@ Project.getStatements = async (params) => {
 
   const s = {
     currency: 'EUR',
+    periodicity: periodicity,
     outstanding: {
       all: 0, total: 0, dates: { ...dates }
     },
