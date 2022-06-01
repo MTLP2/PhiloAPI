@@ -100,17 +100,13 @@ App.hourly = async () => {
       await Cio.syncNewsletterNoAccount()
     } else if (hour === 7) {
       await App.check5DaysLeftProjects()
+      await App.checkFinishedProjects()
     } else if (hour === 8) {
       await Box.checkReminder()
+      await Production.checkNotif()
     } else if (hour === 9) {
       await Whiplash.syncStocks()
     } else if (hour === 10) {
-      await Production.checkNotif()
-    } else if (hour === 11) {
-      await App.checkFinishedProjects()
-    } else if (hour === 12) {
-      await App.checkFinishedProjects()
-    } else if (hour === 13) {
       await Review.checkNotif()
     }
 
