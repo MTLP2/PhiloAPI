@@ -241,6 +241,7 @@ Project.findAll = async (params) => {
     .from('project as p')
     .join('vod as v', 'p.id', 'v.project_id')
     .leftJoin('item', 'item.id', 'v.related_item_id')
+    .where('p.is_visible', true)
 
   if (params.type === 'liked') {
     params.liked = params.user_id
@@ -309,10 +310,12 @@ Project.findAll = async (params) => {
   }
   if (params.user_id) {
     projects.where('v.user_id', params.user_id)
-      .where('v.step', 'in_progress')
+    if (params.promo && Utils.unhashId(params.promo) === +params.user_id) {
+      projects.whereIn('v.step', ['in_progress', 'promo'])
+    } else {
+      projects.where('v.step', 'in_progress')
+    }
     params.limit = 1000
-  } else {
-    projects.where('p.is_visible', true)
   }
 
   if (params.supported) {
