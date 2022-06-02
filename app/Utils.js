@@ -4,6 +4,8 @@ const config = require('../config')
 const fs = require('fs')
 const DB = use('App/DB')
 const { v4: uuidv4 } = require('uuid')
+const Hashids = require('hashids')
+const hashids = new Hashids('diggers', 5)
 
 const Utils = {}
 
@@ -202,6 +204,18 @@ Utils.strdecode = data => {
   return JSON.parse(unescape(decodeURIComponent(data)))
 }
 
+Utils.hashId = (id) => {
+  return hashids.encode(id)
+}
+
+Utils.unhashId = (id) => {
+  try {
+    return hashids.decode(id)[0]
+  } catch (err) {
+    return null
+  }
+}
+
 Utils.toPdf = async (html) => {
   return new Promise((resolve, reject) => {
     const pdf = require('html-pdf')
@@ -247,7 +261,7 @@ Utils.getRows = async (params) => {
             if (value) {
               let column = filter.name
               if (filter.name && filter.name.includes(' ')) {
-                column = DB.raw(`CONCAT(${column.split(' ').join(',\' \',')})`)
+                column = DB.raw(`CONCAT(${column.split(' ').map(c => `COALESCE(${c}, '')`).join(',\' \',')})`)
               }
               if (value.indexOf('!=null') !== -1) {
                 q.orWhereNotNull(column)

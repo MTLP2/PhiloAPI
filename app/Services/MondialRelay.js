@@ -236,34 +236,37 @@ class MondialRelay {
         params.Security = md5(security).toUpperCase()
 
         client.WSI2_TracingColisDetaille(params, function (err, result) {
-          if (err) {
-            reject(err)
+          try {
+            if (err) {
+              reject(err)
+            }
+            // 82 => Colis récupéré
+            // 81 => Colis disponible
+
+            const delivered = result
+              .WSI2_TracingColisDetailleResult
+              .Tracing
+              .ret_WSI2_sub_TracingColisDetaille
+              .some(s => s.Libelle === 'COLIS LIVRÉ')
+
+            if (delivered) {
+              resolve('delivered')
+            }
+
+            const available = result
+              .WSI2_TracingColisDetailleResult
+              .Tracing
+              .ret_WSI2_sub_TracingColisDetaille
+              .some(s => s.Libelle === 'DISPONIBLE AU POINT RELAIS')
+
+            if (available) {
+              resolve('available')
+            }
+
+            resolve('in_progress')
+          } catch (err) {
+            resolve(false)
           }
-
-          // 82 => Colis récupéré
-          // 81 => Colis disponible
-
-          const delivered = result
-            .WSI2_TracingColisDetailleResult
-            .Tracing
-            .ret_WSI2_sub_TracingColisDetaille
-            .some(s => s.Libelle === 'COLIS LIVRÉ')
-
-          if (delivered) {
-            resolve('delivered')
-          }
-
-          const available = result
-            .WSI2_TracingColisDetailleResult
-            .Tracing
-            .ret_WSI2_sub_TracingColisDetaille
-            .some(s => s.Libelle === 'DISPONIBLE AU POINT RELAIS')
-
-          if (available) {
-            resolve('available')
-          }
-
-          resolve('in_progress')
         })
       })
     })

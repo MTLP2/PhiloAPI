@@ -55,7 +55,7 @@
     "paypal-rest-sdk": "^1.8.1",
     "postcode-validator": "^3.3.0",
     "request": "^2.88.2",
-    "sharp": "^0.30.4",
+    "sharp": "^0.30.6",
     "sitemap": "^2.2.0",
     "soap": "^0.33.0",
     "stripe": "^7.15.0",

@@ -15,6 +15,7 @@ const ApiError = use('App/ApiError')
 const Excel = require('exceljs')
 const Storage = use('App/Services/Storage')
 const Order = use('App/Services/Order')
+const Review = use('App/Services/Review')
 const Stock = use('App/Services/Stock')
 const Production = use('App/Services/Production')
 const Sna = use('App/Services/Sna')
@@ -171,7 +172,9 @@ Admin.getProject = async (id) => {
     .all()
 
   const projectImagesQuery = Project.getProjectImages({ projectId: id })
-  const stocksQuery = Stock.getProject(id)
+  const stocksQuery = DB('stock')
+    .where('project_id', id)
+    .all()
 
   const stocksHistoricQuery = DB('stock_historic')
     .select('stock_historic.*', 'user.name')
@@ -198,6 +201,7 @@ Admin.getProject = async (id) => {
       'os.id',
       'type',
       'quantity',
+      'size',
       'date_export',
       'whiplash_id',
       'os.transporter',
@@ -214,7 +218,9 @@ Admin.getProject = async (id) => {
     .where('is_paid', 1)
     .all()
 
-  const [project, codes, costs, stocks, stocksHistoric, items, orders, projectImages] = await Promise.all([
+  const reviewsQuery = Review.find({ projectId: id, onlyVisible: false })
+
+  const [project, codes, costs, stocks, stocksHistoric, items, orders, reviews, projectImages] = await Promise.all([
     projectQuery,
     codesQuery,
     costsQuery,
@@ -222,6 +228,7 @@ Admin.getProject = async (id) => {
     stocksHistoricQuery,
     itemsQuery,
     ordersQuery,
+    reviewsQuery,
     projectImagesQuery
   ])
 
@@ -235,8 +242,20 @@ Admin.getProject = async (id) => {
   project.project_images = projectImages
   project.stocks_historic = stocksHistoric
 
-  for (const [key, value] of Object.entries(stocks)) {
-    project[`stock_${key}`] = value
+  project.stocks = stocks
+
+  stocks.unshift({
+    type: 'distrib',
+    is_distrib: true,
+    quantity: stocks.filter(s => s.is_distrib).map(c => c.quantity).reduce((a, c) => a + c, 0)
+  })
+  stocks.unshift({
+    type: 'site',
+    is_distrib: false,
+    quantity: stocks.filter(s => !s.is_distrib).map(c => c.quantity).reduce((a, c) => a + c, 0)
+  })
+  for (const stock of stocks) {
+    project[`stock_${stock.type}`] = stock.quantity
   }
 
   project.stock_preorder = project.goal - project.count - project.count_other - project.count_distrib
@@ -248,11 +267,12 @@ Admin.getProject = async (id) => {
   const barcodes = {}
   project.to_sizes = {}
   for (const order of orders) {
-    if (!project.to_sizes[order.size]) {
-      project.to_sizes[order.size] = 0
+    if (order.size) {
+      if (!project.to_sizes[order.size]) {
+        project.to_sizes[order.size] = 0
+      }
+      project.to_sizes[order.size]++
     }
-    project.to_sizes[order.size]++
-
     if (!order.transporter) {
       order.transporter = 'daudin'
     }
@@ -310,6 +330,7 @@ Admin.getProject = async (id) => {
   project.barcodes = barcodes
   project.exports = JSON.parse(project.exports)
   project.historic = JSON.parse(project.historic)
+  project.reviews = reviews
 
   return project
 }
@@ -1474,7 +1495,7 @@ Admin.getOrder = async (id) => {
     .all()
 
   const orderShops = await DB('order_shop')
-    .select('order_shop.*', 'user.name')
+    .select('order_shop.*', 'user.name', 'payment.code as payment_code')
     .join('user', 'user.id', 'order_shop.shop_id')
     .leftJoin('payment', 'payment.id', 'order_shop.shipping_payment_id')
     .where('order_id', id)
@@ -1513,14 +1534,22 @@ Admin.getOrder = async (id) => {
     .leftJoin('item', 'item.id', 'order_item.item_id')
     .all()
 
-  orderItems.map(item => {
+  for (const item of orderItems) {
     const shop = order.shops
       .find(shop => shop.id === item.order_shop_id)
 
     if (shop) {
+      const review = await Review.find({
+        projectId: item.project_id,
+        userId: order.user_id,
+        onlyVisible: false
+      })
+      if (review) {
+        item.review = review[0]
+      }
       shop.items.push(item)
     }
-  })
+  }
 
   return order
 }
@@ -1587,12 +1616,18 @@ Admin.extractOrders = async (params) => {
   const data = await Admin.getOrders(params)
 
   if (params.only_refunds === 'true') {
-    const refunds = await DB('refund')
+    const refundsRaw = await DB('refund')
       .select('refund.*', 'order.currency', 'order.user_id', 'order.payment_type')
       .join('order', 'order.id', 'refund.order_id')
       .where('refund.created_at', '>=', params.start)
       .where('refund.created_at', '<=', `${params.end} 23:59`)
       .all()
+
+    // Change refund.amount dots to commas (otherwise numbers are treated as dates by Drive)
+    const refunds = refundsRaw.map(refund => {
+      refund.amount = refund.amount.toString().replace('.', ',')
+      return refund
+    })
 
     return Utils.arrayToCsv([
       { name: 'ID', index: 'id' },
@@ -1634,6 +1669,23 @@ Admin.extractOrders = async (params) => {
     { name: 'Zip code', index: 'zip_code' },
     { name: 'State', index: 'state' },
     { name: 'Country', index: 'country_id' }
+  ], data.data)
+}
+
+Admin.exportReviews = async (params) => {
+  params.size = 0
+  const data = await Review.all(params)
+
+  return Utils.toCsv([
+    { name: 'ID', index: 'id' },
+    { name: 'User ID', index: 'user_id' },
+    { name: 'Project ID', index: 'project_id' },
+    { name: 'Project Name', index: 'name' },
+    { name: 'Status', index: 'is_visible' },
+    { name: 'Rate', index: 'rate' },
+    { name: 'Title', index: 'title' },
+    { name: 'Date', index: 'created_at' },
+    { name: 'Lang', index: 'lang' }
   ], data.data)
 }
 
@@ -1736,6 +1788,7 @@ Admin.refundProject = async (id, params) => {
 }
 
 Admin.refundOrder = async (params) => {
+  console.log('🚀 ~ file: Admin.js ~ line 1789 ~ Admin.refundOrder= ~ params', params)
   const order = await DB('order').find(params.id)
   const customer = await DB('order_shop')
     .select('customer_id')
@@ -1771,13 +1824,15 @@ Admin.refundOrder = async (params) => {
           step: 'canceled'
         })
 
-      await Notification.new({
-        type: 'my_order_canceled',
-        user_id: order.user_id,
-        order_id: params.id,
-        order_shop_id: params.order_shop_id,
-        alert: 0
-      })
+      if (params.cancel_notification) {
+        await Notification.new({
+          type: 'my_order_canceled',
+          user_id: order.user_id,
+          order_id: params.id,
+          order_shop_id: params.order_shop_id,
+          alert: 0
+        })
+      }
     }
 
     await Order.addRefund(params)
@@ -1977,6 +2032,11 @@ Admin.getUser = async (id) => {
     .join('notifications', 'notifications.user_id', 'user.id')
     .belongsTo('customer')
     .first()
+
+  const reviews = await Review.find({ userId: id, onlyVisible: false })
+  if (reviews.length) {
+    user.reviews = reviews
+  }
 
   user.styles = user.styles ? JSON.parse(user.styles) : []
   user.digs = await Dig.byUser(id)
@@ -4255,6 +4315,47 @@ Admin.removePictureProject = async (id) => {
       picture_project: null
     })
 
+  return { success: true }
+}
+
+Admin.getReviews = async (params) => {
+  return await Review.all(params)
+}
+
+Admin.updateReview = async (params) => {
+  // If a review is -2 / complaint, admin can't change its status
+  const review = await Review.find({ reviewId: +params.rid })
+  if (review.is_visible === -2) {
+    throw new Error('You can\'t change the status of a complaint.')
+  }
+
+  // Admin must choose a lang if is_visible is 1|public
+  if (params.is_visible === 1 && (!params.lang && !review.lang)) throw new Error('You must choose a language if review is public.')
+
+  // A project can only have one is_starred
+  if (params.is_starred === 1) {
+    if (params.is_visible !== 1) {
+      throw new Error('A starred project can only be approved')
+    }
+
+    if (!params.lang) {
+      throw new Error('A starred project must have a language')
+    }
+
+    // Update all reviews linked to this project with same lang to 0
+    await DB('review')
+      .where('project_id', +params.id)
+      .where('lang', params.lang)
+      .update({ is_starred: 0 })
+  }
+
+  // Then update the selected review
+  await Review.update({ id: params.rid, params })
+  return { newTab: params.is_visible }
+}
+
+Admin.deleteReview = async (params) => {
+  await Review.delete({ id: params.rid })
   return { success: true }
 }
 

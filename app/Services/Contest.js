@@ -1,7 +1,5 @@
 const DB = use('App/DB')
 const Utils = use('App/Utils')
-const Hashids = require('hashids')
-const hashids = new Hashids('diggers', 5)
 const ApiError = use('App/ApiError')
 
 class Contest {
@@ -23,7 +21,7 @@ class Contest {
     res.data = res.data.map(res => {
       return {
         ...res,
-        code: hashids.encode(res.id)
+        code: Utils.hashId(res.id)
       }
     })
 
@@ -41,7 +39,7 @@ class Contest {
       item.where('id', 18)
     } else {
       try {
-        id = hashids.decode(id)[0]
+        id = Utils.unhashId(id)
         if (!Number.isInteger(id)) {
           throw new ApiError(404)
         }

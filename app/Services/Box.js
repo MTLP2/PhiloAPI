@@ -16,7 +16,6 @@ const bwipjs = require('bwip-js')
 const JSZip = require('jszip')
 const soap = require('soap')
 const Env = use('Env')
-const Hashids = require('hashids')
 
 class Box {
   static all (params) {
@@ -238,12 +237,12 @@ class Box {
     }
 
     stats.selections = await DB('vod')
-      .select('p.id', 'artist_name', 'name', 'picture', 'stock.stock', 'description_fr', 'description_en')
+      .select('p.id', 'artist_name', 'name', 'picture', 'stock.quantity as stock', 'description_fr', 'description_en')
       .join('project as p', 'p.id', 'project_id')
       .join('stock', 'stock.project_id', 'p.id')
       .where('stock.type', 'daudin')
       .where('is_shop', true)
-      .where('stock.stock', '>', 0)
+      .where('stock.quantity', '>', 0)
       .where('is_box', true)
       .count()
 
@@ -522,7 +521,7 @@ class Box {
 
     let sponsor = null
     if (box.sponsor) {
-      const decode = Box.decodeSponsor(box.sponsor)
+      const decode = Utils.unhashId(box.sponsor)
       if (decode) {
         const sponsorBox = await DB('box')
           .where('id', decode)
@@ -736,22 +735,8 @@ class Box {
     }
   }
 
-  static encodeSponsor (box) {
-    const hashids = new Hashids('diggers', 5)
-    return hashids.encode(box.id)
-  }
-
-  static decodeSponsor (code) {
-    const hashids = new Hashids('diggers', 5)
-    try {
-      return hashids.decode(code)
-    } catch (err) {
-      return ''
-    }
-  }
-
   static async checkSponsor (params) {
-    const boxId = Box.decodeSponsor(params.sponsor)
+    const boxId = Utils.unhashId(params.sponsor)
     if (boxId.length === 0) {
       return { error: 'box_not_found' }
     } else {
@@ -817,7 +802,7 @@ class Box {
         if (box.step !== 'confirmed' && dispatch) {
           end = dispatch.created_at
         }
-        if (!dispatch || (dispatch.created_at < payment.created_at && moment(payment.created_at).format('YYYY-MM') === moment().format('YYYY-MM'))) {
+        if (payment && (!dispatch || (dispatch.created_at < payment.created_at && moment(payment.created_at).format('YYYY-MM') === moment().format('YYYY-MM')))) {
           left = 1
         } else {
           left = 0
@@ -896,8 +881,8 @@ class Box {
 
   static async cleanDispatchs () {
     const dispatchs = await DB('box_dispatch')
-      .whereNull('box_project_id')
       .whereNull('date_export')
+      .where('is_generate', true)
       .all()
 
     const bb = {}
@@ -952,7 +937,7 @@ class Box {
     const boxes = await DB().execute(`
       SELECT box.id, box.styles, box.step, box.periodicity, box.date_stop, box.type, d1.created_at as last_dispatch,
         box_project.gifts, project1, project2, project3, project4, project5, project6, user.email,
-        box_project.created_at, user.lang, box.user_id, (SELECT count(*) FROM box_sponsor where box_id = box.id AND used IS NULL) as vinyl_gift
+        box_project.created_at, user.email, user.lang, box.user_id, (SELECT count(*) FROM box_sponsor where box_id = box.id AND used IS NULL) as vinyl_gift
       FROM user, box
       LEFT OUTER JOIN box_project ON (box.id = box_project.box_id AND box_project.date = DATE_FORMAT(NOW(), "%Y-%m-01"))
       LEFT OUTER JOIN box_dispatch d1 ON (box.id = d1.box_id)
@@ -1017,7 +1002,7 @@ class Box {
       .all()
 
     const projects = await DB().execute(`
-      SELECT project.id, box_month.project_id, barcode, project.styles, stock_base as stock, stock.stock as stock_daudin
+      SELECT project.id, box_month.project_id, barcode, project.styles, stock_base as stock, stock.quantity as stock_daudin
       FROM box_month
       JOIN project ON project.id = box_month.project_id
       JOIN stock ON stock.project_id = project.id
@@ -1027,6 +1012,7 @@ class Box {
     `)
     const stocks = {}
     const selected = {}
+    const success = []
     const errors = []
     for (const p in projects) {
       const project = projects[p]
@@ -1038,7 +1024,7 @@ class Box {
     }
 
     const selections = await DB().execute(`
-      SELECT project.id, barcode, project.styles, stock.stock as stock_daudin
+      SELECT project.id, barcode, project.styles, stock.quantity as stock_daudin
       FROM vod JOIN project ON project.id = vod.project_id
         JOIN stock ON stock.project_id = vod.project_id
         AND stock.type = 'daudin'
@@ -1165,31 +1151,40 @@ class Box {
         errors.push({ id: box.id, type: 'no_goodie' })
       }
       for (const g of gg) {
-        if (!goods[g]) {
-          goods[g] = 0
+        if (!goods[g.id]) {
+          goods[g.id] = 0
         }
-        const idx = goodies.findIndex(ggg => g === ggg.barcode)
+        const idx = goodies.findIndex(ggg => g.id === ggg.id)
         goodies[idx].stock--
-        goods[g]++
+        goods[g.id]++
       }
-      barcodes.push(...gg)
+      barcodes.push(...gg.map(g => g.barcode.split(',')))
 
-      await DB('box_dispatch')
+      const [id] = await DB('box_dispatch')
         .insert({
           box_id: box.id,
           barcodes: barcodes.join(','),
           step: 'confirmed',
-          is_daudin: 1,
+          is_daudin: true,
+          is_generate: true,
           created_at: Utils.date(),
           updated_at: Utils.date()
         })
+
+      success.push({
+        id: id,
+        box_id: box.id,
+        user_id: box.user_id,
+        email: box.email,
+        barcodes: barcodes
+      })
     }
 
-    console.log(goods)
+    console.log('// Goodies', goods)
 
     for (const g of Object.keys(goods)) {
       await DB('goodie')
-        .where('barcode', g)
+        .where('id', g)
         .update({
           stock: DB.raw(`stock - ${goods[g]}`)
         })
@@ -1204,7 +1199,7 @@ class Box {
         })
     }
 
-    console.log(selected)
+    console.log('selected', selected)
     for (const s of Object.keys(selected)) {
       Stock.save({
         project_id: s,
@@ -1220,7 +1215,7 @@ class Box {
       to: 'box@diggersfactory.com,victor@diggersfactory.com',
       subject: 'Box - Dispatch',
       html: `
-        <p>${boxes.length} dispatch créés.</p>
+        <p>${success.length} dispatch créés.</p>
         <p>${errors.length} erreur(s).</p>
         ${errors.length > 0
           ? `<table>
@@ -1230,6 +1225,25 @@ class Box {
             </tr>
             ${errors.map(error =>
               `<tr><td>${error.id}</td><td>${error.type}</td></tr>`
+            ).join('')}
+          </table>`
+          : ''
+        }
+        ${success.length > 0
+          ? `<table>
+            <tr>
+              <th>Dispatch</th>
+              <th>Box</th>
+              <th>User</th>
+              <th>Barcodes</th>
+            </tr>
+            ${success.map(d =>
+              `<tr>
+                <td>${d.id}</td>
+                <td><a href="https://www.diggersfactory.com/sheraf/box/${d.box_id}">${d.box_id}</a></td>
+                <td><a href="https://www.diggersfactory.com/sheraf/user/${d.user_id}">${d.email}</a></td>
+                <td>${d.barcodes.map(b => b)}</td>
+              </tr>`
             ).join('')}
           </table>`
           : ''
@@ -1581,7 +1595,7 @@ class Box {
     } else {
       for (const barcode of barcodes) {
         const vod = await DB('vod')
-          .select('stock.project_id', 'stock.stock')
+          .select('stock.project_id', 'stock.quantity as stock')
           .where('barcode', barcode)
           .join('stock', 'stock.project_id', 'vod.project_id')
           .where('stock.type', 'daudin')
@@ -1876,7 +1890,7 @@ class Box {
 
   static async getLastBoxes (params) {
     let projects = DB('box_month')
-      .select('box_month.*', 'p.*', 'stock.stock as stock_daudin', 'v.description_fr', 'v.description_en')
+      .select('box_month.*', 'p.*', 'stock.quantity as stock_daudin', 'v.description_fr', 'v.description_en')
       .join('project as p', 'p.id', 'project_id')
       .join('vod as v', 'v.project_id', 'p.id')
       .join('stock', 'stock.project_id', 'v.project_id')
@@ -1902,12 +1916,12 @@ class Box {
       Utils.shuffle(months[project.date])
     }
     months.selection = await DB('vod')
-      .select('p.id', 'artist_name', 'name', 'picture', 'stock.stock', 'description_fr', 'description_en')
+      .select('p.id', 'artist_name', 'name', 'picture', 'stock.quantity as stock', 'description_fr', 'description_en')
       .join('project as p', 'p.id', 'project_id')
       .join('stock', 'stock.project_id', 'p.id')
       .where('stock.type', 'daudin')
       .where('is_shop', true)
-      .where('stock.stock', '>', 0)
+      .where('stock.quantity', '>', 0)
       .where('is_box', true)
       .orderBy(DB.raw('RAND()'))
       .all()
@@ -2095,7 +2109,7 @@ class Box {
           .where('date', params.month)
           .first()
         const vod = await DB('vod')
-          .select('is_box', 'stock.stock', 'barcode')
+          .select('is_box', 'stock.quantity as stock', 'barcode')
           .join('stock', 'stock.project_id', 'vod.project_id')
           .where('vod.project_id', p)
           .where('stock.type', 'daudin')
@@ -2202,7 +2216,8 @@ class Box {
     }
     **/
 
-    barcodes.push(...await Box.getMyGoodie(box, goodies, dispatchs))
+    const myGoodies = await Box.getMyGoodie(box, goodies, dispatchs)
+    barcodes.push(...myGoodies.map(g => g.barcode.split(',')))
 
     if (dispatch) {
       dispatch.barcodes = barcodes.join(',')
@@ -2547,7 +2562,7 @@ class Box {
         duration = Math.round(moment.duration(moment(box.end).diff(moment(box.start))).asMonths()) + 1
       }
 
-      box.sponsor = Box.encodeSponsor(box)
+      box.sponsor = Utils.hashId(box)
 
       csv += `${box.id},`
       csv += `${box.type},`
@@ -3098,7 +3113,7 @@ class Box {
         .filter(g => gg.indexOf(g.barcode) === -1)
         .filter(g => g.lang === 'all' || g.lang === box.lang)) {
         if (goodie.stock > 0 && dispatchs.indexOf(goodie.barcode) === -1) {
-          gg.push(...goodie.barcode.split(','))
+          gg.push(goodie)
           break
         }
       }

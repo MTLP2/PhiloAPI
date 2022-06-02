@@ -13,6 +13,7 @@ const Statement = use('App/Services/Statement')
 const Production = use('App/Services/Production')
 const Storage = use('App/Services/Storage')
 const MondialRelay = use('App/Services/MondialRelay')
+const Review = use('App/Services/Review')
 const Invoice = use('App/Services/Invoice')
 const Cio = use('App/Services/CIO')
 const Excel = require('exceljs')
@@ -49,15 +50,10 @@ App.daily = async () => {
     if (moment().format('DD') === '1') {
       await Box.checkPayments()
     }
-    /**
-    if (moment().format('DD') === '26') {
-      await Box.confirmDispatchs()
-    }
-    **/
     if (moment().format('E') !== '6' && moment().format('E') !== '7') {
       await Daudin.export()
-      await App.alertStock()
     }
+
     if (moment().format('DD') === '28') {
       await Statement.setStorageCosts()
       await Statement.sendStatements()
@@ -71,6 +67,11 @@ App.daily = async () => {
   } catch (err) {
     cron.status = 'error'
     await cron.save()
+    await Notification.sendEmail({
+      to: 'victor@diggersfactory.com',
+      subject: 'Error daily task',
+      html: err
+    })
     throw err
   }
 }
@@ -91,18 +92,22 @@ App.hourly = async () => {
   try {
     const hour = (new Date()).getHours()
 
-    if (hour === 4) {
+    if (hour === 3) {
       await App.currencies()
-      await Whiplash.syncStocks()
+    } else if (hour === 4) {
       await Whiplash.setTrackingLinks()
-    } else if (hour === 7) {
-      await App.checkFinishedProjects()
-      await Production.checkNotif()
-      await Box.checkReminder()
-      await Box.checkFinishedBox()
-      await App.check5DaysLeftProjects()
     } else if (hour === 5) {
       await Cio.syncNewsletterNoAccount()
+    } else if (hour === 7) {
+      await App.check5DaysLeftProjects()
+      await App.checkFinishedProjects()
+    } else if (hour === 8) {
+      await Box.checkReminder()
+      await Production.checkNotif()
+    } else if (hour === 9) {
+      await Whiplash.syncStocks()
+    } else if (hour === 10) {
+      await Review.checkNotif()
     }
 
     await Storage.cleanTmp('storage')
@@ -114,6 +119,11 @@ App.hourly = async () => {
   } catch (err) {
     cron.status = 'error'
     await cron.save()
+    await Notification.sendEmail({
+      to: 'victor@diggersfactory.com',
+      subject: 'Error hourly task',
+      html: err
+    })
     throw err
   }
 }
@@ -134,6 +144,7 @@ App.cron = async () => {
     if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'staging') {
       await App.checkReminderLabels()
     }
+
     await App.checkNotifications()
     await Project.deleteDownload()
     await MondialRelay.checkSent()
@@ -148,6 +159,11 @@ App.cron = async () => {
   } catch (err) {
     cron.status = 'error'
     await cron.save()
+    await Notification.sendEmail({
+      to: 'victor@diggersfactory.com',
+      subject: 'Error minutely task',
+      html: err.message
+    })
     throw err
   }
 }

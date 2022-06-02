@@ -5,7 +5,6 @@ const Notification = require('./Notification')
 const ApiError = use('App/ApiError')
 const Customer = require('./Customer')
 const Order = require('./Order')
-const ProjectEdit = require('./ProjectEdit')
 const Artwork = require('./Artwork')
 const Box = require('./Box')
 const DB = use('App/DB')
@@ -15,7 +14,6 @@ const moment = require('moment')
 const cio = use('App/Services/CIO')
 const User = DB('user')
 const config = require('../../config')
-const Hashids = require('hashids')
 
 User.me = (id) => {
   const user = DB()
@@ -609,7 +607,7 @@ User.getOrderShop = async (params) => {
 
 User.updateOrderCustomer = async (params) => {
   const order = await DB()
-    .select('os.user_id', 'order_id', 'pickup_not_found', 'customer_id')
+    .select('os.user_id', 'order_id', 'date_export', 'pickup_not_found', 'customer_id')
     .from('order_shop as os')
     .join('order', 'order.id', 'os.order_id')
     .where('os.id', params.shop_id)
@@ -627,7 +625,8 @@ User.updateOrderCustomer = async (params) => {
         pickup_not_found: false,
         updated_at: Utils.date()
       })
-    if (order.pickup_not_found) {
+
+    if (order.date_export && order.pickup_not_found) {
       await Notification.sendEmail({
         to: 'support@diggersfactory.com,victor@diggersfactory.com',
         subject: 'Changmenet point relais effectué',
@@ -704,7 +703,7 @@ User.getProjects = async (userId, params) => {
   let projects = DB()
     .select(
       'p.id', 'name', 'picture', 'artist_name', 'slug', 'styles', 'user_id',
-      'v.created_at', 'type', 'step', 'count', 'stage1',
+      'v.created_at', 'type', 'step', 'count', 'stage1', 'send_statement',
       DB.raw('(select max(id) from production where project_id = p.id) as prod_id')
     )
     .from('project as p')
@@ -850,17 +849,11 @@ User.unsubscribeNewsletter = async (params) => {
 }
 
 User.encodeUnsubscribeNewseletter = (id) => {
-  const hashids = new Hashids('diggers', 10)
-  return hashids.encode(id)
+  return Utils.hashId(id)
 }
 
 User.decodeUnsubscribeNewseletter = (id) => {
-  const hashids = new Hashids('diggers', 10)
-  try {
-    return hashids.decode(id)
-  } catch (err) {
-    return ''
-  }
+  return Utils.unhashId(id)
 }
 
 User.event = async (params) => {

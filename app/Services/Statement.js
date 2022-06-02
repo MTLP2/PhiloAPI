@@ -130,7 +130,7 @@ class StatementService {
       if (!data[d].project) {
         data[d].project = Project.query()
           .select('project.id', 'project.name', 'artist_name', 'fee_distrib',
-            'currency', 'item.name as item_name')
+            'currency', 'item.name as item_name', 'project.picture')
           .join('vod', 'vod.project_id', 'project.id')
           .join('item', 'item.project_id', 'project.id')
 
@@ -959,43 +959,45 @@ class StatementService {
   }
 
   static async setStorageCosts () {
-    const vod = await DB('vod')
-      .select('vod.*', 'project.category')
-      .join('project', 'project.id', 'vod.project_id')
+    const projects = await DB('project')
+      .select('project.id', 'project.category', 'vod.currency', 'vod.stock_price', DB.raw('SUM(stock.quantity) as stock'))
+      .join('stock', 'project.id', 'stock.project_id')
+      .join('vod', 'project.id', 'vod.project_id')
+      .where('stock.is_distrib', false)
+      .where('stock.type', '!=', 'diggers')
+      .having('stock', '>', 0)
+      .groupBy('project.id')
+      .groupBy('vod.currency')
+      .groupBy('vod.stock_price')
       .all()
 
     const currenciesDb = await Utils.getCurrenciesDb()
 
     let i = 0
-    for (const v of vod) {
-      const currencies = Utils.getCurrencies(v.currency, currenciesDb)
+    for (const p of projects) {
+      const currencies = Utils.getCurrencies(p.currency, currenciesDb)
 
-      const stocks = v.stock_daudin + v.stock_whiplash + v.stock_whiplash_uk
-
-      if (stocks < 1) {
-        continue
-      }
       i++
       const month = moment().format('YYYY-MM')
 
       let statement = await DB('statement')
-        .where('project_id', v.project_id)
+        .where('project_id', p.id)
         .where('date', month)
         .first()
 
       if (!statement) {
         statement = new Statement()
-        statement.project_id = v.project_id
+        statement.project_id = p.id
         statement.date = month
         statement.created_at = Utils.date()
       }
 
-      const stockPrice = JSON.parse(v.stock_price)
+      const stockPrice = JSON.parse(p.stock_price)
       const price = Utils.getFee(stockPrice, moment().format('YYYY-MM-DD'))
 
-      const unitPrice = v.category === 'vinyl' ? price : 0.05
+      const unitPrice = p.category === 'vinyl' ? price : 0.05
 
-      statement.storage = (stocks * unitPrice) / currencies.EUR
+      statement.storage = (p.stock * unitPrice) / currencies.EUR
       statement.updated_at = Utils.date()
 
       await statement.save()
