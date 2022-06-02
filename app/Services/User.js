@@ -493,7 +493,7 @@ User.getBoxes = async (params) => {
 
   for (let i = 0; i < boxes.length; i++) {
     const box = boxes[i]
-    boxes[i].sponsorcode = Box.encodeSponsor(box)
+    boxes[i].sponsorcode = Utils.hashId(box)
     boxes[i].styles = boxes[i].styles && boxes[i].styles.split(',').map(s => parseInt(s))
     boxes[i].customer = await DB('customer').where('id', box.customer_id).first()
     boxes[i].orders = await DB('order_box')
