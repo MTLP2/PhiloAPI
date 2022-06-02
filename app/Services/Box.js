@@ -737,7 +737,7 @@ class Box {
 
   static async checkSponsor (params) {
     const boxId = Utils.unhashId(params.sponsor)
-    if (boxId.length === 0) {
+    if (!boxId || boxId.length === 0) {
       return { error: 'box_not_found' }
     } else {
       const box = await DB('box')
