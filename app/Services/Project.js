@@ -1510,10 +1510,11 @@ Project.getStatements = async (params) => {
     s[cat][type].countries[country] += quantity
   }
 
-  s.addList = function (type, cat, date, value) {
+  s.addList = function (type, cat, date, value, project) {
     if (value) {
       s[cat].list.push({
         type: type,
+        project_id: project,
         date: date,
         amount: value
       })
@@ -1567,17 +1568,17 @@ Project.getStatements = async (params) => {
     const date = moment(stat.date).format(format)
 
     s.setDate('production', 'costs', date, stat.production)
-    s.addList('production', 'costs', date, stat.production)
+    s.addList('production', 'costs', date, stat.production, stat.project_id)
     s.setDate('sdrm', 'costs', date, stat.sdrm)
-    s.addList('sdrm', 'costs', date, stat.sdrm)
+    s.addList('sdrm', 'costs', date, stat.sdrm, stat.project_id)
     s.setDate('marketing', 'costs', date, stat.marketing)
-    s.addList('marketing', 'costs', date, stat.marketing)
+    s.addList('marketing', 'costs', date, stat.marketing, stat.project_id)
     s.setDate('mastering', 'costs', date, stat.mastering)
-    s.addList('mastering', 'costs', date, stat.mastering)
+    s.addList('mastering', 'costs', date, stat.mastering, stat.project_id)
     s.setDate('logistic', 'costs', date, stat.logistic)
-    s.addList('logistic', 'costs', date, stat.logistic)
+    s.addList('logistic', 'costs', date, stat.logistic, stat.project_id)
     s.setDate('distribution', 'costs', date, stat.distribution_cost)
-    s.addList('distribution', 'costs', date, stat.distribution_cost)
+    s.addList('distribution', 'costs', date, stat.distribution_cost, stat.project_id)
 
     if (projects[stat.project_id].storage_costs) {
       s.setDate('storage', 'costs', date, stat.storage)
@@ -1590,8 +1591,8 @@ Project.getStatements = async (params) => {
       : null
     s.setDate('other', 'costs', date, custom)
 
-    s.addList('diggers', 'payments', stat.date, stat.payment_diggers)
-    s.addList('artist', 'payments', stat.date, stat.payment_artist)
+    s.addList('diggers', 'payments', stat.date, stat.payment_diggers, stat.project_id)
+    s.addList('artist', 'payments', stat.date, stat.payment_artist, stat.project_id)
 
     s.setDate('diggers', 'payments', date, stat.payment_diggers)
     s.setDate('artist', 'payments', date, stat.payment_artist)
@@ -1611,7 +1612,7 @@ Project.getStatements = async (params) => {
 
       // Distributor storage cost
       s.setDate('distribution', 'costs', date, dist.storage)
-      s.addList('distribution', 'costs', date, dist.storage)
+      s.addList('distribution', 'costs', date, dist.storage, stat.project_id)
 
       s.setDate('distrib', 'quantity', date, dist.quantity)
       s.setCountry('distrib', 'quantity', dist.country_id, dist.quantity)
