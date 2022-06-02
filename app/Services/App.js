@@ -43,18 +43,18 @@ App.daily = async () => {
 
   try {
     await CronJobs.query()
-      .whereRaw('start < date_sub(now(), interval 30 day)')
+      .whereRaw('start < date_sub(now(), interval 15 day)')
       .orderBy('start', 'desc')
       .delete()
 
-    if (moment().format('DD') === '1') {
+    if (+moment().format('D') === 3) {
       await Box.checkPayments()
     }
     if (moment().format('E') !== '6' && moment().format('E') !== '7') {
       await Daudin.export()
     }
 
-    if (moment().format('DD') === '28') {
+    if (+moment().format('D') === 28) {
       await Statement.setStorageCosts()
       await Statement.sendStatements()
       await Box.setDispatchs()
