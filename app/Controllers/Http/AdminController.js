@@ -438,6 +438,10 @@ class AdminController {
     return Feedback.all(params)
   }
 
+  exportFeedbacks ({ params }) {
+    return Feedback.exportAll(params)
+  }
+
   getNewsletters ({ params }) {
     return Admin.getNewsletters(params)
   }

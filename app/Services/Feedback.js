@@ -16,6 +16,13 @@ class Feedback {
       .join('order', 'order.id', 'order_id')
       .orderBy('feedback.id', 'desc')
 
+    if (params.start) {
+      params.query.where('feedback.created_at', '>=', params.start)
+    }
+    if (params.end) {
+      params.query.where('feedback.created_at', '<=', `${params.end} 23:59`)
+    }
+
     return Utils.getRows(params)
   }
 
@@ -31,6 +38,21 @@ class Feedback {
     await feedback.save()
 
     return { success: true }
+  }
+
+  static async exportAll (params) {
+    params.size = 0
+    const { data: feedbacks } = await this.all(params)
+
+    return Utils.arrayToCsv([
+      { name: 'ID', index: 'id' },
+      { name: 'Order ID', index: 'order_id' },
+      { name: 'User name', index: 'user_name' },
+      { name: 'Date', index: 'created_at' },
+      { name: 'Country', index: 'country_id' },
+      { name: 'Rating', index: 'rating' },
+      { name: 'Comment', index: 'comment' }
+    ], feedbacks)
   }
 }
 
