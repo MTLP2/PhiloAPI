@@ -619,21 +619,33 @@ class Production {
       for (const address of params[type]) {
         let item
 
+        // TODO : recall && type = "test_pressing" if can't fix
         if (address.id) {
           item = await DB('production_dispatch')
             .where('production_id', prod.id)
             .where('id', address.id)
+            .where('type', type)
             .first()
+
+          console.log(item)
+          // TODO check why I duplicate personal stock on save
+
+          if (!item) {
+            item = DB('production_dispatch')
+            item.created_at = Utils.date()
+            item.production_id = prod.id
+          }
         } else {
           item = DB('production_dispatch')
           item.created_at = Utils.date()
           item.production_id = prod.id
-          item.type = type
+          // item.type = type
         }
         item.quantity = address.quantity
+        item.type = type
 
         if (address.same_address) {
-          item.customer_id = testPressingCustomer
+          item.customer_id = address.customer_id
         } else {
           const customer = await Customer.save(address)
           item.customer_id = customer.id
@@ -649,6 +661,8 @@ class Production {
           item.delete_by = params.user.id
         }
         item.updated_at = Utils.date()
+        // console.log(item)
+        // TODO Trouver un moyen de créer un nouveau dispatch même si on reprend l'ID d'un dispatch existant (dans le sens tp -> sp)
         await item.save()
       }
     }
