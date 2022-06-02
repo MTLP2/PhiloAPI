@@ -2152,11 +2152,14 @@ Admin.getAudiences = async (params) => {
   let users = DB('user')
     .select(
       DB().raw('distinct(email)'),
+      'id',
       'lang',
       'country_id',
       'newsletter',
       'user.created_at',
-      DB().raw('(select count(distinct(order_id)) from order_shop where user_id = user.id and is_paid = 1) as orders')
+      'origin',
+      DB().raw('(select count(distinct(order_id)) from order_shop where user_id = user.id and is_paid = 1) as orders'),
+      DB().raw("(SELECT SUM(total) FROM order_shop WHERE user_id = user.id AND step IN ('sent', 'creating', 'check_address', 'confirmed', 'launched', 'in_production', 'test_pressing_ok', 'preparation')) as turnover")
     )
 
   if (params.project_id) {
@@ -2212,12 +2215,22 @@ Admin.getAudiences = async (params) => {
   }
 
   users = await users.all()
-  let data = 'email,lang,country,newsletter,orders,date\r\n'
-  users.map(user => {
-    data += `${user.email},${user.lang},${user.country_id || ''},${user.newsletter},${user.orders},${user.created_at.substr(0, 10)}\r\n`
-  })
+  const usersToExport = users.map(user => ({
+    ...user,
+    turnover: user.turnover && user.turnover.toString().replace('.', ',')
+  }))
 
-  return data
+  return Utils.arrayToCsv([
+    { name: 'ID', index: 'id' },
+    { name: 'Email', index: 'email' },
+    { name: 'Lang', index: 'lang' },
+    { name: 'Country', index: 'country_id' },
+    { name: 'Origin', index: 'origin' },
+    { name: 'Newsletter', index: 'newsletter' },
+    { name: 'Orders', index: 'orders' },
+    { name: 'Turnover', index: 'turnover' },
+    { name: 'Account creation', index: 'created_at' }
+  ], usersToExport)
 }
 
 Admin.getNewsletters = () =>
