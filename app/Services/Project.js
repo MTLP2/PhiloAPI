@@ -1369,8 +1369,8 @@ Project.getStatements = async (params) => {
   const [orders, statements, boxes] = await Promise.all([ordersPromise, statementsPromise, boxesPromise])
 
   if (params.period === 'last_month') {
-    params.start = moment().subtract('1', 'months').format('YYYY-MM-DD 23:59')
-    params.end = moment().format('YYYY-MM-DD 23:59')
+    params.start = moment().subtract('1', 'months').startOf('month').format('YYYY-MM-DD 23:59')
+    params.end = moment().subtract('1', 'months').endOf('month').format('YYYY-MM-DD 23:59')
   } else if (params.period === 'all_time') {
     if (orders.length > 0) {
       params.start = orders[0].created_at.substring(0, 10)
@@ -1393,6 +1393,9 @@ Project.getStatements = async (params) => {
     periodicity = 'months'
     format = 'YYYY-MM'
   }
+  if (periodicity === 'months') {
+    params.start = moment(params.start).startOf('month').format('YYYY-MM-DD')
+  }
 
   const dates = {}
   const now = periodicity === 'months' ? moment(params.start).startOf('month') : moment(params.start)
@@ -1404,6 +1407,8 @@ Project.getStatements = async (params) => {
   const s = {
     currency: 'EUR',
     periodicity: periodicity,
+    start: params.start,
+    end: params.end,
     outstanding: {
       all: 0, total: 0, dates: { ...dates }
     },
@@ -1487,7 +1492,7 @@ Project.getStatements = async (params) => {
 
   s.setDate = function (type, cat, date, value) {
     if (value) {
-      if (moment(date).isBetween(params.start, params.end)) {
+      if (moment(periodicity === 'months' ? `${date}-01` : date).isBetween(params.start, params.end, undefined, '[]')) {
         this[cat][type].dates[date] += value
         this[cat].all.dates[date] += value
         this[cat][type].total += value
