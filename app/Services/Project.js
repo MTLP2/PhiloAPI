@@ -1684,6 +1684,9 @@ Project.getOrders = async (params, projects) => {
   } else {
     params.query.where('order_item.project_id', params.id)
   }
+  if (params.start && params.end) {
+    params.query.whereBetween('order_item.created_at', [params.start, params.end])
+  }
 
   if (!params.sort) {
     params.sort = 'id'
