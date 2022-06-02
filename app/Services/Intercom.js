@@ -7,7 +7,7 @@ const { existsByEmail } = use('App/Services/User')
 const { isEmail } = use('App/Utils')
 
 // Translates an order step into a human readable string
-const translate = (key, lang = 'EN') => {
+const translate = (key, lang = 'EN', payload) => {
   const wording = {
     // Error
     error: lang === 'EN' ? '🤔 Oops! An error has occurred.' : '🤔 Oups, nous avons rencontré une erreur.',
@@ -48,8 +48,8 @@ const translate = (key, lang = 'EN') => {
     postprod_description: lang === 'EN' ? 'Here we are, the pressing of your vinyl record is almost over or already done! You will receive an email to ask you to confirm your postal address soon, and then to inform you of the delivery. Thank you!' : 'On y est, le pressage en usine de votre commande touche bientôt à sa fin ou est déjà terminé ! Vous recevrez un e-mail prochainement pour vous demander de confirmer votre adresse postale, puis pour vous informer de la livraison. Merci !',
     // prodend: lang === 'EN' ? 'Production ended' : 'Production terminée',
     // prodend_description: lang === 'EN' ? 'The factory has finished the production of this vinyl. You will receive a notification when it is ready.' : 'La production de ce vinyl est terminée. Vous recevrez une notification lorsque celui-ci sera prêt.',
-    prod_shipping: lang === 'EN' ? 'Delivery in progress' : 'Livraison en cours',
-    prod_shipping_description: lang === 'EN' ? 'Get your turntable ready, the delivery of your order has started! You will receive an email with the tracking link shortly. Thank you! 🎶' : 'Préparez votre platine, la livraison de votre commande a débuté ! Vous recevrez un email avec le lien de suivi prochainement. Merci ! 🎶',
+    prod_shipping: lang === 'EN' ? 'Estimated shipping date' : 'Date d\'expédition estimée',
+    prod_shipping_description: lang === 'EN' ? `The estimated shipping date of your record is: ${payload}. Thank you for your patience and support! 🎶` : `La date d’expedition estimée est : ${payload}. Merci pour votre patience et soutien ! 🎶`,
 
     // Order -> Currencies
     EUR: ' €',
@@ -356,7 +356,7 @@ const generateOrderCard = async (order, lang, single = false) => {
         type: 'item',
         id: 'shipping',
         title: `🟢 ${getLocaleDateFromString(dateShipping, lang)} - ${translate('prod_shipping', lang)}`,
-        subtitle: translate('prod_shipping_description', lang)
+        subtitle: translate('prod_shipping_description', lang, getLocaleDateFromString(dateShipping, lang))
       })
     }
 
