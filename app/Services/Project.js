@@ -310,11 +310,7 @@ Project.findAll = async (params) => {
   }
   if (params.user_id) {
     projects.where('v.user_id', params.user_id)
-    if (params.promo && Utils.unhashId(params.promo) === +params.user_id) {
-      projects.whereIn('v.step', ['in_progress', 'promo'])
-    } else {
-      projects.where('v.step', 'in_progress')
-    }
+    projects.whereIn('v.step', ['in_progress', 'coming_soon'])
     params.limit = 1000
   }
 
@@ -1325,7 +1321,7 @@ Project.getStats = async (params) => {
 Project.getStatements = async (params) => {
   let projects = DB('project')
     .select('project.name', 'project.id', 'storage_costs', 'vod.barcode', 'vod.currency',
-      'vod.fee_date', 'vod.fee_distrib_date', 'payback_distrib', 'payback_box')
+      'vod.fee_date', 'vod.fee_distrib_date', 'payback_site', 'payback_distrib', 'payback_box')
     .join('vod', 'vod.project_id', 'project.id')
     .where('is_delete', '!=', '1')
 
@@ -1399,7 +1395,7 @@ Project.getStatements = async (params) => {
   }
 
   const dates = {}
-  const now = moment(params.start)
+  const now = periodicity === 'months' ? moment(params.start).startOf('month') : moment(params.start)
   while (now.isSameOrBefore(moment(params.end))) {
     dates[now.format(format)] = 0
     now.add(1, periodicity)
@@ -1415,6 +1411,7 @@ Project.getStatements = async (params) => {
       all: 0, total: 0, dates: { ...dates }
     },
     payments: {
+      list: [],
       all: {
         all: 0, total: 0, dates: { ...dates }
       },
@@ -1426,6 +1423,7 @@ Project.getStatements = async (params) => {
       }
     },
     costs: {
+      list: [],
       all: {
         all: 0, total: 0, dates: { ...dates }
       },
@@ -1512,6 +1510,16 @@ Project.getStatements = async (params) => {
     s[cat][type].countries[country] += quantity
   }
 
+  s.addList = function (type, cat, date, value) {
+    if (value) {
+      s[cat].list.push({
+        type: type,
+        date: date,
+        amount: value
+      })
+    }
+  }
+
   for (const order of orders) {
     const date = moment(order.created_at).format(format)
 
@@ -1525,7 +1533,12 @@ Project.getStatements = async (params) => {
       order.total -= order.discount
     }
 
-    const value = (order.total / order.tax_rate) * order.currency_rate_project * fee
+    let value
+    if (projects[order.project_id].payback_site) {
+      value = order.quantity * projects[order.project_id].payback_site * order.currency_rate_project
+    } else {
+      value = (order.total / order.tax_rate) * order.currency_rate_project * fee
+    }
     const tips = (order.tips / order.tax_rate) * order.currency_rate_project * fee
 
     s.setDate('site', 'income', date, value)
@@ -1554,11 +1567,17 @@ Project.getStatements = async (params) => {
     const date = moment(stat.date).format(format)
 
     s.setDate('production', 'costs', date, stat.production)
+    s.addList('production', 'costs', date, stat.production)
     s.setDate('sdrm', 'costs', date, stat.sdrm)
+    s.addList('sdrm', 'costs', date, stat.sdrm)
     s.setDate('marketing', 'costs', date, stat.marketing)
+    s.addList('marketing', 'costs', date, stat.marketing)
     s.setDate('mastering', 'costs', date, stat.mastering)
+    s.addList('mastering', 'costs', date, stat.mastering)
     s.setDate('logistic', 'costs', date, stat.logistic)
+    s.addList('logistic', 'costs', date, stat.logistic)
     s.setDate('distribution', 'costs', date, stat.distribution_cost)
+    s.addList('distribution', 'costs', date, stat.distribution_cost)
 
     if (projects[stat.project_id].storage_costs) {
       s.setDate('storage', 'costs', date, stat.storage)
@@ -1570,6 +1589,9 @@ Project.getStatements = async (params) => {
       }, 0)
       : null
     s.setDate('other', 'costs', date, custom)
+
+    s.addList('diggers', 'payments', stat.date, stat.payment_diggers)
+    s.addList('artist', 'payments', stat.date, stat.payment_artist)
 
     s.setDate('diggers', 'payments', date, stat.payment_diggers)
     s.setDate('artist', 'payments', date, stat.payment_artist)
@@ -1589,6 +1611,7 @@ Project.getStatements = async (params) => {
 
       // Distributor storage cost
       s.setDate('distribution', 'costs', date, dist.storage)
+      s.addList('distribution', 'costs', date, dist.storage)
 
       s.setDate('distrib', 'quantity', date, dist.quantity)
       s.setCountry('distrib', 'quantity', dist.country_id, dist.quantity)
@@ -1618,7 +1641,7 @@ Project.getOrdersForTable = async (params) => {
     .join('vod', 'vod.project_id', 'project.id')
 
   if (params.id === 'all') {
-    pp.where('user_id', params.user.id)
+    pp.where('user_id', params.user_id)
   } else {
     pp.where('project.id', params.id)
   }
@@ -1649,7 +1672,7 @@ Project.getOrders = async (params, projects) => {
     .where('is_paid', true)
 
   if (params.id === 'all') {
-    params.query.where('vod.user_id', params.user.id)
+    params.query.where('vod.user_id', params.user_id)
   } else if (params.ids) {
     params.query.whereIn('order_item.project_id', params.ids)
   } else {
