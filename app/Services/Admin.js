@@ -4364,4 +4364,44 @@ Admin.getProjectProductions = async (params) => {
   return productions
 }
 
+Admin.exportOrdersCommercial = async (params) => {
+  const commercialList = params.resp_id.split(',')
+
+  const projectsRaw = await DB('project as p')
+    .select('p.id', 'p.name', 'p.created_at', 'p.artist_name', 'v.step', 'v.type', 'u.id as com_id', 'u.name as com_name', 'v.origin', 'v.historic')
+    .join('vod as v', 'v.project_id', 'p.id')
+    .join('user as u', 'u.id', 'v.com_id')
+    .whereIn('v.com_id', commercialList)
+    .where('p.is_delete', 0)
+    .where('p.created_at', '>=', params.start)
+    .where('p.created_at', '<=', `${params.end} 23:59`)
+    .all()
+
+  const projects = projectsRaw.map(project => {
+    if (project.com_id === 109131) project.com_name = 'Margot Diggers'
+    if (project.historic && project.historic.length) {
+      project.historic = JSON.parse(project.historic)
+        .sort((a, b) => {
+          return new Date(b.date) - new Date(a.date)
+        })
+        .map(h => `- ${h.old || 'Unknown'} (${h.date})`)
+        .join('\n')
+    }
+
+    return project
+  })
+
+  return Utils.arrayToCsv([
+    { index: 'id', name: 'ID' },
+    { index: 'created_at', name: 'Creation Date' },
+    { index: 'com_name', name: 'Commercial' },
+    { index: 'name', name: 'Name' },
+    { index: 'artist_name', name: 'Artist Name' },
+    { index: 'origin', name: 'Origin' },
+    { index: 'step', name: 'Step' },
+    { index: 'type', name: 'Type' },
+    { index: 'historic', name: 'Previous steps' }
+  ], projects)
+}
+
 module.exports = Admin
