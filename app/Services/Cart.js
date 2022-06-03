@@ -956,6 +956,7 @@ Cart.calculateItem = async (params) => {
   } else {
     res.price = p.project.prices[params.currency]
     res.picture = p.project.picture
+    res.picture_project = p.project.picture_project
   }
   res.discount = p.project.discount * p.quantity
   res.discount_artist = p.project.discount_artist
@@ -1571,7 +1572,8 @@ Cart.validPayment = async (orderId, transactionId, status = 'confirmed') => {
 
     if (shop.type === 'vod' || shop.type === 'shop') {
       const items = await DB()
-        .select('order_item.*', 'project.picture', 'project.cat_number', 'vod.barcode', 'vod.type as type_project',
+        .select('order_item.*', 'project.picture', 'vod.picture_project', 'project.cat_number',
+          'vod.barcode', 'vod.type as type_project',
           'vod.transporter', 'item.barcode as item_barcode')
         .from('order_item')
         .join('project', 'project.id', 'order_item.project_id')
@@ -1627,7 +1629,7 @@ Cart.validPayment = async (orderId, transactionId, status = 'confirmed') => {
         })
 
         const project = await DB()
-          .select('project.id', 'category', 'project.picture', 'user_id', 'project.name',
+          .select('project.id', 'category', 'project.picture', 'vod.picture_project', 'user_id', 'project.name',
             'project.label_name', 'vod.type as type_project', 'artist_name', 'count', 'styles', 'diggers')
           .from('project')
           .leftJoin('vod', 'vod.project_id', 'project.id')
@@ -1718,7 +1720,7 @@ Cart.validPayment = async (orderId, transactionId, status = 'confirmed') => {
     .select('order.id as order_id', 'order_item.total', 'order_item.currency',
       'order_item.quantity', 'order_item.project_id', 'order_item.price',
       'order_shop.id as order_shop_id', 'order_shop.shop_id', 'project.picture',
-      'project.name as project', 'project.artist_name as artist', 'vod.type as type_project',
+      'project.name as project', 'project.artist_name as artist', 'vod.type as type_project', 'picture_project',
       'project.slug as slug', 'project.id', 'item.name as item', 'item.picture as item_picture')
     .from('order_item')
     .join('order', 'order_item.order_id', 'order.id')
