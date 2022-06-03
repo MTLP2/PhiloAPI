@@ -726,7 +726,7 @@ class Production {
       })
     }
     if (params.type !== 'test_pressing' && !item.tracking && params.tracking) {
-      Production.addNotif({ id: item.production_id, type: 'final_dispatch', data: params.tracking })
+      Production.addNotif({ id: item.production_id, type: params.type === 'personal_stock' ? 'personal_stock_dispatch' : 'final_dispatch', data: params.tracking })
     }
     if (params.logistician && !item.date_receipt && params.date_receipt) {
       Production.addNotif({ id: item.production_id, type: 'logistician_receiption', date: params.date_receipt, data: params.logistician })
