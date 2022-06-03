@@ -165,7 +165,7 @@ class Production {
         category: 'prod',
         type: 'dispatchs',
         action: 'check',
-        for: 'team'
+        for: 'artist'
       },
       {
         category: 'postprod',
@@ -328,13 +328,13 @@ class Production {
       Production.addNotif({ id: item.id, type: 'change_date_shipping', date: params.date_shipping })
     }
     // Prod.Dispatchs goes to toDo when quantity_dispatched is changed + notif
-    if (item.quantity_dispatch && params.quantity_dispatch) {
+    if (!item.quantity_dispatch && params.quantity_dispatch) {
       const prodAction = await DB('production_action')
         .where('production_id', params.id)
         .where('type', 'dispatchs')
         .first()
 
-      prodAction.status = 'to_do'
+      prodAction.status = 'to_check'
       prodAction.save()
 
       await Production.addNotif({ id: item.id, type: 'in_dispatchs' })
@@ -612,16 +612,20 @@ class Production {
 
     await Utils.checkProjectOwner({ project_id: prod.project_id, user: params.user })
 
+    // Handle both PS/TP status change
     const action = await DB('production_action')
       .where('production_id', prod.id)
-      .where('type', 'shipping')
+      .where('type', params.test_pressing ? 'shipping' : 'dispatchs')
       .first()
 
-    if (action.status === 'to_do') {
+    if (params.test_pressing && action.status === 'to_do') {
       action.status = 'pending'
-      action.created_at = Utils.date()
-      await action.save()
     }
+    if (params.personal_stock && action.status === 'to_check') {
+      action.status = 'to_check_team'
+    }
+    action.created_at = Utils.date()
+    await action.save()
 
     let testPressingCustomer
 
@@ -629,10 +633,10 @@ class Production {
       if (!params[type]) {
         continue
       }
+
       for (const address of params[type]) {
         let item
 
-        // TODO : recall && type = "test_pressing" if can't fix
         if (address.id) {
           item = await DB('production_dispatch')
             .where('production_id', prod.id)
