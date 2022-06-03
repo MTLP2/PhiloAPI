@@ -327,6 +327,18 @@ class Production {
     if (item.date_shipping && item.date_shipping !== params.date_shipping) {
       Production.addNotif({ id: item.id, type: 'change_date_shipping', date: params.date_shipping })
     }
+    // Prod.Dispatchs goes to toDo when quantity_dispatched is changed + notif
+    if (item.quantity_dispatch && params.quantity_dispatch) {
+      const prodAction = await DB('production_action')
+        .where('production_id', params.id)
+        .where('type', 'dispatchs')
+        .first()
+
+      prodAction.status = 'to_do'
+      prodAction.save()
+
+      await Production.addNotif({ id: item.id, type: 'in_dispatchs' })
+    }
 
     if (item.step !== params.step) {
       Production.notif({
@@ -356,6 +368,7 @@ class Production {
     item.date_shipping = params.date_shipping || null
     item.quantity = params.quantity || null
     item.quantity_pressed = params.quantity_pressed || null
+    item.quantity_dispatch = params.quantity_dispatch || null
     item.currency = params.currency || null
     item.quote_price = params.quote_price || null
     item.quote_com = params.quote_com || null
@@ -1231,12 +1244,15 @@ class Production {
   }
 
   static async addNotif ({ id, type, date, data }) {
+    console.log('addNotif')
     const prod = await DB('vod')
       .select('production.id', 'vod.project_id', 'production.notif', 'vod.user_id', 'production.resp_id')
       .join('production', 'production.project_id', 'vod.project_id')
       .whereRaw('vod.project_id = production.project_id')
       .where('production.id', id)
       .first()
+
+    console.log(prod)
 
     if (prod.notif) {
       console.log('add_notif', {
