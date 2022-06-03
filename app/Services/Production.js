@@ -607,7 +607,9 @@ class Production {
 
   static async saveDispatchUser (params) {
     const prod = await DB('production')
-      .where('id', params.id)
+      .select('production.id', 'production.resp_id', 'project.id as project_id')
+      .join('project', 'project.id', 'production.project_id')
+      .where('production.id', params.id)
       .first()
 
     await Utils.checkProjectOwner({ project_id: prod.project_id, user: params.user })
@@ -670,6 +672,16 @@ class Production {
         item.updated_at = Utils.date()
         await item.save()
       }
+    }
+
+    // Notification for PS resp when action changes from to check to pending team
+    if (params.personal_stock && action.status === 'to_check_team') {
+      await Notification.add({
+        type: 'production_pending_personal_stock',
+        prod_id: prod.id,
+        project_id: prod.project_id,
+        user_id: prod.resp_id
+      })
     }
 
     return { success: true }
@@ -1248,15 +1260,12 @@ class Production {
   }
 
   static async addNotif ({ id, type, date, data }) {
-    console.log('addNotif')
     const prod = await DB('vod')
       .select('production.id', 'vod.project_id', 'production.notif', 'vod.user_id', 'production.resp_id')
       .join('production', 'production.project_id', 'vod.project_id')
       .whereRaw('vod.project_id = production.project_id')
       .where('production.id', id)
       .first()
-
-    console.log(prod)
 
     if (prod.notif) {
       console.log('add_notif', {
