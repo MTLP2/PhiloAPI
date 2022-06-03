@@ -626,20 +626,10 @@ class Production {
             .where('id', address.id)
             .where('type', type)
             .first()
-
-          console.log(item)
-          // TODO check why I duplicate personal stock on save
-
-          if (!item) {
-            item = DB('production_dispatch')
-            item.created_at = Utils.date()
-            item.production_id = prod.id
-          }
         } else {
           item = DB('production_dispatch')
           item.created_at = Utils.date()
           item.production_id = prod.id
-          // item.type = type
         }
         item.quantity = address.quantity
         item.type = type
@@ -661,8 +651,6 @@ class Production {
           item.delete_by = params.user.id
         }
         item.updated_at = Utils.date()
-        // console.log(item)
-        // TODO Trouver un moyen de créer un nouveau dispatch même si on reprend l'ID d'un dispatch existant (dans le sens tp -> sp)
         await item.save()
       }
     }
