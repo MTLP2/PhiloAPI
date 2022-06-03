@@ -258,7 +258,7 @@ Admin.getProject = async (id) => {
     project[`stock_${stock.type}`] = stock.quantity
   }
 
-  project.stock_preorder = project.goal - project.count - project.count_other - project.count_distrib
+  project.stock_preorder = project.goal - project.count - project.count_other - project.count_bundle - project.count_distrib
 
   project.com = project.com ? JSON.parse(project.com) : {}
   project.sizes = project.sizes ? JSON.parse(project.sizes) : {}

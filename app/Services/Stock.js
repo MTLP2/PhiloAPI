@@ -125,11 +125,11 @@ class Stock {
     await p.save()
 
     if (p.barcode) {
-      if (isShop && recursive) {
+      if (recursive) {
         const projects = await DB('vod')
-          .where('step', 'in_progress')
           .where('vod.project_id', '!=', id)
-          .where('is_shop', true)
+          // .where('step', 'in_progress')
+          // .where('is_shop', true)
           .where(query => {
             for (const barcode of p.barcode.split(',')) {
               query.orWhere('vod.barcode', 'like', `%${barcode}%`)
@@ -137,14 +137,22 @@ class Stock {
           })
           .all()
 
-        for (const p of projects) {
-          await Stock.calcul({
-            id: id,
-            quantity: quantity,
-            isShop: isShop,
-            transporter: transporter,
-            recursive: false
-          })
+        if (isShop) {
+          for (const p of projects) {
+            await Stock.calcul({
+              id: id,
+              quantity: quantity,
+              isShop: isShop,
+              transporter: transporter,
+              recursive: false
+            })
+          }
+        } else {
+          await DB('vod')
+            .whereIn('project_id', projects.map(p => p.project_id))
+            .update({
+              count_bundle: DB.raw(`count_bundle + ${quantity}`)
+            })
         }
       } else {
         const barcodes = {}
