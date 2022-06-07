@@ -954,6 +954,7 @@ Admin.saveVod = async (params) => {
       user_id: params.user.id,
       old: vod.step,
       new: params.step,
+      notif: params.notif,
       date: Utils.date()
     })
   }
@@ -963,6 +964,7 @@ Admin.saveVod = async (params) => {
       user_id: params.user.id,
       old: vod.status,
       new: params.status,
+      notif: params.notif,
       date: Utils.date()
     })
   }
