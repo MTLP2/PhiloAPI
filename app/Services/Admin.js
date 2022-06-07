@@ -941,6 +941,7 @@ Admin.saveVod = async (params) => {
   status.in_production = 'my_order_in_production'
   status.test_pressing_ok = 'my_order_test_pressing_ok'
   status.test_pressing_ko = 'my_order_test_pressing_ko'
+  status.dispatched = 'my_order_dispatched'
   status.check_address = 'my_order_check_address'
   // status.preparation = 'my_order_in_preparation'
   // status.sent = 'my_order_sent'
