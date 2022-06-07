@@ -553,14 +553,14 @@ Order.exportSales = async (params) => {
 
 Order.refundOrderShop = async (id, type, params) => {
   const order = await DB('order_shop')
-    .select('order_shop.*', 'order.refunded', 'order.payment_id', 'order.transaction_id', 'order.payment_type', 'order_item.project_id', 'order.id as order_id')
+    .select('order_shop.*', 'order.refunded', 'order.payment_id', 'order.transaction_id', 'order.payment_type',
+      'order_item.project_id', 'order.id as order_id')
     .join('order', 'order.id', 'order_shop.order_id')
     .join('order_item', 'order.id', 'order_item.order_id')
     .where('order_shop.id', id)
     .first()
 
   const Order = use('App/Services/Order')
-  const Vod = use('App/Services/Vod')
 
   if (order.total <= 0) {
     return false
@@ -596,9 +596,11 @@ Order.refundOrderShop = async (id, type, params) => {
 
   if ((params && params.credit_note === 'true') || !params) {
     await Invoice.insertRefund(order)
+    /**
     if (order.project_id) {
       await Stock.calcul({ id: order.project_id })
     }
+    **/
   }
 
   if (type === 'cancel' || (params && params.cancel_notification === 'true')) {
