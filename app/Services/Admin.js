@@ -830,18 +830,6 @@ Admin.saveVod = async (params) => {
     vod.count_other = params.count_other
     vod.count_distrib = params.count_distrib
 
-    for (const trans of ['daudin', 'sna', 'whiplash', 'whiplash_uk', 'diggers', 'shipehype']) {
-      await Stock.save({
-        project_id: params.id,
-        type: trans,
-        stock: params[`stock_${trans}`],
-        user_id: params.user.id,
-        comment: 'sheraf'
-      })
-    }
-    vod.stock = +params.stock_daudin + +params.stock_sna + +params.stock_whiplash +
-      +params.stock_whiplash_uk + +params.stock_diggers + +params.stock_shipehype
-
     vod.is_size = params.is_size
 
     const sizes = {

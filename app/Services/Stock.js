@@ -40,22 +40,22 @@ class Stock {
       stock.created_at = Utils.date()
     }
 
-    if (params.quantity) {
+    if (params.diff) {
       params.quantity = stock.quantity + params.quantity
     }
 
-    if (stock.quantity !== +params.stock) {
+    if (stock.quantity !== +params.quantity) {
       await DB('stock_historic').insert({
         project_id: params.project_id,
         user_id: params.user_id,
         type: params.type,
         old: stock.quantity,
-        new: params.stock,
+        new: params.quantity,
         comment: params.comment
       })
     }
 
-    stock.quantity = params.stock
+    stock.quantity = params.quantity
     stock.updated_at = Utils.date()
 
     await stock.save()
@@ -100,7 +100,7 @@ class Stock {
       Stock.save({
         project_id: id,
         type: transporter,
-        stock: stock[transporter]
+        quantity: stock[transporter]
       })
       const stocks = Object.keys(p)
         .filter(s => s.startsWith('stock'))
@@ -365,7 +365,7 @@ class Stock {
           await Stock.save({
             project_id: stock.project.id,
             type: params.distributor,
-            stock: stock.quantity,
+            quantity: stock.quantity,
             comment: 'uplaod',
             user_id: params.user_id,
             is_distrib: true
@@ -376,6 +376,30 @@ class Stock {
     } else {
       return stocks
     }
+  }
+
+  static async setStocksProject (params) {
+    for (const stock of params.stocks) {
+      Stock.save({
+        project_id: params.id,
+        type: stock.type,
+        quantity: stock.quantity,
+        is_distrib: stock.is_distrib,
+        user_id: params.user_id
+      })
+    }
+
+    if (params.type && params.quantity) {
+      Stock.save({
+        project_id: params.id,
+        type: params.type,
+        quantity: params.quantity,
+        is_distrib: params.is_distrib,
+        user_id: params.user_id
+      })
+    }
+
+    return { success: true }
   }
 }
 

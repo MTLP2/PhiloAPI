@@ -296,7 +296,7 @@ Dispatch.changeStock = async (params) => {
     Stock.save({
       project_id: project.project_id,
       type: 'sna',
-      stock: params.quantity,
+      quantity: params.quantity,
       comment: 'api'
     })
 

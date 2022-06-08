@@ -232,6 +232,7 @@ Route.group(() => {
   Route.get('/projects/:id/statements', 'AdminController.getStatements')
   Route.post('/projects/:id/statements', 'AdminController.saveStatement')
   Route.post('/projects/:id/images', 'AdminController.saveProjectImage')
+  Route.post('/projects/:id/stock', 'AdminController.setStock')
   Route.put('/projects/:id/images/:iid', 'AdminController.updateProjectImage')
   Route.delete('/projects/:id/images/:iid', 'AdminController.deleteProjectImage')
   Route.get('/projects/:id/statements/download', 'AdminController.downloadStatement')

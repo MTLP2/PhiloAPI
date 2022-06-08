@@ -554,7 +554,7 @@ Whiplash.syncStocks = async (params) => {
           type: 'whiplash',
           user_id: 1,
           comment: 'api',
-          stock: us
+          quantity: us
         })
       }
       if (uk !== project.stock_whiplash_uk) {
@@ -563,7 +563,7 @@ Whiplash.syncStocks = async (params) => {
           type: 'whiplash_uk',
           user_id: 1,
           comment: 'api',
-          stock: uk
+          quantity: uk
         })
       }
     }
