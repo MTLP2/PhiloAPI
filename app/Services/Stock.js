@@ -343,19 +343,20 @@ class Stock {
       stock.barcode = row.getCell(params.barcode).value
       stock.quantity = row.getCell(params.quantity).value
 
-      if (stock.barcode && !isNaN(stock.barcode) && !isNaN(stock.quantity)) {
+      if (stock.barcode && stock.barcode && !isNaN(stock.quantity)) {
         stocks.push(stock)
       }
     })
 
     const projects = await DB('vod')
-      .select('project.id', 'artist_name', 'picture', 'name', 'vod.barcode')
+      .select('project.id', 'artist_name', 'picture', 'name', 'vod.barcode', 'cat_number')
       .join('project', 'project.id', 'vod.project_id')
       .whereIn('barcode', stocks.map(s => s.barcode))
+      .orWhereIn('cat_number', stocks.map(s => s.barcode))
       .all()
 
     for (const [i, stock] of Object.entries(stocks)) {
-      stocks[i].project = projects.find(p => +p.barcode === +stock.barcode)
+      stocks[i].project = projects.find(p => +p.barcode === +stock.barcode || p.cat_number === stock.barcode)
     }
 
     if (params.type === 'save') {
