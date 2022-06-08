@@ -266,6 +266,7 @@ Admin.getProject = async (id) => {
   project.trans = {}
   const barcodes = {}
   project.to_sizes = {}
+  project.count = 0
   for (const order of orders) {
     if (order.size) {
       if (!project.to_sizes[order.size]) {
@@ -284,6 +285,7 @@ Admin.getProject = async (id) => {
       }
     }
     project.trans[order.transporter].orders += order.quantity
+    project.count += order.quantity
     if (!order.sending && !order.date_export && order.type === 'vod') {
       project.trans[order.transporter].to_send += order.quantity
     }
