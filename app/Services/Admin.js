@@ -752,6 +752,8 @@ Admin.saveWishlist = async (params) => {
 
 Admin.saveVod = async (params) => {
   const vod = await DB('vod').where('id', params.vod_id).first()
+  const vodArchive = { ...vod }
+
   if (!vod) {
     return false
   }
@@ -948,6 +950,15 @@ Admin.saveVod = async (params) => {
 
   vod.historic = vod.historic ? JSON.parse(vod.historic) : []
 
+  if (vodArchive.is_shop !== params.is_shop) {
+    vod.historic.push({
+      type: 'shop',
+      user_id: params.user.id,
+      old: vodArchive.is_shop,
+      new: params.is_shop,
+      date: Utils.date()
+    })
+  }
   if (vod.step !== params.step) {
     vod.historic.push({
       type: 'step',
