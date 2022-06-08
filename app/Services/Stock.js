@@ -394,6 +394,7 @@ class Stock {
         project_id: params.id,
         type: params.type,
         quantity: params.quantity,
+        comment: 'sheraf',
         is_distrib: params.is_distrib,
         user_id: params.user_id
       })
