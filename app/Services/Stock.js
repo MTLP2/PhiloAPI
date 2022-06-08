@@ -340,10 +340,10 @@ class Stock {
 
     worksheet.eachRow(row => {
       const stock = {}
-      stock.barcode = row.getCell(params.barcode).value
-      stock.quantity = row.getCell(params.quantity).value
+      stock.barcode = row.getCell(params.barcode).text
+      stock.quantity = row.getCell(params.quantity).text
 
-      if (stock.barcode && stock.barcode && !isNaN(stock.quantity)) {
+      if (stock.barcode && stock.barcode && stock.quantity !== '' && !isNaN(stock.quantity)) {
         stocks.push(stock)
       }
     })
