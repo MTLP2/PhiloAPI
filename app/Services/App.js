@@ -105,12 +105,11 @@ App.hourly = async () => {
       await Box.checkReminder()
       await Production.checkNotif()
     } else if (hour === 9) {
-      await Whiplash.syncStocks()
-    } else if (hour === 10) {
       await Review.checkNotif()
     }
 
     await Storage.cleanTmp('storage')
+    await Whiplash.syncStocks()
 
     cron.status = 'complete'
     cron.end = new Date()
