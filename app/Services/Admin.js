@@ -1690,7 +1690,7 @@ Admin.exportReviews = async (params) => {
   params.size = 0
   const data = await Review.all(params)
 
-  return Utils.toCsv([
+  return Utils.arrayToCsv([
     { name: 'ID', index: 'id' },
     { name: 'User ID', index: 'user_id' },
     { name: 'Project ID', index: 'project_id' },
