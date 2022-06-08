@@ -4,6 +4,7 @@ const Env = use('Env')
 const Order = use('App/Services/Order')
 const Notification = use('App/Services/Notification')
 const Storage = use('App/Services/Storage')
+const Stock = use('App/Services/Stock')
 const ApiError = use('App/ApiError')
 const config = require('../../config')
 const Utils = use('App/Utils')
@@ -490,15 +491,33 @@ Whiplash.extract = async (params) => {
 
 Whiplash.syncStocks = async (params) => {
   const projects = await DB('vod')
-    .select('project_id', 'barcode', 'stock_whiplash', 'stock_whiplash_uk')
+    .select('vod.project_id', 'whiplash_stock', 'barcode', 'stock_us.quantity as stock_whiplash', 'stock_uk.quantity as stock_whiplash_uk')
+    .whereNotNull('barcode')
     .where(query => {
       query.whereRaw('JSON_EXTRACT(transporters, "$.whiplash") = true')
         .orWhereRaw('JSON_EXTRACT(transporters, "$.whiplash_uk") = true')
     })
-    .whereNotNull('barcode')
+    .leftJoin('stock as stock_us', query => {
+      query.on('stock_us.project_id', 'vod.project_id')
+      query.on('stock_us.type', DB.raw('?', ['whiplash']))
+    })
+    .leftJoin('stock as stock_uk', query => {
+      query.on('stock_uk.project_id', 'vod.project_id')
+      query.on('stock_uk.type', DB.raw('?', ['whiplash_uk']))
+    })
+    .orderBy('whiplash_stock')
+    .limit(20)
     .all()
 
   for (const project of projects) {
+    console.log(project.project_id, project.barcode, project.whiplash_stock)
+
+    DB('vod')
+      .where('project_id', project.project_id)
+      .update({
+        whiplash_stock: Utils.date()
+      })
+
     const res = await whiplash(`items/sku/${project.barcode}`)
 
     if (!res[0]) {
@@ -530,26 +549,22 @@ Whiplash.syncStocks = async (params) => {
         })
 
       if (us !== project.stock_whiplash) {
-        await DB('vod_stock')
-          .insert({
-            project_id: project.project_id,
-            type: 'whiplash',
-            user_id: 1,
-            comment: 'api',
-            old: project.stock_whiplash,
-            new: us
-          })
+        Stock.save({
+          project_id: project.project_id,
+          type: 'whiplash',
+          user_id: 1,
+          comment: 'api',
+          stock: us
+        })
       }
       if (uk !== project.stock_whiplash_uk) {
-        await DB('vod_stock')
-          .insert({
-            project_id: project.project_id,
-            type: 'whiplash_uk',
-            user_id: 1,
-            comment: 'api',
-            old: project.stock_whiplash_uk,
-            new: uk
-          })
+        Stock.save({
+          project_id: project.project_id,
+          type: 'whiplash_uk',
+          user_id: 1,
+          comment: 'api',
+          stock: uk
+        })
       }
     }
   }
