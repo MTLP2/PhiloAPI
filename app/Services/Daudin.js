@@ -222,7 +222,7 @@ class Daudin {
       .select(DB.raw(`
         os.*, oi.quantity, customer.*, user.name as username, artist_name, project.name, oi.price,
         item.name as item_name, item.catnumber as item_catnumber, customer.name as customer_name,
-        user.email as email, country.name as country, country.ue, os.id as order_shop_id, os.id,
+        user.email as email, country.name as country, country.ue, os.id as order_shop_id, os.id, sizes, size,
         vod.barcode, project.cat_number, item.catnumber as item_catnumber, item.barcode as item_barcode
       `))
       .join('order_shop as os', 'os.id', 'oi.order_shop_id')
@@ -239,13 +239,17 @@ class Daudin {
       .all()
 
     for (const item of vod) {
+      const sizes = item.sizes ? JSON.parse(item.sizes) : null
       if (item.shipping_type === 'pickup') {
         const pickup = JSON.parse(item.address_pickup)
         const split = pickup.number.split('-')
         item.address2 = split.length > 1 ? split[1] : pickup.number
       }
       const barcodes = (item.item_barcode || item.barcode).split(',')
-      for (const barcode of barcodes) {
+      for (let barcode of barcodes) {
+        if (barcode === 'SIZE') {
+          barcode = sizes[item.size]
+        }
         lines.push({
           ...item,
           id: `${item.id}`,
@@ -277,7 +281,7 @@ class Daudin {
       const order = shops[i]
 
       const items = await DB('order_item')
-        .select('quantity', 'cat_number', 'vod.barcode', 'order_item.price',
+        .select('quantity', 'cat_number', 'vod.barcode', 'order_item.price', 'size', 'sizes',
           'item.barcode as item_barcode', 'item.name as item_name', 'item.catnumber as item_catnumber',
           'artist_name', 'project.name'
         )
@@ -290,6 +294,7 @@ class Daudin {
 
       for (const j in items) {
         const item = items[j]
+        const sizes = item.sizes ? JSON.parse(item.sizes) : null
         if (order.shipping_type === 'pickup') {
           const pickup = JSON.parse(order.address_pickup)
           const split = pickup.number.split('-')
@@ -309,7 +314,10 @@ class Daudin {
           continue
         }
         const barcodes = (item.item_barcode || item.barcode).split(',')
-        for (const barcode of barcodes) {
+        for (let barcode of barcodes) {
+          if (barcode === 'SIZE') {
+            barcode = sizes[item.size]
+          }
           lines.push({
             ...order,
             ...item,

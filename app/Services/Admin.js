@@ -831,14 +831,7 @@ Admin.saveVod = async (params) => {
     vod.count_distrib = params.count_distrib
 
     vod.is_size = params.is_size
-
-    const sizes = {
-      s: false, m: false, l: false, xl: false, '2xl': false, '3xl': false, '4xl': false
-    }
-    for (const s of params.sizes) {
-      sizes[s] = true
-    }
-    vod.sizes = JSON.stringify(sizes)
+    vod.sizes = params.is_size ? JSON.stringify(params.sizes) : null
 
     vod.alert_stock = params.alert_stock || null
     vod.only_country = params.only_country
