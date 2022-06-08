@@ -1487,8 +1487,8 @@ Admin.getOrders = async (params) => {
 Admin.getOrder = async (id) => {
   const order = await DB('order')
     .select('order.*', 'user.name', 'user.email', 'user.points', 'notification.id as notification_id', 'notification.type as notification_type', DB.raw('CONCAT(customer.firstname, \' \', customer.lastname) AS customer_name'))
-    .join('user', 'user.id', 'order.user_id')
-    .join('customer', 'customer.id', 'user.customer_id')
+    .leftJoin('user', 'user.id', 'order.user_id')
+    .leftJoin('customer', 'customer.id', 'user.customer_id')
     .leftJoin('notification', 'notification.order_id', 'order.id')
     .where('order.id', id)
     .first()
