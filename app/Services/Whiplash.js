@@ -160,7 +160,7 @@ Whiplash.syncProject = async (params) => {
   const query = `
     SELECT OS.*, OI.price, OI.quantity, OI.tips, OI.total, customer.*, user.name as username,
       user.email as email, country.name as country, country.ue, O.payment_type, OS.id as order_shop_id, OS.id,
-      vod.barcode, project.cat_number, item.catnumber as item_catnumber, item.barcode as item_barcode
+      vod.barcode, vod.sizes, project.cat_number, item.catnumber as item_catnumber, item.barcode as item_barcode
     FROM \`order\` O, order_item OI
       LEFT OUTER JOIN project ON project.id = OI.project_id
       LEFT OUTER JOIN item ON item.id = OI.item_id
@@ -189,8 +189,12 @@ Whiplash.syncProject = async (params) => {
 
   for (const order of Object.values(orders)) {
     for (const item of order.items) {
+      const sizes = item.sizes ? JSON.parse(item.sizes) : null
       const bb = (item.item_barcode || item.barcode).split(',')
-      for (const barcode of bb) {
+      for (let barcode of bb) {
+        if (barcode === 'SIZE') {
+          barcode = sizes[item.size]
+        }
         barcodes[barcode] = true
       }
     }
@@ -226,8 +230,12 @@ Whiplash.syncProject = async (params) => {
         order_items: []
       }
       for (const item of order.items) {
+        const sizes = item.sizes ? JSON.parse(item.sizes) : null
         const bb = (item.item_barcode || item.barcode).split(',')
-        for (const barcode of bb) {
+        for (let barcode of bb) {
+          if (barcode === 'SIZE') {
+            barcode = sizes[item.size]
+          }
           params.order_items.push({
             item_id: barcodes[barcode],
             quantity: item.quantity

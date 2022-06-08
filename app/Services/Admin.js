@@ -1127,7 +1127,7 @@ Admin.syncProjectSna = async (params) => {
     .all()
 
   const items = await DB()
-    .select('order_shop_id', 'oi.project_id', 'oi.quantity', 'oi.price', 'vod.barcode')
+    .select('order_shop_id', 'oi.project_id', 'oi.quantity', 'oi.price', 'oi.size', 'vod.barcode', 'vod.sizes')
     .from('order_item as oi')
     .whereIn('order_shop_id', orders.map(o => o.id))
     .join('vod', 'vod.project_id', 'oi.project_id')
