@@ -457,6 +457,36 @@ Whiplash.setTrackingLinks = async (params) => {
   return { success: true }
 }
 
+Whiplash.setDelivered = async () => {
+  const shops = await DB('order_shop')
+    .whereNotNull('whiplash_id')
+    .whereNull('tracking_number')
+    .whereIn('transporter', ['whiplash', 'whiplash_uk'])
+    .limit(1)
+    .where('is_paid', true)
+    .orderBy('id', 'desc')
+    .limit(20)
+    .all()
+
+  for (const shop of shops) {
+    // shop.whiplash_id = 22888898
+    // console.log(shop.whiplash_id)
+    const order = await Whiplash.getOrder(shop.whiplash_id)
+    console.log(shop.id, shop.whiplash_id, order.status_name, order.approximate_delivery_date)
+    /**
+    await DB('order_shop')
+      .where('id', shop.id)
+      .update({
+        step: 'sent',
+        tracking_number: order.tracking[0],
+        tracking_link: order.tracking_links[0]
+      })
+    **/
+  }
+
+  return { success: true }
+}
+
 Whiplash.getTrackingDelivery = async (params) => {
   const shop = await DB('order_shop')
     .where('id', params.id)
