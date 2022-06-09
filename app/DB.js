@@ -508,10 +508,10 @@ const DB = (tablee, idd) => {
         })
     },
 
-    update (values) {
+    update (...args) {
       const error = new Error()
       return p.query
-        .update(values)
+        .update(...args)
         .catch(err => {
           error.status = err.status
           error.message = err.message
