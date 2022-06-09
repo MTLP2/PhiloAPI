@@ -43,18 +43,18 @@ App.daily = async () => {
 
   try {
     await CronJobs.query()
-      .whereRaw('start < date_sub(now(), interval 30 day)')
+      .whereRaw('start < date_sub(now(), interval 15 day)')
       .orderBy('start', 'desc')
       .delete()
 
-    if (moment().format('DD') === '1') {
+    if (+moment().format('D') === 3) {
       await Box.checkPayments()
     }
     if (moment().format('E') !== '6' && moment().format('E') !== '7') {
       await Daudin.export()
     }
 
-    if (moment().format('DD') === '28') {
+    if (+moment().format('D') === 28) {
       await Statement.setStorageCosts()
       await Statement.sendStatements()
       await Box.setDispatchs()
@@ -105,12 +105,11 @@ App.hourly = async () => {
       await Box.checkReminder()
       await Production.checkNotif()
     } else if (hour === 9) {
-      await Whiplash.syncStocks()
-    } else if (hour === 10) {
       await Review.checkNotif()
     }
 
     await Storage.cleanTmp('storage')
+    await Whiplash.syncStocks()
 
     cron.status = 'complete'
     cron.end = new Date()
@@ -387,7 +386,7 @@ App.notification = async (notif, test = false) => {
     const order = await DB('order').where('id', n.order_id).first()
     const items = await DB('order_item as oi')
       .select('vod.message_order', 'vod.download', 'vod.send_tracks', 'oi.*', 'p.name', 'p.slug', 'vod.is_shop', 'vod.end',
-        'p.artist_name', 'p.picture', 'item.name as item_name', 'item.picture as item_picture', 'vod.date_shipping',
+        'p.artist_name', 'p.picture', 'item.name as item_name', 'item.picture as item_picture', 'picture_project', 'vod.date_shipping',
         'order_shop.address_pickup', 'order_shop.shipping_type', 'order_shop.customer_id')
       .join('project as p', 'oi.project_id', 'p.id')
       .join('order_shop', 'order_shop.id', 'oi.order_shop_id')
@@ -429,7 +428,7 @@ App.notification = async (notif, test = false) => {
     data.boxes = boxes
 
     data.order_items = items.map(item => {
-      item.picture = `${config.app.storage_url}/projects/${item.picture || item.project_id}/cover.jpg`
+      item.picture = `${config.app.storage_url}/projects/${item.picture || item.project_id}/${item.picture_project ? `${item.picture_project}.png` : 'cover.jpg'}`
       if (item.item_name) {
         item.name = item.item_name
       }

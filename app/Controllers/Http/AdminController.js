@@ -139,11 +139,17 @@ class AdminController {
     project.show_image_bar = params.show_image_bar
     project.show_reviews = params.show_reviews
     project.nb_vinyl = params.nb_vinyl
+    project.color = params.color
 
     await project.save()
     await Admin.saveVod(params)
 
     return { success: true }
+  }
+
+  async setStock ({ params, user }) {
+    params.user_id = user.id
+    return Stock.setStocksProject(params)
   }
 
   async uploadTracks ({ params }) {
@@ -435,6 +441,10 @@ class AdminController {
 
   getFeedbacks ({ params }) {
     return Feedback.all(params)
+  }
+
+  exportFeedbacks ({ params }) {
+    return Feedback.exportAll(params)
   }
 
   getNewsletters ({ params }) {
@@ -828,6 +838,10 @@ class AdminController {
 
   getProjectProductions ({ params }) {
     return Admin.getProjectProductions(params)
+  }
+
+  exportOrdersCommercial ({ params }) {
+    return Admin.exportOrdersCommercial(params)
   }
 }
 

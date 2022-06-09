@@ -40,22 +40,22 @@ class Stock {
       stock.created_at = Utils.date()
     }
 
-    if (params.quantity) {
+    if (params.diff) {
       params.quantity = stock.quantity + params.quantity
     }
 
-    if (stock.quantity !== +params.stock) {
+    if (stock.quantity !== +params.quantity) {
       await DB('stock_historic').insert({
         project_id: params.project_id,
         user_id: params.user_id,
         type: params.type,
         old: stock.quantity,
-        new: params.stock,
+        new: params.quantity,
         comment: params.comment
       })
     }
 
-    stock.quantity = params.stock
+    stock.quantity = params.quantity
     stock.updated_at = Utils.date()
 
     await stock.save()
@@ -100,7 +100,7 @@ class Stock {
       Stock.save({
         project_id: id,
         type: transporter,
-        stock: stock[transporter]
+        quantity: stock[transporter]
       })
       const stocks = Object.keys(p)
         .filter(s => s.startsWith('stock'))
@@ -125,11 +125,11 @@ class Stock {
     await p.save()
 
     if (p.barcode) {
-      if (isShop && recursive) {
+      if (recursive) {
         const projects = await DB('vod')
-          .where('step', 'in_progress')
           .where('vod.project_id', '!=', id)
-          .where('is_shop', true)
+          // .where('step', 'in_progress')
+          // .where('is_shop', true)
           .where(query => {
             for (const barcode of p.barcode.split(',')) {
               query.orWhere('vod.barcode', 'like', `%${barcode}%`)
@@ -137,14 +137,22 @@ class Stock {
           })
           .all()
 
-        for (const p of projects) {
-          await Stock.calcul({
-            id: id,
-            quantity: quantity,
-            isShop: isShop,
-            transporter: transporter,
-            recursive: false
-          })
+        if (isShop) {
+          for (const p of projects) {
+            await Stock.calcul({
+              id: id,
+              quantity: quantity,
+              isShop: isShop,
+              transporter: transporter,
+              recursive: false
+            })
+          }
+        } else {
+          await DB('vod')
+            .whereIn('project_id', projects.map(p => p.project_id))
+            .update({
+              count_bundle: DB.raw(`count_bundle + ${quantity}`)
+            })
         }
       } else {
         const barcodes = {}
@@ -332,22 +340,23 @@ class Stock {
 
     worksheet.eachRow(row => {
       const stock = {}
-      stock.barcode = row.getCell(params.barcode).value
-      stock.quantity = row.getCell(params.quantity).value
+      stock.barcode = row.getCell(params.barcode).text
+      stock.quantity = row.getCell(params.quantity).text
 
-      if (stock.barcode && !isNaN(stock.barcode) && !isNaN(stock.quantity)) {
+      if (stock.barcode && stock.barcode && stock.quantity !== '' && !isNaN(stock.quantity)) {
         stocks.push(stock)
       }
     })
 
     const projects = await DB('vod')
-      .select('project.id', 'artist_name', 'picture', 'name', 'vod.barcode')
+      .select('project.id', 'artist_name', 'picture', 'name', 'vod.barcode', 'cat_number')
       .join('project', 'project.id', 'vod.project_id')
       .whereIn('barcode', stocks.map(s => s.barcode))
+      .orWhereIn('cat_number', stocks.map(s => s.barcode))
       .all()
 
     for (const [i, stock] of Object.entries(stocks)) {
-      stocks[i].project = projects.find(p => +p.barcode === +stock.barcode)
+      stocks[i].project = projects.find(p => +p.barcode === +stock.barcode || p.cat_number === stock.barcode)
     }
 
     if (params.type === 'save') {
@@ -356,7 +365,7 @@ class Stock {
           await Stock.save({
             project_id: stock.project.id,
             type: params.distributor,
-            stock: stock.quantity,
+            quantity: stock.quantity,
             comment: 'uplaod',
             user_id: params.user_id,
             is_distrib: true
@@ -367,6 +376,31 @@ class Stock {
     } else {
       return stocks
     }
+  }
+
+  static async setStocksProject (params) {
+    for (const stock of params.stocks) {
+      Stock.save({
+        project_id: params.id,
+        type: stock.type,
+        quantity: stock.quantity,
+        is_distrib: stock.is_distrib,
+        user_id: params.user_id
+      })
+    }
+
+    if (params.type && params.quantity) {
+      Stock.save({
+        project_id: params.id,
+        type: params.type,
+        quantity: params.quantity,
+        comment: 'sheraf',
+        is_distrib: params.is_distrib,
+        user_id: params.user_id
+      })
+    }
+
+    return { success: true }
   }
 }
 

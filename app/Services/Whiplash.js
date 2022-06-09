@@ -4,6 +4,7 @@ const Env = use('Env')
 const Order = use('App/Services/Order')
 const Notification = use('App/Services/Notification')
 const Storage = use('App/Services/Storage')
+const Stock = use('App/Services/Stock')
 const ApiError = use('App/ApiError')
 const config = require('../../config')
 const Utils = use('App/Utils')
@@ -67,7 +68,6 @@ Whiplash.validOrder = async (shop, user, items) => {
     for (const barcode of barcodes) {
       const item = await Whiplash.findItem(barcode)
       if (!item || !item.id) {
-        console.log(shop)
         await Notification.sendEmail({
           to: 'victor@diggersfactory.com,alexis@diggersfactory.com',
           subject: `Error barcode Whiplash : ${barcode}`,
@@ -90,6 +90,7 @@ Whiplash.validOrder = async (shop, user, items) => {
   await DB('order_shop')
     .where('id', shop.id)
     .update({
+      step: 'in_preparation',
       whiplash_id: order.id,
       date_export: Utils.date()
     })
@@ -157,9 +158,9 @@ Whiplash.syncProject = async (params) => {
     .all()
 
   const query = `
-    SELECT OS.*, OI.price, OI.quantity, OI.tips, OI.total, customer.*, user.name as username,
+    SELECT OS.*, OI.price, OI.quantity, OI.tips, OI.size, OI.total, customer.*, user.name as username,
       user.email as email, country.name as country, country.ue, O.payment_type, OS.id as order_shop_id, OS.id,
-      vod.barcode, project.cat_number, item.catnumber as item_catnumber, item.barcode as item_barcode
+      vod.barcode, vod.sizes, project.cat_number, item.catnumber as item_catnumber, item.barcode as item_barcode
     FROM \`order\` O, order_item OI
       LEFT OUTER JOIN project ON project.id = OI.project_id
       LEFT OUTER JOIN item ON item.id = OI.item_id
@@ -188,8 +189,12 @@ Whiplash.syncProject = async (params) => {
 
   for (const order of Object.values(orders)) {
     for (const item of order.items) {
+      const sizes = item.sizes ? JSON.parse(item.sizes) : null
       const bb = (item.item_barcode || item.barcode).split(',')
-      for (const barcode of bb) {
+      for (let barcode of bb) {
+        if (barcode === 'SIZE') {
+          barcode = sizes[item.size]
+        }
         barcodes[barcode] = true
       }
     }
@@ -225,8 +230,12 @@ Whiplash.syncProject = async (params) => {
         order_items: []
       }
       for (const item of order.items) {
+        const sizes = item.sizes ? JSON.parse(item.sizes) : null
         const bb = (item.item_barcode || item.barcode).split(',')
-        for (const barcode of bb) {
+        for (let barcode of bb) {
+          if (barcode === 'SIZE') {
+            barcode = sizes[item.size]
+          }
           params.order_items.push({
             item_id: barcodes[barcode],
             quantity: item.quantity
@@ -244,6 +253,7 @@ Whiplash.syncProject = async (params) => {
       await DB('order_shop')
         .where('id', order.order_shop_id)
         .update({
+          step: 'in_preparation',
           date_export: Utils.date(),
           whiplash_id: whiplash.id
         })
@@ -447,6 +457,36 @@ Whiplash.setTrackingLinks = async (params) => {
   return { success: true }
 }
 
+Whiplash.setDelivered = async () => {
+  const shops = await DB('order_shop')
+    .whereNotNull('whiplash_id')
+    .whereNull('tracking_number')
+    .whereIn('transporter', ['whiplash', 'whiplash_uk'])
+    .limit(1)
+    .where('is_paid', true)
+    .orderBy('id', 'desc')
+    .limit(20)
+    .all()
+
+  for (const shop of shops) {
+    // shop.whiplash_id = 22888898
+    // console.log(shop.whiplash_id)
+    const order = await Whiplash.getOrder(shop.whiplash_id)
+    console.log(shop.id, shop.whiplash_id, order.status_name, order.approximate_delivery_date)
+    /**
+    await DB('order_shop')
+      .where('id', shop.id)
+      .update({
+        step: 'sent',
+        tracking_number: order.tracking[0],
+        tracking_link: order.tracking_links[0]
+      })
+    **/
+  }
+
+  return { success: true }
+}
+
 Whiplash.getTrackingDelivery = async (params) => {
   const shop = await DB('order_shop')
     .where('id', params.id)
@@ -490,15 +530,33 @@ Whiplash.extract = async (params) => {
 
 Whiplash.syncStocks = async (params) => {
   const projects = await DB('vod')
-    .select('project_id', 'barcode', 'stock_whiplash', 'stock_whiplash_uk')
+    .select('vod.project_id', 'whiplash_stock', 'barcode', 'stock_us.quantity as stock_whiplash', 'stock_uk.quantity as stock_whiplash_uk')
+    .whereNotNull('barcode')
     .where(query => {
       query.whereRaw('JSON_EXTRACT(transporters, "$.whiplash") = true')
         .orWhereRaw('JSON_EXTRACT(transporters, "$.whiplash_uk") = true')
     })
-    .whereNotNull('barcode')
+    .leftJoin('stock as stock_us', query => {
+      query.on('stock_us.project_id', 'vod.project_id')
+      query.on('stock_us.type', DB.raw('?', ['whiplash']))
+    })
+    .leftJoin('stock as stock_uk', query => {
+      query.on('stock_uk.project_id', 'vod.project_id')
+      query.on('stock_uk.type', DB.raw('?', ['whiplash_uk']))
+    })
+    .orderBy('whiplash_stock')
+    .limit(20)
     .all()
 
   for (const project of projects) {
+    console.log(project.project_id, project.barcode, project.whiplash_stock)
+
+    DB('vod')
+      .where('project_id', project.project_id)
+      .update({
+        whiplash_stock: Utils.date()
+      })
+
     const res = await whiplash(`items/sku/${project.barcode}`)
 
     if (!res[0]) {
@@ -530,26 +588,22 @@ Whiplash.syncStocks = async (params) => {
         })
 
       if (us !== project.stock_whiplash) {
-        await DB('vod_stock')
-          .insert({
-            project_id: project.project_id,
-            type: 'whiplash',
-            user_id: 1,
-            comment: 'api',
-            old: project.stock_whiplash,
-            new: us
-          })
+        Stock.save({
+          project_id: project.project_id,
+          type: 'whiplash',
+          user_id: 1,
+          comment: 'api',
+          quantity: us
+        })
       }
       if (uk !== project.stock_whiplash_uk) {
-        await DB('vod_stock')
-          .insert({
-            project_id: project.project_id,
-            type: 'whiplash_uk',
-            user_id: 1,
-            comment: 'api',
-            old: project.stock_whiplash_uk,
-            new: uk
-          })
+        Stock.save({
+          project_id: project.project_id,
+          type: 'whiplash_uk',
+          user_id: 1,
+          comment: 'api',
+          quantity: uk
+        })
       }
     }
   }
