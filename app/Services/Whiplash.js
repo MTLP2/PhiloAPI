@@ -158,7 +158,7 @@ Whiplash.syncProject = async (params) => {
     .all()
 
   const query = `
-    SELECT OS.*, OI.price, OI.quantity, OI.tips, OI.total, customer.*, user.name as username,
+    SELECT OS.*, OI.price, OI.quantity, OI.tips, OI.size, OI.total, customer.*, user.name as username,
       user.email as email, country.name as country, country.ue, O.payment_type, OS.id as order_shop_id, OS.id,
       vod.barcode, vod.sizes, project.cat_number, item.catnumber as item_catnumber, item.barcode as item_barcode
     FROM \`order\` O, order_item OI
