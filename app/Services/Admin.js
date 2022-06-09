@@ -1199,6 +1199,7 @@ Admin.syncProjectSna = async (params) => {
   await DB('order_shop')
     .whereIn('id', dispatchs.map(d => d.id))
     .update({
+      step: 'in_preparation',
       date_export: Utils.date(),
       transporter: params.type
     })

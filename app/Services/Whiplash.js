@@ -253,6 +253,7 @@ Whiplash.syncProject = async (params) => {
       await DB('order_shop')
         .where('id', order.order_shop_id)
         .update({
+          step: 'in_preparation',
           date_export: Utils.date(),
           whiplash_id: whiplash.id
         })

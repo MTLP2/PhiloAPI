@@ -793,6 +793,7 @@ class Daudin {
           .where('id', id)
           .first()
 
+        order.step = 'in_preparation'
         order.sending = false
         order.date_export = date
         order.updated_at = Utils.date()
