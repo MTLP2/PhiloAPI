@@ -1274,8 +1274,16 @@ Admin.syncProjectDaudin = async (params) => {
       await DB('order_shop')
         .where('id', order.order_shop_id)
         .update({
+          step: 'in_preparation',
           sending: true
         })
+
+      await Notification.add({
+        type: 'my_order_in_preparation',
+        order_id: order.order_id,
+        order_shop_id: order.id,
+        user_id: order.user_id
+      })
 
       qty = qty + order.quantity
     }

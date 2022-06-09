@@ -68,7 +68,6 @@ Whiplash.validOrder = async (shop, user, items) => {
     for (const barcode of barcodes) {
       const item = await Whiplash.findItem(barcode)
       if (!item || !item.id) {
-        console.log(shop)
         await Notification.sendEmail({
           to: 'victor@diggersfactory.com,alexis@diggersfactory.com',
           subject: `Error barcode Whiplash : ${barcode}`,
@@ -91,6 +90,7 @@ Whiplash.validOrder = async (shop, user, items) => {
   await DB('order_shop')
     .where('id', shop.id)
     .update({
+      step: 'in_preparation',
       whiplash_id: order.id,
       date_export: Utils.date()
     })
