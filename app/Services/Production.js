@@ -606,6 +606,8 @@ class Production {
   }
 
   static async saveDispatchUser (params) {
+    if (params.no_tp_dispatch) params.test_pressing = true
+
     const prod = await DB('production')
       .select('production.id', 'production.resp_id', 'project.id as project_id')
       .join('project', 'project.id', 'production.project_id')
@@ -628,6 +630,21 @@ class Production {
     }
     action.created_at = Utils.date()
     await action.save()
+
+    // If client does not want TP dispatch, just save without proceeding to address saving and remove all associated TP dispatch
+    if (params.no_tp_dispatch) {
+      const dispatchs = await DB('production_dispatch')
+        .where('production_id', params.id)
+        .where('is_delete', false)
+        .where('type', 'test_pressing')
+        .all()
+
+      for (const dispatch of dispatchs) {
+        await Production.removeDispatch({ did: dispatch.id, user: params.user })
+      }
+
+      return { success: true }
+    }
 
     let testPressingCustomer
 
