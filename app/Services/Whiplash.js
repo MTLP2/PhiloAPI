@@ -613,14 +613,12 @@ Whiplash.syncStocks = async (params) => {
 
 Whiplash.setCosts = async () => {
   const files = await Storage.list('shippings/whiplash', true)
-
   const currencies = await Utils.getCurrenciesDb()
 
   const uk = await Utils.getCurrencies('GBP', currencies)
   const us = await Utils.getCurrencies('USD', currencies)
 
   let i = 0
-  const dispatchs = []
   for (const file of files) {
     if (file.size === 0) {
       continue
@@ -629,25 +627,35 @@ Whiplash.setCosts = async () => {
     const buffer = await Storage.get(file.path, true)
     const dispatchs = Utils.csvToArray(buffer)
     const date = dispatchs[0].transaction_date
-    console.log(i, date, file)
+    const shops = await DB('order_shop')
+      .whereIn('whiplash_id', dispatchs.filter(s => s.creator_id).map(s => s.creator_id))
+      .whereNull('shipping_cost')
+      .all()
 
+    console.log(i, date, shops.length, file)
     for (const dispatch of dispatchs) {
       if (dispatch.creator_id) {
-        const shop = await DB('order_shop')
-          .where('whiplash_id', dispatch.creator_id)
-          .whereNull('shipping_cost')
-          .first()
+        const shop = shops.find(s => {
+          return +s.whiplash_id === +dispatch.creator_id
+        })
 
         if (!shop) {
           continue
         }
+
         if (+dispatch.warehouse_id === 3) {
-          shop.shipping_cost = -dispatch.total * uk[shop.currency]
-          await shop.save()
+          await DB('order_shop')
+            .where('id', shop.id)
+            .update({
+              shipping_cost: -dispatch.total * uk[shop.currency]
+            })
           i++
         } else if (+dispatch.warehouse_id === 4) {
-          shop.shipping_cost = -dispatch.total * us[shop.currency]
-          await shop.save()
+          await DB('order_shop')
+            .where('id', shop.id)
+            .update({
+              shipping_cost: -dispatch.total * us[shop.currency]
+            })
           i++
         } else if (+dispatch.warehouse_id !== 0) {
           throw new Error('bas_warehouse')
@@ -657,7 +665,7 @@ Whiplash.setCosts = async () => {
     }
   }
 
-  return dispatchs.length
+  return i
 }
 
 module.exports = Whiplash
