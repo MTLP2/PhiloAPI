@@ -61,17 +61,14 @@ class Stock {
     await stock.save()
 
     if (!params.is_distrib) {
-      const stocks = await Stock.getProject(params.project_id)
+      const stocks = await DB('stock')
+        .select(DB.raw('SUM(quantity) as quantity'))
+        .where('project_id', params.project_id)
+        .where('is_distrib', false)
+        .first()
       await DB('vod')
         .where('project_id', params.project_id)
-        .update({
-          stock: Object.values(stocks).reduce((a, b) => {
-            if (b < 0) {
-              b = 0
-            }
-            return a + b
-          }, 0)
-        })
+        .update('stock', stocks.quantity)
     }
   }
 
