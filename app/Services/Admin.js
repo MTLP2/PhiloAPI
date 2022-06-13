@@ -266,6 +266,7 @@ Admin.getProject = async (id) => {
   project.trans = {}
   const barcodes = {}
   project.to_sizes = {}
+  project.count = 0
   for (const order of orders) {
     if (order.size) {
       if (!project.to_sizes[order.size]) {
@@ -284,6 +285,7 @@ Admin.getProject = async (id) => {
       }
     }
     project.trans[order.transporter].orders += order.quantity
+    project.count += order.quantity
     if (!order.sending && !order.date_export && order.type === 'vod') {
       project.trans[order.transporter].to_send += order.quantity
     }
@@ -752,6 +754,8 @@ Admin.saveWishlist = async (params) => {
 
 Admin.saveVod = async (params) => {
   const vod = await DB('vod').where('id', params.vod_id).first()
+  const vodArchive = { ...vod }
+
   if (!vod) {
     return false
   }
@@ -826,27 +830,8 @@ Admin.saveVod = async (params) => {
     vod.count_other = params.count_other
     vod.count_distrib = params.count_distrib
 
-    for (const trans of ['daudin', 'sna', 'whiplash', 'whiplash_uk', 'diggers', 'shipehype']) {
-      await Stock.save({
-        project_id: params.id,
-        type: trans,
-        stock: params[`stock_${trans}`],
-        user_id: params.user.id,
-        comment: 'sheraf'
-      })
-    }
-    vod.stock = +params.stock_daudin + +params.stock_sna + +params.stock_whiplash +
-      +params.stock_whiplash_uk + +params.stock_diggers + +params.stock_shipehype
-
     vod.is_size = params.is_size
-
-    const sizes = {
-      s: false, m: false, l: false, xl: false, '2xl': false, '3xl': false, '4xl': false
-    }
-    for (const s of params.sizes) {
-      sizes[s] = true
-    }
-    vod.sizes = JSON.stringify(sizes)
+    vod.sizes = params.is_size ? JSON.stringify(params.sizes) : null
 
     vod.alert_stock = params.alert_stock || null
     vod.only_country = params.only_country
@@ -941,18 +926,29 @@ Admin.saveVod = async (params) => {
   status.in_production = 'my_order_in_production'
   status.test_pressing_ok = 'my_order_test_pressing_ok'
   status.test_pressing_ko = 'my_order_test_pressing_ko'
+  status.dispatched = 'my_order_dispatched'
   status.check_address = 'my_order_check_address'
   // status.preparation = 'my_order_in_preparation'
   // status.sent = 'my_order_sent'
 
   vod.historic = vod.historic ? JSON.parse(vod.historic) : []
 
+  if (vodArchive.is_shop !== params.is_shop) {
+    vod.historic.push({
+      type: 'shop',
+      user_id: params.user.id,
+      old: vodArchive.is_shop,
+      new: params.is_shop,
+      date: Utils.date()
+    })
+  }
   if (vod.step !== params.step) {
     vod.historic.push({
       type: 'step',
       user_id: params.user.id,
       old: vod.step,
       new: params.step,
+      notif: params.notif,
       date: Utils.date()
     })
   }
@@ -962,6 +958,7 @@ Admin.saveVod = async (params) => {
       user_id: params.user.id,
       old: vod.status,
       new: params.status,
+      notif: params.notif,
       date: Utils.date()
     })
   }
@@ -1130,7 +1127,7 @@ Admin.syncProjectSna = async (params) => {
     .all()
 
   const items = await DB()
-    .select('order_shop_id', 'oi.project_id', 'oi.quantity', 'oi.price', 'vod.barcode')
+    .select('order_shop_id', 'oi.project_id', 'oi.quantity', 'oi.price', 'oi.size', 'vod.barcode', 'vod.sizes')
     .from('order_item as oi')
     .whereIn('order_shop_id', orders.map(o => o.id))
     .join('vod', 'vod.project_id', 'oi.project_id')
@@ -1202,6 +1199,7 @@ Admin.syncProjectSna = async (params) => {
   await DB('order_shop')
     .whereIn('id', dispatchs.map(d => d.id))
     .update({
+      step: 'in_preparation',
       date_export: Utils.date(),
       transporter: params.type
     })
@@ -1276,8 +1274,16 @@ Admin.syncProjectDaudin = async (params) => {
       await DB('order_shop')
         .where('id', order.order_shop_id)
         .update({
+          step: 'in_preparation',
           sending: true
         })
+
+      await Notification.add({
+        type: 'my_order_in_preparation',
+        order_id: order.order_id,
+        order_shop_id: order.id,
+        user_id: order.user_id
+      })
 
       qty = qty + order.quantity
     }
@@ -1473,8 +1479,8 @@ Admin.getOrders = async (params) => {
 Admin.getOrder = async (id) => {
   const order = await DB('order')
     .select('order.*', 'user.name', 'user.email', 'user.points', 'notification.id as notification_id', 'notification.type as notification_type', DB.raw('CONCAT(customer.firstname, \' \', customer.lastname) AS customer_name'))
-    .join('user', 'user.id', 'order.user_id')
-    .join('customer', 'customer.id', 'user.customer_id')
+    .leftJoin('user', 'user.id', 'order.user_id')
+    .leftJoin('customer', 'customer.id', 'user.customer_id')
     .leftJoin('notification', 'notification.order_id', 'order.id')
     .where('order.id', id)
     .first()
@@ -1676,7 +1682,7 @@ Admin.exportReviews = async (params) => {
   params.size = 0
   const data = await Review.all(params)
 
-  return Utils.toCsv([
+  return Utils.arrayToCsv([
     { name: 'ID', index: 'id' },
     { name: 'User ID', index: 'user_id' },
     { name: 'Project ID', index: 'project_id' },

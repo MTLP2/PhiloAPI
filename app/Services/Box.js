@@ -1205,6 +1205,7 @@ class Box {
         project_id: s,
         type: 'daudin',
         quantity: -selected[s],
+        diff: true,
         comment: 'boxes'
       })
     }
@@ -1608,6 +1609,7 @@ class Box {
             project_id: vod.project_id,
             type: 'daudin',
             quantity: -1,
+            diff: true,
             comment: 'box'
           })
         }
@@ -2152,6 +2154,7 @@ class Box {
           project_id: a,
           type: 'daudin',
           quantity: -1,
+          diff: true,
           comment: 'box'
         })
       }
@@ -2167,6 +2170,7 @@ class Box {
           project_id: s,
           type: 'daudin',
           quantity: +1,
+          diff: true,
           comment: 'box'
         })
       }

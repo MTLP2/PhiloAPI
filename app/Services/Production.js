@@ -165,7 +165,7 @@ class Production {
         category: 'prod',
         type: 'dispatchs',
         action: 'check',
-        for: 'team'
+        for: 'artist'
       },
       {
         category: 'postprod',
@@ -327,6 +327,18 @@ class Production {
     if (item.date_shipping && item.date_shipping !== params.date_shipping) {
       Production.addNotif({ id: item.id, type: 'change_date_shipping', date: params.date_shipping })
     }
+    // Prod.Dispatchs goes to toDo when quantity_dispatched is changed + notif
+    if (!item.quantity_dispatch && params.quantity_dispatch) {
+      const prodAction = await DB('production_action')
+        .where('production_id', params.id)
+        .where('type', 'dispatchs')
+        .first()
+
+      prodAction.status = 'to_check'
+      prodAction.save()
+
+      await Production.addNotif({ id: item.id, type: 'in_dispatchs' })
+    }
 
     if (item.step !== params.step) {
       Production.notif({
@@ -356,6 +368,7 @@ class Production {
     item.date_shipping = params.date_shipping || null
     item.quantity = params.quantity || null
     item.quantity_pressed = params.quantity_pressed || null
+    item.quantity_dispatch = params.quantity_dispatch || null
     item.currency = params.currency || null
     item.quote_price = params.quote_price || null
     item.quote_com = params.quote_com || null
@@ -594,21 +607,27 @@ class Production {
 
   static async saveDispatchUser (params) {
     const prod = await DB('production')
-      .where('id', params.id)
+      .select('production.id', 'production.resp_id', 'project.id as project_id')
+      .join('project', 'project.id', 'production.project_id')
+      .where('production.id', params.id)
       .first()
 
     await Utils.checkProjectOwner({ project_id: prod.project_id, user: params.user })
 
+    // Handle both PS/TP status change
     const action = await DB('production_action')
       .where('production_id', prod.id)
-      .where('type', 'shipping')
+      .where('type', params.test_pressing ? 'shipping' : 'dispatchs')
       .first()
 
-    if (action.status === 'to_do') {
+    if (params.test_pressing && action.status === 'to_do') {
       action.status = 'pending'
-      action.created_at = Utils.date()
-      await action.save()
     }
+    if (params.personal_stock && action.status === 'to_check') {
+      action.status = 'to_check_team'
+    }
+    action.created_at = Utils.date()
+    await action.save()
 
     let testPressingCustomer
 
@@ -616,6 +635,7 @@ class Production {
       if (!params[type]) {
         continue
       }
+
       for (const address of params[type]) {
         let item
 
@@ -623,17 +643,18 @@ class Production {
           item = await DB('production_dispatch')
             .where('production_id', prod.id)
             .where('id', address.id)
+            .where('type', type)
             .first()
         } else {
           item = DB('production_dispatch')
           item.created_at = Utils.date()
           item.production_id = prod.id
-          item.type = type
         }
         item.quantity = address.quantity
+        item.type = type
 
         if (address.same_address) {
-          item.customer_id = testPressingCustomer
+          item.customer_id = address.customer_id
         } else {
           const customer = await Customer.save(address)
           item.customer_id = customer.id
@@ -651,6 +672,16 @@ class Production {
         item.updated_at = Utils.date()
         await item.save()
       }
+    }
+
+    // Notification for PS resp when action changes from to check to pending team
+    if (params.personal_stock && action.status === 'to_check_team') {
+      await Notification.add({
+        type: 'production_pending_personal_stock',
+        prod_id: prod.id,
+        project_id: prod.project_id,
+        user_id: prod.resp_id
+      })
     }
 
     return { success: true }
@@ -695,7 +726,7 @@ class Production {
       })
     }
     if (params.type !== 'test_pressing' && !item.tracking && params.tracking) {
-      Production.addNotif({ id: item.production_id, type: 'final_dispatch', data: params.tracking })
+      Production.addNotif({ id: item.production_id, type: params.type === 'personal_stock' ? 'personal_stock_dispatch' : 'final_dispatch', data: params.tracking })
     }
     if (params.logistician && !item.date_receipt && params.date_receipt) {
       Production.addNotif({ id: item.production_id, type: 'logistician_receiption', date: params.date_receipt, data: params.logistician })

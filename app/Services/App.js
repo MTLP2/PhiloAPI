@@ -105,12 +105,11 @@ App.hourly = async () => {
       await Box.checkReminder()
       await Production.checkNotif()
     } else if (hour === 9) {
-      await Whiplash.syncStocks()
-    } else if (hour === 10) {
       await Review.checkNotif()
     }
 
     await Storage.cleanTmp('storage')
+    await Whiplash.syncStocks()
 
     cron.status = 'complete'
     cron.end = new Date()
@@ -353,7 +352,7 @@ App.notification = async (notif, test = false) => {
   }
   if (n.prod_id) {
     const prod = await DB('production')
-      .select('user.name as resp', 'user.email as resp_email')
+      .select('user.name as resp', 'user.email as resp_email', 'quantity_dispatch')
       .where('production.id', n.prod_id)
       .join('user', 'user.id', 'production.resp_id')
       .first()
@@ -376,6 +375,10 @@ App.notification = async (notif, test = false) => {
         }
         data.to_do_preprod += '</ul>'
       }
+    }
+
+    if (notif.type === 'production_in_dispatchs') {
+      data.quantity_dispatch = prod.quantity_dispatch
     }
   }
   if (n.order_id) {

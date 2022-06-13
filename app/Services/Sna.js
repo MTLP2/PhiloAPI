@@ -43,8 +43,12 @@ class Sna {
         }
 
         for (const item of order.items) {
+          const sizes = item.sizes ? JSON.parse(item.sizes) : null
           const barcodes = item.barcode.split(',')
           for (let barcode of barcodes) {
+            if (barcode === 'SIZE') {
+              barcode = sizes[item.size]
+            }
             if (process.env.NODE_ENV !== 'production') {
               barcode = '1111111111111'
             }
