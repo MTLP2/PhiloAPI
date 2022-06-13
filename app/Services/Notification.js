@@ -34,6 +34,7 @@ Notification.new = (params) => {
       box_id: (params.box_id !== undefined) ? params.box_id : null,
       bid_id: (params.bid_id !== undefined) ? params.bid_id : null,
       prod_id: (params.prod_id !== undefined) ? params.prod_id : null,
+      file_id: (params.file_id !== undefined) ? params.file_id : null,
       order_box_id: (params.order_box_id !== undefined) ? params.order_box_id : null,
       box_dispatch_id: (params.box_dispatch_id !== undefined) ? params.box_dispatch_id : null,
       payment_id: (params.payment_id !== undefined) ? params.payment_id : null,
