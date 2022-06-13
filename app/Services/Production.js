@@ -1008,6 +1008,7 @@ class Production {
         // send email to the team
         Production.notif({
           production_id: pfile.production_id,
+          file_id: pfile.id,
           user_id: params.user.id,
           type: 'production_refuse_file',
           data: file.name,
@@ -1271,6 +1272,7 @@ class Production {
         user_id: prod.user_id,
         data: params.data,
         project_id: prod.project_id,
+        file_id: params.file_id,
         date: Utils.date()
       })
     }
