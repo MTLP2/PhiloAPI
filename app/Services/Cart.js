@@ -744,6 +744,42 @@ Cart.calculateShippingDaudin = async (params) => {
   return costs
 }
 
+Cart.calculateShippingWhiplashUk = async (params) => {
+  const transporters = await DB('shipping_weight')
+    .where('partner', 'whiplash_uk')
+    .where('country_id', params.country_id)
+    .all()
+
+  let weight = params.weight
+  if (weight < 750) {
+    weight = '750g'
+  } else {
+    weight = Math.ceil(params.weight / 1000) + 'kg'
+  }
+
+  let costs = null
+
+  for (const transporter of transporters) {
+    if (params.quantity > 1) {
+      transporter.picking = 1
+    }
+    const cost = transporter.packing + (transporter.picking * params.insert)
+
+    if (transporter[weight] && (!costs || !costs.standard || costs.standard > transporter[weight])) {
+      costs = {
+        ...costs,
+        transporter: params.transporter,
+        partner: transporter.transporter,
+        currency: transporter.currency,
+        standard: Utils.round(transporter[weight] + cost),
+        tracking: Utils.round(transporter[weight] + cost + 5)
+      }
+    }
+  }
+
+  return costs
+}
+
 Cart.calculateShippingWhiplash = async (params, trans) => {
   const transporter = await DB('shipping_vinyl')
     .where('country_id', params.country_id)
@@ -858,7 +894,7 @@ Cart.calculateShipping = async (params) => {
     }
   }
   if (transporters.all || transporters.whiplash_uk) {
-    const whiplashUk = await Cart.calculateShippingWhiplash(params, 'whiplash_uk')
+    const whiplashUk = await Cart.calculateShippingWhiplashUk(params)
     if (whiplashUk) {
       shippings.push(whiplashUk)
     }
