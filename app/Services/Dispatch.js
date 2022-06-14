@@ -292,7 +292,7 @@ Dispatch.changeStock = async (params) => {
     project[`stock_${key}`] = value
   }
 
-  if (project && project.stock_sna !== params.quantity) {
+  if (project && project.stock_sna !== +params.quantity) {
     Stock.save({
       project_id: project.project_id,
       type: 'sna',
@@ -300,20 +300,22 @@ Dispatch.changeStock = async (params) => {
       comment: 'api'
     })
 
-    const html = `<ul>
-    <li><strong>Transporter:</strong> ${params.transporter || ''}</li>
-    <li><strong>Barcode:</strong> ${params.barcode || ''}</li>
-    <li><strong>Name:</strong> ${params.name || ''}</li>
-    <li><strong>Old:</strong> ${project.stock_sna}</li>
-    <li><strong>Quantity:</strong> ${params.quantity || ''}</li>
-    <li><strong>Comment:</strong> ${params.comment || ''}</li>
-  </ul>`
+    if (!project.stock_sna) {
+      const html = `<ul>
+      <li><strong>Transporter:</strong> ${params.transporter || ''}</li>
+      <li><strong>Barcode:</strong> ${params.barcode || ''}</li>
+      <li><strong>Name:</strong> ${params.name || ''}</li>
+      <li><strong>Old:</strong> ${project.stock_sna}</li>
+      <li><strong>Quantity:</strong> ${params.quantity || ''}</li>
+      <li><strong>Comment:</strong> ${params.comment || ''}</li>
+    </ul>`
 
-    await Notification.sendEmail({
-      to: 'alexis@diggersfactory.com,victor@diggersfactory.com,ismail@diggersfactory.com',
-      subject: `${params.transporter} - new stock : ${params.barcode}`,
-      html: html
-    })
+      await Notification.sendEmail({
+        to: 'alexis@diggersfactory.com,victor@diggersfactory.com,ismail@diggersfactory.com',
+        subject: `${params.transporter} - new stock : ${params.barcode}`,
+        html: html
+      })
+    }
   }
 
   return { success: true }
