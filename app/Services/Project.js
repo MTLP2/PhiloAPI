@@ -1504,6 +1504,7 @@ Project.getStatements = async (params) => {
   }
 
   s.setCountry = function (type, cat, country, quantity) {
+    country = country || null
     if (!s[cat].all.countries[country]) {
       s[cat].all.countries[country] = 0
     }
@@ -1620,6 +1621,7 @@ Project.getStatements = async (params) => {
       s.addList('distribution', 'costs', date, dist.storage, stat.project_id)
 
       s.setDate('distrib', 'quantity', date, dist.quantity)
+
       s.setCountry('distrib', 'quantity', dist.country_id, dist.quantity)
     }
   }
