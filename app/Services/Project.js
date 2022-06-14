@@ -1405,7 +1405,7 @@ Project.getStatements = async (params) => {
   }
 
   const s = {
-    currency: 'EUR',
+    currency: Object.values(projects)[0].currency,
     periodicity: periodicity,
     start: params.start,
     end: params.end,
