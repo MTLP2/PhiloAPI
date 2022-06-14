@@ -109,10 +109,10 @@ module.exports = {
   },
 
   emails: {
-    commercial: 'benjamin@diggersfactory.com,manon@diggersfactory.com,alexis@diggersfactory.com,leopold@diggersfactory.com',
+    commercial: 'benjamin@diggersfactory.com,manon@diggersfactory.com,alexis@diggersfactory.com,paul@diggersfactory.com',
     marketing: 'olivia@diggersfactory.com',
     distribution: 'alexis@diggersfactory.com,cyril@diggersfactory.com,guillaume@diggersfactory.com',
-    send_vinyl: 'manon@diggersfactory.com,leopold@diggersfactory.com',
+    send_vinyl: 'manon@diggersfactory.com,paul@diggersfactory.com',
     illustration: 'nina@diggersfactory.com',
     compatibility: 'alexis@diggersfactory.com,nelly@diggersfactory.com'
   },
