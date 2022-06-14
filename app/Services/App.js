@@ -1653,6 +1653,23 @@ App.ordersScaryPockets = async (transporter) => {
   return whi
 }
 
+App.renameIcons = () => {
+  const fs = require('fs')
+  const path = '../streamline'
+  const files = fs.readdirSync(path)
+
+  for (const file of files) {
+    let name = file.replace('streamline-icon-', '')
+    name = name.replace('streamlinehq-', '')
+    name = name.replace('@140x140', '')
+    name = name.replace('-250', '')
+    name = name.replace('.SVG', '.svg')
+
+    fs.renameSync(`${path}/${file}`, `${path}/${name}`)
+  }
+  return files
+}
+
 App.exportNoTracking = async (transporter) => {
   const orders = await DB('order_shop')
     .where(query => {
