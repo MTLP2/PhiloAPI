@@ -143,6 +143,7 @@ Admin.getProject = async (id) => {
       'wishlist.user_id as wishlist_user_id',
       'wishlist.step as wishlist_step',
       'user.email',
+      'user.lang as user_lang',
       'user.id as user_id',
       'user.name as user_name',
       'project.*',
