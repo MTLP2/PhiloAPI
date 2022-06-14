@@ -768,7 +768,7 @@ Cart.calculateShippingWhiplashUk = async (params) => {
     if (transporter[weight] && (!costs || !costs.standard || costs.standard > transporter[weight])) {
       costs = {
         ...costs,
-        transporter: params.transporter,
+        transporter: 'whiplash_uk',
         partner: transporter.transporter,
         currency: transporter.currency,
         standard: Utils.round(transporter[weight] + cost),
