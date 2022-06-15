@@ -52,6 +52,11 @@ Route.group(() => {
   Route.post('/account-submit', 'IntercomController.submitAccount')
 }).prefix('intercom').middleware('intercom')
 
+// Conversions API
+Route.group(() => {
+  Route.post('/event', 'ConversionController.event')
+}).prefix('capi')
+
 Route.group(() => {
   Route.get('/emails/:id', 'AppController.previewEmail')
 }).prefix('app').middleware('app')
