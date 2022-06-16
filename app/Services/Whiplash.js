@@ -668,4 +668,55 @@ Whiplash.setCosts = async () => {
   return i
 }
 
+Whiplash.parseShippings = async () => {
+  const countries = await DB('country')
+    .where('lang', 'en')
+    .all()
+
+  const Excel = require('exceljs')
+  const workbook = new Excel.Workbook()
+  await workbook.xlsx.readFile('../shipping_uk.xlsx')
+  const worksheet = workbook.getWorksheet(1)
+
+  const data = []
+  worksheet.eachRow((row, rowNumber) => {
+    const country = row.getCell('H').value
+    if (country) {
+      const d = {
+        country: country,
+        code: countries.find(c => c.name === country)?.id,
+        '500g': row.getCell('I').value,
+        '750g': row.getCell('J').value,
+        '1kg': row.getCell('K').value
+      }
+      if (d.code) {
+        data.push(d)
+      }
+    }
+  })
+
+  for (const d of data) {
+    await DB('shipping_weight')
+      .where('country_id', d.code)
+      .where('partner', 'whiplash_uk')
+      .delete()
+
+    await DB('shipping_weight')
+      .insert({
+        country_id: d.code,
+        partner: 'whiplash_uk',
+        transporter: null,
+        currency: 'GBP',
+        packing: 4,
+        picking: 0.75,
+        '500g': d['500g'],
+        '750g': d['750g'],
+        '1kg': d['1kg'],
+        created_at: Utils.date(),
+        updated_at: Utils.date()
+      })
+  }
+  return data
+}
+
 module.exports = Whiplash

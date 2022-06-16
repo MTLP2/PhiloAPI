@@ -1662,6 +1662,7 @@ App.renameIcons = () => {
     let name = file.replace('streamline-icon-', '')
     name = name.replace('streamlinehq-', '')
     name = name.replace('@140x140', '')
+    name = name.replace('@250x250', '')
     name = name.replace('-250', '')
     name = name.replace('.SVG', '.svg')
 

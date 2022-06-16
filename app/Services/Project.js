@@ -446,6 +446,8 @@ Project.findAll = async (params) => {
     } else if (params.sort === 'price_desc') {
       projects.whereNotNull('price')
       projects.orderBy('price', 'DESC')
+    } else {
+      projects.orderBy('id', 'DESC')
     }
   } else if (params.type === 'produced') {
     projects
@@ -460,9 +462,8 @@ Project.findAll = async (params) => {
       .orderBy(DB.raw('field(p.id, 578)'), 'desc')
       .orderBy(DB.raw('p.created_at'), 'desc')
   } else {
-    projects
-      .orderBy('home', 'desc')
-      .orderBy(DB.raw('RAND()'))
+    projects.orderBy('home', 'desc')
+      .orderBy('id', 'desc')
   }
 
   if (params.filter === 'preorder') {
