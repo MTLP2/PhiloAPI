@@ -816,8 +816,18 @@ class AdminController {
     return Admin.getShippingRevenues(params)
   }
 
-  getReviews ({ params }) {
-    return Review.all(params)
+  getProjectsReviews ({ params }) {
+    return Review.all({
+      ...params,
+      type: 'project'
+    })
+  }
+
+  getBoxesReviews ({ params }) {
+    return Review.all({
+      ...params,
+      type: 'box'
+    })
   }
 
   getProjectReviews ({ params }) {

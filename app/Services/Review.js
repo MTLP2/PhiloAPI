@@ -53,10 +53,29 @@ Review.checkNotif = async () => {
 }
 
 Review.all = async (params) => {
+  const selects = [
+    'r.*', 'u.id as user_id', 'u.country_id', 'u.picture as user_picture', 'u.name as user_name'
+  ]
+  let join
+
+  // Selects and join for projects
+  if (params.type === 'project') {
+    selects.push('p.id as project_id')
+    selects.push('p.artist_name')
+    selects.push('p.name')
+    join = ['project as p', 'p.id', 'r.project_id']
+  }
+
+  // Selects and join for box
+  if (params.type === 'box') {
+    selects.push('b.id as box_id')
+    join = ['box as b', 'b.id', 'r.box_id']
+  }
+
   params.query = DB('review as r')
-    .select('r.*', 'u.id as user_id', 'u.country_id', 'u.picture as user_picture', 'u.name as user_name', 'p.name', 'p.artist_name', 'p.id as project_id')
+    .select(...selects)
     .join('user as u', 'u.id', 'r.user_id')
-    .join('project as p', 'p.id', 'r.project_id')
+    .join(...join)
     .orderBy('r.created_at', 'desc')
 
   if (params.start) {
