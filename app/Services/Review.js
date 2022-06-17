@@ -77,10 +77,11 @@ Review.save = async (params) => {
     is_starred: 0,
     created_at: new Date(),
     user_id: params.user_id,
-    project_id: params.project_id
+    project_id: params.project_id ?? null,
+    box_id: params.box_id ?? null
   })
 
-  // If review
+  // If bad review
   if (params.is_bad_review) {
     await Notification.add({
       type: 'user_bad_review',
@@ -88,6 +89,7 @@ Review.save = async (params) => {
       order_id: params.order_id,
       order_shop_id: params.order_shop_id,
       project_id: params.project_id,
+      box_id: params.box_id,
       user_id: 8695 // contact@diggersfactory.com
     })
   }
