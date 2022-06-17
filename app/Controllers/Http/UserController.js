@@ -122,6 +122,11 @@ class UserController {
     return User.getOrderShop(params)
   }
 
+  getBox ({ user, params }) {
+    params.user_id = user.id
+    return User.getBox(params)
+  }
+
   getBoxes ({ user, params }) {
     params.user_id = user.id
     return User.getBoxes(params)
@@ -161,6 +166,10 @@ class UserController {
   getBoxCard ({ user, params }) {
     params.user_id = user.id
     return User.downloadCard(params)
+  }
+
+  checkUserHasReviewedBox ({ user, params }) {
+    return Review.getUserBoxReview({ userId: user.id, boxId: params.bid })
   }
 
   getTrackingDelivery ({ user, params }) {

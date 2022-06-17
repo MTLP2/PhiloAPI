@@ -5,11 +5,12 @@ const Notification = use('App/Services/Notification')
 const Review = {}
 
 Review.checkNotif = async () => {
+  // Check product review
   const ordersToReview = await DB('order_shop as os')
     .select('os.id', 'os.order_id', 'os.user_id', 'os.date_export')
     .where('os.step', 'sent')
     .where('os.is_paid', 1)
-    .whereRaw('DATEDIFF(now(), os.date_export) = 60')
+    .whereRaw('DATEDIFF(now(), os.date_export) = 21')
     .whereNotExists(query => {
       query.from('notification')
         .whereRaw('order_shop_id = os.id')
@@ -26,6 +27,27 @@ Review.checkNotif = async () => {
       user_id: order.user_id
     })
   }
+
+  // Check box review
+  const boxesToReview = await DB('box as b')
+    .select('b.id', 'b.end', 'b.user_id', 'b.customer_id', 'b.step')
+    .whereIn('b.step', ['stoped', 'finished'])
+    .whereRaw('DATEDIFF(now(), b.end) = 36')
+    .whereNotExists(query => {
+      query.from('notification')
+        .whereRaw('box_id = b.id')
+        .where('type', 'box_review_request')
+        // .whereRaw('created_at > (NOW() - INTERVAL 3 DAY)')
+    })
+    .all()
+
+  // for (const box of boxesToReview) {
+  //   await Notification.add({
+  //     type: 'box_review_request',
+  //     box_id: box.id,
+  //     user_id: box.user_id
+  //   })
+  // }
 
   return { count: ordersToReview.length, ordersToReview }
 }
@@ -126,6 +148,15 @@ Review.getUserProjectReview = async ({ user_id: userId, pid }) => {
     .first()
 
   return { reviewExist }
+}
+
+Review.getUserBoxReview = async ({ userId, boxId }) => {
+  const reviewExist = await DB('review')
+    .where('user_id', userId)
+    .where('box_id', +boxId)
+    .first()
+
+  return { reviewExist: !!reviewExist }
 }
 
 module.exports = Review
