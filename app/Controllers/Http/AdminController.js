@@ -843,6 +843,11 @@ class AdminController {
   exportOrdersCommercial ({ params }) {
     return Admin.exportOrdersCommercial(params)
   }
+
+  exportProjectsBox ({ params }) {
+    console.log('plop')
+    return Admin.exportProjectsBox(params)
+  }
 }
 
 module.exports = AdminController

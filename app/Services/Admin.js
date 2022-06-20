@@ -4424,4 +4424,18 @@ Admin.exportOrdersCommercial = async (params) => {
   ], projects)
 }
 
+Admin.exportProjectsBox = async (params) => {
+  const projectsIsBox = await DB('vod')
+    .select('project.id', 'project.name', 'project.artist_name')
+    .join('project', 'project.id', 'vod.project_id')
+    .where('is_box', 1)
+    .all()
+
+  return Utils.arrayToCsv([
+    { index: 'id', name: 'ID' },
+    { index: 'name', name: 'Name' },
+    { index: 'artist_name', name: 'Artist Name' }
+  ], projectsIsBox)
+}
+
 module.exports = Admin
