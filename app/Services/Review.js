@@ -6,10 +6,19 @@ const Review = {}
 
 Review.checkNotif = async () => {
   const ordersToReview = await DB('order_shop as os')
-    .select('os.id', 'os.order_id', 'os.user_id', 'os.date_export')
-    .where('os.step', 'sent')
+    .select('os.id', 'os.order_id', 'os.user_id', 'os.date_export', 'os.step')
     .where('os.is_paid', 1)
-    .whereRaw('DATEDIFF(now(), os.date_export) = 60')
+    .where(query => {
+      query.where(query => {
+        query.where('os.step', 'delivered')
+        query.whereRaw('DATEDIFF(now(), os.date_export) < 40')
+      })
+      query.orWhere(query => {
+        query.whereRaw('DATEDIFF(now(), os.date_export) = 14')
+        query.where('os.step', 'sent')
+      })
+    })
+
     .whereNotExists(query => {
       query.from('notification')
         .whereRaw('order_shop_id = os.id')
