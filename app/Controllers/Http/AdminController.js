@@ -845,7 +845,6 @@ class AdminController {
   }
 
   exportProjectsBox ({ params }) {
-    console.log('plop')
     return Admin.exportProjectsBox(params)
   }
 }
