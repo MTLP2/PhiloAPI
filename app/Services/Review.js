@@ -7,10 +7,17 @@ const Review = {}
 Review.checkNotif = async () => {
   // Check product review
   const ordersToReview = await DB('order_shop as os')
-    .select('os.id', 'os.order_id', 'os.user_id', 'os.date_export')
-    .where('os.step', 'sent')
+    .select('os.id', 'os.order_id', 'os.user_id', 'os.date_export', 'os.step')
     .where('os.is_paid', 1)
-    .whereRaw('DATEDIFF(now(), os.date_export) = 14')
+    .where(query => {
+      query.where(query => {
+        query.where('os.step', 'sent')
+        query.whereRaw('DATEDIFF(now(), os.date_export) = 14')
+      })
+      query.orWhere(query => {
+        query.where('os.step', 'delivered')
+      })
+    })
     .whereNotExists(query => {
       query.from('notification')
         .whereRaw('order_shop_id = os.id')
@@ -173,7 +180,8 @@ Review.update = async (params) => {
       throw new Error('A starred project must have a language')
     }
 
-    // Update all reviews linked to this project with same lang to 0 as long as it's a project review
+    // Update all reviews linked to this project with same lang to 0
+    // If params.id begin with B
     if (!params.id.startsWith('B')) {
       await DB('review')
         .where('project_id', +params.id)
