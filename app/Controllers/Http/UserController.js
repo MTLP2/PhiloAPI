@@ -236,18 +236,6 @@ class UserController {
       }
     }
 
-    // const validation = !params.is_bad_review
-    //   ? await validateAll(params, {
-    //     title: 'required'
-    //     rate: 'required'
-    //   })
-    //   : await validateAll(params, {
-    //     message: 'required',
-    //     order_id: 'required',
-    //     order_shop_id: 'required',
-    //     project_id: 'required'
-    //   })
-
     const validation = await validateAll(params, dataToValidate)
 
     if (validation.fails()) {
