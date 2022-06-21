@@ -150,14 +150,6 @@ Review.find = async ({ reviewId, projectId, userId, onlyVisible = true }) => {
   return await query.all()
 }
 
-Review.update = async ({ id, params }) => {
-  return await DB('review').where('id', id).update({
-    is_visible: params.is_visible,
-    is_starred: params.is_starred,
-    lang: params.lang
-  })
-}
-
 Review.update = async (params) => {
   // If a review is -2 / complaint, admin can't change its status
   const review = await Review.find({ reviewId: +params.rid })
@@ -181,11 +173,13 @@ Review.update = async (params) => {
       throw new Error('A starred project must have a language')
     }
 
-    // Update all reviews linked to this project with same lang to 0
-    await DB('review')
-      .where('project_id', +params.id)
-      .where('lang', params.lang)
-      .update({ is_starred: 0 })
+    // Update all reviews linked to this project with same lang to 0 as long as it's a project review
+    if (!params.id.startsWith('B')) {
+      await DB('review')
+        .where('project_id', +params.id)
+        .where('lang', params.lang)
+        .update({ is_starred: 0 })
+    }
   }
 
   // Then update the selected review
