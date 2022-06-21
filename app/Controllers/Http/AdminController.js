@@ -839,7 +839,7 @@ class AdminController {
   }
 
   updateReview ({ params }) {
-    return Admin.updateReview(params)
+    return Review.update(params)
   }
 
   deleteReview ({ params }) {

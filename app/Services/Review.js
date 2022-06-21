@@ -158,6 +158,48 @@ Review.update = async ({ id, params }) => {
   })
 }
 
+Review.update = async (params) => {
+  // If a review is -2 / complaint, admin can't change its status
+  const review = await Review.find({ reviewId: +params.rid })
+  if (review.is_visible === -2) {
+    throw new Error('You can\'t change the status of a complaint.')
+  }
+
+  // Admin must choose a lang and put translation if is_visible is 1|public
+  if (params.is_visible === 1 &&
+    ((!params.lang && !review.lang) ||
+    (!params.title_trad || !params.message_trad)
+    )) throw new Error('You must choose a language and translate the review if review is public.')
+
+  // A project can only have one is_starred
+  if (params.is_starred === 1) {
+    if (params.is_visible !== 1) {
+      throw new Error('A starred project can only be approved')
+    }
+
+    if (!params.lang) {
+      throw new Error('A starred project must have a language')
+    }
+
+    // Update all reviews linked to this project with same lang to 0
+    await DB('review')
+      .where('project_id', +params.id)
+      .where('lang', params.lang)
+      .update({ is_starred: 0 })
+  }
+
+  // Then update the selected review
+  await DB('review').where('id', params.rid).update({
+    is_visible: params.is_visible,
+    is_starred: params.is_starred,
+    lang: params.lang,
+    title_trad: params.title_trad,
+    message_trad: params.message_trad
+  })
+
+  return { newTab: params.is_visible }
+}
+
 Review.delete = async ({ id }) => {
   return await DB('review').where('id', id).delete()
 }
