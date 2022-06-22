@@ -14,6 +14,7 @@ const moment = require('moment')
 const cio = use('App/Services/CIO')
 const User = DB('user')
 const config = require('../../config')
+const Review = require('./Review')
 
 User.me = (id) => {
   const user = DB()
@@ -478,6 +479,13 @@ User.sendMessage = (userId, params) =>
       updated_at: Utils.date()
     })
 
+User.getBox = ({ id, user_id: userId }) => {
+  return DB('box')
+    .where('id', id)
+    .where('user_id', userId)
+    .first()
+}
+
 User.getBoxes = async (params) => {
   const boxes = (await DB('box')
     .where('user_id', params.user_id)
@@ -561,6 +569,10 @@ User.getBoxes = async (params) => {
   }
 
   return boxes
+}
+
+User.checkUserHasReviewedBox = async ({ uid, bid }) => {
+  return Review.getUserBoxReview({ userId: uid, boxId: bid })
 }
 
 User.downloadCard = async (params) => {

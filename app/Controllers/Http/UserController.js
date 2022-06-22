@@ -122,6 +122,11 @@ class UserController {
     return User.getOrderShop(params)
   }
 
+  getBox ({ user, params }) {
+    params.user_id = user.id
+    return User.getBox(params)
+  }
+
   getBoxes ({ user, params }) {
     params.user_id = user.id
     return User.getBoxes(params)
@@ -161,6 +166,10 @@ class UserController {
   getBoxCard ({ user, params }) {
     params.user_id = user.id
     return User.downloadCard(params)
+  }
+
+  checkUserHasReviewedBox ({ user, params }) {
+    return Review.getUserBoxReview({ userId: user.id, boxId: params.bid })
   }
 
   getTrackingDelivery ({ user, params }) {
@@ -209,18 +218,25 @@ class UserController {
   }
 
   async postReview ({ user, params, response }) {
-    // Validation differs if it's a bad review or not
-    const validation = !params.is_bad_review
-      ? await validateAll(params, {
-        title: 'required',
-        rate: 'required'
-      })
-      : await validateAll(params, {
-        message: 'required',
-        order_id: 'required',
-        order_shop_id: 'required',
-        project_id: 'required'
-      })
+    // Validation differs if it's a bad review or not, and if it's a box or not
+    const dataToValidate = {}
+    if (!params.is_bad_review) {
+      if (!params.box_id) {
+        dataToValidate.rate = 'required'
+      }
+      dataToValidate.title = 'required'
+    } else {
+      dataToValidate.message = 'required'
+      if (!params.box_id) {
+        dataToValidate.order_id = 'required'
+        dataToValidate.order_shop_id = 'required'
+        dataToValidate.project_id = 'required'
+      } else {
+        dataToValidate.box_id = 'required'
+      }
+    }
+
+    const validation = await validateAll(params, dataToValidate)
 
     if (validation.fails()) {
       return response.status(400).send({ error: validation.messages() })
