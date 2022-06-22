@@ -138,7 +138,8 @@ class MondialRelay {
       .all()
 
     for (const dispatch of dispatchs) {
-      const status = await MondialRelay.getStatus(dispatch.tracking_number)
+      const address = JSON.parse(dispatch.address_pickup)
+      const status = await MondialRelay.getStatus(dispatch.tracking_number, address.zip_code)
 
       if (status === 'available') {
         await Notification.add({
@@ -183,7 +184,8 @@ class MondialRelay {
       .all()
 
     for (const dispatch of dispatchs) {
-      const status = await MondialRelay.getStatus(dispatch.tracking_number)
+      const address = JSON.parse(dispatch.address_pickup)
+      const status = await MondialRelay.getStatus(dispatch.tracking_number, address.zip_code)
 
       if (status === 'delivered') {
         await DB('order_shop')
@@ -215,7 +217,7 @@ class MondialRelay {
     }
   }
 
-  static getStatus (number) {
+  static getStatusOld (number) {
     return new Promise((resolve, reject) => {
       const url = 'https://api.mondialrelay.com/Web_Services.asmx?wsdl'
 
@@ -269,6 +271,28 @@ class MondialRelay {
           }
         })
       })
+    })
+  }
+
+  static getStatus (number, zipCode) {
+    return Utils.request(
+      'https://www.mondialrelay.fr/_mvc/fr-FR/SuiviExpedition/RechercherJsonResponsive', {
+        method: 'POST',
+        json: true,
+        body: {
+          NumeroExpedition: number,
+          CodePostal: zipCode
+        }
+      }).then(res => {
+      if (res.Message.includes('Colis livr&#233; au destinataire')) {
+        return 'delivered'
+      } else if (res.Message.includes('Colis disponible au Point Relais')) {
+        return 'available'
+      } else if (res.Message) {
+        return 'in_progress'
+      } else {
+        return false
+      }
     })
   }
 }
