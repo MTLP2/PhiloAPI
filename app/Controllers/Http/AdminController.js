@@ -106,6 +106,10 @@ class AdminController {
         .where('project_id', project.id)
         .first()
 
+      if (!project.picture) {
+        project.picture = Utils.uuid()
+      }
+
       if (vod.picture_project) {
         await Storage.deleteImage(`projects/${project.picture}/${vod.picture_project}`)
       }
