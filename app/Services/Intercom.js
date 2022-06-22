@@ -1,7 +1,7 @@
 const Env = use('Env')
 // const Order = use('App/Services/Order')
 const Production = use('App/Services/Production')
-const { getTransporterLink } = use('App/Utils')
+const { getTransporterLink, getOriginFromTransporter } = use('App/Utils')
 const { forgotPassword } = use('App/Services/Sign')
 const { existsByEmail } = use('App/Services/User')
 const { isEmail } = use('App/Utils')
@@ -14,6 +14,14 @@ const translate = (key, lang = 'EN', payload) => {
     error_message: lang === 'EN' ? 'Can you please wait for a few minutes or contact support by writing your message below? Thank you!' : 'Pouvez-vous patienter quelques minutes ou contacter le support en écrivant votre message ci-dessous ? Merci !',
     error_account_fail: lang === 'EN' ? '🤔 Oops, unfortunately it\'s wrong again' : '🤔 Oups, ce n’est toujours pas ça, malheureusement.',
     error_account_fail_message: lang === 'EN' ? 'You\'ve reached maximum retries. Please contact the customer support below. We\'ll get back to you shortly. Thank you!' : 'Veuillez contacter le service client ci-dessous. Nous reviendrons vers vous prochainement. Merci !',
+
+    // Countries
+    country_fr: 'France',
+    country_us: lang === 'EN' ? 'United States' : 'États-Unis',
+    country_uk: lang === 'EN' ? 'United Kingdom' : 'Royaume-Uni',
+    country_de: lang === 'EN' ? 'Germany' : 'Allemagne',
+    country_au: lang === 'EN' ? 'Australia' : 'Australie',
+    country_es: lang === 'EN' ? 'Spain' : 'Espagne',
 
     // Order - Common
     order: lang === 'EN' ? 'Order' : 'Commande',
@@ -38,6 +46,10 @@ const translate = (key, lang = 'EN', payload) => {
     got_tracking_link: lang === 'EN' ? 'You have a tracking link! 😎' : 'Vous avez un lien de suivi ! 😎',
     see_tracking_link: lang === 'EN' ? '🔗 See tracking link' : '🔗 Voir le lien de tracking',
     no_tracking_link: lang === 'EN' ? 'The tracking link is not yet available, unfortunately. We\'ll share it with you once your order is shipped. Thank you!' : 'Le lien de suivi n’est pas encore disponible, malheureusement. Nous vous le communiquerons lorsque votre commande sera expédiée. Merci !',
+    type_order: lang === 'EN' ? 'Type' : 'Type',
+    type_shop: lang === 'EN' ? 'Immediate delivery' : 'Livraison immédiate',
+    type_vod: lang === 'EN' ? 'Preorder' : 'Précommande',
+    shipment_origin: lang === 'EN' ? 'Ship from' : 'Expédié depuis',
 
     // Order -> Production details
     preprod: lang === 'EN' ? 'Pre-production' : 'Production en attente',
@@ -69,7 +81,7 @@ const translate = (key, lang = 'EN', payload) => {
     returned: lang === 'EN' ? ['Unfortunately, your order is being returned to our logistics center. Several reasons can explain this:: the parcel stayed too long at the pickup point, your address was wrong, or you were absent.', 'You can check the tracking link for more information.', 'You will receive an e-mail as soon as the order is received by our logistics center.'] : ['Malheureusement, votre commande est en retour vers notre centre logistique pour plusieurs raisons : elle est restée trop longtemps au point de retrait, votre adresse était erronée, ou vous étiez absent(e).', 'Vous pouvez consulter le lien de suivi pour plus d\'informations.', 'Vous recevrez un e-mail dès que celle-ci sera réceptionnée par notre centre logistique.'],
     refund: lang === 'EN' ? ['We have refunded your order.', 'This follows either a request from you or a project cancellation because it unfortunately did not reach its funding goal.', 'The amount appears on your bank account within a few days.'] : ['Nous avons procédé au remboursement de votre commande.', 'Ceci fait suite soit à une demande de votre part, soit parce que le projet a été annulé car il n’a malheureusement pas atteint son objectif de financement.', 'Le montant apparaît sur votre compte bancaire dans les jours qui suivent.'],
     test_pressing_ok: lang === 'EN' ? ['Your vinyl record’s pressing is in progress!', 'The next steps are: order preparation, and delivery (please check your address).', 'Thank you!'] : ['Le pressage de votre vinyle suit son cours !', 'Les prochaines étapes sont : préparation de votre commande puis la livraison (merci de vérifier votre adresse).', 'Merci !'],
-    preparation: lang === 'EN' ? ['Only two more little steps! Your order is being prepared in our logistics center. It will be delivered to you as soon as possible, depending on the distance between our warehouses and your address.', 'Emails will be sent to inform you of the delivery. Thank you!'] : ['Nous sommes à l’avant-dernière étape ! Votre commande est en cours de préparation dans notre centre logistique.', 'Elle vous sera transmise au plus vite, selon la distance entre nos entrepôts et votre adresse. Des e-mails vous seront envoyés pour vous informer de la livraison. Merci !'],
+    in_preparation: lang === 'EN' ? ['Your order is being prepared in our logistics center. It will be delivered to you as soon as possible, depending on the distance between our warehouses and your address.', 'Emails will be sent to inform you of the delivery. Thank you!'] : ['Votre commande est en cours de préparation dans notre centre logistique.', 'Elle vous sera transmise au plus vite, selon la distance entre nos entrepôts et votre adresse. Des e-mails vous seront envoyés pour vous informer de la livraison. Merci !'],
     test_pressing_ko: lang === 'EN' ? ['We are sorry, the "Test Pressing" vinyl record which is the basis for the whole production has not been approved by everyone because it is not satisfactory.', 'We will produce a new "Test Pressing" in order to make the project as good as possible so that it meets our quality standards.', 'Thank you for your patience.'] : ['Nous sommes désolés, le vinyle “Test Pressing” qui sert de base à toute la production n’a pas été validé par les différentes parties car il n’est pas satisfaisant.', 'Nous allons produire un nouveau “Test Pressing” afin que le projet soit aussi réussi que possible et qu’il corresponde à nos standards de qualité.', 'Merci pour votre patience.'],
     dispatched: lang === 'EN' ? ['Good news, your vinyl has been pressed and is out of the factory! It\'s on its way to our logistics center, which will prepare your order and ship it to you. The next steps are: order preparation, and shipping.', 'Thank you!'] : ['Bonne nouvelle, votre vinyle a été pressé et est sorti d’usine ! Il est en route vers notre centre logistique qui préparera votre commande et vous l’expédiera. Les prochaines étapes sont : préparation de votre commande, et expédition.', 'Merci !'],
     date_shipping_description: lang === 'EN' ? 'You should receive your vinyl on the indicated date. You will be informed if any incidents occur and extend this delay (factory malfunction, lack of raw material, etc.)' : 'Vous devriez recevoir votre vinyle à la date indiquée. Vous serez informé si des incidents allongent ce délai (dysfonctionnement de l’usine, manque de matière première, etc.).',
@@ -172,7 +184,7 @@ const generateOrderCard = async (order, lang, single = false) => {
 
   const cardComponent = [{
     type: 'text',
-    text: `*${getLocaleDateFromString(order.created_at, lang)} | ${translate('order', lang)} n°${order.id}*`,
+    text: `*${getLocaleDateFromString(order.created_at, lang)} | ${translate('order', lang)} n°${order.id} | ${translate(`type_${order.type}`, lang)}*`,
     style: 'header'
   }]
 
@@ -274,6 +286,13 @@ const generateOrderCard = async (order, lang, single = false) => {
     type: 'field-value',
     field: translate('tracking_link_available', lang),
     value: order.tracking_link || getTransporterLink(order) ? '✅' : '❌'
+  })
+
+  // Info shipment origin
+  infoTable.items.push({
+    type: 'field-value',
+    field: translate('shipment_origin', lang),
+    value: translate(`country_${getOriginFromTransporter(order.transporter)}`, lang)
   })
 
   // Push the info table to the card
@@ -586,10 +605,18 @@ const replyWithOrderList = async (orders, diggersUserId, response, currentAction
 
 const replyWithOrderCard = async (orderShopId, orders, diggersUserId, response, lang) => {
   // Find the right order_shop
-  const order = orders.find(order => order.shops.find(shop => shop.id === orderShopId))
+  let orderShop
+  for (const order of orders) {
+    for (const shop of order.shops) {
+      if (shop.id === orderShopId) {
+        orderShop = shop
+        break
+      }
+    }
+  }
 
   // Generate a canvas card for the order
-  const orderCard = await generateOrderCard(order.shops[0], lang)
+  const orderCard = await generateOrderCard(orderShop, lang)
 
   // Display it to the chat
   return response.json({
