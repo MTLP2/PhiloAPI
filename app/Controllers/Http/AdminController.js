@@ -853,6 +853,10 @@ class AdminController {
   exportOrdersCommercial ({ params }) {
     return Admin.exportOrdersCommercial(params)
   }
+
+  exportProjectsBox ({ params }) {
+    return Admin.exportProjectsBox(params)
+  }
 }
 
 module.exports = AdminController

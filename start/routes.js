@@ -223,6 +223,7 @@ Route.group(() => {
   Route.get('/projects', 'AdminController.getProjects')
   Route.get('/projects/export', 'AdminController.exportProjects')
   Route.get('/projects/balance', 'AdminController.getBalances')
+  Route.get('/projects/boxes-export', 'AdminController.exportProjectsBox')
   Route.get('/projects/:id', 'AdminController.getProject')
   Route.post('/projects/:id', 'AdminController.saveProject')
   Route.get('/projects/:id/balance', 'AdminController.getBalance')
