@@ -808,7 +808,6 @@ Admin.saveVod = async (params) => {
 
   vod.historic = vod.historic ? JSON.parse(vod.historic) : []
   if (params.edit_stock) {
-    // vod.transporter = params.transporter || null
     const transporters = {}
     if (params.transporter_daudin) {
       transporters.daudin = true
