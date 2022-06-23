@@ -140,6 +140,7 @@ class IntercomController {
     console.log('🚀 ~ file: IntercomController.js ~ line 140 ~ IntercomController ~ submitOrder ~ request', request.body)
     try {
       const currentAction = request.body.component_id
+      console.log('🚀 ~ file: IntercomController.js ~ line 142 ~ IntercomController ~ submitOrder ~ currentAction', currentAction)
 
       // Retrieve  Diggers User ID + language
       const { lang, orders, diggersUserId } = request.body.current_canvas.stored_data
@@ -161,11 +162,17 @@ class IntercomController {
         await replyWithOrderCard(orderShopId, orders, diggersUserId, response, lang)
       }
 
-      // * Handle user click on 'Resend check address' button
+      // * Handle first user click on 'Resend check address' button
       if (currentAction === 'resend-check-address') {
         // const orderShopId = +currentAction.split('-')[2]
-
         await replyWithResendCheckAddressCard(orders, response, lang)
+      }
+
+      // * Handle flow of resend input
+      if (currentAction === 'resend-check-address-email') {
+        // get email
+        const resendEmail = request.body.input_values['resend-check-address-email']
+        await replyWithInputFlow({ email: resendEmail, response, lang, failCount: 0, currentAction })
       }
     } catch (err) {
       console.log('err in submit', err)
@@ -199,7 +206,7 @@ class IntercomController {
       }
 
       // Else, process with the input flow (ask input, check if valid, check if exists, respond accordingly)
-      await replyWithInputFlow(email, response, lang, failCount)
+      await replyWithInputFlow({ email, response, lang, failCount })
     } catch (err) {
       return replyWithErrorCard(response, 'EN')
     }

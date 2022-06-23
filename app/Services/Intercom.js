@@ -39,6 +39,7 @@ const translate = (key, lang = 'EN', payload) => {
     many_orders: lang === 'EN' ? 'You have several orders (thanks!), please select one:' : 'Vous avez plusieurs commandes (merci !), votre demande concerne :',
     no_orders: lang === 'EN' ? 'Sorry, it seems that you haven’t ordered yet. We recommend that you login to the account used to order. Thanks!' : 'Vous n’avez pas (encore) de commande chez nous. Nous vous invitons à retrouver vos identifiants ou contacter le support. Merci !',
     see_other_orders: lang === 'EN' ? 'See other orders' : 'Voir d\'autres commandes',
+    back_to_orders: lang === 'EN' ? 'Back to orders' : 'Retour aux commandes',
     sent_orders: lang === 'EN' ? 'Delivered or delivery in progress' : 'Commandes en cours de livraison ou livrées',
     current_orders: lang === 'EN' ? 'Orders in production' : 'Commandes en cours de production',
     all_orders: lang === 'EN' ? 'All orders' : 'Toutes les commandes',
@@ -51,7 +52,7 @@ const translate = (key, lang = 'EN', payload) => {
     type_vod: lang === 'EN' ? 'Preorder' : 'Précommande',
     shipment_origin: lang === 'EN' ? 'Ship from' : 'Expédié depuis',
     resend_check_address: lang === 'EN' ? 'I have not received this email' : 'Je n\'ai pas reçu l\'email',
-    resend_check_address_details: lang === 'EN' ? 'Please ' : 'Je n\'ai pas reçu l\'email',
+    resend_check_address_details: lang === 'EN' ? 'Check your spam for your order address confirmation. If you haven’t received our mail, we can resend you a new one now:' : 'Vérifiez dans vos spams la confirmation de l\'adresse de votre commande. Si vous n\'avez pas reçu ce courrier, nous pouvons vous en envoyer un nouveau maintenant :',
 
     // Order -> Production details
     preprod: lang === 'EN' ? 'Pre-production' : 'Production en attente',
@@ -468,16 +469,20 @@ const replyWithResendCheckAddressCard = async (orders, response, lang) => {
           },
           {
             type: 'input',
-            id: 'email',
-            placeholder: 'example@eail.com',
+            id: 'resend-check-address-email',
+            placeholder: 'example@email.com',
             action: {
               type: 'submit'
             }
           },
           {
+            type: 'spacer',
+            size: 'm'
+          },
+          {
             type: 'button',
             id: 'see-other-orders',
-            label: translate('see_other_orders', lang),
+            label: translate('back_to_orders', lang),
             style: 'secondary',
             action: {
               type: 'submit'
@@ -775,7 +780,7 @@ const replyWithForgotConfirmation = async (email, response, lang) => {
   })
 }
 
-const replyWithInputFlow = async (email, response, lang, failCount) => {
+const replyWithInputFlow = async ({ email, response, lang, failCount, currentAction }) => {
   // If input is not an email, display error
   if (!isEmail(email)) {
     return response.json({
@@ -789,7 +794,7 @@ const replyWithInputFlow = async (email, response, lang, failCount) => {
             },
             {
               type: 'input',
-              id: 'email',
+              id: currentAction,
               placeholder: 'john@mail.com',
               action: {
                 type: 'submit'
