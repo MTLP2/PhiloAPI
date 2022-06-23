@@ -11,17 +11,6 @@ Review.checkNotif = async () => {
     .where('os.is_paid', 1)
     .where(query => {
       query.where(query => {
-<<<<<<< HEAD
-        query.where('os.step', 'delivered')
-        query.whereRaw('DATEDIFF(now(), os.date_export) < 40')
-      })
-      query.orWhere(query => {
-        query.whereRaw('DATEDIFF(now(), os.date_export) = 14')
-        query.where('os.step', 'sent')
-      })
-    })
-
-=======
         query.where('os.step', 'sent')
         query.whereRaw('DATEDIFF(now(), os.date_export) = 14')
       })
@@ -29,7 +18,6 @@ Review.checkNotif = async () => {
         query.where('os.step', 'delivered')
       })
     })
->>>>>>> 662415d041635ab4a01e1eb6f2ba95902f7d180a
     .whereNotExists(query => {
       query.from('notification')
         .whereRaw('order_shop_id = os.id')
