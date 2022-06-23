@@ -2,6 +2,8 @@ const DB = use('App/DB')
 const Utils = use('App/Utils')
 const Notification = require('./Notification')
 const Excel = require('exceljs')
+const View = use('View')
+const Antl = use('Antl')
 
 class Quote {
   static async all (params) {
@@ -72,47 +74,33 @@ class Quote {
     return quote
   }
 
-  static async download (id) {
-    const _ = require('underscore')
-    const fs = require('fs')
-    const file = await fs.readFileSync('./resources/views/quote.html', 'utf8')
+  static async download (id, toHtml = false) {
     const quote = await Quote.find(id)
 
     const number = `${new Date().getFullYear().toString().substr(-2)}${quote.id}`
     const name = `${quote.lang === 'fr' ? 'Devis' : 'Quote'} ${number} - ${quote.client}.pdf`
 
-    let currency
-    switch (quote.currency) {
-      case 'EUR':
-        currency = '€'
-        break
-      case 'USD':
-        currency = '$'
-        break
-      case 'GPD':
-        currency = '£'
-        break
-      case 'AUD':
-        currency = '$A'
-        break
-    }
+    const currency = Antl.forLocale(quote.lang).formatMessage(`base.${quote.currency}`)
 
     for (const i in quote.lines) {
       if (!isNaN(quote.lines[i].value)) {
-        quote.lines[i].value = `${Utils.round(+quote.lines[i].value + +quote.lines[i].value * (quote.fee / 100))} ${currency}`
+        quote.lines[i].value = `${Utils.round(+quote.lines[i].value + +quote.lines[i].value * (quote.fee / 100), 0)} ${currency}`
       }
     }
 
-    const template = _.template(file)
-    const html = template({
-      date: Utils.date(new Date(), false),
+    const html = View.render('quote', {
+      date: Utils.date({ time: false }),
       fee: `1.${('0' + quote.fee).slice(-2)}`,
       round: Utils.round,
       quote: quote,
-      currency: currency,
       number: number,
-      lang: quote.lang
+      lang: quote.lang,
+      currency: currency
     })
+
+    if (toHtml) {
+      return html
+    }
 
     const pdf = await Utils.toPdf(html)
     return {
@@ -913,6 +901,8 @@ class Quote {
         } else if (worksheet.name === 'kuroneko') {
           const line = {
             id: rowNumber,
+            category1: category1,
+            category2: category2,
             label: row.getCell('A').toString(),
             type: row.getCell('B').toString(),
             q250: +row.getCell('C').toString(),
@@ -921,7 +911,14 @@ class Quote {
             q3000: +row.getCell('F').toString(),
             q5000: +row.getCell('G').toString()
           }
-          costs[worksheet.name].push(line)
+
+          if (line.type === 'TYPE') {
+            category1 = line.label
+          } else if (!line.type) {
+            category2 = line.label
+          } else {
+            costs[worksheet.name].push(line)
+          }
         } else {
           costs[worksheet.name].push({
             id: rowNumber,
