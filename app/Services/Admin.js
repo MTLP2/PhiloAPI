@@ -806,28 +806,39 @@ Admin.saveVod = async (params) => {
   vod.storage_costs = params.storage_costs
   vod.is_licence = params.is_licence
 
+  vod.historic = vod.historic ? JSON.parse(vod.historic) : []
   if (params.edit_stock) {
     // vod.transporter = params.transporter || null
-    vod.transporters = {}
+    const transporters = {}
     if (params.transporter_daudin) {
-      vod.transporters.daudin = true
+      transporters.daudin = true
     }
     if (params.transporter_whiplash) {
-      vod.transporters.whiplash = true
+      transporters.whiplash = true
     }
     if (params.transporter_whiplash_uk) {
-      vod.transporters.whiplash_uk = true
+      transporters.whiplash_uk = true
     }
     if (params.transporter_diggers) {
-      vod.transporters.diggers = true
+      transporters.diggers = true
     }
     if (params.transporter_soundmerch) {
-      vod.transporters.soundmerch = true
+      transporters.soundmerch = true
     }
     if (params.transporter_sna) {
-      vod.transporters.sna = true
+      transporters.sna = true
     }
-    vod.transporters = JSON.stringify(vod.transporters)
+    if (vod.transporters !== JSON.stringify(transporters)) {
+      vod.historic.push({
+        type: 'transporters',
+        user_id: params.user.id,
+        old: vod.transporters,
+        new: JSON.stringify(transporters),
+        date: Utils.date()
+      })
+    }
+
+    vod.transporters = JSON.stringify(transporters)
     vod.count_other = params.count_other
     vod.count_distrib = params.count_distrib
 
@@ -931,8 +942,6 @@ Admin.saveVod = async (params) => {
   status.check_address = 'my_order_check_address'
   // status.preparation = 'my_order_in_preparation'
   // status.sent = 'my_order_sent'
-
-  vod.historic = vod.historic ? JSON.parse(vod.historic) : []
 
   if (vodArchive.is_shop !== params.is_shop) {
     vod.historic.push({
