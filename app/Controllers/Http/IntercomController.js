@@ -1,5 +1,13 @@
 const Env = use('Env')
-const { replyWithOrderList, replyWithOrderCard, replyWithAccountInit, replyWithForgotConfirmation, replyWithInputFlow, replyWithErrorCard } = use('App/Services/Intercom')
+const {
+  replyWithOrderList,
+  replyWithOrderCard,
+  replyWithAccountInit,
+  replyWithForgotConfirmation,
+  replyWithInputFlow,
+  replyWithErrorCard,
+  replyWithResendCheckAddressCard
+} = use('App/Services/Intercom')
 const Order = use('App/Services/Order')
 
 // client boot for Intercom
@@ -129,6 +137,7 @@ class IntercomController {
 
   // * SUBMIT CANVAS
   async submitOrder ({ request, response }) {
+    console.log('🚀 ~ file: IntercomController.js ~ line 140 ~ IntercomController ~ submitOrder ~ request', request.body)
     try {
       const currentAction = request.body.component_id
 
@@ -150,6 +159,13 @@ class IntercomController {
         const orderShopId = +currentAction.split('-')[2]
 
         await replyWithOrderCard(orderShopId, orders, diggersUserId, response, lang)
+      }
+
+      // * Handle user click on 'Resend check address' button
+      if (currentAction === 'resend-check-address') {
+        const orderShopId = +currentAction.split('-')[2]
+
+        await replyWithResendCheckAddressCard(orderShopId, response, lang)
       }
     } catch (err) {
       console.log('err in submit', err)

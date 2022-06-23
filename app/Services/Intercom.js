@@ -50,6 +50,8 @@ const translate = (key, lang = 'EN', payload) => {
     type_shop: lang === 'EN' ? 'Immediate shipment' : 'Expédition immédiate',
     type_vod: lang === 'EN' ? 'Preorder' : 'Précommande',
     shipment_origin: lang === 'EN' ? 'Ship from' : 'Expédié depuis',
+    resend_check_address: lang === 'EN' ? 'I have not received this email' : 'Je n\'ai pas reçu l\'email',
+    resend_check_address_details: lang === 'EN' ? 'Please ' : 'Je n\'ai pas reçu l\'email',
 
     // Order -> Production details
     preprod: lang === 'EN' ? 'Pre-production' : 'Production en attente',
@@ -330,6 +332,19 @@ const generateOrderCard = async (order, lang, single = false) => {
         },
         ...stepMessage
       )
+
+      // If order step is check_address, display button to re-send check_address notification
+      if (order.step === 'check_address') {
+        cardComponent.push({
+          type: 'button',
+          id: 'resend-check-address',
+          label: translate('resend_check_address', lang),
+          style: 'secondary',
+          action: {
+            type: 'submit'
+          }
+        })
+      }
     }
   }
 
@@ -439,6 +454,32 @@ const generateOrderCard = async (order, lang, single = false) => {
   }
 
   return cardComponent
+}
+
+const replyWithResendCheckAddressCard = async (orderShopId, response, lang) => {
+  console.log('🚀 ~ file: Intercom.js ~ line 459 ~ replyWithResendCheckAddressCard ~ orderShopId', orderShopId)
+  return response.json({
+    canvas: {
+      content: {
+        components: [
+          {
+            type: 'text',
+            text: translate('resend_check_address_details', lang),
+            style: 'paragraph'
+          },
+          {
+            type: 'input',
+            id: 'email',
+            placeholder: 'example@eail.com',
+            action: {
+              type: 'submit'
+            }
+          }
+        ]
+      },
+      stored_data: { lang, failCount: 0 }
+    }
+  })
 }
 
 // Generates and return a canvas component with error notification for the user
@@ -856,5 +897,6 @@ module.exports = {
   replyWithAccountInit,
   replyWithForgotConfirmation,
   replyWithInputFlow,
+  replyWithResendCheckAddressCard,
   replyWithErrorCard
 }
