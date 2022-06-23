@@ -6,7 +6,7 @@ const {
   replyWithForgotConfirmation,
   replyWithInputFlow,
   replyWithErrorCard,
-  replyWithResendCheckAddressCard
+  replyWithCheckAddressCard
 } = use('App/Services/Intercom')
 const Order = use('App/Services/Order')
 
@@ -158,24 +158,23 @@ class IntercomController {
       if (currentAction.includes('order-card')) {
         // Splitting the component_id to get the order id
         const orderShopId = +currentAction.split('-')[2]
-
         await replyWithOrderCard(orderShopId, orders, diggersUserId, response, lang)
       }
 
       // * Handle first user click on 'Resend check address' button
       if (currentAction === 'resend-check-address') {
-        // const orderShopId = +currentAction.split('-')[2]
-        await replyWithResendCheckAddressCard(orders, response, lang)
+        await replyWithCheckAddressCard({ orders, response, lang })
       }
 
-      // * Handle flow of resend input
-      if (currentAction === 'resend-check-address-email') {
-        // get email
-        const resendEmail = request.body.input_values['resend-check-address-email']
-        await replyWithInputFlow({ email: resendEmail, response, lang, failCount: 0, currentAction })
-      }
+      // // * Handle flow of resend input
+      // if (currentAction === 'resend-check-address-email') {
+      //   // get email
+      //   const resendEmail = request.body.input_values['resend-check-address-email']
+      //   const { orders = [] } = request.body.current_canvas.stored_data
+      //   await replyWithInputFlow({ email: resendEmail, response, lang, failCount: 0, currentAction, orders })
+      // }
     } catch (err) {
-      console.log('err in submit', err)
+      console.log('🚀 ~ file: IntercomController.js ~ line 177 ~ IntercomController ~ submitOrder ~ err', err)
       return replyWithErrorCard(response, 'EN')
     }
   }

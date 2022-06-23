@@ -52,7 +52,8 @@ const translate = (key, lang = 'EN', payload) => {
     type_vod: lang === 'EN' ? 'Preorder' : 'Précommande',
     shipment_origin: lang === 'EN' ? 'Ship from' : 'Expédié depuis',
     resend_check_address: lang === 'EN' ? 'I have not received this email' : 'Je n\'ai pas reçu l\'email',
-    resend_check_address_details: lang === 'EN' ? 'Check your spam for your order address confirmation. If you haven’t received our mail, we can resend you a new one now:' : 'Vérifiez dans vos spams la confirmation de l\'adresse de votre commande. Si vous n\'avez pas reçu ce courrier, nous pouvons vous en envoyer un nouveau maintenant :',
+    check_address_details: lang === 'EN' ? 'Check your spam for your order address confirmation. If you haven’t received our mail, we can resend you a new one now:' : 'Vérifiez dans vos spams la confirmation de l\'adresse de votre commande. Si vous n\'avez pas reçu ce courrier, nous pouvons vous en envoyer un nouveau maintenant :',
+    check_address_link: lang === 'EN' ? '🔗 Go to your account' : '🔗 Aller à votre compte',
 
     // Order -> Production details
     preprod: lang === 'EN' ? 'Pre-production' : 'Production en attente',
@@ -457,22 +458,23 @@ const generateOrderCard = async (order, lang, single = false) => {
   return cardComponent
 }
 
-const replyWithResendCheckAddressCard = async (orders, response, lang) => {
+const replyWithCheckAddressCard = async ({ orders, response, lang }) => {
   return response.json({
     canvas: {
       content: {
         components: [
           {
             type: 'text',
-            text: translate('resend_check_address_details', lang),
+            text: translate('check_address_details', lang),
             style: 'paragraph'
           },
           {
-            type: 'input',
-            id: 'resend-check-address-email',
-            placeholder: 'example@email.com',
+            type: 'button',
+            id: 'resend-check-address',
+            label: translate('check_address_link', lang),
             action: {
-              type: 'submit'
+              type: 'url',
+              url: 'https://www.diggersfactory.com/fr/my-account/orders'
             }
           },
           {
@@ -780,7 +782,7 @@ const replyWithForgotConfirmation = async (email, response, lang) => {
   })
 }
 
-const replyWithInputFlow = async ({ email, response, lang, failCount, currentAction }) => {
+const replyWithInputFlow = async ({ email, response, lang, failCount, currentAction, orders }) => {
   // If input is not an email, display error
   if (!isEmail(email)) {
     return response.json({
@@ -802,7 +804,7 @@ const replyWithInputFlow = async ({ email, response, lang, failCount, currentAct
             }
           ]
         },
-        stored_data: { lang: lang || 'EN' }
+        stored_data: { lang: lang || 'EN', orders: orders }
       }
     })
   }
@@ -824,7 +826,7 @@ const replyWithInputFlow = async ({ email, response, lang, failCount, currentAct
               style: 'paragraph'
             }
           ],
-          stored_data: { lang: lang || 'EN', failCount: failCount }
+          stored_data: { lang: lang || 'EN', failCount: failCount, orders: orders }
         }
       }
     })
@@ -910,6 +912,6 @@ module.exports = {
   replyWithAccountInit,
   replyWithForgotConfirmation,
   replyWithInputFlow,
-  replyWithResendCheckAddressCard,
+  replyWithCheckAddressCard,
   replyWithErrorCard
 }
