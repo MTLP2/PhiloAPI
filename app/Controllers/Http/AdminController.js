@@ -106,6 +106,10 @@ class AdminController {
         .where('project_id', project.id)
         .first()
 
+      if (!project.picture) {
+        project.picture = Utils.uuid()
+      }
+
       if (vod.picture_project) {
         await Storage.deleteImage(`projects/${project.picture}/${vod.picture_project}`)
       }
@@ -816,8 +820,18 @@ class AdminController {
     return Admin.getShippingRevenues(params)
   }
 
-  getReviews ({ params }) {
-    return Review.all(params)
+  getProjectsReviews ({ params }) {
+    return Review.all({
+      ...params,
+      type: 'project'
+    })
+  }
+
+  getBoxesReviews ({ params }) {
+    return Review.all({
+      ...params,
+      type: 'box'
+    })
   }
 
   getProjectReviews ({ params }) {
@@ -829,7 +843,7 @@ class AdminController {
   }
 
   updateReview ({ params }) {
-    return Admin.updateReview(params)
+    return Review.update(params)
   }
 
   deleteReview ({ params }) {

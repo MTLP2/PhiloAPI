@@ -4342,38 +4342,6 @@ Admin.getReviews = async (params) => {
   return await Review.all(params)
 }
 
-Admin.updateReview = async (params) => {
-  // If a review is -2 / complaint, admin can't change its status
-  const review = await Review.find({ reviewId: +params.rid })
-  if (review.is_visible === -2) {
-    throw new Error('You can\'t change the status of a complaint.')
-  }
-
-  // Admin must choose a lang if is_visible is 1|public
-  if (params.is_visible === 1 && (!params.lang && !review.lang)) throw new Error('You must choose a language if review is public.')
-
-  // A project can only have one is_starred
-  if (params.is_starred === 1) {
-    if (params.is_visible !== 1) {
-      throw new Error('A starred project can only be approved')
-    }
-
-    if (!params.lang) {
-      throw new Error('A starred project must have a language')
-    }
-
-    // Update all reviews linked to this project with same lang to 0
-    await DB('review')
-      .where('project_id', +params.id)
-      .where('lang', params.lang)
-      .update({ is_starred: 0 })
-  }
-
-  // Then update the selected review
-  await Review.update({ id: params.rid, params })
-  return { newTab: params.is_visible }
-}
-
 Admin.deleteReview = async (params) => {
   await Review.delete({ id: params.rid })
   return { success: true }
