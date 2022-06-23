@@ -456,8 +456,7 @@ const generateOrderCard = async (order, lang, single = false) => {
   return cardComponent
 }
 
-const replyWithResendCheckAddressCard = async (orderShopId, response, lang) => {
-  console.log('🚀 ~ file: Intercom.js ~ line 459 ~ replyWithResendCheckAddressCard ~ orderShopId', orderShopId)
+const replyWithResendCheckAddressCard = async (orders, response, lang) => {
   return response.json({
     canvas: {
       content: {
@@ -474,10 +473,19 @@ const replyWithResendCheckAddressCard = async (orderShopId, response, lang) => {
             action: {
               type: 'submit'
             }
+          },
+          {
+            type: 'button',
+            id: 'see-other-orders',
+            label: translate('see_other_orders', lang),
+            style: 'secondary',
+            action: {
+              type: 'submit'
+            }
           }
         ]
       },
-      stored_data: { lang, failCount: 0 }
+      stored_data: { lang: lang, failCount: 0, orders: orders }
     }
   })
 }

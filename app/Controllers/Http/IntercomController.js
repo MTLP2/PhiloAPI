@@ -163,9 +163,9 @@ class IntercomController {
 
       // * Handle user click on 'Resend check address' button
       if (currentAction === 'resend-check-address') {
-        const orderShopId = +currentAction.split('-')[2]
+        // const orderShopId = +currentAction.split('-')[2]
 
-        await replyWithResendCheckAddressCard(orderShopId, response, lang)
+        await replyWithResendCheckAddressCard(orders, response, lang)
       }
     } catch (err) {
       console.log('err in submit', err)
