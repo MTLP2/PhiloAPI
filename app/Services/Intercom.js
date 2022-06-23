@@ -142,6 +142,25 @@ const getMultiParagraph = (text, lang = 'EN') => {
   return paragraphs
 }
 
+const generateBackMenu = ({ lang }) => [
+  {
+    type: 'divider'
+  },
+  {
+    type: 'spacer',
+    size: 'm'
+  },
+  {
+    type: 'button',
+    id: 'main-order-menu',
+    label: translate('main_order_menu', lang),
+    style: 'secondary',
+    action: {
+      type: 'submit'
+    }
+  }
+]
+
 // ! ORDER BOT
 
 // Filters between sent and current orders
@@ -596,8 +615,37 @@ const handleMultipleOrders = async (orders, diggersUserId, catOrders, response, 
   })
 }
 
+// ! ORDERS
+const replyWithOrderInit = async ({ lang, orders, diggersUserId }) => {
+  return {
+    canvas: {
+      content: {
+        components: [
+          {
+            type: 'button',
+            id: 'all-orders',
+            label: 'Get infos on my orders',
+            action: {
+              type: 'submit'
+            }
+          },
+          {
+            type: 'button',
+            id: 'download-code',
+            label: 'Get infos on my download code',
+            action: {
+              type: 'submit'
+            }
+          }
+        ]
+      },
+      stored_data: { lang, orders, diggersUserId }
+    }
+  }
+}
+
 // Reply with a canvas component with a list of user's orders.
-const replyWithOrderList = async (orders, diggersUserId, response, currentAction, lang) => {
+const replyWithOrderList = async ({ orders, diggersUserId, response, currentAction, lang }) => {
   // If more than 1 order, reorder data
   const {
     orders: allOrders,
@@ -685,6 +733,23 @@ const replyWithOrderCard = async (orderShopId, orders, diggersUserId, response, 
       stored_data: { lang: lang, orders: orders, diggersUserId: diggersUserId }
     }
   })
+}
+
+const replyWithDownloadCard = async ({ lang, diggersUserId, orders }) => {
+  return {
+    canvas: {
+      content: {
+        components: [
+          {
+            type: 'text',
+            text: translate('download_code', lang),
+            style: 'header'
+          }
+        ]
+      },
+      stored_data: { lang: lang, orders: orders, diggersUserId: diggersUserId }
+    }
+  }
 }
 
 // ! ACCOUNT BOT
@@ -906,12 +971,21 @@ const replyWithInputFlow = async ({ email, response, lang, failCount, currentAct
   })
 }
 
+//! SEARCH
+const replyWithSearchInit = async ({ request }) => {
+  console.log('🚀 ~ file: Intercom.js ~ line 911 ~ replyWithSearchInit ~ request', request)
+}
+
 module.exports = {
+  generateBackMenu,
   replyWithOrderList,
   replyWithOrderCard,
   replyWithAccountInit,
   replyWithForgotConfirmation,
   replyWithInputFlow,
   replyWithCheckAddressCard,
-  replyWithErrorCard
+  replyWithErrorCard,
+  replyWithSearchInit,
+  replyWithOrderInit,
+  replyWithDownloadCard
 }
