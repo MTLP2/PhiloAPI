@@ -54,6 +54,7 @@ const translate = (key, lang = 'EN', payload) => {
     resend_check_address: lang === 'EN' ? 'I have not received this email' : 'Je n\'ai pas reçu l\'email',
     check_address_details: lang === 'EN' ? 'Check your spam for your order address confirmation. If you haven’t received our mail, we can resend you a new one now:' : 'Vérifiez dans vos spams la confirmation de l\'adresse de votre commande. Si vous n\'avez pas reçu ce courrier, nous pouvons vous en envoyer un nouveau maintenant :',
     check_address_link: lang === 'EN' ? '🔗 Go to your account' : '🔗 Aller à votre compte',
+    main_order_menu: lang === 'EN' ? 'Back to main menu' : 'Retour au menu principal',
 
     // Order -> Production details
     preprod: lang === 'EN' ? 'Pre-production' : 'Production en attente',
@@ -160,6 +161,11 @@ const generateBackMenu = ({ lang }) => [
     }
   }
 ]
+
+const addBackMenu = ({ canvas, lang }) => {
+  canvas.canvas.content.components.push(...generateBackMenu({ lang }))
+  return canvas
+}
 
 // ! ORDER BOT
 
@@ -478,7 +484,7 @@ const generateOrderCard = async (order, lang, single = false) => {
 }
 
 const replyWithCheckAddressCard = async ({ orders, response, lang }) => {
-  return response.json({
+  return {
     canvas: {
       content: {
         components: [
@@ -513,12 +519,12 @@ const replyWithCheckAddressCard = async ({ orders, response, lang }) => {
       },
       stored_data: { lang: lang, failCount: 0, orders: orders }
     }
-  })
+  }
 }
 
 // Generates and return a canvas component with error notification for the user
-const replyWithErrorCard = (response, lang = 'EN') => {
-  return response.json({
+const replyWithErrorCard = ({ lang = 'EN' }) => {
+  return {
     canvas: {
       content: {
         components: [{
@@ -537,11 +543,11 @@ const replyWithErrorCard = (response, lang = 'EN') => {
     event: {
       type: 'completed'
     }
-  })
+  }
 }
 
-const replyWithOrderChoice = async (response, lang, orders, diggersUserId) => {
-  response.json({
+const replyWithOrderChoice = async ({ lang, orders, diggersUserId }) => {
+  return {
     canvas: {
       content: {
         components: [{
@@ -579,45 +585,44 @@ const replyWithOrderChoice = async (response, lang, orders, diggersUserId) => {
       },
       stored_data: { lang: lang, orders: orders, diggersUserId: diggersUserId }
     }
-  })
+  }
 }
 
 // Displays a list of orders regarding its type (sent or current). Distinguishes between lists of one and many.
-const handleMultipleOrders = async (orders, diggersUserId, catOrders, response, lang) => {
+const handleMultipleOrders = async ({ orders, diggersUserId, catOrders, lang }) => {
   // Single typed order - skip choice card and display order card
   if (catOrders.length === 1) {
-    await replyWithOrderCard(catOrders[0].id, orders, diggersUserId, response, lang)
-    return
+    return await replyWithOrderCard({ orderShopId: catOrders[0].id, orders, diggersUserId, lang })
   }
 
   // Multiple typed orders
   const ordersButtons = generateOrderButtons(catOrders, lang)
 
-  const components = [{
-    type: 'text',
-    text: translate('many_orders', lang),
-    style: 'header'
-  },
-  {
-    type: 'list',
-    items: ordersButtons
-  }
-  // ...ordersButtons
+  const components = [
+    {
+      type: 'text',
+      text: translate('many_orders', lang),
+      style: 'header'
+    },
+    {
+      type: 'list',
+      items: ordersButtons
+    }
   ]
 
-  return response.json({
+  return {
     canvas: {
       content: {
         components
       },
       stored_data: { lang: lang, orders: orders, diggersUserId: diggersUserId }
     }
-  })
+  }
 }
 
 // ! ORDERS
 const replyWithOrderInit = async ({ lang, orders, diggersUserId }) => {
-  return {
+  const rawCanvas = {
     canvas: {
       content: {
         components: [
@@ -642,10 +647,13 @@ const replyWithOrderInit = async ({ lang, orders, diggersUserId }) => {
       stored_data: { lang, orders, diggersUserId }
     }
   }
+
+  return addBackMenu({ canvas: rawCanvas, lang })
 }
 
 // Reply with a canvas component with a list of user's orders.
-const replyWithOrderList = async ({ orders, diggersUserId, response, currentAction, lang }) => {
+const replyWithOrderList = async ({ orders, diggersUserId, currentAction, lang }) => {
+  console.log('🚀 ~ file: Intercom.js ~ line 656 ~ replyWithOrderList ~ orders', orders)
   // If more than 1 order, reorder data
   const {
     orders: allOrders,
@@ -662,7 +670,7 @@ const replyWithOrderList = async ({ orders, diggersUserId, response, currentActi
       style: 'paragraph'
     }]
 
-    return response.json({
+    const canvas = {
       canvas: {
         content: {
           components
@@ -670,46 +678,48 @@ const replyWithOrderList = async ({ orders, diggersUserId, response, currentActi
         stored_data: { lang: lang, orders: orders, diggersUserId: diggersUserId }
       },
       event: { type: 'completed' }
-    })
+    }
+    return addBackMenu({ canvas, lang })
   }
 
   // * Exactly 1 order overall (skip the choice card)
   if (allOrders.length === 1) {
     const components = await generateOrderCard(allOrders[0], lang, true)
 
-    return response.json({
+    return {
       canvas: {
         content: {
           components
         },
         stored_data: { lang: lang, orders: orders, diggersUserId: diggersUserId }
       }
-    })
+    }
   }
 
   // * If more than 1 order and 4 or less, display them all without distinction || user chooses to see all orders
   if (currentAction === 'all-orders' || allOrders.length <= 4) {
-    await handleMultipleOrders(orders, diggersUserId, allOrders, response, lang)
-    return
+    const canvas = await handleMultipleOrders({ orders, diggersUserId, catOrders: allOrders, lang })
+    return addBackMenu({ canvas, lang })
   }
 
   // ONLY SENT ORDERS
   if (currentAction === 'sent-orders' || (sentOrders.length > 0 && currentOrders.length === 0)) {
-    await handleMultipleOrders(orders, diggersUserId, sentOrders, response, lang)
-    return
+    const canvas = await handleMultipleOrders({ orders, diggersUserId, catOrders: sentOrders, lang })
+    return addBackMenu({ canvas, lang })
   }
 
   // ONLY CURRENT ORDERS
   if (currentAction === 'current-orders' || (currentOrders.length > 0 && sentOrders.length === 0)) {
-    await handleMultipleOrders(orders, diggersUserId, currentOrders, response, lang)
-    return
+    const canvas = await handleMultipleOrders({ orders, diggersUserId, catOrders: currentOrders, lang })
+    return addBackMenu({ canvas, lang })
   }
 
   // ELSE, Choice between all, sent and current orders
-  await replyWithOrderChoice(response, lang, orders, diggersUserId)
+  const canvas = await replyWithOrderChoice({ lang, orders, diggersUserId })
+  return addBackMenu({ canvas, lang })
 }
 
-const replyWithOrderCard = async (orderShopId, orders, diggersUserId, response, lang) => {
+const replyWithOrderCard = async ({ orderShopId, orders, diggersUserId, lang }) => {
   // Find the right order_shop
   let orderShop
   for (const order of orders) {
@@ -725,14 +735,14 @@ const replyWithOrderCard = async (orderShopId, orders, diggersUserId, response, 
   const orderCard = await generateOrderCard(orderShop, lang)
 
   // Display it to the chat
-  return response.json({
+  return {
     canvas: {
       content: {
         components: orderCard
       },
       stored_data: { lang: lang, orders: orders, diggersUserId: diggersUserId }
     }
-  })
+  }
 }
 
 const replyWithDownloadCard = async ({ lang, diggersUserId, orders }) => {
@@ -987,5 +997,6 @@ module.exports = {
   replyWithErrorCard,
   replyWithSearchInit,
   replyWithOrderInit,
-  replyWithDownloadCard
+  replyWithDownloadCard,
+  addBackMenu
 }
