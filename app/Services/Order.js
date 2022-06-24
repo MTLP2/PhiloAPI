@@ -119,7 +119,7 @@ Order.getOrders = async (params) => {
 
   let items = query()
     .select('order_item.*', 'project.name', 'project.slug', 'project.picture', 'project.artist_name',
-      'item.name as item', 'item.picture as item_picture', 'picture_project', 'vod.date_shipping'
+      'item.name as item', 'item.picture as item_picture', 'picture_project', 'vod.date_shipping', 'vod.download'
     )
     .join('order_item', 'order.id', 'order_item.order_id')
     .join('project', 'project.id', 'order_item.project_id')

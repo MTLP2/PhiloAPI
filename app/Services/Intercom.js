@@ -4,6 +4,7 @@ const Production = use('App/Services/Production')
 const { getTransporterLink, getOriginFromTransporter } = use('App/Utils')
 const { forgotPassword } = use('App/Services/Sign')
 const { existsByEmail } = use('App/Services/User')
+const { checkDownloadCode, generateDownload } = use('App/Services/Project')
 const { isEmail } = use('App/Utils')
 
 // Translates an order step into a human readable string
@@ -14,6 +15,10 @@ const translate = (key, lang = 'EN', payload) => {
     error_message: lang === 'EN' ? 'Can you please wait for a few minutes or contact support by writing your message below? Thank you!' : 'Pouvez-vous patienter quelques minutes ou contacter le support en écrivant votre message ci-dessous ? Merci !',
     error_account_fail: lang === 'EN' ? '🤔 Oops, unfortunately it\'s wrong again' : '🤔 Oups, ce n’est toujours pas ça, malheureusement.',
     error_account_fail_message: lang === 'EN' ? 'You\'ve reached maximum retries. Please contact the customer support below. We\'ll get back to you shortly. Thank you!' : 'Veuillez contacter le service client ci-dessous. Nous reviendrons vers vous prochainement. Merci !',
+
+    // Order - Init
+    order_choice: lang === 'EN' ? 'I want infos on my orders' : 'Je veux des informations sur mes commandes',
+    download_choice: lang === 'EN' ? 'I want to redeem a download code' : 'Je veux utiliser un code de téléchargement',
 
     // Countries
     country_fr: 'France',
@@ -94,6 +99,14 @@ const translate = (key, lang = 'EN', payload) => {
     delivered: lang === 'EN' ? 'Good news, your order has been delivered to the scheduled delivery point. Your vinyl record is waiting for you!' : 'Bonne nouvelle, votre commande a été livrée au point de livraison prévu. Votre vinyle vous attend !',
     pickup_available: lang === 'EN' ? 'Good news, your order is available at the pickup point! You have 14 days to pick it up. Thanks!' : 'Bonne nouvelle, votre commande est disponible en point relais ! Vous disposez de 14 jours pour aller la récupérer. Merci !',
     pickup_still_available: lang === 'EN' ? 'Hello, your order is still waiting for you at the pickup point! You only have a few days left to pick it up. Thank you!' : 'Bonjour, votre commande vous attend toujours au point relais ! Il ne vous reste que quelques jours pour aller la récupérer. Merci !',
+
+    // Orders -> download codes
+    download_code_header: lang === 'EN' ? 'The following items can be redeemed as digital downloads' : 'Les éléments suivants peuvent être obtenus en tant que téléchargement numériques :',
+    redeem_download_code: lang === 'EN' ? 'Redeem download code' : 'Obtenir un code de téléchargement',
+    code_download_used: lang === 'EN' ? 'This code has already been used.' : 'Ce code a déjà été utilisé.',
+    code_download_helper: lang === 'EN' ? 'Please click on this link to download your project.' : 'Merci de cliquer sur ce lien pour télécharger votre projet.',
+    code_download_link: lang === 'EN' ? '🔗 Download link' : '🔗 Lien de téléchargement',
+    no_downloadables: lang === 'EN' ? 'There are no downloadable items in your orders.' : 'Il n’y a pas d’éléments téléchargeables dans vos commandes.',
 
     // Account - Common
     account_header: lang === 'EN' ? 'Let’s try to find your account! 😊' : 'Nous allons essayer de retrouver votre compte ensemble 😊',
@@ -202,6 +215,25 @@ const generateOrderButtons = (orders, lang) => {
       subtitle: `${order.total}${translate(order.currency)}`,
       tertiary_text: getLocaleDateFromString(order.created_at, lang),
       image: `${Env.get('STORAGE_URL')}/projects/${order.items[0].picture || order.items[0].project_id}/cover.jpg`,
+      image_height: 48,
+      image_width: 48,
+      action: {
+        type: 'submit'
+      }
+    }
+  })
+}
+
+// Generates order buttons to integrate into a canvas
+const generateDownloadButtons = (downloadItems, lang) => {
+  return downloadItems.map(item => {
+    return {
+      type: 'item',
+      id: `redeem-download-${item.id}`,
+      title: item.name,
+      subtitle: item.artist_name,
+      tertiary_text: translate('redeem_download_code', lang),
+      image: `${Env.get('STORAGE_URL')}/projects/${item.picture || item.project_id}/cover.jpg`,
       image_height: 48,
       image_width: 48,
       action: {
@@ -487,7 +519,61 @@ const generateOrderCard = async (order, lang, single = false) => {
   return cardComponent
 }
 
-const replyWithCheckAddressCard = async ({ orders, response, lang }) => {
+const generateDownloadbleItemCard = async ({ item, userId, lang }) => {
+  if (!item) {
+    return [{
+      type: 'text',
+      text: translate('no_downloadables', lang),
+      style: 'header'
+    }]
+  }
+
+  const { codeIsUsed } = await checkDownloadCode({ projectId: item.project_id, userId })
+
+  if (codeIsUsed) {
+    return [
+      {
+        type: 'text',
+        text: translate('code_download_used', lang),
+        style: 'header'
+      }
+    ]
+  }
+
+  const code = await generateDownload({ project_id: item.project_id })
+
+  return [
+    {
+      type: 'image',
+      url: `${Env.get('STORAGE_URL')}/projects/${item.picture || item.project_id}/cover.jpg`,
+      height: 300,
+      width: 300
+    }, {
+      type: 'text',
+      text: `*${item.artist_name} - ${item.name}*`,
+      style: 'paragraph'
+    },
+    {
+      type: 'divider'
+    },
+    {
+      type: 'text',
+      text: translate('code_download_helper', lang),
+      style: 'paragraph'
+    },
+    {
+      type: 'button',
+      id: 'code',
+      label: translate('code_download_link', lang),
+      action: {
+        type: 'url',
+        url: `http://localhost:3100/download?code=${code}`
+      }
+    }
+  ]
+}
+
+const replyWithCheckAddressCard = async ({ orders, lang }) => {
   return {
     canvas: {
       content: {
@@ -626,14 +712,14 @@ const handleMultipleOrders = async ({ orders, diggersUserId, catOrders, lang }) 
 
 // ! ORDERS
 const replyWithOrderInit = async ({ lang, orders, diggersUserId }) => {
-  const rawCanvas = {
+  return {
     canvas: {
       content: {
         components: [
           {
             type: 'button',
             id: 'all-orders',
-            label: 'Get infos on my orders',
+            label: translate('order_choice', lang),
             action: {
               type: 'submit'
             }
@@ -641,23 +727,20 @@ const replyWithOrderInit = async ({ lang, orders, diggersUserId }) => {
           {
             type: 'button',
             id: 'download-code',
-            label: 'Get infos on my download code',
+            label: translate('download_choice', lang),
             action: {
               type: 'submit'
             }
           }
         ]
       },
-      stored_data: { lang, orders, diggersUserId }
+      stored_data: { lang: lang, orders: orders, diggersUserId: diggersUserId }
     }
   }
-
-  return addBackMenu({ canvas: rawCanvas, lang })
 }
 
 // Reply with a canvas component with a list of user's orders.
 const replyWithOrderList = async ({ orders, diggersUserId, currentAction, lang }) => {
-  console.log('🚀 ~ file: Intercom.js ~ line 656 ~ replyWithOrderList ~ orders', orders)
   // If more than 1 order, reorder data
   const {
     orders: allOrders,
@@ -749,21 +832,87 @@ const replyWithOrderCard = async ({ orderShopId, orders, diggersUserId, lang }) 
   }
 }
 
-const replyWithDownloadCard = async ({ lang, diggersUserId, orders }) => {
-  return {
+const replyWithDownloadCard = async ({ itemId, orders, diggersUserId, lang }) => {
+  // Find the right order_shop
+  let downloadbleItem
+  for (const order of orders) {
+    for (const shop of order.shops) {
+      for (const item of shop.items) {
+        if (item.id === +itemId) {
+          downloadbleItem = item
+          break
+        }
+      }
+    }
+  }
+
+  const components = await generateDownloadbleItemCard({ item: downloadbleItem, lang, userId: diggersUserId })
+
+  // Display it to the chat
+  const canvas = {
+    canvas: {
+      content: {
+        components
+      },
+      stored_data: { lang: lang, orders: orders, diggersUserId: diggersUserId }
+    }
+  }
+  return addBackMenu({ canvas, lang })
+}
+
+const replyWithDownloadList = async ({ lang, diggersUserId, orders }) => {
+  const downloadableItems = []
+  for (const order of orders) {
+    for (const shop of order.shops) {
+      for (const item of shop.items) {
+        if (item.download) {
+          downloadableItems.push(item)
+        }
+      }
+    }
+  }
+
+  // If no downloadable items, return
+  if (downloadableItems.length === 0) {
+    const canvas = {
+      canvas: {
+        content: {
+          components: [
+            {
+              type: 'text',
+              text: translate('no_downloadables', lang),
+              style: 'header'
+            }
+          ]
+        },
+        stored_data: { lang: lang, orders: orders, diggersUserId: diggersUserId }
+      }
+    }
+    return addBackMenu({ canvas, lang })
+  }
+
+  const downloadButtons = generateDownloadButtons(downloadableItems, lang)
+
+  const canvas = {
     canvas: {
       content: {
         components: [
           {
             type: 'text',
-            text: translate('download_code', lang),
+            text: translate('download_code_header', lang),
             style: 'header'
+          },
+          {
+            type: 'list',
+            items: downloadButtons
           }
         ]
       },
       stored_data: { lang: lang, orders: orders, diggersUserId: diggersUserId }
     }
   }
+
+  return addBackMenu({ canvas, lang })
 }
 
 // ! ACCOUNT BOT
@@ -1001,6 +1150,6 @@ module.exports = {
   replyWithErrorCard,
   replyWithSearchInit,
   replyWithOrderInit,
-  replyWithDownloadCard,
-  addBackMenu
+  replyWithDownloadList,
+  replyWithDownloadCard
 }

@@ -9,6 +9,7 @@ const {
   replyWithCheckAddressCard,
   replyWithSearchInit,
   replyWithOrderInit,
+  replyWithDownloadList,
   replyWithDownloadCard
 } = use('App/Services/Intercom')
 const Order = use('App/Services/Order')
@@ -132,9 +133,6 @@ class IntercomController {
 
       const canvas = await replyWithOrderInit({ lang, orders, diggersUserId })
       return response.json(canvas)
-
-      // * Launch app loop
-      // await replyWithOrderList({ orders, diggersUserId, response, currentAction: 'first-call', lang })
     } catch (err) {
       console.log('err in init', err)
       const canvas = await replyWithErrorCard({ lang: 'EN' })
@@ -156,9 +154,16 @@ class IntercomController {
         return response.json(canvas)
       }
 
-      // Handle "download code" action
+      // Handle "download code" list action
       if (currentAction === 'download-code') {
-        const canvas = await replyWithDownloadCard({ lang, orders, diggersUserId })
+        const canvas = await replyWithDownloadList({ lang, orders, diggersUserId })
+        return response.json(canvas)
+      }
+
+      // Handle "download code" single item action
+      if (currentAction.includes('redeem-download')) {
+        const itemId = currentAction.split('-')[2]
+        const canvas = await replyWithDownloadCard({ itemId, lang, orders, diggersUserId })
         return response.json(canvas)
       }
 
