@@ -145,6 +145,10 @@ const getMultiParagraph = (text, lang = 'EN') => {
 
 const generateBackMenu = ({ lang }) => [
   {
+    type: 'spacer',
+    size: 'm'
+  },
+  {
     type: 'divider'
   },
   {
