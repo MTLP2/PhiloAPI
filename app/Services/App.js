@@ -626,6 +626,20 @@ App.notification = async (notif, test = false) => {
     ]
   }
 
+  if (n.review_id) {
+    const review = await DB('review')
+      .join('user', 'user.id', 'review.user_id')
+      .join('customer', 'customer.id', 'user.customer_id')
+      .where('review.id', n.review_id)
+      .first()
+
+    data.review = {
+      reviewerName: `${review.firstname} ${review.lastname}`,
+      title: review.title,
+      message: review.message
+    }
+  }
+
   if (!test) {
     if (process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'staging') {
       send = 3
