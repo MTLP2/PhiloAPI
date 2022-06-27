@@ -1576,14 +1576,11 @@ Project.getDashboard = async (params) => {
   for (const stock of stocks) {
     if (stock.quantity > 0) {
       if (stock.is_distrib) {
-        s.setCountry('distrib', 'stocks', 'ALL', stock.quantity)
         s.setCountry('distrib', 'stocks', stock.country_id, stock.quantity)
       } else {
-        s.setCountry('site', 'stocks', 'ALL', stock.quantity)
         s.setCountry('site', 'stocks', stock.country_id, stock.quantity)
       }
-      s.setCountry('all', 'stocks', 'ALL', stock.quantity)
-      s.setCountry('all', 'stocks', stock.country_id, stock.quantity)
+      s.setCountry('site', 'stocks', 'ALL', stock.quantity)
     }
   }
 
