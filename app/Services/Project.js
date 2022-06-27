@@ -1577,10 +1577,11 @@ Project.getDashboard = async (params) => {
     if (stock.quantity > 0) {
       if (stock.is_distrib) {
         s.setCountry('distrib', 'stocks', stock.country_id, stock.quantity)
+        s.setCountry('distrib', 'stocks', 'ALL', stock.quantity)
       } else {
         s.setCountry('site', 'stocks', stock.country_id, stock.quantity)
+        s.setCountry('site', 'stocks', 'ALL', stock.quantity)
       }
-      s.setCountry('site', 'stocks', 'ALL', stock.quantity)
     }
   }
 
