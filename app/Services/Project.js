@@ -1367,7 +1367,18 @@ Project.getDashboard = async (params) => {
     })
     .all()
 
-  const [orders, statements, boxes] = await Promise.all([ordersPromise, statementsPromise, boxesPromise])
+  const stocksPromises = DB('stock')
+    .select('stock.*', 'stock_place.country_id')
+    .join('stock_place', 'stock_place.code', 'stock.type')
+    .whereIn('project_id', ids)
+    .all()
+
+  const [orders, statements, boxes, stocks] = await Promise.all([
+    ordersPromise,
+    statementsPromise,
+    boxesPromise,
+    stocksPromises
+  ])
 
   if (params.period === 'last_month') {
     params.start = moment().subtract('1', 'months').startOf('month').format('YYYY-MM-DD 23:59')
@@ -1488,6 +1499,11 @@ Project.getDashboard = async (params) => {
       distrib: {
         all: 0, total: 0, dates: { ...dates }, countries: {}
       }
+    },
+    stocks: {
+      all: { countries: {} },
+      site: { countries: {} },
+      distrib: { countries: {} }
     }
   }
 
@@ -1555,6 +1571,20 @@ Project.getDashboard = async (params) => {
 
     s.setCountry('site', 'income', order.country_id, value)
     s.setCountry('site', 'quantity', order.country_id, order.quantity)
+  }
+
+  for (const stock of stocks) {
+    if (stock.quantity > 0) {
+      if (stock.is_distrib) {
+        s.setCountry('distrib', 'stocks', 'ALL', stock.quantity)
+        s.setCountry('distrib', 'stocks', stock.country_id, stock.quantity)
+      } else {
+        s.setCountry('site', 'stocks', 'ALL', stock.quantity)
+        s.setCountry('site', 'stocks', stock.country_id, stock.quantity)
+      }
+      s.setCountry('all', 'stocks', 'ALL', stock.quantity)
+      s.setCountry('all', 'stocks', stock.country_id, stock.quantity)
+    }
   }
 
   for (const box of boxes) {
