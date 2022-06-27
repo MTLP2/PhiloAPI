@@ -329,7 +329,7 @@ App.notification = async (notif, test = false) => {
     n.order_id = null
   }
   if ([
-    'production_new_file',
+    '',
     'production_valid_file',
     'production_refuse_file'
   ].includes(notif.type)) {
@@ -337,9 +337,9 @@ App.notification = async (notif, test = false) => {
     n.order_id = null
 
     // Add refuse details
-    if (notif.type === 'production_refuse_file') {
+    if (notif.type !== 'production_new_file') {
       const prodAction = await DB('production_file').where('id', n.file_id).first()
-      data.refused_reason = prodAction?.comment || (data.lang === 'en' ? 'Cause of refusal unspecified.' : 'Aucun motif de refus n\'a été précisé.')
+      data.file_reason = prodAction?.comment || (data.lang === 'en' ? 'Cause of refusal unspecified.' : 'Aucun motif de refus n\'a été précisé.')
     }
   }
   data.data = n.data ? JSON.parse(n.data) : null
