@@ -1614,21 +1614,6 @@ class Production {
     ], data.data)
   }
 
-  static async generateFgl (params) {
-    const workbook = new Excel.Workbook()
-    await workbook.xlsx.load('./FGL.xlsx')
-    const worksheet = workbook.getWorksheet(1)
-
-    worksheet.eachRow((row, rowNumber) => {
-      const prod = {
-        barcode: row.getCell('A').toString(),
-        quantity: row.getCell('H').toString(),
-        cost: row.getCell('F').toString()
-      }
-      console.log(prod)
-    })
-  }
-
   static async generateProd (params) {
     const costs = await DB('cost')
       .select('cost.*', 'project.artist_name', 'project.name as project', 'vod.goal', 'production.quantity',
