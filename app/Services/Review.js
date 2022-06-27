@@ -160,9 +160,6 @@ Review.find = async ({ reviewId, projectId, userId, onlyVisible = true }) => {
 Review.update = async (params) => {
   // If a review is -2 / complaint, admin can't change its status
   const review = await Review.find({ reviewId: +params.rid })
-  if (review.is_visible === -2) {
-    throw new Error('You can\'t change the status of a complaint.')
-  }
 
   // Admin must choose a lang and put translation if is_visible is 1|public
   if (params.is_visible === 1 &&
@@ -196,7 +193,8 @@ Review.update = async (params) => {
     is_starred: params.is_starred,
     lang: params.lang,
     title_trad: params.title_trad,
-    message_trad: params.message_trad
+    message_trad: params.message_trad,
+    complaint_status: params.complaint_status
   })
 
   return { newTab: params.is_visible }
