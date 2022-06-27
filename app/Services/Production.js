@@ -1022,6 +1022,7 @@ class Production {
         Production.notif({
           production_id: pfile.production_id,
           user_id: params.user.id,
+          file_id: pfile.id,
           type: params.status === 'valid' ? 'production_valid_file' : 'production_refuse_file',
           data: file.name,
           artist: true,
@@ -1198,6 +1199,7 @@ class Production {
         type: params.type,
         user_id: prod.resp_id,
         data: params.data,
+        file_id: params.file_id,
         project_id: prod.project_id,
         date: Utils.date()
       })
@@ -1219,6 +1221,7 @@ class Production {
           type: params.type,
           user_id: 97118,
           data: params.data,
+          file_id: params.file_id,
           project_id: prod.project_id,
           date: Utils.date()
         })
