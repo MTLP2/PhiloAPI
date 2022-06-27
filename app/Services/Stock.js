@@ -363,7 +363,7 @@ class Stock {
             project_id: stock.project.id,
             type: params.distributor,
             quantity: stock.quantity,
-            comment: 'uplaod',
+            comment: 'upload',
             user_id: params.user_id,
             is_distrib: true
           })
