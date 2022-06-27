@@ -638,7 +638,7 @@ const replyWithErrorCard = ({ lang = 'EN' }) => {
   }
 }
 
-const replyWithOrderChoice = async ({ lang, botData, diggersUserId }) => {
+const replyWithOrderChoice = async ({ lang, botData }) => {
   return {
     canvas: {
       content: {
@@ -675,16 +675,16 @@ const replyWithOrderChoice = async ({ lang, botData, diggersUserId }) => {
           }
         }]
       },
-      stored_data: { lang: lang, botData: botData, diggersUserId: diggersUserId }
+      stored_data: { lang: lang, botData: botData }
     }
   }
 }
 
 // Displays a list of orders regarding its type (sent or current). Distinguishes between lists of one and many.
-const handleMultipleOrders = async ({ botData, diggersUserId, catOrders, lang }) => {
+const handleMultipleOrders = async ({ botData, catOrders, lang }) => {
   // Single typed order - skip choice card and display order card
   if (catOrders.length === 1) {
-    return await replyWithOrderCard({ orderShopId: catOrders[0].id, botData, diggersUserId, lang })
+    return await replyWithOrderCard({ orderShopId: catOrders[0].id, botData, lang })
   }
 
   // Multiple typed orders
@@ -707,13 +707,13 @@ const handleMultipleOrders = async ({ botData, diggersUserId, catOrders, lang })
       content: {
         components
       },
-      stored_data: { lang: lang, botData: botData, diggersUserId: diggersUserId }
+      stored_data: { lang: lang, botData: botData }
     }
   }
 }
 
 // ! ORDERS
-const replyWithOrderInit = async ({ lang, botData, diggersUserId }) => {
+const replyWithOrderInit = async ({ lang, botData }) => {
   return {
     canvas: {
       content: {
@@ -753,13 +753,13 @@ const replyWithOrderInit = async ({ lang, botData, diggersUserId }) => {
           }
         ]
       },
-      stored_data: { lang: lang, botData: botData, diggersUserId: diggersUserId }
+      stored_data: { lang: lang, botData: botData }
     }
   }
 }
 
 // Reply with a canvas component with a list of user's orders.
-const replyWithOrderList = async ({ botData, diggersUserId, currentAction, lang }) => {
+const replyWithOrderList = async ({ botData, currentAction, lang }) => {
   console.log('🚀 ~ file: Intercom.js ~ line 763 ~ replyWithOrderList ~ botData', botData === undefined)
   // If more than 1 order, reorder data
   const {
@@ -782,7 +782,7 @@ const replyWithOrderList = async ({ botData, diggersUserId, currentAction, lang 
         content: {
           components
         },
-        stored_data: { lang: lang, botData: botData, diggersUserId: diggersUserId }
+        stored_data: { lang: lang, botData: botData }
       },
       event: { type: 'completed' }
     }
@@ -798,35 +798,35 @@ const replyWithOrderList = async ({ botData, diggersUserId, currentAction, lang 
         content: {
           components
         },
-        stored_data: { lang: lang, botData: botData, diggersUserId: diggersUserId }
+        stored_data: { lang: lang, botData: botData }
       }
     }
   }
 
   // * If more than 1 order and 4 or less, display them all without distinction || user chooses to see all orders
   if (currentAction === 'all-orders' || allOrders.length <= 4) {
-    const canvas = await handleMultipleOrders({ botData, diggersUserId, catOrders: allOrders, lang })
+    const canvas = await handleMultipleOrders({ botData, catOrders: allOrders, lang })
     return addBackMenu({ canvas, lang })
   }
 
   // ONLY SENT ORDERS
   if (currentAction === 'sent-orders' || (sentOrders.length > 0 && currentOrders.length === 0)) {
-    const canvas = await handleMultipleOrders({ botData, diggersUserId, catOrders: sentOrders, lang })
+    const canvas = await handleMultipleOrders({ botData, catOrders: sentOrders, lang })
     return addBackMenu({ canvas, lang })
   }
 
   // ONLY CURRENT ORDERS
   if (currentAction === 'current-orders' || (currentOrders.length > 0 && sentOrders.length === 0)) {
-    const canvas = await handleMultipleOrders({ botData, diggersUserId, catOrders: currentOrders, lang })
+    const canvas = await handleMultipleOrders({ botData, catOrders: currentOrders, lang })
     return addBackMenu({ canvas, lang })
   }
 
   // ELSE, Choice between all, sent and current orders
-  const canvas = await replyWithOrderChoice({ lang, botData, diggersUserId })
+  const canvas = await replyWithOrderChoice({ lang, botData })
   return addBackMenu({ canvas, lang })
 }
 
-const replyWithOrderCard = async ({ orderShopId, botData, diggersUserId, lang }) => {
+const replyWithOrderCard = async ({ orderShopId, botData, lang }) => {
   // Find the right order_shop
   let orderShop
   for (const order of botData.orders) {
@@ -847,12 +847,12 @@ const replyWithOrderCard = async ({ orderShopId, botData, diggersUserId, lang })
       content: {
         components: orderCard
       },
-      stored_data: { lang: lang, botData: botData, diggersUserId: diggersUserId }
+      stored_data: { lang: lang, botData: botData }
     }
   }
 }
 
-const replyWithDownloadCard = async ({ itemId, botData, diggersUserId, lang }) => {
+const replyWithDownloadCard = async ({ itemId, botData, lang }) => {
   // Find the right order_shop
   let downloadbleItem
   for (const order of botData.orders) {
@@ -866,7 +866,7 @@ const replyWithDownloadCard = async ({ itemId, botData, diggersUserId, lang }) =
     }
   }
 
-  const components = await generateDownloadbleItemCard({ item: downloadbleItem, lang, userId: diggersUserId })
+  const components = await generateDownloadbleItemCard({ item: downloadbleItem, lang, userId: botData.diggersUserId })
 
   // Display it to the chat
   const canvas = {
@@ -874,13 +874,13 @@ const replyWithDownloadCard = async ({ itemId, botData, diggersUserId, lang }) =
       content: {
         components
       },
-      stored_data: { lang: lang, botData: botData, diggersUserId: diggersUserId }
+      stored_data: { lang: lang, botData: botData }
     }
   }
   return addBackMenu({ canvas, lang })
 }
 
-const replyWithDownloadList = async ({ lang, diggersUserId, botData }) => {
+const replyWithDownloadList = async ({ lang, botData }) => {
   const downloadableItems = []
   for (const order of botData.orders) {
     for (const shop of order.shops) {
@@ -905,7 +905,7 @@ const replyWithDownloadList = async ({ lang, diggersUserId, botData }) => {
             }
           ]
         },
-        stored_data: { lang: lang, botData: botData, diggersUserId: diggersUserId }
+        stored_data: { lang: lang, botData: botData }
       }
     }
     return addBackMenu({ canvas, lang })
@@ -928,7 +928,7 @@ const replyWithDownloadList = async ({ lang, diggersUserId, botData }) => {
           }
         ]
       },
-      stored_data: { lang: lang, botData: botData, diggersUserId: diggersUserId }
+      stored_data: { lang: lang, botData: botData }
     }
   }
 

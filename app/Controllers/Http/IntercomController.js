@@ -133,12 +133,13 @@ class IntercomController {
       const { orders } = await Order.getOrders({ user_id: diggersUserId })
       const boxes = await User.getBoxes({ user_id: diggersUserId })
       const botData = {
+        lang,
         orders,
         boxes,
         diggersUserId
       }
 
-      const canvas = await replyWithOrderInit({ lang, botData })
+      const canvas = await replyWithOrderInit({ botData })
       return response.json(canvas)
     } catch (err) {
       console.log('err in init', err)
@@ -153,25 +154,24 @@ class IntercomController {
       const currentAction = request.body.component_id
 
       // Retrieve  Diggers User ID + language from stored_data (in )
-      const { lang, botData, diggersUserId } = request.body.current_canvas.stored_data
-      console.log('🚀 ~ file: IntercomController.js ~ line 156 ~ IntercomController ~ submitOrder ~ botData', botData === undefined)
+      const { lang, botData } = request.body.current_canvas.stored_data
 
       // Handle back to main menu action
       if (currentAction === 'main-order-menu') {
-        const canvas = await replyWithOrderInit({ lang, botData, diggersUserId })
+        const canvas = await replyWithOrderInit({ lang, botData })
         return response.json(canvas)
       }
 
       // Handle "download code" list action
       if (currentAction === 'download-code') {
-        const canvas = await replyWithDownloadList({ lang, botData, diggersUserId })
+        const canvas = await replyWithDownloadList({ lang, botData })
         return response.json(canvas)
       }
 
       // Handle "download code" single item action
       if (currentAction.includes('redeem-download')) {
         const itemId = currentAction.split('-')[2]
-        const canvas = await replyWithDownloadCard({ itemId, lang, botData, diggersUserId })
+        const canvas = await replyWithDownloadCard({ itemId, lang, botData })
         return response.json(canvas)
       }
 
@@ -179,7 +179,7 @@ class IntercomController {
       //  Handle user click on 'See other orders' whilst on the orderCard, loop through orders selection
       const actionsWithOrderList = ['sent-orders', 'current-orders', 'all-orders', 'see-other-orders']
       if (actionsWithOrderList.includes(currentAction)) {
-        const canvas = await replyWithOrderList({ botData, diggersUserId, currentAction, lang })
+        const canvas = await replyWithOrderList({ botData, currentAction, lang })
         return response.json(canvas)
       }
 
@@ -187,7 +187,7 @@ class IntercomController {
       if (currentAction.includes('order-card')) {
         // Splitting the component_id to get the order id
         const orderShopId = +currentAction.split('-')[2]
-        const canvas = await replyWithOrderCard({ orderShopId, botData, diggersUserId, lang })
+        const canvas = await replyWithOrderCard({ orderShopId, botData, lang })
         return response.json(canvas)
       }
 
@@ -215,42 +215,6 @@ class IntercomController {
   }
 
   async submitAccount ({ request, response }) {
-    try {
-      // Getting the email from the input, lang from the stored data, failCount and currentAction (button if clicked)
-      const email = request.body.input_values.email || request.body.current_canvas.stored_data.email
-      const lang = request.body.current_canvas.stored_data.lang || 'EN'
-      const currentAction = request.body.component_id
-      // Get failCount to limit DB call on input retry (if undefined, init to 0)
-      const failCount = request.body.current_canvas.stored_data.failCount || 0
-
-      // If action is 'reset-password', send confirmation or error/catch reset password email
-      if (currentAction === 'reset-password') {
-        await replyWithForgotConfirmation(email, response, lang)
-        return
-      }
-
-      // Else, process with the input flow (ask input, check if valid, check if exists, respond accordingly)
-      await replyWithInputFlow({ email, response, lang, failCount })
-    } catch (err) {
-      const canvas = await replyWithErrorCard({ lang: 'EN' })
-      return response.json(canvas)
-    }
-  }
-
-  //! ----ACCOUNT BOT--------------
-  // * INIT CANVAS
-  async initSearch ({ request, response }) {
-    try {
-      // const lang = request.body.card_creation_options.language || 'EN'
-      const res = await replyWithSearchInit({ request })
-      return response(res)
-    } catch (err) {
-      const canvas = await replyWithErrorCard({ lang: 'EN' })
-      return response.json(canvas)
-    }
-  }
-
-  async submitSearch ({ request, response }) {
     try {
       // Getting the email from the input, lang from the stored data, failCount and currentAction (button if clicked)
       const email = request.body.input_values.email || request.body.current_canvas.stored_data.email
