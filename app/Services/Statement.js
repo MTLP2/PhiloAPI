@@ -320,22 +320,38 @@ class StatementService {
     const data = {}
     physicalSales.eachRow(row => {
       const barcode = row.getCell('I').value
+      const country = row.getCell('O').value
+      const idx = `${barcode}#${country}`
 
       if (barcode && barcode !== 'UPC') {
-        if (!data[barcode]) {
-          refs[row.getCell('B').value] = barcode
-          data[barcode] = {
+        if (!data[`${barcode}#GB`]) {
+          refs[row.getCell('B').value] = idx
+          data[idx] = {
             barcode: barcode,
+            country_id: country,
             quantity: 0,
             returned: 0,
             total: 0,
             storage: 0
           }
         }
-        data[barcode].country_id = row.getCell('O').value
-        data[barcode].quantity += row.getCell('R').value
-        data[barcode].returned += -row.getCell('S').value
-        data[barcode].total += row.getCell('AC').value / currencies.GBP
+        if (!data[idx]) {
+          if (!refs[row.getCell('B').value]) {
+            refs[row.getCell('B').value] = idx
+          }
+          data[idx] = {
+            barcode: barcode,
+            country_id: country,
+            quantity: 0,
+            returned: 0,
+            total: 0,
+            storage: 0
+          }
+        }
+        data[idx].country_id = row.getCell('O').value
+        data[idx].quantity += row.getCell('R').value
+        data[idx].returned += -row.getCell('S').value
+        data[idx].total += row.getCell('AC').value / currencies.GBP
       }
     })
 
