@@ -1,5 +1,6 @@
 const Env = use('Env')
 const {
+  replyWithOrderInit,
   replyWithOrderList,
   replyWithOrderCard,
   replyWithAccountInit,
@@ -7,12 +8,12 @@ const {
   replyWithInputFlow,
   replyWithErrorCard,
   replyWithCheckAddressCard,
-  replyWithOrderInit,
   replyWithDownloadList,
   replyWithDownloadCard,
   replyWithBoxList,
   replyWithBoxCard,
-  replyWithBoxHelp
+  replyWithBoxHelp,
+  replyWithBoxRenew
 } = use('App/Services/Intercom')
 const { getOrders } = use('App/Services/Order')
 const { getBoxes } = use('App/Services/User')
@@ -223,7 +224,11 @@ class IntercomController {
         return response.json(canvas)
       }
 
-      // Handle box card
+      // Handle box renew
+      if (currentAction === 'box-renew') {
+        const canvas = await replyWithBoxRenew({ botData, lang })
+        return response.json(canvas)
+      }
     } catch (err) {
       console.log('🚀 ~ file: IntercomController.js ~ line 177 ~ IntercomController ~ submitOrder ~ err', err)
       const canvas = await replyWithErrorCard({ lang: 'EN' })

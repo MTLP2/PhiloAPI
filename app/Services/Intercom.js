@@ -152,6 +152,7 @@ const translate = (key, lang = 'EN', payload) => {
     box_wrong_record_button: lang === 'EN' ? 'I received the wrong record' : 'J’ai reçu le mauvais disque',
     box_incomplete_button: lang === 'EN' ? 'My box is incomplete' : 'Ma box est incomplète',
     box_damage_button: lang === 'EN' ? 'My box is damaged' : 'Ma box est endommagée',
+    box_renew_header: lang === 'EN' ? 'You can reniew this box by clicking the link below.' : 'Vous pouvez renouveler cette box en cliquant sur le lien ci-dessous.',
     box_renew_button: lang === 'EN' ? 'I want to renew my box' : 'Je veux renouveler ma box',
     box_help_header: lang === 'EN' ? '📝 In order to help you with this issue, please indicate below that you need some help from the customer service and type your inquery with the reference of the box ID. Our staff will come back to you soon!' : '📝 Afin de vous aider, merci d’indiquer ci-dessous que vous avez besoin d’aide du service client et tapez votre question accompagnée de votre ID de box. Notre équipe vous répondra dans les plus brefs délais !'
   }
@@ -1400,6 +1401,33 @@ const replyWithBoxHelp = async ({ lang, botData, boxId }) => {
   return addBackMenu({ canvas, lang })
 }
 
+const replyWithBoxRenew = async ({ lang, botData, boxId }) => {
+  const canvas = {
+    canvas: {
+      content: {
+        components: [
+          {
+            type: 'text',
+            text: translate('box_renew_header', lang)
+          },
+          {
+            type: 'button',
+            id: 'box-renew',
+            label: translate('box_renew_button', lang),
+            action: {
+              type: 'url',
+              url: 'https://www.diggersfactory.com/fr/my-account/box'
+            }
+          }
+        ]
+      },
+      stored_data: { lang, botData }
+    }
+  }
+
+  return addBackMenu({ canvas, lang })
+}
+
 module.exports = {
   generateBackMenu,
   replyWithOrderList,
@@ -1414,5 +1442,6 @@ module.exports = {
   replyWithDownloadCard,
   replyWithBoxList,
   replyWithBoxCard,
-  replyWithBoxHelp
+  replyWithBoxHelp,
+  replyWithBoxRenew
 }
