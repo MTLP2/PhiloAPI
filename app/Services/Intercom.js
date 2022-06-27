@@ -123,7 +123,37 @@ const translate = (key, lang = 'EN', payload) => {
     forgot_password: lang === 'EN' ? '🤔 Forgotten password ? Create a new one with the link below' : '🤔 Mot de passe oublié ? Réinitialisez-le en cliquant sur le bouton ci-dessous.',
     forgot_password_link: lang === 'EN' ? '🔗 Create a new password' : '🔗 Créer un nouveau mot de passe',
     forgot_password_header: lang === 'EN' ? 'An email has been sent with a link to create a new password' : 'Un email vient de vous être envoyé. Merci de cliquer sur le lien dans l\'email pour réinitialiser votre mot de passe.',
-    forgot_password_helper: lang === 'EN' ? 'Once you have reset your password, you can log in again.' : 'Une fois votre mot de passe réinitialisé, vous pourrez vous connecter avec votre nouveau mot de passe.'
+    forgot_password_helper: lang === 'EN' ? 'Once you have reset your password, you can log in again.' : 'Une fois votre mot de passe réinitialisé, vous pourrez vous connecter avec votre nouveau mot de passe.',
+
+    // Box
+    box_header: lang === 'EN' ? '📦 On which box do you need more details?' : '📦 Sur quelle box souhaitez-vous des informations ?',
+    box_status: lang === 'EN' ? 'Status' : 'Statut',
+    box_type_one: lang === 'EN' ? 'One' : 'One',
+    box_type_two: lang === 'EN' ? 'Two' : 'Two',
+    box_period_1_month: lang === 'EN' ? '1 month' : '1 mois',
+    box_period_1_months: lang === 'EN' ? '1 month' : '1 mois',
+    box_period_3_months: lang === 'EN' ? '3 months' : '3 mois',
+    box_period_6_months: lang === 'EN' ? '6 months' : '6 mois',
+    box_period_12_months: lang === 'EN' ? '12 months' : '12 mois',
+    box_period_monthly: lang === 'EN' ? 'Monthly' : 'Mensuel',
+    box_step_confirmed: lang === 'EN' ? '🟢 Confirmed' : '🟢 Confirmée',
+    box_step_delivered: lang === 'EN' ? '🟢 Delivered' : '🟢 Livrée',
+    box_step_stopped: lang === 'EN' ? '🔴 Stopped' : '🔴 Arrêtée',
+    box_step_finished: lang === 'EN' ? '🔴 Finished' : '🔴 Terminée',
+    box_step_refunded: lang === 'EN' ? 'Refunded' : 'Remboursée',
+    box_step_creating: lang === 'EN' ? '🟠 Waiting for payment' : '🟠 En attente de paiement',
+    box_step_renewing: lang === 'EN' ? '🟠 Renewing' : '🟠 En renouvellement',
+    box_step_not_activated: lang === 'EN' ? '🔴 Not activated' : '🔴 Non activée',
+    box_name: lang === 'EN' ? 'Name' : 'Nom',
+    box_address: lang === 'EN' ? 'Address' : 'Adresse',
+    box_city: lang === 'EN' ? 'City' : 'Ville',
+    box_selection: lang === 'EN' ? 'My selection' : 'Ma sélection',
+    box_actions: lang === 'EN' ? 'My actions' : 'Mes actions',
+    box_wrong_record_button: lang === 'EN' ? 'I received the wrong record' : 'J’ai reçu le mauvais disque',
+    box_incomplete_button: lang === 'EN' ? 'My box is incomplete' : 'Ma box est incomplète',
+    box_damage_button: lang === 'EN' ? 'My box is damaged' : 'Ma box est endommagée',
+    box_renew_button: lang === 'EN' ? 'I want to renew my box' : 'Je veux renouveler ma box',
+    box_help_header: lang === 'EN' ? '📝 In order to help you with this issue, please indicate below that you need some help from the customer service and type your inquery with the reference of the box ID. Our staff will come back to you soon!' : '📝 Afin de vous aider, merci d’indiquer ci-dessous que vous avez besoin d’aide du service client et tapez votre question accompagnée de votre ID de box. Notre équipe vous répondra dans les plus brefs délais !'
   }
 
   return wording[key] || key
@@ -760,7 +790,6 @@ const replyWithOrderInit = async ({ lang, botData }) => {
 
 // Reply with a canvas component with a list of user's orders.
 const replyWithOrderList = async ({ botData, currentAction, lang }) => {
-  console.log('🚀 ~ file: Intercom.js ~ line 763 ~ replyWithOrderList ~ botData', botData === undefined)
   // If more than 1 order, reorder data
   const {
     orders: allOrders,
@@ -1154,9 +1183,221 @@ const replyWithInputFlow = async ({ email, response, lang, failCount, currentAct
   })
 }
 
-//! SEARCH
-const replyWithSearchInit = async ({ request }) => {
-  console.log('🚀 ~ file: Intercom.js ~ line 911 ~ replyWithSearchInit ~ request', request)
+//! BOXES
+const generateBoxListItems = ({ boxes, lang }) => {
+  return boxes.map(box => ({
+    type: 'item',
+    id: `box-card-${box.id}`,
+    title: `Box ${translate(`box_type_${box.type}`, lang)} - ${translate(`box_period_${box.periodicity}`, lang)}`,
+    subtitle: `Box N°${box.id}`,
+    tertiary_text: translate(`box_step_${box.step}`, lang),
+    image: 'https://storage.diggersfactory.com/assets/images/icons/streamline/gift-box-1.svg',
+    image_height: 36,
+    image_width: 36,
+    action: {
+      type: 'submit'
+    }
+
+  }))
+}
+
+const generateBoxCard = ({ box, lang, genres }) => {
+  const recordItems = []
+  for (const record of box.records) {
+    for (let index = 1; index <= 6; index++) {
+      if (record[`project${index}`]) {
+        recordItems.push({
+          type: 'item',
+          id: `record-card-${record[`project${index}`]}`,
+          title: record[`p${index}_name`],
+          subtitle: record[`p${index}_artist`],
+          tertiary_text: getLocaleDateFromString(record.date, lang),
+          image: `${Env.get('STORAGE_URL')}/projects/${record[`p${index}_picture`] || record[`p${index}`]}/cover.jpg`,
+          image_height: 48,
+          image_width: 48
+        })
+      }
+    }
+  }
+
+  return [
+    {
+      type: 'text',
+      text: `Box ${translate(`box_type_${box.type}`, lang)} - ${translate(`box_period_${box.periodicity}`, lang)}`,
+      style: 'header'
+    },
+    {
+      type: 'data-table',
+      items: [
+        {
+          type: 'field-value',
+          field: translate('box_status', lang),
+          value: translate(`box_step_${box.step}`, lang)
+        },
+        {
+          type: 'field-value',
+          field: 'Styles',
+          value: genres.filter(style => box.styles.includes(style.id)).map(style => style.name).join(', ')
+        },
+        {
+          type: 'field-value',
+          field: translate('box_name', lang),
+          value: `${box.customer.firstname} ${box.customer.lastname}`
+        },
+        {
+          type: 'field-value',
+          field: translate('box_address', lang),
+          value: `${box.customer.address}`
+        },
+        {
+          type: 'field-value',
+          field: translate('box_city', lang),
+          value: `${box.customer.city}`
+        }
+
+      ]
+    },
+
+    {
+      type: 'spacer',
+      size: 'm'
+    },
+    {
+      type: 'divider'
+    },
+    {
+      type: 'spacer',
+      size: 'm'
+    },
+    {
+      type: 'text',
+      text: translate('box_selection', lang),
+      style: 'header'
+    },
+    {
+      type: 'list',
+      items: recordItems
+    },
+
+    {
+      type: 'spacer',
+      size: 'm'
+    },
+    {
+      type: 'text',
+      text: translate('box_actions', lang),
+      style: 'header'
+    },
+    {
+      type: 'button',
+      id: 'box-help-wrong-record',
+      label: translate('box_wrong_record_button', lang),
+      style: 'secondary',
+      action: {
+        type: 'submit'
+      }
+    },
+    {
+      type: 'button',
+      id: 'box-help-incomplete',
+      label: translate('box_incomplete_button', lang),
+      style: 'secondary',
+      action: {
+        type: 'submit'
+      }
+    },
+    {
+      type: 'button',
+      id: 'box-help-damage',
+      label: translate('box_damage_button', lang),
+      style: 'secondary',
+      action: {
+        type: 'submit'
+      }
+    },
+    {
+      type: 'button',
+      id: 'box-renew',
+      label: translate('box_renew_button', lang),
+      style: 'secondary',
+      action: {
+        type: 'submit'
+      }
+    }
+  ]
+}
+
+const replyWithBoxList = async ({ lang, botData }) => {
+  const boxListItems = generateBoxListItems({ lang, boxes: botData.boxes })
+
+  const canvas = {
+    canvas: {
+      content: {
+        components: [
+          {
+            type: 'text',
+            text: translate('box_header', lang),
+            style: 'header'
+          },
+          {
+            type: 'spacer',
+            size: 'm'
+          },
+          {
+            type: 'list',
+            items: boxListItems
+          }
+        ]
+      },
+      stored_data: { lang, botData }
+    }
+  }
+
+  return addBackMenu({ canvas, lang })
+}
+
+const replyWithBoxCard = async ({ boxId, lang, botData }) => {
+  const boxComponent = generateBoxCard({
+    box: botData.boxes.find(box => box.id === boxId),
+    lang,
+    genres: botData.genres
+  })
+
+  botData.boxId = boxId
+
+  const canvas = {
+    canvas: {
+      content: {
+        components: boxComponent
+      },
+      stored_data: { lang, botData }
+    }
+  }
+
+  return addBackMenu({ canvas, lang })
+}
+
+const replyWithBoxHelp = async ({ lang, botData, boxId }) => {
+  const canvas = {
+    canvas: {
+      content: {
+        components: [
+          {
+            type: 'text',
+            text: translate('box_help_header', lang)
+          },
+          {
+            type: 'text',
+            text: `Box ID: ${boxId}`,
+            style: 'header'
+          }
+        ]
+      },
+      stored_data: { lang, botData }
+    }
+  }
+
+  return addBackMenu({ canvas, lang })
 }
 
 module.exports = {
@@ -1168,8 +1409,10 @@ module.exports = {
   replyWithInputFlow,
   replyWithCheckAddressCard,
   replyWithErrorCard,
-  replyWithSearchInit,
   replyWithOrderInit,
   replyWithDownloadList,
-  replyWithDownloadCard
+  replyWithDownloadCard,
+  replyWithBoxList,
+  replyWithBoxCard,
+  replyWithBoxHelp
 }

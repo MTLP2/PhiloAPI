@@ -7,13 +7,16 @@ const {
   replyWithInputFlow,
   replyWithErrorCard,
   replyWithCheckAddressCard,
-  replyWithSearchInit,
   replyWithOrderInit,
   replyWithDownloadList,
-  replyWithDownloadCard
+  replyWithDownloadCard,
+  replyWithBoxList,
+  replyWithBoxCard,
+  replyWithBoxHelp
 } = use('App/Services/Intercom')
-const Order = use('App/Services/Order')
-const User = use('App/Services/User')
+const { getOrders } = use('App/Services/Order')
+const { getBoxes } = use('App/Services/User')
+const { getGenres } = use('App/Services/App')
 
 // client boot for Intercom
 const { Client } = require('intercom-client')
@@ -129,17 +132,20 @@ class IntercomController {
 
       const { external_id: diggersUserId } = await client.contacts.find({ id: intercomUserId })
 
-      // Getting data from user. This data will always be passed to stored_data inside responses from and to the canvas, in order to avoid a new DB call on each canvas interaction/refresh.
-      const { orders } = await Order.getOrders({ user_id: diggersUserId })
-      const boxes = await User.getBoxes({ user_id: diggersUserId })
+      // Getting data from user.
+      const { orders } = await getOrders({ user_id: diggersUserId })
+      const boxes = await getBoxes({ user_id: diggersUserId })
+      const genres = await getGenres()
+
+      // These data will always be passed to stored_data inside responses from and to the canvas, in order to avoid a new DB call on each canvas interaction/refresh.
       const botData = {
-        lang,
         orders,
         boxes,
-        diggersUserId
+        diggersUserId,
+        genres
       }
 
-      const canvas = await replyWithOrderInit({ botData })
+      const canvas = await replyWithOrderInit({ botData, lang })
       return response.json(canvas)
     } catch (err) {
       console.log('err in init', err)
@@ -196,6 +202,28 @@ class IntercomController {
         const canvas = await replyWithCheckAddressCard({ botData, lang })
         return response.json(canvas)
       }
+
+      // Handle boxes list
+      if (currentAction === 'all-boxes') {
+        const canvas = await replyWithBoxList({ botData, lang })
+        return response.json(canvas)
+      }
+
+      // Handle box card
+      if (currentAction.includes('box-card')) {
+        const boxId = +currentAction.split('-')[2]
+        const canvas = await replyWithBoxCard({ boxId, botData, lang })
+        return response.json(canvas)
+      }
+
+      // Handle box help
+      if (currentAction.includes('box-help')) {
+        const boxId = botData.boxId
+        const canvas = await replyWithBoxHelp({ boxId, botData, lang })
+        return response.json(canvas)
+      }
+
+      // Handle box card
     } catch (err) {
       console.log('🚀 ~ file: IntercomController.js ~ line 177 ~ IntercomController ~ submitOrder ~ err', err)
       const canvas = await replyWithErrorCard({ lang: 'EN' })
