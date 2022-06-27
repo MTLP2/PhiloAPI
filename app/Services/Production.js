@@ -4,6 +4,7 @@ const ProjectEdit = use('App/Services/ProjectEdit')
 const Notification = use('App/Services/Notification')
 const Customer = use('App/Services/Customer')
 const File = use('App/Services/File')
+const Excel = require('exceljs')
 const Storage = use('App/Services/Storage')
 const View = use('View')
 const Antl = use('Antl')
@@ -1608,6 +1609,83 @@ class Production {
       { name: 'Postprod', index: 'date_postprod' },
       { name: 'Shipping', index: 'date_shipping' }
     ], data.data)
+  }
+
+  static async generateFgl (params) {
+    const workbook = new Excel.Workbook()
+    await workbook.xlsx.load('./FGL.xlsx')
+    const worksheet = workbook.getWorksheet(1)
+
+    worksheet.eachRow((row, rowNumber) => {
+      const prod = {
+        barcode: row.getCell('A').toString(),
+        quantity: row.getCell('H').toString(),
+        cost: row.getCell('F').toString()
+      }
+      console.log(prod)
+    })
+  }
+
+  static async generateProd (params) {
+    const costs = await DB('cost')
+      .select('cost.*', 'project.artist_name', 'project.name as project', 'vod.goal', 'production.quantity',
+        'production.id as production_id')
+      .join('vod', 'vod.project_id', 'cost.project_id')
+      .join('project', 'vod.project_id', 'project.id')
+      .leftJoin('production', 'production.project_id', 'cost.project_id')
+      .whereNull('cost.production_id')
+      .whereNotExists(query => {
+        query.from('production')
+          .whereRaw('production.project_id = cost.project_id')
+      })
+      .where('cost.created_at', '>', '2022-01-01')
+      .all()
+
+    console.log(costs.length)
+
+    const c = {}
+    for (const cost of costs) {
+      if (!c[cost.project_id]) {
+        c[cost.project_id] = {
+          total: 0,
+          margin: 0,
+          production_id: cost.production_id,
+          goal: cost.goal,
+          quantity: cost.quantity,
+          list: []
+        }
+      }
+
+      c[cost.project_id].list.push(cost)
+      c[cost.project_id].total += cost.cost_invoiced
+      c[cost.project_id].margin += cost.margin
+    }
+
+    // console.log(c)
+    for (const [id, project] of Object.entries(costs)) {
+      const prod = DB('production')
+      if (project.production_id) {
+
+      } else {
+
+      }
+      /**
+      const [productionId] = await DB('production')
+        .insert({
+          project_id: project,
+          final_price: costs.total,
+          quantity: costs.quantity
+        })
+      **/
+    }
+
+    return Utils.arrayToCsv([
+      { name: 'ID', index: 'id' },
+      { name: 'Artiste', index: 'artist_name' },
+      { name: 'Project', index: 'project' },
+      { name: 'Cost', index: 'name' },
+      { name: 'Total', index: 'cost_invoiced' }
+    ], costs)
   }
 }
 
