@@ -1319,7 +1319,7 @@ Project.getStats = async (params) => {
   })
 }
 
-Project.getStatements = async (params) => {
+Project.getDashboard = async (params) => {
   let projects = DB('project')
     .select('project.name', 'project.id', 'storage_costs', 'vod.barcode', 'vod.currency',
       'vod.fee_date', 'vod.fee_distrib_date', 'payback_site', 'payback_distrib', 'payback_box')

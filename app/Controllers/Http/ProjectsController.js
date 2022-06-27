@@ -141,7 +141,7 @@ class ProjectsController {
     return Project.getStats(params)
   }
 
-  async getStatements ({ params, user }) {
+  async getDashboard ({ params, user }) {
     params.user = user
 
     if (params.u && user.id !== +params.u && !await Utils.isTeam(user.id)) {
@@ -151,7 +151,7 @@ class ProjectsController {
       await Utils.checkProjectOwner({ project_id: params.p, user: user })
     }
 
-    return Project.getStatements(params)
+    return Project.getDashboard(params)
   }
 
   async getOrders ({ params, user }) {

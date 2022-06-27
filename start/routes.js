@@ -88,7 +88,7 @@ Route.group(() => {
   Route.get('/projects/all', 'ProjectsController.getAll')
   Route.get('/projects/recommandations', 'ProjectsController.recommandations')
   Route.get('/projects/soundcloud', 'ProjectsController.getSoundcloud')
-  Route.get('/projects/statements', 'ProjectsController.getStatements')
+  Route.get('/projects/dashboard', 'ProjectsController.getDashboard')
   Route.get('/projects/:id', 'ProjectsController.find')
   Route.get('/projects/:id/more', 'ProjectsController.getMore')
   Route.get('/projects/:id/group-shipment', 'ProjectsController.getGroupShipment')
