@@ -17,8 +17,10 @@ const translate = (key, lang = 'EN', payload) => {
     error_account_fail_message: lang === 'EN' ? 'You\'ve reached maximum retries. Please contact the customer support below. We\'ll get back to you shortly. Thank you!' : 'Veuillez contacter le service client ci-dessous. Nous reviendrons vers vous prochainement. Merci !',
 
     // Order - Init
-    order_choice: lang === 'EN' ? 'I want infos on my orders' : 'Je veux des informations sur mes commandes',
+    order_init: lang === 'EN' ? '💼 What do you want to do?' : '💼 Quelles informations souhaitez-vous ?',
+    order_choice: lang === 'EN' ? 'I want details on my orders' : 'Je veux des informations sur mes commandes',
     download_choice: lang === 'EN' ? 'I want to redeem a download code' : 'Je veux utiliser un code de téléchargement',
+    box_choice: lang === 'EN' ? 'I want details on my boxes' : 'Je veux des informations sur ma box',
 
     // Countries
     country_fr: 'France',
@@ -567,13 +569,13 @@ const generateDownloadbleItemCard = async ({ item, userId, lang }) => {
       label: translate('code_download_link', lang),
       action: {
         type: 'url',
-        url: `http://localhost:3100/download?code=${code}`
+        url: `https://www.diggersfactory.com/download?code=${code}`
       }
     }
   ]
 }
 
-const replyWithCheckAddressCard = async ({ orders, lang }) => {
+const replyWithCheckAddressCard = async ({ botData, lang }) => {
   return {
     canvas: {
       content: {
@@ -607,7 +609,7 @@ const replyWithCheckAddressCard = async ({ orders, lang }) => {
           }
         ]
       },
-      stored_data: { lang: lang, failCount: 0, orders: orders }
+      stored_data: { lang: lang, failCount: 0, botData: botData }
     }
   }
 }
@@ -636,7 +638,7 @@ const replyWithErrorCard = ({ lang = 'EN' }) => {
   }
 }
 
-const replyWithOrderChoice = async ({ lang, orders, diggersUserId }) => {
+const replyWithOrderChoice = async ({ lang, botData, diggersUserId }) => {
   return {
     canvas: {
       content: {
@@ -673,16 +675,16 @@ const replyWithOrderChoice = async ({ lang, orders, diggersUserId }) => {
           }
         }]
       },
-      stored_data: { lang: lang, orders: orders, diggersUserId: diggersUserId }
+      stored_data: { lang: lang, botData: botData, diggersUserId: diggersUserId }
     }
   }
 }
 
 // Displays a list of orders regarding its type (sent or current). Distinguishes between lists of one and many.
-const handleMultipleOrders = async ({ orders, diggersUserId, catOrders, lang }) => {
+const handleMultipleOrders = async ({ botData, diggersUserId, catOrders, lang }) => {
   // Single typed order - skip choice card and display order card
   if (catOrders.length === 1) {
-    return await replyWithOrderCard({ orderShopId: catOrders[0].id, orders, diggersUserId, lang })
+    return await replyWithOrderCard({ orderShopId: catOrders[0].id, botData, diggersUserId, lang })
   }
 
   // Multiple typed orders
@@ -705,17 +707,26 @@ const handleMultipleOrders = async ({ orders, diggersUserId, catOrders, lang }) 
       content: {
         components
       },
-      stored_data: { lang: lang, orders: orders, diggersUserId: diggersUserId }
+      stored_data: { lang: lang, botData: botData, diggersUserId: diggersUserId }
     }
   }
 }
 
 // ! ORDERS
-const replyWithOrderInit = async ({ lang, orders, diggersUserId }) => {
+const replyWithOrderInit = async ({ lang, botData, diggersUserId }) => {
   return {
     canvas: {
       content: {
         components: [
+          {
+            type: 'text',
+            text: translate('order_init', lang),
+            style: 'header'
+          },
+          {
+            type: 'spacer',
+            size: 'm'
+          },
           {
             type: 'button',
             id: 'all-orders',
@@ -731,22 +742,31 @@ const replyWithOrderInit = async ({ lang, orders, diggersUserId }) => {
             action: {
               type: 'submit'
             }
+          },
+          {
+            type: 'button',
+            id: 'all-boxes',
+            label: translate('box_choice', lang),
+            action: {
+              type: 'submit'
+            }
           }
         ]
       },
-      stored_data: { lang: lang, orders: orders, diggersUserId: diggersUserId }
+      stored_data: { lang: lang, botData: botData, diggersUserId: diggersUserId }
     }
   }
 }
 
 // Reply with a canvas component with a list of user's orders.
-const replyWithOrderList = async ({ orders, diggersUserId, currentAction, lang }) => {
+const replyWithOrderList = async ({ botData, diggersUserId, currentAction, lang }) => {
+  console.log('🚀 ~ file: Intercom.js ~ line 763 ~ replyWithOrderList ~ botData', botData === undefined)
   // If more than 1 order, reorder data
   const {
     orders: allOrders,
     sentOrders,
     currentOrders
-  } = getOrdersFromCart(orders)
+  } = getOrdersFromCart(botData.orders)
 
   // * No orders
   // If user has no orders, return
@@ -762,7 +782,7 @@ const replyWithOrderList = async ({ orders, diggersUserId, currentAction, lang }
         content: {
           components
         },
-        stored_data: { lang: lang, orders: orders, diggersUserId: diggersUserId }
+        stored_data: { lang: lang, botData: botData, diggersUserId: diggersUserId }
       },
       event: { type: 'completed' }
     }
@@ -778,38 +798,38 @@ const replyWithOrderList = async ({ orders, diggersUserId, currentAction, lang }
         content: {
           components
         },
-        stored_data: { lang: lang, orders: orders, diggersUserId: diggersUserId }
+        stored_data: { lang: lang, botData: botData, diggersUserId: diggersUserId }
       }
     }
   }
 
   // * If more than 1 order and 4 or less, display them all without distinction || user chooses to see all orders
   if (currentAction === 'all-orders' || allOrders.length <= 4) {
-    const canvas = await handleMultipleOrders({ orders, diggersUserId, catOrders: allOrders, lang })
+    const canvas = await handleMultipleOrders({ botData, diggersUserId, catOrders: allOrders, lang })
     return addBackMenu({ canvas, lang })
   }
 
   // ONLY SENT ORDERS
   if (currentAction === 'sent-orders' || (sentOrders.length > 0 && currentOrders.length === 0)) {
-    const canvas = await handleMultipleOrders({ orders, diggersUserId, catOrders: sentOrders, lang })
+    const canvas = await handleMultipleOrders({ botData, diggersUserId, catOrders: sentOrders, lang })
     return addBackMenu({ canvas, lang })
   }
 
   // ONLY CURRENT ORDERS
   if (currentAction === 'current-orders' || (currentOrders.length > 0 && sentOrders.length === 0)) {
-    const canvas = await handleMultipleOrders({ orders, diggersUserId, catOrders: currentOrders, lang })
+    const canvas = await handleMultipleOrders({ botData, diggersUserId, catOrders: currentOrders, lang })
     return addBackMenu({ canvas, lang })
   }
 
   // ELSE, Choice between all, sent and current orders
-  const canvas = await replyWithOrderChoice({ lang, orders, diggersUserId })
+  const canvas = await replyWithOrderChoice({ lang, botData, diggersUserId })
   return addBackMenu({ canvas, lang })
 }
 
-const replyWithOrderCard = async ({ orderShopId, orders, diggersUserId, lang }) => {
+const replyWithOrderCard = async ({ orderShopId, botData, diggersUserId, lang }) => {
   // Find the right order_shop
   let orderShop
-  for (const order of orders) {
+  for (const order of botData.orders) {
     for (const shop of order.shops) {
       if (shop.id === orderShopId) {
         orderShop = shop
@@ -827,15 +847,15 @@ const replyWithOrderCard = async ({ orderShopId, orders, diggersUserId, lang }) 
       content: {
         components: orderCard
       },
-      stored_data: { lang: lang, orders: orders, diggersUserId: diggersUserId }
+      stored_data: { lang: lang, botData: botData, diggersUserId: diggersUserId }
     }
   }
 }
 
-const replyWithDownloadCard = async ({ itemId, orders, diggersUserId, lang }) => {
+const replyWithDownloadCard = async ({ itemId, botData, diggersUserId, lang }) => {
   // Find the right order_shop
   let downloadbleItem
-  for (const order of orders) {
+  for (const order of botData.orders) {
     for (const shop of order.shops) {
       for (const item of shop.items) {
         if (item.id === +itemId) {
@@ -854,15 +874,15 @@ const replyWithDownloadCard = async ({ itemId, orders, diggersUserId, lang }) =>
       content: {
         components
       },
-      stored_data: { lang: lang, orders: orders, diggersUserId: diggersUserId }
+      stored_data: { lang: lang, botData: botData, diggersUserId: diggersUserId }
     }
   }
   return addBackMenu({ canvas, lang })
 }
 
-const replyWithDownloadList = async ({ lang, diggersUserId, orders }) => {
+const replyWithDownloadList = async ({ lang, diggersUserId, botData }) => {
   const downloadableItems = []
-  for (const order of orders) {
+  for (const order of botData.orders) {
     for (const shop of order.shops) {
       for (const item of shop.items) {
         if (item.download) {
@@ -885,7 +905,7 @@ const replyWithDownloadList = async ({ lang, diggersUserId, orders }) => {
             }
           ]
         },
-        stored_data: { lang: lang, orders: orders, diggersUserId: diggersUserId }
+        stored_data: { lang: lang, botData: botData, diggersUserId: diggersUserId }
       }
     }
     return addBackMenu({ canvas, lang })
@@ -908,7 +928,7 @@ const replyWithDownloadList = async ({ lang, diggersUserId, orders }) => {
           }
         ]
       },
-      stored_data: { lang: lang, orders: orders, diggersUserId: diggersUserId }
+      stored_data: { lang: lang, botData: botData, diggersUserId: diggersUserId }
     }
   }
 

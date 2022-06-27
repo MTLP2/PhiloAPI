@@ -13,6 +13,7 @@ const {
   replyWithDownloadCard
 } = use('App/Services/Intercom')
 const Order = use('App/Services/Order')
+const User = use('App/Services/User')
 
 // client boot for Intercom
 const { Client } = require('intercom-client')
@@ -128,10 +129,16 @@ class IntercomController {
 
       const { external_id: diggersUserId } = await client.contacts.find({ id: intercomUserId })
 
-      // Getting orders from user
+      // Getting data from user. This data will always be passed to stored_data inside responses from and to the canvas, in order to avoid a new DB call on each canvas interaction/refresh.
       const { orders } = await Order.getOrders({ user_id: diggersUserId })
+      const boxes = await User.getBoxes({ user_id: diggersUserId })
+      const botData = {
+        orders,
+        boxes,
+        diggersUserId
+      }
 
-      const canvas = await replyWithOrderInit({ lang, orders, diggersUserId })
+      const canvas = await replyWithOrderInit({ lang, botData })
       return response.json(canvas)
     } catch (err) {
       console.log('err in init', err)
@@ -146,24 +153,25 @@ class IntercomController {
       const currentAction = request.body.component_id
 
       // Retrieve  Diggers User ID + language from stored_data (in )
-      const { lang, orders, diggersUserId } = request.body.current_canvas.stored_data
+      const { lang, botData, diggersUserId } = request.body.current_canvas.stored_data
+      console.log('🚀 ~ file: IntercomController.js ~ line 156 ~ IntercomController ~ submitOrder ~ botData', botData === undefined)
 
       // Handle back to main menu action
       if (currentAction === 'main-order-menu') {
-        const canvas = await replyWithOrderInit({ lang, orders, diggersUserId })
+        const canvas = await replyWithOrderInit({ lang, botData, diggersUserId })
         return response.json(canvas)
       }
 
       // Handle "download code" list action
       if (currentAction === 'download-code') {
-        const canvas = await replyWithDownloadList({ lang, orders, diggersUserId })
+        const canvas = await replyWithDownloadList({ lang, botData, diggersUserId })
         return response.json(canvas)
       }
 
       // Handle "download code" single item action
       if (currentAction.includes('redeem-download')) {
         const itemId = currentAction.split('-')[2]
-        const canvas = await replyWithDownloadCard({ itemId, lang, orders, diggersUserId })
+        const canvas = await replyWithDownloadCard({ itemId, lang, botData, diggersUserId })
         return response.json(canvas)
       }
 
@@ -171,7 +179,7 @@ class IntercomController {
       //  Handle user click on 'See other orders' whilst on the orderCard, loop through orders selection
       const actionsWithOrderList = ['sent-orders', 'current-orders', 'all-orders', 'see-other-orders']
       if (actionsWithOrderList.includes(currentAction)) {
-        const canvas = await replyWithOrderList({ orders, diggersUserId, currentAction, lang })
+        const canvas = await replyWithOrderList({ botData, diggersUserId, currentAction, lang })
         return response.json(canvas)
       }
 
@@ -179,13 +187,13 @@ class IntercomController {
       if (currentAction.includes('order-card')) {
         // Splitting the component_id to get the order id
         const orderShopId = +currentAction.split('-')[2]
-        const canvas = await replyWithOrderCard({ orderShopId, orders, diggersUserId, lang })
+        const canvas = await replyWithOrderCard({ orderShopId, botData, diggersUserId, lang })
         return response.json(canvas)
       }
 
       // Handle user click on 'Resend check address' button
       if (currentAction === 'resend-check-address') {
-        const canvas = await replyWithCheckAddressCard({ orders, lang })
+        const canvas = await replyWithCheckAddressCard({ botData, lang })
         return response.json(canvas)
       }
     } catch (err) {
