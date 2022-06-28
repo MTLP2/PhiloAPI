@@ -163,9 +163,7 @@ Review.update = async (params) => {
 
   // Admin must choose a lang and put translation if is_visible is 1|public
   if (params.is_visible === 1 &&
-    ((!params.lang && !review.lang) ||
-    (!params.title_trad || !params.message_trad)
-    )) throw new Error('You must choose a language and translate the review if review is public.')
+    ((!params.lang && !review.lang) || !params.title_trad)) throw new Error('You must choose a language and translate the review if review is public.')
 
   // A project can only have one is_starred
   if (params.is_starred === 1) {
