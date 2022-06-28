@@ -47,8 +47,9 @@ App.daily = async () => {
       .orderBy('start', 'desc')
       .delete()
 
-    if (+moment().format('D') === 3) {
+    if (+moment().format('D') === 1) {
       await Box.checkPayments()
+      await Statement.sendStatements()
     }
     if (moment().format('E') !== '6' && moment().format('E') !== '7') {
       await Daudin.export()
@@ -56,7 +57,6 @@ App.daily = async () => {
 
     if (+moment().format('D') === 28) {
       await Statement.setStorageCosts()
-      await Statement.sendStatements()
       await Box.setDispatchs()
     }
 
