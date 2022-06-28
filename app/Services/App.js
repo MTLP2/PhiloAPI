@@ -599,13 +599,14 @@ App.notification = async (notif, test = false) => {
       .all()
   }
   if (n.type === 'statement') {
+    data.end = moment(n.date).subtract(1, 'months').endOf('month').format('YYYY-MM-DD')
     data.from_address = 'nelly@diggersfactory.com'
     data.attachments = [
       {
         filename: 'Statement.xlsx',
         content: await Statement.userDownload({
           id: n.user_id,
-          end: moment(n.date).subtract(1, 'months').endOf('month').format('YYYY-MM-DD'),
+          end: data.end,
           auto: true
         })
       }

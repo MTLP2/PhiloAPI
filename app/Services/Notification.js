@@ -99,6 +99,7 @@ Notification.email = async (params, send = true) => {
       storage_url: config.app.storage_url,
       artist: params.artist,
       username: params.user.name,
+      user_id: params.user_id,
       project_id: params.project_id,
       project: params.project,
       cat_number: params.cat_number,
@@ -124,9 +125,11 @@ Notification.email = async (params, send = true) => {
       order_items: params.order_items,
       order_refused_items: params.order_refused_items,
       refused_vinyl: params.refused_vinyl,
+      end: params.end,
       comment: params.comment,
       address: params.address
     }
+    console.log(data.end)
     p.subject = _.template(p.subject)(data)
     data.subject = p.subject
 
