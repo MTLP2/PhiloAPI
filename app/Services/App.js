@@ -341,7 +341,7 @@ App.notification = async (notif, test = false) => {
     // Add refuse details
     if (notif.type !== 'production_new_file') {
       const prodAction = await DB('production_file').where('id', n.file_id).first()
-      data.file_reason = prodAction?.comment || (data.lang === 'en' ? 'Cause of refusal unspecified.' : 'Aucun motif de refus n\'a été précisé.')
+      data.file_reason = prodAction?.comment || (data.lang === 'en' ? 'Cause is unspecified.' : 'Aucun motif de refus n\'a été précisé.')
     }
   }
   data.data = n.data ? JSON.parse(n.data) : null
