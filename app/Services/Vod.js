@@ -898,4 +898,25 @@ Vod.getFactoryPrice = async (params) => {
   return res
 }
 
+Vod.checkCampaignStart = async (hour) => {
+  const vodToStart = await DB('vod')
+    .where('step', 'coming_soon')
+    // where day is today
+    .whereRaw('DATE(`start`) = CURDATE()')
+    // where hour is hourly hour
+    .whereRaw(`HOUR(\`start\`) = ${hour}`)
+    .all()
+
+  for (const vod of vodToStart) {
+    // Update each vod to step 'in_progress'
+    await DB('vod')
+      .where('id', vod.id)
+      .update({
+        step: 'in_progress'
+      })
+  }
+
+  return { success: true }
+}
+
 module.exports = Vod

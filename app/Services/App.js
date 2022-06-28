@@ -15,6 +15,7 @@ const Storage = use('App/Services/Storage')
 const MondialRelay = use('App/Services/MondialRelay')
 const Review = use('App/Services/Review')
 const Invoice = use('App/Services/Invoice')
+const Vod = use('App/Services/Vod')
 const Cio = use('App/Services/CIO')
 const Excel = require('exceljs')
 const Antl = use('Antl')
@@ -112,6 +113,7 @@ App.hourly = async () => {
 
     await Storage.cleanTmp('storage')
     await Whiplash.syncStocks()
+    await Vod.checkCampaignStart(hour)
 
     cron.status = 'complete'
     cron.end = new Date()
@@ -341,7 +343,7 @@ App.notification = async (notif, test = false) => {
     // Add refuse details
     if (notif.type !== 'production_new_file') {
       const prodAction = await DB('production_file').where('id', n.file_id).first()
-      data.file_reason = prodAction?.comment || (data.lang === 'en' ? 'Cause of refusal unspecified.' : 'Aucun motif de refus n\'a été précisé.')
+      data.file_reason = prodAction?.comment || (data.lang === 'en' ? 'Cause is unspecified.' : 'Aucun motif de refus n\'a été précisé.')
     }
   }
   data.data = n.data ? JSON.parse(n.data) : null
