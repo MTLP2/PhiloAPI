@@ -15,6 +15,7 @@ const Storage = use('App/Services/Storage')
 const MondialRelay = use('App/Services/MondialRelay')
 const Review = use('App/Services/Review')
 const Invoice = use('App/Services/Invoice')
+const Vod = use('App/Services/Vod')
 const Cio = use('App/Services/CIO')
 const Excel = require('exceljs')
 const Antl = use('Antl')
@@ -110,6 +111,7 @@ App.hourly = async () => {
 
     await Storage.cleanTmp('storage')
     await Whiplash.syncStocks()
+    await Vod.checkCampaignStart(hour)
 
     cron.status = 'complete'
     cron.end = new Date()
