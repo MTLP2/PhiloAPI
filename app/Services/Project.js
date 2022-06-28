@@ -685,6 +685,7 @@ Project.find = async (id, params) => {
       'project.picture as related_picture',
       'project.name as related_name',
       'project.artist_name as related_artist',
+      'vod.is_shop',
       'vod.type',
       'vod.user_id as related_user',
       'vod.price as related_price',
@@ -721,7 +722,20 @@ Project.find = async (id, params) => {
     return { error: 404 }
   }
 
-  project.items = items
+  project.items = items.map(item => {
+    let soldout = true
+    if (item.step === 'in_progress') {
+      if (item.is_shop && item.related_stock_shop > 0) {
+        soldout = false
+      } else if (!item.is_shop && (item.related_stock > 0 || item.type === 'funding')) {
+        soldout = false
+      }
+    }
+    return {
+      ...item,
+      soldout: soldout
+    }
+  })
   const p = Project.setInfo(project, currencies, sales)
 
   let item = null
