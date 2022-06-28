@@ -49,7 +49,6 @@ App.daily = async () => {
 
     if (+moment().format('D') === 1) {
       await Box.checkPayments()
-      await Statement.sendStatements()
     }
     if (moment().format('E') !== '6' && moment().format('E') !== '7') {
       await Daudin.export()
@@ -58,6 +57,9 @@ App.daily = async () => {
     if (+moment().format('D') === 28) {
       await Statement.setStorageCosts()
       await Box.setDispatchs()
+    }
+    if (+moment().format('D') === 29) {
+      await Statement.sendStatements()
     }
 
     cron.status = 'complete'
