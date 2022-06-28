@@ -550,9 +550,10 @@ class Daudin {
       })
     }
 
-    const pdf = await Utils.toPdf(html)
-
-    zip.file('invoices.pdf', pdf)
+    if (html) {
+      const pdf = await Utils.toPdf(html)
+      zip.file('invoices.pdf', pdf)
+    }
 
     const csv = await Daudin.csv(lines)
     zip.file('orders.csv', csv)
