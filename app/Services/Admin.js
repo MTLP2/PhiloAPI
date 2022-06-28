@@ -170,6 +170,7 @@ Admin.getProject = async (id) => {
 
   const costsQuery = DB('cost')
     .where('project_id', id)
+    .belongsTo('production')
     .all()
 
   const projectImagesQuery = Project.getProjectImages({ projectId: id })
@@ -1065,6 +1066,7 @@ Admin.storeCosts = async (params) => {
   }
 
   item.project_id = params.project_id
+  item.production_id = params.production_id
   item.name = params.name
   item.invoice_number = params.invoice_number
   item.name = params.name
