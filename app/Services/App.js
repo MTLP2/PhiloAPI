@@ -57,10 +57,8 @@ App.daily = async () => {
 
     if (+moment().format('D') === 28) {
       await Statement.setStorageCosts()
-      await Box.setDispatchs()
-    }
-    if (+moment().format('D') === 29) {
       await Statement.sendStatements()
+      await Box.setDispatchs()
     }
 
     cron.status = 'complete'
