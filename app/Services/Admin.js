@@ -272,9 +272,16 @@ Admin.getProject = async (id) => {
   for (const order of orders) {
     if (order.size) {
       if (!project.to_sizes[order.size]) {
-        project.to_sizes[order.size] = 0
+        project.to_sizes[order.size] = {
+          total: 0,
+          trans: {}
+        }
       }
-      project.to_sizes[order.size]++
+      if (!project.to_sizes[order.size].trans[order.transporter]) {
+        project.to_sizes[order.size].trans[order.transporter] = 0
+      }
+      project.to_sizes[order.size].trans[order.transporter]++
+      project.to_sizes[order.size].total++
     }
     if (!order.transporter) {
       order.transporter = 'daudin'
@@ -283,10 +290,17 @@ Admin.getProject = async (id) => {
     if (!project.trans[order.transporter]) {
       project.trans[order.transporter] = {
         orders: 0,
-        to_send: 0
+        to_send: 0,
+        sizes: {}
       }
     }
     project.trans[order.transporter].orders += order.quantity
+    if (order.size) {
+      if (!project.trans[order.transporter].sizes[order.size]) {
+        project.trans[order.transporter].sizes[order.size] = 0
+      }
+      project.trans[order.transporter].sizes[order.size] += order.quantity
+    }
     project.count += order.quantity
     if (!order.sending && !order.date_export && order.type === 'vod') {
       project.trans[order.transporter].to_send += order.quantity
@@ -336,6 +350,7 @@ Admin.getProject = async (id) => {
   project.historic = JSON.parse(project.historic)
   project.reviews = reviews
 
+  console.log(project.to_sizes, project.trans)
   return project
 }
 
