@@ -350,7 +350,6 @@ Admin.getProject = async (id) => {
   project.historic = JSON.parse(project.historic)
   project.reviews = reviews
 
-  console.log(project.to_sizes, project.trans)
   return project
 }
 
