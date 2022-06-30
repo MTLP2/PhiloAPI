@@ -4390,7 +4390,7 @@ Admin.exportOrdersCommercial = async (params) => {
   const projectsRaw = await DB('project as p')
     .select('p.id', 'p.name', 'p.created_at', 'p.artist_name', 'v.step', 'v.type', 'u.id as com_id', 'u.name as com_name', 'v.origin', 'v.historic')
     .join('vod as v', 'v.project_id', 'p.id')
-    .join('user as u', 'u.id', 'v.com_id')
+    .leftJoin('user as u', 'u.id', 'v.com_id')
     .whereIn('v.com_id', commercialList)
     .where('p.is_delete', 0)
     .where('p.created_at', '>=', params.start)
