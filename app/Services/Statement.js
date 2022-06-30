@@ -29,6 +29,8 @@ class StatementService {
     let item = DB('statement')
     if (params.id) {
       item = await DB('statement').find(params.id)
+    } else {
+      item.created_at = Utils.date()
     }
     item.project_id = params.project_id
     item.date = params.year + '-' + params.month
@@ -43,6 +45,7 @@ class StatementService {
     item.payment_diggers = params.payment_diggers
     item.storage = params.storage
     item.comment = params.comment
+    item.updated_at = Utils.date()
     await item.save()
 
     await DB('statement_distributor')
