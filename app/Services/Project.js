@@ -1401,7 +1401,7 @@ Project.getDashboard = async (params) => {
     if (orders.length > 0) {
       params.start = orders[0].created_at.substring(0, 10)
     }
-    if (statements.length > 0 && `${statements[0].date}-01` < params.start) {
+    if (statements.length > 0 && (!params.start || `${statements[0].date}-01` < params.start)) {
       params.start = `${statements[0].date}-01`
     }
   }
