@@ -1314,7 +1314,7 @@ class StatementService {
           data.distrib_total.total += parseFloat(dist.digital * feeDistrib)
         }
         if (project.storage_costs) {
-          data[`${dist.name}_${dist.item}_storage`][stat.date] += parseInt(-dist.storage || 0)
+          data[`${dist.name}_${dist.item}_storage`][stat.date] += parseFloat(-dist.storage || 0)
         }
 
         data.distrib_quantity[stat.date] += parseInt(dist.quantity)
@@ -1327,8 +1327,8 @@ class StatementService {
         data.distrib_total.total += value
 
         if (project.storage_costs) {
-          data.distrib_total[stat.date] += parseInt(-dist.storage || 0)
-          data.distrib_total.total += parseInt(-dist.storage || 0)
+          data.distrib_total[stat.date] += parseFloat(-dist.storage || 0)
+          data.distrib_total.total += parseFloat(-dist.storage || 0)
         }
       }
     }
