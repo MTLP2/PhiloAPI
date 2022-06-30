@@ -4395,10 +4395,10 @@ Admin.exportOrdersCommercial = async (params) => {
     .where('p.is_delete', 0)
     .where('p.created_at', '>=', params.start)
     .where('p.created_at', '<=', `${params.end} 23:59`)
+    .whereNotNull('v.user_id')
     .all()
 
   const projects = projectsRaw.map(project => {
-    if (project.com_id === 109131) project.com_name = 'Margot Diggers'
     if (project.historic && project.historic.length) {
       project.historic = JSON.parse(project.historic)
         .sort((a, b) => {
