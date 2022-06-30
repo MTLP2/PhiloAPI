@@ -16,7 +16,7 @@ const Excel = require('exceljs')
 const Storage = use('App/Services/Storage')
 const Order = use('App/Services/Order')
 const Review = use('App/Services/Review')
-const Stock = use('App/Services/Stock')
+const Vod = use('App/Services/Vod')
 const Production = use('App/Services/Production')
 const Sna = use('App/Services/Sna')
 const cio = use('App/Services/CIO')
@@ -1152,15 +1152,23 @@ Admin.syncProjectSna = async (params) => {
     .all()
 
   const items = await DB()
-    .select('order_shop_id', 'oi.project_id', 'oi.quantity', 'oi.price', 'oi.size', 'vod.barcode', 'vod.sizes')
+    .select('order_shop_id', 'oi.project_id', 'oi.quantity', 'oi.price', 'oi.size',
+      'vod.barcode', 'vod.weight', 'vod.sizes', 'project.nb_vinyl', 'vod.sleeve', 'vod.vinyl_weight')
     .from('order_item as oi')
     .whereIn('order_shop_id', orders.map(o => o.id))
     .join('vod', 'vod.project_id', 'oi.project_id')
+    .join('project', 'project.id', 'oi.project_id')
     .all()
 
   for (const item of items) {
     const idx = orders.findIndex(o => o.id === item.order_shop_id)
     orders[idx].items = orders[idx].items ? [...orders[idx].items, item] : [item]
+
+    if (!orders[idx].weight) {
+      // Packaging weight
+      orders[idx].weight = 340
+    }
+    orders[idx].weight += item.quantity * (item.weight || Vod.calculateWeight(item))
   }
 
   const dispatchs = []
