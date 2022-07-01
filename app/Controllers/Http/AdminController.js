@@ -50,6 +50,10 @@ class AdminController {
     return Admin.exportProjects(params)
   }
 
+  exportRawProjects ({ params }) {
+    return Admin.exportRawProjects(params)
+  }
+
   exportCatalog ({ params }) {
     return Admin.exportCatalog(params)
   }

@@ -473,6 +473,7 @@ Project.findAll = async (params) => {
     projects.where('v.is_shop', '1')
     projects.where('v.step', 'in_progress')
   }
+
   if (!params.limit) {
     params.limit = 9
   }
