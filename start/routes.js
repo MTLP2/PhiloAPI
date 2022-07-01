@@ -297,6 +297,7 @@ Route.group(() => {
   Route.get('/reviews/projects', 'AdminController.getProjectsReviews')
   Route.get('/reviews/boxes', 'AdminController.getBoxesReviews')
   Route.get('/reviews/pending', 'AdminController.getPendingReviews')
+  Route.get('/reviews/stats', 'AdminController.getReviewsStats')
   Route.get('/boxes', 'BoxController.getBoxes')
   Route.get('/boxes/export', 'BoxController.exportBoxes')
   Route.get('/boxes/dispatchs', 'BoxController.statsDispatchs')

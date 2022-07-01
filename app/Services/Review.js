@@ -226,4 +226,15 @@ Review.getUserBoxReview = async ({ userId, boxId }) => {
   return { reviewExist: !!reviewExist }
 }
 
+Review.getStats = async () => {
+  const stats = await DB('notification')
+    .select('type', DB.raw('COUNT(*) as count'))
+    .where('type', 'review_request')
+    .orWhere('type', 'box_review_request')
+    .groupBy('type')
+    .all()
+
+  return stats
+}
+
 module.exports = Review

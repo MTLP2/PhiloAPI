@@ -854,6 +854,10 @@ class AdminController {
     return Review.delete({ id: params.rid })
   }
 
+  getReviewsStats ({ params }) {
+    return Review.getStats(params)
+  }
+
   getProjectProductions ({ params }) {
     return Admin.getProjectProductions(params)
   }
