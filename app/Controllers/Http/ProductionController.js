@@ -130,6 +130,10 @@ class ProductionController {
     return Production.saveComment(params)
   }
 
+  getProjectProductions ({ params }) {
+    return Production.getProjectProductions(params)
+  }
+
   async extract ({ params, user, response }) {
     if (!await Utils.isTeam(user.id)) {
       return response.status(401).json({
@@ -144,6 +148,18 @@ class ProductionController {
   async downloadInvoiceCo ({ params, user }) {
     params.user = user
     return Production.downloadInvoiceCo(params)
+  }
+
+  storeCosts ({ params }) {
+    return Production.storeCosts(params)
+  }
+
+  deleteCost ({ params }) {
+    return Production.deleteCost(params)
+  }
+
+  downloadInvoiceCost ({ params }) {
+    return Production.downloadInvoiceCost(params)
   }
 }
 

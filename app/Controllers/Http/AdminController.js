@@ -23,7 +23,6 @@ const Daudin = use('App/Services/Daudin')
 const Artwork = use('App/Services/Artwork')
 const Stats = use('App/Services/Stats')
 const MailJet = use('App/Services/MailJet')
-const Vod = use('App/Services/Vod')
 const Review = use('App/Services/Review')
 const ApiError = use('App/ApiError')
 const ProjectService = use('App/Services/Project')
@@ -303,20 +302,8 @@ class AdminController {
     return ProjectService.duplicate(params.id)
   }
 
-  storeCosts ({ params }) {
-    return Admin.storeCosts(params)
-  }
-
   async removePicture ({ params }) {
     return Admin.removePictureProject(params.id)
-  }
-
-  deleteCost ({ params }) {
-    return Admin.deleteCost(params)
-  }
-
-  downloadInvoiceCost ({ params }) {
-    return Admin.downloadInvoiceCost(params)
   }
 
   async newsletterUnsub ({ params }) {
@@ -856,10 +843,6 @@ class AdminController {
 
   getReviewsStats ({ params }) {
     return Review.getStats(params)
-  }
-
-  getProjectProductions ({ params }) {
-    return Admin.getProjectProductions(params)
   }
 
   exportOrdersCommercial ({ params }) {
