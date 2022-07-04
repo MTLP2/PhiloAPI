@@ -1678,8 +1678,8 @@ class Production {
 
   static async downloadInvoiceCo (params) {
     const prod = await DB('production')
-      .select('production_dispatch.*', 'production.currency', 'production.final_price', 'production.quantity_pressed',
-        'project.artist_name', 'project.name')
+      .select('production_dispatch.*', 'production.currency', 'production.final_price', 'production.form_price',
+        'production.quantity_pressed', 'project.artist_name', 'project.name')
       .join('production_dispatch', 'production_dispatch.production_id', 'production.id')
       .where('production_dispatch.id', params.dispatch_id)
       .join('project', 'project.id', 'production.project_id')
@@ -1709,7 +1709,7 @@ class Production {
     }
     invoice.customer = prod.customer
     invoice.customer.country = country.name
-    const unitPrice = Utils.round(prod.final_price / prod.quantity_pressed)
+    const unitPrice = Utils.round((params.price === 'final_price' ? prod.final_price : prod.form_price) / prod.quantity_pressed)
     invoice.sub_total = Utils.round(unitPrice * prod.quantity)
     invoice.tax = 0
     invoice.total = invoice.sub_total
