@@ -16,8 +16,17 @@ class Intercom {
       .update(JSON.stringify(request.body))
       .digest('hex')
 
+    // const boxSignature = crypto
+    //   .createHmac('sha256', Env.get('INTERCOM_BOX_CLIENT'))
+    //   .update(JSON.stringify(request.body))
+    //   .digest('hex')
+
     // Check if headers contains x-body-signature (comes from Intercom) and if signature checks out with one of our two apps
-    if (!headers['x-body-signature'] || (headers['x-body-signature'] !== accountSignature && headers['x-body-signature'] !== orderSignature)) {
+    if (!headers['x-body-signature'] || (
+      headers['x-body-signature'] !== accountSignature &&
+      headers['x-body-signature'] !== orderSignature
+      // headers['x-body-signature'] !== boxSignature
+    )) {
       return response.status(401).json({
         error: 'Unauthorized'
       })

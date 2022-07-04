@@ -1208,6 +1208,11 @@ Project.recommendations = async (params) => {
   return reco.concat(refs0).concat(refs1).concat(refs2).slice(0, 6)
 }
 
+Project.checkDownloadCode = async ({ projectId, userId }) => {
+  const code = await DB('download').where('project_id', projectId).where('user_id', userId).first()
+  return { codeIsUsed: !!code }
+}
+
 Project.generateDownload = async (params) => {
   let found = true
   let code = null

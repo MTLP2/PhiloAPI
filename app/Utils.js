@@ -1046,4 +1046,25 @@ Utils.getTransporterLink = (shop) => {
   }
 }
 
+Utils.getOriginFromTransporter = (transporter) => {
+  switch (transporter) {
+    case 'daudin': case 'pias': case 'diggers': case 'sna':
+      return 'fr'
+    case 'whiplash': case 'lita':
+      return 'us'
+    case 'whiplash_uk': case 'rom':
+      return 'uk'
+    case 'rom_de':
+      return 'de'
+    case 'altafonte':
+      return 'es'
+    case 'shipehype':
+      return 'cs'
+    case 'mgm':
+      return 'au'
+    default:
+      return ''
+  }
+}
+
 module.exports = Utils

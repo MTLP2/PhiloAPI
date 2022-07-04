@@ -1,6 +1,23 @@
 const Env = use('Env')
-const { replyWithOrderList, replyWithOrderCard, replyWithAccountInit, replyWithForgotConfirmation, replyWithInputFlow, replyWithErrorCard } = use('App/Services/Intercom')
-const Order = use('App/Services/Order')
+const {
+  replyWithOrderInit,
+  replyWithOrderList,
+  replyWithOrderCard,
+  replyWithAccountInit,
+  replyWithForgotConfirmation,
+  replyWithInputFlow,
+  replyWithErrorCard,
+  replyWithCheckAddressCard,
+  replyWithDownloadList,
+  replyWithDownloadCard,
+  replyWithBoxList,
+  replyWithBoxCard,
+  replyWithBoxHelp,
+  replyWithBoxRenew
+} = use('App/Services/Intercom')
+const { getOrders } = use('App/Services/Order')
+const { getBoxes } = use('App/Services/User')
+const { getGenres } = use('App/Services/App')
 
 // client boot for Intercom
 const { Client } = require('intercom-client')
@@ -69,7 +86,7 @@ class IntercomController {
   // * INIT CANVAS
   async initOrder ({ request, response }) {
     try {
-    // Get language from app config (defaults to EN)
+      // Get language from app config (defaults to EN)
       const lang = request.body.card_creation_options.language || 'EN'
 
       // Conversation ID
@@ -116,14 +133,25 @@ class IntercomController {
 
       const { external_id: diggersUserId } = await client.contacts.find({ id: intercomUserId })
 
-      // Getting orders from user
-      const { orders } = await Order.getOrders({ user_id: diggersUserId })
+      // Getting data from user.
+      const { orders } = await getOrders({ user_id: diggersUserId })
+      const boxes = await getBoxes({ user_id: diggersUserId })
+      const genres = await getGenres()
 
-      // * Launch app loop
-      await replyWithOrderList(orders, diggersUserId, response, 'first-call', lang)
+      // These data will always be passed to stored_data inside responses from and to the canvas, in order to avoid a new DB call on each canvas interaction/refresh.
+      const botData = {
+        orders,
+        boxes,
+        diggersUserId,
+        genres
+      }
+
+      const canvas = await replyWithOrderInit({ botData, lang })
+      return response.json(canvas)
     } catch (err) {
       console.log('err in init', err)
-      return replyWithErrorCard(response, 'EN')
+      const canvas = await replyWithErrorCard({ lang: 'EN' })
+      return response.json(canvas)
     }
   }
 
@@ -132,28 +160,79 @@ class IntercomController {
     try {
       const currentAction = request.body.component_id
 
-      // Retrieve  Diggers User ID + language
-      const { lang, orders, diggersUserId } = request.body.current_canvas.stored_data
+      // Retrieve  Diggers User ID + language from stored_data (in )
+      const { lang, botData } = request.body.current_canvas.stored_data
 
-      // Retrieve language from stored data
-
-      // * Handle "only sent orders" | "only current orders" and "all orders" buttons
-      // * Handle user click on 'See other orders' whilst on the orderCard, loop through orders selection
-      const actionsWithOrderList = ['sent-orders', 'current-orders', 'all-orders', 'see-other-orders']
-      if (actionsWithOrderList.includes(currentAction)) {
-        await replyWithOrderList(orders, diggersUserId, response, currentAction, lang)
+      // Handle back to main menu action
+      if (currentAction === 'main-order-menu') {
+        const canvas = await replyWithOrderInit({ lang, botData })
+        return response.json(canvas)
       }
 
-      // * Handle user click on an order button, display this specific order
+      // Handle "download code" list action
+      if (currentAction === 'download-code') {
+        const canvas = await replyWithDownloadList({ lang, botData })
+        return response.json(canvas)
+      }
+
+      // Handle "download code" single item action
+      if (currentAction.includes('redeem-download')) {
+        const itemId = currentAction.split('-')[2]
+        const canvas = await replyWithDownloadCard({ itemId, lang, botData })
+        return response.json(canvas)
+      }
+
+      //  Handle "only sent orders" | "only current orders" and "all orders" buttons
+      //  Handle user click on 'See other orders' whilst on the orderCard, loop through orders selection
+      const actionsWithOrderList = ['sent-orders', 'current-orders', 'all-orders', 'see-other-orders']
+      if (actionsWithOrderList.includes(currentAction)) {
+        const canvas = await replyWithOrderList({ botData, currentAction, lang })
+        return response.json(canvas)
+      }
+
+      // Handle user click on an order button, display this specific order
       if (currentAction.includes('order-card')) {
         // Splitting the component_id to get the order id
         const orderShopId = +currentAction.split('-')[2]
+        const canvas = await replyWithOrderCard({ orderShopId, botData, lang })
+        return response.json(canvas)
+      }
 
-        await replyWithOrderCard(orderShopId, orders, diggersUserId, response, lang)
+      // Handle user click on 'Resend check address' button
+      if (currentAction === 'resend-check-address') {
+        const canvas = await replyWithCheckAddressCard({ botData, lang })
+        return response.json(canvas)
+      }
+
+      // Handle boxes list
+      if (currentAction === 'all-boxes') {
+        const canvas = await replyWithBoxList({ botData, lang })
+        return response.json(canvas)
+      }
+
+      // Handle box card
+      if (currentAction.includes('box-card')) {
+        const boxId = +currentAction.split('-')[2]
+        const canvas = await replyWithBoxCard({ boxId, botData, lang })
+        return response.json(canvas)
+      }
+
+      // Handle box help
+      if (currentAction.includes('box-help')) {
+        const boxId = botData.boxId
+        const canvas = await replyWithBoxHelp({ boxId, botData, lang })
+        return response.json(canvas)
+      }
+
+      // Handle box renew
+      if (currentAction === 'box-renew') {
+        const canvas = await replyWithBoxRenew({ botData, lang })
+        return response.json(canvas)
       }
     } catch (err) {
-      console.log('err in submit', err)
-      return replyWithErrorCard(response, 'EN')
+      console.log('🚀 ~ file: IntercomController.js ~ line 177 ~ IntercomController ~ submitOrder ~ err', err)
+      const canvas = await replyWithErrorCard({ lang: 'EN' })
+      return response.json(canvas)
     }
   }
 
@@ -163,7 +242,8 @@ class IntercomController {
     try {
       return await replyWithAccountInit(request, response)
     } catch (err) {
-      return replyWithErrorCard(response, 'EN')
+      const canvas = await replyWithErrorCard({ lang: 'EN' })
+      return response.json(canvas)
     }
   }
 
@@ -183,9 +263,10 @@ class IntercomController {
       }
 
       // Else, process with the input flow (ask input, check if valid, check if exists, respond accordingly)
-      await replyWithInputFlow(email, response, lang, failCount)
+      await replyWithInputFlow({ email, response, lang, failCount })
     } catch (err) {
-      return replyWithErrorCard(response, 'EN')
+      const canvas = await replyWithErrorCard({ lang: 'EN' })
+      return response.json(canvas)
     }
   }
 }
