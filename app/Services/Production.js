@@ -375,8 +375,6 @@ class Production {
     item.quote_com = params.quote_com || null
     item.form_price = params.form_price || null
     item.form_com = params.form_com || null
-    item.final_price = params.final_price || null
-    item.shipping_final = params.shipping_final || null
     item.shipping_com = params.shipping_com || null
     item.shipping_estimation = params.shipping_estimation || null
     item.rest_pay_preprod = params.rest_pay_preprod || null
@@ -1615,16 +1613,16 @@ class Production {
   }
 
   static async generateProd (params) {
-    const costs = await DB('cost')
-      .select('cost.*', 'project.artist_name', 'project.name as project', 'vod.goal', 'production.quantity',
+    const costs = await DB('production_cost')
+      .select('production_cost.*', 'project.artist_name', 'project.name as project', 'vod.goal', 'production.quantity',
         'production.id as production_id')
       .join('vod', 'vod.project_id', 'cost.project_id')
       .join('project', 'vod.project_id', 'project.id')
-      .leftJoin('production', 'production.project_id', 'cost.project_id')
-      .whereNull('cost.production_id')
+      .leftJoin('production', 'production.project_id', 'production_cost.project_id')
+      .whereNull('production_cost.production_id')
       .whereNotExists(query => {
         query.from('production')
-          .whereRaw('production.project_id = cost.project_id')
+          .whereRaw('production.project_id = production_cost.project_id')
       })
       .where('cost.created_at', '>', '2022-01-01')
       .all()
@@ -1748,6 +1746,84 @@ class Production {
 
     const pdf = await Utils.toPdf(html)
     return pdf
+  }
+
+  static async storeCosts (params) {
+    let item = DB('production_cost')
+    if (params.id) {
+      item = await DB('production_cost').find(params.id)
+    } else {
+      item.created_at = Utils.date()
+    }
+
+    item.project_id = params.project_id
+    item.production_id = params.production_id
+    item.name = params.name
+    item.invoice_number = params.invoice_number
+    item.name = params.name
+    item.date = params.date
+    item.date_due = params.date_due || null
+    item.date_payment = params.date_payment || null
+    item.quote = params.quote || null
+    item.cost_real = params.cost_real
+    item.cost_real_ttc = params.cost_real_ttc
+    item.cost_invoiced = params.cost_invoiced
+    item.margin = params.margin
+    item.in_final_price = params.in_final_price
+    item.updated_at = Utils.date()
+
+    if (params.invoice) {
+      if (item.invoice) {
+        Storage.delete(item.invoice, true)
+      }
+      const fileName = `invoices/${Utils.uuid()}.${params.invoice.name.split('.').pop()}`
+      item.invoice = fileName
+      Storage.upload(
+        fileName,
+        Buffer.from(params.invoice.data, 'base64'),
+        true
+      )
+    }
+
+    await item.save()
+
+    await Production.calculateFinalPrice(item.production_id)
+
+    return true
+  }
+
+  static async deleteCost (params) {
+    await DB('production_cost')
+      .where('id', params.id)
+      .delete()
+
+    return true
+  }
+
+  static async downloadInvoiceCost (params) {
+    const item = await DB('production_cost')
+      .find(params.cid)
+
+    return Storage.get(item.invoice, true)
+  }
+
+  static async calculateFinalPrice (id) {
+    const total = await DB('production_cost')
+      .select(DB.raw('SUM(cost_real) as total'))
+      .where('production_id', id)
+      .where('in_final_price', true)
+      .first()
+
+    DB('production')
+      .where('id', id)
+      .update({
+        final_price: total.total
+      })
+  }
+
+  static async getProjectProductions (params) {
+    const { data: productions } = await Production.all({ project_id: params.id, user: { is_team: false } })
+    return productions
   }
 }
 
