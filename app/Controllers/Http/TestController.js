@@ -4,7 +4,7 @@ const Utils = use('App/Utils')
 const Vod = use('App/Services/Vod')
 const Stock = use('App/Services/Stock')
 const Production = use('App/Services/Production')
-const Notification = use('App/Services/Notification')
+const Admin = use('App/Services/Admin')
 const App = use('App/Services/App')
 
 class TestController {

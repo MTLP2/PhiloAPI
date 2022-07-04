@@ -376,14 +376,16 @@ class Stock {
   }
 
   static async setStocksProject (params) {
-    for (const stock of params.stocks) {
-      Stock.save({
-        project_id: params.id,
-        type: stock.type,
-        quantity: stock.quantity,
-        is_distrib: stock.is_distrib,
-        user_id: params.user_id
-      })
+    if (params.stocks) {
+      for (const stock of params.stocks) {
+        Stock.save({
+          project_id: params.id,
+          type: stock.type,
+          quantity: stock.quantity,
+          is_distrib: stock.is_distrib,
+          user_id: params.user_id
+        })
+      }
     }
 
     if (params.type && params.quantity) {

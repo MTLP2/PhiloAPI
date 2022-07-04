@@ -79,6 +79,13 @@ Admin.getProjects = async (params) => {
       .orderBy('project.id', 'desc')
   }
 
+  if (params.start) {
+    projects.where('vod.created_at', '>=', params.start)
+  }
+  if (params.end) {
+    projects.where('vod.created_at', '<=', `${params.end} 23:59`)
+  }
+
   params.query = projects
   return Utils.getRows(params)
 }
@@ -1720,9 +1727,13 @@ Admin.exportReviews = async (params) => {
     { name: 'User ID', index: 'user_id' },
     { name: 'Project ID', index: 'project_id' },
     { name: 'Project Name', index: 'name' },
+    { name: 'Box ID', index: 'box_id' },
     { name: 'Status', index: 'is_visible' },
+    { name: 'Complaint Status', index: 'complaint_status' },
     { name: 'Rate', index: 'rate' },
+    { name: 'Starred', index: 'is_starred' },
     { name: 'Title', index: 'title' },
+    { name: 'Message', index: 'message' },
     { name: 'Date', index: 'created_at' },
     { name: 'Lang', index: 'lang' }
   ], data.data)
@@ -3662,6 +3673,24 @@ Admin.exportProjects = async () => {
   }
 
   return workbook.xlsx.writeBuffer()
+}
+
+Admin.exportRawProjects = async (params) => {
+  const projects = await Admin.getProjects({ start: params.start, end: params.end, size: 0 })
+
+  return Utils.arrayToCsv([
+    { index: 'id', name: 'ID' },
+    { index: 'type', name: 'Type' },
+    { index: 'step', name: 'Step' },
+    { index: 'count', name: 'Count' },
+    { index: 'created_at', name: 'Date' },
+    { index: 'start', name: 'Start' },
+    { index: 'name', name: 'Project' },
+    { index: 'artist_name', name: 'Artist Name' },
+    { index: 'status', name: 'Status' },
+    { index: 'date_shipping', name: 'Date Shipping' },
+    { index: 'country_id', name: 'Country ID' }
+  ], projects.data)
 }
 
 Admin.exportCatalog = async (params) => {

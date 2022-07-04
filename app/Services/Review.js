@@ -63,27 +63,32 @@ Review.all = async (params) => {
   const selects = [
     'r.*', 'u.id as user_id', 'u.country_id', 'u.picture as user_picture', 'u.name as user_name'
   ]
-  let join
+  const joins = []
 
   // Selects and join for projects
-  if (params.type === 'project') {
+  if (!params.type || params.type === 'project') {
     selects.push('p.id as project_id')
     selects.push('p.artist_name')
     selects.push('p.name')
-    join = ['project as p', 'p.id', 'r.project_id']
+    joins.push({ elements: ['project as p', 'p.id', 'r.project_id'] })
   }
 
-  // Selects and join for box
-  if (params.type === 'box') {
+  // Selects and joins for box
+  if (!params.type || params.type === 'box') {
     selects.push('b.id as box_id')
-    join = ['box as b', 'b.id', 'r.box_id']
+    joins.push({ elements: ['box as b', 'b.id', 'r.box_id'] })
   }
 
   params.query = DB('review as r')
     .select(...selects)
     .join('user as u', 'u.id', 'r.user_id')
-    .join(...join)
-    .orderBy('r.created_at', 'desc')
+
+  for (const join of joins) {
+    if (!params.type) params.query.leftJoin(...join.elements)
+    else params.query.join(...join.elements)
+  }
+
+  params.query.orderBy('r.created_at', 'desc')
 
   if (params.start) {
     params.query.where('r.created_at', '>=', params.start)
@@ -91,6 +96,7 @@ Review.all = async (params) => {
   if (params.end) {
     params.query.where('r.created_at', '<=', `${params.end} 23:59`)
   }
+
   return Utils.getRows(params)
 }
 
@@ -218,6 +224,17 @@ Review.getUserBoxReview = async ({ userId, boxId }) => {
     .first()
 
   return { reviewExist: !!reviewExist }
+}
+
+Review.getStats = async () => {
+  const stats = await DB('notification')
+    .select('type', DB.raw('COUNT(*) as count'))
+    .where('type', 'review_request')
+    .orWhere('type', 'box_review_request')
+    .groupBy('type')
+    .all()
+
+  return stats
 }
 
 module.exports = Review
