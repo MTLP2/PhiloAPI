@@ -145,12 +145,12 @@ class Stats {
 
     const costs = DB()
       .select(
-        'cost.*',
+        'production_cost.*',
         'vod.is_licence',
         DB.raw(`DATE_FORMAT(concat(date_due, '-01'), '${format}') as date`)
       )
-      .from('cost')
-      .join('vod', 'vod.project_id', 'cost.project_id')
+      .from('production_cost')
+      .join('vod', 'vod.project_id', 'production_cost.project_id')
       .where(DB.raw(`DATE_FORMAT(concat(date_due, '-01'), '%Y-%m-%d') BETWEEN '${params.start}' AND '${params.end}'`))
       .all()
     names.push('costs')
@@ -917,12 +917,12 @@ class Stats {
 
     const costs = DB()
       .select(
-        'cost.*',
+        'production_cost.*',
         'vod.is_licence',
         DB.raw(`DATE_FORMAT(concat(date_due, '-01'), '${format}') as date`)
       )
-      .from('cost')
-      .join('vod', 'vod.project_id', 'cost.project_id')
+      .from('production_cost')
+      .join('vod', 'vod.project_id', 'production_cost.project_id')
       .where(DB.raw(`DATE_FORMAT(concat(date_due, '-01'), '%Y-%m-%d') BETWEEN '${params.start}' AND '${params.end}'`))
       .all()
     names.push('costs')
