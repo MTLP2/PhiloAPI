@@ -18,6 +18,7 @@ Customer.save = (params) => {
     email_paypal: (params.email_paypal) ? params.email_paypal : null,
     birthday: (params.birthday) ? new Date(params.birthday) : null,
     ssn_last_4: (params.ssn_last_4) ? params.ssn_last_4 : null,
+    email: (params.email) ? params.email : null,
     personal_id_number: (params.personal_id_number) ? params.personal_id_number : null,
     vat_rate: (params.vat_rate) ? params.vat_rate : null,
     tax_intra: (params.tax_intra) ? params.tax_intra : null,
