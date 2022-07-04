@@ -127,6 +127,7 @@ const translate = (key, lang = 'EN', payload) => {
 
     // Box
     box_header: lang === 'EN' ? '📦 On which box do you need more details?' : '📦 À propos de quelle box souhaitez-vous obtenir des informations ?',
+    no_boxes: lang === 'EN' ? '🤔 We couldn\'t find any box linked to your account.' : '🤔 Nous n’avons trouvé aucune box liée à votre compte.',
     box_status: lang === 'EN' ? 'Status' : 'Statut',
     box_type_one: lang === 'EN' ? 'One' : 'One',
     box_type_two: lang === 'EN' ? 'Two' : 'Two',
@@ -1329,6 +1330,27 @@ const generateBoxCard = ({ box, lang, genres }) => {
 }
 
 const replyWithBoxList = async ({ lang, botData }) => {
+  // If no boxes, inform the user
+  if (!botData.boxes.length) {
+    const canvas = {
+      canvas: {
+        content: {
+          components: [
+            {
+              type: 'text',
+              text: translate('no_boxes', lang),
+              style: 'header'
+            }
+          ]
+        },
+        stored_data: { lang, botData }
+      }
+    }
+
+    return addBackMenu({ canvas, lang })
+  }
+
+  // If there are boxes, generate the list
   const boxListItems = generateBoxListItems({ lang, boxes: botData.boxes })
 
   const canvas = {
