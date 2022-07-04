@@ -1750,6 +1750,55 @@ class Production {
     return pdf
   }
 
+  static async packingList (params) {
+    const prod = await DB('production')
+      .select('production_dispatch.*', 'production.currency', 'production.final_price', 'production.quantity_pressed',
+        'project.artist_name', 'project.name', 'vod.barcode')
+      .join('production_dispatch', 'production_dispatch.production_id', 'production.id')
+      .where('production_dispatch.id', params.dispatch_id)
+      .join('project', 'project.id', 'production.project_id')
+      .join('vod', 'vod.project_id', 'production.project_id')
+      .belongsTo('customer')
+      .first()
+
+    const workbook = new Excel.Workbook()
+    const worksheet = workbook.addWorksheet()
+
+    const dispatchs = [
+      {
+        sender: prod.sender,
+        title: `${prod.artist_name} - ${prod.name}`,
+        quantity: prod.quantity,
+        barcode: prod.barcode,
+        contact: `${prod.customer.firstname} ${prod.customer.lastname}`,
+        email: prod.customer.email,
+        phone: prod.customer.phone,
+        address: prod.customer.address,
+        postal_code: prod.customer.zip_code,
+        city: prod.customer.city,
+        country: prod.customer.country_id
+      }
+    ]
+
+    worksheet.columns = [
+      { header: 'Sender', key: 'sender', width: 15 },
+      { header: 'Title product', key: 'title', width: 30 },
+      { header: 'Quantity', key: 'quantity', width: 10 },
+      { header: 'EAN / SKU Code', key: 'barcode', width: 15 },
+      { header: 'Contact', key: 'contact', width: 15 },
+      { header: 'Mail', key: 'email', width: 15 },
+      { header: 'Phone', key: 'phone', width: 15 },
+      { header: 'Address', key: 'address', width: 15 },
+      { header: 'Postal code', key: 'postal_code', width: 15 },
+      { header: 'City', key: 'city', width: 15 },
+      { header: 'Country', key: 'country', width: 15 }
+    ]
+
+    worksheet.addRows(dispatchs)
+
+    return workbook.xlsx.writeBuffer()
+  }
+
   static async storeCosts (params) {
     let item = DB('production_cost')
     if (params.id) {

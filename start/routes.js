@@ -168,6 +168,7 @@ Route.group(() => {
   Route.put('/productions/:id/dispatchs', 'ProductionController.saveDispatchUser')
   Route.get('/productions/:id/dispatchs/:did/file', 'ProductionController.fileDispatch')
   Route.get('/productions/:id/invoice-co', 'ProductionController.downloadInvoiceCo')
+  Route.get('/productions/:id/packing-list', 'ProductionController.packingList')
   Route.post('/productions/:id/lines', 'ProductionController.saveLines')
   Route.delete('/productions/:id/dispatchs/:did', 'ProductionController.removeDispatch')
 }).middleware('auth')

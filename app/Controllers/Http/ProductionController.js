@@ -161,6 +161,10 @@ class ProductionController {
   downloadInvoiceCost ({ params }) {
     return Production.downloadInvoiceCost(params)
   }
+
+  packingList ({ params }) {
+    return Production.packingList(params)
+  }
 }
 
 module.exports = ProductionController
