@@ -1675,6 +1675,80 @@ class Production {
       { name: 'Total', index: 'cost_invoiced' }
     ], costs)
   }
+
+  static async downloadInvoiceCo (params) {
+    const prod = await DB('production')
+      .select('production_dispatch.*', 'production.currency', 'production.final_price', 'production.quantity_pressed',
+        'project.artist_name', 'project.name')
+      .join('production_dispatch', 'production_dispatch.production_id', 'production.id')
+      .where('production_dispatch.id', params.dispatch_id)
+      .join('project', 'project.id', 'production.project_id')
+      .belongsTo('customer')
+      .first()
+
+    const country = await DB('country')
+      .where('id', prod.customer.country_id)
+      .where('lang', params.lang)
+      .first()
+
+    const invoice = {}
+
+    switch (prod.currency) {
+      case 'EUR':
+        invoice.currency = '€'
+        break
+      case 'USD':
+        invoice.currency = '$'
+        break
+      case 'GBP':
+        invoice.currency = '£'
+        break
+      case 'AUD':
+        invoice.currency = '$A'
+        break
+    }
+    invoice.customer = prod.customer
+    invoice.customer.country = country.name
+    const unitPrice = Utils.round(prod.final_price / prod.quantity_pressed)
+    invoice.sub_total = Utils.round(unitPrice * prod.quantity)
+    invoice.tax = 0
+    invoice.total = invoice.sub_total
+
+    invoice.lines = [
+      { name: `${prod.artist_name} - ${prod.name}`, price: unitPrice, quantity: prod.quantity, total: invoice.sub_total }
+    ]
+
+    const moment = require('moment')
+    invoice.date = moment().format('YYYY-MM-DD')
+    invoice.lang = params.lang
+
+    invoice.sub_total = Utils.round(invoice.total - invoice.tax)
+
+    if (!params.invoice || !params.invoice.from) {
+      invoice.from = {
+        name: 'Diggers Factory',
+        address: '10 boulevard Arago',
+        zip_code: '75013',
+        city: 'Paris',
+        country: 'France',
+        phone: '+33 1 58 30 51 98',
+        number: 'FR 33 813648714',
+        bank: true
+      }
+    }
+
+    const html = View.render('invoice', {
+      ...invoice,
+      t: v => Antl.forLocale(params.lang).formatMessage(v)
+    })
+
+    if (params.html) {
+      return html
+    }
+
+    const pdf = await Utils.toPdf(html)
+    return pdf
+  }
 }
 
 module.exports = Production

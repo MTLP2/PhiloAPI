@@ -140,6 +140,11 @@ class ProductionController {
     params.user.is_team = await Utils.isTeam(user.id)
     return Production.extract(params)
   }
+
+  async downloadInvoiceCo ({ params, user }) {
+    params.user = user
+    return Production.downloadInvoiceCo(params)
+  }
 }
 
 module.exports = ProductionController
