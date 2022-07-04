@@ -785,6 +785,8 @@ class Production {
 
     await item.save()
 
+    await Production.calculateFinalShipping(item.production_id)
+
     return { success: true }
   }
 
@@ -1818,6 +1820,19 @@ class Production {
       .where('id', id)
       .update({
         final_price: total.total
+      })
+  }
+
+  static async calculateFinalShipping (id) {
+    const total = await DB('production_dispatch')
+      .select(DB.raw('SUM(price) as total'))
+      .where('production_id', id)
+      .first()
+
+    DB('production')
+      .where('id', id)
+      .update({
+        shipping_final: total.total
       })
   }
 
