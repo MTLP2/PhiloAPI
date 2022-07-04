@@ -2,6 +2,7 @@
   "invoice": "Facture",
   "credit_note": "Avoir",
   "number": "N° Facture",
+  "eori_number": "N° EORI",
   "order_number":"N° de Commande",
   "date": "Date",
   "tva_intra": "TVA intra",

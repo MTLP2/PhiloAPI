@@ -205,6 +205,12 @@
             <td>{{ customer.tax_intra }}</td>
           </tr>
           @endif
+          @if(customer.eori_number)
+          <tr>
+            <th>{{ t('invoice.eori_number') }}</th>
+            <td>{{ customer.eori_number }}</td>
+          </tr>
+          @endif
         </table>
       </td>
     </tr>

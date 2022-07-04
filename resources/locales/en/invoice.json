@@ -2,6 +2,7 @@
  "invoice": "Invoice",
  "credit_note": "Credit Note",
  "number": "N° Invoice",
+ "eori_number": "N° EORI",
  "order_number":"N° Order",
  "date": "Date",
  "tva_intra": "TVA intra",
