@@ -103,12 +103,12 @@ const translate = (key, lang = 'EN', payload) => {
     pickup_still_available: lang === 'EN' ? 'Hello, your order is still waiting for you at the pickup point! You only have a few days left to pick it up. Thank you!' : 'Bonjour, votre commande vous attend toujours au point relais ! Il ne vous reste que quelques jours pour aller la récupérer. Merci !',
 
     // Orders -> download codes
-    download_code_header: lang === 'EN' ? 'The following items can be redeemed as digital downloads' : 'Les éléments suivants peuvent être obtenus en tant que téléchargement numériques :',
+    download_code_header: lang === 'EN' ? 'The following projects offer tracks in digital format:' : 'Les projets suivants offrent des morceaux au format numérique :',
     redeem_download_code: lang === 'EN' ? 'Redeem download code' : 'Obtenir un code de téléchargement',
     code_download_used: lang === 'EN' ? 'This code has already been used.' : 'Ce code a déjà été utilisé.',
     code_download_helper: lang === 'EN' ? 'Please click on this link to download your project.' : 'Merci de cliquer sur ce lien pour télécharger votre projet.',
     code_download_link: lang === 'EN' ? '🔗 Download link' : '🔗 Lien de téléchargement',
-    no_downloadables: lang === 'EN' ? 'There are no downloadable items in your orders.' : 'Il n’y a pas d’éléments téléchargeables dans vos commandes.',
+    no_downloadables: lang === 'EN' ? 'The following projects don\'t offer tracks in digital format.' : 'Les projets suivants n’offrent pas les morceaux au format numérique.',
 
     // Account - Common
     account_header: lang === 'EN' ? 'Let’s try to find your account! 😊' : 'Nous allons essayer de retrouver votre compte ensemble 😊',
@@ -126,7 +126,7 @@ const translate = (key, lang = 'EN', payload) => {
     forgot_password_helper: lang === 'EN' ? 'Once you have reset your password, you can log in again.' : 'Une fois votre mot de passe réinitialisé, vous pourrez vous connecter avec votre nouveau mot de passe.',
 
     // Box
-    box_header: lang === 'EN' ? '📦 On which box do you need more details?' : '📦 Sur quelle box souhaitez-vous des informations ?',
+    box_header: lang === 'EN' ? '📦 On which box do you need more details?' : '📦 À propos de quelle box souhaitez-vous obtenir des informations ?',
     box_status: lang === 'EN' ? 'Status' : 'Statut',
     box_type_one: lang === 'EN' ? 'One' : 'One',
     box_type_two: lang === 'EN' ? 'Two' : 'Two',
@@ -136,7 +136,7 @@ const translate = (key, lang = 'EN', payload) => {
     box_period_6_months: lang === 'EN' ? '6 months' : '6 mois',
     box_period_12_months: lang === 'EN' ? '12 months' : '12 mois',
     box_period_monthly: lang === 'EN' ? 'Monthly' : 'Mensuel',
-    box_step_confirmed: lang === 'EN' ? '🟢 Confirmed' : '🟢 Confirmée',
+    box_step_confirmed: lang === 'EN' ? '🟢 Box activated' : '🟢 Box activée',
     box_step_delivered: lang === 'EN' ? '🟢 Delivered' : '🟢 Livrée',
     box_step_stopped: lang === 'EN' ? '🔴 Stopped' : '🔴 Arrêtée',
     box_step_finished: lang === 'EN' ? '🔴 Finished' : '🔴 Terminée',
@@ -149,12 +149,12 @@ const translate = (key, lang = 'EN', payload) => {
     box_city: lang === 'EN' ? 'City' : 'Ville',
     box_selection: lang === 'EN' ? 'My selection' : 'Ma sélection',
     box_actions: lang === 'EN' ? 'My actions' : 'Mes actions',
-    box_wrong_record_button: lang === 'EN' ? 'I received the wrong record' : 'J’ai reçu le mauvais disque',
+    box_wrong_record_button: lang === 'EN' ? 'I received a record I don’t want anymore' : 'J’ai reçu un disque que je souhaite retourner',
     box_incomplete_button: lang === 'EN' ? 'My box is incomplete' : 'Ma box est incomplète',
     box_damage_button: lang === 'EN' ? 'My box is damaged' : 'Ma box est endommagée',
-    box_renew_header: lang === 'EN' ? 'You can reniew this box by clicking the link below.' : 'Vous pouvez renouveler cette box en cliquant sur le lien ci-dessous.',
-    box_renew_button: lang === 'EN' ? 'I want to renew my box' : 'Je veux renouveler ma box',
-    box_help_header: lang === 'EN' ? '📝 In order to help you with this issue, please indicate below that you need some help from the customer service and type your inquery with the reference of the box ID. Our staff will come back to you soon!' : '📝 Afin de vous aider, merci d’indiquer ci-dessous que vous avez besoin d’aide du service client et tapez votre question accompagnée de votre ID de box. Notre équipe vous répondra dans les plus brefs délais !'
+    box_renew_header: lang === 'EN' ? 'You can renew this box by clicking the link below.' : 'Vous pouvez renouveler cette box en cliquant sur le lien ci-dessous.',
+    box_renew_button: lang === 'EN' ? 'I wish to renew my box' : 'Je souhaite renouveler ma box',
+    box_help_header: lang === 'EN' ? '📝 We’re sorry if you’re having issues. In order to help you, please indicate below that you need some help from the customer service and type your request with the box ID reference. We will come back to you soon!' : '📝 Nous sommes navrés d’apprendre que vous avez des difficultés. Merci d’effectuer votre demande ci-dessous et en mentionnant votre ID de box. Nous reviendrons vers vous dans les plus brefs délais !'
   }
 
   return wording[key] || key
