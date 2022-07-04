@@ -175,7 +175,7 @@ Admin.getProject = async (id) => {
     .where('project_id', id)
     .all()
 
-  const costsQuery = DB('cost')
+  const costsQuery = DB('production_cost')
     .where('project_id', id)
     .belongsTo('production')
     .all()
@@ -1076,62 +1076,6 @@ Admin.saveVod = async (params) => {
   await vod.save()
 
   return vod
-}
-
-Admin.storeCosts = async (params) => {
-  let item = DB('cost')
-  if (params.id) {
-    item = await DB('cost').find(params.id)
-  } else {
-    item.created_at = Utils.date()
-  }
-
-  item.project_id = params.project_id
-  item.production_id = params.production_id
-  item.name = params.name
-  item.invoice_number = params.invoice_number
-  item.name = params.name
-  item.date = params.date
-  item.date_due = params.date_due || null
-  item.date_payment = params.date_payment || null
-  item.quote = params.quote || null
-  item.cost_real = params.cost_real
-  item.cost_real_ttc = params.cost_real_ttc
-  item.cost_invoiced = params.cost_invoiced
-  item.margin = params.margin
-  item.updated_at = Utils.date()
-
-  if (params.invoice) {
-    if (item.invoice) {
-      Storage.delete(item.invoice, true)
-    }
-    const fileName = `invoices/${Utils.uuid()}.${params.invoice.name.split('.').pop()}`
-    item.invoice = fileName
-    Storage.upload(
-      fileName,
-      Buffer.from(params.invoice.data, 'base64'),
-      true
-    )
-  }
-
-  await item.save()
-
-  return true
-}
-
-Admin.deleteCost = async (params) => {
-  await DB('cost')
-    .where('id', params.id)
-    .delete()
-
-  return true
-}
-
-Admin.downloadInvoiceCost = async (params) => {
-  const item = await DB('cost')
-    .find(params.cid)
-
-  return Storage.get(item.invoice, true)
 }
 
 Admin.syncProjectSna = async (params) => {
@@ -4406,11 +4350,6 @@ Admin.getReviews = async (params) => {
 Admin.deleteReview = async (params) => {
   await Review.delete({ id: params.rid })
   return { success: true }
-}
-
-Admin.getProjectProductions = async (params) => {
-  const { data: productions } = await Production.all({ project_id: params.id, user: { is_team: false } })
-  return productions
 }
 
 Admin.exportOrdersCommercial = async (params) => {
