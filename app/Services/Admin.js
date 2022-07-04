@@ -1961,7 +1961,7 @@ Admin.getUsers = async (params) => {
     .select(
       'user.id',
       'user.name',
-      'email',
+      'user.email',
       'user.type',
       'is_pro',
       'confirmed',
