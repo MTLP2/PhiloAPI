@@ -1472,6 +1472,7 @@ Admin.getOrder = async (id) => {
   if (!order) {
     throw new ApiError(404)
   }
+  order.error = null
 
   order.shops = []
 
