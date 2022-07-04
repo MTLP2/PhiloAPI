@@ -21,7 +21,8 @@ Customer.save = (params) => {
     personal_id_number: (params.personal_id_number) ? params.personal_id_number : null,
     vat_rate: (params.vat_rate) ? params.vat_rate : null,
     tax_intra: (params.tax_intra) ? params.tax_intra : null,
-    registration_number: (params.registration_number) ? params.registration_number : null
+    registration_number: (params.registration_number) ? params.registration_number : null,
+    eori_number: (params.eori_number) ? params.eori_number : null
   }
 
   return DB('customer')
