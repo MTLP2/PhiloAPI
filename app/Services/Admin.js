@@ -17,7 +17,7 @@ const Storage = use('App/Services/Storage')
 const Order = use('App/Services/Order')
 const Review = use('App/Services/Review')
 const Vod = use('App/Services/Vod')
-const Production = use('App/Services/Production')
+const Stock = use('App/Services/Stock')
 const Sna = use('App/Services/Sna')
 const cio = use('App/Services/CIO')
 const Env = use('Env')
@@ -1180,6 +1180,13 @@ Admin.syncProjectSna = async (params) => {
   vod.updated_at = Utils.date()
   await vod.save()
 
+  await Stock.save({
+    project_id: vod.project_id,
+    type: 'sna',
+    quantity: -params.quantity,
+    diff: true,
+    comment: 'sync'
+  })
   await DB('order_shop')
     .whereIn('id', dispatchs.map(d => d.id))
     .update({
@@ -1272,6 +1279,14 @@ Admin.syncProjectDaudin = async (params) => {
       qty = qty + order.quantity
     }
   }
+
+  await Stock.save({
+    project_id: vod.project_id,
+    type: 'daudin',
+    quantity: -qty,
+    diff: true,
+    comment: 'sync'
+  })
 
   return qty
 }

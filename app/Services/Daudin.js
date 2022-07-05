@@ -262,7 +262,7 @@ class Daudin {
 
     const shops = await DB('order_shop')
       .select('order_shop.id', 'order_shop.order_id', 'shipping', 'shipping_type', 'order_shop.currency', 'sub_total', 'tax', 'tax_rate', 'total',
-        'email', 'address', 'customer.name as customer_name', 'firstname', 'lastname', 'user_id',
+        'user.email', 'address', 'customer.name as customer_name', 'firstname', 'lastname', 'user_id',
         'city', 'zip_code', 'ue', 'state', 'customer.country_id', 'phone', 'address_pickup', 'user.email',
         'promo_code.gift')
       .join('user', 'user.id', 'order_shop.user_id')

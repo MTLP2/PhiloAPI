@@ -266,6 +266,15 @@ Whiplash.syncProject = async (params) => {
       })
     }
   }
+
+  await Stock.save({
+    project_id: params.project_id,
+    type: params.type,
+    quantity: -count,
+    diff: true,
+    comment: 'sync'
+  })
+
   return count
 }
 
