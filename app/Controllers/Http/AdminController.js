@@ -852,6 +852,10 @@ class AdminController {
   exportProjectsBox ({ params }) {
     return Admin.exportProjectsBox(params)
   }
+
+  getCustomerByOrderShopId ({ params }) {
+    return Customer.getByOrderShopId({ orderShopId: params.id })
+  }
 }
 
 module.exports = AdminController
