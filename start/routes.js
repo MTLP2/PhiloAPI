@@ -82,6 +82,8 @@ Route.group(() => {
   Route.get('/blog', 'BlogController.all')
   Route.get('/blog/:id', 'BlogController.find')
 
+  Route.get('/shops/:id', 'ShopController.find')
+
   Route.post('projects/check-code', 'ProjectsController.checkCode')
   Route.post('/projects/download', 'ProjectsController.download')
   Route.get('/projects', 'ProjectsController.getProjects')
