@@ -155,7 +155,7 @@ const translate = (key, lang = 'EN', payload) => {
     box_damage_button: lang === 'EN' ? 'My box is damaged' : 'Ma box est endommagée',
     box_renew_header: lang === 'EN' ? 'You can renew this box by clicking the link below.' : 'Vous pouvez renouveler cette box en cliquant sur le lien ci-dessous.',
     box_renew_button: lang === 'EN' ? 'I wish to renew my box' : 'Je souhaite renouveler ma box',
-    box_help_header: lang === 'EN' ? '📝 We’re sorry if you’re having issues. In order to help you, please indicate below that you need some help from the customer service and type your request with the box ID reference. We will come back to you soon!' : '📝 Nous sommes navrés d’apprendre que vous avez des difficultés. Merci d’effectuer votre demande ci-dessous et en mentionnant votre ID de box. Nous reviendrons vers vous dans les plus brefs délais !'
+    box_help_header: lang === 'EN' ? '📝 We’re sorry if you’re having issues with your Box. In order to help you, please contact us by clicking on “I wish to talk to the customer support” button below and type your request with the box ID reference. We will come back to you soon!' : '📝 Nous sommes navrés d’apprendre que vous avez des difficultés. Merci de cliquer sur “J’ai besoin d’échanger avec le service client” si dessous et effectuez votre demande en mentionnant votre ID de box. Nous reviendrons vers vous dans les plus brefs délais !'
   }
 
   return wording[key] || key
