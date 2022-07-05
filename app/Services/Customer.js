@@ -39,4 +39,12 @@ Customer.toAddress = (c) =>
   ${c.country}${c.state ? ` - ${c.state}` : ''}
 `
 
+Customer.getByOrderShopId = async ({ orderShopId }) => {
+  return DB('order_shop')
+    .select('customer.*')
+    .join('customer', 'customer.id', 'order_shop.customer_id')
+    .where('order_shop.id', orderShopId)
+    .first()
+}
+
 module.exports = Customer

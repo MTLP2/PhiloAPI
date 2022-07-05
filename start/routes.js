@@ -294,6 +294,7 @@ Route.group(() => {
   Route.post('/orders/:id/pickup-change', 'AdminController.pickupMustChange')
   Route.delete('/orders/:id/refund', 'AdminController.refundOrderShop')
   Route.delete('/orders/:id', 'AdminController.cancelOrderShop')
+  Route.get('/orders/:id/customer', 'AdminController.getCustomerByOrderShopId')
   Route.get('/feedbacks', 'AdminController.getFeedbacks')
   Route.get('/feedbacks/export', 'AdminController.exportFeedbacks')
   Route.get('/reviews/projects', 'AdminController.getProjectsReviews')
