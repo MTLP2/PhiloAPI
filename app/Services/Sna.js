@@ -11,7 +11,7 @@ class Sna {
 
       for (const order of orders) {
         const pickup = order.address_pickup ? JSON.parse(order.address_pickup) : null
-        const address = order.address.match(/.{1,35}(\s|$)/g)
+        const address = order.address.match(/.{1,30}(\s|$)/g)
 
         const data = {
           customerOrderNumber: process.env.NODE_ENV !== 'production'
