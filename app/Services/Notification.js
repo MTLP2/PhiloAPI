@@ -129,7 +129,6 @@ Notification.email = async (params, send = true) => {
       comment: params.comment,
       address: params.address
     }
-    console.log(data.end)
     p.subject = _.template(p.subject)(data)
     data.subject = p.subject
 
@@ -524,7 +523,7 @@ Notification.template = (params) => {
             </p>
 
             <p style="padding: 0; margin: 3px;">Mot de passe oublié ? <a href="${config.app.url}/fr/forgot-password">Suivez les instructions.</a></p>
-            <p style="padding: 0; margin: 3px;">Vous pouvez vous <a href="${config.app.url}/fr/unsubscribe-newsletter?id=${params.user_id}&t=${hash}">désabonner de ces mails</a>.</p>
+            <p style="padding: 0; margin: 3px;">Vous pouvez vous <a href="${config.app.url}/fr/unsubscribe-newsletter?id=${params.to}&t=${hash}">désabonner de ces mails</a>.</p>
             <p style="padding: 0; margin: 3px;">Télécharger nos <a href="${config.app.url}/fr/terms">Conditions Générales d’Utilisation.</a></p>
             <p style="padding: 0; margin: 3px;">Diggers Factory, 10 boulevard Arago, 75013, Paris, France</p>
           </td>
@@ -550,7 +549,7 @@ Notification.template = (params) => {
           </p>
 
           <p style="padding: 0; margin: 3px;">Forgotten password ? <a href="${config.app.url}/forgot-password">Follow the instructions.</a></p>
-          <p style="padding: 0; margin: 3px;">You can <a href="${config.app.url}/unsubscribe-newsletter?id=${params.user_id}&t=${hash}">unsubscribe from these emails </a>.</p>
+          <p style="padding: 0; margin: 3px;">You can <a href="${config.app.url}/unsubscribe-newsletter?id=${params.to}&t=${hash}">unsubscribe from these emails </a>.</p>
           <p style="padding: 0; margin: 3px;">Download our <a href="${config.app.url}/terms">Terms of Service.</a></p>
           <p style="padding: 0; margin: 3px;">Diggers Factory, 10 boulevard Arago, 75013, Paris, France</p>
         </td>
