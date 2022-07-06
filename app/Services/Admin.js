@@ -4434,12 +4434,12 @@ Admin.exportProjectsBox = async (params) => {
 
 Admin.checkProjectRest = async (params) => {
   const refund = await DB('refund')
-    .select('*')
+    .select('comment')
     .where('order_shop_id', params.osid)
     .where('reason', 'rest')
     .first()
 
-  return !!refund
+  return { refund }
 }
 
 module.exports = Admin
