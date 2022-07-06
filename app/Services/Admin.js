@@ -1798,7 +1798,6 @@ Admin.refundProject = async (id, params) => {
 }
 
 Admin.refundOrder = async (params) => {
-  console.log('🚀 ~ file: Admin.js ~ line 1789 ~ Admin.refundOrder= ~ params', params)
   const order = await DB('order').find(params.id)
   const customer = await DB('order_shop')
     .select('customer_id')
@@ -1810,16 +1809,16 @@ Admin.refundOrder = async (params) => {
     moment().subtract(6, 'months')
   )
   if (!params.only_history && order.payment_type === 'paypal' && orderOlderThanSixMonths) {
-    return { error: 'You\'re trying to refund a paypal order older than 6 months. Please tick "Create a refund history without payment" and manually refund the client.' }
+    return { error: 'You\'re trying to refund a paypal order older than 6 months. Please tick "Create a refund history without payment" in "Add refund" and manually refund the client.' }
   }
 
-  // Only history means we add a refund history without making actual payment. Choosen when a refund is made in the Sheraf.
+  // Only history means we add a refund history without making actual payment. Chosen when a refund is made in the Sheraf.
   if (params.refund_payment !== false) {
     if (!params.only_history) {
-      await Order.refundPayment({
-        ...order,
-        total: params.amount
-      })
+      // await Order.refundPayment({
+      //   ...order,
+      //   total: params.amount
+      // })
     }
 
     const { total: totalOrderShop } = await DB('order_shop').select('total').where('id', params.order_shop_id).first()
@@ -1843,6 +1842,17 @@ Admin.refundOrder = async (params) => {
           alert: 0
         })
       }
+    }
+
+    // Special notification in case of unavailable item (rest)
+    if (params.reason === 'rest') {
+      await Notification.add({
+        type: 'order_unavailable_item',
+        order_id: params.id,
+        order_shop_id: params.order_shop_id,
+        user_id: order.user_id,
+        project_id: params.project_id
+      })
     }
 
     await Order.addRefund(params)
