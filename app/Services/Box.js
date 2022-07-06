@@ -1926,6 +1926,7 @@ class Box {
       .where('is_shop', true)
       .where('stock.quantity', '>', 0)
       .where('is_box', true)
+      .where('is_delete', false)
       .orderBy(DB.raw('RAND()'))
       .all()
 
