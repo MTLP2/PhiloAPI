@@ -787,6 +787,10 @@ class AdminController {
     return Admin.exportFacebookProjects(params)
   }
 
+  checkProjectRest ({ params }) {
+    return Admin.checkProjectRest(params)
+  }
+
   getBalances ({ params }) {
     return Statement.getBalances(params)
   }
