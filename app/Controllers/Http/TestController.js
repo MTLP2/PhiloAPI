@@ -13,8 +13,6 @@ class TestController {
       return 'test'
     }
 
-    return Admin.checkProjectRest({ osid: 132602, pid: 244579 })
-
     return App.alertStock()
   }
 }
