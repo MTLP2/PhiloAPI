@@ -5,6 +5,7 @@ const Payment = use('App/Services/Payment')
 const Whiplash = use('App/Services/Whiplash')
 const Box = use('App/Services/Box')
 const Review = use('App/Services/Review')
+const Shop = use('App/Services/Shop')
 const DB = use('App/DB')
 const Utils = use('App/Utils')
 const { validateAll } = use('Validator')
@@ -80,6 +81,20 @@ class UserController {
 
   getMessagesByUser ({ user, params }) {
     return User.getMessagesByUser(user.id, params)
+  }
+
+  getShop ({ user }) {
+    return Shop.find({ user_id: user.id })
+  }
+
+  updateShop ({ params, user }) {
+    params.user_id = user
+    return Shop.update(params)
+  }
+
+  removeShopImage ({ params, user }) {
+    params.user_id = user
+    return Shop.removeImage(params)
   }
 
   async getProjects ({ user, params }) {

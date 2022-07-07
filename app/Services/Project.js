@@ -314,6 +314,11 @@ Project.findAll = async (params) => {
     params.limit = 1000
   }
 
+  if (params.shop_id) {
+    projects.join('shop_project', 'shop_project.project_id', 'p.id')
+    projects.where('shop_project.shop_id', params.shop_id)
+  }
+
   if (params.supported) {
     projects.whereIn('p.id', DB.raw(`
       SELECT project_id
