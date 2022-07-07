@@ -1388,7 +1388,7 @@ Admin.getOrders = async (params) => {
   const orders = DB('order_item as oi')
     .select('os.*', 'order.origin', 'order.promo_code', 'oi.id as item_id', 'oi.project_id', 'oi.total', 'order.payment_type', 'order.refunded',
       'os.total as os_total', 'os.is_paid', 'os.ask_cancel', 'order.total as o_total',
-      'order.transaction_id', 'oi.order_id', 'oi.order_shop_id', 'oi.quantity', 'oi.size', 'order.status',
+      'order.transaction_id', 'oi.order_id', 'oi.order_shop_id', 'oi.quantity', 'oi.price', 'oi.size', 'order.status',
       'order.payment_id', 'user.name as user_name', 'user.email as user_email', 'user.picture as user_picture',
       's.id as shop_id', 's.name as shop_name', 'order.user_agent', 'c.country_id', 'c.name', 'c.firstname', 'c.lastname',
       'c.address', 'c.zip_code', 'c.city', 'c.state', 'user.is_pro', 'project.artist_name', 'project.name as project_name',
