@@ -9,6 +9,7 @@ const Stock = use('App/Services/Stock')
 const Notification = use('App/Services/Notification')
 const Invoice = use('App/Services/Invoice')
 const Whiplash = use('App/Services/Whiplash')
+const ApiError = use('App/ApiError')
 
 Order.configurePaypal = (p) => {
   const clientId = (p !== null)
@@ -616,47 +617,52 @@ Order.refundOrderShop = async (id, type, params) => {
   return true
 }
 
-Order.refundPayment = (order) =>
-  new Promise(async (resolve, reject) => {
+Order.refundPayment = async (order) => {
+  Utils.checkParams({
+    payment_type: 'required',
+    payment_id: 'required',
+    currency: 'required',
+    total: 'required'
+  }, order)
+
+  if (order.payment_type === 'paypal') {
     try {
-      Utils.checkParams({
-        payment_type: 'required',
-        payment_id: 'required',
-        currency: 'required',
-        total: 'required'
-      }, order)
-
-      if (order.payment_type === 'paypal') {
-        Order.configurePaypal(order.payment_account)
-        paypal.sale.refund(order.transaction_id, {
-          amount: {
-            total: Number.parseFloat(order.total).toFixed(2),
-            currency: order.currency
-          }
-        }, (err, res) => {
-          if (err) reject(err)
-          resolve(res)
-        })
-      } else if (order.payment_type === 'stripe') {
-        const stripe = require('stripe')(config.stripe.client_secret)
-
-        if (order.transfert_id) {
-          await stripe.transfers.createReversal(order.transfert_id)
-        }
-        if (order.payment_id.substring(0, 2) === 'pi') {
-          const intent = await stripe.paymentIntents.retrieve(order.payment_id)
-          order.payment_id = intent.charges.data[0].id
-        }
-        const refund = await stripe.refunds.create({
-          charge: order.payment_id,
-          amount: Math.round(order.total * 100)
-        })
-        resolve(refund)
-      }
-    } catch (e) {
-      reject(e)
+      await Order.refundPayapl(order)
+    } catch (err) {
+      throw new ApiError(err.response.httpStatusCode, err.response.message)
     }
+  } else if (order.payment_type === 'stripe') {
+    const stripe = require('stripe')(config.stripe.client_secret)
+
+    if (order.transfert_id) {
+      await stripe.transfers.createReversal(order.transfert_id)
+    }
+    if (order.payment_id.substring(0, 2) === 'pi') {
+      const intent = await stripe.paymentIntents.retrieve(order.payment_id)
+      order.payment_id = intent.charges.data[0].id
+    }
+    const refund = await stripe.refunds.create({
+      charge: order.payment_id,
+      amount: Math.round(order.total * 100)
+    })
+    return refund
+  }
+}
+
+Order.refundPayapl = (order) => {
+  return new Promise((resolve, reject) => {
+    Order.configurePaypal(order.payment_account)
+    paypal.sale.refund(order.transaction_id, {
+      amount: {
+        total: Number.parseFloat(order.total).toFixed(2),
+        currency: order.currency
+      }
+    }, (err, res) => {
+      if (err) reject(err)
+      resolve(res)
+    })
   })
+}
 
 Order.allManual = async (params) => {
   params.query = DB('order_manual')
