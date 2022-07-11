@@ -212,6 +212,7 @@ Route.group(() => {
   Route.post('/event', 'UserController.event')
   Route.get('/sponsor', 'UserController.getSponsor')
   Route.post('/reviews', 'UserController.postReview')
+  Route.post('/reviews/stat', 'UserController.postReviewStat')
   Route.get('/projects/:pid/reviews', 'UserController.getProjectReviews')
 }).prefix('user').middleware(['auth'])
 

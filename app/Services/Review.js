@@ -126,6 +126,14 @@ Review.save = async (params) => {
     })
   }
 
+  // Update review stat
+  await DB('review_stat')
+    .where('user_id', params.user_id)
+    .where(params.project_id ? 'project_id' : 'box_id', params.project_id ?? params.box_id)
+    .orderBy('id', 'desc')
+    .limit(1)
+    .update('review_sent', 1)
+
   return { success: true }
 }
 
@@ -235,6 +243,17 @@ Review.getStats = async () => {
     .all()
 
   return stats
+}
+
+Review.saveStat = async (params) => {
+  await DB('review_stat').insert({
+    type: params.type,
+    project_id: params.projectId,
+    box_id: params.boxId,
+    user_id: params.userId,
+    created_at: new Date()
+  })
+  return { success: true }
 }
 
 module.exports = Review
