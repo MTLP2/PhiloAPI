@@ -378,6 +378,8 @@ Route.group(() => {
   Route.get('/promo-codes', 'AdminController.getPromoCodes')
   Route.post('/promo-codes', 'AdminController.savePromoCode')
   Route.post('/promo-codes/calculate', 'AdminController.calculatePromoCodes')
+  Route.get('/promo-codes/user/:id', 'AdminController.getPromoCodesByUser')
+  Route.post('/promo-codes/user', 'AdminController.savePromoCodesByUser')
   Route.get('/emails', 'AdminController.getEmails')
   Route.get('/emails/:id', 'AdminController.getEmail')
   Route.post('/emails', 'AdminController.saveEmail')
