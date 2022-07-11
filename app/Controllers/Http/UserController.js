@@ -245,6 +245,11 @@ class UserController {
     params.user_id = user.id
     return Review.save(params)
   }
+
+  async postReviewStat ({ user, params }) {
+    params.userId = user.id
+    return Review.saveStat(params)
+  }
 }
 
 module.exports = UserController

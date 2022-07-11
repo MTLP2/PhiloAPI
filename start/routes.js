@@ -212,6 +212,7 @@ Route.group(() => {
   Route.post('/event', 'UserController.event')
   Route.get('/sponsor', 'UserController.getSponsor')
   Route.post('/reviews', 'UserController.postReview')
+  Route.post('/reviews/stat', 'UserController.postReviewStat')
   Route.get('/projects/:pid/reviews', 'UserController.getProjectReviews')
 }).prefix('user').middleware(['auth'])
 
@@ -378,6 +379,8 @@ Route.group(() => {
   Route.get('/promo-codes', 'AdminController.getPromoCodes')
   Route.post('/promo-codes', 'AdminController.savePromoCode')
   Route.post('/promo-codes/calculate', 'AdminController.calculatePromoCodes')
+  Route.get('/promo-codes/user/:id', 'AdminController.getPromoCodesByUser')
+  Route.post('/promo-codes/user', 'AdminController.savePromoCodesByUser')
   Route.get('/emails', 'AdminController.getEmails')
   Route.get('/emails/:id', 'AdminController.getEmail')
   Route.post('/emails', 'AdminController.saveEmail')

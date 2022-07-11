@@ -637,6 +637,14 @@ class AdminController {
     return PromoCode.calculate(params)
   }
 
+  getPromoCodesByUser ({ params }) {
+    return PromoCode.getByUser({ userId: params.id })
+  }
+
+  savePromoCodesByUser ({ params }) {
+    return PromoCode.saveByUser({ codes: params.codes, userId: params.userId })
+  }
+
   getGoodies ({ params }) {
     return Goodie.all(params)
   }
