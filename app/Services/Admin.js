@@ -4105,6 +4105,26 @@ Admin.compareShipping = async (params) => {
         shipping: shipping
       }
     })
+  } if (params.transporter === 'sna') {
+    const workbook = new Excel.Workbook()
+    await workbook.xlsx.load(file)
+    const worksheet = workbook.getWorksheet(1)
+
+    worksheet.eachRow((row, rowNumber) => {
+      const id = row.getCell('C').toString()
+      const shipping = Utils.round(+row.getCell('I').toString() + +row.getCell('M').toString())
+      costs.orders.shipping += shipping
+      costs[id] = {
+        id: id,
+        category: 'order',
+        country: row.getCell('F').toString(),
+        // mode: row.getCell('G').toString(),
+        quantity: row.getCell('E').toString(),
+        weight: row.getCell('H').toString(),
+        transporter: row.getCell('G').toString(),
+        shipping: shipping
+      }
+    })
   } else if (params.transporter === 'whiplash') {
     const lines = file.toString().split('\n')
     let t = 0
@@ -4159,7 +4179,10 @@ Admin.compareShipping = async (params) => {
   for (const shop of shops) {
     const revenue = Utils.round((shop.shipping * shop.currency_rate) / (1 + shop.tax_rate))
 
-    const id = params.transporter === 'daudin' ? shop.id : shop.whiplash_id
+    const id = ['daudin', 'sna'].includes(params.transporter) ? shop.id : shop.whiplash_id
+    if (!costs[id]) {
+      continue
+    }
     costs[id].revenue = revenue
     costs.orders.revenue += revenue
     costs[id].diff = Utils.round(costs[id].revenue - costs[id].shipping)
