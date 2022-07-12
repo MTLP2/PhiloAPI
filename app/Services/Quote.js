@@ -210,16 +210,13 @@ class Quote {
       quote = this.calculateKuroneko(data, getCost)
     }
 
-    quote.transport = 0
     // Frais supplementaire + échentillon diggers
     quote.test_pressing += 35
     if (data.project) {
       if (!quote.test_pressing) {
         quote.test_pressing = 0
       }
-      quote.transport += 40 + 30
     }
-    quote.transport += Math.ceil(0.5 * data.quantity)
 
     let feeProd = 30
     if (params.fee) {
@@ -469,6 +466,16 @@ class Quote {
       quote.print_finish = getCost(341)
     }
 
+    // insert
+    if (params.insert !== 'none') {
+      quote.insert = getCost(252)
+    }
+
+    // sticker
+    if (params.sticker) {
+      quote.sticker = getCost(237)
+    }
+
     // test pressing
     quote.test_pressing = 0
     if (params.test_pressing) {
@@ -530,6 +537,16 @@ class Quote {
     // shrink
     if (params.shrink !== 0) {
       quote.shrink = getCost(27) / params.nb_vinyl
+    }
+
+    // insert
+    if (params.insert !== 'none') {
+      quote.insert = getCost(29)
+    }
+
+    // sticker
+    if (params.sticker) {
+      quote.sticker = getCost(30)
     }
 
     quote.test_pressing = 0
@@ -760,11 +777,24 @@ class Quote {
       quote.print_finish = quote.print_finish * 2
     }
 
+    // insert
+    if (params.insert !== 'none') {
+      if (params.insert === 'two_sides_printed') {
+        quote.insert = getCost(110)
+      } else if (params.insert === 'booklet_printed') {
+        quote.insert = getCost(111)
+      }
+    }
+
+    // sticker
+    if (params.sticker) {
+      quote.sticker = getCost(127)
+    }
+
     // test pressing
     quote.test_pressing = 0
     if (params.test_pressing) {
       quote.test_pressing += params.nb_vinyl * getCost(16)
-      quote.transporter = getCost(19) * 2
     }
 
     return quote

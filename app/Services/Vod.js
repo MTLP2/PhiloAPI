@@ -92,6 +92,8 @@ Vod.save = async (params, pp) => {
   vod.sleeve = params.sleeve
   vod.inner_sleeve = params.inner_sleeve
   vod.test_pressing = params.test_pressing
+  vod.insert = params.insert
+  vod.sticker = params.sticker
   vod.cutting = params.cutting
   vod.shrink = params.shrink
   vod.rpm = params.rpm
