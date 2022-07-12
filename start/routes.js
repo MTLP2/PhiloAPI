@@ -286,6 +286,7 @@ Route.group(() => {
   Route.get('/sales-export', 'AdminController.exportSales')
   Route.get('/reviews-export', 'AdminController.exportReviews')
   Route.post('/orders/:id', 'AdminController.saveOrderShop')
+  Route.post('/orders/:id/sync', 'AdminController.syncOrder')
   Route.post('/orders/:id/items', 'AdminController.saveOrderItem')
   Route.get('/orders/:id/download', 'AdminController.downloadOrder')
   Route.post('/orders/:id/refund', 'AdminController.refundOrder')

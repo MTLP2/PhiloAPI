@@ -437,15 +437,12 @@ class Daudin {
       })
     }
 
-    console.log(lines.map(l => l.id))
-    console.log(lines.length)
     const lines2 = []
     for (const line of lines) {
       if (line.country_id !== 'RU' && oo.findIndex(v => parseInt(v) === line.id) === -1) {
         lines2.push(line)
       }
     }
-    console.log(lines2.length)
     lines = lines2
 
     /**
@@ -982,7 +979,6 @@ class Daudin {
           })
       }
     }
-    console.log(trackings.length)
 
     return trackings
   }
@@ -1143,6 +1139,8 @@ class Daudin {
       if (file.size === 0) {
         continue
       }
+      const path = file.path.split('.')[0].split(' ')
+      const date = path[path.length - 1]
       const buffer = await Storage.get(file.path, true)
 
       const workbook = new Excel.Workbook()
@@ -1152,7 +1150,11 @@ class Daudin {
       worksheet.eachRow(async row => {
         const dispatch = {
           id: row.getCell('C').value,
-          shipping: row.getCell('G').value
+          shipping: Utils.round(+row.getCell('G').toString() + 0.7 + row.getCell('H').toString() * 0.38)
+        }
+        // Packing
+        if (date >= '2021-07') {
+          dispatch.shipping += 0.7
         }
         if (!dispatch.id || !dispatch.shipping || isNaN(dispatch.shipping)) {
           return
@@ -1185,7 +1187,7 @@ class Daudin {
           if (!order) {
             return
           }
-          order.shipping_cost = dispatch.shipping
+          order.shipping_cost = dispatch.shipping + dispatch.shipping * order.tax_rate
           await order.save()
         }
         dispatchs.push(dispatch)

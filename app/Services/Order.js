@@ -9,6 +9,7 @@ const Stock = use('App/Services/Stock')
 const Notification = use('App/Services/Notification')
 const Invoice = use('App/Services/Invoice')
 const Whiplash = use('App/Services/Whiplash')
+const Sna = use('App/Services/Sna')
 const ApiError = use('App/ApiError')
 
 Order.configurePaypal = (p) => {
@@ -842,6 +843,76 @@ Order.addRefund = async (params) => {
     order_shop_id: params.order_shop_id,
     created_at: Utils.date()
   })
+}
+
+/**
+ * Sync order to the transporter
+ */
+Order.sync = async (params, throwError = false) => {
+  const shop = await DB('order_shop')
+    .select('order_shop.*', 'user.email')
+    .join('user', 'user.id', 'order_shop.user_id')
+    .where('order_shop.id', params.id)
+    .first()
+
+  const items = await DB('order_item')
+    .select('order_item.quantity', 'order_item.price', 'barcode')
+    .join('vod', 'vod.project_id', 'order_item.project_id')
+    .where('order_shop_id', params.id)
+    .all()
+
+  if (shop.transporter === 'daudin') {
+    await DB('order_shop')
+      .where('id', shop.id)
+      .update({
+        sending: true
+      })
+  } else if (['whiplash', 'whiplash_uk'].includes(shop.transporter)) {
+    await Whiplash.validOrder(shop, items)
+  } else if (shop.transporter === 'sna') {
+    const customer = await DB('customer')
+      .find(shop.customer_id)
+
+    try {
+      await Sna.sync([{
+        ...customer,
+        ...shop,
+        email: shop.email,
+        items: items
+      }])
+      await DB('order_shop')
+        .where('id', shop.id)
+        .update({
+          step: 'in_preparation',
+          date_export: Utils.date()
+        })
+    } catch (err) {
+      if (throwError) {
+        throw err
+      } else {
+        await Notification.sendEmail({
+          to: 'victor@diggersfactory.com',
+          subject: `Problem with SNA : ${shop.id}`,
+          html: `<ul>
+            <li>Order Id : https://www.diggersfactory.com/sheraf/order/${shop.id}</li>
+            <li>Shop Id : ${shop.id}</li>
+            <li>Error: ${err}</li>
+          </ul>`
+        })
+      }
+    }
+  }
+
+  if (params.notification) {
+    await Notification.add({
+      type: 'my_order_in_preparation',
+      user_id: shop.user_id,
+      order_id: shop.order_id,
+      order_shop_id: shop.id
+    })
+  }
+
+  return { success: true }
 }
 
 module.exports = Order

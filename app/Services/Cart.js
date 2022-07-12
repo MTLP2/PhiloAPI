@@ -13,9 +13,8 @@ const Customer = use('App/Services/Customer')
 const DB = use('App/DB')
 const Payment = use('App/Services/Payment')
 const Invoice = use('App/Services/Invoice')
-const Whiplash = use('App/Services/Whiplash')
 const Stock = use('App/Services/Stock')
-const Sna = use('App/Services/Sna')
+const Order = use('App/Services/Order')
 const cio = use('App/Services/CIO')
 const Antl = use('Antl')
 
@@ -1618,41 +1617,8 @@ Cart.validPayment = async (orderId, transactionId, status = 'confirmed') => {
         .where('order_shop_id', shop.id)
         .all()
 
-      if (shop.type === 'shop' && ['whiplash', 'whiplash_uk'].includes(shop.transporter)) {
-        await Whiplash.validOrder(shop, user, items)
-      }
-      if (shop.type === 'shop' && ['sna'].includes(shop.transporter)) {
-        const customer = await DB('customer').find(shop.customer_id)
-        try {
-          await Sna.sync([{
-            ...customer,
-            ...shop,
-            email: user.email,
-            items: items
-          }])
-          await DB('order_shop')
-            .where('id', shop.id)
-            .update({
-              date_export: Utils.date()
-            })
-        } catch (err) {
-          await Notification.sendEmail({
-            to: 'victor@diggersfactory.com',
-            subject: `Problem with SNA : ${shop.id}`,
-            html: `<ul>
-              <li>Order Id : https://www.diggersfactory.com/sheraf/order/${shop.id}</li>
-              <li>Shop Id : ${shop.id}</li>
-              <li>Error: ${err}</li>
-            </ul>`
-          })
-        }
-      }
-      if (shop.type === 'shop' && shop.transporter === 'diggers') {
-        await Notification.sendEmail({
-          to: config.emails.send_vinyl,
-          subject: `${shop.id} : Nouvelle commande à envoyer depuis Diggers`,
-          html: `<p>OrderShopId : https://www.diggersfactory.com/sheraf/order/${shop.order_id}</p>`
-        })
+      if (shop.type === 'shop') {
+        Order.sync({ id: shop.id })
       }
 
       await Promise.all(items.map(async item => {

@@ -47,7 +47,7 @@ Whiplash.getItems = () => {
   return whiplash('items')
 }
 
-Whiplash.validOrder = async (shop, user, items) => {
+Whiplash.validOrder = async (shop, items) => {
   const customer = await DB('customer').find(shop.customer_id)
 
   const params = {
@@ -58,7 +58,7 @@ Whiplash.validOrder = async (shop, user, items) => {
     shipping_country: customer.country_id,
     shipping_zip: customer.zip_code,
     shipping_phone: customer.phone,
-    email: user.email,
+    email: shop.email,
     shop_shipping_method_text: Whiplash.getShippingMethod(customer.id, shop.shipping_type),
     order_items: []
   }

@@ -363,6 +363,10 @@ class AdminController {
     return Admin.saveOrderShop(params)
   }
 
+  syncOrder ({ params }) {
+    return Order.sync(params, true)
+  }
+
   getOrderShopInvoice ({ params }) {
     return Admin.getOrderShopInvoice(params.id)
   }
