@@ -26,10 +26,18 @@ class Stock {
   }
 
   static async save (params) {
-    let stock = await DB('stock')
-      .where('project_id', params.project_id)
-      .where('type', params.type)
-      .first()
+    let stock
+    if (params.id) {
+      stock = await DB('stock')
+        .where('id', params.id)
+        .first()
+      stock.type = params.type
+    } else {
+      stock = await DB('stock')
+        .where('project_id', params.project_id)
+        .where('type', params.type)
+        .first()
+    }
 
     if (!stock) {
       stock = DB('stock')
@@ -378,18 +386,25 @@ class Stock {
   static async setStocksProject (params) {
     if (params.stocks) {
       for (const stock of params.stocks) {
-        Stock.save({
-          project_id: params.id,
-          type: stock.type,
-          quantity: stock.quantity,
-          is_distrib: stock.is_distrib,
-          user_id: params.user_id
-        })
+        if (!stock.type) {
+          await DB('stock')
+            .where('id', stock.id)
+            .delete()
+        } else {
+          await Stock.save({
+            id: stock.id,
+            project_id: params.id,
+            type: stock.type,
+            quantity: stock.quantity,
+            is_distrib: stock.is_distrib,
+            user_id: params.user_id
+          })
+        }
       }
     }
 
     if (params.type && params.quantity) {
-      Stock.save({
+      await Stock.save({
         project_id: params.id,
         type: params.type,
         quantity: params.quantity,
