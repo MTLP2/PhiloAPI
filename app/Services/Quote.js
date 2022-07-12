@@ -468,7 +468,11 @@ class Quote {
 
     // insert
     if (params.insert !== 'none') {
-      quote.insert = getCost(252)
+      if (params.insert === 'two_sides_printed') {
+        quote.insert = getCost(364)
+      } else if (params.insert === 'booklet_printed') {
+        quote.insert = getCost(366)
+      }
     }
 
     // sticker
