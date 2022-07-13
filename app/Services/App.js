@@ -623,10 +623,12 @@ App.notification = async (notif, test = false) => {
       .first()
     data.lang = data.invoice.lang
     data.to = data.invoice.email
+
+    const pdf = await Invoice.download({ params: { id: n.invoice_id, lang: data.lang } })
     data.attachments = [
       {
         filename: `${data.invoice.code}.pdf`,
-        content: await Invoice.download({ params: { id: n.invoice_id, lang: data.lang } })
+        content: pdf.data
       }
     ]
   }
