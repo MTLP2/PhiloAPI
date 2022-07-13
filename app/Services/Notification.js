@@ -139,7 +139,7 @@ Notification.email = async (params, send = true) => {
 
   if (!p.from_address) {
     p.from_name = 'Diggers Factory'
-    p.from_address = 'contact@diggersfactory.com'
+    p.from_address = 'noreply@diggersfactory.com'
   }
   p.template = 'none'
 
