@@ -134,6 +134,13 @@ class Sna {
         2000: 'CP',
         9999: 'CP'
       },
+      RE: {
+        250: 'CP',
+        500: 'CP',
+        1000: 'CP',
+        2000: 'CP',
+        9999: 'CP'
+      },
       OM1: {
         250: 'Sign',
         500: 'Sign',
@@ -1770,6 +1777,7 @@ class Sna {
     } else {
       w = 9999
     }
+
     return transporters[country][w]
   }
 }
