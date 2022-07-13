@@ -60,6 +60,7 @@ Notification.exist = (params) =>
     .where('order_shop_id', (params.order_shop_id) ? params.order_shop_id : null)
     .where('order_manual_id', (params.order_manual_id) ? params.order_manual_id : null)
     .where('payment_id', (params.payment_id) ? params.payment_id : null)
+    .where('invoice_id', (params.invoice_id) ? params.invoice_id : null)
     .where('prod_id', (params.prod_id) ? params.prod_id : null)
     .where('date', (params.date) ? params.date : null)
     .first()
