@@ -266,6 +266,7 @@ Route.group(() => {
   Route.get('/projects/:id/costs/:cid/download', 'AdminController.downloadInvoiceCost')
   Route.put('/projects/:id/reviews/:rid', 'AdminController.updateReview')
   Route.delete('/projects/:id/reviews/:rid', 'AdminController.deleteReview')
+  Route.get('/projects/:id/dispatchs', 'AdminController.getDispatchs')
   Route.get('/projects/facebook', 'AdminController.exportFacebookProjects')
   Route.post('/statements', 'AdminController.uploadStatement')
   Route.post('/stocks', 'AdminController.uploadStocks')

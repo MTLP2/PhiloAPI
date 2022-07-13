@@ -861,6 +861,10 @@ class AdminController {
     return Review.getStats(params)
   }
 
+  getDispatchs ({ params }) {
+    return ProjectService.getDispatchs(params)
+  }
+
   exportOrdersCommercial ({ params }) {
     return Admin.exportOrdersCommercial(params)
   }

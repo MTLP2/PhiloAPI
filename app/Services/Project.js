@@ -1889,4 +1889,14 @@ Project.downloadPromoKit = async (id, force = true) => {
   return Storage.url(path, `Promokit (${project.artist_name} - ${project.name}).zip`)
 }
 
+Project.getDispatchs = async (params) => {
+  const items = await DB('production_dispatch')
+    .where('project_id', params.id)
+    .belongsTo('customer')
+    .where('is_delete', false)
+    .all()
+
+  return items
+}
+
 module.exports = Project

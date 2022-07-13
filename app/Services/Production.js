@@ -710,8 +710,10 @@ class Production {
 
     let item
     if (!params.did) {
+      console.log(params)
       item = DB('production_dispatch')
-      item.production_id = params.id
+      item.production_id = params.id || null
+      item.project_id = params.project_id
       item.created_at = Utils.date()
     } else {
       item = await DB('production_dispatch')
