@@ -4502,8 +4502,8 @@ Admin.checkProjectRest = async (params) => {
     // .groupBy('order_item.quantity')
     .all()
 
-  // If not refunds, item can be rested
-  if (!refunds.length) return false
+  // If no refunds, item(s) can be rested
+  if (!refunds.length) return { hasBeenRested: false }
 
   let totalRestedQuantity = 0
   for (const refund of refunds) {
@@ -4514,7 +4514,11 @@ Admin.checkProjectRest = async (params) => {
   }
 
   // If combined rested items are less than total quantity of the ordered item, returns false (all items not rested). Else, returns true (all items rested).
-  return totalRestedQuantity >= refunds[0].quantity
+  // Also returns the remaining rest quantity
+  return {
+    hasBeenRested: totalRestedQuantity >= refunds[0].quantity,
+    restLeft: refunds[0].quantity - totalRestedQuantity
+  }
 }
 
 module.exports = Admin
