@@ -1815,10 +1815,10 @@ Admin.refundOrder = async (params) => {
   // Only history means we add a refund history without making actual payment. Chosen when a refund is made in the Sheraf.
   if (params.refund_payment !== false) {
     if (!params.only_history) {
-      await Order.refundPayment({
-        ...order,
-        total: params.amount
-      })
+      // await Order.refundPayment({
+      //   ...order,
+      //   total: params.amount
+      // })
     }
 
     const { total: totalOrderShop } = await DB('order_shop').select('total').where('id', params.order_shop_id).first()
@@ -4489,12 +4489,32 @@ Admin.exportProjectsBox = async (params) => {
 
 Admin.checkProjectRest = async (params) => {
   const refunds = await DB('refund')
-    .select('comment')
-    .where('order_shop_id', params.osid)
+    .select('refund.comment', 'refund.data', 'order_item.quantity')
+    .join('order_shop', 'order_shop.id', 'refund.order_shop_id')
+    .join('order_item', function () {
+      this.on('order_item.order_shop_id', '=', 'order_shop.id')
+      this.on('order_item.project_id', '=', +params.pid)
+    })
+    .where('refund.order_shop_id', +params.osid)
     .where('reason', 'rest')
+    // .groupBy('refund.comment')
+    // .groupBy('refund.data')
+    // .groupBy('order_item.quantity')
     .all()
 
-  return !!refunds.find(r => r.comment.includes(params.pid))
+  // If not refunds, item can be rested
+  if (!refunds.length) return false
+
+  let totalRestedQuantity = 0
+  for (const refund of refunds) {
+    if (!refund.data) continue
+
+    refund.data = JSON.parse(refund.data)
+    if (refund.data.project === +params.pid) totalRestedQuantity += +refund.data.quantity
+  }
+
+  // If combined rested items are less than total quantity of the ordered item, returns false (all items not rested). Else, returns true (all items rested).
+  return totalRestedQuantity >= refunds[0].quantity
 }
 
 module.exports = Admin
