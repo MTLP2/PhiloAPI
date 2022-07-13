@@ -2178,9 +2178,10 @@ Admin.getAudiences = async (params) => {
       'newsletter',
       'user.created_at',
       'origin',
-      DB().raw('(select count(distinct(order_id)) from order_shop where user_id = user.id and is_paid = 1) as orders'),
+      DB().raw('(select count(distinct(order_id)) from order_shop where user_id = user.id and is_paid = 1) as orders_total'),
       DB().raw("(SELECT SUM(total) FROM order_shop WHERE user_id = user.id AND step IN ('sent', 'creating', 'check_address', 'confirmed', 'launched', 'in_production', 'test_pressing_ok', 'preparation')) as turnover")
     )
+    .hasMany('order', 'orders', 'user_id')
 
   if (params.project_id) {
     users.whereExists(
@@ -2235,10 +2236,33 @@ Admin.getAudiences = async (params) => {
   }
 
   users = await users.all()
-  const usersToExport = users.map(user => ({
-    ...user,
-    turnover: user.turnover && user.turnover.toString().replace('.', ',')
-  }))
+
+  const orderLines = []
+  for (const user of users) {
+    // Change format of turnover for csv/excel reading
+    user.turnover = user.turnover && user.turnover.toString().replace('.', ',')
+    let orderIdx = 1
+
+    for (const order of user.orders) {
+      // Create a new key/value for each order
+      user[`order_total_${orderIdx}`] = order.total.toString().replace('.', ',')
+      user[`order_date_${orderIdx}`] = new Date(order.created_at).toLocaleDateString()
+
+      // Push for arrayToCsv if orderIdx does not exist
+      if (!orderLines.find(ol => ol.index === `order_total_${orderIdx}`)) {
+        orderLines.push({
+          name: `Order n°${orderIdx} (total)`,
+          index: `order_total_${orderIdx}`
+        },
+        {
+          name: `Order n°${orderIdx} (date)`,
+          index: `order_date_${orderIdx}`
+        })
+      }
+
+      orderIdx++
+    }
+  }
 
   return Utils.arrayToCsv([
     { name: 'ID', index: 'id' },
@@ -2247,10 +2271,11 @@ Admin.getAudiences = async (params) => {
     { name: 'Country', index: 'country_id' },
     { name: 'Origin', index: 'origin' },
     { name: 'Newsletter', index: 'newsletter' },
-    { name: 'Orders', index: 'orders' },
+    { name: 'Orders', index: 'orders_total' },
     { name: 'Turnover', index: 'turnover' },
-    { name: 'Account creation', index: 'created_at' }
-  ], usersToExport)
+    { name: 'Account creation', index: 'created_at' },
+    ...orderLines
+  ], users)
 }
 
 Admin.getNewsletters = () =>
