@@ -1390,19 +1390,17 @@ Admin.getOrders = async (params) => {
       'os.total as os_total', 'os.is_paid', 'os.ask_cancel', 'order.total as o_total',
       'order.transaction_id', 'oi.order_id', 'oi.order_shop_id', 'oi.quantity', 'oi.price', 'oi.size', 'order.status',
       'order.payment_id', 'user.name as user_name', 'user.email as user_email', 'user.picture as user_picture',
-      's.id as shop_id', 's.name as shop_name', 'order.user_agent', 'c.country_id', 'c.name', 'c.firstname', 'c.lastname',
+      'order.user_agent', 'c.country_id', 'c.name', 'c.firstname', 'c.lastname',
       'c.address', 'c.zip_code', 'c.city', 'c.state', 'user.is_pro', 'project.artist_name', 'project.name as project_name',
-      'project.picture', 'item.name as item', 'item.picture as item_picture', 'user.facebook_id', 'user.soundcloud_id', 'vod.barcode',
+      'project.picture', 'user.facebook_id', 'user.soundcloud_id',
       DB.raw('CONCAT(c.firstname, \' \', c.lastname) AS user_infos')
     )
     .join('order', 'oi.order_id', 'order.id')
     .join('order_shop as os', 'os.id', 'oi.order_shop_id')
     .join('user', 'user.id', 'order.user_id')
-    .join('user as s', 's.id', 'os.shop_id')
     .join('project', 'project.id', 'oi.project_id')
-    .join('vod', 'vod.project_id', 'oi.project_id')
+    // .join('vod', 'vod.project_id', 'oi.project_id')
     .leftJoin('customer as c', 'c.id', 'os.customer_id')
-    .leftJoin('item', 'item.id', 'oi.item_id')
     .where('os.step', '!=', 'creating')
     .where('os.step', '!=', 'failed')
 
