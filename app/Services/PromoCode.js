@@ -126,19 +126,6 @@ PromoCode.getSales = ({ vod = false, box = false }) => {
   return sales.first()
 }
 
-PromoCode.getByUser = async ({ userId }) => {
-  const { data } = await PromoCode.all({ size: 0 })
-  const codes = data
-    .filter(c => c.code)
-    .map(code => ({
-      id: code.id,
-      label: code.code,
-      user_registered: !!code.users?.split(',').find(u => +u === +userId)
-    }))
-
-  return codes
-}
-
 PromoCode.getByItem = async ({ itemId, type }) => {
   const { data } = await PromoCode.all({ size: 0 })
   const codes = data
@@ -186,37 +173,6 @@ PromoCode.saveByItem = async ({ codes, itemId, type }) => {
     }
   }
   return { success: true }
-}
-
-PromoCode.saveByUser = async ({ codes, userId }) => {
-  // userId check
-  if (!userId) return { error: 'User not found' }
-
-  for (const code of codes) {
-    // Code check
-    const newCode = await DB('promo_code').find(code)
-    if (!newCode) return { error: 'Code not found' }
-
-    // If user is already registered, skip : else, save
-    if (!newCode.users?.split(',').map(u => +u).includes(userId)) {
-      newCode.users = `${newCode.users || ''}${newCode.users ? ',' : ''}${userId}`
-      newCode.save()
-    }
-  }
-  return { success: true }
-}
-
-PromoCode.getByProject = async ({ projectId }) => {
-  const { data } = await PromoCode.all({ size: 0 })
-  const codes = data
-    .filter(c => c.code)
-    .map(code => ({
-      id: code.id,
-      label: code.code,
-      project_registered: !!code.projects?.split(',').find(u => +u === +projectId)
-    }))
-
-  return codes
 }
 
 module.exports = PromoCode
