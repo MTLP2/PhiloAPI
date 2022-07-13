@@ -107,6 +107,8 @@ App.hourly = async () => {
       await Production.checkNotif()
     } else if (hour === 9) {
       await Review.checkNotif()
+    } else if (hour === 10) {
+      await Invoice.reminder()
     }
 
     await Storage.cleanTmp('storage')
