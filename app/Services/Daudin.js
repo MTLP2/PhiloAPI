@@ -855,61 +855,53 @@ class Daudin {
   }
 
   static async checkStock (params) {
-    const stock = []
-    const stock2 = []
+    const stock = {}
     const file = Buffer.from(params.file, 'base64').toString('ascii')
 
     const lines = file.split('\n')
     for (const line of lines) {
       const columns = line.split(',')
 
+      const qty = parseInt(columns[6]) - parseInt(columns[7])
       const item = {
-        code: columns[1],
+        barcode: columns[1],
         name: columns[2],
-        qty: parseInt(columns[6]) - parseInt(columns[7])
+        qty: qty,
+        stock: 0,
+        diff: qty
       }
       if (!isNaN(item.qty)) {
-        stock.push(item)
+        stock[item.barcode] = item
       }
     }
 
     const projects = await DB('vod')
-      .select('is_shop', 'barcode', 'stock_daudin', 'goal', 'count', 'count_distrib', 'count_other')
+      .select('project.artist_name', 'project.name', 'project.id', 'project.picture', 'vod.step',
+        'vod.project_id', 'barcode', 'stock.quantity as stock')
       .join('project', 'project.id', 'vod.project_id')
-      .whereIn('barcode', stock.map(s => s.code))
+      .join('stock', 'project.id', 'stock.project_id')
+      .where('stock.type', 'daudin')
+      .whereIn('barcode', Object.keys(stock))
       .all()
 
     for (const p of projects) {
-      for (const r in stock) {
-        if (stock[r].code === p.barcode) {
-          if (p.is_shop) {
-            stock[r].count = p.stock_daudin
-          } else {
-            stock[r].count = p.goal - p.count - p.count_distrib - p.count_other
-          }
-        }
-      }
-    }
-    const items = await DB('item')
-      .select('barcode', 'stock')
-      .whereIn('barcode', stock.map(s => s.code))
-      .all()
-
-    for (const i of items) {
-      for (const r in stock) {
-        if (stock[r].code === i.barcode) {
-          stock[r].count = i.stock
-        }
-      }
+      stock[p.barcode].picture = p.picture
+      stock[p.barcode].name = p.name
+      stock[p.barcode].artist_name = p.artist_name
+      stock[p.barcode].step = p.step
+      stock[p.barcode].id = p.id
+      stock[p.barcode].stock = p.stock
+      stock[p.barcode].diff = Math.abs(p.stock - stock[p.barcode].qty)
     }
 
-    for (const s of stock) {
-      if (s.qty !== s.count) {
-        stock2.push(s)
-      }
-    }
+    const stocks = Object.values(stock)
 
-    return stock2
+    stocks.sort((a, b) => {
+      return -a.diff - -b.diff
+    })
+
+    return stocks
+      .filter(s => s.diff !== 0)
   }
 
   static async missingProjects (params) {
