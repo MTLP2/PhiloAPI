@@ -324,6 +324,7 @@ Route.group(() => {
   Route.get('/users', 'AdminController.getUsers')
   Route.get('/users/extract', 'AdminController.extractUsers')
   Route.get('/users/audiences', 'AdminController.getAudiences')
+  Route.get('/users/unsubscribed', 'AdminController.getUnsubscribed')
   Route.post('/users/unsub', 'AdminController.newsletterUnsub')
   Route.get('/users/:id', 'AdminController.getUser')
   Route.get('/users/:id/emails', 'AdminController.getUserEmails')

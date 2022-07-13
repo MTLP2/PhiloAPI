@@ -413,6 +413,10 @@ class AdminController {
     return { data: audiences }
   }
 
+  async getUnsubscribed ({ params }) {
+    return Admin.getUnsubscribed(params)
+  }
+
   getUser ({ params }) {
     return Admin.getUser(params.id)
   }

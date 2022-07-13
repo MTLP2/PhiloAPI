@@ -2278,6 +2278,13 @@ Admin.getAudiences = async (params) => {
   ], users)
 }
 
+Admin.getUnsubscribed = () => {
+  return DB('user').select(
+    DB.raw('SUM(unsubscribed) as unsubscribed'),
+    DB.raw('COUNT(*) as total')
+  ).first()
+}
+
 Admin.getNewsletters = () =>
   DB('newsletter')
     .select('id', 'subject',
