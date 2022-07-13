@@ -868,7 +868,8 @@ class Daudin {
         name: columns[2],
         qty: qty,
         stock: 0,
-        diff: qty
+        diff: qty,
+        step: 'no_project'
       }
       if (!isNaN(item.qty)) {
         stock[item.barcode] = item
