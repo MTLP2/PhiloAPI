@@ -29,7 +29,14 @@ class Invoice {
 
   static async find (id) {
     const invoice = await DB()
-      .select('invoice.*', 'user.name as user_name', 'user.email', 'project.name as project_name', 'project.artist_name', 'production.name as prod_name', 'production.quantity as prod_quantity')
+      .select('invoice.*',
+        'user.name as user_name',
+        'user.email as user_email',
+        'project.name as project_name',
+        'project.artist_name',
+        'production.name as prod_name',
+        'production.quantity as prod_quantity'
+      )
       .from('invoice')
       .leftJoin('user', 'user.id', 'invoice.user_id')
       .leftJoin('project', 'project.id', 'invoice.project_id')
