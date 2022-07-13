@@ -107,7 +107,7 @@ App.hourly = async () => {
       await Production.checkNotif()
     } else if (hour === 9) {
       await Review.checkNotif()
-    } else if (hour === 10) {
+    } else if (hour === 12) {
       await Invoice.reminder()
     }
 
