@@ -1815,10 +1815,10 @@ Admin.refundOrder = async (params) => {
   // Only history means we add a refund history without making actual payment. Chosen when a refund is made in the Sheraf.
   if (params.refund_payment !== false) {
     if (!params.only_history) {
-      // await Order.refundPayment({
-      //   ...order,
-      //   total: params.amount
-      // })
+      await Order.refundPayment({
+        ...order,
+        total: params.amount
+      })
     }
 
     const { total: totalOrderShop } = await DB('order_shop').select('total').where('id', params.order_shop_id).first()
