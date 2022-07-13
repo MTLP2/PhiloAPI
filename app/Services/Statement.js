@@ -994,6 +994,9 @@ class StatementService {
 
     let i = 0
     for (const p of projects) {
+      if (p.stock < 10) {
+        continue
+      }
       const currencies = Utils.getCurrencies(p.currency, currenciesDb)
 
       i++
