@@ -276,22 +276,21 @@ class MondialRelay {
 
   static getStatus (number, zipCode) {
     return Utils.request(
-      'https://www.mondialrelay.fr/_mvc/fr-FR/SuiviExpedition/RechercherJsonResponsive', {
-        method: 'POST',
-        json: true,
-        body: {
-          NumeroExpedition: number,
-          CodePostal: zipCode
-        }
-      }).then(res => {
-      if (res.Message.includes('Colis livr&#233; au destinataire')) {
+      `https://www.mondialrelay.fr/suivi-de-colis?codeMarque=F2&nexp=${number}`).then(res => {
+      if (res.includes('<p>Votre colis a été livré.</p>')) {
         return 'delivered'
-      } else if (res.Message.includes('Colis disponible au Point Relais')) {
+      } else if (res.includes('<p>Retour &#224; l&#39;exp&#233;diteur</p>')) {
+        return 'returned'
+      } else if (res.includes(`<div class="col-xs-8 col-sm-9 col-md-9">
+<p>Colis disponible au Point Relais</p>
+</div>`)) {
         return 'available'
-      } else if (res.Message) {
+      } else if (res.includes('Prise en charge de votre colis sur notre site logistique')) {
+        return 'in_progress'
+      } else if (res.includes('Colis en pr&#233;paration chez l&#39;exp&#233;diteur')) {
         return 'in_progress'
       } else {
-        return false
+        return 'not_found'
       }
     })
   }
