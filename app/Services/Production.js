@@ -168,15 +168,45 @@ class Production {
         action: 'check',
         for: 'artist'
       },
+      // {
+      //   category: 'postprod',
+      //   type: 'delivery_note',
+      //   action: 'check',
+      //   for: 'team'
+      // },
+      // {
+      //   category: 'postprod',
+      //   type: 'receipt',
+      //   action: 'check',
+      //   for: 'team'
+      // }
       {
         category: 'postprod',
-        type: 'delivery_note',
+        type: 'on_shipping',
         action: 'check',
         for: 'team'
       },
       {
         category: 'postprod',
-        type: 'receipt',
+        type: 'on_reception',
+        action: 'check',
+        for: 'team'
+      },
+      {
+        category: 'postprod',
+        type: 'check_address',
+        action: 'check',
+        for: 'team'
+      },
+      {
+        category: 'postprod',
+        type: 'sync',
+        action: 'check',
+        for: 'team'
+      },
+      {
+        category: 'postprod',
+        type: 'done',
         action: 'check',
         for: 'team'
       }
@@ -505,7 +535,10 @@ class Production {
       item.status = params.valid === 0 ? 'refused' : params.status
     }
 
-    item.text = params.text
+    item.text = JSON.stringify({
+      number: params.text || params.text_number,
+      organization: params.text_organization
+    })
     item.comment = params.comment
 
     if (params.status === 'valid') {
