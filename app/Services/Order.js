@@ -892,7 +892,7 @@ Order.sync = async (params, throwError = false) => {
           to: 'victor@diggersfactory.com',
           subject: `Problem with SNA : ${shop.id}`,
           html: `<ul>
-            <li>Order Id : https://www.diggersfactory.com/sheraf/order/${shop.id}</li>
+            <li>Order Id : https://www.diggersfactory.com/sheraf/order/${shop.order_id}</li>
             <li>Shop Id : ${shop.id}</li>
             <li>Error: ${err}</li>
           </ul>`
