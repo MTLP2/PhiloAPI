@@ -126,22 +126,40 @@ PromoCode.getSales = ({ vod = false, box = false }) => {
   return sales.first()
 }
 
-PromoCode.getByUser = async ({ userId }) => {
+PromoCode.getByItem = async ({ itemId, type }) => {
   const { data } = await PromoCode.all({ size: 0 })
   const codes = data
     .filter(c => c.code)
     .map(code => ({
       id: code.id,
       label: code.code,
-      user_registered: !!code.users?.split(',').find(u => +u === +userId)
+      [`${type}_registered`]: !!code[`${type}s`]?.split(',').find(u => +u === +itemId, type)
     }))
 
   return codes
 }
 
-PromoCode.saveByUser = async ({ codes, userId }) => {
-  // userId check
-  if (!userId) return { error: 'User not found' }
+PromoCode.saveByItem = async ({ codes, itemId, type }) => {
+  // element ID check
+  if (!itemId) return { error: type + 'not found' }
+
+  // Check if a itemId is present in promo_code but not in codes
+  const { data } = await PromoCode.all({ size: 0 })
+  const promoCodes = data
+    .filter(c => c[`${type}s`]?.includes(itemId))
+
+  // remove itemId from promoCodes that are not in codes
+  if (promoCodes.length > codes.length) {
+    for (const code of promoCodes) {
+      if (!codes.find(c => c.id === code.id)) {
+        await DB('promo_code')
+          .where('id', code.id)
+          .update({
+            [`${type}s`]: code[`${type}s`].split(',').filter(i => +i !== +itemId).join(',')
+          })
+      }
+    }
+  }
 
   for (const code of codes) {
     // Code check
@@ -149,11 +167,12 @@ PromoCode.saveByUser = async ({ codes, userId }) => {
     if (!newCode) return { error: 'Code not found' }
 
     // If user is already registered, skip : else, save
-    if (!newCode.users?.split(',').map(u => +u).includes(userId)) {
-      newCode.users = `${newCode.users || ''}${newCode.users ? ',' : ''}${userId}`
+    if (!newCode[`${type}s`]?.split(',').map(u => +u).includes(itemId)) {
+      newCode[`${type}s`] = `${newCode[`${type}s`] || ''}${newCode[`${type}s`] ? ',' : ''}${itemId}`
       newCode.save()
     }
   }
   return { success: true }
 }
+
 module.exports = PromoCode

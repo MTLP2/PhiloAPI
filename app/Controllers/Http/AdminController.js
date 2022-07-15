@@ -417,6 +417,10 @@ class AdminController {
     return { data: audiences }
   }
 
+  async getUnsubscribed ({ params }) {
+    return Admin.getUnsubscribed(params)
+  }
+
   getUser ({ params }) {
     return Admin.getUser(params.id)
   }
@@ -647,6 +651,14 @@ class AdminController {
 
   savePromoCodesByUser ({ params }) {
     return PromoCode.saveByUser({ codes: params.codes, userId: params.userId })
+  }
+
+  getPromoCodesByItem ({ params }) {
+    return PromoCode.getByItem({ itemId: params.id, type: params.type })
+  }
+
+  savePromoCodesByItem ({ params }) {
+    return PromoCode.saveByItem({ codes: params.codes, itemId: params.itemId, type: params.type })
   }
 
   getGoodies ({ params }) {

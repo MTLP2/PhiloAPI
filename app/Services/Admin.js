@@ -2176,9 +2176,10 @@ Admin.getAudiences = async (params) => {
       'newsletter',
       'user.created_at',
       'origin',
-      DB().raw('(select count(distinct(order_id)) from order_shop where user_id = user.id and is_paid = 1) as orders'),
+      DB().raw('(select count(distinct(order_id)) from order_shop where user_id = user.id and is_paid = 1) as orders_total'),
       DB().raw("(SELECT SUM(total) FROM order_shop WHERE user_id = user.id AND step IN ('sent', 'creating', 'check_address', 'confirmed', 'launched', 'in_production', 'test_pressing_ok', 'preparation')) as turnover")
     )
+    .hasMany('order', 'orders', 'user_id')
 
   if (params.project_id) {
     users.whereExists(
@@ -2233,10 +2234,33 @@ Admin.getAudiences = async (params) => {
   }
 
   users = await users.all()
-  const usersToExport = users.map(user => ({
-    ...user,
-    turnover: user.turnover && user.turnover.toString().replace('.', ',')
-  }))
+
+  const orderLines = []
+  for (const user of users) {
+    // Change format of turnover for csv/excel reading
+    user.turnover = user.turnover && user.turnover.toString().replace('.', ',')
+    let orderIdx = 1
+
+    for (const order of user.orders) {
+      // Create a new key/value for each order
+      user[`order_total_${orderIdx}`] = order.total.toString().replace('.', ',')
+      user[`order_date_${orderIdx}`] = new Date(order.created_at).toLocaleDateString()
+
+      // Push for arrayToCsv if orderIdx does not exist
+      if (!orderLines.find(ol => ol.index === `order_total_${orderIdx}`)) {
+        orderLines.push({
+          name: `Order n°${orderIdx} (total)`,
+          index: `order_total_${orderIdx}`
+        },
+        {
+          name: `Order n°${orderIdx} (date)`,
+          index: `order_date_${orderIdx}`
+        })
+      }
+
+      orderIdx++
+    }
+  }
 
   return Utils.arrayToCsv([
     { name: 'ID', index: 'id' },
@@ -2245,10 +2269,18 @@ Admin.getAudiences = async (params) => {
     { name: 'Country', index: 'country_id' },
     { name: 'Origin', index: 'origin' },
     { name: 'Newsletter', index: 'newsletter' },
-    { name: 'Orders', index: 'orders' },
+    { name: 'Orders', index: 'orders_total' },
     { name: 'Turnover', index: 'turnover' },
-    { name: 'Account creation', index: 'created_at' }
-  ], usersToExport)
+    { name: 'Account creation', index: 'created_at' },
+    ...orderLines
+  ], users)
+}
+
+Admin.getUnsubscribed = () => {
+  return DB('user').select(
+    DB.raw('SUM(unsubscribed) as unsubscribed'),
+    DB.raw('COUNT(*) as total')
+  ).first()
 }
 
 Admin.getNewsletters = () =>
@@ -4455,12 +4487,36 @@ Admin.exportProjectsBox = async (params) => {
 
 Admin.checkProjectRest = async (params) => {
   const refunds = await DB('refund')
-    .select('comment')
-    .where('order_shop_id', params.osid)
+    .select('refund.comment', 'refund.data', 'order_item.quantity')
+    .join('order_shop', 'order_shop.id', 'refund.order_shop_id')
+    .join('order_item', function () {
+      this.on('order_item.order_shop_id', '=', 'order_shop.id')
+      this.on('order_item.project_id', '=', +params.pid)
+    })
+    .where('refund.order_shop_id', +params.osid)
     .where('reason', 'rest')
+    // .groupBy('refund.comment')
+    // .groupBy('refund.data')
+    // .groupBy('order_item.quantity')
     .all()
 
-  return !!refunds.find(r => r.comment.includes(params.pid))
+  // If no refunds, item(s) can be rested
+  if (!refunds.length) return { hasBeenRested: false }
+
+  let totalRestedQuantity = 0
+  for (const refund of refunds) {
+    if (!refund.data) continue
+
+    refund.data = JSON.parse(refund.data)
+    if (refund.data.project === +params.pid) totalRestedQuantity += +refund.data.quantity
+  }
+
+  // If combined rested items are less than total quantity of the ordered item, returns false (all items not rested). Else, returns true (all items rested).
+  // Also returns the remaining rest quantity
+  return {
+    hasBeenRested: totalRestedQuantity >= refunds[0].quantity,
+    restLeft: refunds[0].quantity - totalRestedQuantity
+  }
 }
 
 module.exports = Admin
