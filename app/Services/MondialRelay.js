@@ -162,6 +162,17 @@ class MondialRelay {
             step_check: Utils.date()
           })
       } else {
+        if (status === 'not_found') {
+          await Notification.sendEmail({
+            to: 'victor@diggersfactory.com',
+            subject: `MondialRelay not found : ${dispatch.tracking_number}`,
+            html: `<ul>
+              <li>Order Id : https://www.diggersfactory.com/sheraf/order/${dispatch.order_id}</li>
+              <li>Shop Id : ${dispatch.id}</li>
+              <li>Mondail Relay: ${dispatch.tracking_number}</li>
+            </ul>`
+          })
+        }
         await DB('order_shop')
           .where('id', dispatch.id)
           .update({
