@@ -243,6 +243,7 @@ Utils.download = async (params) => {
 }
 
 Utils.getRows = async (params) => {
+  console.log('🚀 ~ file: Utils.js ~ line 246 ~ Utils.getRows= ~ params', params)
   const { query } = params
 
   let filters

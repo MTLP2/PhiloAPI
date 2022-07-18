@@ -1615,6 +1615,8 @@ Admin.saveOrderShop = async (params) => {
 
 Admin.extractOrders = async (params) => {
   params.size = 0
+  const filters = params.filters ? JSON.parse(params.filters) : {}
+  params.filters = JSON.stringify(Object.keys(filters).map(key => ({ name: key, value: filters[key] })))
 
   params.project_id = params.id
   const data = await Admin.getOrders(params)
