@@ -1,8 +1,9 @@
 const Shop = use('App/Services/Shop')
 
 class ShopController {
-  getShop ({ user }) {
-    return Shop.find({ user_id: user.id })
+  getShop ({ params, user }) {
+    params.user_id = user.id
+    return Shop.find(params)
   }
 
   updateShop ({ params, user }) {

@@ -317,7 +317,10 @@ Project.findAll = async (params) => {
   if (params.shop_id) {
     projects.join('shop_project', 'shop_project.project_id', 'p.id')
     projects.where('shop_project.shop_id', params.shop_id)
-    projects.whereIn('v.step', ['in_progress', 'coming_soon', 'successful'])
+    console.log(params)
+    if (!params.all_project) {
+      projects.whereIn('v.step', ['in_progress', 'coming_soon', 'successful'])
+    }
   }
 
   if (params.supported) {

@@ -30,7 +30,7 @@ class Shop {
       throw new ApiError(404)
     }
 
-    shop.projects = await Project.findAll({ shop_id: shop.id })
+    shop.projects = await Project.findAll({ shop_id: shop.id, all_project: params.all_project })
 
     return shop
   }
@@ -148,9 +148,14 @@ class Shop {
       .where('project_id', params.project_id)
       .first()
 
+    console.log(exists)
     if (exists) {
       return false
     } else {
+      console.log({
+        shop_id: params.shop_id,
+        project_id: params.project_id
+      })
       await DB('shop_project')
         .insert({
           shop_id: params.shop_id,
