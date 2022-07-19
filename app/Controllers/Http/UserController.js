@@ -217,6 +217,11 @@ class UserController {
     return Review.getUserProjectReview(params)
   }
 
+  async getReviews ({ user, params }) {
+    params.userId = user.id
+    return Review.getUserReviews(params)
+  }
+
   async postReview ({ user, params, response }) {
     // Validation differs if it's a bad review or not, and if it's a box or not
     const dataToValidate = {}
