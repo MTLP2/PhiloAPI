@@ -363,6 +363,10 @@ class AdminController {
     return Admin.saveOrderShop(params)
   }
 
+  syncOrder ({ params }) {
+    return Order.sync(params, true)
+  }
+
   getOrderShopInvoice ({ params }) {
     return Admin.getOrderShopInvoice(params.id)
   }
@@ -411,6 +415,10 @@ class AdminController {
   async getAudiences ({ params }) {
     const audiences = await Admin.getAudiences(params)
     return { data: audiences }
+  }
+
+  async getUnsubscribed ({ params }) {
+    return Admin.getUnsubscribed(params)
   }
 
   getUser ({ params }) {
@@ -637,6 +645,22 @@ class AdminController {
     return PromoCode.calculate(params)
   }
 
+  getPromoCodesByUser ({ params }) {
+    return PromoCode.getByUser({ userId: params.id })
+  }
+
+  savePromoCodesByUser ({ params }) {
+    return PromoCode.saveByUser({ codes: params.codes, userId: params.userId })
+  }
+
+  getPromoCodesByItem ({ params }) {
+    return PromoCode.getByItem({ itemId: params.id, type: params.type })
+  }
+
+  savePromoCodesByItem ({ params }) {
+    return PromoCode.saveByItem({ codes: params.codes, itemId: params.itemId, type: params.type })
+  }
+
   getGoodies ({ params }) {
     return Goodie.all(params)
   }
@@ -787,6 +811,10 @@ class AdminController {
     return Admin.exportFacebookProjects(params)
   }
 
+  checkProjectRest ({ params }) {
+    return Admin.checkProjectRest(params)
+  }
+
   getBalances ({ params }) {
     return Statement.getBalances(params)
   }
@@ -843,6 +871,10 @@ class AdminController {
 
   getReviewsStats ({ params }) {
     return Review.getStats(params)
+  }
+
+  getDispatchs ({ params }) {
+    return ProjectService.getDispatchs(params)
   }
 
   exportOrdersCommercial ({ params }) {

@@ -437,15 +437,12 @@ class Daudin {
       })
     }
 
-    console.log(lines.map(l => l.id))
-    console.log(lines.length)
     const lines2 = []
     for (const line of lines) {
       if (line.country_id !== 'RU' && oo.findIndex(v => parseInt(v) === line.id) === -1) {
         lines2.push(line)
       }
     }
-    console.log(lines2.length)
     lines = lines2
 
     /**
@@ -858,61 +855,61 @@ class Daudin {
   }
 
   static async checkStock (params) {
-    const stock = []
-    const stock2 = []
+    const stock = {}
     const file = Buffer.from(params.file, 'base64').toString('ascii')
 
     const lines = file.split('\n')
     for (const line of lines) {
       const columns = line.split(',')
 
-      const item = {
-        code: columns[1],
-        name: columns[2],
-        qty: parseInt(columns[6]) - parseInt(columns[7])
+      if (columns[6]) {
+        columns[6] = +columns[6].replace(/\s/g, '')
       }
+      if (columns[7]) {
+        columns[7] = +columns[7].replace(/\s/g, '')
+      }
+      const qty = columns[6] - columns[7]
+      const item = {
+        barcode: columns[1],
+        name: columns[2],
+        qty: qty,
+        stock: 0,
+        diff: qty,
+        step: 'no_project'
+      }
+
       if (!isNaN(item.qty)) {
-        stock.push(item)
+        stock[item.barcode] = item
       }
     }
 
     const projects = await DB('vod')
-      .select('is_shop', 'barcode', 'stock_daudin', 'goal', 'count', 'count_distrib', 'count_other')
+      .select('project.artist_name', 'project.name', 'project.id', 'project.picture', 'vod.step',
+        'vod.project_id', 'barcode', 'stock.quantity as stock')
       .join('project', 'project.id', 'vod.project_id')
-      .whereIn('barcode', stock.map(s => s.code))
+      .join('stock', 'project.id', 'stock.project_id')
+      .where('stock.type', 'daudin')
+      .whereIn('barcode', Object.keys(stock))
       .all()
 
     for (const p of projects) {
-      for (const r in stock) {
-        if (stock[r].code === p.barcode) {
-          if (p.is_shop) {
-            stock[r].count = p.stock_daudin
-          } else {
-            stock[r].count = p.goal - p.count - p.count_distrib - p.count_other
-          }
-        }
-      }
-    }
-    const items = await DB('item')
-      .select('barcode', 'stock')
-      .whereIn('barcode', stock.map(s => s.code))
-      .all()
-
-    for (const i of items) {
-      for (const r in stock) {
-        if (stock[r].code === i.barcode) {
-          stock[r].count = i.stock
-        }
-      }
+      stock[p.barcode].picture = p.picture
+      stock[p.barcode].name = p.name
+      stock[p.barcode].artist_name = p.artist_name
+      stock[p.barcode].step = p.step
+      stock[p.barcode].id = p.id
+      stock[p.barcode].stock = p.stock
+      stock[p.barcode].diff = Math.abs(p.stock - stock[p.barcode].qty)
     }
 
-    for (const s of stock) {
-      if (s.qty !== s.count) {
-        stock2.push(s)
-      }
-    }
+    const stocks = Object.values(stock)
 
-    return stock2
+    stocks.sort((a, b) => {
+      return -a.diff - -b.diff
+    })
+
+    return stocks
+      .filter(s => s.diff !== 0)
   }
 
   static async missingProjects (params) {
@@ -982,7 +979,6 @@ class Daudin {
           })
       }
     }
-    console.log(trackings.length)
 
     return trackings
   }
@@ -1143,6 +1139,8 @@ class Daudin {
       if (file.size === 0) {
         continue
       }
+      const path = file.path.split('.')[0].split(' ')
+      const date = path[path.length - 1]
       const buffer = await Storage.get(file.path, true)
 
       const workbook = new Excel.Workbook()
@@ -1152,7 +1150,11 @@ class Daudin {
       worksheet.eachRow(async row => {
         const dispatch = {
           id: row.getCell('C').value,
-          shipping: row.getCell('G').value
+          shipping: Utils.round(+row.getCell('G').toString() + 0.7 + row.getCell('H').toString() * 0.38)
+        }
+        // Packing
+        if (date >= '2021-07') {
+          dispatch.shipping += 0.7
         }
         if (!dispatch.id || !dispatch.shipping || isNaN(dispatch.shipping)) {
           return
@@ -1185,7 +1187,7 @@ class Daudin {
           if (!order) {
             return
           }
-          order.shipping_cost = dispatch.shipping
+          order.shipping_cost = dispatch.shipping + dispatch.shipping * order.tax_rate
           await order.save()
         }
         dispatchs.push(dispatch)

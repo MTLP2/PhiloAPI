@@ -126,6 +126,14 @@ Review.save = async (params) => {
     })
   }
 
+  // Update review stat
+  await DB('review_stat')
+    .where('user_id', params.user_id)
+    .where(params.project_id ? 'project_id' : 'box_id', params.project_id ?? params.box_id)
+    .orderBy('id', 'desc')
+    .limit(1)
+    .update('review_sent', 1)
+
   return { success: true }
 }
 
@@ -227,14 +235,34 @@ Review.getUserBoxReview = async ({ userId, boxId }) => {
 }
 
 Review.getStats = async () => {
-  const stats = await DB('notification')
-    .select('type', DB.raw('COUNT(*) as count'))
-    .where('type', 'review_request')
-    .orWhere('type', 'box_review_request')
-    .groupBy('type')
-    .all()
+  const [notifications, clicks] = await Promise.all([
+    DB('notification')
+      .select('type', DB.raw('COUNT(*) as count'))
+      .where('type', 'review_request')
+      .orWhere('type', 'box_review_request')
+      .groupBy('type')
+      .all(),
+    DB('review_stat')
+      .select(
+        'type',
+        DB.raw('COUNT(type) as count'),
+        DB.raw('ROUND(AVG(review_sent), 3) * 100 as average'))
+      .groupBy('type')
+      .all()
+  ])
 
-  return stats
+  return { notifications, clicks }
+}
+
+Review.saveStat = async (params) => {
+  await DB('review_stat').insert({
+    type: params.type,
+    project_id: params.projectId,
+    box_id: params.boxId,
+    user_id: params.userId,
+    created_at: new Date()
+  })
+  return { success: true }
 }
 
 module.exports = Review

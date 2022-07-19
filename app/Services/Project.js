@@ -503,7 +503,8 @@ Project.getAll = (search, type) => {
       'p.id',
       'p.name',
       'p.slug',
-      'p.artist_name'
+      'p.artist_name',
+      'v.type'
     )
     .from('project as p')
     .leftJoin('vod as v', 'p.id', 'v.project_id')
@@ -1892,6 +1893,16 @@ Project.downloadPromoKit = async (id, force = true) => {
   await Storage.upload(`promo-kit/${id}.zip`, buffer, true)
 
   return Storage.url(path, `Promokit (${project.artist_name} - ${project.name}).zip`)
+}
+
+Project.getDispatchs = async (params) => {
+  const items = await DB('production_dispatch')
+    .where('project_id', params.id)
+    .belongsTo('customer')
+    .where('is_delete', false)
+    .all()
+
+  return items
 }
 
 module.exports = Project

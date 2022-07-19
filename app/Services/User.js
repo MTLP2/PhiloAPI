@@ -824,7 +824,10 @@ User.unsubscribeNewsletter = async (params) => {
   // we search the user with the decrypted id and the params email
   const user = await DB('user')
     .where('id', id)
-    .where('email', params.email)
+    .where(query => {
+      query.where('email', params.email || '')
+        .orWhere('id', params.id || '')
+    })
     .first()
 
   if (user) {

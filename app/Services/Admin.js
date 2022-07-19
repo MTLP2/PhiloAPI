@@ -1386,23 +1386,21 @@ Admin.deleteProject = async (id) => {
 
 Admin.getOrders = async (params) => {
   const orders = DB('order_item as oi')
-    .select('os.*', 'order.origin', 'order.promo_code', 'oi.id as item_id', 'oi.project_id', 'oi.total', 'order.payment_type', 'order.refunded',
+    .select(DB.raw('(os.shipping - os.shipping_cost) as shipping_diff'), 'os.*', 'order.origin', 'order.promo_code', 'oi.id as item_id', 'oi.project_id', 'oi.total', 'order.payment_type', 'order.refunded',
       'os.total as os_total', 'os.is_paid', 'os.ask_cancel', 'order.total as o_total',
-      'order.transaction_id', 'oi.order_id', 'oi.order_shop_id', 'oi.quantity', 'oi.size', 'order.status',
+      'order.transaction_id', 'oi.order_id', 'oi.order_shop_id', 'oi.quantity', 'oi.price', 'oi.size', 'order.status',
       'order.payment_id', 'user.name as user_name', 'user.email as user_email', 'user.picture as user_picture',
-      's.id as shop_id', 's.name as shop_name', 'order.user_agent', 'c.country_id', 'c.name', 'c.firstname', 'c.lastname',
+      'order.user_agent', 'c.country_id', 'c.name', 'c.firstname', 'c.lastname',
       'c.address', 'c.zip_code', 'c.city', 'c.state', 'user.is_pro', 'project.artist_name', 'project.name as project_name',
-      'project.picture', 'item.name as item', 'item.picture as item_picture', 'user.facebook_id', 'user.soundcloud_id', 'vod.barcode',
+      'project.picture', 'user.facebook_id', 'user.soundcloud_id',
       DB.raw('CONCAT(c.firstname, \' \', c.lastname) AS user_infos')
     )
     .join('order', 'oi.order_id', 'order.id')
     .join('order_shop as os', 'os.id', 'oi.order_shop_id')
     .join('user', 'user.id', 'order.user_id')
-    .join('user as s', 's.id', 'os.shop_id')
     .join('project', 'project.id', 'oi.project_id')
-    .join('vod', 'vod.project_id', 'oi.project_id')
+    // .join('vod', 'vod.project_id', 'oi.project_id')
     .leftJoin('customer as c', 'c.id', 'os.customer_id')
-    .leftJoin('item', 'item.id', 'oi.item_id')
     .where('os.step', '!=', 'creating')
     .where('os.step', '!=', 'failed')
 
@@ -1617,7 +1615,6 @@ Admin.saveOrderShop = async (params) => {
 
 Admin.extractOrders = async (params) => {
   params.size = 0
-
   params.project_id = params.id
   const data = await Admin.getOrders(params)
 
@@ -1798,7 +1795,6 @@ Admin.refundProject = async (id, params) => {
 }
 
 Admin.refundOrder = async (params) => {
-  console.log('🚀 ~ file: Admin.js ~ line 1789 ~ Admin.refundOrder= ~ params', params)
   const order = await DB('order').find(params.id)
   const customer = await DB('order_shop')
     .select('customer_id')
@@ -1810,10 +1806,10 @@ Admin.refundOrder = async (params) => {
     moment().subtract(6, 'months')
   )
   if (!params.only_history && order.payment_type === 'paypal' && orderOlderThanSixMonths) {
-    return { error: 'You\'re trying to refund a paypal order older than 6 months. Please tick "Create a refund history without payment" and manually refund the client.' }
+    return { error: 'You\'re trying to refund a paypal order older than 6 months. Please tick "Create a refund history without payment" in "Add refund" and manually refund the client.' }
   }
 
-  // Only history means we add a refund history without making actual payment. Choosen when a refund is made in the Sheraf.
+  // Only history means we add a refund history without making actual payment. Chosen when a refund is made in the Sheraf.
   if (params.refund_payment !== false) {
     if (!params.only_history) {
       await Order.refundPayment({
@@ -1843,6 +1839,17 @@ Admin.refundOrder = async (params) => {
           alert: 0
         })
       }
+    }
+
+    // Special notification in case of unavailable item (rest)
+    if (params.reason === 'rest') {
+      await Notification.add({
+        type: 'order_unavailable_item',
+        order_id: params.id,
+        order_shop_id: params.order_shop_id,
+        user_id: order.user_id,
+        project_id: params.project_id
+      })
     }
 
     await Order.addRefund(params)
@@ -2168,9 +2175,10 @@ Admin.getAudiences = async (params) => {
       'newsletter',
       'user.created_at',
       'origin',
-      DB().raw('(select count(distinct(order_id)) from order_shop where user_id = user.id and is_paid = 1) as orders'),
+      DB().raw('(select count(distinct(order_id)) from order_shop where user_id = user.id and is_paid = 1) as orders_total'),
       DB().raw("(SELECT SUM(total) FROM order_shop WHERE user_id = user.id AND step IN ('sent', 'creating', 'check_address', 'confirmed', 'launched', 'in_production', 'test_pressing_ok', 'preparation')) as turnover")
     )
+    .hasMany('order', 'orders', 'user_id')
 
   if (params.project_id) {
     users.whereExists(
@@ -2225,10 +2233,33 @@ Admin.getAudiences = async (params) => {
   }
 
   users = await users.all()
-  const usersToExport = users.map(user => ({
-    ...user,
-    turnover: user.turnover && user.turnover.toString().replace('.', ',')
-  }))
+
+  const orderLines = []
+  for (const user of users) {
+    // Change format of turnover for csv/excel reading
+    user.turnover = user.turnover && user.turnover.toString().replace('.', ',')
+    let orderIdx = 1
+
+    for (const order of user.orders) {
+      // Create a new key/value for each order
+      user[`order_total_${orderIdx}`] = order.total.toString().replace('.', ',')
+      user[`order_date_${orderIdx}`] = new Date(order.created_at).toLocaleDateString()
+
+      // Push for arrayToCsv if orderIdx does not exist
+      if (!orderLines.find(ol => ol.index === `order_total_${orderIdx}`)) {
+        orderLines.push({
+          name: `Order n°${orderIdx} (total)`,
+          index: `order_total_${orderIdx}`
+        },
+        {
+          name: `Order n°${orderIdx} (date)`,
+          index: `order_date_${orderIdx}`
+        })
+      }
+
+      orderIdx++
+    }
+  }
 
   return Utils.arrayToCsv([
     { name: 'ID', index: 'id' },
@@ -2237,10 +2268,18 @@ Admin.getAudiences = async (params) => {
     { name: 'Country', index: 'country_id' },
     { name: 'Origin', index: 'origin' },
     { name: 'Newsletter', index: 'newsletter' },
-    { name: 'Orders', index: 'orders' },
+    { name: 'Orders', index: 'orders_total' },
     { name: 'Turnover', index: 'turnover' },
-    { name: 'Account creation', index: 'created_at' }
-  ], usersToExport)
+    { name: 'Account creation', index: 'created_at' },
+    ...orderLines
+  ], users)
+}
+
+Admin.getUnsubscribed = () => {
+  return DB('user').select(
+    DB.raw('SUM(unsubscribed) as unsubscribed'),
+    DB.raw('COUNT(*) as total')
+  ).first()
 }
 
 Admin.getNewsletters = () =>
@@ -4095,6 +4134,26 @@ Admin.compareShipping = async (params) => {
         shipping: shipping
       }
     })
+  } if (params.transporter === 'sna') {
+    const workbook = new Excel.Workbook()
+    await workbook.xlsx.load(file)
+    const worksheet = workbook.getWorksheet(1)
+
+    worksheet.eachRow((row, rowNumber) => {
+      const id = row.getCell('C').toString()
+      const shipping = Utils.round(+row.getCell('I').toString() + +row.getCell('M').toString())
+      costs.orders.shipping += shipping
+      costs[id] = {
+        id: id,
+        category: 'order',
+        country: row.getCell('F').toString(),
+        // mode: row.getCell('G').toString(),
+        quantity: row.getCell('E').toString(),
+        weight: row.getCell('H').toString(),
+        transporter: row.getCell('G').toString(),
+        shipping: shipping
+      }
+    })
   } else if (params.transporter === 'whiplash') {
     const lines = file.toString().split('\n')
     let t = 0
@@ -4149,7 +4208,10 @@ Admin.compareShipping = async (params) => {
   for (const shop of shops) {
     const revenue = Utils.round((shop.shipping * shop.currency_rate) / (1 + shop.tax_rate))
 
-    const id = params.transporter === 'daudin' ? shop.id : shop.whiplash_id
+    const id = ['daudin', 'sna'].includes(params.transporter) ? shop.id : shop.whiplash_id
+    if (!costs[id]) {
+      continue
+    }
     costs[id].revenue = revenue
     costs.orders.revenue += revenue
     costs[id].diff = Utils.round(costs[id].revenue - costs[id].shipping)
@@ -4420,6 +4482,40 @@ Admin.exportProjectsBox = async (params) => {
     { index: 'name', name: 'Name' },
     { index: 'artist_name', name: 'Artist Name' }
   ], projectsIsBox)
+}
+
+Admin.checkProjectRest = async (params) => {
+  const refunds = await DB('refund')
+    .select('refund.comment', 'refund.data', 'order_item.quantity')
+    .join('order_shop', 'order_shop.id', 'refund.order_shop_id')
+    .join('order_item', function () {
+      this.on('order_item.order_shop_id', '=', 'order_shop.id')
+      this.on('order_item.project_id', '=', +params.pid)
+    })
+    .where('refund.order_shop_id', +params.osid)
+    .where('reason', 'rest')
+    // .groupBy('refund.comment')
+    // .groupBy('refund.data')
+    // .groupBy('order_item.quantity')
+    .all()
+
+  // If no refunds, item(s) can be rested
+  if (!refunds.length) return { hasBeenRested: false }
+
+  let totalRestedQuantity = 0
+  for (const refund of refunds) {
+    if (!refund.data) continue
+
+    refund.data = JSON.parse(refund.data)
+    if (refund.data.project === +params.pid) totalRestedQuantity += +refund.data.quantity
+  }
+
+  // If combined rested items are less than total quantity of the ordered item, returns false (all items not rested). Else, returns true (all items rested).
+  // Also returns the remaining rest quantity
+  return {
+    hasBeenRested: totalRestedQuantity >= refunds[0].quantity,
+    restLeft: refunds[0].quantity - totalRestedQuantity
+  }
 }
 
 module.exports = Admin

@@ -13,10 +13,12 @@ class Sna {
         const pickup = order.address_pickup ? JSON.parse(order.address_pickup) : null
         const address = order.address.match(/.{1,30}(\s|$)/g)
 
+        const id = process.env.NODE_ENV !== 'production'
+          ? Utils.randomString(10, '#')
+          : order.id.toString()
+
         const data = {
-          customerOrderNumber: process.env.NODE_ENV !== 'production'
-            ? Utils.randomString(10, '#')
-            : order.id.toString(),
+          customerOrderNumber: id,
           orderLabel: '',
           orderDate: order.created_at,
           carrierServiceCode: pickup ? 'MR' : Sna.getTransporter(order.country_id, order.weight),
@@ -31,7 +33,7 @@ class Sna {
             ad3: address[2] || '',
             postalCode: order.zip_code.substring(0, 11),
             city: order.city,
-            stateCode: order.state || '',
+            stateCode: (order.state && order.state.substring(0, 30)) || '',
             countryCode: order.country_id,
             mail: order.email,
             phoneNumber: order.phone || '123',
@@ -126,6 +128,13 @@ class Sna {
   static getTransporter (country, weight) {
     const transporters = {
       FR: {
+        250: 'CP',
+        500: 'CP',
+        1000: 'CP',
+        2000: 'CP',
+        9999: 'CP'
+      },
+      RE: {
         250: 'CP',
         500: 'CP',
         1000: 'CP',
@@ -1768,6 +1777,7 @@ class Sna {
     } else {
       w = 9999
     }
+
     return transporters[country][w]
   }
 }

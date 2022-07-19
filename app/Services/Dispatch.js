@@ -280,6 +280,9 @@ Dispatch.changeStock = async (params) => {
   }
 
   const project = await DB('vod')
+    .select('vod.*', 'u1.email as prod', 'u2.email as com')
+    .leftJoin('user as u1', 'u1.id', 'vod.resp_prod_id')
+    .leftJoin('user as u2', 'u2.id', 'vod.com_id')
     .where('barcode', params.barcode)
     .first()
 
@@ -300,8 +303,8 @@ Dispatch.changeStock = async (params) => {
       comment: 'api'
     })
 
-    if (!project.stock_sna) {
-      const html = `<ul>
+    const html = `<ul>
+      <li><strong>Project:</strong> https://www.diggersfactory.com/sheraf/project/${project.project_id}/stocks</li>
       <li><strong>Transporter:</strong> ${params.transporter || ''}</li>
       <li><strong>Barcode:</strong> ${params.barcode || ''}</li>
       <li><strong>Name:</strong> ${params.name || ''}</li>
@@ -310,9 +313,24 @@ Dispatch.changeStock = async (params) => {
       <li><strong>Comment:</strong> ${params.comment || ''}</li>
     </ul>`
 
+    if (!project.stock_sna) {
       await Notification.sendEmail({
-        to: 'alexis@diggersfactory.com,victor@diggersfactory.com,ismail@diggersfactory.com',
-        subject: `${params.transporter} - new stock : ${params.barcode}`,
+        to: ['alexis@diggersfactory.com',
+          'victor@diggersfactory.com',
+          'ismail@diggersfactory.com',
+          'romain@diggersfactory.com',
+          project.com,
+          project.prod
+        ].join(','),
+        subject: `${params.transporter} - new stock : ${params.name}`,
+        html: html
+      })
+    }
+
+    if (params.quantity < 0) {
+      await Notification.sendEmail({
+        to: ['ismail@diggersfactory.com'].join(','),
+        subject: `${params.transporter} - negative stock : ${params.name}`,
         html: html
       })
     }

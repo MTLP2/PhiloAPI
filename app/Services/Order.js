@@ -9,6 +9,8 @@ const Stock = use('App/Services/Stock')
 const Notification = use('App/Services/Notification')
 const Invoice = use('App/Services/Invoice')
 const Whiplash = use('App/Services/Whiplash')
+const Sna = use('App/Services/Sna')
+const ApiError = use('App/ApiError')
 
 Order.configurePaypal = (p) => {
   const clientId = (p !== null)
@@ -616,47 +618,52 @@ Order.refundOrderShop = async (id, type, params) => {
   return true
 }
 
-Order.refundPayment = (order) =>
-  new Promise(async (resolve, reject) => {
+Order.refundPayment = async (order) => {
+  Utils.checkParams({
+    payment_type: 'required',
+    payment_id: 'required',
+    currency: 'required',
+    total: 'required'
+  }, order)
+
+  if (order.payment_type === 'paypal') {
     try {
-      Utils.checkParams({
-        payment_type: 'required',
-        payment_id: 'required',
-        currency: 'required',
-        total: 'required'
-      }, order)
-
-      if (order.payment_type === 'paypal') {
-        Order.configurePaypal(order.payment_account)
-        paypal.sale.refund(order.transaction_id, {
-          amount: {
-            total: Number.parseFloat(order.total).toFixed(2),
-            currency: order.currency
-          }
-        }, (err, res) => {
-          if (err) reject(err)
-          resolve(res)
-        })
-      } else if (order.payment_type === 'stripe') {
-        const stripe = require('stripe')(config.stripe.client_secret)
-
-        if (order.transfert_id) {
-          await stripe.transfers.createReversal(order.transfert_id)
-        }
-        if (order.payment_id.substring(0, 2) === 'pi') {
-          const intent = await stripe.paymentIntents.retrieve(order.payment_id)
-          order.payment_id = intent.charges.data[0].id
-        }
-        const refund = await stripe.refunds.create({
-          charge: order.payment_id,
-          amount: Math.round(order.total * 100)
-        })
-        resolve(refund)
-      }
-    } catch (e) {
-      reject(e)
+      await Order.refundPayapl(order)
+    } catch (err) {
+      throw new ApiError(err.response.httpStatusCode, err.response.message)
     }
+  } else if (order.payment_type === 'stripe') {
+    const stripe = require('stripe')(config.stripe.client_secret)
+
+    if (order.transfert_id) {
+      await stripe.transfers.createReversal(order.transfert_id)
+    }
+    if (order.payment_id.substring(0, 2) === 'pi') {
+      const intent = await stripe.paymentIntents.retrieve(order.payment_id)
+      order.payment_id = intent.charges.data[0].id
+    }
+    const refund = await stripe.refunds.create({
+      charge: order.payment_id,
+      amount: Math.round(order.total * 100)
+    })
+    return refund
+  }
+}
+
+Order.refundPayapl = (order) => {
+  return new Promise((resolve, reject) => {
+    Order.configurePaypal(order.payment_account)
+    paypal.sale.refund(order.transaction_id, {
+      amount: {
+        total: Number.parseFloat(order.total).toFixed(2),
+        currency: order.currency
+      }
+    }, (err, res) => {
+      if (err) reject(err)
+      resolve(res)
+    })
   })
+}
 
 Order.allManual = async (params) => {
   params.query = DB('order_manual')
@@ -824,9 +831,6 @@ Order.getRefunds = async (params) => {
 
 Order.addRefund = async (params) => {
   params.order_id = params.id
-  // delete params.id
-  // delete params.only_history
-  // delete params.credit_note
 
   return DB('refund').insert({
     amount: params.amount,
@@ -834,8 +838,79 @@ Order.addRefund = async (params) => {
     order_id: params.order_id,
     comment: params.comment,
     order_shop_id: params.order_shop_id,
-    created_at: Utils.date()
+    created_at: Utils.date(),
+    data: JSON.stringify(params.data)
   })
+}
+
+/**
+ * Sync order to the transporter
+ */
+Order.sync = async (params, throwError = false) => {
+  const shop = await DB('order_shop')
+    .select('order_shop.*', 'user.email')
+    .join('user', 'user.id', 'order_shop.user_id')
+    .where('order_shop.id', params.id)
+    .first()
+
+  const items = await DB('order_item')
+    .select('order_item.quantity', 'order_item.price', 'barcode')
+    .join('vod', 'vod.project_id', 'order_item.project_id')
+    .where('order_shop_id', params.id)
+    .all()
+
+  if (shop.transporter === 'daudin') {
+    await DB('order_shop')
+      .where('id', shop.id)
+      .update({
+        sending: true
+      })
+  } else if (['whiplash', 'whiplash_uk'].includes(shop.transporter)) {
+    await Whiplash.validOrder(shop, items)
+  } else if (shop.transporter === 'sna') {
+    const customer = await DB('customer')
+      .find(shop.customer_id)
+
+    try {
+      await Sna.sync([{
+        ...customer,
+        ...shop,
+        email: shop.email,
+        items: items
+      }])
+      await DB('order_shop')
+        .where('id', shop.id)
+        .update({
+          step: 'in_preparation',
+          date_export: Utils.date()
+        })
+    } catch (err) {
+      if (throwError) {
+        throw err
+      } else {
+        await Notification.sendEmail({
+          to: 'victor@diggersfactory.com',
+          subject: `Problem with SNA : ${shop.id}`,
+          html: `<ul>
+            <li>Order Id : https://www.diggersfactory.com/sheraf/order/${shop.order_id}</li>
+            <li>Shop Id : ${shop.id}</li>
+            <li>Error: ${err}</li>
+          </ul>`
+        })
+      }
+    }
+  }
+
+  if (params.notification) {
+    await Notification.add({
+      type: 'my_order_in_preparation',
+      user_id: shop.user_id,
+      order_id: shop.order_id,
+      order_shop_id: shop.id
+    })
+  }
+
+  return { success: true }
 }
 
 module.exports = Order
