@@ -862,7 +862,13 @@ class Daudin {
     for (const line of lines) {
       const columns = line.split(',')
 
-      const qty = parseInt(columns[6]) - parseInt(columns[7])
+      if (columns[6]) {
+        columns[6] = +columns[6].replace(/\s/g, '')
+      }
+      if (columns[7]) {
+        columns[7] = +columns[7].replace(/\s/g, '')
+      }
+      const qty = columns[6] - columns[7]
       const item = {
         barcode: columns[1],
         name: columns[2],
@@ -871,6 +877,7 @@ class Daudin {
         diff: qty,
         step: 'no_project'
       }
+
       if (!isNaN(item.qty)) {
         stock[item.barcode] = item
       }

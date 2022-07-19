@@ -1615,7 +1615,6 @@ Admin.saveOrderShop = async (params) => {
 
 Admin.extractOrders = async (params) => {
   params.size = 0
-
   params.project_id = params.id
   const data = await Admin.getOrders(params)
 
