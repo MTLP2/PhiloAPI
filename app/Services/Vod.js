@@ -921,4 +921,41 @@ Vod.checkCampaignStart = async (hour) => {
   return { success: true }
 }
 
+Vod.checkCampaignEnd = async (hour, minutes) => {
+  const vodToEnd = await DB('vod')
+    .whereNotIn('step', ['successful'])
+    // where day is today
+    .whereRaw('DATE(`end`) = CURDATE()')
+    // where hour is hourly hour
+    .whereRaw(`HOUR(\`end\`) = ${hour}`)
+    // where minute is hourly minutes
+    .whereRaw(`MINUTE(\`end\`) = ${minutes}`)
+    .all()
+
+  for (const vod of vodToEnd) {
+    // Update each vod to step 'in_progress'
+    await DB('vod')
+      .where('id', vod.id)
+      .update({
+        step: 'successful'
+      })
+  }
+
+  return { success: true }
+}
+
+Vod.checkDateShipping = async (hour) => {
+  const vodToShipping = await DB('vod')
+    .whereNotIn('status', ['sent', 'failed'])
+    // where day is today
+    .whereRaw('DATE(`end`) = CURDATE()')
+    // where hour is hourly hour
+    .whereRaw(`HOUR(\`end\`) = ${hour}`)
+    .all()
+
+  return vodToShipping
+
+  return { success: true }
+}
+
 module.exports = Vod

@@ -13,6 +13,8 @@ class TestController {
       return 'test'
     }
 
+    return Vod.checkCampaignEnd(18, (new Date()).getMinutes())
+
     return App.alertStock()
   }
 }
