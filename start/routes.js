@@ -211,6 +211,7 @@ Route.group(() => {
   Route.post('/cards', 'UserController.saveCards')
   Route.post('/event', 'UserController.event')
   Route.get('/sponsor', 'UserController.getSponsor')
+  Route.get('/reviews', 'UserController.getReviews')
   Route.post('/reviews', 'UserController.postReview')
   Route.post('/reviews/stat', 'UserController.postReviewStat')
   Route.get('/projects/:pid/reviews', 'UserController.getProjectReviews')
