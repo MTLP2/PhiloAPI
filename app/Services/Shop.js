@@ -82,6 +82,35 @@ class Shop {
 
     await item.save()
 
+    const projects = await DB('shop_project')
+      .where('shop_id', item.id)
+      .all()
+
+    const ids = []
+    for (const project of params.projects) {
+      const keys = Object.keys(project)
+      if (project[keys]) {
+        ids.push(+keys[0])
+      }
+      if (project[keys] && !projects.some(p => p.project_id === +keys[0])) {
+        await DB('shop_project')
+          .insert({
+            shop_id: item.id,
+            project_id: keys[0]
+          })
+      }
+    }
+    for (const project of projects) {
+      if (!ids.includes(project.project_id)) {
+        await DB('shop_project')
+          .where({
+            shop_id: item.id,
+            project_id: project.project_id
+          })
+          .delete()
+      }
+    }
+
     return { success: true }
   }
 
