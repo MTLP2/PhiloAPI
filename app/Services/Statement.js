@@ -30,6 +30,14 @@ class StatementService {
     if (params.id) {
       item = await DB('statement').find(params.id)
     } else {
+      const exists = await DB('statement')
+        .where('project_id', params.project_id)
+        .where('date', params.year + '-' + params.month)
+        .first()
+
+      if (exists) {
+        return { error: 'statement_already_exists' }
+      }
       item.created_at = Utils.date()
     }
     item.project_id = params.project_id
