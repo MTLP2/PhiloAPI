@@ -882,13 +882,14 @@ class Daudin {
         stock[item.barcode] = item
       }
     }
-
     const projects = await DB('vod')
       .select('project.artist_name', 'project.name', 'project.id', 'project.picture', 'vod.step',
         'vod.project_id', 'barcode', 'stock.quantity as stock')
       .join('project', 'project.id', 'vod.project_id')
-      .join('stock', 'project.id', 'stock.project_id')
-      .where('stock.type', 'daudin')
+      .leftJoin('stock', function () {
+        this.on('project.id', '=', 'stock.project_id')
+        this.andOnVal('stock.type', '=', 'daudin')
+      })
       .whereIn('barcode', Object.keys(stock))
       .all()
 
