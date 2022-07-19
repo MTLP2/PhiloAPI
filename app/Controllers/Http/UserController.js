@@ -83,20 +83,6 @@ class UserController {
     return User.getMessagesByUser(user.id, params)
   }
 
-  getShop ({ user }) {
-    return Shop.find({ user_id: user.id })
-  }
-
-  updateShop ({ params, user }) {
-    params.user_id = user
-    return Shop.update(params)
-  }
-
-  removeShopImage ({ params, user }) {
-    params.user_id = user
-    return Shop.removeImage(params)
-  }
-
   async getProjects ({ user, params }) {
     if (params.user_id && user.id !== +params.u && !await Utils.isTeam(user.id)) {
       throw new ApiError(403)

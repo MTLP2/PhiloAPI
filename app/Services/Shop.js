@@ -5,6 +5,13 @@ const DB = use('App/DB')
 const ApiError = use('App/ApiError')
 
 class Shop {
+  static async all (params) {
+    params.query = DB('shop')
+      .select('shop.*')
+
+    return Utils.getRows(params)
+  }
+
   static async find (params) {
     let shop = DB('shop')
       .select('shop.*')
@@ -52,7 +59,7 @@ class Shop {
       Storage.uploadImage(
         fileName,
         Buffer.from(params.logo, 'base64'),
-        { type: 'jpg', width: 200 }
+        { type: 'png', width: 200 }
       )
     }
     if (params.banner) {
@@ -131,6 +138,36 @@ class Shop {
     item.updated_at = Utils.date()
 
     await item.save()
+
+    return { success: true }
+  }
+
+  static async addProject (params) {
+    const exists = await DB('shop_project')
+      .where('shop_id', params.shop_id)
+      .where('project_id', params.project_id)
+      .first()
+
+    if (exists) {
+      return false
+    } else {
+      await DB('shop_project')
+        .insert({
+          shop_id: params.shop_id,
+          project_id: params.project_id
+        })
+    }
+
+    return { success: true }
+  }
+
+  static async removeProject (params) {
+    await DB('shop_project')
+      .where({
+        shop_id: params.shop_id,
+        project_id: params.project_id
+      })
+      .delete()
 
     return { success: true }
   }
