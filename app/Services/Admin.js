@@ -2180,6 +2180,13 @@ Admin.getAudiences = async (params) => {
     )
     .hasMany('order', 'orders', 'user_id')
 
+  if (params.start) {
+    users.where('user.created_at', '>=', params.start)
+  }
+  if (params.end) {
+    users.where('user.created_at', '<=', `${params.end} 23:59`)
+  }
+
   if (params.project_id) {
     users.whereExists(
       DB().raw(`
@@ -2233,7 +2240,6 @@ Admin.getAudiences = async (params) => {
   }
 
   users = await users.all()
-
   const orderLines = []
   for (const user of users) {
     // Change format of turnover for csv/excel reading
@@ -2242,7 +2248,7 @@ Admin.getAudiences = async (params) => {
 
     for (const order of user.orders) {
       // Create a new key/value for each order
-      user[`order_total_${orderIdx}`] = order.total.toString().replace('.', ',')
+      user[`order_total_${orderIdx}`] = order.total?.toString().replace('.', ',')
       user[`order_date_${orderIdx}`] = new Date(order.created_at).toLocaleDateString()
 
       // Push for arrayToCsv if orderIdx does not exist
