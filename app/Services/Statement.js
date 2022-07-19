@@ -123,39 +123,34 @@ class StatementService {
 
     data = Object.values(data)
 
-    for (const d in data) {
-      data[d].project = Project.query()
-        .select('project.id', 'project.name', 'artist_name', 'fee_distrib', 'currency')
-        .join('vod', 'vod.project_id', 'project.id')
-        .where('is_delete', false)
+    const barcodes = data.filter(d => d.barcode).map(d => d.barcode)
+    const catnumber = data.filter(d => d.cat_number).map(d => d.cat_number)
 
+    const projects = await DB('project')
+      .select('project.id', 'project.name', 'artist_name', 'fee_distrib', 'currency', 'barcode', 'cat_number')
+      .join('vod', 'vod.project_id', 'project.id')
+      .where('is_delete', false)
+      .where(query => {
+        query.whereIn('barcode', barcodes)
+          .orWhereIn('cat_number', catnumber)
+      })
+      .all()
+
+    const bb = {}
+    const cc = {}
+    for (const project of projects) {
+      bb[project.barcode] = project
+      cc[project.cat_number] = project
+    }
+
+    for (const d in data) {
       if (data[d].barcode) {
-        data[d].project.where('vod.barcode', 'like', data[d].barcode)
+        data[d].project = bb[data[d].barcode]
       } else if (data[d].cat_number) {
-        data[d].project.where('project.cat_number', 'like', data[d].cat_number.split('#')[0])
+        data[d].project = cc[data[d].cat_number]
       }
-      data[d].project = await data[d].project.first()
       data[d].total = Utils.round(data[d].total)
       data[d].storage = Utils.round(data[d].storage)
-
-      if (!data[d].project) {
-        data[d].project = Project.query()
-          .select('project.id', 'project.name', 'artist_name', 'fee_distrib',
-            'currency', 'item.name as item_name', 'project.picture')
-          .join('vod', 'vod.project_id', 'project.id')
-          .join('item', 'item.project_id', 'project.id')
-
-        if (data[d].barcode) {
-          data[d].project.orWhere('item.barcode', 'like', data[d].barcode)
-        } else if (data[d].cat_number) {
-          data[d].project.orWhere('item.catnumber', 'like', data[d].cat_number)
-        }
-        data[d].project = await data[d].project.first()
-        if (data[d].project) {
-          data[d].item = data[d].project.item_name
-        }
-        data[d].total = Utils.round(data[d].total)
-      }
     }
 
     if (params.type === 'save') {
