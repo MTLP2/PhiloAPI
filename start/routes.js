@@ -82,6 +82,8 @@ Route.group(() => {
   Route.get('/blog', 'BlogController.all')
   Route.get('/blog/:id', 'BlogController.find')
 
+  Route.get('/shops/:id', 'ShopController.find')
+
   Route.post('projects/check-code', 'ProjectsController.checkCode')
   Route.post('/projects/download', 'ProjectsController.download')
   Route.get('/projects', 'ProjectsController.getProjects')
@@ -171,6 +173,13 @@ Route.group(() => {
   Route.get('/productions/:id/packing-list', 'ProductionController.packingList')
   Route.post('/productions/:id/lines', 'ProductionController.saveLines')
   Route.delete('/productions/:id/dispatchs/:did', 'ProductionController.removeDispatch')
+
+  Route.get('/shops', 'ShopController.getShops')
+  Route.get('/shop', 'ShopController.getShop')
+  Route.post('/shop', 'ShopController.updateShop')
+  Route.post('/shop/project', 'ShopController.addProject')
+  Route.delete('/shop/project', 'ShopController.removeProject')
+  Route.delete('/shop/image', 'ShopController.removeShopImage')
 }).middleware('auth')
 
 Route.get('/productions/:id/order-form', 'ProductionController.orderForm')
@@ -224,6 +233,7 @@ Route.group(() => {
   Route.get('/resp-prod', 'AdminController.getRespProd')
   Route.get('/stripe-balance', 'AdminController.getStripeBalance')
   Route.post('/customers', 'AdminController.saveCustomer')
+  Route.get('/shops', 'ShopController.all')
   Route.get('/projects', 'AdminController.getProjects')
   Route.get('/projects/export', 'AdminController.exportProjects')
   Route.get('/projects/export-raw', 'AdminController.exportRawProjects')
