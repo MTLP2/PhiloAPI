@@ -102,6 +102,7 @@ App.hourly = async () => {
     } else if (hour === 7) {
       await App.check5DaysLeftProjects()
       await App.checkFinishedProjects()
+      await Vod.checkDateShipping()
     } else if (hour === 8) {
       await Box.checkReminder()
       await Production.checkNotif()
@@ -154,6 +155,7 @@ App.cron = async () => {
     await MondialRelay.checkDelivered()
     await User.syncCIOs()
     await User.syncEvents()
+    await Vod.checkCampaignEnd(new Date().getHours(), new Date().getMinutes())
 
     cron.status = 'complete'
     cron.end = new Date()

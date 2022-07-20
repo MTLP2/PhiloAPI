@@ -924,9 +924,10 @@ Admin.saveVod = async (params) => {
 
   if (params.end) {
     vod.end = new Date(params.end)
-    vod.end.setUTCHours(20)
-    vod.end.setUTCMinutes(0)
-    vod.end.setUTCSeconds(0)
+    //! User now set this by himself
+    // vod.end.setUTCHours(20)
+    // vod.end.setUTCMinutes(0)
+    // vod.end.setUTCSeconds(0)
   }
 
   if (params.start_project && project.type !== 'wishlist') {
