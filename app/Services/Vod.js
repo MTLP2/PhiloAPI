@@ -79,6 +79,7 @@ Vod.save = async (params, pp) => {
 
   vod.description = params.description
   vod.description_fr_long = params.description_fr_long
+  vod.text_bellow_button = params.text_bellow_button
   vod.download = params.download
   vod.send_tracks = params.send_tracks
   vod.type_vinyl = params.type_vinyl

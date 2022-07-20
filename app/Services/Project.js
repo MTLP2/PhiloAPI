@@ -582,6 +582,7 @@ Project.find = async (id, params) => {
       'v.color_vinyl',
       'v.color_vinyl_str',
       'v.picture_project',
+      'v.text_bellow_button',
       'vinyl_weight',
       'v.weight',
       'v.barcode',
