@@ -944,16 +944,28 @@ Vod.checkCampaignEnd = async (hour, minutes) => {
   return { success: true }
 }
 
-Vod.checkDateShipping = async (hour) => {
-  const vodToShipping = await DB('vod')
-    .whereNotIn('status', ['sent', 'failed'])
-    // where day is today
-    .whereRaw('DATE(`end`) = CURDATE()')
-    // where hour is hourly hour
-    .whereRaw(`HOUR(\`end\`) = ${hour}`)
+Vod.checkDateShipping = async () => {
+  const vodLateDateShipping = await DB('vod')
+    .select('date_shipping', 'step', 'status', 'id', 'project_id', 'resp_prod_id')
+    // exclude irrelevant steps and statuses (globally failed or successful)
+    .whereNotIn('step', ['successful', 'failed'])
+    .whereNotIn('status', ['sent', 'failed', 'dispatched', 'launched'])
+    // where date shipping is today or after
+    .whereRaw('DATE(`date_shipping`) <= CURDATE()')
+    // where data_shipping is 2022 or after
+    .whereRaw('DATE(`date_shipping`) >= "2022-01-01"')
+    // exclude vod without prod resp as we're notifying them
+    .whereNotNull('resp_prod_id')
     .all()
 
-  return vodToShipping
+  for (const vod of vodLateDateShipping) {
+    await Notification.add({
+      user_id: vod.resp_prod_id,
+      type: 'vod_late_date_shipping',
+      project_id: vod.project_id,
+      vod_id: vod.id
+    })
+  }
 
   return { success: true }
 }

@@ -102,6 +102,7 @@ App.hourly = async () => {
     } else if (hour === 7) {
       await App.check5DaysLeftProjects()
       await App.checkFinishedProjects()
+      await Vod.checkDateShipping()
     } else if (hour === 8) {
       await Box.checkReminder()
       await Production.checkNotif()
