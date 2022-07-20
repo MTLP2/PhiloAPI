@@ -1,5 +1,6 @@
 const Utils = use('App/Utils')
 const request = require('request')
+const { removeNullish } = require('stripe/lib/utils')
 const ApiError = use('App/ApiError')
 const Env = use('Env')
 const DB = use('App/DB')
@@ -10,10 +11,11 @@ class Sna {
       const dispatchs = []
 
       for (const order of orders) {
-        const pickup = order.address_pickup ? JSON.parse(order.address_pickup) : null
+        const pickup = order.address_pickup ? JSON.parse(order.address_pickup) : removeNullish
         const address = order.address.match(/.{1,30}(\s|$)/g)
 
-        const id = process.env.NODE_ENV !== 'production'
+        const id = order.id.toString()
+        process.env.NODE_ENV !== 'production'
           ? Utils.randomString(10, '#')
           : order.id.toString()
 
@@ -89,9 +91,9 @@ class Sna {
     })
   }
 
-  static getStockApi () {
+  static getApi (endpoint) {
     return new Promise((resolve, reject) => {
-      request('https://api.snagz.fr/stock', {
+      request(`https://api.snagz.fr/${endpoint}`, {
         qs: {
           CustomerAccount: Env.get('SNA_CUSTOMER'),
           User: Env.get('SNA_USER'),
@@ -111,7 +113,7 @@ class Sna {
   }
 
   static async getStock () {
-    const stock = await Sna.getStockApi()
+    const stock = await Sna.getApi('stock')
     const projects = await DB('project as p')
       .select('p.id', 'p.artist_name', 'p.name', 'p.picture', 'vod.barcode')
       .join('vod', 'vod.project_id', 'p.id')
@@ -123,6 +125,11 @@ class Sna {
     }
 
     return stock
+  }
+
+  static async getOrders () {
+    const orders = await Sna.getApi('Order_Status')
+    return orders
   }
 
   static getTransporter (country, weight) {

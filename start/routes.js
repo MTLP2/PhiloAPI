@@ -420,6 +420,7 @@ Route.group(() => {
   Route.post('/daudin/stock', 'AdminController.getDaudinStock')
   Route.post('/daudin/missing-project', 'AdminController.getDaudinMissingProject')
   Route.get('/sna/stock', 'SnaController.getStock')
+  Route.get('/sna/orders', 'SnaController.getOrders')
   Route.get('/order-manual', 'AdminController.getOrderManual')
   Route.post('/order-manual', 'AdminController.saveOrderManual')
   Route.delete('/order-manual/:id', 'AdminController.deleteOrderManual')
