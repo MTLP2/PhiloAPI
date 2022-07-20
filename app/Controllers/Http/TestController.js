@@ -13,8 +13,6 @@ class TestController {
       return 'test'
     }
 
-    return Vod.checkDateShipping()
-
     return App.alertStock()
   }
 }
