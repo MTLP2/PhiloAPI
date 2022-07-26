@@ -13,6 +13,8 @@ class TestController {
       return 'test'
     }
 
+    return Production.checkIfActionHasNotifications({ id: 262811, tid: 'check_address' })
+
     return App.alertStock()
   }
 }

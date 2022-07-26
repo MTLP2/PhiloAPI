@@ -1993,6 +1993,16 @@ class Production {
     const { data: productions } = await Production.all({ project_id: params.id, user: { is_team: false } })
     return productions
   }
+
+  static async checkIfActionHasNotifications (params) {
+    const notification = await DB('notification')
+      .select('created_at')
+      .where('project_id', +params.id)
+      .where('type', `my_order_${params.tid}`)
+      .first()
+
+    return { date: notification ? notification.created_at : false }
+  }
 }
 
 module.exports = Production
