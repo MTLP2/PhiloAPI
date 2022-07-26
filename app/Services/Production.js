@@ -207,7 +207,7 @@ class Production {
       },
       {
         category: 'postprod',
-        type: 'done',
+        type: 'completed',
         action: 'check',
         for: 'team'
       }
@@ -543,6 +543,13 @@ class Production {
     item.comment = params.comment
 
     if (params.status === 'valid') {
+      // Handle postprod completed
+      if (item.category === 'postprod' && params.type === 'completed') {
+        await DB('vod')
+          .where('id', prod.vod_id)
+          .update('status', 'completed')
+      }
+
       // Handle postprod check address & sync (notif to orders)
       if (item.category === 'postprod' && ['check_address', 'sync'].includes(params.type)) {
         const orders = await DB()
@@ -1386,7 +1393,7 @@ class Production {
     }
   }
 
-  static async addNotif ({ id, type, date, data }) {
+  static async addNotif ({ id, type, date, data, overrideNotif = false }) {
     const prod = await DB('vod')
       .select('production.id', 'vod.project_id', 'production.notif', 'vod.user_id', 'production.resp_id')
       .join('production', 'production.project_id', 'vod.project_id')
@@ -1394,7 +1401,7 @@ class Production {
       .where('production.id', id)
       .first()
 
-    if (prod.notif) {
+    if (prod.notif || overrideNotif) {
       console.log('add_notif', {
         type: `production_${type}`,
         prod_id: prod.id,
@@ -2002,6 +2009,29 @@ class Production {
       .first()
 
     return { date: notification ? notification.created_at : false }
+  }
+
+  static async checkProductionToBeCompleted () {
+    const productions = await DB('vod')
+      .select('production_action.updated_at', 'production.id as prod_id', 'vod.id as vod_id')
+      .join('project', 'project.id', 'vod.project_id')
+      .join('production', 'production.project_id', 'project.id')
+      .join('production_action', 'production_action.production_id', 'production.id')
+      .where('vod.status', 'preparation')
+      .where('production_action.type', 'sync')
+      .whereRaw('production_action.updated_at > (NOW() - INTERVAL 21 DAY)')
+      .all()
+
+    for (const prod of productions) {
+      Production.addNotif({
+        id: prod.prod_id,
+        type: 'completed_alert',
+        date: Utils.date({ time: false }),
+        overrideNotif: true
+      })
+    }
+
+    return productions
   }
 }
 
