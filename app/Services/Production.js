@@ -544,7 +544,7 @@ class Production {
 
     if (params.status === 'valid') {
       // Handle postprod check address & sync (notif to orders)
-      if (item.category === 'postprod') {
+      if (item.category === 'postprod' && ['check_address', 'sync'].includes(params.type)) {
         const orders = await DB()
           .select('os.*', 'os.id as order_shop_id')
           .from('order_shop as os')
@@ -577,7 +577,10 @@ class Production {
             }
           }
 
-          await Notification.add(data)
+          // Send notif check
+          if (params.notif) {
+            await Notification.add(data)
+          }
 
           await DB('order_shop')
             .where('id', order.id)
