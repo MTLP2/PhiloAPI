@@ -155,7 +155,7 @@ App.cron = async () => {
     await MondialRelay.checkDelivered()
     await User.syncCIOs()
     await User.syncEvents()
-    await Vod.checkCampaignEnd(new Date().getHours(), new Date().getMinutes())
+    // await Vod.checkCampaignEnd(new Date().getHours(), new Date().getMinutes())
 
     cron.status = 'complete'
     cron.end = new Date()
