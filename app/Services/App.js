@@ -547,7 +547,7 @@ App.notification = async (notif, test = false) => {
     const items = JSON.parse(order.barcodes)
 
     const projects = await DB('vod')
-      .select('vod.barcode', 'p.name', 'p.slug', 'p.artist_name', 'p.picture')
+      .select('vod.barcode', 'p.name', 'p.slug', 'p.artist_name', 'p.picture', 'p.id as project_id')
       .join('project as p', 'vod.project_id', 'p.id')
       .whereIn('barcode', items.map(b => b.barcode))
       .all()
@@ -570,7 +570,7 @@ App.notification = async (notif, test = false) => {
     }
 
     data.order_items = items.map(item => {
-      item.picture = item.picture || item.project_id
+      item.picture = `${config.app.storage_url}/projects/${item.picture || item.project_id}/cover.jpg`
       return item
     })
   }
