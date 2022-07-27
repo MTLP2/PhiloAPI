@@ -867,7 +867,7 @@ Order.addRefund = async (params) => {
     reason: params.reason,
     order_id: params.order_id,
     comment: params.comment,
-    order_shop_id: params.order_shop_id,
+    order_shop_id: params.order_shop_id || 0,
     created_at: Utils.date(),
     data: JSON.stringify(params.data)
   })
