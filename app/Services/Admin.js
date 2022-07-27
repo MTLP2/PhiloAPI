@@ -1400,7 +1400,7 @@ Admin.getOrders = async (params) => {
     .join('order_shop as os', 'os.id', 'oi.order_shop_id')
     .join('user', 'user.id', 'order.user_id')
     .join('project', 'project.id', 'oi.project_id')
-    // .join('vod', 'vod.project_id', 'oi.project_id')
+    .join('vod', 'vod.project_id', 'oi.project_id')
     .leftJoin('customer as c', 'c.id', 'os.customer_id')
     .where('os.step', '!=', 'creating')
     .where('os.step', '!=', 'failed')
