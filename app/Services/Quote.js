@@ -1015,4 +1015,31 @@ class Quote {
   }
 }
 
+Quote.exportAll = async (params) => {
+  const query = DB('quote')
+
+  if (params.start) {
+    query.where('quote.created_at', '>=', params.start)
+  }
+  if (params.end) {
+    query.where('quote.created_at', '<=', `${params.end} 23:59`)
+  }
+  query.orderBy('created_at', 'desc')
+
+  const quotes = await query.all()
+
+  return Utils.arrayToCsv([
+    { index: 'id', name: 'ID' },
+    { index: 'origin', name: 'Origin' },
+    { index: 'name', name: 'Name' },
+    { index: 'client', name: 'Client' },
+    { index: 'email', name: 'Email' },
+    { index: 'phone', name: 'Phone' },
+    { index: 'quantity', name: 'Quantity' },
+    { index: 'total', name: 'Total' },
+    { index: 'site', name: 'Site' },
+    { index: 'created_at', name: 'Date' }
+  ], quotes)
+}
+
 module.exports = Quote
