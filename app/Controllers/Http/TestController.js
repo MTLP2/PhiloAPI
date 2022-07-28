@@ -5,7 +5,6 @@ const Vod = use('App/Services/Vod')
 const Stock = use('App/Services/Stock')
 const Production = use('App/Services/Production')
 const Admin = use('App/Services/Admin')
-const Quote = use('App/Services/Quote')
 const App = use('App/Services/App')
 
 class TestController {
@@ -13,8 +12,6 @@ class TestController {
     if (process.env.NODE_ENV === 'production') {
       return 'test'
     }
-
-    return Quote.exportAll({})
 
     return App.alertStock()
   }
