@@ -913,7 +913,6 @@ Cart.calculateShipping = async (params) => {
   }
 
   if (shippings.length === 0) {
-    console.log('length')
     return { error: 'no_shipping' }
   }
 
@@ -941,7 +940,6 @@ Cart.calculateShipping = async (params) => {
   }
 
   if (!shipping) {
-    console.log('shipping')
     return { error: 'no_shipping' }
   }
 
