@@ -504,6 +504,7 @@ class Production {
   }
 
   static async saveAction (params) {
+    console.log('🚀 ~ file: Production.js ~ line 507 ~ Production ~ saveAction ~ params', params)
     let item = await DB('production_action')
       .select('production_action.*', 'user.is_admin as user_is_admin')
       .join('user', 'user.id', params.user.id)
@@ -535,6 +536,8 @@ class Production {
     if (params.type === 'test_pressing') {
       item.status = params.valid === 0 ? 'refused' : params.status
     }
+    // Override checks above when postprod
+    item.status = params.category === 'postprod' ? params.status : item.status
 
     item.text = JSON.stringify({
       number: params.text || params.text_number,
