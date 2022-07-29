@@ -826,6 +826,7 @@ Admin.saveVod = async (params) => {
   vod.show_countdown = params.show_countdown
   vod.send_statement = params.send_statement
   vod.storage_costs = params.storage_costs
+  vod.scheduled_end = params.scheduled_end
   vod.is_licence = params.is_licence
 
   vod.historic = vod.historic ? JSON.parse(vod.historic) : []
