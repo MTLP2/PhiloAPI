@@ -253,6 +253,11 @@ Utils.getRows = async (params) => {
   }
 
   if (filters) {
+    // Turn object filters into array to avoid non-iterable error
+    if (!Array.isArray(filters)) {
+      filters = Object.keys(filters).map(key => ({ name: key, value: filters[key] }))
+    }
+
     for (const filter of filters) {
       if (filter && filter.value) {
         query.where(q => {

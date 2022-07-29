@@ -82,6 +82,8 @@ Route.group(() => {
   Route.get('/blog', 'BlogController.all')
   Route.get('/blog/:id', 'BlogController.find')
 
+  Route.get('/shops/:id', 'ShopController.find')
+
   Route.post('projects/check-code', 'ProjectsController.checkCode')
   Route.post('/projects/download', 'ProjectsController.download')
   Route.get('/projects', 'ProjectsController.getProjects')
@@ -172,6 +174,13 @@ Route.group(() => {
   Route.post('/productions/:id/lines', 'ProductionController.saveLines')
   Route.delete('/productions/:id/dispatchs/:did', 'ProductionController.removeDispatch')
   Route.get('/productions/:id/notifications/:tid', 'ProductionController.checkIfActionHasNotifications')
+
+  Route.get('/shops', 'ShopController.getShops')
+  Route.get('/shop', 'ShopController.getShop')
+  Route.post('/shop', 'ShopController.updateShop')
+  Route.post('/shop/project', 'ShopController.addProject')
+  Route.delete('/shop/project', 'ShopController.removeProject')
+  Route.delete('/shop/image', 'ShopController.removeShopImage')
 }).middleware('auth')
 
 Route.get('/productions/:id/order-form', 'ProductionController.orderForm')
@@ -212,6 +221,7 @@ Route.group(() => {
   Route.post('/cards', 'UserController.saveCards')
   Route.post('/event', 'UserController.event')
   Route.get('/sponsor', 'UserController.getSponsor')
+  Route.get('/reviews', 'UserController.getReviews')
   Route.post('/reviews', 'UserController.postReview')
   Route.post('/reviews/stat', 'UserController.postReviewStat')
   Route.get('/projects/:pid/reviews', 'UserController.getProjectReviews')
@@ -224,6 +234,7 @@ Route.group(() => {
   Route.get('/resp-prod', 'AdminController.getRespProd')
   Route.get('/stripe-balance', 'AdminController.getStripeBalance')
   Route.post('/customers', 'AdminController.saveCustomer')
+  Route.get('/shops', 'ShopController.all')
   Route.get('/projects', 'AdminController.getProjects')
   Route.get('/projects/export', 'AdminController.exportProjects')
   Route.get('/projects/export-raw', 'AdminController.exportRawProjects')
@@ -410,6 +421,7 @@ Route.group(() => {
   Route.post('/daudin/stock', 'AdminController.getDaudinStock')
   Route.post('/daudin/missing-project', 'AdminController.getDaudinMissingProject')
   Route.get('/sna/stock', 'SnaController.getStock')
+  Route.get('/sna/orders', 'SnaController.getOrders')
   Route.get('/order-manual', 'AdminController.getOrderManual')
   Route.post('/order-manual', 'AdminController.saveOrderManual')
   Route.delete('/order-manual/:id', 'AdminController.deleteOrderManual')

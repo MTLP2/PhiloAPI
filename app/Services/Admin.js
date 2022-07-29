@@ -924,9 +924,10 @@ Admin.saveVod = async (params) => {
 
   if (params.end) {
     vod.end = new Date(params.end)
-    vod.end.setUTCHours(20)
-    vod.end.setUTCMinutes(0)
-    vod.end.setUTCSeconds(0)
+    //! User now set this by himself
+    // vod.end.setUTCHours(20)
+    // vod.end.setUTCMinutes(0)
+    // vod.end.setUTCSeconds(0)
   }
 
   if (params.start_project && project.type !== 'wishlist') {
@@ -1615,7 +1616,6 @@ Admin.saveOrderShop = async (params) => {
 
 Admin.extractOrders = async (params) => {
   params.size = 0
-
   params.project_id = params.id
   const data = await Admin.getOrders(params)
 
@@ -2181,6 +2181,13 @@ Admin.getAudiences = async (params) => {
     )
     .hasMany('order', 'orders', 'user_id')
 
+  if (params.start) {
+    users.where('user.created_at', '>=', params.start)
+  }
+  if (params.end) {
+    users.where('user.created_at', '<=', `${params.end} 23:59`)
+  }
+
   if (params.project_id) {
     users.whereExists(
       DB().raw(`
@@ -2234,7 +2241,6 @@ Admin.getAudiences = async (params) => {
   }
 
   users = await users.all()
-
   const orderLines = []
   for (const user of users) {
     // Change format of turnover for csv/excel reading
@@ -2243,7 +2249,7 @@ Admin.getAudiences = async (params) => {
 
     for (const order of user.orders) {
       // Create a new key/value for each order
-      user[`order_total_${orderIdx}`] = order.total.toString().replace('.', ',')
+      user[`order_total_${orderIdx}`] = order.total?.toString().replace('.', ',')
       user[`order_date_${orderIdx}`] = new Date(order.created_at).toLocaleDateString()
 
       // Push for arrayToCsv if orderIdx does not exist

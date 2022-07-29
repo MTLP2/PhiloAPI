@@ -5,6 +5,7 @@ const Payment = use('App/Services/Payment')
 const Whiplash = use('App/Services/Whiplash')
 const Box = use('App/Services/Box')
 const Review = use('App/Services/Review')
+const Shop = use('App/Services/Shop')
 const DB = use('App/DB')
 const Utils = use('App/Utils')
 const { validateAll } = use('Validator')
@@ -215,6 +216,11 @@ class UserController {
   async getProjectReviews ({ user, params }) {
     params.user_id = user.id
     return Review.getUserProjectReview(params)
+  }
+
+  async getReviews ({ user, params }) {
+    params.userId = user.id
+    return Review.getUserReviews(params)
   }
 
   async postReview ({ user, params, response }) {

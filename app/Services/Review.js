@@ -265,4 +265,31 @@ Review.saveStat = async (params) => {
   return { success: true }
 }
 
+Review.getUserReviews = async ({ userId }) => {
+  return DB('order_shop as os')
+    .select(
+      DB.raw('DISTINCT p.id'),
+      'p.color',
+      'p.name',
+      'p.artist_name',
+      'p.picture',
+      'item.name as item',
+      'item.picture as item_picture',
+      DB.raw('CASE WHEN r.id IS NULL THEN 0 ELSE 1 END AS has_review')
+    )
+    .join('order_item as oi', 'oi.order_shop_id', 'os.id')
+    .join('project as p', 'p.id', 'oi.project_id')
+    .leftJoin('review as r', function () {
+      this.on('r.project_id', 'p.id')
+      this.on('r.user_id', userId)
+    })
+    .leftJoin('item', 'item.id', 'oi.item_id')
+    .where('os.user_id', userId)
+    .where('os.ask_cancel', 0)
+    .where('os.is_paid', 1)
+    .whereNotNull('os.date_export')
+    .orderBy('has_review', 'asc')
+    .all()
+}
+
 module.exports = Review

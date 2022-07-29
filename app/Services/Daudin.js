@@ -862,7 +862,13 @@ class Daudin {
     for (const line of lines) {
       const columns = line.split(',')
 
-      const qty = parseInt(columns[6]) - parseInt(columns[7])
+      if (columns[6]) {
+        columns[6] = +columns[6].replace(/\s/g, '')
+      }
+      if (columns[7]) {
+        columns[7] = +columns[7].replace(/\s/g, '')
+      }
+      const qty = columns[6] - columns[7]
       const item = {
         barcode: columns[1],
         name: columns[2],
@@ -871,17 +877,19 @@ class Daudin {
         diff: qty,
         step: 'no_project'
       }
+
       if (!isNaN(item.qty)) {
         stock[item.barcode] = item
       }
     }
-
     const projects = await DB('vod')
       .select('project.artist_name', 'project.name', 'project.id', 'project.picture', 'vod.step',
         'vod.project_id', 'barcode', 'stock.quantity as stock')
       .join('project', 'project.id', 'vod.project_id')
-      .join('stock', 'project.id', 'stock.project_id')
-      .where('stock.type', 'daudin')
+      .leftJoin('stock', function () {
+        this.on('project.id', '=', 'stock.project_id')
+        this.andOnVal('stock.type', '=', 'daudin')
+      })
       .whereIn('barcode', Object.keys(stock))
       .all()
 

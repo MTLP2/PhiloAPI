@@ -697,6 +697,9 @@ Order.allManual = async (params) => {
 Order.saveManual = async (params) => {
   let item = DB('order_manual')
 
+  const prices = {}
+  const projects = {}
+  let weight = 0
   if (!params.id && !params.force) {
     for (const b of params.barcodes) {
       const vod = await DB('vod')
@@ -708,6 +711,9 @@ Order.saveManual = async (params) => {
         .first()
 
       if (vod) {
+        projects[vod.barcode] = vod.project_id
+        prices[vod.barcode] = vod.price
+        weight += vod.weight
         const stocks = await Stock.getProject(vod.project_id)
         for (const [key, value] of Object.entries(stocks)) {
           vod[`stock_${key}`] = value
@@ -762,6 +768,26 @@ Order.saveManual = async (params) => {
 
   await item.save()
 
+  if (['sna'].includes(params.transporter)) {
+    await Sna.sync([{
+      ...customer,
+      id: 'M' + item.id,
+      shipping: 15,
+      currency: 'EUR',
+      address_pickup: params.address_pickup,
+      // Add package weight
+      weight: weight + 340,
+      created_at: item.created_at,
+      email: item.email,
+      items: params.barcodes.map(b => {
+        return {
+          barcode: b.barcode,
+          quantity: b.quantity,
+          price: prices[b.barcode]
+        }
+      })
+    }])
+  }
   if (['whiplash', 'whiplash_uk'].includes(params.transporter) && !item.whiplash_id) {
     const pp = {
       shipping_name: `${customer.firstname} ${customer.lastname}`,
@@ -801,11 +827,15 @@ Order.saveManual = async (params) => {
   }
 
   for (const b of params.barcodes) {
-    await DB('vod')
-      .where('barcode', b.barcode)
-      .update({
-        [`stock_${params.transporter}`]: DB.raw(`stock_${params.transporter} - ${b.quantity}`)
+    if (projects[b.barcode]) {
+      await Stock.save({
+        project_id: projects[b.barcode],
+        type: 'sna',
+        quantity: -b.quantity,
+        diff: true,
+        comment: 'manual'
       })
+    }
   }
 
   if (item.user_id) {

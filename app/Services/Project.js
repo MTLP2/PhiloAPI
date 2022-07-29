@@ -314,6 +314,14 @@ Project.findAll = async (params) => {
     params.limit = 1000
   }
 
+  if (params.shop_id) {
+    projects.join('shop_project', 'shop_project.project_id', 'p.id')
+    projects.where('shop_project.shop_id', params.shop_id)
+    if (!params.all_project) {
+      projects.whereIn('v.step', ['in_progress', 'coming_soon', 'successful'])
+    }
+  }
+
   if (params.supported) {
     projects.whereIn('p.id', DB.raw(`
       SELECT project_id
@@ -574,6 +582,7 @@ Project.find = async (id, params) => {
       'v.color_vinyl',
       'v.color_vinyl_str',
       'v.picture_project',
+      'v.text_bellow_button',
       'vinyl_weight',
       'v.weight',
       'v.barcode',
