@@ -2034,7 +2034,7 @@ class Production {
       })
     }
 
-    return productions
+    return { success: true }
   }
 }
 

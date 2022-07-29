@@ -105,6 +105,7 @@ App.hourly = async () => {
     } else if (hour === 8) {
       await Box.checkReminder()
       await Production.checkNotif()
+      await Production.checkProductionToBeCompleted()
     } else if (hour === 9) {
       await Review.checkNotif()
     } else if (hour === 12) {
