@@ -262,14 +262,15 @@ App.currencies = async () => {
 }
 
 App.checkNotifications = async () => {
+  /**
   const query = `
     UPDATE notification
       SET email = 1
     WHERE
       email = -1
       AND created_at >= DATE_SUB(curdate(), INTERVAL 1 WEEK)
-  `
   await DB().execute(query)
+  **/
 
   const notifications = await DB('notification').where('email', 1).limit(1000).all()
 
