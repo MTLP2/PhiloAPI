@@ -233,6 +233,7 @@ class Daudin {
       .join('customer', 'customer.id', 'os.customer_id')
       .join('country', 'country.id', 'customer.country_id')
       .leftJoin('promo_code', 'promo_code.id', 'os.promo_code')
+      .where('os.type', 'vod')
       .where('country.lang', 'en')
       .where('sending', true)
       .orderBy('os.id', 'asc')
@@ -250,6 +251,7 @@ class Daudin {
         if (barcode === 'SIZE') {
           barcode = sizes[item.size]
         }
+
         lines.push({
           ...item,
           id: `${item.id}`,
@@ -318,6 +320,7 @@ class Daudin {
           if (barcode === 'SIZE') {
             barcode = sizes[item.size]
           }
+
           lines.push({
             ...order,
             ...item,
