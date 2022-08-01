@@ -404,6 +404,7 @@ Route.group(() => {
   Route.get('/quotes/:id', 'AdminController.getQuote')
   Route.post('/quotes/:id', 'AdminController.saveQuote')
   Route.get('/quotes/:id/download', 'AdminController.downloadQuote')
+  Route.get('/quote-export', 'AdminController.exportQuotes')
   Route.get('/invoices', 'AdminController.getInvoices')
   Route.post('/invoices', 'AdminController.saveInvoice')
   Route.get('/invoices/sfc', 'AdminController.invoicesSfc')

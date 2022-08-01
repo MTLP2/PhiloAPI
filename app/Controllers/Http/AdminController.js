@@ -888,6 +888,10 @@ class AdminController {
   getCustomerByOrderShopId ({ params }) {
     return Customer.getByOrderShopId({ orderShopId: params.id })
   }
+
+  exportQuotes ({ params }) {
+    return Quote.exportAll(params)
+  }
 }
 
 module.exports = AdminController

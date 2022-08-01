@@ -128,8 +128,9 @@ PromoCode.getSales = ({ vod = false, box = false }) => {
 
 PromoCode.getByItem = async ({ itemId, type }) => {
   const { data } = await PromoCode.all({ size: 0 })
+  // Codes that have a name, are enabled, and with end date not passed
   const codes = data
-    .filter(c => c.code)
+    .filter(c => c.code && c.is_enabled && !(c.end <= moment().format('YYYY-MM-DD')))
     .map(code => ({
       id: code.id,
       label: code.code,
@@ -140,6 +141,7 @@ PromoCode.getByItem = async ({ itemId, type }) => {
 }
 
 PromoCode.saveByItem = async ({ codes, itemId, type }) => {
+  // Item can be 'user' or 'project'
   // element ID check
   if (!itemId) return { error: type + 'not found' }
 

@@ -931,6 +931,7 @@ Vod.checkCampaignEnd = async (hour, minutes) => {
     .whereRaw(`HOUR(\`end\`) = ${hour}`)
     // where minute is hourly minutes
     .whereRaw(`MINUTE(\`end\`) = ${minutes}`)
+    .where('vod.scheduled_end', 1)
     .all()
 
   for (const vod of vodToEnd) {
@@ -947,7 +948,7 @@ Vod.checkCampaignEnd = async (hour, minutes) => {
 
 Vod.checkDateShipping = async () => {
   const vodLateDateShipping = await DB('vod')
-    .select('date_shipping', 'step', 'status', 'id', 'project_id', 'resp_prod_id')
+    .select('date_shipping', 'step', 'status', 'id', 'project_id', 'resp_prod_id', 'scheduled_end')
     // exclude irrelevant steps and statuses (globally failed or successful)
     .whereNotIn('step', ['successful', 'failed'])
     .whereNotIn('status', ['sent', 'failed', 'dispatched', 'launched'])
