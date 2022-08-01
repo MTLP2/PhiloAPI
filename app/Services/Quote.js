@@ -672,14 +672,14 @@ class Quote {
     // Cutting
     if (params.cutting === 'DMM') {
       quote.cutting = getCost({
-        '12"': 4,
-        '10"': 6,
-        '7"': 6
+        '12"': 3,
+        '10"': 3,
+        '7"': 5
       })
     } else if (params.cutting === 'LACQUE') {
       quote.cutting = getCost({
         '12"': 3,
-        '10"': 5,
+        '10"': 3,
         '7"': 5
       })
     } else {
