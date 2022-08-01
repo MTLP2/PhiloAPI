@@ -2,6 +2,7 @@ const DB = use('App/DB')
 const Utils = use('App/Utils')
 const ProjectEdit = use('App/Services/ProjectEdit')
 const Notification = use('App/Services/Notification')
+const MondialRelay = use('App/Services/MondialRelay')
 const Customer = use('App/Services/Customer')
 const File = use('App/Services/File')
 const Excel = require('exceljs')
@@ -168,15 +169,45 @@ class Production {
         action: 'check',
         for: 'artist'
       },
+      // {
+      //   category: 'postprod',
+      //   type: 'delivery_note',
+      //   action: 'check',
+      //   for: 'team'
+      // },
+      // {
+      //   category: 'postprod',
+      //   type: 'receipt',
+      //   action: 'check',
+      //   for: 'team'
+      // }
       {
         category: 'postprod',
-        type: 'delivery_note',
+        type: 'on_shipping',
         action: 'check',
         for: 'team'
       },
       {
         category: 'postprod',
-        type: 'receipt',
+        type: 'on_reception',
+        action: 'check',
+        for: 'team'
+      },
+      {
+        category: 'postprod',
+        type: 'check_address',
+        action: 'check',
+        for: 'team'
+      },
+      {
+        category: 'postprod',
+        type: 'sync',
+        action: 'check',
+        for: 'team'
+      },
+      {
+        category: 'postprod',
+        type: 'completed',
         action: 'check',
         for: 'team'
       }
@@ -473,6 +504,7 @@ class Production {
   }
 
   static async saveAction (params) {
+    console.log('🚀 ~ file: Production.js ~ line 507 ~ Production ~ saveAction ~ params', params)
     let item = await DB('production_action')
       .select('production_action.*', 'user.is_admin as user_is_admin')
       .join('user', 'user.id', params.user.id)
@@ -490,7 +522,7 @@ class Production {
     }
 
     const prod = await DB('production')
-      .select('production.project_id', 'resp.email as resp_email', 'com.email as com_email', 'project.name as project_name', 'project.artist_name as artist_name')
+      .select('production.project_id', 'resp.email as resp_email', 'com.email as com_email', 'project.name as project_name', 'project.artist_name as artist_name', 'vod.id as vod_id')
       .join('project', 'project.id', 'production.project_id')
       .join('vod', 'vod.project_id', 'project.id')
       .join('user as resp', 'resp.id', 'production.resp_id')
@@ -504,12 +536,77 @@ class Production {
     if (params.type === 'test_pressing') {
       item.status = params.valid === 0 ? 'refused' : params.status
     }
+    // Override checks above when postprod
+    item.status = params.category === 'postprod' ? params.status : item.status
 
-    item.text = params.text
+    item.text = JSON.stringify({
+      number: params.text || params.text_number,
+      organization: params.text_organization
+    })
     item.comment = params.comment
 
     if (params.status === 'valid') {
-      // Only one notif for owner
+      // Handle postprod completed
+      if (item.category === 'postprod' && params.type === 'completed') {
+        await DB('vod')
+          .where('id', prod.vod_id)
+          .update('status', 'completed')
+      }
+
+      // Handle postprod check address & sync (notif to orders)
+      if (item.category === 'postprod' && ['check_address', 'sync'].includes(params.type)) {
+        const orders = await DB()
+          .select('os.*', 'os.id as order_shop_id')
+          .from('order_shop as os')
+          .join('order_item as oi', 'oi.order_shop_id', 'os.id')
+          .where('oi.project_id', prod.project_id)
+          .where('oi.vod_id', prod.vod_id)
+          .where('os.is_paid', 1)
+          .whereNull('date_export')
+          .all()
+
+        for (const order of orders) {
+          const data = {
+            user_id: order.user_id,
+            type: params.type === 'check_address' ? 'my_order_check_address' : 'my_order_in_preparation',
+            project_id: prod.project_id,
+            project_name: prod.project_name,
+            vod_id: prod.vod_id,
+            order_shop_id: order.id,
+            order_id: order.order_id,
+            alert: 0
+          }
+
+          let pickupNotFound = false
+          if (params.type === 'check_address' && order.shipping_type === 'pickup') {
+            const pickup = JSON.parse(order.address_pickup)
+            const avaiblable = await MondialRelay.checkPickupAvailable(pickup.number)
+            if (!avaiblable) {
+              data.type = 'my_order_pickup_must_change'
+              pickupNotFound = true
+            }
+          }
+
+          // Send notif check
+          if (params.notif) {
+            await Notification.add(data)
+          }
+
+          await DB('order_shop')
+            .where('id', order.id)
+            .where('is_paid', 1)
+            .update({
+              step: params.type,
+              pickup_not_found: pickupNotFound
+            })
+        }
+
+        await DB('vod')
+          .where('id', prod.vod_id)
+          .update('status', params.type === 'check_address' ? 'check_address' : 'preparation')
+      }
+
+      // Else, notif for team or artist. Only one notif for owner
       if (!item.check_user) {
         item.check_date = Utils.date()
         item.check_user = params.user.id
@@ -721,6 +818,7 @@ class Production {
         .first()
     }
 
+    // Test Pressing notification
     if (params.type === 'test_pressing' && !item.tracking && params.tracking) {
       Production.addNotif({ id: item.production_id, type: 'tp_pending', data: params.tracking })
 
@@ -743,11 +841,25 @@ class Production {
         text: `TP reçu pour la production ${project.artist_name} - ${project.name}`
       })
     }
+
+    // Dispatch (personal stock or final dispatch)
     if (params.type !== 'test_pressing' && !item.tracking && params.tracking) {
       Production.addNotif({ id: item.production_id, type: params.type === 'personal_stock' ? 'personal_stock_dispatch' : 'final_dispatch', data: params.tracking })
     }
+
+    // Logistician reception
     if (params.logistician && !item.date_receipt && params.date_receipt) {
       Production.addNotif({ id: item.production_id, type: 'logistician_receiption', date: params.date_receipt, data: params.logistician })
+    }
+
+    // Update postprod last modified
+    if (params.postprod_type) {
+      await Production.saveAction({
+        production_id: item.production_id,
+        type: params.postprod_type,
+        user_id: params.user.id,
+        user: { id: params.user.id }
+      })
     }
 
     const customer = await Customer.save(params.customer)
@@ -1284,7 +1396,7 @@ class Production {
     }
   }
 
-  static async addNotif ({ id, type, date, data }) {
+  static async addNotif ({ id, type, date, data, overrideNotif = false }) {
     const prod = await DB('vod')
       .select('production.id', 'vod.project_id', 'production.notif', 'vod.user_id', 'production.resp_id')
       .join('production', 'production.project_id', 'vod.project_id')
@@ -1292,7 +1404,7 @@ class Production {
       .where('production.id', id)
       .first()
 
-    if (prod.notif) {
+    if (prod.notif || overrideNotif) {
       console.log('add_notif', {
         type: `production_${type}`,
         prod_id: prod.id,
@@ -1890,6 +2002,39 @@ class Production {
   static async getProjectProductions (params) {
     const { data: productions } = await Production.all({ project_id: params.id, user: { is_team: false } })
     return productions
+  }
+
+  static async checkIfActionHasNotifications (params) {
+    const notification = await DB('notification')
+      .select('created_at')
+      .where('project_id', +params.id)
+      .where('type', `my_order_${params.tid}`)
+      .first()
+
+    return { date: notification ? notification.created_at : false }
+  }
+
+  static async checkProductionToBeCompleted () {
+    const productions = await DB('vod')
+      .select('production_action.updated_at', 'production.id as prod_id', 'vod.id as vod_id')
+      .join('project', 'project.id', 'vod.project_id')
+      .join('production', 'production.project_id', 'project.id')
+      .join('production_action', 'production_action.production_id', 'production.id')
+      .where('vod.status', 'preparation')
+      .where('production_action.type', 'sync')
+      .whereRaw('production_action.updated_at > (NOW() - INTERVAL 21 DAY)')
+      .all()
+
+    for (const prod of productions) {
+      Production.addNotif({
+        id: prod.prod_id,
+        type: 'completed_alert',
+        date: Utils.date({ time: false }),
+        overrideNotif: true
+      })
+    }
+
+    return { success: true }
   }
 }
 

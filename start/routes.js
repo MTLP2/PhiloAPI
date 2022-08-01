@@ -173,6 +173,7 @@ Route.group(() => {
   Route.get('/productions/:id/packing-list', 'ProductionController.packingList')
   Route.post('/productions/:id/lines', 'ProductionController.saveLines')
   Route.delete('/productions/:id/dispatchs/:did', 'ProductionController.removeDispatch')
+  Route.get('/productions/:id/notifications/:tid', 'ProductionController.checkIfActionHasNotifications')
 
   Route.get('/shops', 'ShopController.getShops')
   Route.get('/shop', 'ShopController.getShop')

@@ -13,6 +13,8 @@ class TestController {
       return 'test'
     }
 
+    return Production.checkProductionToBeCompleted()
+
     return App.alertStock()
   }
 }

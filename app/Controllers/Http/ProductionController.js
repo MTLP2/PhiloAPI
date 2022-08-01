@@ -165,6 +165,10 @@ class ProductionController {
   packingList ({ params }) {
     return Production.packingList(params)
   }
+
+  checkIfActionHasNotifications ({ params }) {
+    return Production.checkIfActionHasNotifications(params)
+  }
 }
 
 module.exports = ProductionController
