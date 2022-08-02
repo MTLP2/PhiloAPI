@@ -1185,7 +1185,7 @@ Admin.syncProjectSna = async (params) => {
     .insert({
       transporter: 'sna',
       project_id: vod.project_id,
-      quantity: params.quantity,
+      quantity: qty,
       date: Utils.date()
     })
 
@@ -1281,7 +1281,7 @@ Admin.syncProjectDaudin = async (params) => {
     .insert({
       project_id: params.id,
       transporter: 'daudin',
-      quantity: params.quantity,
+      quantity: qty,
       date: Utils.date()
     })
 
@@ -1442,8 +1442,8 @@ Admin.getOrders = async (params) => {
       query.orWhereExists(function () {
         this.where('os.type', 'vod')
         this.from('project_export')
-        this.where('project_export.project_id', 'oi.project_id')
-        this.where('project_export.transporter', 'os.transporter')
+        this.whereRaw('project_export.project_id = oi.project_id')
+        this.whereRaw('project_export.transporter = os.transporter')
         this.whereRaw('project_export.date < DATE_SUB(NOW(), INTERVAL 4 DAY)')
       })
     })
@@ -1478,7 +1478,6 @@ Admin.getOrders = async (params) => {
   params.query = orders
   return Utils.getRows(params)
 }
-
 
 Admin.getOrderShop = async (id) => {
   const shop = await DB('order_shop')
@@ -1860,8 +1859,8 @@ Admin.countOrdersErrors = async () => {
       query.orWhereExists(function () {
         this.where('os.type', 'vod')
         this.from('project_export')
-        this.where('project_export.project_id', 'oi.project_id')
-        this.where('project_export.transporter', 'os.transporter')
+        this.whereRaw('project_export.project_id = oi.project_id')
+        this.whereRaw('project_export.transporter = os.transporter')
         this.whereRaw('project_export.date < DATE_SUB(NOW(), INTERVAL 4 DAY)')
       })
     })

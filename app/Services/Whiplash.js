@@ -272,7 +272,7 @@ Whiplash.syncProject = async (params) => {
     .insert({
       project_id: params.project_id,
       transporter: params.type,
-      quantity: params.quantity,
+      quantity: count,
       date: Utils.date()
     })
 
