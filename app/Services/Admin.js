@@ -1479,6 +1479,91 @@ Admin.getOrders = async (params) => {
   return Utils.getRows(params)
 }
 
+Admin.getOrder = async (id) => {
+  const order = await DB('order')
+    .select('order.*', 'user.name', 'user.email', 'user.points', 'notification.id as notification_id', 'notification.type as notification_type', DB.raw('CONCAT(customer.firstname, \' \', customer.lastname) AS customer_name'))
+    .leftJoin('user', 'user.id', 'order.user_id')
+    .leftJoin('customer', 'customer.id', 'user.customer_id')
+    .leftJoin('notification', 'notification.order_id', 'order.id')
+    .where('order.id', id)
+    .first()
+
+  if (!order) {
+    throw new ApiError(404)
+  }
+  order.error = null
+
+  order.shops = []
+
+  order.invoice = await DB('invoice').where('order_id', id).first()
+
+  const orderNotifications = await DB('notification')
+    .select('notification.type', 'notification.project_id', 'notification.project_name', 'notification.email', 'notification.created_at', 'notification.order_shop_id')
+    .where('order_id', id)
+    .orderBy('project_id', 'asc')
+    .orderBy('created_at', 'desc')
+    .all()
+
+  const orderShops = await DB('order_shop')
+    .select('order_shop.*', 'user.name', 'payment.code as payment_code')
+    .join('user', 'user.id', 'order_shop.shop_id')
+    .leftJoin('payment', 'payment.id', 'order_shop.shipping_payment_id')
+    .where('order_id', id)
+    .belongsTo('customer')
+    .all()
+
+  const orderManuals = await DB('order_manual')
+    .whereIn('order_shop_id', orderShops.map(s => s.id))
+    .all()
+
+  const payments = await DB('payment')
+    .whereIn('order_shop_id', orderShops.map(s => s.id))
+    .all()
+
+  const orderRefunds = await Order.getRefunds({ id: id })
+  order.refunds = orderRefunds
+
+  order.shipping = 0
+  for (const shop of orderShops) {
+    shop.notifications = orderNotifications.filter(notification => notification.order_shop_id === shop.id)
+    shop.payments = payments.filter(p => p.order_shop_id === shop.id)
+    shop.order_manual = orderManuals.filter(o => o.order_shop_id === shop.id)
+
+    shop.items = []
+    shop.address_pickup = shop.shipping_type === 'pickup' ? JSON.parse(shop.address_pickup) : {}
+    order.shipping += shop.shipping
+    order.shops.push(shop)
+  }
+
+  const orderItems = await DB('order_item')
+    .select('order_item.*', 'project.name', 'project.artist_name', 'project.picture', 'project.slug',
+      'item.name as item', 'item.picture as item_picture', 'vod.barcode')
+    .where('order_id', id)
+    .join('project', 'project.id', 'order_item.project_id')
+    .join('vod', 'vod.project_id', 'order_item.project_id')
+    .leftJoin('item', 'item.id', 'order_item.item_id')
+    .all()
+
+  for (const item of orderItems) {
+    const shop = order.shops
+      .find(shop => shop.id === item.order_shop_id)
+
+    if (shop) {
+      const review = await Review.find({
+        projectId: item.project_id,
+        userId: order.user_id,
+        onlyVisible: false
+      })
+      if (review) {
+        item.review = review[0]
+      }
+      shop.items.push(item)
+    }
+  }
+
+  return order
+}
+
 Admin.getOrderShop = async (id) => {
   const shop = await DB('order_shop')
     .select('order_shop.*', 'user.name', 'user.email')
