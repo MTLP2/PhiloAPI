@@ -361,6 +361,14 @@
     than the lump sum of 40 euros, an additional compensation justification may be requested.
   </p>
   @endif
+
+  @if(invoice_comment)
+  <p>
+    @each(line in invoice_comment)
+      {{line}}<br />
+    @endeach
+  </p>
+  @endif
 </div>
 <div style="page-break-before:always"></div>
 </body>

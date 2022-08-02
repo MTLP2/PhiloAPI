@@ -876,6 +876,7 @@ class Production {
     item.quantity = params.quantity || null
     item.quantity_received = params.quantity_received || null
     item.date_receipt = params.date_receipt || null
+    item.invoice_comment = params.invoice_comment || null
 
     if (params.delivery_note) {
       const file = await File.save({
@@ -1837,6 +1838,7 @@ class Production {
     invoice.lang = params.lang
 
     invoice.sub_total = Utils.round(invoice.total - invoice.tax)
+    invoice.invoice_comment = prod.invoice_comment.split('\n')
 
     if (!params.invoice || !params.invoice.from) {
       invoice.from = {
