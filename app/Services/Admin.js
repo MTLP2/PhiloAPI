@@ -1100,7 +1100,8 @@ Admin.syncProjectSna = async (params) => {
     .where('os.transporter', 'daudin')
     .where('os.type', 'vod')
     .whereNull('date_export')
-    .where('is_paid', 1)
+    .where('is_paid', true)
+    .where('is_paused', false)
     .orderBy('os.created_at')
     .all()
 
@@ -1230,7 +1231,8 @@ Admin.syncProjectDaudin = async (params) => {
     .whereNull('date_export')
     .where('os.transporter', 'daudin')
     .where('oi.project_id', params.id)
-    .where('is_paid', 1)
+    .where('is_paid', true)
+    .where('is_paused', false)
     .orderBy('oi.created_at')
     .where('sending', false)
     .all()
@@ -1597,6 +1599,7 @@ Admin.saveOrderShop = async (params) => {
   shop.ask_cancel = params.ask_cancel
   shop.step = params.step
   shop.is_paid = params.is_paid
+  shop.is_paused = params.is_paused
   shop.date_export = !params.date_export ? null : params.date_export
   shop.type = params.type
 

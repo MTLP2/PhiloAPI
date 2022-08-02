@@ -173,6 +173,7 @@ Whiplash.syncProject = async (params) => {
       AND OS.whiplash_id IS NULL
       AND OS.transporter = '${params.type}'
       AND OS.is_paid = 1
+      AND OS.is_paused = 0
       AND OI.order_shop_id = OS.id
   `
   const res = await DB().execute(query)

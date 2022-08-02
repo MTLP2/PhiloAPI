@@ -236,6 +236,7 @@ class Daudin {
       .where('os.type', 'vod')
       .where('country.lang', 'en')
       .where('sending', true)
+      .where('is_paused', false)
       .orderBy('os.id', 'asc')
       .all()
 
@@ -274,6 +275,7 @@ class Daudin {
       .where('order_shop.type', 'shop')
       .whereNull('date_export')
       .where('is_paid', 1)
+      .where('is_paused', false)
       .where('order_shop.transporter', 'daudin')
       .where('country.lang', 'en')
       .orderBy('id', 'asc')
