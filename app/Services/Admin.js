@@ -227,9 +227,13 @@ Admin.getProject = async (id) => {
     .where('is_paid', 1)
     .all()
 
+  const exportsQuery = DB('project_export')
+    .where('project_id', id)
+    .all()
+
   const reviewsQuery = Review.find({ projectId: id, onlyVisible: false })
 
-  const [project, codes, costs, stocks, stocksHistoric, items, orders, reviews, projectImages] = await Promise.all([
+  const [project, codes, costs, stocks, stocksHistoric, items, orders, reviews, projectImages, exps] = await Promise.all([
     projectQuery,
     codesQuery,
     costsQuery,
@@ -238,7 +242,8 @@ Admin.getProject = async (id) => {
     itemsQuery,
     ordersQuery,
     reviewsQuery,
-    projectImagesQuery
+    projectImagesQuery,
+    exportsQuery
   ])
 
   if (!project) {
@@ -252,6 +257,7 @@ Admin.getProject = async (id) => {
   project.stocks_historic = stocksHistoric
 
   project.stocks = stocks
+  project.exports = exps
 
   stocks.unshift({
     type: 'distrib',
@@ -353,7 +359,6 @@ Admin.getProject = async (id) => {
     }
   }
   project.barcodes = barcodes
-  project.exports = JSON.parse(project.exports)
   project.historic = JSON.parse(project.historic)
   project.reviews = reviews
 
@@ -1176,12 +1181,13 @@ Admin.syncProjectSna = async (params) => {
     await Sna.sync(dispatchs)
   }
 
-  const exports = vod.exports ? JSON.parse(vod.exports) : []
-
-  exports.push({ type: params.type, date: Utils.date(), quantity: params.quantity })
-  vod.exports = JSON.stringify(exports)
-  vod.updated_at = Utils.date()
-  await vod.save()
+  await DB('project_export')
+    .insert({
+      transporter: 'sna',
+      project_id: vod.project_id,
+      quantity: params.quantity,
+      date: Utils.date()
+    })
 
   await Stock.save({
     project_id: vod.project_id,
@@ -1211,19 +1217,6 @@ Admin.syncProjectSna = async (params) => {
 }
 
 Admin.syncProjectDaudin = async (params) => {
-  const vod = await DB('vod')
-    .where('project_id', params.id).first()
-  if (!vod) {
-    return false
-  }
-
-  const date = new Date(new Date().getTime() + 24 * 60 * 60 * 1000)
-
-  vod.daudin_export = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`
-  vod.updated_at = Utils.date()
-
-  await vod.save()
-
   const orders = await DB()
     .from('order_item as oi')
     .join('order_shop as os', 'os.id', 'oi.order_shop_id')
@@ -1284,8 +1277,16 @@ Admin.syncProjectDaudin = async (params) => {
     }
   }
 
+  await DB('project_export')
+    .insert({
+      project_id: params.id,
+      transporter: 'daudin',
+      quantity: params.quantity,
+      date: Utils.date()
+    })
+
   await Stock.save({
-    project_id: vod.project_id,
+    project_id: params.id,
     type: 'daudin',
     quantity: -qty,
     diff: true,
@@ -1412,7 +1413,7 @@ Admin.getOrders = async (params) => {
   if (params.project_id) {
     orders.where('oi.project_id', params.project_id)
   }
-  if (params.no_tracking === 'true') {
+  if (params.type === 'no_tracking') {
     orders.where(query => {
       query.where('date_export', '>', '2020-01-01')
         .whereNull('tracking_number')
@@ -1430,7 +1431,7 @@ Admin.getOrders = async (params) => {
   if (params.end) {
     orders.where('os.created_at', '<=', `${params.end} 23:59`)
   }
-  if (params.no_export === 'true') {
+  if (params.type === 'no_export') {
     orders.whereNull('date_export')
     orders.whereNull('tracking_number')
     orders.whereNull('whiplash_id')
@@ -1438,12 +1439,12 @@ Admin.getOrders = async (params) => {
     orders.where(DB.raw('os.created_at < DATE_SUB(NOW(), INTERVAL 4 DAY)'))
     orders.where(query => {
       query.where('os.type', 'shop')
-      query.orWhere(query => {
-        query.where('os.type', 'vod')
-        query.where(query => {
-          query.where(DB.raw('vod.daudin_export < DATE_SUB(NOW(), INTERVAL 4 DAY)'))
-          query.orWhere(DB.raw('vod.whiplash_export < DATE_SUB(NOW(), INTERVAL 4 DAY)'))
-        })
+      query.orWhereExists(function () {
+        this.where('os.type', 'vod')
+        this.from('project_export')
+        this.where('project_export.project_id', 'oi.project_id')
+        this.where('project_export.transporter', 'os.transporter')
+        this.whereRaw('project_export.date < DATE_SUB(NOW(), INTERVAL 4 DAY)')
       })
     })
     params.sort = 'os.created_at'
@@ -1478,90 +1479,6 @@ Admin.getOrders = async (params) => {
   return Utils.getRows(params)
 }
 
-Admin.getOrder = async (id) => {
-  const order = await DB('order')
-    .select('order.*', 'user.name', 'user.email', 'user.points', 'notification.id as notification_id', 'notification.type as notification_type', DB.raw('CONCAT(customer.firstname, \' \', customer.lastname) AS customer_name'))
-    .leftJoin('user', 'user.id', 'order.user_id')
-    .leftJoin('customer', 'customer.id', 'user.customer_id')
-    .leftJoin('notification', 'notification.order_id', 'order.id')
-    .where('order.id', id)
-    .first()
-
-  if (!order) {
-    throw new ApiError(404)
-  }
-  order.error = null
-
-  order.shops = []
-
-  order.invoice = await DB('invoice').where('order_id', id).first()
-
-  const orderNotifications = await DB('notification')
-    .select('notification.type', 'notification.project_id', 'notification.project_name', 'notification.email', 'notification.created_at', 'notification.order_shop_id')
-    .where('order_id', id)
-    .orderBy('project_id', 'asc')
-    .orderBy('created_at', 'desc')
-    .all()
-
-  const orderShops = await DB('order_shop')
-    .select('order_shop.*', 'user.name', 'payment.code as payment_code')
-    .join('user', 'user.id', 'order_shop.shop_id')
-    .leftJoin('payment', 'payment.id', 'order_shop.shipping_payment_id')
-    .where('order_id', id)
-    .belongsTo('customer')
-    .all()
-
-  const orderManuals = await DB('order_manual')
-    .whereIn('order_shop_id', orderShops.map(s => s.id))
-    .all()
-
-  const payments = await DB('payment')
-    .whereIn('order_shop_id', orderShops.map(s => s.id))
-    .all()
-
-  const orderRefunds = await Order.getRefunds({ id: id })
-  order.refunds = orderRefunds
-
-  order.shipping = 0
-  for (const shop of orderShops) {
-    shop.notifications = orderNotifications.filter(notification => notification.order_shop_id === shop.id)
-    shop.payments = payments.filter(p => p.order_shop_id === shop.id)
-    shop.order_manual = orderManuals.filter(o => o.order_shop_id === shop.id)
-
-    shop.items = []
-    shop.address_pickup = shop.shipping_type === 'pickup' ? JSON.parse(shop.address_pickup) : {}
-    order.shipping += shop.shipping
-    order.shops.push(shop)
-  }
-
-  const orderItems = await DB('order_item')
-    .select('order_item.*', 'project.name', 'project.artist_name', 'project.picture', 'project.slug',
-      'item.name as item', 'item.picture as item_picture', 'vod.barcode')
-    .where('order_id', id)
-    .join('project', 'project.id', 'order_item.project_id')
-    .join('vod', 'vod.project_id', 'order_item.project_id')
-    .leftJoin('item', 'item.id', 'order_item.item_id')
-    .all()
-
-  for (const item of orderItems) {
-    const shop = order.shops
-      .find(shop => shop.id === item.order_shop_id)
-
-    if (shop) {
-      const review = await Review.find({
-        projectId: item.project_id,
-        userId: order.user_id,
-        onlyVisible: false
-      })
-      if (review) {
-        item.review = review[0]
-      }
-      shop.items.push(item)
-    }
-  }
-
-  return order
-}
 
 Admin.getOrderShop = async (id) => {
   const shop = await DB('order_shop')
@@ -1940,12 +1857,12 @@ Admin.countOrdersErrors = async () => {
     .where(DB.raw('os.created_at < DATE_SUB(NOW(), INTERVAL 4 DAY)'))
     .where(query => {
       query.where('os.type', 'shop')
-      query.orWhere(query => {
-        query.where('os.type', 'vod')
-        query.where(query => {
-          query.where(DB.raw('vod.daudin_export < DATE_SUB(NOW(), INTERVAL 4 DAY)'))
-          query.orWhere(DB.raw('vod.whiplash_export < DATE_SUB(NOW(), INTERVAL 4 DAY)'))
-        })
+      query.orWhereExists(function () {
+        this.where('os.type', 'vod')
+        this.from('project_export')
+        this.where('project_export.project_id', 'oi.project_id')
+        this.where('project_export.transporter', 'os.transporter')
+        this.whereRaw('project_export.date < DATE_SUB(NOW(), INTERVAL 4 DAY)')
       })
     })
     .count()

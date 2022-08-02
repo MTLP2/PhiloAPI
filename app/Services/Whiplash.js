@@ -268,6 +268,14 @@ Whiplash.syncProject = async (params) => {
     }
   }
 
+  await DB('project_export')
+    .insert({
+      project_id: params.project_id,
+      transporter: params.type,
+      quantity: params.quantity,
+      date: Utils.date()
+    })
+
   await Stock.save({
     project_id: params.project_id,
     type: params.type,

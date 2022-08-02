@@ -1909,4 +1909,29 @@ Project.getDispatchs = async (params) => {
   return items
 }
 
+Project.convertExports = async (params) => {
+  const vod = await DB('vod')
+    .select('project_id', 'exports')
+    .whereNotNull('exports')
+    .all()
+
+  await DB().execute('TRUNCATE TABLE project_export')
+
+  for (const v of vod) {
+    const exps = JSON.parse(v.exports)
+
+    for (const exp of exps) {
+      await DB('project_export')
+        .insert({
+          project_id: v.project_id,
+          transporter: exp.type,
+          quantity: exp.quantity,
+          date: exp.date
+        })
+    }
+  }
+
+  return { success: true }
+}
+
 module.exports = Project
