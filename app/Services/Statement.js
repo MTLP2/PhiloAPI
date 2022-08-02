@@ -1133,9 +1133,9 @@ class StatementService {
       data.box_quantity = { name: 'Box - Quantity', type: 'income', currency: false }
       data.box_total = { name: 'Box - Total', type: 'income' }
     }
-    data.distrib_quantity = { name: 'Distrib - Quantity', currency: false }
-    data.distrib_returned = { name: 'Distrib - Quantity', currency: false }
-    data.distrib_total = { name: 'Distrib - Total' }
+    data.distrib_quantity = { name: 'Retail - Quantity', currency: false }
+    data.distrib_returned = { name: 'Retail - Quantity', currency: false }
+    data.distrib_total = { name: 'Retail - Total' }
 
     const distribs = {}
     const costs = {}
