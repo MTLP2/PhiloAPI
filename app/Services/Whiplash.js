@@ -305,6 +305,7 @@ Whiplash.setTrackingLinks = async (params) => {
     .join('customer', 'customer.id', 'order_shop.customer_id')
     .orderBy('id', 'asc')
     .where('is_paid', 1)
+    .where('is_paused', false)
     .all()
 
   shops = shops.concat(manuals.map(m => {
@@ -474,6 +475,7 @@ Whiplash.setDelivered = async () => {
     .whereIn('transporter', ['whiplash', 'whiplash_uk'])
     .limit(1)
     .where('is_paid', true)
+    .where('is_paused', false)
     .orderBy('id', 'desc')
     .limit(20)
     .all()

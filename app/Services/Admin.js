@@ -1306,6 +1306,7 @@ Admin.sendProjectNotif = async (projectId, success) => {
     FROM user U, \`order_shop\` OS, order_item OI
     WHERE U.id = OS.user_id
       AND OS.is_paid = 1
+      AND OS.is_paused = false
       AND OI.project_id = '${p.id}'
       AND OI.order_shop_id = OS.id
     GROUP BY OS.id, OI.vod_id, OI.order_id
@@ -1391,7 +1392,7 @@ Admin.deleteProject = async (id) => {
 Admin.getOrders = async (params) => {
   const orders = DB('order_item as oi')
     .select(DB.raw('(os.shipping - os.shipping_cost) as shipping_diff'), 'os.*', 'order.origin', 'order.promo_code', 'oi.id as item_id', 'oi.project_id', 'oi.total', 'order.payment_type', 'order.refunded',
-      'os.total as os_total', 'os.is_paid', 'os.ask_cancel', 'order.total as o_total',
+      'os.total as os_total', 'os.is_paid', 'os.is_paused', 'os.ask_cancel', 'order.total as o_total',
       'order.transaction_id', 'oi.order_id', 'oi.order_shop_id', 'oi.quantity', 'oi.price', 'oi.size', 'order.status',
       'order.payment_id', 'user.name as user_name', 'user.email as user_email', 'user.picture as user_picture',
       'order.user_agent', 'c.country_id', 'c.name', 'c.firstname', 'c.lastname',
