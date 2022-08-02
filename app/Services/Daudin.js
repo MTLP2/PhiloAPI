@@ -573,7 +573,7 @@ class Daudin {
       })
 
     await Notification.sendEmail({
-      to: 'victor@diggersfactory.com,alexis@diggersfactory.com,serviceclient@daudin.fr',
+      to: 'victor@diggersfactory.com,alexis@diggersfactory.com,romain@diggersfactory.com,serviceclient@daudin.fr',
       subject: `Export Daudin jour le jour ${d}`,
       html: orders.length > 0
         ? `Bonjour,<br /><br />Voici l'export des commandes du ${d}:<br />
