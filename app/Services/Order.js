@@ -830,7 +830,7 @@ Order.saveManual = async (params) => {
     if (projects[b.barcode]) {
       await Stock.save({
         project_id: projects[b.barcode],
-        type: 'sna',
+        type: params.transporter,
         quantity: -b.quantity,
         diff: true,
         comment: 'manual'
