@@ -268,21 +268,23 @@ Whiplash.syncProject = async (params) => {
     }
   }
 
-  await DB('project_export')
-    .insert({
-      project_id: params.project_id,
-      transporter: params.type,
-      quantity: count,
-      date: Utils.date()
-    })
+  if (count > 0) {
+    await DB('project_export')
+      .insert({
+        project_id: params.project_id,
+        transporter: params.type,
+        quantity: count,
+        date: Utils.date()
+      })
 
-  await Stock.save({
-    project_id: params.project_id,
-    type: params.type,
-    quantity: -count,
-    diff: true,
-    comment: 'sync'
-  })
+    await Stock.save({
+      project_id: params.project_id,
+      type: params.type,
+      quantity: -count,
+      diff: true,
+      comment: 'sync'
+    })
+  }
 
   return count
 }

@@ -1181,21 +1181,23 @@ Admin.syncProjectSna = async (params) => {
     await Sna.sync(dispatchs)
   }
 
-  await DB('project_export')
-    .insert({
-      transporter: 'sna',
-      project_id: vod.project_id,
-      quantity: qty,
-      date: Utils.date()
-    })
+  if (qty > 0) {
+    await DB('project_export')
+      .insert({
+        transporter: 'sna',
+        project_id: vod.project_id,
+        quantity: qty,
+        date: Utils.date()
+      })
 
-  await Stock.save({
-    project_id: vod.project_id,
-    type: 'sna',
-    quantity: -params.quantity,
-    diff: true,
-    comment: 'sync'
-  })
+    await Stock.save({
+      project_id: vod.project_id,
+      type: 'sna',
+      quantity: -params.quantity,
+      diff: true,
+      comment: 'sync'
+    })
+  }
   await DB('order_shop')
     .whereIn('id', dispatchs.map(d => d.id))
     .update({
@@ -1277,21 +1279,23 @@ Admin.syncProjectDaudin = async (params) => {
     }
   }
 
-  await DB('project_export')
-    .insert({
-      project_id: params.id,
-      transporter: 'daudin',
-      quantity: qty,
-      date: Utils.date()
-    })
+  if (qty > 0) {
+    await DB('project_export')
+      .insert({
+        project_id: params.id,
+        transporter: 'daudin',
+        quantity: qty,
+        date: Utils.date()
+      })
 
-  await Stock.save({
-    project_id: params.id,
-    type: 'daudin',
-    quantity: -qty,
-    diff: true,
-    comment: 'sync'
-  })
+    await Stock.save({
+      project_id: params.id,
+      type: 'daudin',
+      quantity: -qty,
+      diff: true,
+      comment: 'sync'
+    })
+  }
 
   return qty
 }
