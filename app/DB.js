@@ -14,6 +14,8 @@ const knex = require('knex')({
   }
 })
 
+let lastQuery = null
+
 const DB = (tablee, idd) => {
   const p = {
     id: 'id',
@@ -52,6 +54,7 @@ const DB = (tablee, idd) => {
         p.columns = columns
       }
       p.query.first(p.columns)
+      lastQuery = p.query.toString()
       return db.get('first').catch(err => {
         error.status = err.status
         error.message = err.message
@@ -71,6 +74,8 @@ const DB = (tablee, idd) => {
       const error = new Error()
 
       p.query.select(p.columns)
+
+      lastQuery = p.query.toString()
       return db.get('all').catch(err => {
         error.status = err.status
         error.message = err.message
@@ -86,6 +91,10 @@ const DB = (tablee, idd) => {
 
     getQuery () {
       return p.query
+    },
+
+    getSql () {
+      return lastQuery
     },
 
     get (type) {
@@ -394,6 +403,7 @@ const DB = (tablee, idd) => {
 
     execute (query) {
       const error = new Error()
+      lastQuery = query
       return knex.raw(query)
         .then(res => res[0])
         .catch(err => {
@@ -584,6 +594,9 @@ const DB = (tablee, idd) => {
 
 DB.raw = (arg1, arg2) => knex.raw(arg1, arg2)
 DB.query = knex
+DB.getSql = () => {
+  return lastQuery
+}
 DB.close = () => {
   return knex.destroy()
 }
