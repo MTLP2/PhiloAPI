@@ -539,10 +539,12 @@ class Production {
     // Override checks above when postprod
     item.status = params.category === 'postprod' ? params.status : item.status
 
-    item.text = JSON.stringify({
-      number: params.text || params.text_number,
-      organization: params.text_organization
-    })
+    if ((params.text) || (params.text_number && params.text_organization)) {
+      item.text = JSON.stringify({
+        number: params.text || params.text_number,
+        organization: params.text_organization
+      })
+    }
     item.comment = params.comment
 
     if (params.status === 'valid') {
