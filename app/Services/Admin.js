@@ -1451,8 +1451,10 @@ Admin.getOrders = async (params) => {
         this.whereRaw('project_export.date < DATE_SUB(NOW(), INTERVAL 4 DAY)')
       })
     })
-    params.sort = 'os.created_at'
-    params.order = 'asc'
+    if (!params.sort) {
+      params.sort = 'os.created_at'
+      params.order = 'asc'
+    }
   }
 
   const filters = params.filters ? JSON.parse(params.filters) : null
