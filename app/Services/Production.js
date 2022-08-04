@@ -411,6 +411,8 @@ class Production {
     item.rest_pay_preprod = params.rest_pay_preprod || null
     item.rest_pay_prod = params.rest_pay_prod || null
     item.cost_comment = params.cost_comment || null
+    item.shipping_final = params.shipping_final || null
+    item.final_price = params.final_price || null
     item.notif = params.notif
     item.updated_at = Utils.date()
 
