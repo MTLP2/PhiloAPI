@@ -165,6 +165,7 @@ Admin.getProject = async (id) => {
       ) as count_distribution
       `)
     )
+    .hasMany('production', 'productions', 'production.project_id')
     .leftJoin('vod', 'vod.project_id', 'project.id')
     .leftJoin('wishlist', 'wishlist.project_id', 'project.id')
     .leftJoin('user', 'user.id', 'vod.user_id')
@@ -1082,6 +1083,17 @@ Admin.saveVod = async (params) => {
     data.alert = 1
 
     await Notification.new(data)
+  }
+
+  // Assign to prod for some statuses
+  if (params.assign_prod_id) {
+    if (params.status === 'dispatched') {
+      await DB('production')
+        .where('id', params.assign_prod_id)
+        .update({
+          step: 'postprod'
+        })
+    }
   }
 
   await vod.save()
