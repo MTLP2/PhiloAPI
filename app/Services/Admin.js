@@ -1606,6 +1606,7 @@ Admin.saveOrderShop = async (params) => {
   shop.step = params.step
   shop.is_paid = params.is_paid
   shop.is_paused = params.is_paused
+  shop.shipping_type = params.shipping_type
   shop.date_export = !params.date_export ? null : params.date_export
   shop.type = params.type
 
