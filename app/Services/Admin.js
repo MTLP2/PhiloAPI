@@ -1004,7 +1004,7 @@ Admin.saveVod = async (params) => {
   vod.historic = JSON.stringify(vod.historic)
 
   if ((vod.status !== params.status && status[params.status]) ||
-  (vod.date_shipping !== params.date_shipping && params.notif && vod.date_shipping)) {
+  (vod.date_shipping !== params.date_shipping && params.notif)) {
     const orders = await DB()
       .select('os.*', 'os.id as order_shop_id')
       .from('order_shop as os')
@@ -1019,15 +1019,19 @@ Admin.saveVod = async (params) => {
       let type = null
       if (params.notif && params.status === vod.status &&
         vod.date_shipping !== params.date_shipping) {
-        if (vod.date_shipping < params.date_shipping) {
-          type = 'my_order_delayed'
+        // If date_shipping is null,
+        if (!vod.date_shipping) {
+          type = 'my_order_first_date_shipping'
         } else {
-          type = 'my_order_sooner'
+          if (vod.date_shipping < params.date_shipping) {
+            type = 'my_order_delayed'
+          } else {
+            type = 'my_order_sooner'
+          }
         }
       } else if (params.notif && params.status !== vod.status && status[params.status]) {
         type = status[params.status]
       }
-
       let pickupNotFound = false
       if (type) {
         const data = {
