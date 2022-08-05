@@ -1134,6 +1134,7 @@ Project.recommendations = async (params) => {
     'v.splatter1',
     'v.splatter2',
     'v.color_vinyl',
+    'v.picture_project',
     'v.price',
     'v.currency',
     'v.goal',
