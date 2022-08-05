@@ -43,6 +43,8 @@ PromoCode.save = async (params) => {
   code.users = params.users || null
   code.countries = params.countries || null
   code.gift = params.gift || null
+  code.max_quantity = params.max_quantity || null
+  code.max_total = params.max_total || null
 
   if (params.temporary) {
     code.start = params.start || null
