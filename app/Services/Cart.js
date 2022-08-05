@@ -313,9 +313,34 @@ Cart.calculate = async (params) => {
     }))
   }
 
-  if (cart.promo_code && !cart.discount) {
-    cart.promo_code = ''
-    cart.promo_error = 'promo_code_not_applicable'
+  if (cart.promo_code) {
+    // Check if no discount
+    if (!cart.discount) {
+      cart.promo_code = ''
+      cart.promo_error = 'promo_code_not_applicable'
+    } else {
+      // Check for promo code max_quantity and max_total
+      const promocode = await DB('promo_code').where('code', cart.promo_code).first()
+
+      // Resetting shops & items discounts
+      if ((promocode.max_total && ((promocode.max_total < cart.total))) || (promocode.max_quantity && ((promocode.max_quantity < cart.count)))) {
+        for (const shopKey in cart.shops) {
+          const shop = cart.shops[shopKey]
+          for (const item of shop.items) {
+            item.discount = 0
+            item.total = item.total_old
+            item.total_old = null
+          }
+          shop.discount = 0
+        }
+
+        // Resetting cart
+
+        cart.discount = 0
+        cart.promo_code = ''
+        cart.promo_error = 'promo_code_not_applicable'
+      }
+    }
   }
 
   if (cart.noPaypal) {
@@ -342,7 +367,6 @@ Cart.calculate = async (params) => {
   if (params.user_id && params.save) {
     await Cart.saveCart(params.user_id, cart)
   }
-
   return cart
 }
 
