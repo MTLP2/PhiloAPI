@@ -507,7 +507,8 @@ Project.getAll = (search, type) => {
       'p.name',
       'p.slug',
       'p.artist_name',
-      'v.type'
+      'v.type',
+      'v.step'
     )
     .from('project as p')
     .leftJoin('vod as v', 'p.id', 'v.project_id')
