@@ -250,7 +250,9 @@ class Daudin {
       const barcodes = (item.item_barcode || item.barcode).split(',')
       for (let barcode of barcodes) {
         if (barcode === 'SIZE') {
-          barcode = sizes[item.size]
+          barcode = sizes[item.size].split(',')[0]
+        } else if (barcode === 'SIZE2') {
+          barcode = sizes[item.size].split(',')[1]
         }
 
         lines.push({
@@ -320,7 +322,9 @@ class Daudin {
         const barcodes = (item.item_barcode || item.barcode).split(',')
         for (let barcode of barcodes) {
           if (barcode === 'SIZE') {
-            barcode = sizes[item.size]
+            barcode = sizes[item.size].split(',')[0]
+          } else if (barcode === 'SIZE2') {
+            barcode = sizes[item.size].split(',')[1]
           }
 
           lines.push({

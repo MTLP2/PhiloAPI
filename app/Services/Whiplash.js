@@ -203,7 +203,9 @@ Whiplash.syncProject = async (params) => {
       const bb = (item.item_barcode || item.barcode).split(',')
       for (let barcode of bb) {
         if (barcode === 'SIZE') {
-          barcode = sizes[item.size]
+          barcode = sizes[item.size].split(',')[0]
+        } else if (barcode === 'SIZE2') {
+          barcode = sizes[item.size].split(',')[1]
         }
         barcodes[barcode] = true
       }
@@ -244,7 +246,9 @@ Whiplash.syncProject = async (params) => {
         const bb = (item.item_barcode || item.barcode).split(',')
         for (let barcode of bb) {
           if (barcode === 'SIZE') {
-            barcode = sizes[item.size]
+            barcode = sizes[item.size].split(',')[0]
+          } else if (barcode === 'SIZE2') {
+            barcode = sizes[item.size].split(',')[1]
           }
           params.order_items.push({
             item_id: barcodes[barcode],
