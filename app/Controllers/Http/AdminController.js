@@ -26,6 +26,7 @@ const MailJet = use('App/Services/MailJet')
 const Review = use('App/Services/Review')
 const ApiError = use('App/ApiError')
 const ProjectService = use('App/Services/Project')
+const Dispatch = use('App/Services/Dispatch')
 const Database = use('Database')
 
 class AdminController {
@@ -891,6 +892,10 @@ class AdminController {
 
   exportQuotes ({ params }) {
     return Quote.exportAll(params)
+  }
+
+  getShippingCosts ({ params }) {
+    return Dispatch.getCosts(params)
   }
 }
 

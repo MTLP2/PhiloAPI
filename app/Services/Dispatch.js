@@ -371,7 +371,6 @@ Dispatch.getCountriesForDispatch = async () => {
     projects[order.project_id][order.country_id] = order.total
   }
 
-  console.log(Object.values(projects)[0])
   return Utils.arrayToCsv([
     { name: 'Project', index: 'name' },
     ...Object.keys(contries).map(c => { return { name: c, index: c } })
@@ -383,33 +382,127 @@ Dispatch.getCosts = async () => {
     .where('lang', 'en')
     .all()
 
-  const shippings = await DB('shipping_weight')
-    .where('transporter', '!=', 'LTS')
-    .where('transporter', '!=', 'MDR')
-    .all()
-
   const costs = {}
   for (const country of countries) {
     costs[country.id] = {
-      name: country.name,
-      price: null
+      country_id: country.id,
+      country: country.name,
+      daudin: null,
+      daudin_cost: null,
+      daudin_costs: [],
+      daudin_pickup: null,
+      daudin_pickup_cost: null,
+      daudin_pickup_costs: [],
+      whiplash: null,
+      whiplash_cost: null,
+      whiplash_costs: [],
+      whiplash_uk: null,
+      whiplash_uk_cost: null,
+      whiplash_uk_costs: []
     }
   }
 
-  for (const ship of shippings) {
-    const price = Utils.round(ship.cost + ship.picking + ship.packing + ship['1kg'])
+  const shippings1 = await DB('shipping_weight')
+    .where('transporter', '!=', 'LTS')
+    .all()
+  for (const ship of shippings1) {
+    let price = ship['1kg']
     if (!costs[ship.country_id]) {
       continue
     }
-    if (!costs[ship.country_id].price || costs[ship.country_id].price > price) {
-      costs[ship.country_id].price = price
+
+    if (ship.transporter === 'MDR') {
+      if (price < 4.65) {
+        price = 4.65
+      }
+      price = price + ship.picking + ship.packing
+      price = price * 1.2
+      price = Utils.round(price, 2, 0.1)
+
+      if (!costs[ship.country_id].daudin_pickup || costs[ship.country_id].daudin_pickup > price) {
+        costs[ship.country_id].daudin_pickup = price
+      }
+    } else {
+      if (costs.transporter === 'IMX') {
+        price = price * 1.1
+      }
+      if (price < 7.2) {
+        price = 7.2
+      }
+      price = price + ship.picking + ship.packing
+      price = price * 1.2
+      price = Utils.round(price, 2, 0.1)
+
+      if (!costs[ship.country_id].daudin || costs[ship.country_id].daudin > price) {
+        costs[ship.country_id].daudin = price
+      }
     }
   }
 
+  const shippings2 = await DB('shipping_vinyl')
+    .all()
+  for (const ship of shippings2) {
+    const price = Utils.round(ship.cost + ship.picking + ship.packing + ship['1_vinyl'], 2, 0.1)
+    if (!costs[ship.country_id]) {
+      continue
+    }
+
+    if (ship.transporter === 'whiplash') {
+      if (!costs[ship.country_id].whiplash || costs[ship.country_id].whiplash > price) {
+        costs[ship.country_id].whiplash = price
+      }
+    } else if (ship.transporter === 'whiplash_uk') {
+      if (!costs[ship.country_id].whiplash_uk || costs[ship.country_id].whiplash_uk > price) {
+        costs[ship.country_id].whiplash_uk = price
+      }
+    }
+  }
+
+  const orders = await DB('order_shop')
+    .select('order_shop.id', 'order_shop.order_id', 'order_shop.transporter', 'shipping_type',
+      'customer.country_id', 'shipping_cost', 'order_shop.currency')
+    .whereNotNull('shipping_cost')
+    .join('order_item', 'order_shop_id', 'order_shop.id')
+    .join('customer', 'customer_id', 'customer.id')
+    .join('vod', 'vod.project_id', 'order_item.project_id')
+    .where('quantity', 1)
+    .where('order_shop.type', 'vod')
+    .where('barcode', 'not like', '%,%')
+    .where('weight', '<', '500')
+    .where('date_export', '>', '2022-01-01')
+    .where('shipping_type', '!=', 'letter')
+    .all()
+
+  for (const order of orders) {
+    if (!costs[order.country_id] || !costs[order.country_id][`${order.transporter}_costs`]) {
+      continue
+    }
+    if (order.transporter === 'daudin' && order.shipping_type === 'pickup') {
+      costs[order.country_id].daudin_pickup_costs.push(order)
+    } else {
+      costs[order.country_id][`${order.transporter}_costs`].push(order)
+    }
+  }
+
+  for (const [c, cost] of Object.entries(costs)) {
+    for (const t of ['daudin', 'daudin_pickup', 'whiplash', 'whiplash_uk']) {
+      if (cost[`${t}_costs`].length > 0) {
+        costs[c][`${t}_cost`] = Utils.round(cost[`${t}_costs`].reduce((a, b) => {
+          return a + b.shipping_cost
+        }, 0) / cost[`${t}_costs`].length)
+        costs[c][`${t}_diff`] = Utils.round(costs[c][t] - costs[c][`${t}_cost`])
+      }
+    }
+  }
+
+  console.log(costs.CH)
+  return Object.values(costs).filter(c => c.daudin)
+  /**
   return Utils.arrayToCsv([
     { name: 'Country', index: 'name' },
     { name: 'Price', index: 'price' }
   ], Object.values(costs))
+  **/
 }
 
 module.exports = Dispatch
