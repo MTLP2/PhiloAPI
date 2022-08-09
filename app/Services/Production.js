@@ -46,40 +46,24 @@ class Production {
         // Display type in front admin
         selects.push('production_action.type as production_action_type')
         params.query.join('production_action', 'production_action.production_id', 'production.id')
-
-        // params.query.whereIn('production_action.type', ['artwork', 'pressing_proof'])
         params.query.where(function () {
-          this.where('production_action.type', 'artwork')
-          this.whereIn('production_action.status', ['to_check', 'pending'])
-          this.where('production.step', 'preprod')
-        })
-        params.query.orWhere(function () {
-          this.where('production_action.type', 'pressing_proof')
-          this.whereIn('production_action.status', ['to_check', 'pending'])
-          this.where('production.step', 'prod')
-        })
-
-        params.query.where(function () {
-          this.orWhereExists(function () {
-            this.from('production_action')
-            this.join('production_file', 'production_file.production_id', 'production_action.production_id')
-            this.whereRaw('production_file.production_id = production.id')
-            this.whereIn('production_action.status', ['to_check', 'pending'])
-            this.where('production_file.status', 'pending')
-            this.where('type', 'artwork')
-            this.where('production_file.action', 'artwork')
-            this.whereNull('production_file.check_user')
+          this.where(function () {
+            this.where('production_action.type', 'artwork')
+            this.whereIn('production_action.status', ['to_check'])
+            this.where('production.step', 'preprod')
           })
+          this.orWhere(function () {
+            this.where('production_action.type', 'pressing_proof')
+            this.whereIn('production_action.status', ['to_check'])
+            this.where('production.step', 'prod')
+          })
+          /**
           this.orWhereExists(function () {
-            this.from('production_action')
+            this.whereIn('production_action.type', ['artwork', 'pressing_proof'])
             this.join('production_file', 'production_file.production_id', 'production_action.production_id')
-            this.whereRaw('production_file.production_id = production.id')
             this.whereIn('production_action.status', ['pending', 'to_check'])
-            this.where('production_file.status', 'pending')
-            this.where('type', 'pressing_proof')
-            this.where('production_file.action', 'pressing_proof')
-            this.whereNull('production_file.check_user')
           })
+          **/
         })
       } else {
         params.query.whereExists(function () {
