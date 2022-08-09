@@ -7,12 +7,12 @@ class ShopController {
   }
 
   updateShop ({ params, user }) {
-    params.user_id = user
+    params.user_id = user.id
     return Shop.update(params)
   }
 
   removeShopImage ({ params, user }) {
-    params.user_id = user
+    params.user_id = user.id
     return Shop.removeImage(params)
   }
 
