@@ -416,6 +416,37 @@ class Stock {
 
     return { success: true }
   }
+
+  static async fixBundle (params) {
+    const vod = await DB('vod')
+      .select('project_id', 'count_bundle', 'barcode')
+      .where('count_bundle', '!=', 0)
+      // .where('project_id', 253021)
+      .all()
+
+    console.log('====>', vod.length)
+
+    for (const v of vod) {
+      const quantity = await DB('order_item as oi')
+        .select(DB.raw('SUM(oi.quantity) as total'))
+        .join('order_shop as os', 'os.id', 'oi.order_shop_id')
+        .join('vod', 'vod.project_id', 'oi.project_id')
+        .where('oi.project_id', '!=', v.project_id)
+        .where('vod.barcode', 'like', `%${v.barcode}%`)
+        .where('is_paid', true)
+        .first()
+
+      await DB('vod')
+        .where('project_id', v.project_id)
+        .update({
+          count_bundle: quantity.total || 0
+        })
+      console.log(v.project_id, quantity.total)
+    }
+
+    console.log(vod.length)
+    return vod.length
+  }
 }
 
 module.exports = Stock
