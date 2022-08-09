@@ -110,11 +110,20 @@ Whiplash.saveOrderItem = (params) => {
 }
 
 Whiplash.findItem = (sku) => {
-  return whiplash(`/items/sku/${sku}`).then(res => {
-    return process.env.NODE_ENV === 'production'
-      ? res[0] || null
-      : { id: 2743163 }
-  })
+  if (process.env.NODE_ENV !== 'production') {
+    sku = 'TEST'
+  }
+  return whiplash(`/items/sku/${sku}`)
+    .then(res => {
+      if (!res) {
+        return null
+      // If eligible for media mail is not activited we return null
+      } else if (!res[0].media_mail) {
+        return null
+      } else {
+        return res[0]
+      }
+    })
 }
 
 Whiplash.getShippingMethod = (countryId, type) => {
