@@ -378,4 +378,38 @@ Dispatch.getCountriesForDispatch = async () => {
   ], Object.values(projects))
 }
 
+Dispatch.getCosts = async () => {
+  const countries = await DB('country')
+    .where('lang', 'en')
+    .all()
+
+  const shippings = await DB('shipping_weight')
+    .where('transporter', '!=', 'LTS')
+    .where('transporter', '!=', 'MDR')
+    .all()
+
+  const costs = {}
+  for (const country of countries) {
+    costs[country.id] = {
+      name: country.name,
+      price: null
+    }
+  }
+
+  for (const ship of shippings) {
+    const price = Utils.round(ship.cost + ship.picking + ship.packing + ship['1kg'])
+    if (!costs[ship.country_id]) {
+      continue
+    }
+    if (!costs[ship.country_id].price || costs[ship.country_id].price > price) {
+      costs[ship.country_id].price = price
+    }
+  }
+
+  return Utils.arrayToCsv([
+    { name: 'Country', index: 'name' },
+    { name: 'Price', index: 'price' }
+  ], Object.values(costs))
+}
+
 module.exports = Dispatch
