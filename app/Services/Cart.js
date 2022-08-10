@@ -698,6 +698,7 @@ Cart.calculateShippingDaudin = async (params) => {
     }
     const cost = transporter.packing + (transporter.picking * params.insert)
 
+    transporter[weight] = transporter.oil ? transporter[weight] + ((transporter.oil / 100) * transporter[weight]) : transporter[weight]
     if (transporter.transporter === 'MDR') {
       if (params.pickup === false) {
         continue
@@ -705,8 +706,8 @@ Cart.calculateShippingDaudin = async (params) => {
       if (!costs) {
         costs = {}
       }
-      if (transporter[weight] < 4.65) {
-        transporter[weight] = 4.65
+      if (transporter[weight] < 5.2) {
+        transporter[weight] = 5.2
       }
       costs.pickup = Utils.round(transporter[weight] + cost)
     } else if (transporter.transporter === 'LTS') {
