@@ -396,6 +396,9 @@ Dispatch.getCosts = async () => {
       daudin_pickup: null,
       daudin_pickup_cost: null,
       daudin_pickup_costs: [],
+      sna: null,
+      sna_cost: null,
+      sna_costs: [],
       whiplash: null,
       whiplash_cost: null,
       whiplash_costs: [],
@@ -476,6 +479,7 @@ Dispatch.getCosts = async () => {
     .join('project', 'vod.project_id', 'project.id')
     .where('quantity', 1)
     .where('order_shop.type', 'vod')
+    .where('order_shop.transporter', 'sna')
     .where('barcode', 'not like', '%,%')
     .where('weight', '<', '500')
     .where('shipping_type', '!=', 'letter')
@@ -484,7 +488,9 @@ Dispatch.getCosts = async () => {
     .orderBy('created_at', 'desc')
     .all()
 
+  console.log(orders)
   for (const order of orders) {
+    console.log(order.transporter)
     if (!costs[order.country_id] || !costs[order.country_id][`${order.transporter}_costs`]) {
       continue
     }
@@ -497,7 +503,7 @@ Dispatch.getCosts = async () => {
   }
 
   for (const [c, cost] of Object.entries(costs)) {
-    for (const t of ['daudin', 'daudin_pickup', 'whiplash', 'whiplash_uk']) {
+    for (const t of ['daudin', 'daudin_pickup', 'sna', 'whiplash', 'whiplash_uk']) {
       if (cost[`${t}_costs`].length > 0) {
         costs[c][`${t}_cost`] = Utils.round(
           cost[`${t}_costs`].reduce((a, b) => {
