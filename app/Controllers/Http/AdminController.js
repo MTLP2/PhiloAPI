@@ -160,6 +160,11 @@ class AdminController {
     return Stock.setStocksProject(params)
   }
 
+  async getStocks ({ params, user }) {
+    params.user_id = user.id
+    return Stock.getAll(params)
+  }
+
   async uploadTracks ({ params }) {
     return Utils.upload({
       ...params,

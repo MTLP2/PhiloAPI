@@ -441,6 +441,7 @@ Route.group(() => {
   Route.delete('/contests/:id', 'ContestController.remove')
   Route.post('/contests/:id/extract', 'ContestController.extract')
   Route.get('/shipping-costs', 'AdminController.getShippingCosts')
+  Route.get('/stocks', 'AdminController.getStocks')
 }).prefix('admin').middleware(['auth', 'admin'])
 
 Route.group(() => {

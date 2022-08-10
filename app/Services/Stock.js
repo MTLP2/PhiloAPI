@@ -448,6 +448,16 @@ class Stock {
     console.log(vod.length)
     return vod.length
   }
+
+  static async getAll () {
+    const stocks = await DB('stock')
+      .select('type', DB.raw('sum(quantity) as quantity'))
+      .groupBy('type')
+      .orderBy('quantity', 'desc')
+      .all()
+
+    return stocks
+  }
 }
 
 module.exports = Stock
