@@ -417,8 +417,8 @@ Dispatch.getCosts = async () => {
     }
 
     if (ship.transporter === 'MDR') {
-      if (price < 5.2) {
-        price = 5.2
+      if (price < 4.8) {
+        price = 4.8
       }
       price = price + ship.picking + ship.packing
       price = price * 1.2
@@ -431,8 +431,8 @@ Dispatch.getCosts = async () => {
       if (costs.transporter === 'IMX') {
         price = price * 1.1
       }
-      if (price < 7.2) {
-        price = 7.2
+      if (price < 7.3) {
+        price = 7.3
       }
       price = price + ship.picking + ship.packing
       price = price * 1.2

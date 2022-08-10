@@ -706,8 +706,8 @@ Cart.calculateShippingDaudin = async (params) => {
       if (!costs) {
         costs = {}
       }
-      if (transporter[weight] < 5.2) {
-        transporter[weight] = 5.2
+      if (transporter[weight] < 4.8) {
+        transporter[weight] = 4.8
       }
       costs.pickup = Utils.round(transporter[weight] + cost)
     } else if (transporter.transporter === 'LTS') {
@@ -726,8 +726,8 @@ Cart.calculateShippingDaudin = async (params) => {
         transporter[weight] = transporter[weight] * 1.1
       }
 
-      if (transporter[weight] < 7.2) {
-        transporter[weight] = 7.2
+      if (transporter[weight] < 7.3) {
+        transporter[weight] = 7.3
       }
 
       costs = {
