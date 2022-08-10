@@ -479,6 +479,7 @@ Dispatch.getCosts = async () => {
     .where('barcode', 'not like', '%,%')
     .where('weight', '<', '500')
     .where('shipping_type', '!=', 'letter')
+    .where('shipping_type', '!=', 'tracking')
     .whereRaw('date_export > DATE_SUB(now(), INTERVAL 6 MONTH)')
     .orderBy('created_at', 'desc')
     .all()
