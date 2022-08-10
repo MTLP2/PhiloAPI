@@ -228,13 +228,20 @@ Admin.getProject = async (id) => {
     .where('is_paid', 1)
     .all()
 
+  const prodQuery = await DB('production')
+    .where('project_id', id)
+    .whereNotNull('form_price')
+    .whereNotNull('quantity_pressed')
+    .orderBy('id', 'desc')
+    .first()
+
   const exportsQuery = DB('project_export')
     .where('project_id', id)
     .all()
 
   const reviewsQuery = Review.find({ projectId: id, onlyVisible: false })
 
-  const [project, codes, costs, stocks, stocksHistoric, items, orders, reviews, projectImages, exps] = await Promise.all([
+  const [project, codes, costs, stocks, stocksHistoric, items, orders, reviews, prod, projectImages, exps] = await Promise.all([
     projectQuery,
     codesQuery,
     costsQuery,
@@ -243,6 +250,7 @@ Admin.getProject = async (id) => {
     itemsQuery,
     ordersQuery,
     reviewsQuery,
+    prodQuery,
     projectImagesQuery,
     exportsQuery
   ])
@@ -275,6 +283,11 @@ Admin.getProject = async (id) => {
   }
 
   project.stock_preorder = project.goal - project.count - project.count_other - project.count_bundle - project.count_distrib
+
+  if (prod) {
+    // prod.final_price / prod.quantity_pressed
+    project.unit_price = prod.form_price / prod.quantity_pressed
+  }
 
   project.com = project.com ? JSON.parse(project.com) : {}
   project.sizes = project.sizes ? JSON.parse(project.sizes) : {}
@@ -377,6 +390,7 @@ Admin.getProjectStats = async (params) => {
     tips: 0,
     costs: 0,
     prod: 0,
+    unit_price: 0,
     quantity: 0,
     quantity_site: 0,
     quantity_site_tax: 0,
@@ -505,6 +519,18 @@ Admin.getProjectStats = async (params) => {
     }
   }
 
+  const prod = await DB('production')
+    .where('project_id', params.id)
+    .whereNotNull('form_price')
+    .whereNotNull('quantity_pressed')
+    .orderBy('id', 'desc')
+    .first()
+
+  if (prod) {
+    // prod.final_price / prod.quantity_pressed
+    stats.unit_price = prod.form_price / prod.quantity_pressed
+  }
+
   stats.currency = project.currency
   stats.quantity = stats.quantity_site + stats.quantity_distrib
   stats.turnover = stats.turnover_site + stats.turnover_distrib + stats.turnover_digital
@@ -526,8 +552,6 @@ Admin.getProjectsStats = async () => {
     .where('is_licence', 1)
     .orderBy('id', 'desc')
     .all()
-
-  console.log(projects.length)
 
   const res = {
     marge: {
