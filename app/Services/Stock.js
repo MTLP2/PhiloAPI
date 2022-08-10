@@ -63,6 +63,7 @@ class Stock {
       })
     }
 
+    stock.is_distrib = params.is_distrib
     stock.quantity = params.quantity
     stock.updated_at = Utils.date()
 
