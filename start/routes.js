@@ -275,7 +275,7 @@ Route.group(() => {
   Route.post('/projects/:id/costs', 'ProductionController.storeCosts')
   Route.delete('/projects/:id/costs', 'ProductionController.deleteCost')
   Route.get('/projects/:id/productions', 'ProductionController.getProjectProductions')
-  Route.get('/projects/:id/costs/:cid/download', 'AdminController.downloadInvoiceCost')
+  Route.get('/projects/:id/costs/:cid/download', 'ProductionController.downloadInvoiceCost')
   Route.put('/projects/:id/reviews/:rid', 'AdminController.updateReview')
   Route.delete('/projects/:id/reviews/:rid', 'AdminController.deleteReview')
   Route.get('/projects/:id/dispatchs', 'AdminController.getDispatchs')
