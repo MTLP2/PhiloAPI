@@ -378,6 +378,9 @@ Dispatch.getCountriesForDispatch = async () => {
 }
 
 Dispatch.getCosts = async () => {
+  const currenciesDb = await Utils.getCurrenciesDb()
+  const currencies = await Utils.getCurrencies('EUR', currenciesDb)
+
   const countries = await DB('country')
     .where('lang', 'en')
     .all()
@@ -403,17 +406,19 @@ Dispatch.getCosts = async () => {
   }
 
   const shippings1 = await DB('shipping_weight')
-    .where('transporter', '!=', 'LTS')
+    .where('partner', 'Daudin')
     .all()
   for (const ship of shippings1) {
     let price = ship['1kg']
+
+    price = ship.oil ? price + ((ship.oil / 100) * price) : price
     if (!costs[ship.country_id]) {
       continue
     }
 
     if (ship.transporter === 'MDR') {
-      if (price < 4.65) {
-        price = 4.65
+      if (price < 5.2) {
+        price = 5.2
       }
       price = price + ship.picking + ship.packing
       price = price * 1.2
@@ -442,16 +447,18 @@ Dispatch.getCosts = async () => {
   const shippings2 = await DB('shipping_vinyl')
     .all()
   for (const ship of shippings2) {
-    const price = Utils.round(ship.cost + ship.picking + ship.packing + ship['1_vinyl'], 2, 0.1)
+    let price = Utils.round(ship.cost + ship.picking + ship.packing + ship['1_vinyl'], 2, 0.1)
     if (!costs[ship.country_id]) {
       continue
     }
 
     if (ship.transporter === 'whiplash') {
+      price = price / currencies.USD
       if (!costs[ship.country_id].whiplash || costs[ship.country_id].whiplash > price) {
         costs[ship.country_id].whiplash = price
       }
     } else if (ship.transporter === 'whiplash_uk') {
+      price = price / currencies.GBP
       if (!costs[ship.country_id].whiplash_uk || costs[ship.country_id].whiplash_uk > price) {
         costs[ship.country_id].whiplash_uk = price
       }
@@ -460,23 +467,27 @@ Dispatch.getCosts = async () => {
 
   const orders = await DB('order_shop')
     .select('order_shop.id', 'order_shop.order_id', 'order_shop.transporter', 'shipping_type',
-      'customer.country_id', 'shipping_cost', 'order_shop.currency')
+      'customer.country_id', 'shipping', 'shipping_cost', 'order_shop.currency', 'order_shop.currency_rate',
+      'order_shop.date_export', 'order_shop.created_at', 'vod.project_id', 'project.picture', 'project.name', 'project.artist_name')
     .whereNotNull('shipping_cost')
     .join('order_item', 'order_shop_id', 'order_shop.id')
     .join('customer', 'customer_id', 'customer.id')
     .join('vod', 'vod.project_id', 'order_item.project_id')
+    .join('project', 'vod.project_id', 'project.id')
     .where('quantity', 1)
     .where('order_shop.type', 'vod')
     .where('barcode', 'not like', '%,%')
     .where('weight', '<', '500')
-    .where('date_export', '>', '2022-01-01')
     .where('shipping_type', '!=', 'letter')
+    .whereRaw('date_export > DATE_SUB(now(), INTERVAL 6 MONTH)')
+    .orderBy('created_at', 'desc')
     .all()
 
   for (const order of orders) {
     if (!costs[order.country_id] || !costs[order.country_id][`${order.transporter}_costs`]) {
       continue
     }
+    order.diff = Utils.round(order.shipping - order.shipping_cost)
     if (order.transporter === 'daudin' && order.shipping_type === 'pickup') {
       costs[order.country_id].daudin_pickup_costs.push(order)
     } else {
@@ -487,22 +498,19 @@ Dispatch.getCosts = async () => {
   for (const [c, cost] of Object.entries(costs)) {
     for (const t of ['daudin', 'daudin_pickup', 'whiplash', 'whiplash_uk']) {
       if (cost[`${t}_costs`].length > 0) {
-        costs[c][`${t}_cost`] = Utils.round(cost[`${t}_costs`].reduce((a, b) => {
-          return a + b.shipping_cost
-        }, 0) / cost[`${t}_costs`].length)
+        costs[c][`${t}_cost`] = Utils.round(
+          cost[`${t}_costs`].reduce((a, b) => {
+            return a + b.shipping_cost * b.currency_rate
+          }, 0) / cost[`${t}_costs`].length)
+
         costs[c][`${t}_diff`] = Utils.round(costs[c][t] - costs[c][`${t}_cost`])
       }
     }
   }
 
-  console.log(costs.CH)
-  return Object.values(costs).filter(c => c.daudin)
-  /**
-  return Utils.arrayToCsv([
-    { name: 'Country', index: 'name' },
-    { name: 'Price', index: 'price' }
-  ], Object.values(costs))
-  **/
+  return Object.values(costs)
+    .filter(c => c.daudin)
+    .sort((a, b) => b.daudin_costs.length - a.daudin_costs.length)
 }
 
 module.exports = Dispatch
