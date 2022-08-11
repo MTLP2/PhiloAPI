@@ -1912,7 +1912,7 @@ class Production {
     }
 
     item.project_id = params.project_id
-    item.production_id = params.production_id
+    item.production_id = params.production_id || null
     item.name = params.name
     item.invoice_number = params.invoice_number
     item.name = params.name
@@ -1941,9 +1941,7 @@ class Production {
     }
 
     await item.save()
-
-    await Production.calculateFinalPrice(item.production_id)
-
+    // await Production.calculateFinalPrice(item.production_id)
     return true
   }
 
@@ -1959,7 +1957,9 @@ class Production {
     const item = await DB('production_cost')
       .find(params.cid)
 
-    return Storage.get(item.invoice, true)
+    const file = await Storage.get(item.invoice, true)
+
+    return file
   }
 
   static async calculateFinalPrice (id) {
