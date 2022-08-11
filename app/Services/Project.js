@@ -1597,8 +1597,8 @@ Project.getDashboard = async (params) => {
     }
     const tips = (order.tips / order.tax_rate) * order.currency_rate_project * fee
 
-    s.setDate('site', 'income', date, value)
-    s.setDate('tips', 'income', date, tips)
+    s.setDate('site', 'income', date, value + tips)
+    // s.setDate('tips', 'income', date, tips)
     s.setDate('site', 'quantity', date, order.quantity)
 
     s.setCountry('site', 'income', order.country_id, value)
