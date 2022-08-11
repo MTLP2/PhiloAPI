@@ -532,8 +532,8 @@ Admin.getProjectStats = async (params) => {
   }
 
   stats.currency = project.currency
-  stats.quantity = stats.quantity_site + stats.quantity_distrib
-  stats.turnover = stats.turnover_site + stats.turnover_distrib + stats.turnover_digital
+  stats.quantity = stats.quantity_site + stats.quantity_distrib + stats.quantity_box
+  stats.turnover = stats.turnover_site + stats.turnover_distrib + stats.turnover_digital + stats.turnover_box
   stats.benefit_total = stats.benefit_site + stats.benefit_distrib + stats.benefit_prod
   stats.benefit_per_vinyl = (stats.benefit_site + stats.benefit_distrib) / stats.quantity
   stats.benefit_site_per_vinyl = stats.benefit_site / stats.quantity_site
