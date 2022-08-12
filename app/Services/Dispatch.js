@@ -377,7 +377,7 @@ Dispatch.getCountriesForDispatch = async () => {
   ], Object.values(projects))
 }
 
-Dispatch.getCosts = async () => {
+Dispatch.getCosts = async (params) => {
   const currenciesDb = await Utils.getCurrenciesDb()
   const currencies = await Utils.getCurrencies('EUR', currenciesDb)
 
@@ -479,18 +479,15 @@ Dispatch.getCosts = async () => {
     .join('project', 'vod.project_id', 'project.id')
     .where('quantity', 1)
     .where('order_shop.type', 'vod')
-    .where('order_shop.transporter', 'sna')
     .where('barcode', 'not like', '%,%')
     .where('weight', '<', '500')
     .where('shipping_type', '!=', 'letter')
     .where('shipping_type', '!=', 'tracking')
-    .whereRaw('date_export > DATE_SUB(now(), INTERVAL 6 MONTH)')
+    .whereBetween('date_export', [params.start, params.end])
     .orderBy('created_at', 'desc')
     .all()
 
-  console.log(orders)
   for (const order of orders) {
-    console.log(order.transporter)
     if (!costs[order.country_id] || !costs[order.country_id][`${order.transporter}_costs`]) {
       continue
     }
