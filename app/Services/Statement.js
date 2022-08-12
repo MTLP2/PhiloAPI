@@ -1,5 +1,3 @@
-const Statement = use('App/Models/Statement')
-const Project = use('App/Models/Project')
 const Excel = require('exceljs')
 const moment = require('moment')
 const Utils = use('App/Utils')
@@ -139,15 +137,21 @@ class StatementService {
     const bb = {}
     const cc = {}
     for (const project of projects) {
-      bb[project.barcode] = project
-      cc[project.cat_number] = project
+      if (!bb[project.barcode]) {
+        bb[project.barcode] = []
+      }
+      bb[project.barcode].push(project)
+      if (!cc[project.cat_number]) {
+        cc[project.cat_number] = []
+      }
+      cc[project.cat_number].push(project)
     }
 
     for (const d in data) {
       if (data[d].barcode) {
-        data[d].project = bb[data[d].barcode]
+        data[d].projects = bb[data[d].barcode]
       } else if (data[d].cat_number) {
-        data[d].project = cc[data[d].cat_number]
+        data[d].projects = cc[data[d].cat_number]
       }
       data[d].total = Utils.round(data[d].total)
       data[d].storage = Utils.round(data[d].storage)
@@ -156,43 +160,46 @@ class StatementService {
     if (params.type === 'save') {
       const inserts = []
       for (const ref of data) {
-        if (ref.project) {
-          let stat = await Statement.query()
-            .where('project_id', ref.project.id)
-            .where('date', `${params.year}-${params.month}`)
-            .first()
-          if (!stat) {
-            stat = new Statement()
-            stat.project_id = ref.project.id
-            stat.date = params.year + '-' + params.month
-            stat.distributors = 0
-            stat.production = 0
-            stat.sdrm = 0
-            stat.mastering = 0
-            stat.marketing = 0
-            stat.logistic = 0
-            stat.distribution_cost = 0
-            stat.storage = 0
-            await stat.save()
+        if (ref.projects) {
+          for (const project of ref.projects) {
+            ref.project = project
+            let stat = await DB('statement')
+              .where('project_id', ref.project.id)
+              .where('date', `${params.year}-${params.month}`)
+              .first()
+            if (!stat) {
+              stat = DB('statement')
+              stat.project_id = ref.project.id
+              stat.date = params.year + '-' + params.month
+              stat.distributors = 0
+              stat.production = 0
+              stat.sdrm = 0
+              stat.mastering = 0
+              stat.marketing = 0
+              stat.logistic = 0
+              stat.distribution_cost = 0
+              stat.storage = 0
+              await stat.save()
+            }
+
+            ref.total = ref.total ? Utils.round(ref.total * currencies[ref.project.currency]) : 0
+            ref.digital = ref.digital ? Utils.round(ref.digital * currencies[ref.project.currency]) : 0
+            ref.storage = ref.storage ? Utils.round(ref.storage * currencies[ref.project.currency]) : 0
+
+            inserts.push({
+              statement_id: stat.id,
+              name: params.distributor,
+              date: params.year + '-' + params.month,
+              quantity: ref.quantity,
+              country_id: ref.country_id,
+              returned: ref.returned,
+              digital: ref.digital,
+              total: ref.total,
+              storage: ref.storage,
+              created_at: Utils.date(),
+              updated_at: Utils.date()
+            })
           }
-
-          ref.total = ref.total ? Utils.round(ref.total * currencies[ref.project.currency]) : 0
-          ref.digital = ref.digital ? Utils.round(ref.digital * currencies[ref.project.currency]) : 0
-          ref.storage = ref.storage ? Utils.round(ref.storage * currencies[ref.project.currency]) : 0
-
-          inserts.push({
-            statement_id: stat.id,
-            name: params.distributor,
-            date: params.year + '-' + params.month,
-            quantity: ref.quantity,
-            country_id: ref.country_id,
-            returned: ref.returned,
-            digital: ref.digital,
-            total: ref.total,
-            storage: ref.storage,
-            created_at: Utils.date(),
-            updated_at: Utils.date()
-          })
         }
       }
 
@@ -200,6 +207,7 @@ class StatementService {
         .where('date', params.year + '-' + params.month)
         .where('name', params.distributor)
         .delete()
+
       await DB('statement_distributor').insert(inserts)
 
       if (process.env.NODE_ENV === 'production') {
@@ -356,12 +364,14 @@ class StatementService {
         data[refs[catNumber]].storage += Utils.round(11.5 / currencies.GBP)
       }
     })
-    foc.eachRow(row => {
-      const catNumber = row.getCell('A').value
-      if (refs[catNumber]) {
-        data[refs[catNumber]].storage += row.getCell('D').value * (0.25 / currencies.GBP)
-      }
-    })
+    if (foc) {
+      foc.eachRow(row => {
+        const catNumber = row.getCell('A').value
+        if (refs[catNumber]) {
+          data[refs[catNumber]].storage += row.getCell('D').value * (0.25 / currencies.GBP)
+        }
+      })
+    }
 
     return data
   }
@@ -945,10 +955,12 @@ class StatementService {
       .join('\n')
   }
 
-  static async refreshStatements () {
-    const statements = await DB('statement')
-      .all()
-
+  static async refreshStatements (params) {
+    let statements = DB('statements')
+    if (params.distributor) {
+      statements.where('distributor', params.distributor)
+    }
+    statements = await await statements.all()
     for (const statement of statements) {
       const file = await Storage.get(`statements/${statement.id}.xlsx`)
       const date = statement.date.split('-')
@@ -962,7 +974,7 @@ class StatementService {
       if (file) {
         const parse = await StatementService.upload(stat)
         // console.log(parse)
-        break
+        // break
       }
     }
 
