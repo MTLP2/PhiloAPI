@@ -1440,7 +1440,7 @@ Admin.getOrders = async (params) => {
       'os.total as os_total', 'os.is_paid', 'os.is_paused', 'os.ask_cancel', 'order.total as o_total',
       'order.transaction_id', 'oi.order_id', 'oi.order_shop_id', 'oi.quantity', 'oi.price', 'oi.size', 'order.status',
       'order.payment_id', 'user.name as user_name', 'user.email as user_email', 'user.picture as user_picture',
-      'order.user_agent', 'c.country_id', 'c.name', 'c.firstname', 'c.lastname',
+      'order.user_agent', 'c.country_id', 'c.name', 'c.firstname', 'c.lastname', 'vod.date_shipping',
       'c.address', 'c.zip_code', 'c.city', 'c.state', 'user.is_pro', 'project.artist_name', 'project.name as project_name',
       'project.picture', 'user.facebook_id', 'user.soundcloud_id',
       DB.raw('CONCAT(c.firstname, \' \', c.lastname) AS user_infos')
