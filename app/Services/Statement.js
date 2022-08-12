@@ -330,17 +330,6 @@ class StatementService {
       const idx = `${barcode}#${country}`
 
       if (barcode && barcode !== 'UPC') {
-        if (!data[`${barcode}#GB`]) {
-          refs[row.getCell('B').value] = idx
-          data[idx] = {
-            barcode: barcode,
-            country_id: country,
-            quantity: 0,
-            returned: 0,
-            total: 0,
-            storage: 0
-          }
-        }
         if (!data[idx]) {
           if (!refs[row.getCell('B').value]) {
             refs[row.getCell('B').value] = idx
