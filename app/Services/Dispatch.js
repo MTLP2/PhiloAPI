@@ -5,6 +5,10 @@ const Notification = use('App/Services/Notification')
 const Payment = use('App/Services/Payment')
 const Order = use('App/Services/Order')
 const Stock = use('App/Services/Stock')
+const Daudin = use('App/Services/Daudin')
+const Sna = use('App/Services/Sna')
+const Storage = use('App/Services/Storage')
+const Whiplash = use('App/Services/Whiplash')
 const Excel = require('exceljs')
 const ApiError = use('App/ApiError')
 
@@ -516,6 +520,44 @@ Dispatch.getCosts = async (params) => {
   return Object.values(costs)
     .filter(c => c.daudin)
     .sort((a, b) => b.daudin_costs.length - a.daudin_costs.length)
+}
+
+Dispatch.setCosts = async (params) => {
+  const files = await Storage.list(`shippings/${params.transporter}`, true)
+
+  const dispatchs = []
+  for (const file of files) {
+    if (file.size === 0) {
+      continue
+    }
+    const path = file.path.split('.')[0].split(' ')
+    console.log(path)
+    const date = path[path.length - 1]
+    const buffer = await Storage.get(file.path, true)
+
+    const dis = await Dispatch.setCost(params.transporter, date, buffer)
+    // console.log(dis.length)
+    dispatchs.push(...dis)
+
+    break
+  }
+  return dispatchs.length
+}
+
+Dispatch.setCost = async (transporter, date, buffer) => {
+  const dispatchs = []
+
+  let dis
+  if (transporter === 'daudin') {
+    dis = await Daudin.setCost(date, buffer)
+  } else if (transporter === 'sna') {
+    dis = await Sna.setCost(date, buffer)
+  } else if (transporter === 'whiplash') {
+    dis = await Whiplash.setCost(buffer)
+  }
+  dispatchs.push(...dis)
+
+  return dispatchs
 }
 
 Dispatch.compareShipping = async (params) => {

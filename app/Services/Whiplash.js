@@ -646,61 +646,52 @@ Whiplash.syncStocks = async (params) => {
   return projects
 }
 
-Whiplash.setCosts = async () => {
-  const files = await Storage.list('shippings/whiplash', true)
-  const currencies = await Utils.getCurrenciesDb()
+Whiplash.setCost = async (buffer) => {
+  const lines = Utils.csvToArray(buffer)
+  const date = lines[0].transaction_date.substring(0, 10)
 
-  const uk = await Utils.getCurrencies('GBP', currencies)
-  const us = await Utils.getCurrencies('USD', currencies)
+  let currencies
 
-  let i = 0
-  for (const file of files) {
-    if (file.size === 0) {
-      continue
-    }
-
-    const buffer = await Storage.get(file.path, true)
-    const dispatchs = Utils.csvToArray(buffer)
-    const date = dispatchs[0].transaction_date
-    const shops = await DB('order_shop')
-      .whereIn('whiplash_id', dispatchs.filter(s => s.creator_id).map(s => s.creator_id))
-      .whereNull('shipping_cost')
-      .all()
-
-    console.log(i, date, shops.length, file)
-    for (const dispatch of dispatchs) {
-      if (dispatch.creator_id) {
-        const shop = shops.find(s => {
-          return +s.whiplash_id === +dispatch.creator_id
-        })
-
-        if (!shop) {
-          continue
-        }
-
-        if (+dispatch.warehouse_id === 3) {
-          await DB('order_shop')
-            .where('id', shop.id)
-            .update({
-              shipping_cost: -dispatch.total * uk[shop.currency]
-            })
-          i++
-        } else if (+dispatch.warehouse_id === 4) {
-          await DB('order_shop')
-            .where('id', shop.id)
-            .update({
-              shipping_cost: -dispatch.total * us[shop.currency]
-            })
-          i++
-        } else if (+dispatch.warehouse_id !== 0) {
-          throw new Error('bas_warehouse')
-        }
-        // console.log(shop.order_id, dispatch.creator_id, dispatch.warehouse_id, -dispatch.total, shop.shipping_cost)
-      }
-    }
+  if (lines[0].warehouse_id === 3) {
+    currencies = await Utils.getCurrenciesApi(date, 'EUR,USD,GBP,AUD', 'GBP')
+  } else {
+    currencies = await Utils.getCurrenciesApi(date, 'EUR,USD,GBP,AUD', 'USD')
   }
 
-  return i
+  const shops = await DB('order_shop')
+    .whereIn('whiplash_id', lines.filter(s => s.creator_id).map(s => s.creator_id))
+    // .whereNull('shipping_cost')
+    .all()
+
+  const dispatchs = []
+  for (const dispatch of lines) {
+    if (dispatch.creator_id) {
+      const shop = shops.find(s => {
+        return +s.whiplash_id === +dispatch.creator_id
+      })
+
+      if (!shop) {
+        continue
+      }
+
+      if (+dispatch.warehouse_id === 3 || +dispatch.warehouse_id === 4) {
+        await DB('order_shop')
+          .where('id', shop.id)
+          .update({
+            shipping_trans: -dispatch['Carrier Fees'] * currencies[shop.currency],
+            shipping_cost: -dispatch.total * currencies[shop.currency],
+            shipping_quantity: +dispatch.merch_count
+          })
+      } else if (+dispatch.warehouse_id !== 0) {
+        throw new Error('bad_warehouse')
+      }
+
+      dispatchs.push(dispatch)
+      // console.log(shop.order_id, dispatch.creator_id, dispatch.warehouse_id, -dispatch.total, shop.shipping_cost)
+    }
+
+    return dispatchs
+  }
 }
 
 Whiplash.parseShippings = async () => {
