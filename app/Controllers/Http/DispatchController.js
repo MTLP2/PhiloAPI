@@ -80,6 +80,14 @@ class DispatchController {
 
     return api.response(res)
   }
+
+  compareShippingOrder ({ params }) {
+    return Dispatch.compareShipping(params)
+  }
+
+  getShippingRevenues ({ params }) {
+    return Dispatch.getShippingRevenues(params)
+  }
 }
 
 module.exports = DispatchController
