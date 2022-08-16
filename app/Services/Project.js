@@ -1358,10 +1358,10 @@ Project.getDashboard = async (params) => {
     .join('vod', 'vod.project_id', 'project.id')
     .where('is_delete', '!=', '1')
 
-  if (params.u) {
-    projects.where('user_id', params.u)
+  if (params.user_id) {
+    projects.where('user_id', params.user_id)
   } else {
-    projects.where('project.id', params.p)
+    projects.where('project.id', params.project_id)
   }
 
   projects = Utils.arrayToObject(await projects.all(), 'id')

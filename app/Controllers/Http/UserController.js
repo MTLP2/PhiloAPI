@@ -84,7 +84,7 @@ class UserController {
   }
 
   async getProjects ({ user, params }) {
-    if (params.user_id && user.id !== +params.u && !await Utils.isTeam(user.id)) {
+    if (params.user_id && user.id !== +params.user_id && !await Utils.isTeam(user.id)) {
       throw new ApiError(403)
     }
     if (params.project_id) {

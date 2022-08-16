@@ -144,11 +144,11 @@ class ProjectsController {
   async getDashboard ({ params, user }) {
     params.user = user
 
-    if (params.u && user.id !== +params.u && !await Utils.isTeam(user.id)) {
+    if (params.user_id && user.id !== +params.user_id && !await Utils.isTeam(user.id)) {
       throw new ApiError(403)
     }
-    if (params.p !== 'all') {
-      await Utils.checkProjectOwner({ project_id: params.p, user: user })
+    if (params.project_id !== 'all' && params.project_id !== '') {
+      await Utils.checkProjectOwner({ project_id: params.project_id, user: user })
     }
 
     return Project.getDashboard(params)
