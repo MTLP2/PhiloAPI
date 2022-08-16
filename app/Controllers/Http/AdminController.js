@@ -140,7 +140,6 @@ class AdminController {
     project.category = params.category
     project.tags = params.tags && params.tags.join(',')
     project.cat_number = params.cat_number ? params.cat_number.trim() : null
-    project.home = params.home || 0
     project.is_visible = params.is_visible
     project.show_info = params.show_info
     project.show_image_bar = params.show_image_bar
