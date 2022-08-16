@@ -507,6 +507,21 @@ const DB = (tablee, idd) => {
       }
     },
 
+    async create (params) {
+      const error = new Error()
+      const [id] = await p.query.clone()
+        .insert(params)
+        .catch(err => {
+          error.status = err.status
+          error.message = err.message
+          throw error
+        })
+
+      return this
+        .where('id', id)
+        .first()
+    },
+
     insert (values) {
       const error = new Error()
       return p.query
