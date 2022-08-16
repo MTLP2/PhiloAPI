@@ -579,7 +579,6 @@ const DB = (tablee, idd) => {
 
       return p.query
         .insert(attributes)
-        // .then(() => knex.first(knex.raw('LAST_INSERT_ID() AS id')))
         .then(id => {
           db.newQuery()
           return db.find(id).then(() => db)
