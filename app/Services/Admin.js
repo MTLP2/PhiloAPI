@@ -1665,6 +1665,9 @@ Admin.saveOrderShop = async (params) => {
   if (params.tracking_transporter) {
     shop.tracking_transporter = params.tracking_transporter
   }
+  if (params.address_pickup) {
+    shop.address_pickup = params.address_pickup
+  }
   shop.updated_at = Utils.date()
   await shop.save()
 
