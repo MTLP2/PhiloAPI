@@ -1072,6 +1072,10 @@ Admin.saveVod = async (params) => {
 
         if (params.status === 'check_address' && order.shipping_type === 'pickup') {
           const pickup = JSON.parse(order.address_pickup)
+          if (!pickup || !pickup.number) {
+            console.log(order)
+            continue
+          }
           const avaiblable = await MondialRelay.checkPickupAvailable(pickup.number)
           if (!avaiblable) {
             data.type = 'my_order_pickup_must_change'
