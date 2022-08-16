@@ -1012,7 +1012,7 @@ class StatementService {
         .first()
 
       if (!statement) {
-        statement = new Statement()
+        statement = DB('statement')
         statement.project_id = p.id
         statement.date = month
         statement.created_at = Utils.date()
