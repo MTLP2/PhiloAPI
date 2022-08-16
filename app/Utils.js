@@ -229,6 +229,16 @@ Utils.toPdf = async (html) => {
   })
 }
 
+Utils.inUE = (country) => {
+  const ue = ['AT', 'BE', 'BG', 'CY', 'CZ', 'DE', 'DK', 'EE', 'ES', 'FI', 'FR', 'GI', 'GR', 'HR', 'HU', 'IE', 'IT', 'LT', 'LU', 'LV', 'MT', 'NL', 'PL', 'PT', 'RO', 'SE', 'SI', 'SK']
+
+  if (ue.indexOf(country) > -1) {
+    return true
+  } else {
+    return false
+  }
+}
+
 Utils.download = async (params) => {
   params.res.implicitEnd = false
 
@@ -476,6 +486,7 @@ Utils.getCurrencyRate = async (currency, date) => {
     }
     currencyRate = Utils.round(1 / currencies[currency], 2)
   }
+
   return currencyRate
 }
 
@@ -534,7 +545,6 @@ Utils.getCurrenciesApi = async (date = 'latest', symbols = 'EUR,USD,GBP,AUD', ba
       json: true
     }
   ).then(res => {
-    console.log(res)
     return res.rates
   })
 }
