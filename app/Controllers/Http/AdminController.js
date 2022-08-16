@@ -1,4 +1,5 @@
 const Admin = use('App/Services/Admin')
+const DB = use('App/DB')
 const Notification = use('App/Services/Notification')
 const Order = use('App/Services/Order')
 const PromoCode = use('App/Services/PromoCode')
@@ -13,7 +14,6 @@ const Invoice = use('App/Services/Invoice')
 const Whiplash = use('App/Services/Whiplash')
 const Song = use('App/Services/Song')
 const Utils = use('App/Utils')
-const Project = use('App/Models/Project')
 const Statement = use('App/Services/Statement')
 const Feedback = use('App/Services/Feedback')
 const Storage = use('App/Services/Storage')
@@ -27,7 +27,6 @@ const Review = use('App/Services/Review')
 const ApiError = use('App/ApiError')
 const ProjectService = use('App/Services/Project')
 const Dispatch = use('App/Services/Dispatch')
-const Database = use('Database')
 
 class AdminController {
   getStats ({ params }) {
@@ -67,7 +66,7 @@ class AdminController {
 
   async saveProject ({ params, user }) {
     params.user = user
-    const project = await Project.find(params.id)
+    const project = await DB('project').find(params.id)
     if (params.banner_picture) {
       if (project.banner) {
         Storage.deleteImage(`home/${project.banner}`)
@@ -106,7 +105,7 @@ class AdminController {
     }
 
     if (params.picture_project) {
-      const vod = await Database.table('vod')
+      const vod = await DB.table('vod')
         .where('project_id', project.id)
         .first()
 
@@ -125,7 +124,7 @@ class AdminController {
         { type: 'png', width: 1000, quality: 100 }
       )
 
-      await Database.table('vod')
+      await DB.table('vod')
         .where('project_id', project.id)
         .update({
           picture_project: file
