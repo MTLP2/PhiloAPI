@@ -291,7 +291,7 @@ class Production {
     const item = DB('production')
     item.step = 'preprod'
     item.project_id = params.project_id
-    item.resp_id = params.resp_id
+    item.resp_id = params.resp_id || null
     item.quantity = project.stage1 || project.quantity
     item.notif = params.notif
     item.date_preprod = Utils.date()
@@ -303,7 +303,7 @@ class Production {
     await DB('vod')
       .where('project_id', params.project_id)
       .update({
-        resp_prod_id: params.resp_id
+        resp_prod_id: params.resp_id || null
       })
 
     const actions = Production.listActions()
@@ -369,7 +369,7 @@ class Production {
       await DB('vod')
         .where('project_id', params.project_id)
         .update({
-          resp_prod_id: params.resp_id
+          resp_prod_id: params.resp_id || null
         })
     }
 
