@@ -671,24 +671,14 @@ Cart.setDiscount = (shop, p, value) => {
   return shop
 }
 
-Cart.calculateShippingDaudin = async (params) => {
+Cart.calculateShippingByTransporter = async (params) => {
   const transporters = await DB('shipping_weight')
-    .where('partner', 'Daudin')
+    .where('partner', 'like', params.partner)
     .where('country_id', params.country_id)
-    .where('transporter', 'like', params.transporter === 'diggers' ? 'COL' : '%')
+    .where('transporter', 'like', params.mode || '%')
     .all()
 
-  let weight = params.weight
-  /**
-  if (weight < 500) {
-    weight = '500g'
-  }
-  **/
-  if (weight < 750 && params.country_id === 'FR') {
-    weight = '750g'
-  } else {
-    weight = Math.ceil(params.weight / 1000) + 'kg'
-  }
+  const weight = Math.ceil(params.weight / 1000) + 'kg'
 
   let costs = null
 
@@ -732,7 +722,7 @@ Cart.calculateShippingDaudin = async (params) => {
 
       costs = {
         ...costs,
-        transporter: params.transporter === 'diggers' ? 'diggers' : 'daudin',
+        transporter: params.transporter,
         partner: transporter.transporter,
         currency: transporter.currency,
         standard: Utils.round(transporter[weight] + cost),
@@ -873,14 +863,30 @@ Cart.calculateShipping = async (params) => {
 
   const shippings = []
   if (transporters.all || transporters.daudin) {
-    const daudin = await Cart.calculateShippingDaudin(params)
+    const daudin = await Cart.calculateShippingByTransporter({
+      ...params,
+      partner: 'daudin',
+      transporter: 'daudin'
+    })
     if (daudin) {
       shippings.push(daudin)
     }
   }
-  if (transporters.all || transporters.diggers) {
-    const diggers = await Cart.calculateShippingDaudin({
+  if (transporters.all || transporters.sna) {
+    const trans = await Cart.calculateShippingByTransporter({
       ...params,
+      partner: 'sna',
+      transporter: 'sna'
+    })
+    if (trans) {
+      shippings.push(trans)
+    }
+  }
+  if (transporters.all || transporters.diggers) {
+    const diggers = await Cart.calculateShippingByTransporter({
+      ...params,
+      mode: 'COL',
+      partner: 'daudin',
       transporter: 'diggers'
     })
     if (diggers) {
@@ -897,13 +903,6 @@ Cart.calculateShipping = async (params) => {
     const whiplashUk = await Cart.calculateShippingWhiplashUk(params)
     if (whiplashUk) {
       shippings.push(whiplashUk)
-    }
-  }
-  if (transporters.all || transporters.sna) {
-    const trans = await Cart.calculateShippingDaudin(params)
-    trans.transporter = 'sna'
-    if (trans) {
-      shippings.push(trans)
     }
   }
   if (transporters.soundmerch) {
