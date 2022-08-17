@@ -413,11 +413,16 @@ Dispatch.getCosts = async (params) => {
     }
   }
 
+  const weight = params.weight.split('-')
+  const weightDb = weight[1] === '0.75'
+    ? '1kg'
+    : `${weight[1]}kg`
+
   const shippings1 = await DB('shipping_weight')
     .where('partner', 'Daudin')
     .all()
   for (const ship of shippings1) {
-    let price = ship['1kg']
+    let price = ship[weightDb]
 
     price = ship.oil ? price + ((ship.oil / 100) * price) : price
     if (!costs[ship.country_id]) {
@@ -474,18 +479,18 @@ Dispatch.getCosts = async (params) => {
   }
 
   const orders = await DB('order_shop')
-    .select('order_shop.id', 'order_shop.order_id', 'order_shop.transporter', 'shipping_type',
-      'customer.country_id', 'shipping', 'shipping_cost', 'order_shop.currency', 'order_shop.currency_rate',
-      'order_shop.date_export', 'order_shop.created_at', 'vod.project_id', 'project.picture', 'project.name', 'project.artist_name')
+    .select('order_shop.id', 'order_shop.order_id', 'order_shop.transporter', 'shipping_type', 'shipping_mode',
+      'customer.country_id', 'shipping', 'shipping_cost', 'shipping_trans', 'shipping_weight', 'shipping_quantity',
+      'order_shop.currency', 'order_shop.currency_rate', 'order_shop.date_export', 'order_shop.created_at',
+      'vod.project_id', 'project.picture', 'project.name', 'project.artist_name')
     .whereNotNull('shipping_cost')
     .join('order_item', 'order_shop_id', 'order_shop.id')
     .join('customer', 'customer_id', 'customer.id')
     .join('vod', 'vod.project_id', 'order_item.project_id')
     .join('project', 'vod.project_id', 'project.id')
-    .where('quantity', 1)
-    .where('order_shop.type', 'vod')
-    .where('barcode', 'not like', '%,%')
-    .where('weight', '<', '500')
+    .where('shipping_weight', '>=', weight[0])
+    .where('shipping_weight', '<', weight[1])
+    .where('shipping_quantity', 1)
     .where('shipping_type', '!=', 'letter')
     .where('shipping_type', '!=', 'tracking')
     .whereBetween('date_export', [params.start, params.end])
