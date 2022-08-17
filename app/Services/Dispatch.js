@@ -404,6 +404,9 @@ Dispatch.getCosts = async (params) => {
       sna: null,
       sna_cost: null,
       sna_costs: [],
+      sna_pickup: null,
+      sna_pickup_cost: null,
+      sna_pickup_costs: [],
       whiplash: null,
       whiplash_cost: null,
       whiplash_costs: [],
@@ -504,13 +507,17 @@ Dispatch.getCosts = async (params) => {
     order.diff = Utils.round(order.shipping - order.shipping_cost)
     if (order.transporter === 'daudin' && order.shipping_type === 'pickup') {
       costs[order.country_id].daudin_pickup_costs.push(order)
+    } else if (order.transporter === 'sna' && order.shipping_type === 'pickup') {
+      costs[order.country_id].sna_pickup_costs.push(order)
     } else {
       costs[order.country_id][`${order.transporter}_costs`].push(order)
     }
+    costs[order.country_id].sna_pickup = costs[order.country_id].daudin_pickup
+    costs[order.country_id].sna = costs[order.country_id].daudin
   }
 
   for (const [c, cost] of Object.entries(costs)) {
-    for (const t of ['daudin', 'daudin_pickup', 'sna', 'whiplash', 'whiplash_uk']) {
+    for (const t of ['daudin', 'daudin_pickup', 'sna', 'sna_pickup', 'whiplash', 'whiplash_uk']) {
       if (cost[`${t}_costs`].length > 0) {
         costs[c][`${t}_cost`] = Utils.round(
           cost[`${t}_costs`].reduce((a, b) => {
