@@ -686,7 +686,13 @@ Cart.calculateShippingByTransporter = async (params) => {
     if (params.quantity > 1) {
       transporter.picking = 1
     }
-    const cost = transporter.packing + (transporter.picking * params.insert)
+
+    let cost
+    if (params.transporter === 'diggers') {
+      cost = 0
+    } else {
+      cost = transporter.packing + (transporter.picking * params.insert)
+    }
 
     transporter[weight] = transporter.oil ? transporter[weight] + ((transporter.oil / 100) * transporter[weight]) : transporter[weight]
     if (transporter.transporter === 'MDR') {
