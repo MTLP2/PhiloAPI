@@ -105,7 +105,7 @@ class AdminController {
     }
 
     if (params.picture_project) {
-      const vod = await DB.table('vod')
+      const vod = await DB('vod')
         .where('project_id', project.id)
         .first()
 
@@ -124,7 +124,7 @@ class AdminController {
         { type: 'png', width: 1000, quality: 100 }
       )
 
-      await DB.table('vod')
+      await DB('vod')
         .where('project_id', project.id)
         .update({
           picture_project: file

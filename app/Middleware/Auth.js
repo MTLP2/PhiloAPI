@@ -58,7 +58,7 @@ class Auth {
     }
 
     if (ctx.request.input('admin')) {
-      const user = await DB.table('user').where('id', ctx.user.id).first()
+      const user = await DB('user').where('id', ctx.user.id).first()
       if (!user.is_admin) {
         return ctx.response.status(401).json({
           error: 'Unauthorized'
