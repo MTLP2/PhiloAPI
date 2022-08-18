@@ -427,6 +427,10 @@ Dispatch.getCosts = async (params) => {
   for (const ship of shippings1) {
     let price = ship[weightDb]
 
+    if (ship.transporter === 'GLS') {
+      ship.oil = 0
+    }
+
     price = ship.oil ? price + ((ship.oil / 100) * price) : price
     if (!costs[ship.country_id]) {
       continue
@@ -447,9 +451,10 @@ Dispatch.getCosts = async (params) => {
       if (costs.transporter === 'IMX') {
         price = price * 1.1
       }
-      if (price < 7.3) {
-        price = 7.3
+      if (price < 6.4) {
+        price = 6.4
       }
+
       price = price + ship.picking + ship.packing
       price = price * 1.2
       price = Utils.round(price, 2, 0.1)

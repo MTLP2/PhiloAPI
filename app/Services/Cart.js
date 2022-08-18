@@ -694,6 +694,10 @@ Cart.calculateShippingByTransporter = async (params) => {
       cost = transporter.packing + (transporter.picking * params.insert)
     }
 
+    if (transporter.transporter === 'GLS') {
+      transporter.oil = 0
+    }
+
     transporter[weight] = transporter.oil ? transporter[weight] + ((transporter.oil / 100) * transporter[weight]) : transporter[weight]
     if (transporter.transporter === 'MDR') {
       if (params.pickup === false) {
@@ -722,8 +726,8 @@ Cart.calculateShippingByTransporter = async (params) => {
         transporter[weight] = transporter[weight] * 1.1
       }
 
-      if (transporter[weight] < 7.3) {
-        transporter[weight] = 7.3
+      if (transporter[weight] < 6.4) {
+        transporter[weight] = 6.4
       }
 
       costs = {
