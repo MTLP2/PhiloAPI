@@ -49,7 +49,7 @@ class Production {
         params.query.where(function () {
           this.where(function () {
             this.where('production_action.type', 'artwork')
-            this.whereIn('production_action.status', ['to_check'])
+            this.whereIn('production_action.status', ['pending'])
             this.where('production.step', 'preprod')
           })
           this.orWhere(function () {
