@@ -227,7 +227,7 @@ class Daudin {
       `))
       .join('order_shop as os', 'os.id', 'oi.order_shop_id')
       .join('project', 'project.id', 'oi.project_id')
-      .join('vod', 'vod.id', 'oi.vod_id')
+      .join('vod', 'vod.project_id', 'oi.project_id')
       .leftJoin('item', 'item.id', 'oi.item_id')
       .join('user', 'user.id', 'os.user_id')
       .join('customer', 'customer.id', 'os.customer_id')
@@ -1150,6 +1150,10 @@ class Daudin {
 
     const columnMode = worksheet.getCell('S1').value === 'Nom transporteur' ? 'S' : 'R'
 
+    const oils = await DB('shipping_oil')
+      .where('date', date)
+      .all()
+
     worksheet.eachRow(row => {
       if (!row.getCell('G').value) {
         return
@@ -1167,6 +1171,16 @@ class Daudin {
       }
 
       dispatch.cost = dispatch.trans
+
+      // Add oil tax if exists
+      if (['COL', 'MDR'].includes(dispatch.mode)) {
+        const oil = oils.find(o => o.transporter === dispatch.mode)
+        if (oil) {
+          dispatch.cost += dispatch.trans * (oil.rate / 100)
+        } else {
+          return
+        }
+      }
 
       // Packing
       dispatch.cost += 0.7
