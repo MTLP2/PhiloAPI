@@ -46,40 +46,24 @@ class Production {
         // Display type in front admin
         selects.push('production_action.type as production_action_type')
         params.query.join('production_action', 'production_action.production_id', 'production.id')
-
-        // params.query.whereIn('production_action.type', ['artwork', 'pressing_proof'])
         params.query.where(function () {
-          this.where('production_action.type', 'artwork')
-          this.whereIn('production_action.status', ['to_check', 'pending'])
-          this.where('production.step', 'preprod')
-        })
-        params.query.orWhere(function () {
-          this.where('production_action.type', 'pressing_proof')
-          this.whereIn('production_action.status', ['to_check', 'pending'])
-          this.where('production.step', 'prod')
-        })
-
-        params.query.where(function () {
-          this.orWhereExists(function () {
-            this.from('production_action')
-            this.join('production_file', 'production_file.production_id', 'production_action.production_id')
-            this.whereRaw('production_file.production_id = production.id')
-            this.whereIn('production_action.status', ['to_check', 'pending'])
-            this.where('production_file.status', 'pending')
-            this.where('type', 'artwork')
-            this.where('production_file.action', 'artwork')
-            this.whereNull('production_file.check_user')
+          this.where(function () {
+            this.where('production_action.type', 'artwork')
+            this.whereIn('production_action.status', ['pending'])
+            this.where('production.step', 'preprod')
           })
+          this.orWhere(function () {
+            this.where('production_action.type', 'pressing_proof')
+            this.whereIn('production_action.status', ['to_check'])
+            this.where('production.step', 'prod')
+          })
+          /**
           this.orWhereExists(function () {
-            this.from('production_action')
+            this.whereIn('production_action.type', ['artwork', 'pressing_proof'])
             this.join('production_file', 'production_file.production_id', 'production_action.production_id')
-            this.whereRaw('production_file.production_id = production.id')
             this.whereIn('production_action.status', ['pending', 'to_check'])
-            this.where('production_file.status', 'pending')
-            this.where('type', 'pressing_proof')
-            this.where('production_file.action', 'pressing_proof')
-            this.whereNull('production_file.check_user')
           })
+          **/
         })
       } else {
         params.query.whereExists(function () {
@@ -307,7 +291,7 @@ class Production {
     const item = DB('production')
     item.step = 'preprod'
     item.project_id = params.project_id
-    item.resp_id = params.resp_id
+    item.resp_id = params.resp_id || null
     item.quantity = project.stage1 || project.quantity
     item.notif = params.notif
     item.date_preprod = Utils.date()
@@ -319,7 +303,7 @@ class Production {
     await DB('vod')
       .where('project_id', params.project_id)
       .update({
-        resp_prod_id: params.resp_id
+        resp_prod_id: params.resp_id || null
       })
 
     const actions = Production.listActions()
@@ -385,7 +369,7 @@ class Production {
       await DB('vod')
         .where('project_id', params.project_id)
         .update({
-          resp_prod_id: params.resp_id
+          resp_prod_id: params.resp_id || null
         })
     }
 
@@ -1401,7 +1385,7 @@ class Production {
     }
   }
 
-  static async addNotif ({ id, type, date, data, overrideNotif = false }) {
+  static async addNotif ({ id, type, date, data, overrideNotif = false, userId }) {
     const prod = await DB('vod')
       .select('production.id', 'vod.project_id', 'production.notif', 'vod.user_id', 'production.resp_id')
       .join('production', 'production.project_id', 'vod.project_id')
@@ -1409,11 +1393,13 @@ class Production {
       .where('production.id', id)
       .first()
 
+    // Send notif if notif si activated in prod or method is called with overrideNotif.
+    // Recipient is the user linked to the production, or userId value for override.
     if (prod.notif || overrideNotif) {
       console.log('add_notif', {
         type: `production_${type}`,
         prod_id: prod.id,
-        user_id: prod.user_id,
+        user_id: userId || prod.user_id,
         project_id: prod.project_id,
         date: date,
         data: data
@@ -1421,7 +1407,7 @@ class Production {
       await Notification.add({
         type: `production_${type}`,
         prod_id: prod.id,
-        user_id: prod.user_id,
+        user_id: userId || prod.user_id,
         project_id: prod.project_id,
         date: date,
         data: data
@@ -1837,7 +1823,6 @@ class Production {
       { name: `${prod.artist_name} - ${prod.name}`, price: unitPrice, quantity: prod.quantity, total: invoice.sub_total }
     ]
 
-    const moment = require('moment')
     invoice.date = moment().format('YYYY-MM-DD')
     invoice.lang = params.lang
 
@@ -1928,7 +1913,7 @@ class Production {
     }
 
     item.project_id = params.project_id
-    item.production_id = params.production_id
+    item.production_id = params.production_id || null
     item.name = params.name
     item.invoice_number = params.invoice_number
     item.name = params.name
@@ -1957,9 +1942,7 @@ class Production {
     }
 
     await item.save()
-
-    await Production.calculateFinalPrice(item.production_id)
-
+    // await Production.calculateFinalPrice(item.production_id)
     return true
   }
 
@@ -1975,7 +1958,9 @@ class Production {
     const item = await DB('production_cost')
       .find(params.cid)
 
-    return Storage.get(item.invoice, true)
+    const file = await Storage.get(item.invoice, true)
+
+    return file
   }
 
   static async calculateFinalPrice (id) {
@@ -2022,7 +2007,7 @@ class Production {
 
   static async checkProductionToBeCompleted () {
     const productions = await DB('vod')
-      .select('production_action.updated_at', 'production.id as prod_id', 'vod.id as vod_id')
+      .select('production_action.updated_at', 'production.id as prod_id', 'vod.id as vod_id', 'vod.resp_prod_id')
       .join('project', 'project.id', 'vod.project_id')
       .join('production', 'production.project_id', 'project.id')
       .join('production_action', 'production_action.production_id', 'production.id')
@@ -2036,7 +2021,8 @@ class Production {
         id: prod.prod_id,
         type: 'completed_alert',
         date: Utils.date({ time: false }),
-        overrideNotif: true
+        overrideNotif: true,
+        userId: prod.resp_prod_id
       })
     }
 

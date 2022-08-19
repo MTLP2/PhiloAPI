@@ -507,6 +507,21 @@ const DB = (tablee, idd) => {
       }
     },
 
+    async create (params) {
+      const error = new Error()
+      const [id] = await p.query.clone()
+        .insert(params)
+        .catch(err => {
+          error.status = err.status
+          error.message = err.message
+          throw error
+        })
+
+      return this
+        .where('id', id)
+        .first()
+    },
+
     insert (values) {
       const error = new Error()
       return p.query
@@ -564,7 +579,6 @@ const DB = (tablee, idd) => {
 
       return p.query
         .insert(attributes)
-        // .then(() => knex.first(knex.raw('LAST_INSERT_ID() AS id')))
         .then(id => {
           db.newQuery()
           return db.find(id).then(() => db)

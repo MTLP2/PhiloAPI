@@ -1,7 +1,7 @@
 'use strict'
 const Env = use('Env')
 const jwt = require('jsonwebtoken')
-const Database = use('Database')
+const DB = use('App/DB')
 
 class Auth {
   async handle (ctx, next, properties) {
@@ -58,7 +58,7 @@ class Auth {
     }
 
     if (ctx.request.input('admin')) {
-      const user = await Database.table('user').where('id', ctx.user.id).first()
+      const user = await DB('user').where('id', ctx.user.id).first()
       if (!user.is_admin) {
         return ctx.response.status(401).json({
           error: 'Unauthorized'

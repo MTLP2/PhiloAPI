@@ -1,6 +1,7 @@
 const Utils = use('App/Utils')
 const request = require('request')
 const ApiError = use('App/ApiError')
+const Excel = require('exceljs')
 const Env = use('Env')
 const DB = use('App/DB')
 
@@ -50,7 +51,9 @@ class Sna {
           const barcodes = item.barcode.split(',')
           for (let barcode of barcodes) {
             if (barcode === 'SIZE') {
-              barcode = sizes[item.size]
+              barcode = sizes[item.size].split(',')[0]
+            } else if (barcode === 'SIZE2') {
+              barcode = sizes[item.size].split(',')[1]
             }
             if (process.env.NODE_ENV !== 'production') {
               barcode = '1111111111111'
@@ -129,6 +132,60 @@ class Sna {
   static async getOrders () {
     const orders = await Sna.getApi('Order_Status')
     return orders
+  }
+
+  static async setCost (date, buffer) {
+    const dispatchs = []
+    const workbook = new Excel.Workbook()
+    await workbook.xlsx.load(buffer)
+    const worksheet = workbook.getWorksheet(1)
+
+    worksheet.eachRow(async row => {
+      const dispatch = {
+        id: row.getCell('C').value,
+        trans: Utils.round(row.getCell('P').toString().replace(',', '.')),
+        quantity: row.getCell('E').toString(),
+        country: row.getCell('H').toString(),
+        mode: row.getCell('K').toString(),
+        weight: Utils.round(row.getCell('F').toString())
+      }
+
+      if (!dispatch.id || isNaN(dispatch.id) || !dispatch.trans) {
+        return
+      }
+
+      if (!Utils.inUE(dispatch.country)) {
+        dispatch.trans += 0.5
+      }
+
+      dispatch.cost = dispatch.trans
+
+      // Packing => 1 €
+      dispatch.cost += 1
+
+      // Picking => 0,45 €
+      if (dispatch.quantity > 1) {
+        dispatch.cost += (dispatch.quantity - 1) * 0.45
+      }
+
+      const order = await DB('order_shop')
+        .where('id', dispatch.id.toString())
+        // .whereNull('shipping_cost')
+        .first()
+      if (!order) {
+        return
+      }
+      order.shipping_trans = dispatch.trans
+      order.shipping_cost = dispatch.cost + dispatch.cost * order.tax_rate
+      order.shipping_mode = dispatch.mode
+      order.shipping_quantity = dispatch.quantity
+      order.shipping_weight = dispatch.weight
+      await order.save()
+
+      dispatchs.push(dispatch)
+    })
+
+    return dispatchs
   }
 
   static getTransporter (country, weight) {

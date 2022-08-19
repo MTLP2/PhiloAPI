@@ -1,9 +1,7 @@
 'use strict'
 const App = use('App/Services/App')
-const Database = use('Database')
 const DB = use('App/DB')
 const moment = require('moment')
-const CronJobs = use('App/Models/CronJobs')
 
 const { Command } = require('@adonisjs/ace')
 
@@ -37,7 +35,7 @@ class Schedule extends Command {
     }
 
     try {
-      cron = await CronJobs.create({
+      cron = await DB('cronjobs').create({
         type: args.periodicity,
         date: date,
         start: new Date()
@@ -45,7 +43,6 @@ class Schedule extends Command {
     } catch (err) {
       this.info(`Schedule - ${args.periodicity} - Already done`)
       DB.close()
-      Database.close()
       return false
     }
 
@@ -65,7 +62,6 @@ class Schedule extends Command {
     await cron.save()
 
     DB.close()
-    Database.close()
 
     this.success(`Schedule - ${args.periodicity} - End`)
     return true

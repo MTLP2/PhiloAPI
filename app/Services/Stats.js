@@ -1,5 +1,6 @@
 const DB = use('App/DB')
 const Utils = use('App/Utils')
+const moment = require('moment')
 
 class Stats {
   static async getStats (params) {
@@ -8,7 +9,6 @@ class Stats {
     let query
     let format
 
-    const moment = require('moment')
     const dates = []
     const dateStart = moment(params.start)
     const dateEnd = moment(params.end)
@@ -784,7 +784,6 @@ class Stats {
     let query
     let format
 
-    const moment = require('moment')
     const dates = []
     const dateStart = moment(params.start)
     const dateEnd = moment(params.end)
@@ -1465,7 +1464,6 @@ class Stats {
     const promises = []
     let format
 
-    const moment = require('moment')
     const dates = []
     let start = moment(params.start)
     const end = moment(params.end)

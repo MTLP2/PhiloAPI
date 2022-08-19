@@ -6,6 +6,7 @@ const Invoice = use('App/Services/Invoice')
 const Customer = use('App/Services/Customer')
 const Order = use('App/Services/Order')
 const ApiError = use('App/ApiError')
+const fs = require('fs')
 
 const Payment = {}
 
@@ -397,7 +398,6 @@ Payment.getBalance = (id) =>
   stripe.balance.retrieve({ stripe_account: id })
 
 Payment.saveFile = async (params) => {
-  const fs = require('fs')
   const buffer = Buffer.from(params.identity_document.data, 'binary')
   const pathFile = `/tmp/${params.identity_document.name}`
 
@@ -634,7 +634,6 @@ Payment.getTransactions = async (date, start) => {
 }
 
 Payment.getBalanceProject = async (params) => {
-  const stripe = require('stripe')(config.stripe.client_secret)
   const Paypal = use('App/Services/Paypal')
 
   const payments = await DB('order')

@@ -227,7 +227,7 @@ class Daudin {
       `))
       .join('order_shop as os', 'os.id', 'oi.order_shop_id')
       .join('project', 'project.id', 'oi.project_id')
-      .join('vod', 'vod.id', 'oi.vod_id')
+      .join('vod', 'vod.project_id', 'oi.project_id')
       .leftJoin('item', 'item.id', 'oi.item_id')
       .join('user', 'user.id', 'os.user_id')
       .join('customer', 'customer.id', 'os.customer_id')
@@ -250,7 +250,9 @@ class Daudin {
       const barcodes = (item.item_barcode || item.barcode).split(',')
       for (let barcode of barcodes) {
         if (barcode === 'SIZE') {
-          barcode = sizes[item.size]
+          barcode = sizes[item.size].split(',')[0]
+        } else if (barcode === 'SIZE2') {
+          barcode = sizes[item.size].split(',')[1]
         }
 
         lines.push({
@@ -320,7 +322,9 @@ class Daudin {
         const barcodes = (item.item_barcode || item.barcode).split(',')
         for (let barcode of barcodes) {
           if (barcode === 'SIZE') {
-            barcode = sizes[item.size]
+            barcode = sizes[item.size].split(',')[0]
+          } else if (barcode === 'SIZE2') {
+            barcode = sizes[item.size].split(',')[1]
           }
 
           lines.push({
@@ -1137,69 +1141,101 @@ class Daudin {
     return orders
   }
 
-  static async setCosts () {
-    const files = await Storage.list('shippings/daudin', true)
-
+  static async setCost (date, buffer) {
     const dispatchs = []
-    for (const file of files) {
-      if (file.size === 0) {
-        continue
+
+    const workbook = new Excel.Workbook()
+    await workbook.xlsx.load(buffer)
+    const worksheet = workbook.getWorksheet(1)
+
+    const columnMode = worksheet.getCell('S1').value === 'Nom transporteur' ? 'S' : 'R'
+
+    const oils = await DB('shipping_oil')
+      .where('date', date)
+      .all()
+
+    worksheet.eachRow(row => {
+      if (!row.getCell('G').value) {
+        return
       }
-      const path = file.path.split('.')[0].split(' ')
-      const date = path[path.length - 1]
-      const buffer = await Storage.get(file.path, true)
+      const dispatch = {
+        id: row.getCell('C') && row.getCell('C').value,
+        trans: row.getCell('G') && +row.getCell('G').toString(),
+        weight: row.getCell('D') && +row.getCell('D').toString(),
+        quantity: row.getCell('H') && +row.getCell('H').toString(),
+        mode: row.getCell(columnMode) && row.getCell(columnMode).toString()
+      }
 
-      const workbook = new Excel.Workbook()
-      await workbook.xlsx.load(buffer)
-      const worksheet = workbook.getWorksheet(1)
+      if (!dispatch.id || !dispatch.trans || isNaN(dispatch.trans)) {
+        return
+      }
 
-      worksheet.eachRow(async row => {
-        const dispatch = {
-          id: row.getCell('C').value,
-          shipping: Utils.round(+row.getCell('G').toString() + 0.7 + row.getCell('H').toString() * 0.38)
-        }
-        // Packing
-        if (date >= '2021-07') {
-          dispatch.shipping += 0.7
-        }
-        if (!dispatch.id || !dispatch.shipping || isNaN(dispatch.shipping)) {
+      dispatch.cost = dispatch.trans
+
+      // Add oil tax if exists
+      if (['COL', 'MDR'].includes(dispatch.mode)) {
+        const oil = oils.find(o => o.transporter === dispatch.mode)
+        if (oil) {
+          dispatch.cost += dispatch.trans * (oil.rate / 100)
+        } else {
           return
         }
-        if (dispatch.id[0] === 'M') {
-          const order = await DB('order_manual')
-            .where('id', dispatch.id.substring(1).replace('b', ''))
-            .whereNull('shipping_cost')
-            .first()
-          if (!order) {
-            return
-          }
-          order.shipping_cost = dispatch.shipping
-          await order.save()
-        } else if (dispatch.id[0] === 'B') {
-          const order = await DB('box_dispatch')
-            .where('id', dispatch.id.replace(/B/g, ''))
-            .whereNull('shipping_cost')
-            .first()
-          if (!order) {
-            return
-          }
-          order.shipping_cost = dispatch.shipping
-          await order.save()
-        } else {
-          const order = await DB('order_shop')
-            .where('id', dispatch.id.toString().replace('A', ''))
-            .whereNull('shipping_cost')
-            .first()
-          if (!order) {
-            return
-          }
-          order.shipping_cost = dispatch.shipping + dispatch.shipping * order.tax_rate
-          await order.save()
+      }
+
+      // Packing
+      dispatch.cost += 0.7
+      if (date >= '2021-07') {
+        dispatch.cost += 0.7
+      }
+
+      // Picking
+      dispatch.cost = dispatch.trans + dispatch.quantity * 0.38
+
+      dispatchs.push(dispatch)
+    })
+
+    for (const d in dispatchs) {
+      const dispatch = dispatchs[d]
+
+      if (dispatch.id[0] === 'M') {
+        const order = await DB('order_manual')
+          .where('id', dispatch.id.substring(1).replace('b', ''))
+          .whereNull('shipping_cost')
+          .first()
+        if (!order) {
+          continue
         }
-        dispatchs.push(dispatch)
-      })
+        order.shipping_cost = dispatch.cost
+        await order.save()
+      } else if (dispatch.id[0] === 'B') {
+        const order = await DB('box_dispatch')
+          .where('id', dispatch.id.replace(/B/g, ''))
+          .whereNull('shipping_cost')
+          .first()
+        if (!order) {
+          continue
+        }
+        order.shipping_cost = dispatch.cost
+        await order.save()
+      } else {
+        const order = await DB('order_shop')
+          .where('id', dispatch.id.toString().replace('A', ''))
+          // .whereNull('shipping_cost')
+          .first()
+
+        if (!order) {
+          continue
+        }
+        order.shipping_trans = dispatch.trans
+        order.shipping_mode = dispatch.mode
+        order.shipping_quantity = dispatch.quantity
+        order.shipping_weight = dispatch.weight
+        order.shipping_cost = dispatch.cost + dispatch.cost * order.tax_rate
+        await order.save()
+      }
     }
-    return dispatchs.length
+
+    return dispatchs
   }
 }
 

@@ -8,7 +8,6 @@ const Dig = use('App/Services/Dig')
 const DB = use('App/DB')
 const Env = use('Env')
 const Utils = use('App/Utils')
-const User = use('App/Models/User')
 const ApiError = use('App/ApiError')
 const cio = use('App/Services/CIO')
 
@@ -59,8 +58,7 @@ Sign.loginFacebook = async (facebook) => {
     }
   }
 
-  const user = await User
-    .query()
+  const user = await DB('user')
     .where('email', facebook.email)
     .first()
 
@@ -93,8 +91,7 @@ Sign.loginFacebook = async (facebook) => {
 }
 
 Sign.loginSoundcloud = async (profile) => {
-  const user = await User
-    .query()
+  const user = await DB('user')
     .where('soundcloud_id', profile.id)
     .first()
 

@@ -1,5 +1,4 @@
 const Storage = use('App/Services/Storage')
-const Project = use('App/Models/Project')
 const sharp = require('sharp')
 const Vibrant = require('node-vibrant')
 const Color = require('color')
@@ -317,7 +316,7 @@ class Artwork {
 
   static async setColor (id, buffer) {
     const hex = await Artwork.getColor(buffer)
-    await Project.query()
+    await DB('project')
       .where('id', id)
       .update({
         color: hex

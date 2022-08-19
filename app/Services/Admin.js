@@ -22,6 +22,8 @@ const Sna = use('App/Services/Sna')
 const cio = use('App/Services/CIO')
 const Env = use('Env')
 const moment = require('moment')
+const google = require('googleapis')
+const fs = require('fs')
 const Admin = {}
 
 Admin.getProjects = async (params) => {
@@ -228,13 +230,20 @@ Admin.getProject = async (id) => {
     .where('is_paid', 1)
     .all()
 
+  const prodQuery = await DB('production')
+    .where('project_id', id)
+    .whereNotNull('form_price')
+    .whereNotNull('quantity_pressed')
+    .orderBy('id', 'desc')
+    .first()
+
   const exportsQuery = DB('project_export')
     .where('project_id', id)
     .all()
 
   const reviewsQuery = Review.find({ projectId: id, onlyVisible: false })
 
-  const [project, codes, costs, stocks, stocksHistoric, items, orders, reviews, projectImages, exps] = await Promise.all([
+  const [project, codes, costs, stocks, stocksHistoric, items, orders, reviews, prod, projectImages, exps] = await Promise.all([
     projectQuery,
     codesQuery,
     costsQuery,
@@ -243,6 +252,7 @@ Admin.getProject = async (id) => {
     itemsQuery,
     ordersQuery,
     reviewsQuery,
+    prodQuery,
     projectImagesQuery,
     exportsQuery
   ])
@@ -275,6 +285,11 @@ Admin.getProject = async (id) => {
   }
 
   project.stock_preorder = project.goal - project.count - project.count_other - project.count_bundle - project.count_distrib
+
+  if (prod) {
+    // prod.final_price / prod.quantity_pressed
+    project.unit_price = prod.form_price / prod.quantity_pressed
+  }
 
   project.com = project.com ? JSON.parse(project.com) : {}
   project.sizes = project.sizes ? JSON.parse(project.sizes) : {}
@@ -377,6 +392,7 @@ Admin.getProjectStats = async (params) => {
     tips: 0,
     costs: 0,
     prod: 0,
+    unit_price: 0,
     quantity: 0,
     quantity_site: 0,
     quantity_site_tax: 0,
@@ -505,9 +521,21 @@ Admin.getProjectStats = async (params) => {
     }
   }
 
+  const prod = await DB('production')
+    .where('project_id', params.id)
+    .whereNotNull('form_price')
+    .whereNotNull('quantity_pressed')
+    .orderBy('id', 'desc')
+    .first()
+
+  if (prod) {
+    // prod.final_price / prod.quantity_pressed
+    stats.unit_price = prod.form_price / prod.quantity_pressed
+  }
+
   stats.currency = project.currency
-  stats.quantity = stats.quantity_site + stats.quantity_distrib
-  stats.turnover = stats.turnover_site + stats.turnover_distrib + stats.turnover_digital
+  stats.quantity = stats.quantity_site + stats.quantity_distrib + stats.quantity_box
+  stats.turnover = stats.turnover_site + stats.turnover_distrib + stats.turnover_digital + stats.turnover_box
   stats.benefit_total = stats.benefit_site + stats.benefit_distrib + stats.benefit_prod
   stats.benefit_per_vinyl = (stats.benefit_site + stats.benefit_distrib) / stats.quantity
   stats.benefit_site_per_vinyl = stats.benefit_site / stats.quantity_site
@@ -526,8 +554,6 @@ Admin.getProjectsStats = async () => {
     .where('is_licence', 1)
     .orderBy('id', 'desc')
     .all()
-
-  console.log(projects.length)
 
   const res = {
     marge: {
@@ -1048,6 +1074,10 @@ Admin.saveVod = async (params) => {
 
         if (params.status === 'check_address' && order.shipping_type === 'pickup') {
           const pickup = JSON.parse(order.address_pickup)
+          if (!pickup || !pickup.number) {
+            console.log(order)
+            continue
+          }
           const avaiblable = await MondialRelay.checkPickupAvailable(pickup.number)
           if (!avaiblable) {
             data.type = 'my_order_pickup_must_change'
@@ -1416,7 +1446,7 @@ Admin.getOrders = async (params) => {
       'os.total as os_total', 'os.is_paid', 'os.is_paused', 'os.ask_cancel', 'order.total as o_total',
       'order.transaction_id', 'oi.order_id', 'oi.order_shop_id', 'oi.quantity', 'oi.price', 'oi.size', 'order.status',
       'order.payment_id', 'user.name as user_name', 'user.email as user_email', 'user.picture as user_picture',
-      'order.user_agent', 'c.country_id', 'c.name', 'c.firstname', 'c.lastname',
+      'order.user_agent', 'c.country_id', 'c.name', 'c.firstname', 'c.lastname', 'vod.date_shipping',
       'c.address', 'c.zip_code', 'c.city', 'c.state', 'user.is_pro', 'project.artist_name', 'project.name as project_name',
       'project.picture', 'user.facebook_id', 'user.soundcloud_id',
       DB.raw('CONCAT(c.firstname, \' \', c.lastname) AS user_infos')
@@ -1636,6 +1666,9 @@ Admin.saveOrderShop = async (params) => {
   }
   if (params.tracking_transporter) {
     shop.tracking_transporter = params.tracking_transporter
+  }
+  if (params.address_pickup) {
+    shop.address_pickup = params.address_pickup
   }
   shop.updated_at = Utils.date()
   await shop.save()
@@ -2990,7 +3023,7 @@ Admin.getRespProd = async (params) => {
         total: 0
       }
     }
-    resps[item.resp_prod_id][item.status || 'no_status'] = item.total
+    resps[item.resp_prod_id][item.status || 'no_status'] = item.total
     resps[item.resp_prod_id].total += item.total
   }
   return resps
@@ -2998,8 +3031,6 @@ Admin.getRespProd = async (params) => {
 
 Admin.getAnalytics = (type, days) =>
   new Promise((resolve, reject) => {
-    const google = require('googleapis')
-
     const jwtClient = new google.auth.JWT(
       config.analytics.client_email, null, config.analytics.private_key,
       ['https://www.googleapis.com/auth/analytics.readonly'], null
@@ -3473,8 +3504,6 @@ Admin.extractUsers = async (params) => {
 }
 
 Admin.extractUsersCreating = async () => {
-  const fs = require('fs')
-
   const query = `
     SELECT user.email
     FROM user
@@ -3493,8 +3522,6 @@ Admin.extractUsersCreating = async () => {
 }
 
 Admin.extractUsersArtists = async () => {
-  const fs = require('fs')
-
   const query = `
     SELECT user.email
     FROM user
@@ -4054,317 +4081,6 @@ Admin.checkSync = async (id, transporter) => {
       return -1
     }
   })
-}
-
-Admin.compareShipping = async (params) => {
-  const file = Buffer.from(params.file, 'base64')
-
-  const diff = {
-    total: 0,
-    now: 0
-  }
-
-  const costs = {
-    manuel: {
-      id: 'MANUEL',
-      shipping: 0
-    },
-    box: {
-      id: 'BOX',
-      category: 'box',
-      shipping: 0,
-      revenue: 0,
-      diff: 0
-    },
-    orders: {
-      id: 'ORDERS',
-      category: 'order',
-      shipping: 0,
-      revenue: 0
-    },
-    other: {
-      id: 'OTHER',
-      shipping: 0
-    }
-  }
-
-  const currenciesDb = await Utils.getCurrenciesDb()
-  const currencies = Utils.getCurrencies('EUR', currenciesDb)
-
-  const dispatchs = []
-  const global = {
-    cost: 0,
-    costt: 0,
-    revenue: 0
-  }
-
-  let i = 0
-  if (params.transporter === 'daudin') {
-    const workbook = new Excel.Workbook()
-    await workbook.xlsx.load(file)
-    const worksheet = workbook.getWorksheet(1)
-
-    worksheet.eachRow((row, rowNumber) => {
-      if (rowNumber === 1) {
-        return
-      }
-      i++
-      const id = row.getCell('C').toString()
-      if (!row.getCell('G').value || !row.getCell('H').value) {
-        return
-      }
-      const shipping = Utils.round(+row.getCell('G').toString() + +row.getCell('H').toString() * 0.38 + 0.67)
-      let category
-      if (id[0] === 'M') {
-        costs.manuel.shipping += shipping
-        // global.cost += shipping
-        /**
-        setTimeout(() => {
-          DB('order_manual')
-            .where('id', id.substr(1))
-            .update({
-              shipping_cost: shipping
-            })
-        }, i * 100)
-        **/
-        category = 'manual'
-      } else if (id[0] === 'B') {
-        /**
-        setTimeout(() => {
-          DB('box_dispatch')
-            .where('id', id.substr(1))
-            .update({
-              shipping_cost: shipping
-            })
-        }, i * 100)
-        **/
-        // global.cost += shipping
-        costs.box.shipping += shipping
-        category = 'box'
-        dispatchs.push(id.substr(1))
-      } else if (isNaN(id)) {
-        costs.other.shipping += shipping
-        category = 'other'
-      } else {
-        // global.cost += shipping
-        costs.orders.shipping += shipping
-        category = 'order'
-        /**
-        setTimeout(() => {
-          DB('order_shop')
-            .where('id', id)
-            .update({
-              shipping_cost: shipping
-            })
-        }, i * 100)
-        **/
-      }
-      costs[id] = {
-        id: id,
-        category: category,
-        country: row.getCell('P').toString(),
-        mode: row.getCell('R').toString(),
-        quantity: row.getCell('H').toString(),
-        weight: row.getCell('D').toString(),
-        transporter: row.getCell('S').toString(),
-        shipping: shipping
-      }
-    })
-  } if (params.transporter === 'sna') {
-    const workbook = new Excel.Workbook()
-    await workbook.xlsx.load(file)
-    const worksheet = workbook.getWorksheet(1)
-
-    worksheet.eachRow((row, rowNumber) => {
-      const id = row.getCell('C').toString()
-      const shipping = Utils.round(+row.getCell('I').toString() + +row.getCell('M').toString())
-      costs.orders.shipping += shipping
-      costs[id] = {
-        id: id,
-        category: 'order',
-        country: row.getCell('F').toString(),
-        // mode: row.getCell('G').toString(),
-        quantity: row.getCell('E').toString(),
-        weight: row.getCell('H').toString(),
-        transporter: row.getCell('G').toString(),
-        shipping: shipping
-      }
-    })
-  } else if (params.transporter === 'whiplash') {
-    const lines = file.toString().split('\n')
-    let t = 0
-    for (const line of lines) {
-      t++
-      const data = line.split(',')
-
-      const id = data[9]
-      if (!id) {
-        continue
-      }
-      costs[id] = {
-        id: id,
-        category: 'order',
-        quantity: data.length === 22 ? +data[21] : +data[24],
-        shipping: Utils.round(-data[11] / currencies.USD)
-      }
-
-      // console.log(costs[id])
-
-      if (!isNaN(costs[id].shipping)) {
-        if (+data[11] < 0) {
-          // global.costt += +data[11]
-          costs.orders.shipping += costs[id].shipping
-        }
-        /**
-        i++
-        setTimeout(() => {
-          DB('order_shop')
-            .where('whiplash_id', id)
-            .update({
-              shipping_cost: costs[id].shipping
-            })
-        }, i * 100)
-        **/
-      }
-    }
-  }
-
-  let shops = DB('order_shop')
-    .select('id', 'whiplash_id', 'customer_id', 'transporter', 'shipping', 'currency_rate', 'tax_rate', 'date_export')
-    .belongsTo('customer')
-
-  if (params.transporter === 'daudin') {
-    shops.whereIn('id', Object.keys(costs))
-  } else if (params.transporter === 'whiplash') {
-    shops.whereIn('whiplash_id', Object.keys(costs))
-  }
-
-  shops = await shops.all()
-
-  for (const shop of shops) {
-    const revenue = Utils.round((shop.shipping * shop.currency_rate) / (1 + shop.tax_rate))
-
-    const id = ['daudin', 'sna'].includes(params.transporter) ? shop.id : shop.whiplash_id
-    if (!costs[id]) {
-      continue
-    }
-    costs[id].revenue = revenue
-    costs.orders.revenue += revenue
-    costs[id].diff = Utils.round(costs[id].revenue - costs[id].shipping)
-    costs[id].country = shop.customer.country_id
-
-    /**
-    if (params.transporter === 'whiplash') {
-      global.cost += costs[id].shipping
-    }
-    **/
-    global.cost += costs[id].shipping
-    global.revenue += revenue
-
-    let now
-    /**
-    if (params.transporter === 'daudin') {
-      now = await Cart.calculateShippingDaudin({
-        insert: costs[id].quantity,
-        currency: 'EUR',
-        transporter: 'daudin',
-        weight: costs[id].weight * 1000,
-        country_id: costs[shop.id].country
-      })
-    } else {
-      costs[id].country = shop.customer.country_id
-      now = await Cart.calculateShippingWhiplash({
-        insert: costs[id].quantity,
-        quantity: costs[id].quantity,
-        currency: 'EUR',
-        transporter: 'whiplash',
-        country_id: shop.customer.country_id
-      }, 'whiplash')
-    }
-    costs[id].now = now.standard
-    costs[id].diff_now = Utils.round(costs[id].now - costs[id].shipping)
-    **/
-
-    diff.total += costs[id].diff
-    diff.now += costs[id].diff_now
-  }
-
-  const boxes = await DB('box_dispatch')
-    .select('box_dispatch.id', 'box_id', 'box.shipping', 'box.currency', 'tax_rate', 'box.shipping')
-    .join('box', 'box.id', 'box_dispatch.box_id')
-    .whereIn('box_dispatch.id', dispatchs)
-    .all()
-
-  for (const box of boxes) {
-    if (!box.currency) {
-      box.currency = 'EUR'
-    }
-    const revenue = Utils.round((box.shipping / currencies[box.currency]) / (1 + box.tax_rate))
-
-    if (box.shipping) {
-      costs[`B${box.id}`].revenue = revenue
-      costs[`B${box.id}`].diff = Utils.round(costs[`B${box.id}`].revenue - costs[`B${box.id}`].shipping)
-
-      costs.box.revenue += revenue
-      global.revenue += revenue
-    }
-  }
-
-  costs.manuel.shipping = Utils.round(costs.manuel.shipping)
-  costs.box.revenue = Utils.round(costs.box.revenue)
-  costs.box.shipping = Utils.round(costs.box.shipping)
-  costs.box.diff = Utils.round(costs.box.revenue - costs.box.shipping)
-  costs.other.shipping = Utils.round(costs.other.shipping)
-  costs.orders.shipping = Utils.round(costs.orders.shipping)
-  costs.orders.diff = Utils.round(costs.orders.revenue - costs.orders.shipping)
-
-  global.margin = global.revenue - global.cost
-
-  const date = `${params.year}-${params.month}-01`
-  let shippingCost = await DB('shipping_cost')
-    .where('transporter', params.transporter)
-    .where('date', date)
-    .first()
-
-  if (!shippingCost) {
-    shippingCost = DB('shipping_cost')
-    shippingCost.created_at = Utils.date()
-  }
-
-  shippingCost.transporter = params.transporter
-  shippingCost.date = date
-  shippingCost.cost = global.cost
-  shippingCost.revenue = global.revenue
-  shippingCost.margin = Utils.round(global.revenue - global.cost)
-  shippingCost.updated_at = Utils.date()
-  await shippingCost.save()
-
-  console.log(diff)
-  console.log(costs.box)
-  console.log(costs.manuel)
-  console.log(costs.orders)
-  console.log(global)
-  return Object.values(costs)
-}
-
-Admin.getShippingRevenues = async (params) => {
-  const shops = await DB('order_shop')
-    .select('id', 'transporter', 'shipping', 'currency_rate', 'tax_rate', 'date_export')
-    .whereRaw(`DATE_FORMAT(date_export, '%Y-%m') = '${params.year}-${params.month}'`)
-    .all()
-
-  const s = {}
-
-  for (const shop of shops) {
-    const shipping = (shop.shipping * shop.currency_rate) / (1 + shop.tax_rate)
-    shop.transporter = shop.transporter || 'other'
-    if (!s[shop.transporter]) {
-      s[shop.transporter] = 0
-    }
-    s[shop.transporter] = Utils.round(s[shop.transporter] + shipping)
-  }
-
-  return s
 }
 
 Admin.exportBoxesComptability = async () => {

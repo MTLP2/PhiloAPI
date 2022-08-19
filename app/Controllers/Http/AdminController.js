@@ -1,4 +1,5 @@
 const Admin = use('App/Services/Admin')
+const DB = use('App/DB')
 const Notification = use('App/Services/Notification')
 const Order = use('App/Services/Order')
 const PromoCode = use('App/Services/PromoCode')
@@ -13,7 +14,6 @@ const Invoice = use('App/Services/Invoice')
 const Whiplash = use('App/Services/Whiplash')
 const Song = use('App/Services/Song')
 const Utils = use('App/Utils')
-const Project = use('App/Models/Project')
 const Statement = use('App/Services/Statement')
 const Feedback = use('App/Services/Feedback')
 const Storage = use('App/Services/Storage')
@@ -26,7 +26,7 @@ const MailJet = use('App/Services/MailJet')
 const Review = use('App/Services/Review')
 const ApiError = use('App/ApiError')
 const ProjectService = use('App/Services/Project')
-const Database = use('Database')
+const Dispatch = use('App/Services/Dispatch')
 
 class AdminController {
   getStats ({ params }) {
@@ -66,7 +66,7 @@ class AdminController {
 
   async saveProject ({ params, user }) {
     params.user = user
-    const project = await Project.find(params.id)
+    const project = await DB('project').find(params.id)
     if (params.banner_picture) {
       if (project.banner) {
         Storage.deleteImage(`home/${project.banner}`)
@@ -105,7 +105,7 @@ class AdminController {
     }
 
     if (params.picture_project) {
-      const vod = await Database.table('vod')
+      const vod = await DB('vod')
         .where('project_id', project.id)
         .first()
 
@@ -124,7 +124,7 @@ class AdminController {
         { type: 'png', width: 1000, quality: 100 }
       )
 
-      await Database.table('vod')
+      await DB('vod')
         .where('project_id', project.id)
         .update({
           picture_project: file
@@ -140,7 +140,6 @@ class AdminController {
     project.category = params.category
     project.tags = params.tags && params.tags.join(',')
     project.cat_number = params.cat_number ? params.cat_number.trim() : null
-    project.home = params.home
     project.is_visible = params.is_visible
     project.show_info = params.show_info
     project.show_image_bar = params.show_image_bar
@@ -157,6 +156,11 @@ class AdminController {
   async setStock ({ params, user }) {
     params.user_id = user.id
     return Stock.setStocksProject(params)
+  }
+
+  async getStocks ({ params, user }) {
+    params.user_id = user.id
+    return Stock.getAll(params)
   }
 
   async uploadTracks ({ params }) {
@@ -831,14 +835,6 @@ class AdminController {
     return Customer.save(params)
   }
 
-  compareShippingOrder ({ params }) {
-    return Admin.compareShipping(params)
-  }
-
-  getShippingRevenues ({ params }) {
-    return Admin.getShippingRevenues(params)
-  }
-
   getProjectsReviews ({ params }) {
     return Review.all({
       ...params,
@@ -891,6 +887,10 @@ class AdminController {
 
   exportQuotes ({ params }) {
     return Quote.exportAll(params)
+  }
+
+  getShippingCosts ({ params }) {
+    return Dispatch.getCosts(params)
   }
 }
 

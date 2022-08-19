@@ -507,7 +507,8 @@ Project.getAll = (search, type) => {
       'p.name',
       'p.slug',
       'p.artist_name',
-      'v.type'
+      'v.type',
+      'v.step'
     )
     .from('project as p')
     .leftJoin('vod as v', 'p.id', 'v.project_id')
@@ -1134,6 +1135,7 @@ Project.recommendations = async (params) => {
     'v.splatter1',
     'v.splatter2',
     'v.color_vinyl',
+    'v.picture_project',
     'v.price',
     'v.currency',
     'v.goal',
@@ -1356,10 +1358,10 @@ Project.getDashboard = async (params) => {
     .join('vod', 'vod.project_id', 'project.id')
     .where('is_delete', '!=', '1')
 
-  if (params.u) {
-    projects.where('user_id', params.u)
+  if (params.user_id) {
+    projects.where('user_id', params.user_id)
   } else {
-    projects.where('project.id', params.p)
+    projects.where('project.id', params.project_id)
   }
 
   projects = Utils.arrayToObject(await projects.all(), 'id')
@@ -1595,8 +1597,8 @@ Project.getDashboard = async (params) => {
     }
     const tips = (order.tips / order.tax_rate) * order.currency_rate_project * fee
 
-    s.setDate('site', 'income', date, value)
-    s.setDate('tips', 'income', date, tips)
+    s.setDate('site', 'income', date, value + tips)
+    // s.setDate('tips', 'income', date, tips)
     s.setDate('site', 'quantity', date, order.quantity)
 
     s.setCountry('site', 'income', order.country_id, value)

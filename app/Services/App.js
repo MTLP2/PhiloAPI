@@ -8,7 +8,6 @@ const Order = require('./Order')
 const Customer = require('./Customer')
 const Utils = use('App/Utils')
 const Daudin = use('App/Services/Daudin')
-const CronJobs = use('App/Models/CronJobs')
 const Statement = use('App/Services/Statement')
 const Production = use('App/Services/Production')
 const Storage = use('App/Services/Storage')
@@ -26,6 +25,7 @@ const Whiplash = require('./Whiplash')
 const fs = require('fs')
 const { postcodeValidator, postcodeValidatorExistsForCountry } = require('postcode-validator')
 const juice = require('juice')
+const Cart = require('./Cart')
 
 const App = {}
 
@@ -33,7 +33,7 @@ App.daily = async () => {
   let cron
 
   try {
-    cron = await CronJobs.create({
+    cron = await DB('cronjobs').create({
       type: 'daily',
       date: moment().format('YYYY-MM-DD'),
       start: new Date()
@@ -43,7 +43,7 @@ App.daily = async () => {
   }
 
   try {
-    await CronJobs.query()
+    await DB('cronjobs')
       .whereRaw('start < date_sub(now(), interval 15 day)')
       .orderBy('start', 'desc')
       .delete()
@@ -81,7 +81,7 @@ App.hourly = async () => {
   let cron
 
   try {
-    cron = await CronJobs.create({
+    cron = await DB('cronjobs').create({
       type: 'hourly',
       date: moment().format('YYYY-MM-DD HH'),
       start: new Date()
@@ -136,7 +136,7 @@ App.hourly = async () => {
 App.cron = async () => {
   let cron
   try {
-    cron = await CronJobs.create({
+    cron = await DB('cronjobs').create({
       type: 'minutely',
       date: moment().format('YYYY-MM-DD HH:mm'),
       start: new Date()
@@ -1049,7 +1049,6 @@ App.getGenres = () => {
 }
 
 App.convertOrderBandcamp = async () => {
-  const fs = require('fs')
   const file = fs.readFileSync('bandcamp.tsv', 'utf8')
   const lines = file.split('\r\n')
 
@@ -1064,8 +1063,6 @@ App.convertOrderBandcamp = async () => {
         .orWhere('order.status', 'bandcamp')
     })
     .all()
-
-  const Cart = require('./Cart')
 
   orders.map(order => {
     DB('order_shop')
@@ -1130,7 +1127,6 @@ App.convertOrderBandcamp = async () => {
 
 App.convertKissKiss = async (params) => {
   const Daudin = use('App/Services/Daudin')
-  const fs = require('fs')
   const csv = fs.readFileSync('between-sleeps.tsv', 'utf8')
   const countries = await DB('country').where('lang', 'en').all()
   const lines = csv.split('\n')
@@ -1421,7 +1417,6 @@ App.checkZipCode = async () => {
 }
 
 App.addDiggersShipping = async () => {
-  const fs = require('fs')
   const file = fs.readFileSync('factory/colissimo.tsv', 'utf8')
 
   const lines = file.replace(/"/g, '').split('\r\n')
@@ -1543,7 +1538,6 @@ App.convertChoose2 = async () => {
 }
 
 App.converChoose = async () => {
-  const fs = require('fs')
   const file = fs.readFileSync('choose.csv', 'utf8')
 
   const lines = file.split('\n')
@@ -1679,7 +1673,6 @@ App.ordersScaryPockets = async (transporter) => {
 }
 
 App.renameIcons = () => {
-  const fs = require('fs')
   const path = '../streamline'
   const files = fs.readdirSync(path)
 

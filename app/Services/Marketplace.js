@@ -241,11 +241,11 @@ Marketplace.saveShippingCosts = async (params) => {
     s.plus_pickup = c.plus_pickup ? c.plus_pickup : null
     s.wholesale = c.wholesale
     s['g5-10'] = c['g5-10']
-    s['q5-10'] = `${c['q5']}-${c['q10']}`
+    s['q5-10'] = `${c.q5}-${c.q10}`
     s['g10-20'] = c['g10-20']
-    s['q10-20'] = `${c['q11']}-${c['q20']}`
-    s['g20'] = c['g20']
-    s['q20'] = c['q21']
+    s['q10-20'] = `${c.q11}-${c.q20}`
+    s.g20 = c.g20
+    s.q20 = c.q21
     s.updated_at = Utils.date()
 
     await s.save()
@@ -390,7 +390,7 @@ Marketplace.getItemsByProject = async (id, userId) => {
     .first()
 
   if (user) {
-    let countryId = user.customer ? user.customer.country_id : user.country_id
+    const countryId = user.customer ? user.customer.country_id : user.country_id
 
     if (countryId) {
       await Promise.all(items.map(async (ii, i) => {
@@ -936,8 +936,7 @@ Marketplace.rate = async (params) => {
 
 Marketplace.prepareImport = async (params) => {
   let columns = []
-  let lines = []
-  var fs = require('fs')
+  const lines = []
   const name = params.file.name.split('.')
   const ext = name[name.length - 1]
 
@@ -959,7 +958,6 @@ Marketplace.prepareImport = async (params) => {
     const pathFile = `/tmp/${params.file.name}`
 
     fs.writeFileSync(pathFile, buffer)
-    const Excel = require('exceljs')
     const Workbook = new Excel.Workbook()
     const workbook = await Workbook.xlsx.readFile(pathFile)
     const worksheet = workbook.getWorksheet(1)
@@ -1001,9 +999,9 @@ Marketplace.getLinesImport = (file, col) => {
   refs[col.origin] = 'origin'
   refs[col.catno] = 'catno'
   refs[col.barcode] = 'barcode'
-  refs['release_id'] = 'release_id'
+  refs.release_id = 'release_id'
   refs['Diggers ID'] = 'diggers_id'
-  refs['status'] = 'status'
+  refs.status = 'status'
   refs[col.year] = 'year'
   refs[col.comment] = 'comment'
 
@@ -1134,9 +1132,9 @@ Marketplace.getImports = async (params) => {
   const imports = await DB('marketplace_imports as is')
     .select(
       'is.*',
-      DB.raw(`(SELECT count(*) FROM marketplace_import WHERE import_id = is.id AND status = 'not_found') as not_found`),
-      DB.raw(`(SELECT count(*) FROM marketplace_import WHERE import_id = is.id AND status = 'success') as success`),
-      DB.raw(`(SELECT count(*) FROM marketplace_import WHERE import_id = is.id) as all_imports`)
+      DB.raw('(SELECT count(*) FROM marketplace_import WHERE import_id = is.id AND status = \'not_found\') as not_found'),
+      DB.raw('(SELECT count(*) FROM marketplace_import WHERE import_id = is.id AND status = \'success\') as success'),
+      DB.raw('(SELECT count(*) FROM marketplace_import WHERE import_id = is.id) as all_imports')
     )
     .where('marketplace_id', params.user_id)
     .where('hide', 0)
@@ -1615,8 +1613,8 @@ Marketplace.calculateShipping = async (params) => {
         price = s['g5-10']
       } else if (params.quantity <= parseInt(q2[1])) {
         price = s['g10-20']
-      } else if (params.quantity >= parseInt(s['q20'])) {
-        price = s['g20']
+      } else if (params.quantity >= parseInt(s.q20)) {
+        price = s.g20
       }
     } else if (s.pickup && type === 'pickup') {
       price = s.one_pickup
