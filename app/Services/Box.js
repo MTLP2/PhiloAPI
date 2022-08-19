@@ -10,6 +10,7 @@ const Stock = use('App/Services/Stock')
 const Payment = require('./Payment')
 const moment = require('moment')
 const config = require('../../config')
+const stripe = require('stripe')(config.stripe.client_secret)
 const View = use('View')
 const Antl = use('Antl')
 const bwipjs = require('bwip-js')
@@ -1351,8 +1352,6 @@ class Box {
 
   static async checkPayments (params) {
     await Box.setDispatchLeft()
-
-    const stripe = require('stripe')(config.stripe.client_secret)
 
     const errors = []
 

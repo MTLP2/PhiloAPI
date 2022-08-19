@@ -1,6 +1,7 @@
 const S3 = use('App/Services/S3')
 const sharp = require('sharp')
 const JSZip = require('jszip')
+const fs = require('fs')
 const Storage = S3
 
 class StorageService {
@@ -96,7 +97,6 @@ class StorageService {
   }
 
   static async cleanTmp (path) {
-    const fs = require('fs')
     const files = fs.readdirSync(path)
     const now = Date.now()
 

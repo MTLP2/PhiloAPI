@@ -1823,7 +1823,6 @@ class Production {
       { name: `${prod.artist_name} - ${prod.name}`, price: unitPrice, quantity: prod.quantity, total: invoice.sub_total }
     ]
 
-    const moment = require('moment')
     invoice.date = moment().format('YYYY-MM-DD')
     invoice.lang = params.lang
 

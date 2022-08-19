@@ -11,6 +11,7 @@ const Invoice = use('App/Services/Invoice')
 const Whiplash = use('App/Services/Whiplash')
 const Sna = use('App/Services/Sna')
 const ApiError = use('App/ApiError')
+const stripe = require('stripe')(config.stripe.client_secret)
 
 Order.configurePaypal = (p) => {
   const clientId = (p !== null)
@@ -633,8 +634,6 @@ Order.refundPayment = async (order) => {
       throw new ApiError(err.response.httpStatusCode, err.response.message)
     }
   } else if (order.payment_type === 'stripe') {
-    const stripe = require('stripe')(config.stripe.client_secret)
-
     if (order.transfert_id) {
       await stripe.transfers.createReversal(order.transfert_id)
     }

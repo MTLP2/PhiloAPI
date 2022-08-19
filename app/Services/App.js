@@ -25,6 +25,7 @@ const Whiplash = require('./Whiplash')
 const fs = require('fs')
 const { postcodeValidator, postcodeValidatorExistsForCountry } = require('postcode-validator')
 const juice = require('juice')
+const Cart = require('./Cart')
 
 const App = {}
 
@@ -1048,7 +1049,6 @@ App.getGenres = () => {
 }
 
 App.convertOrderBandcamp = async () => {
-  const fs = require('fs')
   const file = fs.readFileSync('bandcamp.tsv', 'utf8')
   const lines = file.split('\r\n')
 
@@ -1063,8 +1063,6 @@ App.convertOrderBandcamp = async () => {
         .orWhere('order.status', 'bandcamp')
     })
     .all()
-
-  const Cart = require('./Cart')
 
   orders.map(order => {
     DB('order_shop')
@@ -1129,7 +1127,6 @@ App.convertOrderBandcamp = async () => {
 
 App.convertKissKiss = async (params) => {
   const Daudin = use('App/Services/Daudin')
-  const fs = require('fs')
   const csv = fs.readFileSync('between-sleeps.tsv', 'utf8')
   const countries = await DB('country').where('lang', 'en').all()
   const lines = csv.split('\n')
@@ -1420,7 +1417,6 @@ App.checkZipCode = async () => {
 }
 
 App.addDiggersShipping = async () => {
-  const fs = require('fs')
   const file = fs.readFileSync('factory/colissimo.tsv', 'utf8')
 
   const lines = file.replace(/"/g, '').split('\r\n')
@@ -1542,7 +1538,6 @@ App.convertChoose2 = async () => {
 }
 
 App.converChoose = async () => {
-  const fs = require('fs')
   const file = fs.readFileSync('choose.csv', 'utf8')
 
   const lines = file.split('\n')
@@ -1678,7 +1673,6 @@ App.ordersScaryPockets = async (transporter) => {
 }
 
 App.renameIcons = () => {
-  const fs = require('fs')
   const path = '../streamline'
   const files = fs.readdirSync(path)
 

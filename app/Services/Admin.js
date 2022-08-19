@@ -22,6 +22,8 @@ const Sna = use('App/Services/Sna')
 const cio = use('App/Services/CIO')
 const Env = use('Env')
 const moment = require('moment')
+const google = require('googleapis')
+const fs = require('fs')
 const Admin = {}
 
 Admin.getProjects = async (params) => {
@@ -3029,8 +3031,6 @@ Admin.getRespProd = async (params) => {
 
 Admin.getAnalytics = (type, days) =>
   new Promise((resolve, reject) => {
-    const google = require('googleapis')
-
     const jwtClient = new google.auth.JWT(
       config.analytics.client_email, null, config.analytics.private_key,
       ['https://www.googleapis.com/auth/analytics.readonly'], null
@@ -3504,8 +3504,6 @@ Admin.extractUsers = async (params) => {
 }
 
 Admin.extractUsersCreating = async () => {
-  const fs = require('fs')
-
   const query = `
     SELECT user.email
     FROM user
@@ -3524,8 +3522,6 @@ Admin.extractUsersCreating = async () => {
 }
 
 Admin.extractUsersArtists = async () => {
-  const fs = require('fs')
-
   const query = `
     SELECT user.email
     FROM user

@@ -17,6 +17,7 @@ const Stock = use('App/Services/Stock')
 const Order = use('App/Services/Order')
 const cio = use('App/Services/CIO')
 const Antl = use('Antl')
+const stripe = require('stripe')(config.stripe.client_secret)
 
 const paypal = require('paypal-rest-sdk')
 const moment = require('moment')
@@ -1247,8 +1248,6 @@ Cart.pay = async (params) => {
 Cart.createStripePayment = (params) =>
   new Promise(async (resolve, reject) => {
     try {
-      const stripe = require('stripe')(config.stripe.client_secret)
-
       const metadata = {
         order_id: params.order.id
       }

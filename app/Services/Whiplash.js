@@ -10,6 +10,7 @@ const config = require('../../config')
 const Utils = use('App/Utils')
 const request = require('request')
 const juice = require('juice')
+const Excel = require('exceljs')
 
 const whiplash = (endpoint, options = {}) => {
   return new Promise((resolve, reject) => {
@@ -699,7 +700,6 @@ Whiplash.parseShippings = async () => {
     .where('lang', 'en')
     .all()
 
-  const Excel = require('exceljs')
   const workbook = new Excel.Workbook()
   await workbook.xlsx.readFile('../shipping_uk.xlsx')
   const worksheet = workbook.getWorksheet(1)

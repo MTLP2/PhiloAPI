@@ -6,6 +6,7 @@ const Antl = use('Antl')
 const ApiError = use('App/ApiError')
 const View = use('View')
 const moment = require('moment')
+const Excel = require('exceljs')
 
 class Invoice {
   static async all (params) {
@@ -336,7 +337,6 @@ class Invoice {
       }
     }
 
-    const moment = require('moment')
     invoice.before = moment(invoice.date).add(1, 'M').format('YYYY-MM-DD')
     invoice.lang = params.lang
 
@@ -501,7 +501,6 @@ class Invoice {
   }
 
   static async exportSfc () {
-    const Excel = require('exceljs')
     const workbook = new Excel.Workbook()
 
     const invoices = await DB('invoice')
@@ -574,7 +573,6 @@ class Invoice {
   }
 
   static async export (params) {
-    const Excel = require('exceljs')
     const workbook = new Excel.Workbook()
 
     const datas = await DB('invoice')

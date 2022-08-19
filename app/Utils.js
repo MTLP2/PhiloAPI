@@ -6,6 +6,9 @@ const DB = use('App/DB')
 const { v4: uuidv4 } = require('uuid')
 const Hashids = require('hashids')
 const hashids = new Hashids('diggers', 5)
+const request = require('request')
+const _ = require('lodash')
+const pdf = require('html-pdf')
 
 const Utils = {}
 
@@ -122,7 +125,6 @@ Utils.promise = (func, ...params) =>
 
 Utils.request = (url, params) =>
   new Promise((resolve, reject) => {
-    const request = require('request')
     request(url, params, (error, res, body) => {
       if (error) {
         reject(error)
@@ -157,7 +159,6 @@ Utils.round = (num, decimal = 2, step) => {
 
 Utils.fetchBinary = (url) => {
   return new Promise((resolve, reject) => {
-    const request = require('request')
     request.get({
       url: url,
       encoding: null,
@@ -218,7 +219,6 @@ Utils.unhashId = (id) => {
 
 Utils.toPdf = async (html) => {
   return new Promise((resolve, reject) => {
-    const pdf = require('html-pdf')
     pdf.create(html).toBuffer(function (err, buffer) {
       if (err) {
         reject(err)
@@ -328,7 +328,6 @@ Utils.getRows = async (params) => {
 }
 
 Utils.removeAccents = (s) => {
-  const _ = require('lodash')
   return _.deburr(s)
 }
 

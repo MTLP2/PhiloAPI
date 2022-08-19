@@ -4,6 +4,8 @@ const Notification = use('App/Services/Notification')
 const Quote = use('App/Services/Quote')
 const Utils = use('App/Utils')
 const config = require('../../config')
+const User = require('./User')
+const fs = require('fs')
 
 const Vod = {}
 
@@ -30,7 +32,6 @@ Vod.save = async (params, pp) => {
 
     vod = await vod.save()
 
-    const User = require('./User')
     await User.event({
       type: 'create_project',
       project_id: pp.id,
@@ -215,7 +216,6 @@ Vod.save = async (params, pp) => {
       `
     })
 
-    const User = require('./User')
     await User.event({
       type: 'publish_project',
       project_id: pp.id,
@@ -874,8 +874,6 @@ Vod.convert = async () => {
 }
 
 Vod.getFactoryPrice = async (params) => {
-  const fs = require('fs')
-
   let contents
   if (params.factory === 'vdp') {
     contents = fs.readFileSync(`factory/${params.factory}_${params.nb_vinyl}.csv`, 'utf8')
