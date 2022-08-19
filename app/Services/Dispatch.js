@@ -548,13 +548,12 @@ Dispatch.setCosts = async (params) => {
     const path = file.path.split('.')[0].split(' ')
     console.log(path)
     const date = path[path.length - 1]
+
     const buffer = await Storage.get(file.path, true)
 
     const dis = await Dispatch.setCost(params.transporter, date, buffer)
     // console.log(dis.length)
     dispatchs.push(...dis)
-
-    break
   }
   return dispatchs.length
 }
