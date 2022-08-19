@@ -1385,7 +1385,7 @@ class Production {
     }
   }
 
-  static async addNotif ({ id, type, date, data, overrideNotif = false }) {
+  static async addNotif ({ id, type, date, data, overrideNotif = false, userId }) {
     const prod = await DB('vod')
       .select('production.id', 'vod.project_id', 'production.notif', 'vod.user_id', 'production.resp_id')
       .join('production', 'production.project_id', 'vod.project_id')
@@ -1393,11 +1393,13 @@ class Production {
       .where('production.id', id)
       .first()
 
+    // Send notif if notif si activated in prod or method is called with overrideNotif.
+    // Recipient is the user linked to the production, or userId value for override.
     if (prod.notif || overrideNotif) {
       console.log('add_notif', {
         type: `production_${type}`,
         prod_id: prod.id,
-        user_id: prod.user_id,
+        user_id: userId || prod.user_id,
         project_id: prod.project_id,
         date: date,
         data: data
@@ -1405,7 +1407,7 @@ class Production {
       await Notification.add({
         type: `production_${type}`,
         prod_id: prod.id,
-        user_id: prod.user_id,
+        user_id: userId || prod.user_id,
         project_id: prod.project_id,
         date: date,
         data: data
@@ -2006,7 +2008,7 @@ class Production {
 
   static async checkProductionToBeCompleted () {
     const productions = await DB('vod')
-      .select('production_action.updated_at', 'production.id as prod_id', 'vod.id as vod_id')
+      .select('production_action.updated_at', 'production.id as prod_id', 'vod.id as vod_id', 'vod.resp_prod_id')
       .join('project', 'project.id', 'vod.project_id')
       .join('production', 'production.project_id', 'project.id')
       .join('production_action', 'production_action.production_id', 'production.id')
@@ -2020,7 +2022,8 @@ class Production {
         id: prod.prod_id,
         type: 'completed_alert',
         date: Utils.date({ time: false }),
-        overrideNotif: true
+        overrideNotif: true,
+        userId: prod.resp_prod_id
       })
     }
 
