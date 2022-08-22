@@ -444,18 +444,14 @@ const getCosts = async (params) => {
       continue
     }
 
-    if (ship.transporter === 'MDR') {
+    if (ship.transporter === 'MDR' && params.type === 'pickup') {
       if (price < 4.8) {
         price = 4.8
       }
       price = price + ship.picking + ship.packing
       price = price * 1.2
       price = Utils.round(price, 2, 0.1)
-
-      if (!costs[ship.country_id][`${ship.partner}_pickup`] || costs[ship.country_id][`${ship.partner}_pickup`] > price) {
-        costs[ship.country_id][`${ship.partner}_pickup`] = price
-      }
-    } else {
+    } else if (params.type !== 'pickup') {
       if (costs.transporter === 'IMX') {
         price = price * 1.1
       }
@@ -466,10 +462,10 @@ const getCosts = async (params) => {
       price = price + ship.picking + ship.packing
       price = price * 1.2
       price = Utils.round(price, 2, 0.1)
+    }
 
-      if (!costs[ship.country_id][ship.partner] || costs[ship.country_id][ship.partner] > price) {
-        costs[ship.country_id][ship.partner] = price
-      }
+    if (!costs[ship.country_id][`${ship.partner}`] || costs[ship.country_id][`${ship.partner}`] > price) {
+      costs[ship.country_id][`${ship.partner}`] = price
     }
   }
 
@@ -520,7 +516,6 @@ const getCosts = async (params) => {
 
   orders = await orders.all()
 
-  console.log(orders.length)
   for (const order of orders) {
     if (!costs[order.country_id] || !costs[order.country_id][`${order.transporter}_costs`]) {
       continue
@@ -551,7 +546,6 @@ const getCosts = async (params) => {
   }
 
   return Object.values(costs)
-    .filter(c => c.daudin)
     .sort((a, b) => b.daudin_costs.length - a.daudin_costs.length)
 }
 
