@@ -1,21 +1,20 @@
-const Utils = use('App/Utils')
+const Excel = require('exceljs')
+const fs = require('fs')
+
+const ApiError = use('App/ApiError')
+const Daudin = use('App/Services/Daudin')
 const DB = use('App/DB')
 const Dig = use('App/Services/Dig')
 const Notification = use('App/Services/Notification')
-const Payment = use('App/Services/Payment')
 const Order = use('App/Services/Order')
-const Stock = use('App/Services/Stock')
-const Daudin = use('App/Services/Daudin')
+const Payment = use('App/Services/Payment')
 const Sna = use('App/Services/Sna')
+const Stock = use('App/Services/Stock')
 const Storage = use('App/Services/Storage')
+const Utils = use('App/Utils')
 const Whiplash = use('App/Services/Whiplash')
-const fs = require('fs')
-const Excel = require('exceljs')
-const ApiError = use('App/ApiError')
 
-const Dispatch = {}
-
-Dispatch.update = async (params) => {
+const update = async (params) => {
   if (!params.id) {
     throw new ApiError(400, '`id` is missing')
   }
@@ -57,7 +56,7 @@ Dispatch.update = async (params) => {
   }
 
   if (params.status === 'sent') {
-    const res = await Dispatch.setSent({
+    const res = await setSent({
       id: params.id,
       transporter: params.transporter,
       tracking: params.tracking_number
@@ -67,7 +66,7 @@ Dispatch.update = async (params) => {
     }
   }
   if (params.status === 'returned') {
-    const res = await Dispatch.setReturned(params.id)
+    const res = await setReturned(params.id)
     if (!res) {
       return { succes: false }
     }
@@ -76,7 +75,7 @@ Dispatch.update = async (params) => {
   return { success: true }
 }
 
-Dispatch.setSent = async (order) => {
+const setSent = async (order) => {
   if (order.id[0] === 'M') {
     const manual = await DB('order_manual')
       .find(order.id.substring(1))
@@ -160,7 +159,7 @@ Dispatch.setSent = async (order) => {
   return true
 }
 
-Dispatch.setReturned = async (id) => {
+const setReturned = async (id) => {
   if (!isNaN(id)) {
     const order = await DB('order_shop')
       .select('order_shop.*', 'order.comment')
@@ -246,7 +245,7 @@ Dispatch.setReturned = async (id) => {
   return { sucess: true }
 }
 
-Dispatch.refundReturns = async () => {
+const refundReturns = async () => {
   const orders = await DB('order_shop')
     .select('order_shop.*', 'order.payment_id', 'order.payment_type', 'order.refunded')
     .join('order', 'order.id', 'order_shop.order_id')
@@ -280,7 +279,7 @@ Dispatch.refundReturns = async () => {
   return orders
 }
 
-Dispatch.changeStock = async (params) => {
+const changeStock = async (params) => {
   if (!params.barcode) {
     throw new ApiError(400, '`barcode` is missing')
   }
@@ -345,7 +344,7 @@ Dispatch.changeStock = async (params) => {
   return { success: true }
 }
 
-Dispatch.getCountriesForDispatch = async () => {
+const getCountriesForDispatch = async () => {
   const orders = await DB('order')
     .select('project_id', 'project.name', 'artist_name', 'customer.country_id', DB.raw('count(*) as total'))
     .from('order_shop')
@@ -383,7 +382,7 @@ Dispatch.getCountriesForDispatch = async () => {
   ], Object.values(projects))
 }
 
-Dispatch.getCosts = async (params) => {
+const getCosts = async (params) => {
   const currenciesDb = await Utils.getCurrenciesDb()
   const currencies = await Utils.getCurrencies('EUR', currenciesDb)
 
@@ -391,6 +390,9 @@ Dispatch.getCosts = async (params) => {
     .where('lang', 'en')
     .all()
 
+  countries.push({
+    id: '00'
+  })
   const costs = {}
   for (const country of countries) {
     costs[country.id] = {
@@ -399,21 +401,27 @@ Dispatch.getCosts = async (params) => {
       daudin: null,
       daudin_cost: null,
       daudin_costs: [],
+      daudin_benefit: 0,
       daudin_pickup: null,
       daudin_pickup_cost: null,
       daudin_pickup_costs: [],
+      daudin_pickup_benefit: 0,
       sna: null,
       sna_cost: null,
       sna_costs: [],
+      sna_benefit: 0,
       sna_pickup: null,
       sna_pickup_cost: null,
       sna_pickup_costs: [],
+      sna_pickup_benefit: 0,
       whiplash: null,
       whiplash_cost: null,
       whiplash_costs: [],
+      whiplash_benefit: 0,
       whiplash_uk: null,
       whiplash_uk_cost: null,
-      whiplash_uk_costs: []
+      whiplash_uk_costs: [],
+      whiplash_uk_benefit: 0
     }
   }
 
@@ -486,7 +494,7 @@ Dispatch.getCosts = async (params) => {
     }
   }
 
-  const orders = await DB('order_shop')
+  let orders = DB('order_shop')
     .select('order_shop.id', 'order_shop.order_id', 'order_shop.transporter', 'shipping_type', 'shipping_mode',
       'customer.country_id', 'shipping', 'shipping_cost', 'shipping_trans', 'shipping_weight', 'shipping_quantity',
       'order_shop.currency', 'order_shop.currency_rate', 'order_shop.date_export', 'order_shop.created_at',
@@ -496,20 +504,33 @@ Dispatch.getCosts = async (params) => {
     .join('customer', 'customer_id', 'customer.id')
     .join('vod', 'vod.project_id', 'order_item.project_id')
     .join('project', 'vod.project_id', 'project.id')
-    .where('shipping_weight', '>=', weight[0])
-    .where('shipping_weight', '<', weight[1])
-    .where('shipping_quantity', 1)
-    .where('shipping_type', '!=', 'letter')
-    .where('shipping_type', '!=', 'tracking')
     .whereBetween('date_export', [params.start, params.end])
-    .orderBy('created_at', 'desc')
-    .all()
+    .orderBy('date_export', 'desc')
 
+  if (params.type) {
+    orders.where('shipping_type', '>=', params.type)
+  }
+  if (params.weight) {
+    orders.where('shipping_weight', '>=', weight[0])
+    orders.where('shipping_weight', '<', weight[1])
+  }
+  if (params.quantity) {
+    orders.where('shipping_quantity', params.quantity)
+  }
+
+  orders = await orders.all()
+
+  console.log(orders.length)
   for (const order of orders) {
     if (!costs[order.country_id] || !costs[order.country_id][`${order.transporter}_costs`]) {
       continue
     }
+    order.shipping = order.shipping * order.currency_rate
+    if (['daudin', 'sna'].includes(order.transporter)) {
+      order.currency = 'EUR'
+    }
     order.diff = Utils.round(order.shipping - order.shipping_cost)
+    /**
     if (order.transporter === 'daudin' && order.shipping_type === 'pickup') {
       costs[order.country_id].daudin_pickup_costs.push(order)
     } else if (order.transporter === 'sna' && order.shipping_type === 'pickup') {
@@ -517,8 +538,20 @@ Dispatch.getCosts = async (params) => {
     } else {
       costs[order.country_id][`${order.transporter}_costs`].push(order)
     }
+    **/
+    costs[order.country_id][`${order.transporter}_costs`].push(order)
+    if (!costs[order.country_id][`${order.transporter}_cost`]) {
+      costs[order.country_id][`${order.transporter}_cost`] = order.shipping_cost
+      costs[order.country_id][`${order.transporter}_diff`] = costs[order.country_id][order.transporter] - order.shipping_cost
+    }
+    costs[order.country_id][`${order.transporter}_benefit`] += order.shipping - order.shipping_cost
+
+    console.log(order.currency)
+    costs['00'][`${order.transporter}_costs`].push(order)
+    costs['00'][`${order.transporter}_benefit`] += order.shipping - order.shipping_cost
   }
 
+  /**
   for (const [c, cost] of Object.entries(costs)) {
     for (const t of ['daudin', 'daudin_pickup', 'sna', 'sna_pickup', 'whiplash', 'whiplash_uk']) {
       if (cost[`${t}_costs`].length > 0) {
@@ -531,13 +564,14 @@ Dispatch.getCosts = async (params) => {
       }
     }
   }
+  **/
 
   return Object.values(costs)
-    .filter(c => c.daudin)
+    // .filter(c => c.daudin)
     .sort((a, b) => b.daudin_costs.length - a.daudin_costs.length)
 }
 
-Dispatch.setCosts = async (params) => {
+const setCosts = async (params) => {
   const files = await Storage.list(`shippings/${params.transporter}`, true)
 
   const dispatchs = []
@@ -551,14 +585,14 @@ Dispatch.setCosts = async (params) => {
 
     const buffer = await Storage.get(file.path, true)
 
-    const dis = await Dispatch.setCost(params.transporter, date, buffer)
+    const dis = await setCost(params.transporter, date, buffer)
     // console.log(dis.length)
     dispatchs.push(...dis)
   }
   return dispatchs.length
 }
 
-Dispatch.setCost = async (transporter, date, buffer) => {
+const setCost = async (transporter, date, buffer) => {
   const dispatchs = []
 
   let dis
@@ -574,7 +608,7 @@ Dispatch.setCost = async (transporter, date, buffer) => {
   return dispatchs
 }
 
-Dispatch.getShippingRevenues = async (params) => {
+const getShippingRevenues = async (params) => {
   const shops = await DB('order_shop')
     .select('id', 'transporter', 'shipping', 'currency_rate', 'tax_rate', 'date_export')
     .whereRaw(`DATE_FORMAT(date_export, '%Y-%m') = '${params.year}-${params.month}'`)
@@ -594,7 +628,7 @@ Dispatch.getShippingRevenues = async (params) => {
   return s
 }
 
-Dispatch.parsePriceList = async () => {
+const parsePriceList = async () => {
   const workbook = new Excel.Workbook()
 
   workbook.eachSheet(function (worksheet, sheetId) {
@@ -968,4 +1002,16 @@ Dispatch.parsePriceList = async () => {
   return prices
 }
 
-module.exports = Dispatch
+module.exports = {
+  update,
+  setSent,
+  setReturned,
+  refundReturns,
+  changeStock,
+  getCountriesForDispatch,
+  getCosts,
+  setCosts,
+  setCost,
+  getShippingRevenues,
+  parsePriceList
+}
