@@ -515,6 +515,9 @@ Notification.template = (params) => {
         <tr>
           <td class="footer"
             style="text-align: center; font-size: 11px; padding: 20px;" align="center">
+            <p>Une question sur le fonctionnement de Diggers Factory ?<br />
+              <a href="https://intercom.help/diggersfactory/fr">Notre FAQ est là pour vous guider.</a>
+            </p>
             <p class="social">
               <a href="https://www.facebook.com/diggersfactory" target="_blank"><img src="https://storage.diggersfactory.com/assets/images/emails/facebook.png" width="18" style="margin: 10px; border:0" /></a>
               <a href="https://twitter.com/DiggersFactory" target="_blank"><img src="https://storage.diggersfactory.com/assets/images/emails/twitter.png" width="18" style="margin: 10px; border:0" /></a>
@@ -526,7 +529,7 @@ Notification.template = (params) => {
             <p style="padding: 0; margin: 3px;">Mot de passe oublié ? <a href="${config.app.url}/fr/forgot-password">Suivez les instructions.</a></p>
             <p style="padding: 0; margin: 3px;">Vous pouvez vous <a href="${config.app.url}/fr/unsubscribe-newsletter?id=${params.to}&t=${hash}">désabonner de ces mails</a>.</p>
             <p style="padding: 0; margin: 3px;">Télécharger nos <a href="${config.app.url}/fr/terms">Conditions Générales d’Utilisation.</a></p>
-            <p style="padding: 0; margin: 3px;">Diggers Factory, 10 boulevard Arago, 75013, Paris, France</p>
+            <p style="padding: 0; margin: 3px;">Diggers Factory, 4 bis rue du Dahomey, 75011, Paris, France</p>
           </td>
       </tr>
     </table>
@@ -541,6 +544,9 @@ Notification.template = (params) => {
       <tr>
         <td class="footer"
           style="text-align: center; font-size: 11px; padding: 20px;" align="center">
+          <p>Wondering how Diggers Factory works?<br />
+            <a href="https://intercom.help/diggersfactory/en">Let our FAQ guide you.</a>
+          </p>
           <p class="social">
             <a href="https://www.facebook.com/diggersfactory" target="_blank"><img src="https://storage.diggersfactory.com/assets/images/emails/facebook.png" width="18" style="margin: 10px; border:0" /></a>
             <a href="https://twitter.com/DiggersFactory" target="_blank"><img src="https://storage.diggersfactory.com/assets/images/emails/twitter.png" width="18" style="margin: 10px; border:0" /></a>
@@ -552,7 +558,7 @@ Notification.template = (params) => {
           <p style="padding: 0; margin: 3px;">Forgotten password ? <a href="${config.app.url}/forgot-password">Follow the instructions.</a></p>
           <p style="padding: 0; margin: 3px;">You can <a href="${config.app.url}/unsubscribe-newsletter?id=${params.to}&t=${hash}">unsubscribe from these emails </a>.</p>
           <p style="padding: 0; margin: 3px;">Download our <a href="${config.app.url}/terms">Terms of Service.</a></p>
-          <p style="padding: 0; margin: 3px;">Diggers Factory, 10 boulevard Arago, 75013, Paris, France</p>
+          <p style="padding: 0; margin: 3px;">Diggers Factory, 4 bis rue du Dahomey, 75011, Paris, France</p>
         </td>
       </tr>
       </table>
