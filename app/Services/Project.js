@@ -500,18 +500,19 @@ Project.findAll = async (params) => {
   })
 }
 
-Project.getAll = (search, type) => {
+Project.getAll = (search, type, userId) => {
   const projects = DB()
     .select(
       'p.id',
       'p.name',
       'p.slug',
       'p.artist_name',
+      'p.picture',
       'v.type',
       'v.step'
     )
     .from('project as p')
-    .leftJoin('vod as v', 'p.id', 'v.project_id')
+    .join('vod as v', 'p.id', 'v.project_id')
     .leftJoin('wishlist as w', 'p.id', 'w.project_id')
     .where('name', '!=', '')
     .where('is_delete', 0)
@@ -524,9 +525,13 @@ Project.getAll = (search, type) => {
     })
     .limit(20)
 
-  if (type === 'vod') {
-    projects.whereNotNull('v.id')
+  if (type === 'shop') {
+    projects.whereIn('v.step', ['in_progress', 'successful'])
   }
+  if (userId) {
+    projects.whereIn('v.user_id', userId)
+  }
+
   return projects.all()
 }
 
