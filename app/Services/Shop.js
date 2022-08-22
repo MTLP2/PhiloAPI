@@ -47,7 +47,7 @@ class Shop {
     item.code = params.code ? params.code : Utils.slugify(params.name)
     item.bg_color = params.bg_color
     item.font_color = params.font_color
-    item.menu_color = params.menu_color
+    item.title_color = params.title_color
     item.updated_at = Utils.date()
 
     if (params.logo) {
@@ -59,7 +59,7 @@ class Shop {
       Storage.uploadImage(
         fileName,
         Buffer.from(params.logo, 'base64'),
-        { type: 'png', width: 200 }
+        { type: 'png', width: 300 }
       )
     }
     if (params.banner) {
@@ -71,7 +71,7 @@ class Shop {
       Storage.uploadImage(
         fileName,
         Buffer.from(params.banner, 'base64'),
-        { type: 'jpg', width: 800 }
+        { type: 'jpg', width: 1600 }
       )
     }
     if (params.bg_image) {
@@ -83,7 +83,7 @@ class Shop {
       Storage.uploadImage(
         fileName,
         Buffer.from(params.bg_image, 'base64'),
-        { type: 'png', width: 200 }
+        { type: 'png', width: 300 }
       )
     }
 
