@@ -44,7 +44,7 @@ class Shop {
       item.created_at = Utils.date()
     }
     item.name = params.name
-    item.code = params.code
+    item.code = params.code ? params.code : Utils.slugify(params.name)
     item.bg_color = params.bg_color
     item.font_color = params.font_color
     item.menu_color = params.menu_color
@@ -96,37 +96,6 @@ class Shop {
         })
     }
 
-    const projects = await DB('shop_project')
-      .where('shop_id', item.id)
-      .all()
-
-    const ids = []
-    if (params.projects) {
-      for (const project of params.projects) {
-        const keys = Object.keys(project)
-        if (project[keys]) {
-          ids.push(+keys[0])
-        }
-        if (project[keys] && !projects.some(p => p.project_id === +keys[0])) {
-          await DB('shop_project')
-            .insert({
-              shop_id: item.id,
-              project_id: keys[0]
-            })
-        }
-      }
-    }
-    for (const project of projects) {
-      if (!ids.includes(project.project_id)) {
-        await DB('shop_project')
-          .where({
-            shop_id: item.id,
-            project_id: project.project_id
-          })
-          .delete()
-      }
-    }
-
     return { success: true }
   }
 
@@ -157,14 +126,9 @@ class Shop {
       .where('project_id', params.project_id)
       .first()
 
-    console.log(exists)
     if (exists) {
       return false
     } else {
-      console.log({
-        shop_id: params.shop_id,
-        project_id: params.project_id
-      })
       await DB('shop_project')
         .insert({
           shop_id: params.shop_id,
