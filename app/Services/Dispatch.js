@@ -546,28 +546,12 @@ const getCosts = async (params) => {
     }
     costs[order.country_id][`${order.transporter}_benefit`] += order.shipping - order.shipping_cost
 
-    console.log(order.currency)
     costs['00'][`${order.transporter}_costs`].push(order)
     costs['00'][`${order.transporter}_benefit`] += order.shipping - order.shipping_cost
   }
 
-  /**
-  for (const [c, cost] of Object.entries(costs)) {
-    for (const t of ['daudin', 'daudin_pickup', 'sna', 'sna_pickup', 'whiplash', 'whiplash_uk']) {
-      if (cost[`${t}_costs`].length > 0) {
-        costs[c][`${t}_cost`] = Utils.round(
-          cost[`${t}_costs`].reduce((a, b) => {
-            return a + b.shipping_cost * b.currency_rate
-          }, 0) / cost[`${t}_costs`].length)
-
-        costs[c][`${t}_diff`] = Utils.round(costs[c][t] - costs[c][`${t}_cost`])
-      }
-    }
-  }
-  **/
-
   return Object.values(costs)
-    // .filter(c => c.daudin)
+    .filter(c => c.daudin)
     .sort((a, b) => b.daudin_costs.length - a.daudin_costs.length)
 }
 
