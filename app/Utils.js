@@ -314,7 +314,10 @@ Utils.getRows = async (params) => {
   const size = params.size > 0 ? params.size : 50
 
   if (params.sort && params.sort !== 'false') {
-    query.orderBy(params.sort, params.order)
+    const sorts = params.sort.split(' ')
+    for (const sort of sorts) {
+      query.orderBy(sort, params.order)
+    }
   }
 
   if (params.size !== 0) {
