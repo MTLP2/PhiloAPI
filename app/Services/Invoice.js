@@ -20,10 +20,14 @@ class Invoice {
       )
       .from('invoice')
       .leftJoin('customer as c', 'c.id', 'invoice.customer_id')
-      .orderBy('date', 'desc')
-      .orderBy('year', 'desc')
-      .orderBy('invoice.created_at', 'desc')
-      .orderBy('number', 'desc')
+
+    if (!params.sort) {
+      params.query
+        .orderBy('date', 'desc')
+        .orderBy('year', 'desc')
+        .orderBy('invoice.created_at', 'desc')
+        .orderBy('number', 'desc')
+    }
 
     return Utils.getRows(params)
   }
