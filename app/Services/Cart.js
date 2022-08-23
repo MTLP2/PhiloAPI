@@ -924,7 +924,7 @@ Cart.calculateShipping = async (params) => {
       shippings.push(whiplashUk)
     }
   }
-  if (true || transporters.shipehype) {
+  if (transporters.shipehype) {
     const ships = await Cart.calculateShippingByTransporter({
       ...params,
       partner: 'shipehype',
