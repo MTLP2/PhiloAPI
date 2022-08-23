@@ -2311,6 +2311,7 @@ Admin.getAudiences = async (params) => {
     // Change format of turnover for csv/excel reading
     user.turnover = user.turnover && user.turnover.toString().replace('.', ',')
     let orderIdx = 1
+    user.orders_length = user.orders.length
 
     for (const order of user.orders) {
       // Create a new key/value for each order
@@ -2340,7 +2341,7 @@ Admin.getAudiences = async (params) => {
     { name: 'Country', index: 'country_id' },
     { name: 'Origin', index: 'origin' },
     { name: 'Newsletter', index: 'newsletter' },
-    { name: 'Orders', index: 'orders_total' },
+    { name: 'Orders', index: 'orders_length' },
     { name: 'Turnover', index: 'turnover' },
     { name: 'Account creation', index: 'created_at' },
     ...orderLines

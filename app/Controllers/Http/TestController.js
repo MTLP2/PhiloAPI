@@ -13,6 +13,8 @@ class TestController {
       return 'test'
     }
 
+    return Admin.getAudiences({ start: '2022-01-01', lang: 'fr', type: 'all_users' })
+
     return App.alertStock()
   }
 }
