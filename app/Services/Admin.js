@@ -879,6 +879,9 @@ Admin.saveVod = async (params) => {
     if (params.transporter_soundmerch) {
       transporters.soundmerch = true
     }
+    if (params.transporter_shipehype) {
+      transporters.shipehype = true
+    }
     if (params.transporter_sna) {
       transporters.sna = true
     }

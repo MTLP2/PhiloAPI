@@ -230,7 +230,8 @@ Cart.calculate = async (params) => {
           stock_whiplash_uk: project.stock_whiplash_uk,
           stock_diggers: project.stock_diggers,
           stock_sna: project.stock_sna,
-          country_id: params.country_id
+          country_id: params.country_id,
+          state: params.customer.state
         })
         if (shipping.error) {
           cart.error = shipping.error
@@ -546,7 +547,8 @@ Cart.calculateShop = async (p) => {
     currency: shop.currency,
     transporter: shop.transporter,
     transporters: shop.type === 'shop' ? { [shop.transporter || 'all']: true } : shop.transporters,
-    country_id: p.country_id
+    country_id: p.country_id,
+    state: p.customer.state
   })
 
   shop.tax_rate = await Cart.getTaxRate(p.customer)
@@ -673,11 +675,17 @@ Cart.setDiscount = (shop, p, value) => {
 }
 
 Cart.calculateShippingByTransporter = async (params) => {
-  const transporters = await DB('shipping_weight')
+  let transporters = DB('shipping_weight')
     .where('partner', 'like', params.partner)
     .where('country_id', params.country_id)
-    .where('transporter', 'like', params.mode || '%')
-    .all()
+
+  if (params.mode) {
+    transporters.where('transporter', 'like', params.mode)
+  }
+  if (params.partner === 'shipehype' && params.state) {
+    transporters.where('state', 'like', params.state)
+  }
+  transporters = await transporters.all()
 
   const weight = Math.ceil(params.weight / 1000) + 'kg'
 
@@ -914,6 +922,16 @@ Cart.calculateShipping = async (params) => {
     const whiplashUk = await Cart.calculateShippingWhiplashUk(params)
     if (whiplashUk) {
       shippings.push(whiplashUk)
+    }
+  }
+  if (true || transporters.shipehype) {
+    const ships = await Cart.calculateShippingByTransporter({
+      ...params,
+      partner: 'shipehype',
+      transporter: 'shipehype'
+    })
+    if (ships) {
+      shippings.push(ships)
     }
   }
   if (transporters.soundmerch) {
