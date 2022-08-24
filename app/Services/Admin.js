@@ -2957,7 +2957,8 @@ Admin.getBusiness = async (params) => {
       success: 0,
       direct_pressing: 0,
       prospects: 0,
-      distrib: 0
+      distrib: 0,
+      total: 0
     }
   }
 
@@ -2966,6 +2967,7 @@ Admin.getBusiness = async (params) => {
       com[item.com_id] = setDefault(item.com_id)
     }
     com[item.com_id].sent += (item.total * item.currency_rate) / (1 + item.tax_rate)
+    com[item.com_id].total += (item.total * item.currency_rate) / (1 + item.tax_rate)
   }
 
   for (const item of turnover) {
@@ -2980,6 +2982,7 @@ Admin.getBusiness = async (params) => {
       com[item.com_id] = setDefault(item.user_id)
     }
     com[item.com_id].direct_pressing += item.sub_total * item.currency_rate
+    com[item.com_id].total += item.sub_total * item.currency_rate
   }
 
   for (const item of prospects) {
@@ -3009,6 +3012,7 @@ Admin.getBusiness = async (params) => {
       com[item.com_id] = setDefault(item.com_id)
     }
     com[item.com_id].distrib += item.total / currencies[item.currency]
+    com[item.com_id].total += item.total / currencies[item.currency]
   }
 
   const res = Object.values(com)
