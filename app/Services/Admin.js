@@ -2967,7 +2967,6 @@ Admin.getBusiness = async (params) => {
       com[item.com_id] = setDefault(item.com_id)
     }
     com[item.com_id].sent += (item.total * item.currency_rate) / (1 + item.tax_rate)
-    com[item.com_id].total += (item.total * item.currency_rate) / (1 + item.tax_rate)
   }
 
   for (const item of turnover) {
@@ -2975,6 +2974,7 @@ Admin.getBusiness = async (params) => {
       com[item.com_id] = setDefault(item.com_id)
     }
     com[item.com_id].turnover += (item.total * item.currency_rate) / (1 + item.tax_rate)
+    com[item.com_id].total += (item.total * item.currency_rate) / (1 + item.tax_rate)
   }
 
   for (const item of directPressing) {
