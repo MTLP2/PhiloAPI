@@ -628,8 +628,31 @@ App.notification = async (notif, test = false) => {
       .where('id', n.invoice_id)
       .first()
     data.lang = data.invoice.lang
+
     data.to = data.invoice.email
 
+    if ([
+      'lexandra.dessort@arcadesdirect.fr',
+      'manuel.amian@cargo-records.de',
+      'thierry@musicboxpublishing.fr',
+      'good@goodco.co.kr',
+      'alex.Jimenez@aent.com',
+      'djcam73@gmail.com',
+      'nico@echobeach.de',
+      'nathalie@fgl.fr',
+      'ask@edbangerrecords.com',
+      'nbouquet@ina.fr',
+      'angie@lightintheattic.net',
+      'greg@republicofmusic.net',
+      'cyrille.pelisse@pias.com',
+      'andyvicbliss@gmail.com',
+      'rebotini@gmail.com',
+      'gbougard@gmail.com',
+      'zdagenais@urbanoutfitters.com',
+      'gilbert@versatilerecords.com',
+      'julien@yellowprod.fr'].includes(data.to)) {
+      data.to = 'cyril@diggersfactory.com'
+    }
     const pdf = await Invoice.download({ params: { id: n.invoice_id, lang: data.lang } })
     data.attachments = [
       {
