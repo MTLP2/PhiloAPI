@@ -1018,7 +1018,10 @@ class StatementService {
         statement.created_at = Utils.date()
       }
 
-      const stockPrice = JSON.parse(p.stock_price)
+      let stockPrice = JSON.parse(p.stock_price)
+      if (!stockPrice) {
+        stockPrice = [{ start: null, end: null, value: 0.1 }]
+      }
       const price = Utils.getFee(stockPrice, moment().format('YYYY-MM-DD'))
 
       const unitPrice = p.category === 'vinyl' ? price : 0.05
