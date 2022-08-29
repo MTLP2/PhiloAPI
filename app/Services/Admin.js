@@ -4300,7 +4300,6 @@ Admin.checkProjectRest = async (params) => {
 }
 
 Admin.removeImageFromProject = async ({ id: projectId, type }) => {
-  console.log('🚀 ~ file: Admin.js ~ line 4303 ~ Admin.removeImageFromProject= ~ projectId, type', projectId, type)
   const project = await DB('project').find(projectId)
 
   // Type -> fileName map
@@ -4321,8 +4320,9 @@ Admin.removeImageFromProject = async ({ id: projectId, type }) => {
   // Delete files
   if (typeof files.name === 'string') files.name = [files.name]
   for (const fileName of files.name) {
-    await Storage.deleteImage(`projects/${project.picture}/${fileName}`)
-    if (files.withOriginal) await Storage.deleteImage(`projects/${project.picture}/${fileName}_original`)
+    const path = `projects/${project.picture}/${fileName}`
+    await Storage.deleteImage(path, null, `/${path}.*`)
+    if (files.withOriginal) await Storage.deleteImage(path, null, `/${path}.*`)
   }
 
   return { success: true, type }
