@@ -121,6 +121,9 @@ class Shop {
   }
 
   static async addProject (params) {
+    if (!params.project_id || !params.shop_id) {
+      return { success: false }
+    }
     const exists = await DB('shop_project')
       .where('shop_id', params.shop_id)
       .where('project_id', params.project_id)
@@ -148,6 +151,21 @@ class Shop {
       .delete()
 
     return { success: true }
+  }
+
+  static async canEdit (shopId, userId) {
+    if (await Utils.isTeam(userId)) {
+      return true
+    } else {
+      const user = await DB('user')
+        .where('id', userId)
+        .first()
+
+      if (user.shop_id === +shopId) {
+        return true
+      }
+    }
+    return false
   }
 }
 

@@ -517,19 +517,21 @@ Project.getAll = (search, type, userId) => {
     .where('name', '!=', '')
     .where('is_delete', 0)
     .orderBy('artist_name', 'asc')
-    .where(function () {
+    .limit(20)
+
+  if (search) {
+    projects.where(function () {
       this.where('p.name', 'like', `%${search}%`)
         .orWhere('artist_name', 'like', `%${search}%`)
         .orWhere(DB().raw('CONCAT(artist_name, " ", p.name)'), 'like', `%${search}%`)
         .orWhere('p.id', 'like', `%${search}%`)
     })
-    .limit(20)
-
+  }
   if (type === 'shop') {
     projects.whereIn('v.step', ['in_progress', 'successful'])
   }
   if (userId) {
-    projects.whereIn('v.user_id', userId)
+    projects.where('v.user_id', userId)
   }
 
   return projects.all()
