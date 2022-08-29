@@ -7,7 +7,13 @@ const ApiError = use('App/ApiError')
 class Shop {
   static async all (params) {
     params.query = DB('shop')
-      .select('shop.*')
+      .select(
+        'shop.*',
+        DB.query('shop_project')
+          .count('*')
+          .whereRaw('shop_id = shop.id')
+          .as('projects')
+      )
 
     return Utils.getRows(params)
   }
