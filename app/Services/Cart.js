@@ -894,7 +894,7 @@ Cart.calculateShipping = async (params) => {
   if (transporters.all || transporters.sna) {
     const trans = await Cart.calculateShippingByTransporter({
       ...params,
-      partner: 'sna',
+      partner: 'daudin',
       transporter: 'sna'
     })
     if (trans) {
