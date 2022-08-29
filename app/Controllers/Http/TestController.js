@@ -12,7 +12,7 @@ class TestController {
     if (process.env.NODE_ENV === 'production') {
       return 'test'
     }
-    return Admin.removeImageFromProject({ id: '268911', type: 'custom_disc' })
+    return Admin.removeImageFromProject({ id: '268911', type: 'label' })
 
     return App.alertStock()
   }

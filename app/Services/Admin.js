@@ -4323,7 +4323,19 @@ Admin.removeImageFromProject = async ({ id: projectId, type }) => {
     const path = `projects/${project.picture}/${fileName}`
     await Storage.deleteImage(path, null, `/${path}.*`)
     if (files.withOriginal) await Storage.deleteImage(path, null, `/${path}.*`)
+
+    // update DB
+    switch (type) {
+      case 'custom_disc':
+        await DB('vod').where('project_id', projectId).update({ url_vinyl: 0 })
+        break
+
+      default:
+        break
+    }
   }
+
+  // Update project
 
   return { success: true, type }
 }
