@@ -1523,6 +1523,9 @@ Project.getDashboard = async (params) => {
       },
       distrib: {
         all: 0, total: 0, dates: { ...dates }, countries: {}
+      },
+      digital: {
+        all: 0, total: 0, dates: { ...dates }, countries: {}
       }
     },
     quantity: {
@@ -1684,6 +1687,9 @@ Project.getDashboard = async (params) => {
       s.setDate('distrib', 'income', date, value)
       s.setCountry('distrib', 'income', dist.country_id, value)
 
+      if (dist.digital) {
+        s.setDate('digital', 'income', date, dist.digital * feeDistrib)
+      }
       // Distributor storage cost
       s.setDate('distribution', 'costs', date, dist.storage)
       s.addList('distribution', 'costs', date, dist.storage, stat.project_id)
