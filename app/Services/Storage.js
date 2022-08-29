@@ -83,9 +83,10 @@ class StorageService {
   }
 
   static async deleteImage (fileName, isPrivate, invalidate) {
-    await Storage.delete(fileName + '.jpg', isPrivate, invalidate)
-    await Storage.delete(fileName + '.png', isPrivate, invalidate)
-    await Storage.delete(fileName + '.webp', isPrivate, invalidate)
+    await Storage.delete(fileName + '.jpg', isPrivate)
+    await Storage.delete(fileName + '.png', isPrivate)
+    await Storage.delete(fileName + '.webp', isPrivate)
+    await Storage.invalidate(invalidate)
   }
 
   static async deleteFolder (path, isPrivate) {

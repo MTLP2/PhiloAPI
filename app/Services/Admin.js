@@ -9,6 +9,7 @@ const Payment = use('App/Services/Payment')
 const Whiplash = use('App/Services/Whiplash')
 const Invoice = use('App/Services/Invoice')
 const Project = use('App/Services/Project')
+const Artwork = use('App/Services/Artwork')
 const MondialRelay = use('App/Services/MondialRelay')
 const config = require('../../config')
 const ApiError = use('App/ApiError')
@@ -4322,12 +4323,12 @@ Admin.removeImageFromProject = async ({ id: projectId, type }) => {
   for (const fileName of files.name) {
     const path = `projects/${project.picture}/${fileName}`
     await Storage.deleteImage(path, null, `/${path}.*`)
-    if (files.withOriginal) await Storage.deleteImage(path, null, `/${path}.*`)
+    if (files.withOriginal) await Storage.deleteImage(`${path}_original`, null, `/${path}.*`)
 
     // update DB
     switch (type) {
       case 'custom_disc':
-        await DB('vod').where('project_id', projectId).update({ url_vinyl: 0 })
+        await DB('vod').where('project_id', projectId).update({ url_vinyl: null })
         break
 
       default:
@@ -4335,7 +4336,8 @@ Admin.removeImageFromProject = async ({ id: projectId, type }) => {
     }
   }
 
-  // Update project
+  // Update project artwork
+  // await Artwork.updateArtwork({ id: projectId })
 
   return { success: true, type }
 }
