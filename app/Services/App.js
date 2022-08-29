@@ -610,7 +610,7 @@ App.notification = async (notif, test = false) => {
   }
   if (n.type === 'statement') {
     data.end = moment(n.date).subtract(1, 'months').endOf('month').format('YYYY-MM-DD')
-    data.from_address = 'nelly@diggersfactory.com'
+    data.from_address = 'invoicing@diggersfactory.com'
     data.attachments = [
       {
         filename: 'Statement.xlsx',
@@ -623,7 +623,7 @@ App.notification = async (notif, test = false) => {
     ]
   }
   if (n.invoice_id) {
-    data.from_address = 'nelly@diggersfactory.com'
+    data.from_address = 'invoicing@diggersfactory.com'
     data.invoice = await DB('invoice')
       .where('id', n.invoice_id)
       .first()
