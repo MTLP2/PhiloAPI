@@ -1121,11 +1121,14 @@ Admin.saveVod = async (params) => {
   // Assign to prod for some statuses
   if (params.assign_prod_id) {
     if (params.status === 'dispatched') {
-      await DB('production')
+      const prod = await DB('production')
         .where('id', params.assign_prod_id)
-        .update({
-          step: 'postprod'
-        })
+        .first()
+
+      prod.step = 'postprod'
+      prod.date_postprod = moment().add(10, 'days').format('YYYY-MM-DD')
+      prod.date_factory = moment().add(10, 'days').format('YYYY-MM-DD')
+      await prod.save()
     }
   }
 
