@@ -4323,7 +4323,7 @@ Admin.removeImageFromProject = async ({ id: projectId, type }) => {
   for (const fileName of files.name) {
     const path = `projects/${project.picture}/${fileName}`
     await Storage.deleteImage(path, null, `/${path}.*`)
-    if (files.withOriginal) await Storage.deleteImage(`${path}_original`, null, `/${path}.*`)
+    if (files.withOriginal) await Storage.deleteImage(`${path}_original`, null, `/${path}_original.*`)
 
     // update DB
     switch (type) {
