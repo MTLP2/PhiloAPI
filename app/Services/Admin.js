@@ -4299,4 +4299,33 @@ Admin.checkProjectRest = async (params) => {
   }
 }
 
+Admin.removeImageFromProject = async ({ id: projectId, type }) => {
+  console.log('🚀 ~ file: Admin.js ~ line 4303 ~ Admin.removeImageFromProject= ~ projectId, type', projectId, type)
+  const project = await DB('project').find(projectId)
+
+  // Type -> fileName map
+  const typeToFileName = {
+    front_cover: { name: ['cover', 'mini', 'original', 'low'] },
+    back_cover: { name: 'back', withOriginal: true },
+    cover2: { name: 'cover2', withOriginal: true },
+    cover3: { name: 'cover3', withOriginal: true },
+    cover4: { name: 'cover4', withOriginal: true },
+    cover5: { name: 'cover5', withOriginal: true },
+    label: { name: 'label' },
+    custom_disc: { name: 'disc' }
+  }
+
+  const files = typeToFileName[type] ?? null
+  if (!files) throw new Error('Invalid type to remove picture')
+
+  // Delete files
+  if (typeof files.name === 'string') files.name = [files.name]
+  for (const fileName of files.name) {
+    await Storage.deleteImage(`projects/${project.picture}/${fileName}`)
+    if (files.withOriginal) await Storage.deleteImage(`projects/${project.picture}/${fileName}_original`)
+  }
+
+  return { success: true, type }
+}
+
 module.exports = Admin

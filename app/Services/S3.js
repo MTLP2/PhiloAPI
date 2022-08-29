@@ -4,6 +4,7 @@ const s3 = new AWS.S3({
   region: 'eu-west-3',
   signatureVersion: 'v4'
 })
+const cloudfront = new AWS.CloudFront()
 const mime = require('mime-types')
 
 class S3 {
@@ -167,6 +168,27 @@ class S3 {
       s3.deleteObject({
         Bucket: isPrivate ? Env.get('AWS_BUCKET_PRIVATE') : Env.get('AWS_BUCKET_PUBLIC'),
         Key: fileName
+      }, (err, data) => {
+        if (err) {
+          reject(err)
+        } else {
+          resolve(data)
+        }
+      })
+    })
+  }
+
+  static invalidate (path, isPrivate = false) {
+    return new Promise((resolve, reject) => {
+      cloudfront.createInvalidation({
+        DistributionId: 'teststring',
+        InvalidationBatch: {
+          CallerReference: Date.now().toString(),
+          Paths: {
+            Quantity: 1,
+            Items: [path]
+          }
+        }
       }, (err, data) => {
         if (err) {
           reject(err)

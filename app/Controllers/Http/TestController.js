@@ -13,7 +13,7 @@ class TestController {
       return 'test'
     }
 
-    return Admin.getAudiences({ start: '2022-01-01', lang: 'fr', type: 'all_users' })
+    return Admin.removeImageFromProject({ id: '268911', type: 'custom_disc' })
 
     return App.alertStock()
   }
