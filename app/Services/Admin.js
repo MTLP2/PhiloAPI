@@ -861,6 +861,7 @@ Admin.saveVod = async (params) => {
   vod.storage_costs = params.storage_costs
   vod.scheduled_end = params.scheduled_end
   vod.is_licence = params.is_licence
+  vod.shipping_delay_reason = params.shipping_delay_reason
 
   vod.historic = vod.historic ? JSON.parse(vod.historic) : []
   if (params.edit_stock) {
@@ -1131,7 +1132,6 @@ Admin.saveVod = async (params) => {
   }
 
   await vod.save()
-
   return vod
 }
 

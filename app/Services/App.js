@@ -355,7 +355,7 @@ App.notification = async (notif, test = false) => {
   data.data = n.data ? JSON.parse(n.data) : null
   if (n.project_id) {
     const project = await Project.find(n.project_id, { user_id: 0 })
-    const vod = await DB('vod').select('message_order').where('project_id', project.id).first()
+    const vod = await DB('vod').select('message_order', 'shipping_delay_reason').where('project_id', project.id).first()
     data.project = `${project.artist_name} - ${project.name}`
     data.cat_number = project.cat_number
     data.artist = project.artist_name
@@ -365,6 +365,11 @@ App.notification = async (notif, test = false) => {
     if (vod && vod.message_order) {
       data.message_order = marked(vod.message_order, { breaks: true, sanitize: true })
     }
+
+    if (vod?.shipping_delay_reason) {
+      // Other reason is set to not display anything
+      data.shipping_delay_reason = vod.shipping_delay_reason === 'other' ? null : Antl.forLocale(data.lang).formatMessage(`project.${vod.shipping_delay_reason}`)
+    } else data.shipping_delay_reason = null
   }
   if (n.prod_id) {
     const prod = await DB('production')
