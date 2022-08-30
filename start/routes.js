@@ -104,6 +104,9 @@ Route.group(() => {
   Route.post('/projects/:id/tracks', 'ProjectsController.saveTrack')
   Route.delete('/projects/:project_id/tracks/:id', 'ProjectsController.deleteTrack')
 
+  Route.post('/creations/:id', 'CreationController.find')
+  Route.post('/creations', 'CreationController.save')
+
   Route.get('/users', 'UsersController.all')
   Route.get('/users/:id', 'UsersController.find')
 
