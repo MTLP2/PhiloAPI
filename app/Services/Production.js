@@ -584,7 +584,7 @@ class Production {
             .where('id', order.id)
             .where('is_paid', 1)
             .update({
-              step: params.type,
+              step: params.type === 'check_address' ? 'check_address' : 'in_preparation',
               pickup_not_found: pickupNotFound
             })
         }
