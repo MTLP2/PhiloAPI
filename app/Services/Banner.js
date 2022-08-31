@@ -61,6 +61,20 @@ class Banner {
       item.picture = file
     }
 
+    if (params.picture_mobile) {
+      if (item.picture_mobile) {
+        Storage.deleteImage(`home/${item.picture_mobile}`)
+      }
+      const file = Utils.uuid()
+      const fileName = `home/${file}`
+      Storage.uploadImage(
+        fileName,
+        Buffer.from(params.picture_mobile, 'base64'),
+        { width: 1200, quality: 85 }
+      )
+      item.picture_mobile = file
+    }
+
     if (params.cropped) {
       if (item.mobile) {
         Storage.deleteImage(`home/${item.mobile}`)
