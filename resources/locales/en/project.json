@@ -1,0 +1,8 @@
+{
+  "assets": "Getting all the assets to launch production has taken longer than expected.",
+  "test_pressing": "Unfortunately, test pressings haven't been approved. We have to wait for another set of test pressing to get the production going.",
+  "stamper": "This delay is due to a broken stamper during the production process in the factory.",
+  "quality": "This delay is due to an issue on the product regarding quality after multiple tests in the factory.",
+  "factory_warehouse": "Delivery between the factory and our warehouse has taken longer than expected.",
+  "customs": "This delay is due to customs."
+}

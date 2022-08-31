@@ -1,0 +1,8 @@
+{
+  "assets": "La récolte des éléments a pris plus de temps que prévu.",
+  "test_pressing": "Les test pressings n'ont pas été validés. Il faut donc attendre les nouveaux pour faire avancer la production.",
+  "stamper": "Ce retard est dû à une casse matrice interne à l'usine.",
+  "quality": "Ce retard est dû à un souci de qualité sur les pochettes après le contrôle qualité en usine.",
+  "factory_warehouse": "La livraison entre l'usine et notre logisticien a pris plus de temps que prévu.",
+  "customs": "Nous avons rencontré des soucis avec la douane et la marchandise met plus de temps à arriver."
+}

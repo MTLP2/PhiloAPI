@@ -274,31 +274,32 @@ Utils.getRows = async (params) => {
           const values = filter.value.split(',')
           for (const value of values) {
             if (value) {
+              const decodedValue = decodeURIComponent(value)
               let column = filter.name
               if (filter.name && filter.name.includes(' ')) {
                 column = DB.raw(`CONCAT(${column.split(' ').map(c => `COALESCE(${c}, '')`).join(',\' \',')})`)
               }
-              if (value.indexOf('!=null') !== -1) {
+              if (decodedValue.indexOf('!=null') !== -1) {
                 q.orWhereNotNull(column)
-              } else if (value.indexOf('=null') !== -1) {
+              } else if (decodedValue.indexOf('=null') !== -1) {
                 q.orWhereNull(column)
-              } else if (value.indexOf('<=') !== -1) {
-                const f = value.replace('<=', '')
+              } else if (decodedValue.indexOf('<=') !== -1) {
+                const f = decodedValue.replace('<=', '')
                 q.orWhere(column, '<=', f)
-              } else if (value.indexOf('>=') !== -1) {
-                const f = value.replace('>=', '')
+              } else if (decodedValue.indexOf('>=') !== -1) {
+                const f = decodedValue.replace('>=', '')
                 q.orWhere(column, '>=', f)
-              } else if (value.indexOf('<') !== -1) {
-                const f = value.replace('<', '')
+              } else if (decodedValue.indexOf('<') !== -1) {
+                const f = decodedValue.replace('<', '')
                 q.orWhere(column, '<', f)
-              } else if (value.indexOf('>') !== -1) {
-                const f = value.replace('>', '')
+              } else if (decodedValue.indexOf('>') !== -1) {
+                const f = decodedValue.replace('>', '')
                 q.orWhere(column, '>', f)
-              } else if (value.indexOf('=') !== -1) {
-                const f = value.replace('=', '')
+              } else if (decodedValue.indexOf('=') !== -1) {
+                const f = decodedValue.replace('=', '')
                 q.orWhere(column, '=', f)
               } else {
-                q.orWhere(column, 'LIKE', `%${value}%`)
+                q.orWhere(column, 'LIKE', `%${decodedValue}%`)
               }
             }
           }

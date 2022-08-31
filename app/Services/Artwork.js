@@ -373,7 +373,7 @@ class Artwork {
 
     let vinyl
 
-    if (project.url_vinyl) {
+    if (project.url_vinyl && project.url_vinyl !== '0') {
       const image = project.url_vinyl === '1'
         ? await Storage.get(`${path}/disc.png`)
         : await Utils.fetchBinary(project.url_vinyl)

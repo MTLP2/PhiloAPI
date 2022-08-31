@@ -873,6 +873,10 @@ class AdminController {
     return ProjectService.getDispatchs(params)
   }
 
+  removeImage ({ params }) {
+    return Admin.removeImageFromProject(params)
+  }
+
   exportOrdersCommercial ({ params }) {
     return Admin.exportOrdersCommercial(params)
   }

@@ -9,6 +9,7 @@ const Payment = use('App/Services/Payment')
 const Whiplash = use('App/Services/Whiplash')
 const Invoice = use('App/Services/Invoice')
 const Project = use('App/Services/Project')
+const Artwork = use('App/Services/Artwork')
 const MondialRelay = use('App/Services/MondialRelay')
 const config = require('../../config')
 const ApiError = use('App/ApiError')
@@ -860,6 +861,7 @@ Admin.saveVod = async (params) => {
   vod.storage_costs = params.storage_costs
   vod.scheduled_end = params.scheduled_end
   vod.is_licence = params.is_licence
+  vod.shipping_delay_reason = params.shipping_delay_reason
 
   vod.historic = vod.historic ? JSON.parse(vod.historic) : []
   if (params.edit_stock) {
@@ -1078,7 +1080,6 @@ Admin.saveVod = async (params) => {
         if (params.status === 'check_address' && order.shipping_type === 'pickup') {
           const pickup = JSON.parse(order.address_pickup)
           if (!pickup || !pickup.number) {
-            console.log(order)
             continue
           }
           const avaiblable = await MondialRelay.checkPickupAvailable(pickup.number)
@@ -1092,6 +1093,7 @@ Admin.saveVod = async (params) => {
           await Notification.new(data)
         }
       }
+
       await DB('order_shop')
         .where('id', order.id)
         .where('is_paid', 1)
@@ -1133,7 +1135,6 @@ Admin.saveVod = async (params) => {
   }
 
   await vod.save()
-
   return vod
 }
 
@@ -2314,6 +2315,7 @@ Admin.getAudiences = async (params) => {
     // Change format of turnover for csv/excel reading
     user.turnover = user.turnover && user.turnover.toString().replace('.', ',')
     let orderIdx = 1
+    user.orders_length = user.orders.length
 
     for (const order of user.orders) {
       // Create a new key/value for each order
@@ -2343,7 +2345,7 @@ Admin.getAudiences = async (params) => {
     { name: 'Country', index: 'country_id' },
     { name: 'Origin', index: 'origin' },
     { name: 'Newsletter', index: 'newsletter' },
-    { name: 'Orders', index: 'orders_total' },
+    { name: 'Orders', index: 'orders_length' },
     { name: 'Turnover', index: 'turnover' },
     { name: 'Account creation', index: 'created_at' },
     ...orderLines
@@ -4299,6 +4301,48 @@ Admin.checkProjectRest = async (params) => {
     hasBeenRested: totalRestedQuantity >= refunds[0].quantity,
     restLeft: refunds[0].quantity - totalRestedQuantity
   }
+}
+
+Admin.removeImageFromProject = async ({ id: projectId, type }) => {
+  const project = await DB('project').find(projectId)
+
+  // Type -> fileName map
+  const typeToFileName = {
+    front_cover: { name: ['cover', 'mini', 'original', 'low'] },
+    back_cover: { name: 'back', withOriginal: true },
+    cover2: { name: 'cover2', withOriginal: true },
+    cover3: { name: 'cover3', withOriginal: true },
+    cover4: { name: 'cover4', withOriginal: true },
+    cover5: { name: 'cover5', withOriginal: true },
+    label: { name: 'label' },
+    custom_disc: { name: 'disc' }
+  }
+
+  const files = typeToFileName[type] ?? null
+  if (!files) throw new Error('Invalid type to remove picture')
+
+  // Delete files
+  if (typeof files.name === 'string') files.name = [files.name]
+  for (const fileName of files.name) {
+    const path = `projects/${project.picture}/${fileName}`
+    await Storage.deleteImage(path, null, `/${path}.*`)
+    if (files.withOriginal) await Storage.deleteImage(`${path}_original`, null, `/${path}_original.*`)
+
+    // update DB
+    switch (type) {
+      case 'custom_disc':
+        await DB('vod').where('project_id', projectId).update({ url_vinyl: null })
+        break
+
+      default:
+        break
+    }
+  }
+
+  // Update project artwork
+  // await Artwork.updateArtwork({ id: projectId })
+
+  return { success: true, type }
 }
 
 module.exports = Admin
