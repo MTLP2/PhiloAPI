@@ -109,6 +109,7 @@ Project.saveProject = async (params) => {
   if (params.type_project === 'production' ||
     params.type_project === 'reedition' ||
     params.type_project === 'funding' ||
+    params.type_project === 'test_pressing' ||
     params.type_project === 'limited_edition' ||
     params.type_project === 'direct_pressing') {
     await Vod.save(params, pp)
