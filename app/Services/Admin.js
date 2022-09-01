@@ -4214,12 +4214,14 @@ Admin.deleteReview = async (params) => {
 
 Admin.exportOrdersCommercial = async (params) => {
   const commercialList = params.resp_id.split(',')
+  const categoryList = params.category.split(',')
 
   const projectsRaw = await DB('project as p')
-    .select('p.id', 'p.name', 'p.created_at', 'p.artist_name', 'v.step', 'v.type', 'u.id as com_id', 'u.name as com_name', 'v.origin', 'v.historic')
+    .select('p.id', 'p.name', 'p.created_at', 'p.artist_name', 'v.step', 'v.type', 'u.id as com_id', 'u.name as com_name', 'v.origin', 'v.historic', 'p.category')
     .join('vod as v', 'v.project_id', 'p.id')
     .leftJoin('user as u', 'u.id', 'v.com_id')
     .whereIn('v.com_id', commercialList)
+    .whereIn('p.category', categoryList)
     .where('p.is_delete', 0)
     .where('p.created_at', '>=', params.start)
     .where('p.created_at', '<=', `${params.end} 23:59`)
@@ -4248,6 +4250,7 @@ Admin.exportOrdersCommercial = async (params) => {
     { index: 'origin', name: 'Origin' },
     { index: 'step', name: 'Step' },
     { index: 'type', name: 'Type' },
+    { index: 'category', name: 'Category' },
     { index: 'historic', name: 'Previous steps' }
   ], projects)
 }
