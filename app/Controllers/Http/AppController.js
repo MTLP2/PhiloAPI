@@ -537,6 +537,7 @@ class AppController {
         .insert({
           email: params.email,
           origin: params.origin,
+          campaign: params.campaign,
           created_at: Utils.date(),
           updated_at: Utils.date()
         })
@@ -547,6 +548,14 @@ class AppController {
         newsletter: true,
         unsubscribed_code: User.encodeUnsubscribeNewseletter(id)
       })
+      if (params.campaign) {
+        cio.track(params.email, {
+          name: 'inscription',
+          data: {
+            type: params.campaign
+          }
+        })
+      }
     }
 
     return { success: true }
