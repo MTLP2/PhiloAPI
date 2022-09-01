@@ -765,6 +765,7 @@ class StatementService {
     for (const project of projects) {
       const data = await this.setWorksheet(workbook, {
         id: project.id,
+        start: params.start || '2021-01-01',
         end: params.end || moment().format('YYYY-MM-DD'),
         number: i
       })
@@ -815,8 +816,8 @@ class StatementService {
     for (const p in projects) {
       const balance = await this.getBalance({
         id: projects[p].id,
-        start: '2001-01-01',
-        end: moment().format('YYYY-MM-DD')
+        start: params.start,
+        end: params.end
       })
       projects[p].balance = balance.balance
       projects[p].profits = balance.profits
@@ -1036,6 +1037,10 @@ class StatementService {
   }
 
   static async getStatement (params) {
+    if (!params.start) {
+      params.start = '2001-01-01'
+    }
+
     const project = await DB()
       .select('vod.*', 'project.name', 'project.artist_name')
       .from('vod')
@@ -1045,7 +1050,7 @@ class StatementService {
 
     const statements = await DB('statement')
       .where('project_id', params.id)
-      .where(DB.raw('DATE_FORMAT(concat(date, \'-01\'), \'%Y-%m-%d\')'), '<=', `${params.end} 23:59`)
+      .whereBetween(DB.raw('DATE_FORMAT(concat(date, \'-01\'), \'%Y-%m-%d\')'), [params.start, `${params.end} 23:59`])
       .hasMany('statement_distributor', 'distributors')
       .orderBy('date')
       .all()
@@ -1066,7 +1071,7 @@ class StatementService {
       .where('project_id', params.id)
       .where('country.lang', 'en')
       .where('is_paid', 1)
-      .where('oi.created_at', '<=', `${params.end} 23:59`)
+      .whereBetween('oi.created_at', [params.start, `${params.end} 23:59`])
       .orderBy('oi.created_at')
       .all()
 
@@ -1076,7 +1081,7 @@ class StatementService {
         .select('barcodes', DB.raw('DATE_FORMAT(created_at, \'%Y-%m\') as date'))
         .from('box_dispatch')
         .where('barcodes', 'like', `%${project.barcode}%`)
-        .where('created_at', '<=', `${params.end} 23:59`)
+        .whereBetween('created_at', [params.start, `${params.end} 23:59`])
         .all()
     }
 
