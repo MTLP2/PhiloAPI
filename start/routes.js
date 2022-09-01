@@ -104,6 +104,9 @@ Route.group(() => {
   Route.post('/projects/:id/tracks', 'ProjectsController.saveTrack')
   Route.delete('/projects/:project_id/tracks/:id', 'ProjectsController.deleteTrack')
 
+  Route.post('/creations/:id', 'CreationController.find')
+  Route.post('/creations', 'CreationController.save')
+
   Route.get('/users', 'UsersController.all')
   Route.get('/users/:id', 'UsersController.find')
 
@@ -176,7 +179,7 @@ Route.group(() => {
   Route.get('/productions/:id/notifications/:tid', 'ProductionController.checkIfActionHasNotifications')
 
   Route.get('/shops', 'ShopController.getShops')
-  Route.get('/shop', 'ShopController.getShop')
+  Route.get('/shop', 'ShopController.getMyShop')
   Route.post('/shop', 'ShopController.updateShop')
   Route.post('/shop/project', 'ShopController.addProject')
   Route.delete('/shop/project', 'ShopController.removeProject')
@@ -280,6 +283,7 @@ Route.group(() => {
   Route.delete('/projects/:id/reviews/:rid', 'AdminController.deleteReview')
   Route.get('/projects/:id/dispatchs', 'AdminController.getDispatchs')
   Route.get('/projects/facebook', 'AdminController.exportFacebookProjects')
+  Route.delete('/projects/:id/remove-image', 'AdminController.removeImage')
   Route.post('/statements', 'AdminController.uploadStatement')
   Route.post('/stocks', 'AdminController.uploadStocks')
   Route.post('/items', 'AdminController.saveProjectItem')

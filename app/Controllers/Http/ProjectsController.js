@@ -22,8 +22,12 @@ class ProjectsController {
     return Project.getBarcode(params.code)
   }
 
-  getAll ({ params }) {
-    return Project.getAll(params.search, params.type)
+  async getAll ({ params, user }) {
+    let userId
+    if (!await Utils.isTeam(user.id)) {
+      userId = user.id
+    }
+    return Project.getAll(params.search, params.type, userId)
   }
 
   getHome ({ params }) {

@@ -82,10 +82,11 @@ class StorageService {
     return Storage.delete(fileName, isPrivate)
   }
 
-  static async deleteImage (fileName, isPrivate) {
+  static async deleteImage (fileName, isPrivate, invalidate) {
     await Storage.delete(fileName + '.jpg', isPrivate)
     await Storage.delete(fileName + '.png', isPrivate)
     await Storage.delete(fileName + '.webp', isPrivate)
+    await Storage.invalidate(invalidate)
   }
 
   static async deleteFolder (path, isPrivate) {
@@ -135,6 +136,10 @@ class StorageService {
     }))
 
     return zip.generateAsync({ type: 'nodebuffer' })
+  }
+
+  static async invalidate (path) {
+    return Storage.invalidate(path)
   }
 
   /**

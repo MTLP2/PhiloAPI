@@ -7,7 +7,13 @@ const ApiError = use('App/ApiError')
 class Shop {
   static async all (params) {
     params.query = DB('shop')
-      .select('shop.*')
+      .select(
+        'shop.*',
+        DB.query('shop_project')
+          .count('*')
+          .whereRaw('shop_id = shop.id')
+          .as('projects')
+      )
 
     return Utils.getRows(params)
   }
@@ -44,10 +50,10 @@ class Shop {
       item.created_at = Utils.date()
     }
     item.name = params.name
-    item.code = params.code
+    item.code = params.code ? params.code : Utils.slugify(params.name)
     item.bg_color = params.bg_color
     item.font_color = params.font_color
-    item.menu_color = params.menu_color
+    item.title_color = params.title_color
     item.updated_at = Utils.date()
 
     if (params.logo) {
@@ -59,7 +65,7 @@ class Shop {
       Storage.uploadImage(
         fileName,
         Buffer.from(params.logo, 'base64'),
-        { type: 'png', width: 200 }
+        { type: 'png', width: 300 }
       )
     }
     if (params.banner) {
@@ -71,7 +77,7 @@ class Shop {
       Storage.uploadImage(
         fileName,
         Buffer.from(params.banner, 'base64'),
-        { type: 'jpg', width: 800 }
+        { type: 'jpg', width: 1600 }
       )
     }
     if (params.bg_image) {
@@ -83,7 +89,7 @@ class Shop {
       Storage.uploadImage(
         fileName,
         Buffer.from(params.bg_image, 'base64'),
-        { type: 'png', width: 200 }
+        { type: 'png', width: 300 }
       )
     }
 
@@ -94,37 +100,6 @@ class Shop {
         .update({
           shop_id: item.id
         })
-    }
-
-    const projects = await DB('shop_project')
-      .where('shop_id', item.id)
-      .all()
-
-    const ids = []
-    if (params.projects) {
-      for (const project of params.projects) {
-        const keys = Object.keys(project)
-        if (project[keys]) {
-          ids.push(+keys[0])
-        }
-        if (project[keys] && !projects.some(p => p.project_id === +keys[0])) {
-          await DB('shop_project')
-            .insert({
-              shop_id: item.id,
-              project_id: keys[0]
-            })
-        }
-      }
-    }
-    for (const project of projects) {
-      if (!ids.includes(project.project_id)) {
-        await DB('shop_project')
-          .where({
-            shop_id: item.id,
-            project_id: project.project_id
-          })
-          .delete()
-      }
     }
 
     return { success: true }
@@ -152,19 +127,17 @@ class Shop {
   }
 
   static async addProject (params) {
+    if (!params.project_id || !params.shop_id) {
+      return { success: false }
+    }
     const exists = await DB('shop_project')
       .where('shop_id', params.shop_id)
       .where('project_id', params.project_id)
       .first()
 
-    console.log(exists)
     if (exists) {
       return false
     } else {
-      console.log({
-        shop_id: params.shop_id,
-        project_id: params.project_id
-      })
       await DB('shop_project')
         .insert({
           shop_id: params.shop_id,
@@ -184,6 +157,21 @@ class Shop {
       .delete()
 
     return { success: true }
+  }
+
+  static async canEdit (shopId, userId) {
+    if (await Utils.isTeam(userId)) {
+      return true
+    } else {
+      const user = await DB('user')
+        .where('id', userId)
+        .first()
+
+      if (user.shop_id === +shopId) {
+        return true
+      }
+    }
+    return false
   }
 }
 

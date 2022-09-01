@@ -1,13 +1,14 @@
-const DB = use('App/DB')
-const Utils = use('App/Utils')
-const Dig = use('App/Services/Dig')
-const Notification = use('App/Services/Notification')
-const Invoice = use('App/Services/Invoice')
-const Storage = use('App/Services/Storage')
 const Excel = require('exceljs')
-const moment = require('moment')
 const JSZip = require('jszip')
+const moment = require('moment')
+
+const DB = use('App/DB')
+const Dig = use('App/Services/Dig')
+const Invoice = use('App/Services/Invoice')
+const Notification = use('App/Services/Notification')
 const Payment = require('./Payment')
+const Storage = use('App/Services/Storage')
+const Utils = use('App/Utils')
 
 class Daudin {
   static async all (params) {
@@ -1226,11 +1227,11 @@ class Daudin {
         if (!order) {
           continue
         }
-        order.shipping_trans = dispatch.trans
+        order.shipping_trans = dispatch.trans / order.currency_rate
         order.shipping_mode = dispatch.mode
         order.shipping_quantity = dispatch.quantity
         order.shipping_weight = dispatch.weight
-        order.shipping_cost = dispatch.cost + dispatch.cost * order.tax_rate
+        order.shipping_cost = (dispatch.cost + dispatch.cost * order.tax_rate) / order.currency_rate
         await order.save()
       }
     }

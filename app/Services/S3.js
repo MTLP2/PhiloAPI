@@ -4,6 +4,7 @@ const s3 = new AWS.S3({
   region: 'eu-west-3',
   signatureVersion: 'v4'
 })
+const cloudfront = new AWS.CloudFront()
 const mime = require('mime-types')
 
 class S3 {
@@ -162,11 +163,45 @@ class S3 {
     })
   }
 
-  static delete (fileName, isPrivate = false) {
+  static delete (fileName, isPrivate = false, invalidate = false) {
     return new Promise((resolve, reject) => {
       s3.deleteObject({
         Bucket: isPrivate ? Env.get('AWS_BUCKET_PRIVATE') : Env.get('AWS_BUCKET_PUBLIC'),
         Key: fileName
+      }, async (err, data) => {
+        if (err) {
+          reject(err)
+        } else {
+          const invalidateData = { data: null, error: null }
+          if (invalidate) {
+            this.invalidate(invalidate)
+              .then(data => {
+                invalidateData.data = data
+              })
+              .catch(err => {
+                invalidateData.error = err
+              })
+          }
+          resolve({
+            ...data, invalidateData
+          })
+        }
+      })
+    })
+  }
+
+  static invalidate (path) {
+    // Path must be specified as a string in the form of '/path/to/resource.*' or '/path/resource.png
+    return new Promise((resolve, reject) => {
+      cloudfront.createInvalidation({
+        DistributionId: Env.get('AWS_CLOUDFRONT_DISTRIBUTION_ID'),
+        InvalidationBatch: {
+          CallerReference: Date.now().toString(),
+          Paths: {
+            Quantity: 1,
+            Items: [path]
+          }
+        }
       }, (err, data) => {
         if (err) {
           reject(err)

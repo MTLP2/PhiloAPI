@@ -500,33 +500,40 @@ Project.findAll = async (params) => {
   })
 }
 
-Project.getAll = (search, type) => {
+Project.getAll = (search, type, userId) => {
   const projects = DB()
     .select(
       'p.id',
       'p.name',
       'p.slug',
       'p.artist_name',
+      'p.picture',
       'v.type',
       'v.step'
     )
     .from('project as p')
-    .leftJoin('vod as v', 'p.id', 'v.project_id')
+    .join('vod as v', 'p.id', 'v.project_id')
     .leftJoin('wishlist as w', 'p.id', 'w.project_id')
     .where('name', '!=', '')
     .where('is_delete', 0)
     .orderBy('artist_name', 'asc')
-    .where(function () {
+    .limit(20)
+
+  if (search) {
+    projects.where(function () {
       this.where('p.name', 'like', `%${search}%`)
         .orWhere('artist_name', 'like', `%${search}%`)
         .orWhere(DB().raw('CONCAT(artist_name, " ", p.name)'), 'like', `%${search}%`)
         .orWhere('p.id', 'like', `%${search}%`)
     })
-    .limit(20)
-
-  if (type === 'vod') {
-    projects.whereNotNull('v.id')
   }
+  if (type === 'shop') {
+    projects.whereIn('v.step', ['in_progress', 'successful'])
+  }
+  if (userId) {
+    projects.where('v.user_id', userId)
+  }
+
   return projects.all()
 }
 
@@ -1516,6 +1523,9 @@ Project.getDashboard = async (params) => {
       },
       distrib: {
         all: 0, total: 0, dates: { ...dates }, countries: {}
+      },
+      digital: {
+        all: 0, total: 0, dates: { ...dates }, countries: {}
       }
     },
     quantity: {
@@ -1677,6 +1687,9 @@ Project.getDashboard = async (params) => {
       s.setDate('distrib', 'income', date, value)
       s.setCountry('distrib', 'income', dist.country_id, value)
 
+      if (dist.digital) {
+        s.setDate('digital', 'income', date, dist.digital * feeDistrib)
+      }
       // Distributor storage cost
       s.setDate('distribution', 'costs', date, dist.storage)
       s.addList('distribution', 'costs', date, dist.storage, stat.project_id)

@@ -58,6 +58,8 @@ App.daily = async () => {
     if (+moment().format('D') === 28) {
       await Statement.setStorageCosts()
       await Statement.sendStatements()
+    }
+    if (moment().endOf('month').format('YYYY-MM-DD') === moment().format('YYYY-MM-DD')) {
       await Box.setDispatchs()
     }
 
@@ -353,7 +355,7 @@ App.notification = async (notif, test = false) => {
   data.data = n.data ? JSON.parse(n.data) : null
   if (n.project_id) {
     const project = await Project.find(n.project_id, { user_id: 0 })
-    const vod = await DB('vod').select('message_order').where('project_id', project.id).first()
+    const vod = await DB('vod').select('message_order', 'shipping_delay_reason').where('project_id', project.id).first()
     data.project = `${project.artist_name} - ${project.name}`
     data.cat_number = project.cat_number
     data.artist = project.artist_name
@@ -363,6 +365,11 @@ App.notification = async (notif, test = false) => {
     if (vod && vod.message_order) {
       data.message_order = marked(vod.message_order, { breaks: true, sanitize: true })
     }
+
+    if (vod?.shipping_delay_reason) {
+      // Other reason is set to not display anything
+      data.shipping_delay_reason = vod.shipping_delay_reason === 'other' ? null : Antl.forLocale(data.lang).formatMessage(`project.${vod.shipping_delay_reason}`)
+    } else data.shipping_delay_reason = null
   }
   if (n.prod_id) {
     const prod = await DB('production')
@@ -608,7 +615,7 @@ App.notification = async (notif, test = false) => {
   }
   if (n.type === 'statement') {
     data.end = moment(n.date).subtract(1, 'months').endOf('month').format('YYYY-MM-DD')
-    data.from_address = 'nelly@diggersfactory.com'
+    data.from_address = 'invoicing@diggersfactory.com'
     data.attachments = [
       {
         filename: 'Statement.xlsx',
@@ -621,13 +628,36 @@ App.notification = async (notif, test = false) => {
     ]
   }
   if (n.invoice_id) {
-    data.from_address = 'nelly@diggersfactory.com'
+    data.from_address = 'invoicing@diggersfactory.com'
     data.invoice = await DB('invoice')
       .where('id', n.invoice_id)
       .first()
     data.lang = data.invoice.lang
+
     data.to = data.invoice.email
 
+    if ([
+      'lexandra.dessort@arcadesdirect.fr',
+      'manuel.amian@cargo-records.de',
+      'thierry@musicboxpublishing.fr',
+      'good@goodco.co.kr',
+      'alex.Jimenez@aent.com',
+      'djcam73@gmail.com',
+      'nico@echobeach.de',
+      'nathalie@fgl.fr',
+      'ask@edbangerrecords.com',
+      'nbouquet@ina.fr',
+      'angie@lightintheattic.net',
+      'greg@republicofmusic.net',
+      'cyrille.pelisse@pias.com',
+      'andyvicbliss@gmail.com',
+      'rebotini@gmail.com',
+      'gbougard@gmail.com',
+      'zdagenais@urbanoutfitters.com',
+      'gilbert@versatilerecords.com',
+      'julien@yellowprod.fr'].includes(data.to)) {
+      data.to = 'cyril@diggersfactory.com'
+    }
     const pdf = await Invoice.download({ params: { id: n.invoice_id, lang: data.lang } })
     data.attachments = [
       {
