@@ -819,6 +819,10 @@ class AdminController {
     return Admin.checkProjectRest(params)
   }
 
+  exportStripePaypal ({ params }) {
+    return Order.exportStripePaypal(params)
+  }
+
   getBalances ({ params }) {
     return Statement.getBalances(params)
   }

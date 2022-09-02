@@ -294,6 +294,7 @@ Route.group(() => {
   Route.delete('/stripe/:id', 'AdminController.deleteAccount')
   Route.get('/orders/errors', 'AdminController.countOrdersError')
   Route.get('/orders', 'AdminController.getOrders')
+  Route.post('/orders/stripe-paypal', 'AdminController.exportStripePaypal')
   Route.get('/orders/:id', 'AdminController.getOrder')
   Route.get('/orders-shop/:id', 'AdminController.getOrderShop')
   Route.get('/ordershops/:id/invoice', 'AdminController.getOrderShopInvoice')

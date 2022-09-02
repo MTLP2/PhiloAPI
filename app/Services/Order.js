@@ -942,4 +942,57 @@ Order.sync = async (params, throwError = false) => {
   return { success: true }
 }
 
+Order.exportStripePaypal = async (params) => {
+  const orders = await DB('order_shop')
+    .select('payment_type', 'order_shop.total', 'order_shop.currency')
+    .join('order', 'order.id', 'order_shop.order_id')
+    .where('is_paid', true)
+    .whereBetween('order.created_at', [params.start, params.end])
+    .all()
+
+  const payments = {
+    stripe: {
+      EUR: 0,
+      USD: 0,
+      GBP: 0,
+      AUD: 0
+    },
+    paypal: {
+      EUR: 0,
+      USD: 0,
+      GBP: 0,
+      AUD: 0
+    }
+  }
+
+  for (const order of orders) {
+    payments[order.payment_type][order.currency] += order.total
+  }
+
+  const rows = [
+    {
+      type: 'Stripe',
+      EUR: Utils.round(payments.stripe.EUR),
+      USD: Utils.round(payments.stripe.USD),
+      GBP: Utils.round(payments.stripe.GBP),
+      AUD: Utils.round(payments.stripe.AUD)
+    },
+    {
+      type: 'Paypal',
+      EUR: Utils.round(payments.paypal.EUR),
+      USD: Utils.round(payments.paypal.USD),
+      GBP: Utils.round(payments.paypal.GBP),
+      AUD: Utils.round(payments.paypal.AUD)
+    }
+  ]
+
+  return Utils.arrayToCsv([
+    { name: 'Type', index: 'type' },
+    { name: 'EUR', index: 'EUR' },
+    { name: 'USD', index: 'USD' },
+    { name: 'GBP', index: 'GBP' },
+    { name: 'AUD', index: 'AUD' }
+  ], rows)
+}
+
 module.exports = Order
