@@ -258,10 +258,13 @@ Cart.calculate = async (params) => {
       maxQuantity += element.items.reduce((a, b) => a + b.quantity, 0)
     }
 
+    console.log(cart)
+
+    // Check for max quantity promo code
     if (params.promo_code) {
       const code = await DB('promo_code').where('code', params.promo_code).first()
-      if (code && code.max_quantity && (maxQuantity > code.max_quantity)) {
-        cart.promo_error = `This code is limited to a total of ${code.max_quantity} item${code.max_quantity > 1 ? 's' : ''}`
+      if (code?.max_quantity && (maxQuantity > code?.max_quantity)) {
+        cart.promo_error = 'promo_code_not_applicable'
         cart.promo_code = ''
       }
     }
@@ -321,35 +324,35 @@ Cart.calculate = async (params) => {
     }))
   }
 
-  if (cart.promo_code) {
-    // Check if no discount
-    if (!cart.discount) {
-      cart.promo_code = ''
-      cart.promo_error = 'promo_code_not_applicable'
-    } else {
-      // Check for promo code max_quantity and max_total
-      const promocode = await DB('promo_code').where('code', cart.promo_code).first()
+  // if (cart.promo_code) {
+  //   // Check if no discount
+  //   if (!cart.discount) {
+  //     cart.promo_code = ''
+  //     cart.promo_error = 'promo_code_not_applicable'
+  //   } else {
+  //     // Check for promo code max_quantity and max_total
+  //     const promocode = await DB('promo_code').where('code', cart.promo_code).first()
 
-      // Resetting shops & items discounts
-      if ((promocode.max_total && ((promocode.max_total < cart.total))) || (promocode.max_quantity && ((promocode.max_quantity < cart.count)))) {
-        for (const shopKey in cart.shops) {
-          const shop = cart.shops[shopKey]
-          for (const item of shop.items) {
-            item.discount = 0
-            item.total = item.total_old
-            item.total_old = null
-          }
-          shop.discount = 0
-        }
+  //     // Resetting shops & items discounts
+  //     if ((promocode.max_total && ((promocode.max_total < cart.total))) || (promocode.max_quantity && ((promocode.max_quantity < cart.count)))) {
+  //       for (const shopKey in cart.shops) {
+  //         const shop = cart.shops[shopKey]
+  //         for (const item of shop.items) {
+  //           item.discount = 0
+  //           item.total = item.total_old
+  //           item.total_old = null
+  //         }
+  //         shop.discount = 0
+  //       }
 
-        // Resetting cart
+  //       // Resetting cart
 
-        cart.discount = 0
-        cart.promo_code = ''
-        cart.promo_error = 'promo_code_not_applicable'
-      }
-    }
-  }
+  //       cart.discount = 0
+  //       cart.promo_code = ''
+  //       cart.promo_error = 'promo_code_not_applicable'
+  //     }
+  //   }
+  // }
 
   if (cart.noPaypal) {
     cart.paypal = false
