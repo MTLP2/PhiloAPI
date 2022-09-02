@@ -1,3 +1,7 @@
+const moment = require('moment')
+const Excel = require('exceljs')
+const JSZip = require('jszip')
+
 const DB = use('App/DB')
 const Utils = use('App/Utils')
 const Customer = use('App/Services/Customer')
@@ -5,8 +9,6 @@ const Notification = use('App/Services/Notification')
 const Antl = use('Antl')
 const ApiError = use('App/ApiError')
 const View = use('View')
-const moment = require('moment')
-const Excel = require('exceljs')
 
 class Invoice {
   static async all (params) {
@@ -801,6 +803,28 @@ class Invoice {
     }
 
     return { success: true }
+  }
+
+  static async zip (params) {
+    const invoices = await DB('invoice')
+      .whereBetween('date', [params.start, params.end])
+      .whereNotNull('category')
+      .where('type', '!=', 'box')
+      .all()
+
+    const zip = new JSZip()
+
+    for (const invoice of invoices) {
+      const pdf = await Invoice.download({
+        params: {
+          id: invoice.id,
+          lang: 'en'
+        }
+      })
+      zip.file(`${invoice.code}.pdf`, pdf.data)
+    }
+
+    return zip.generateAsync({ type: 'nodebuffer' })
   }
 }
 

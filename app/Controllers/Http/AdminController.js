@@ -751,6 +751,10 @@ class AdminController {
     return Invoice.export(params)
   }
 
+  async zipInvoices ({ params }) {
+    return Invoice.zip(params)
+  }
+
   getDaudin ({ params }) {
     return Daudin.all(params)
   }

@@ -415,6 +415,7 @@ Route.group(() => {
   Route.get('/invoices/sfc', 'AdminController.invoicesSfc')
   Route.get('/invoices/csv', 'AdminController.invoicesCsv')
   Route.get('/invoices/export', 'AdminController.exportInvoices')
+  Route.get('/invoices/zip', 'AdminController.zipInvoices')
   Route.get('/invoices/:id', 'AdminController.getInvoice')
   Route.delete('/invoices/:id', 'AdminController.removeInvoice')
   Route.post('/invoices/:id/duplicate', 'AdminController.duplicateInvoice')
