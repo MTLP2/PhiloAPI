@@ -252,12 +252,6 @@ Cart.calculate = async (params) => {
       }
     }
 
-    let maxQuantity = 0
-    for (const shop in params.shops) {
-      const element = params.shops[shop]
-      maxQuantity += element.items.reduce((a, b) => a + b.quantity, 0)
-    }
-
     await Cart.calculateCart(cart, params)
 
     if (cart.promo_code) {
@@ -269,9 +263,15 @@ Cart.calculate = async (params) => {
       // Check for promo code max_quantity and max_total
         const promocode = await DB('promo_code').where('code', cart.promo_code).first()
 
-        // Resetting cart to recalculate
+        let maxQuantity = 0
+        for (const shop in params.shops) {
+          const element = params.shops[shop]
+          maxQuantity += element.items.reduce((acc, item) => acc + item.quantity, 0)
+        }
+
+        // Checking quantity items and cart total for promocode limits
         if ((promocode?.max_total && (promocode.max_total < cart.total)) || (promocode?.max_quantity && (maxQuantity > promocode?.max_quantity))) {
-          // Resetting cart
+          // Resetting cart to recalculate
           cart.sub_total = 0
           cart.shipping = 0
           cart.tax = 0
