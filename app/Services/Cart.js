@@ -251,15 +251,20 @@ Cart.calculate = async (params) => {
         params.shops[`s_1_${shipping.transporter}`].items.push(item)
       }
     }
-    await Utils.sequence(Object.keys(params.shops).map(s => async () => {
-      const shop = params.shops[s]
-      shop.country_id = countryId
-      shop.user_id = params.user_id
-      shop.promo_code = cart.promo_code
-      shop.customer = params.customer
-      shop.currency = params.currency
-      cart.shops[s] = await Cart.calculateShop(shop)
-    }))
+
+    let maxQuantity = 0
+    for (const shop in params.shops) {
+      const element = params.shops[shop]
+      maxQuantity += element.items.reduce((a, b) => a + b.quantity, 0)
+    }
+
+    if (params.promo_code) {
+      const code = await DB('promo_code').where('code', params.promo_code).first()
+      if (code && code.max_quantity && (maxQuantity > code.max_quantity)) {
+        cart.promo_error = `This code is limited to a total of ${code.max_quantity} item${code.max_quantity > 1 ? 's' : ''}`
+        cart.promo_code = ''
+      }
+    }
 
     await Utils.sequence(Object.keys(params.shops).map(s => async () => {
       const shop = params.shops[s]
@@ -268,6 +273,7 @@ Cart.calculate = async (params) => {
       shop.promo_code = cart.promo_code
       shop.customer = params.customer
       shop.currency = params.currency
+
       cart.shops[s] = await Cart.calculateShop(shop)
 
       if (cart.shops[s].shipping_type === 'pickup') {
