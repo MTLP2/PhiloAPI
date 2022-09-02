@@ -300,6 +300,7 @@ Route.group(() => {
   Route.get('/ordershops/:id/invoice', 'AdminController.getOrderShopInvoice')
   Route.post('/orders', 'AdminController.saveOrder')
   Route.get('/order-export', 'AdminController.extractOrders')
+  Route.get('/order-export/refunds', 'AdminController.exportOrdersRefunds')
   Route.get('/order-export/commercial', 'AdminController.exportOrdersCommercial')
   Route.get('/sales-export', 'AdminController.exportSales')
   Route.get('/reviews-export', 'AdminController.exportReviews')

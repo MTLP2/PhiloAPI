@@ -1688,34 +1688,6 @@ Admin.extractOrders = async (params) => {
   params.project_id = params.id
   const data = await Admin.getOrders(params)
 
-  if (params.only_refunds === 'true') {
-    const refundsRaw = await DB('refund')
-      .select('refund.*', 'order.currency', 'order.user_id', 'order.payment_type')
-      .join('order', 'order.id', 'refund.order_id')
-      .where('refund.created_at', '>=', params.start)
-      .where('refund.created_at', '<=', `${params.end} 23:59`)
-      .all()
-
-    // Change refund.amount dots to commas (otherwise numbers are treated as dates by Drive)
-    const refunds = refundsRaw.map(refund => {
-      refund.amount = refund.amount.toString().replace('.', ',')
-      return refund
-    })
-
-    return Utils.arrayToCsv([
-      { name: 'ID', index: 'id' },
-      { name: 'Order ID', index: 'order_id' },
-      { name: 'User ID', index: 'user_id' },
-      { name: 'OShop ID', index: 'order_shop_id' },
-      { name: 'Payment Type', index: 'payment_type' },
-      { name: 'Date', index: 'created_at' },
-      { name: 'Amount', index: 'amount' },
-      { name: 'Currency', index: 'currency' },
-      { name: 'Reason', index: 'reason' },
-      { name: 'Comment', index: 'comment' }
-    ], refunds)
-  }
-
   return Utils.arrayToCsv([
     { name: 'ID', index: 'order_shop_id' },
     { name: 'Project', index: 'project_name' },
@@ -4215,6 +4187,34 @@ Admin.getReviews = async (params) => {
 Admin.deleteReview = async (params) => {
   await Review.delete({ id: params.rid })
   return { success: true }
+}
+
+Admin.exportOrdersRefunds = async (params) => {
+  const refundsRaw = await DB('refund')
+    .select('refund.*', 'order.currency', 'order.user_id', 'order.payment_type')
+    .join('order', 'order.id', 'refund.order_id')
+    .where('refund.created_at', '>=', params.start)
+    .where('refund.created_at', '<=', `${params.end} 23:59`)
+    .all()
+
+  // Change refund.amount dots to commas (otherwise numbers are treated as dates by Drive)
+  const refunds = refundsRaw.map(refund => {
+    refund.amount = refund.amount.toString().replace('.', ',')
+    return refund
+  })
+
+  return Utils.arrayToCsv([
+    { name: 'ID', index: 'id' },
+    { name: 'Order ID', index: 'order_id' },
+    { name: 'User ID', index: 'user_id' },
+    { name: 'OShop ID', index: 'order_shop_id' },
+    { name: 'Payment Type', index: 'payment_type' },
+    { name: 'Date', index: 'created_at' },
+    { name: 'Amount', index: 'amount' },
+    { name: 'Currency', index: 'currency' },
+    { name: 'Reason', index: 'reason' },
+    { name: 'Comment', index: 'comment' }
+  ], refunds)
 }
 
 Admin.exportOrdersCommercial = async (params) => {

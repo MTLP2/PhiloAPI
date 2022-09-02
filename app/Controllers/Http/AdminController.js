@@ -885,6 +885,10 @@ class AdminController {
     return Admin.removeImageFromProject(params)
   }
 
+  exportOrdersRefunds ({ params }) {
+    return Admin.exportOrdersRefunds(params)
+  }
+
   exportOrdersCommercial ({ params }) {
     return Admin.exportOrdersCommercial(params)
   }
