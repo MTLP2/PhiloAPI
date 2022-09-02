@@ -3784,7 +3784,9 @@ Admin.exportRawProjects = async (params) => {
     { index: 'artist_name', name: 'Artist Name' },
     { index: 'status', name: 'Status' },
     { index: 'date_shipping', name: 'Date Shipping' },
-    { index: 'country_id', name: 'Country ID' }
+    { index: 'country_id', name: 'Country ID' },
+    { index: 'origin', name: 'Origin' },
+    { index: 'comment', name: 'Resp' }
   ], projects.data)
 }
 
