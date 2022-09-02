@@ -3153,45 +3153,14 @@ Admin.parseLabels = async () => {
 }
 
 Admin.getPropects = async (params) => {
-  const items = DB('prospect')
-  items.leftJoin('user', 'user.id', 'user_id')
+  params.query = DB('prospect')
+  params.query.leftJoin('user', 'user.id', 'user_id')
 
   if (!params.sort || params.sort === 'false') {
-    items.orderBy('prospect.id', 'desc')
-  } else {
-    items.orderBy(params.sort, params.order)
+    params.query.orderBy('prospect.id', 'desc')
   }
 
-  const res = {}
-
-  const page = params.page > 0 ? params.page : 1
-  const size = params.size ? params.size : 50
-
-  let filters
-  try {
-    filters = params.filters ? JSON.parse(params.filters) : null
-  } catch (e) {
-    filters = []
-  }
-  if (filters) {
-    filters.map(filter => {
-      if (filter) {
-        items.where(filter.name, 'LIKE', `%${filter.value}%`)
-      }
-      return true
-    })
-  }
-  res.count = await items.count()
-  res.data = await items
-    .select(
-      'prospect.*',
-      'user.name as user_name'
-    )
-    .limit(size)
-    .offset((page - 1) * size)
-    .all()
-
-  return res
+  return Utils.getRows(params)
 }
 
 Admin.newProspect = async (params) => {
