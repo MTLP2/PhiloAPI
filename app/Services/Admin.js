@@ -3154,7 +3154,11 @@ Admin.parseLabels = async () => {
 
 Admin.getPropects = async (params) => {
   params.query = DB('prospect')
-  params.query.leftJoin('user', 'user.id', 'user_id')
+    .select(
+      'prospect.*',
+      'user.name as user_name'
+    )
+    .leftJoin('user', 'user.id', 'user_id')
 
   if (!params.sort || params.sort === 'false') {
     params.query.orderBy('prospect.id', 'desc')
