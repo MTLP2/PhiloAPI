@@ -258,101 +258,34 @@ Cart.calculate = async (params) => {
       maxQuantity += element.items.reduce((a, b) => a + b.quantity, 0)
     }
 
-    console.log(cart)
+    await Cart.calculateCart(cart, params)
 
-    // Check for max quantity promo code
-    if (params.promo_code) {
-      const code = await DB('promo_code').where('code', params.promo_code).first()
-      if (code?.max_quantity && (maxQuantity > code?.max_quantity)) {
-        cart.promo_error = 'promo_code_not_applicable'
+    if (cart.promo_code) {
+    // Check if no discount
+      if (!cart.discount) {
         cart.promo_code = ''
+        cart.promo_error = 'promo_code_not_applicable'
+      } else {
+      // Check for promo code max_quantity and max_total
+        const promocode = await DB('promo_code').where('code', cart.promo_code).first()
+
+        // Resetting cart to recalculate
+        if ((promocode?.max_total && (promocode.max_total < cart.total)) || (promocode?.max_quantity && (maxQuantity > promocode?.max_quantity))) {
+          // Resetting cart
+          cart.sub_total = 0
+          cart.shipping = 0
+          cart.tax = 0
+          cart.total = 0
+          cart.discount = 0
+          cart.count = 0
+          cart.promo_code = ''
+          cart.promo_error = 'promo_code_not_applicable'
+
+          await Cart.calculateCart(cart, params)
+        }
       }
     }
-
-    await Utils.sequence(Object.keys(params.shops).map(s => async () => {
-      const shop = params.shops[s]
-      shop.country_id = countryId
-      shop.user_id = params.user_id
-      shop.promo_code = cart.promo_code
-      shop.customer = params.customer
-      shop.currency = params.currency
-
-      cart.shops[s] = await Cart.calculateShop(shop)
-
-      if (cart.shops[s].shipping_type === 'pickup') {
-        cart.hasPickup = true
-      }
-      if (cart.shops[s].gift) {
-        cart.gift = true
-      }
-      if (cart.shops[s].promo_error) {
-        cart.promo_error = cart.shops[s].promo_error
-      }
-
-      if (cart.shops[s].error) {
-        cart.error = cart.shops[s].error
-      }
-
-      if (cart.shops[s].type === 'marketplace') {
-        cart.noPaypal = true
-      }
-      if (!cart.shops[s].stripe) {
-        cart.noStripe = true
-      }
-
-      let cur = 1
-      if (cart.currency !== cart.shops[s].currency) {
-        cur = await Utils.getCurrencyComp(cart.shops[s].currency, cart.currency)
-      }
-      cart.shipping = Utils.round(cart.shipping + (cart.shops[s].shipping * cur))
-      cart.tax = Utils.round(cart.tax + (cart.shops[s].tax * cur))
-      cart.tax_rate = cart.shops[s].tax_rate
-      cart.sub_total = Utils.round(cart.sub_total + (cart.shops[s].sub_total * cur))
-      cart.total = Utils.round(cart.total + (cart.shops[s].total * cur))
-
-      cart.discount = Utils.round(cart.discount + cart.shops[s].discount)
-
-      cart.paypal = cart.shops[s].paypal
-      cart.stripe = cart.shops[s].stripe
-
-      if (cart.shops[s].type === 'shop' && cart.shops[s].id === 1) {
-        cart.noStripe = false
-        cart.stripe = true
-      }
-
-      cart.count += cart.shops[s].items.length
-    }))
   }
-
-  // if (cart.promo_code) {
-  //   // Check if no discount
-  //   if (!cart.discount) {
-  //     cart.promo_code = ''
-  //     cart.promo_error = 'promo_code_not_applicable'
-  //   } else {
-  //     // Check for promo code max_quantity and max_total
-  //     const promocode = await DB('promo_code').where('code', cart.promo_code).first()
-
-  //     // Resetting shops & items discounts
-  //     if ((promocode.max_total && ((promocode.max_total < cart.total))) || (promocode.max_quantity && ((promocode.max_quantity < cart.count)))) {
-  //       for (const shopKey in cart.shops) {
-  //         const shop = cart.shops[shopKey]
-  //         for (const item of shop.items) {
-  //           item.discount = 0
-  //           item.total = item.total_old
-  //           item.total_old = null
-  //         }
-  //         shop.discount = 0
-  //       }
-
-  //       // Resetting cart
-
-  //       cart.discount = 0
-  //       cart.promo_code = ''
-  //       cart.promo_error = 'promo_code_not_applicable'
-  //     }
-  //   }
-  // }
 
   if (cart.noPaypal) {
     cart.paypal = false
@@ -379,6 +312,62 @@ Cart.calculate = async (params) => {
     await Cart.saveCart(params.user_id, cart)
   }
   return cart
+}
+
+Cart.calculateCart = async (cart, params) => {
+  await Utils.sequence(Object.keys(params.shops).map(s => async () => {
+    const shop = params.shops[s]
+    shop.country_id = params.customer.country_id
+    shop.user_id = params.user_id
+    shop.promo_code = cart.promo_code
+    shop.customer = params.customer
+    shop.currency = params.currency
+
+    cart.shops[s] = await Cart.calculateShop(shop)
+
+    if (cart.shops[s].shipping_type === 'pickup') {
+      cart.hasPickup = true
+    }
+    if (cart.shops[s].gift) {
+      cart.gift = true
+    }
+    if (cart.shops[s].promo_error) {
+      cart.promo_error = cart.shops[s].promo_error
+    }
+
+    if (cart.shops[s].error) {
+      cart.error = cart.shops[s].error
+    }
+
+    if (cart.shops[s].type === 'marketplace') {
+      cart.noPaypal = true
+    }
+    if (!cart.shops[s].stripe) {
+      cart.noStripe = true
+    }
+
+    let cur = 1
+    if (cart.currency !== cart.shops[s].currency) {
+      cur = await Utils.getCurrencyComp(cart.shops[s].currency, cart.currency)
+    }
+    cart.shipping = Utils.round(cart.shipping + (cart.shops[s].shipping * cur))
+    cart.tax = Utils.round(cart.tax + (cart.shops[s].tax * cur))
+    cart.tax_rate = cart.shops[s].tax_rate
+    cart.sub_total = Utils.round(cart.sub_total + (cart.shops[s].sub_total * cur))
+    cart.total = Utils.round(cart.total + (cart.shops[s].total * cur))
+
+    cart.discount = Utils.round(cart.discount + cart.shops[s].discount)
+
+    cart.paypal = cart.shops[s].paypal
+    cart.stripe = cart.shops[s].stripe
+
+    if (cart.shops[s].type === 'shop' && cart.shops[s].id === 1) {
+      cart.noStripe = false
+      cart.stripe = true
+    }
+
+    cart.count += cart.shops[s].items.length
+  }))
 }
 
 Cart.saveCart = (userId, cart) => {
