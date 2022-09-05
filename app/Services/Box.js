@@ -614,6 +614,7 @@ class Box {
       }
     }
 
+    const currencyRate = await Utils.getCurrency(box.currency)
     const orderBox = await DB('order_box')
       .save({
         order_id: params.order.id,
@@ -630,6 +631,7 @@ class Box {
         tax_rate: box.tax_rate,
         sub_total: box.sub_total,
         currency: box.currency,
+        currency_rate: currencyRate,
         discount: box.discount,
         promo_code: box.promo_code,
         total: box.total,
@@ -1396,11 +1398,13 @@ class Box {
           step: 'monthly_pending'
         })
 
+      const currencyRate = await Utils.getCurrency(box.currency)
       const order = await DB('order')
         .save({
           user_id: box.buy_id,
           payment_type: 'stripe',
           currency: box.currency,
+          currency_rate: currencyRate,
           status: 'creating',
           sub_total: box.sub_total,
           shipping: box.shipping,
@@ -1424,6 +1428,7 @@ class Box {
           monthly: box.monthly,
           customer_id: box.customer_id,
           currency: box.currency,
+          currency_rate: currencyRate,
           shipping: box.shipping,
           tax: box.tax,
           tax_rate: box.tax_rate,
@@ -2614,7 +2619,7 @@ class Box {
     invoice.type = 'invoice'
     invoice.lang = 'en'
     invoice.currency = order.currency
-    // invoice.currency_rate = shop.currency_rate
+    invoice.currency_rate = order.currency_rate
     invoice.date = order.created_at
     invoice.sub_toal = order.sub_total
     invoice.tax = order.tax
