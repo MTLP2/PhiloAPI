@@ -908,6 +908,10 @@ class AdminController {
   getShippingCosts ({ params }) {
     return Dispatch.getCosts(params)
   }
+
+  deeplTranslate ({ params }) {
+    return Admin.deeplTranslate(params)
+  }
 }
 
 module.exports = AdminController

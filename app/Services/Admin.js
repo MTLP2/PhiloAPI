@@ -20,6 +20,7 @@ const Review = use('App/Services/Review')
 const Vod = use('App/Services/Vod')
 const Stock = use('App/Services/Stock')
 const Sna = use('App/Services/Sna')
+const Deepl = use('App/Services/Deepl')
 const cio = use('App/Services/CIO')
 const Env = use('Env')
 const moment = require('moment')
@@ -4348,6 +4349,18 @@ Admin.removeImageFromProject = async ({ id: projectId, type }) => {
   // await Artwork.updateArtwork({ id: projectId })
 
   return { success: true, type }
+}
+
+Admin.deeplTranslate = async ({ text, source_lang: sourceLang, target_lang: targetLang }) => {
+  try {
+    return Deepl.translate({
+      text,
+      sourceLang: sourceLang.toUpperCase(),
+      targetLang: targetLang.toUpperCase()
+    })
+  } catch (err) {
+    return err
+  }
 }
 
 module.exports = Admin

@@ -449,6 +449,7 @@ Route.group(() => {
   Route.post('/contests/:id/extract', 'ContestController.extract')
   Route.get('/shipping-costs', 'AdminController.getShippingCosts')
   Route.get('/stocks', 'AdminController.getStocks')
+  Route.post('/deepl-translate', 'AdminController.deeplTranslate')
 }).prefix('admin').middleware(['auth', 'admin'])
 
 Route.group(() => {
