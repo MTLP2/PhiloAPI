@@ -116,6 +116,7 @@ Payment.createInvoice = async (payment) => {
     const p = {
       id: '',
       type: 'invoice',
+      compatibility: true,
       date: Utils.date()
     }
     invoice = await Invoice.save(p)
@@ -123,6 +124,11 @@ Payment.createInvoice = async (payment) => {
     await payment.save()
   } else {
     invoice.id = payment.invoice_id
+  }
+
+  if (payment.name.toLowerCase().includes('shipping return') ||
+    payment.name.toLowerCase().includes('return box')) {
+    invoice.category = 'shipping'
   }
   invoice.status = 'paid'
   invoice.customer_id = payment.customer_id
@@ -231,17 +237,6 @@ Payment.confirmPay = async (payment, charge) => {
       .where('order_shop_id', payment.order_shop_id)
       .all()
 
-    console.log({
-      transporter: order.transporter,
-      type: 'return',
-      auto: true,
-      order_shop_id: payment.order_shop_id,
-      shipping_type: order.shipping_type === 'pickup' ? 'pickup' : 'standard',
-      address_pickup: order.address_pickup,
-      customer: order.customer,
-      email: order.email,
-      barcodes: items
-    })
     await Order.saveManual({
       transporter: order.transporter || 'daudin',
       type: 'return',
