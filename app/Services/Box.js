@@ -77,7 +77,7 @@ class Box {
     }
 
     box.payments = await DB('order_box')
-      .select('order_box.*', 'order.payment_id', 'order.promo_code', 'invoice.id as invoice_id')
+      .select('order_box.*', 'order.payment_id', 'order.promo_code', 'invoice.id as invoice_id', 'invoice.type as invoice_type')
       .join('order', 'order.id', 'order_box.order_id')
       .leftJoin('invoice', 'invoice.order_box_id', 'order_box.id')
       .where('box_id', box.id)
