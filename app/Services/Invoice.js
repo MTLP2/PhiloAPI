@@ -155,7 +155,7 @@ class Invoice {
     invoice.date = params.date
     invoice.status = params.status
     invoice.email = params.email
-    invoice.payment_days = params.payment_days
+    invoice.payment_days = params.payment_days || 0
     invoice.compatibility = params.compatibility
     invoice.sub_total = params.sub_total || 0
     invoice.margin = params.margin || 0
@@ -179,8 +179,7 @@ class Invoice {
     return invoice
   }
 
-  static async newNumber (type) {
-    const year = (new Date()).getYear() - 100
+  static async newNumber (type, year = (new Date()).getYear() - 100) {
     const number = await DB('invoice')
       .select(DB.raw('max(number) as max'))
       .where('type', type)
