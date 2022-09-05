@@ -20,6 +20,7 @@ const Review = use('App/Services/Review')
 const Vod = use('App/Services/Vod')
 const Stock = use('App/Services/Stock')
 const Sna = use('App/Services/Sna')
+const Deepl = use('App/Services/Deepl')
 const cio = use('App/Services/CIO')
 const Env = use('Env')
 const moment = require('moment')
@@ -1687,34 +1688,6 @@ Admin.extractOrders = async (params) => {
   params.size = 0
   params.project_id = params.id
   const data = await Admin.getOrders(params)
-
-  if (params.only_refunds === 'true') {
-    const refundsRaw = await DB('refund')
-      .select('refund.*', 'order.currency', 'order.user_id', 'order.payment_type')
-      .join('order', 'order.id', 'refund.order_id')
-      .where('refund.created_at', '>=', params.start)
-      .where('refund.created_at', '<=', `${params.end} 23:59`)
-      .all()
-
-    // Change refund.amount dots to commas (otherwise numbers are treated as dates by Drive)
-    const refunds = refundsRaw.map(refund => {
-      refund.amount = refund.amount.toString().replace('.', ',')
-      return refund
-    })
-
-    return Utils.arrayToCsv([
-      { name: 'ID', index: 'id' },
-      { name: 'Order ID', index: 'order_id' },
-      { name: 'User ID', index: 'user_id' },
-      { name: 'OShop ID', index: 'order_shop_id' },
-      { name: 'Payment Type', index: 'payment_type' },
-      { name: 'Date', index: 'created_at' },
-      { name: 'Amount', index: 'amount' },
-      { name: 'Currency', index: 'currency' },
-      { name: 'Reason', index: 'reason' },
-      { name: 'Comment', index: 'comment' }
-    ], refunds)
-  }
 
   return Utils.arrayToCsv([
     { name: 'ID', index: 'order_shop_id' },
@@ -4190,6 +4163,34 @@ Admin.deleteReview = async (params) => {
   return { success: true }
 }
 
+Admin.exportOrdersRefunds = async (params) => {
+  const refundsRaw = await DB('refund')
+    .select('refund.*', 'order.currency', 'order.user_id', 'order.payment_type')
+    .join('order', 'order.id', 'refund.order_id')
+    .where('refund.created_at', '>=', params.start)
+    .where('refund.created_at', '<=', `${params.end} 23:59`)
+    .all()
+
+  // Change refund.amount dots to commas (otherwise numbers are treated as dates by Drive)
+  const refunds = refundsRaw.map(refund => {
+    refund.amount = refund.amount.toString().replace('.', ',')
+    return refund
+  })
+
+  return Utils.arrayToCsv([
+    { name: 'ID', index: 'id' },
+    { name: 'Order ID', index: 'order_id' },
+    { name: 'User ID', index: 'user_id' },
+    { name: 'OShop ID', index: 'order_shop_id' },
+    { name: 'Payment Type', index: 'payment_type' },
+    { name: 'Date', index: 'created_at' },
+    { name: 'Amount', index: 'amount' },
+    { name: 'Currency', index: 'currency' },
+    { name: 'Reason', index: 'reason' },
+    { name: 'Comment', index: 'comment' }
+  ], refunds)
+}
+
 Admin.exportOrdersCommercial = async (params) => {
   const commercialList = params.resp_id.split(',')
   const categoryList = params.category.split(',')
@@ -4321,6 +4322,18 @@ Admin.removeImageFromProject = async ({ id: projectId, type }) => {
   // await Artwork.updateArtwork({ id: projectId })
 
   return { success: true, type }
+}
+
+Admin.deeplTranslate = async ({ text, source_lang: sourceLang, target_lang: targetLang }) => {
+  try {
+    return Deepl.translate({
+      text,
+      sourceLang: sourceLang.toUpperCase(),
+      targetLang: targetLang.toUpperCase()
+    })
+  } catch (err) {
+    return err
+  }
 }
 
 module.exports = Admin
