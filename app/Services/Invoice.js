@@ -828,6 +828,17 @@ class Invoice {
 
   static async clean () {
     await DB('invoice')
+      .whereNull('category')
+      .where(query => {
+        query.where('name', 'like', '%shipping return%')
+          .orWhere('name', 'like', '%return box%')
+      })
+      .update({
+        category: 'shipping'
+      })
+
+    /**
+    await DB('invoice')
       .whereNull('currency_rate')
       .where('currency', 'EUR')
       .update({
@@ -865,7 +876,7 @@ class Invoice {
     }
 
     return months
-
+    **/
     /**
     await DB('invoice')
       .whereNull('category')
