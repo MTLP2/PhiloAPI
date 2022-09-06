@@ -1461,137 +1461,207 @@ class Stats {
   }
 
   static async getStats2 (params) {
-    const promises = []
     let format
 
-    const dates = []
-    let start = moment(params.start)
-    const end = moment(params.end)
-
+    let periodicity
     if (params.type === 'day') {
-      format = '%Y-%m-%d'
-      while (end > start || start.format('D') === end.format('D')) {
-        dates.push(start.format('YYYY-MM-DD'))
-        start = start.add(1, 'day')
-      }
-    } else if (params.type === 'week') {
-      format = '%Y-%u'
-      while (end > start || start.format('WW') === end.format('WW')) {
-        dates.push(start.format('YYYY-WW'))
-        start = start.add(1, 'week')
-      }
+      periodicity = 'days'
+      format = 'YYYY-MM-DD'
     } else if (params.type === 'month') {
-      format = '%Y-%m'
-      while (end > start || start.format('M') === end.format('M')) {
-        dates.push(start.format('YYYY-MM'))
-        start = start.add(1, 'month')
-      }
-    } else if (params.type === 'year') {
-      format = '%Y'
-      while (end > start || start.format('YYYY') === end.format('YYYY')) {
-        dates.push(start.format('YYYY'))
-        start = start.add(1, 'year')
-      }
+      periodicity = 'months'
+      format = 'YYYY-MM'
+    } else {
+      periodicity = 'years'
+      format = 'YYYY'
     }
 
-    const columns = {}
-    for (let i = 0; i < dates.length; i++) {
-      columns[dates[i]] = 0
+    const now = periodicity === 'months' ? moment(params.start).startOf('month') : moment(params.start)
+
+    const dates = {}
+    while (now.isSameOrBefore(moment(params.end))) {
+      dates[now.format(format)] = 0
+      now.add(1, periodicity)
     }
 
-    console.log(columns)
+    const invoices = await DB('invoice')
+      .select('id', 'type', 'category', 'sub_total', 'currency_rate', 'order_id')
+      .whereBetween('created_at', [params.start, params.end])
+      .where('compatibility', true)
+      .all()
 
-    promises.push({
-      name: 'shipping',
-      query: DB('order_shop')
-        .select(
-          DB.raw('AVG(shipping * currency_rate) AS total'),
-          DB.raw(`DATE_FORMAT(created_at, '${format}') AS date`)
-        )
-        .whereBetween('created_at', [params.start, params.end])
-        .where('is_paid', true)
-        .groupBy(DB.raw(`date_format(created_at, '${format}')`))
-        .all()
-    })
-
-    promises.push({
-      name: 'productions',
-      query: DB('production')
-        .select(
-          DB.raw(`DATE_FORMAT(date_prod, '${format}') AS date`),
-          DB.raw('count(*) as quantity'),
-          DB.raw('AVG(production.final_price) as total'),
-          DB.raw('AVG(production.final_price - production.form_price) as marge'),
-          'vod.type',
-          'vod.is_licence'
-        )
-        .join('vod', 'vod.project_id', 'production.project_id')
-        .whereBetween('date_prod', [params.start, params.end])
-        .groupByRaw(`date_format(date_prod, '${format}')`)
-        .groupBy('vod.type')
-        .groupBy('vod.is_licence')
-        .all()
-    })
-
+    const orders = {}
     /**
-    res.cart = Utils.round((
-      await DB('order')
-        .select(DB.raw('AVG(total * currency_rate) AS total'))
-        .whereBetween('created_at', [params.start, params.end])
-        .where('status', '!=', 'creating')
-        .first()
-    ).total)
+    const ordersList = await DB('order_shop')
+      .select('order_shop.id as order_shop_id', 'order_shop.order_id', 'shipping',
+        'sub_total', 'tax_rate', 'order_shop.currency', 'currency_rate', 'user.is_pro')
+      .join('user', 'user.id', 'order_shop.user_id')
+      .whereIn('order_id', invoices.map(i => i.order_id))
+      .all()
+
+    for (const order of ordersList) {
+      if (!orders[order.order_id]) {
+        orders[order.order_id] = []
+      }
+      orders[order.order_id].push({
+        ...order,
+        items: []
+      })
+    }
+
+    const projectsList = await DB('vod')
+      .select('order_shop_id', 'order_id', 'order_item.total', 'is_licence')
+      .join('order_item', 'order_item.project_id', 'vod.project_id')
+      .whereIn('order_shop_id', ordersList.map(i => i.order_shop_id))
+      .all()
+
+    for (const project of projectsList) {
+      const idx = orders[project.order_id].findIndex(o => o.order_shop_id === project.order_shop_id)
+      orders[project.order_id][idx].items.push(project)
+    }
     **/
 
-    const d = await Promise.all(promises.map(p => p.query))
-    const data = {}
-    for (const i in d) {
-      data[promises[i].name] = d[i]
+    const boxesList = await DB('order_box')
+      .select('order_id', 'price', 'tax_rate', 'currency', 'shipping', 'currency_rate')
+      .whereIn('order_id', invoices.map(i => i.order_id))
+      .all()
+    for (const order of boxesList) {
+      if (!orders[order.order_id]) {
+        orders[order.order_id] = []
+      }
+      orders[order.order_id].push({
+        ...order,
+        type: 'box',
+        items: [{
+          ...order
+        }]
+      })
     }
+    // console.log(orders)
 
-    console.log(data)
-
-    const res = {
-      shipping: { ...columns },
-      quantity: {
-        direct_pressing: { ...columns },
-        licence: { ...columns },
-        all: { ...columns }
-      },
+    const d = {
       turnover: {
-        direct_pressing: { ...columns },
-        licence: { ...columns },
-        marge: { ...columns },
-        all: { ...columns }
+        total: {
+          total: 0, dates: { ...dates }
+        },
+        projects: {
+          total: 0, dates: { ...dates }
+        },
+        licences: {
+          total: 0, dates: { ...dates }
+        },
+        shippings: {
+          total: 0, dates: { ...dates }
+        },
+        distrib: {
+          total: 0, dates: { ...dates }
+        },
+        direct_shops: {
+          total: 0, dates: { ...dates }
+        },
+        direct_pressing: {
+          total: 0, dates: { ...dates }
+        },
+        boxes: {
+          total: 0, dates: { ...dates }
+        },
+        digital: {
+          total: 0, dates: { ...dates }
+        }
+      },
+      credit_note: {
+        total: {
+          total: 0, dates: { ...dates }
+        },
+        projects: {
+          total: 0, dates: { ...dates }
+        },
+        licences: {
+          total: 0, dates: { ...dates }
+        },
+        shippings: {
+          total: 0, dates: { ...dates }
+        },
+        distrib: {
+          total: 0, dates: { ...dates }
+        },
+        direct_shops: {
+          total: 0, dates: { ...dates }
+        },
+        direct_pressing: {
+          total: 0, dates: { ...dates }
+        },
+        boxes: {
+          total: 0, dates: { ...dates }
+        },
+        digital: {
+          total: 0, dates: { ...dates }
+        }
       }
     }
 
-    for (const s of data.shipping) {
-      res.shipping[s.date] = Utils.round(s.total)
-    }
+    for (const invoice of invoices) {
+      const total = invoice.sub_total * invoice.currency_rate
+      const date = moment(invoice.date).format(format)
 
-    console.log(data.productions)
-    for (const p of data.productions) {
-      if (p.is_licence) {
-        res.quantity.licence[p.date] += p.quantity
-        res.quantity.all[p.date] += p.quantity
+      const type = invoice.type === 'invoice'
+        ? 'turnover'
+        : 'credit_note'
 
-        res.turnover.licence[p.date] += p.total
-        res.turnover.all[p.date] += p.total
+      d[type].total.total += total
+      d[type].total.dates[date] += total
+
+      const ods = orders[invoice.order_id]
+      if (ods) {
+        for (const order of ods) {
+          let shipping = order.shipping * invoice.currency_rate
+          if (order.tax_rate) {
+            shipping = shipping / (1 + order.tax_rate)
+          }
+          d[type].shippings.total += shipping
+          d[type].shippings.dates[date] += shipping
+
+          console.log(order.items)
+          for (const item of order.items) {
+            let total = item.total / (1 + order.tax_rate)
+            if (order.type === 'box') {
+              console.log('box =>', item)
+              total = item.price / (1 + order.tax_rate)
+              d[type].boxes.total += total
+              d[type].boxes.dates[date] += total
+            } if (order.is_pro) {
+              d[type].direct_shops.total += total
+              d[type].direct_shops.dates[date] += total
+            } else if (item.is_licence) {
+              d[type].licences.total += total
+              d[type].licences.dates[date] += total
+            } else {
+              d[type].projects.total += total
+              d[type].projects.dates[date] += total
+            }
+          }
+        }
+      }
+      /**
+      } else if (invoice.category === 'box') {
+        d[type].box.total += total
+        d[type].box.dates[date] += total
+      } else if (invoice.category === 'distribution') {
+        d[type].distrib.total += total
+        d[type].distrib.dates[date] += total
+      } else if (invoice.category === 'direct_pressing') {
+        d[type].direct_pressing.total += total
+        d[type].direct_pressing.dates[date] += total
+      } else if (invoice.category === 'shipping') {
+        d[type].shippings.total += total
+        d[type].shippings.dates[date] += total
       } else {
-        res.quantity.all[p.date] += p.quantity
-        res.turnover.all[p.date] += p.total
+        console.log('=>', invoice)
+        break
       }
-
-      if (p.type === 'direct_pressing') {
-        res.quantity.direct_pressing[p.date] += p.quantity
-        res.turnover.direct_pressing[p.date] += p.total
-      }
-      // res.shipping[s.date] = Utils.round(s.total)
+      **/
     }
 
-    // console.log(res)
-    return res
+    return d
   }
 
   static async getBigCustomer (params = {}) {
