@@ -475,6 +475,8 @@ class Quote {
       }
     }
 
+    quote.energy_cost = 0.5 * params.quantity
+
     // sticker
     if (params.sticker) {
       quote.sticker = getCost(237)
