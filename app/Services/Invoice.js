@@ -825,6 +825,84 @@ class Invoice {
 
     return zip.generateAsync({ type: 'nodebuffer' })
   }
+
+  static async clean () {
+    await DB('invoice')
+      .whereNull('currency_rate')
+      .where('currency', 'EUR')
+      .update({
+        currency_rate: 1
+      })
+
+    const invoices = await DB('invoice')
+      .select('id', 'date', 'currency')
+      .whereNull('currency_rate')
+      .whereNotNull('total')
+      .all()
+
+    const months = {}
+    for (const invoice of invoices) {
+      const date = moment(invoice.date).format('YYYY-MM')
+      if (!months[date]) {
+        months[date] = []
+      }
+      months[date].push(invoice)
+    }
+
+    for (const [month, list] of Object.entries(months)) {
+      const currencies = await Utils.getCurrenciesApi(`${month}-01`, 'EUR,USD,GBP,AUD')
+      // const currencies = { EUR: 1, USD: 1.20496, GBP: 0.865101, AUD: 1.550459 }
+      console.log(currencies)
+
+      for (const invoice of list) {
+        console.log(invoice.id, month, invoice.currency, currencies[invoice.currency])
+        DB('invoice')
+          .where('id', invoice.id)
+          .update({
+            currency_rate: currencies[invoice.currency]
+          })
+      }
+    }
+
+    return months
+
+    /**
+    await DB('invoice')
+      .whereNull('category')
+      .where(query => {
+        query.where('name', 'like', '%shipping return%')
+          .orWhere('name', 'like', '%return box%')
+      })
+      .update({
+        category: 'shipping'
+      })
+
+    const invoices = await DB('invoice as i1')
+      .whereExists(
+        DB('invoice as i2')
+          .where('i1.code', 'i2.code')
+          .where('i1.id', '!=', 'i2.code')
+          .query()
+      )
+      .whereNotNull('code')
+      .where('year', 22)
+      .all()
+
+    console.log(invoices)
+    const invoices = await DB('invoice')
+      .whereNull('code')
+      .where('compatibility', true)
+      .all()
+
+    for (const invoice of invoices) {
+      const year = invoice.date.substring(2, 4)
+      invoice.number = await Invoice.newNumber(invoice.type, year)
+      invoice.code = `${invoice.type[0].toUpperCase()}${year}${invoice.number}`
+
+      break
+    }
+    **/
+  }
 }
 
 module.exports = Invoice
