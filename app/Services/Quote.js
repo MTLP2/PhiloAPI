@@ -475,7 +475,7 @@ class Quote {
       }
     }
 
-    quote.energy_cost = 0.5 * params.quantity
+    quote.energy_cost = 0.5 * params.quantity * params.nb_vinyl
 
     // sticker
     if (params.sticker) {
