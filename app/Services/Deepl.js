@@ -13,9 +13,13 @@ class Deepl {
           Authorization: `DeepL-Auth-Key ${Env.get('DEEPL_FREE_API_KEY')}`
         }
       }, function (err, res, body) {
-        if (err) reject(err)
-        if (body.translations.length === 1) resolve(body.translations[0])
-        else resolve(body.translations)
+        try {
+          if (err) reject(err)
+          if (body.translations.length === 1) resolve(body.translations[0])
+          else resolve(body.translations)
+        } catch (err) {
+          reject(err)
+        }
       })
     })
   }
