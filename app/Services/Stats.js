@@ -1484,13 +1484,12 @@ class Stats {
     }
 
     const invoices = await DB('invoice')
-      .select('id', 'type', 'category', 'sub_total', 'currency_rate', 'order_id')
+      .select('id', 'type', 'name', 'date', 'category', 'sub_total', 'currency_rate', 'order_id')
       .whereBetween('created_at', [params.start, params.end])
       .where('compatibility', true)
       .all()
 
     const orders = {}
-    /**
     const ordersList = await DB('order_shop')
       .select('order_shop.id as order_shop_id', 'order_shop.order_id', 'shipping',
         'sub_total', 'tax_rate', 'order_shop.currency', 'currency_rate', 'user.is_pro')
@@ -1518,7 +1517,6 @@ class Stats {
       const idx = orders[project.order_id].findIndex(o => o.order_shop_id === project.order_shop_id)
       orders[project.order_id][idx].items.push(project)
     }
-    **/
 
     const boxesList = await DB('order_box')
       .select('order_id', 'price', 'tax_rate', 'currency', 'shipping', 'currency_rate')
@@ -1546,6 +1544,12 @@ class Stats {
         projects: {
           total: 0, dates: { ...dates }
         },
+        projects_site: {
+          total: 0, dates: { ...dates }
+        },
+        projects_invoice: {
+          total: 0, dates: { ...dates }
+        },
         licences: {
           total: 0, dates: { ...dates }
         },
@@ -1564,7 +1568,19 @@ class Stats {
         boxes: {
           total: 0, dates: { ...dates }
         },
+        boxes_site: {
+          total: 0, dates: { ...dates }
+        },
+        boxes_invoice: {
+          total: 0, dates: { ...dates }
+        },
         digital: {
+          total: 0, dates: { ...dates }
+        },
+        errors: {
+          total: 0, dates: { ...dates }
+        },
+        other: {
           total: 0, dates: { ...dates }
         }
       },
@@ -1575,6 +1591,12 @@ class Stats {
         projects: {
           total: 0, dates: { ...dates }
         },
+        projects_site: {
+          total: 0, dates: { ...dates }
+        },
+        projects_invoice: {
+          total: 0, dates: { ...dates }
+        },
         licences: {
           total: 0, dates: { ...dates }
         },
@@ -1593,7 +1615,19 @@ class Stats {
         boxes: {
           total: 0, dates: { ...dates }
         },
+        boxes_site: {
+          total: 0, dates: { ...dates }
+        },
+        boxes_invoice: {
+          total: 0, dates: { ...dates }
+        },
         digital: {
+          total: 0, dates: { ...dates }
+        },
+        errors: {
+          total: 0, dates: { ...dates }
+        },
+        other: {
           total: 0, dates: { ...dates }
         }
       }
@@ -1620,15 +1654,15 @@ class Stats {
           d[type].shippings.total += shipping
           d[type].shippings.dates[date] += shipping
 
-          console.log(order.items)
           for (const item of order.items) {
             let total = item.total / (1 + order.tax_rate)
             if (order.type === 'box') {
-              console.log('box =>', item)
               total = item.price / (1 + order.tax_rate)
               d[type].boxes.total += total
               d[type].boxes.dates[date] += total
-            } if (order.is_pro) {
+              d[type].boxes_site.total += total
+              d[type].boxes_site.dates[date] += total
+            } else if (order.is_pro) {
               d[type].direct_shops.total += total
               d[type].direct_shops.dates[date] += total
             } else if (item.is_licence) {
@@ -1637,14 +1671,16 @@ class Stats {
             } else {
               d[type].projects.total += total
               d[type].projects.dates[date] += total
+              d[type].projects_site.total += total
+              d[type].projects_site.dates[date] += total
             }
           }
         }
-      }
-      /**
       } else if (invoice.category === 'box') {
-        d[type].box.total += total
-        d[type].box.dates[date] += total
+        d[type].boxes.total += total
+        d[type].boxes.dates[date] += total
+        d[type].boxes_invoice.total += total
+        d[type].boxes_invoice.dates[date] += total
       } else if (invoice.category === 'distribution') {
         d[type].distrib.total += total
         d[type].distrib.dates[date] += total
@@ -1654,11 +1690,18 @@ class Stats {
       } else if (invoice.category === 'shipping') {
         d[type].shippings.total += total
         d[type].shippings.dates[date] += total
+      } else if (invoice.category === 'project') {
+        d[type].projects.total += total
+        d[type].projects.dates[date] += total
+        d[type].projects_invoice.total += total
+        d[type].projects_invoice.dates[date] += total
+      } else if (invoice.name.includes('Order ')) {
+        d[type].errors.total += total
+        d[type].errors.dates[date] += total
       } else {
-        console.log('=>', invoice)
-        break
+        d[type].other.total += total
+        d[type].other.dates[date] += total
       }
-      **/
     }
 
     return d
