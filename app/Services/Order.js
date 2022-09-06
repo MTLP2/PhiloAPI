@@ -599,11 +599,9 @@ Order.refundOrderShop = async (id, type, params) => {
 
   if ((params && params.credit_note === 'true') || !params) {
     await Invoice.insertRefund(order)
-    /**
-    if (order.project_id) {
+    if (order.project_id && type === 'cancel') {
       await Stock.calcul({ id: order.project_id })
     }
-    **/
   }
 
   if (type === 'cancel' || (params && params.cancel_notification === 'true')) {
