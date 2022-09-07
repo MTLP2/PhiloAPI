@@ -1475,15 +1475,22 @@ class Stats {
       format = 'YYYY'
     }
 
+    params.end = params.end + ' 23:59'
     const now = periodicity === 'months' ? moment(params.start).startOf('month') : moment(params.start)
 
     const dates = {}
+    let lastDate
     while (now.isSameOrBefore(moment(params.end))) {
       dates[now.format(format)] = 0
+      lastDate = now.format(format)
       now.add(1, periodicity)
     }
 
     const d = {
+      orders: {
+        users: {},
+        projects: {}
+      },
       quantity: {
         total: {
           total: 0, dates: { ...dates }
@@ -1606,11 +1613,13 @@ class Stats {
     const quantityPromise = await DB('order_shop as os')
       .select(
         'os.created_at', 'quantity', 'is_paid', 'os.type', 'is_licence', 'os.type',
-        'vod.project_id', 'project.artist_name', 'project.name', 'project.picture'
+        'vod.project_id', 'project.artist_name', 'project.name', 'project.picture',
+        'os.user_id', 'user.name as user_name', 'user.country_id as user_country'
       )
       .join('order_item as oi', 'oi.order_shop_id', 'os.id')
       .join('vod', 'vod.project_id', 'oi.project_id')
       .join('project', 'project.id', 'oi.project_id')
+      .leftJoin('user', 'user.id', 'os.user_id')
       .whereBetween('os.created_at', [params.start, params.end])
       .all()
 
@@ -1625,6 +1634,8 @@ class Stats {
       invoicesPromise
     ])
 
+    const users = {}
+    const projects = {}
     for (const qty of quantity) {
       const date = moment(qty.created_at).format(format)
       const value = qty.quantity
@@ -1654,8 +1665,54 @@ class Stats {
           d.quantity.project.total += value
           d.quantity.project.dates[date] += value
         }
+
+        if (!projects[qty.project_id]) {
+          projects[qty.project_id] = {
+            id: qty.project_id,
+            name: qty.name,
+            artist: qty.artist_name,
+            picture: qty.picture,
+            period: 0,
+            current: 0
+          }
+        }
+        projects[qty.project_id].period += value
+
+        if (date === lastDate) {
+          projects[qty.project_id].current += value
+        }
+
+        if (!users[qty.user_id]) {
+          users[qty.user_id] = {
+            id: qty.user_id,
+            name: qty.user_name,
+            country: qty.user_country,
+            period: 0,
+            current: 0
+          }
+        }
+        users[qty.user_id].period += value
+        if (date === lastDate) {
+          users[qty.user_id].current += value
+        }
       }
     }
+
+    d.orders.projects.current = Object.values(projects)
+      .filter(a => a.current > 0)
+      .sort((a, b) => a.current - b.current < 0 ? 1 : -1)
+      .slice(0, 20)
+
+    d.orders.projects.period = Object.values(projects)
+      .filter(a => a.period > 0)
+      .sort((a, b) => a.period - b.period < 0 ? 1 : -1)
+      .slice(0, 20)
+
+    d.orders.users.period = Object.values(users)
+      .filter(a => a.period > 0)
+      .sort((a, b) => a.period - b.period < 0 ? 1 : -1)
+      .slice(0, 20)
+
     const orders = {}
     const ordersList = await DB('order_shop')
       .select('order_shop.id as order_shop_id', 'order_shop.order_id', 'shipping',
