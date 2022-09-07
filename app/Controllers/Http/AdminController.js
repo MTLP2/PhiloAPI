@@ -172,7 +172,7 @@ class AdminController {
   }
 
   calculStock ({ params }) {
-    return Stock.calcul(params.id)
+    return Stock.calcul({ id: params.id, recursive: false })
   }
 
   getBusiness ({ params, user }) {
