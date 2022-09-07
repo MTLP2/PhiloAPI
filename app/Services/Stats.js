@@ -1483,12 +1483,179 @@ class Stats {
       now.add(1, periodicity)
     }
 
-    const invoices = await DB('invoice')
+    const d = {
+      quantity: {
+        total: {
+          total: 0, dates: { ...dates }
+        },
+        site: {
+          total: 0, dates: { ...dates }
+        },
+        project: {
+          total: 0, dates: { ...dates }
+        },
+        licence: {
+          total: 0, dates: { ...dates }
+        },
+        refund: {
+          total: 0, dates: { ...dates }
+        },
+        shop: {
+          total: 0, dates: { ...dates }
+        },
+        vod: {
+          total: 0, dates: { ...dates }
+        }
+      },
+      turnover: {
+        total: {
+          total: 0, dates: { ...dates }
+        },
+        project: {
+          total: 0, dates: { ...dates }
+        },
+        project_site: {
+          total: 0, dates: { ...dates }
+        },
+        project_invoice: {
+          total: 0, dates: { ...dates }
+        },
+        licence: {
+          total: 0, dates: { ...dates }
+        },
+        shipping: {
+          total: 0, dates: { ...dates }
+        },
+        distrib: {
+          total: 0, dates: { ...dates }
+        },
+        direct_shop: {
+          total: 0, dates: { ...dates }
+        },
+        direct_pressing: {
+          total: 0, dates: { ...dates }
+        },
+        box: {
+          total: 0, dates: { ...dates }
+        },
+        box_site: {
+          total: 0, dates: { ...dates }
+        },
+        box_invoice: {
+          total: 0, dates: { ...dates }
+        },
+        digital: {
+          total: 0, dates: { ...dates }
+        },
+        error: {
+          total: 0, dates: { ...dates }
+        },
+        other: {
+          total: 0, dates: { ...dates }
+        }
+      },
+      credit_note: {
+        total: {
+          total: 0, dates: { ...dates }
+        },
+        project: {
+          total: 0, dates: { ...dates }
+        },
+        project_site: {
+          total: 0, dates: { ...dates }
+        },
+        project_invoice: {
+          total: 0, dates: { ...dates }
+        },
+        licence: {
+          total: 0, dates: { ...dates }
+        },
+        shipping: {
+          total: 0, dates: { ...dates }
+        },
+        distrib: {
+          total: 0, dates: { ...dates }
+        },
+        direct_shop: {
+          total: 0, dates: { ...dates }
+        },
+        direct_pressing: {
+          total: 0, dates: { ...dates }
+        },
+        box: {
+          total: 0, dates: { ...dates }
+        },
+        box_site: {
+          total: 0, dates: { ...dates }
+        },
+        box_invoice: {
+          total: 0, dates: { ...dates }
+        },
+        digital: {
+          total: 0, dates: { ...dates }
+        },
+        error: {
+          total: 0, dates: { ...dates }
+        },
+        other: {
+          total: 0, dates: { ...dates }
+        }
+      }
+    }
+
+    const quantityPromise = await DB('order_shop as os')
+      .select(
+        'os.created_at', 'quantity', 'is_paid', 'os.type', 'is_licence', 'os.type',
+        'vod.project_id', 'project.artist_name', 'project.name', 'project.picture'
+      )
+      .join('order_item as oi', 'oi.order_shop_id', 'os.id')
+      .join('vod', 'vod.project_id', 'oi.project_id')
+      .join('project', 'project.id', 'oi.project_id')
+      .whereBetween('os.created_at', [params.start, params.end])
+      .all()
+
+    const invoicesPromise = await DB('invoice')
       .select('id', 'type', 'name', 'date', 'category', 'sub_total', 'currency_rate', 'order_id')
       .whereBetween('created_at', [params.start, params.end])
       .where('compatibility', true)
       .all()
 
+    const [quantity, invoices] = await Promise.all([
+      quantityPromise,
+      invoicesPromise
+    ])
+
+    for (const qty of quantity) {
+      const date = moment(qty.created_at).format(format)
+      const value = qty.quantity
+
+      if (!qty.is_paid) {
+        d.quantity.refund.total += value
+        d.quantity.refund.dates[date] += value
+      } else {
+        d.quantity.total.total += value
+        d.quantity.total.dates[date] += value
+
+        d.quantity.site.total += value
+        d.quantity.site.dates[date] += value
+
+        if (qty.type === 'shop') {
+          d.quantity.shop.total += value
+          d.quantity.shop.dates[date] += value
+        } else if (qty.type === 'vod') {
+          d.quantity.vod.total += value
+          d.quantity.vod.dates[date] += value
+        }
+
+        if (qty.is_licence) {
+          d.quantity.licence.total += value
+          d.quantity.licence.dates[date] += value
+        } else {
+          d.quantity.project.total += value
+          d.quantity.project.dates[date] += value
+        }
+      }
+    }
     const orders = {}
     const ordersList = await DB('order_shop')
       .select('order_shop.id as order_shop_id', 'order_shop.order_id', 'shipping',
@@ -1536,103 +1703,6 @@ class Stats {
     }
     // console.log(orders)
 
-    const d = {
-      turnover: {
-        total: {
-          total: 0, dates: { ...dates }
-        },
-        projects: {
-          total: 0, dates: { ...dates }
-        },
-        projects_site: {
-          total: 0, dates: { ...dates }
-        },
-        projects_invoice: {
-          total: 0, dates: { ...dates }
-        },
-        licences: {
-          total: 0, dates: { ...dates }
-        },
-        shippings: {
-          total: 0, dates: { ...dates }
-        },
-        distrib: {
-          total: 0, dates: { ...dates }
-        },
-        direct_shops: {
-          total: 0, dates: { ...dates }
-        },
-        direct_pressing: {
-          total: 0, dates: { ...dates }
-        },
-        boxes: {
-          total: 0, dates: { ...dates }
-        },
-        boxes_site: {
-          total: 0, dates: { ...dates }
-        },
-        boxes_invoice: {
-          total: 0, dates: { ...dates }
-        },
-        digital: {
-          total: 0, dates: { ...dates }
-        },
-        errors: {
-          total: 0, dates: { ...dates }
-        },
-        other: {
-          total: 0, dates: { ...dates }
-        }
-      },
-      credit_note: {
-        total: {
-          total: 0, dates: { ...dates }
-        },
-        projects: {
-          total: 0, dates: { ...dates }
-        },
-        projects_site: {
-          total: 0, dates: { ...dates }
-        },
-        projects_invoice: {
-          total: 0, dates: { ...dates }
-        },
-        licences: {
-          total: 0, dates: { ...dates }
-        },
-        shippings: {
-          total: 0, dates: { ...dates }
-        },
-        distrib: {
-          total: 0, dates: { ...dates }
-        },
-        direct_shops: {
-          total: 0, dates: { ...dates }
-        },
-        direct_pressing: {
-          total: 0, dates: { ...dates }
-        },
-        boxes: {
-          total: 0, dates: { ...dates }
-        },
-        boxes_site: {
-          total: 0, dates: { ...dates }
-        },
-        boxes_invoice: {
-          total: 0, dates: { ...dates }
-        },
-        digital: {
-          total: 0, dates: { ...dates }
-        },
-        errors: {
-          total: 0, dates: { ...dates }
-        },
-        other: {
-          total: 0, dates: { ...dates }
-        }
-      }
-    }
-
     for (const invoice of invoices) {
       const total = invoice.sub_total * invoice.currency_rate
       const date = moment(invoice.date).format(format)
@@ -1651,36 +1721,36 @@ class Stats {
           if (order.tax_rate) {
             shipping = shipping / (1 + order.tax_rate)
           }
-          d[type].shippings.total += shipping
-          d[type].shippings.dates[date] += shipping
+          d[type].shipping.total += shipping
+          d[type].shipping.dates[date] += shipping
 
           for (const item of order.items) {
             let total = item.total / (1 + order.tax_rate)
             if (order.type === 'box') {
               total = item.price / (1 + order.tax_rate)
-              d[type].boxes.total += total
-              d[type].boxes.dates[date] += total
-              d[type].boxes_site.total += total
-              d[type].boxes_site.dates[date] += total
+              d[type].box.total += total
+              d[type].box.dates[date] += total
+              d[type].box_site.total += total
+              d[type].box_site.dates[date] += total
             } else if (order.is_pro) {
-              d[type].direct_shops.total += total
-              d[type].direct_shops.dates[date] += total
+              d[type].direct_shop.total += total
+              d[type].direct_shop.dates[date] += total
             } else if (item.is_licence) {
-              d[type].licences.total += total
-              d[type].licences.dates[date] += total
+              d[type].licence.total += total
+              d[type].licence.dates[date] += total
             } else {
-              d[type].projects.total += total
-              d[type].projects.dates[date] += total
-              d[type].projects_site.total += total
-              d[type].projects_site.dates[date] += total
+              d[type].project.total += total
+              d[type].project.dates[date] += total
+              d[type].project_site.total += total
+              d[type].project_site.dates[date] += total
             }
           }
         }
       } else if (invoice.category === 'box') {
-        d[type].boxes.total += total
-        d[type].boxes.dates[date] += total
-        d[type].boxes_invoice.total += total
-        d[type].boxes_invoice.dates[date] += total
+        d[type].box.total += total
+        d[type].box.dates[date] += total
+        d[type].box_invoice.total += total
+        d[type].box_invoice.dates[date] += total
       } else if (invoice.category === 'distribution') {
         d[type].distrib.total += total
         d[type].distrib.dates[date] += total
@@ -1688,16 +1758,16 @@ class Stats {
         d[type].direct_pressing.total += total
         d[type].direct_pressing.dates[date] += total
       } else if (invoice.category === 'shipping') {
-        d[type].shippings.total += total
-        d[type].shippings.dates[date] += total
+        d[type].shipping.total += total
+        d[type].shipping.dates[date] += total
       } else if (invoice.category === 'project') {
-        d[type].projects.total += total
-        d[type].projects.dates[date] += total
-        d[type].projects_invoice.total += total
-        d[type].projects_invoice.dates[date] += total
+        d[type].project.total += total
+        d[type].project.dates[date] += total
+        d[type].project_invoice.total += total
+        d[type].project_invoice.dates[date] += total
       } else if (invoice.name.includes('Order ')) {
-        d[type].errors.total += total
-        d[type].errors.dates[date] += total
+        d[type].error.total += total
+        d[type].error.dates[date] += total
       } else {
         d[type].other.total += total
         d[type].other.dates[date] += total
