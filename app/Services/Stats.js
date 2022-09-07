@@ -1610,11 +1610,14 @@ class Stats {
       }
     }
 
+    const currenciesPromise = DB('currency').all()
+
     const quantityPromise = await DB('order_shop as os')
       .select(
         'os.created_at', 'quantity', 'is_paid', 'os.type', 'is_licence', 'os.type',
         'vod.project_id', 'project.artist_name', 'project.name', 'project.picture',
-        'os.user_id', 'user.name as user_name', 'user.country_id as user_country'
+        'os.user_id', 'user.name as user_name', 'user.country_id as user_country',
+        'oi.price', 'os.total', 'os.currency', 'os.tax_rate'
       )
       .join('order_item as oi', 'oi.order_shop_id', 'os.id')
       .join('vod', 'vod.project_id', 'oi.project_id')
@@ -1629,10 +1632,13 @@ class Stats {
       .where('compatibility', true)
       .all()
 
-    const [quantity, invoices] = await Promise.all([
+    const [quantity, invoices, currenciesDb] = await Promise.all([
       quantityPromise,
-      invoicesPromise
+      invoicesPromise,
+      currenciesPromise
     ])
+
+    const currencies = Utils.getCurrencies('EUR', currenciesDb)
 
     const users = {}
     const projects = {}
@@ -1673,13 +1679,19 @@ class Stats {
             artist: qty.artist_name,
             picture: qty.picture,
             period: 0,
-            current: 0
+            period_tur: 0,
+            current: 0,
+            current_tur: 0
           }
         }
+        const turnover = (qty.price * qty.quantity) / currencies[qty.currency] / (1 + qty.tax_rate)
+
         projects[qty.project_id].period += value
+        projects[qty.project_id].period_tur += turnover
 
         if (date === lastDate) {
           projects[qty.project_id].current += value
+          projects[qty.project_id].current_tur += turnover
         }
 
         if (!users[qty.user_id]) {
@@ -1688,10 +1700,12 @@ class Stats {
             name: qty.user_name,
             country: qty.user_country,
             period: 0,
-            current: 0
+            current: 0,
+            turnover: 0
           }
         }
         users[qty.user_id].period += value
+        users[qty.user_id].turnover += qty.total / currencies[qty.currency] / (1 + qty.tax_rate)
         if (date === lastDate) {
           users[qty.user_id].current += value
         }
