@@ -4,6 +4,7 @@ const ProjectEdit = use('App/Services/ProjectEdit')
 const Notification = use('App/Services/Notification')
 const MondialRelay = use('App/Services/MondialRelay')
 const Customer = use('App/Services/Customer')
+const User = use('App/Services/User')
 const File = use('App/Services/File')
 const Excel = require('exceljs')
 const Storage = use('App/Services/Storage')
@@ -114,7 +115,7 @@ class Production {
       {
         category: 'preprod',
         type: 'mechanical_rights',
-        action: 'file',
+        action: 'check',
         for: 'artist'
       },
       {
@@ -134,6 +135,12 @@ class Production {
         type: 'payment',
         action: 'check',
         for: 'team'
+      },
+      {
+        category: 'preprod',
+        type: 'billing',
+        action: 'check',
+        for: 'artist'
       },
       {
         category: 'prod',
@@ -207,8 +214,9 @@ class Production {
 
   static async find (params) {
     const item = await DB('production')
-      .select('production.*', 'vod.currency as vod_currency')
+      .select('production.*', 'vod.currency as vod_currency', 'user.customer_invoice_id as billing_customer')
       .join('vod', 'vod.project_id', 'production.project_id')
+      .leftJoin('user', 'vod.user_id', 'user.id')
       .where('production.id', params.id)
       .first()
 
@@ -278,6 +286,8 @@ class Production {
 
     item.dispatches = await DB('production_dispatch').select('id', 'type', 'logistician', 'quantity', 'quantity_received', 'tracking', 'date_receipt', 'created_at', 'updated_at', 'transporter').where('production_id', params.id).where('is_delete', 0).all()
 
+    item.billing_address = await DB('customer').find(item.billing_customer)
+
     return item
   }
 
@@ -294,6 +304,7 @@ class Production {
     item.resp_id = params.resp_id || null
     item.quantity = project.stage1 || project.quantity
     item.notif = params.notif
+    item.is_billing = params.is_billing
     item.date_preprod = Utils.date()
     item.created_at = Utils.date()
     item.updated_at = Utils.date()
@@ -398,6 +409,7 @@ class Production {
     item.shipping_final = params.shipping_final || null
     item.final_price = params.final_price || null
     item.notif = params.notif
+    item.is_billing = params.is_billing
     item.updated_at = Utils.date()
 
     await item.save()
@@ -490,6 +502,7 @@ class Production {
   }
 
   static async saveAction (params) {
+    console.log('🚀 ~ file: Production.js ~ line 504 ~ Production ~ saveAction ~ params', params)
     let item = await DB('production_action')
       .select('production_action.*', 'user.is_admin as user_is_admin')
       .join('user', 'user.id', params.user.id)
@@ -507,7 +520,7 @@ class Production {
     }
 
     const prod = await DB('production')
-      .select('production.project_id', 'resp.email as resp_email', 'com.email as com_email', 'project.name as project_name', 'project.artist_name as artist_name', 'vod.id as vod_id')
+      .select('production.project_id', 'resp.email as resp_email', 'com.email as com_email', 'project.name as project_name', 'project.artist_name as artist_name', 'vod.id as vod_id', 'vod.user_id as vod_user')
       .join('project', 'project.id', 'production.project_id')
       .join('vod', 'vod.project_id', 'project.id')
       .join('user as resp', 'resp.id', 'production.resp_id')
@@ -667,6 +680,10 @@ class Production {
             cat_number: params.cat_number
           })
       }
+    }
+
+    if (params.billing_address) {
+      await User.updateDelivery(prod.vod_user, { ...params.billing_address, invoice: true })
     }
 
     return { success: true }

@@ -378,7 +378,7 @@ User.updateDelivery = async (userId, params) => {
   await DB('user')
     .where('id', userId)
     .update({
-      customer_id: customer.id,
+      [params.invoice ? 'customer_invoice_id' : 'customer_id']: customer.id,
       country_id: customer.country_id
     })
   return customer
