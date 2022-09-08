@@ -682,8 +682,9 @@ class Production {
       }
     }
 
+    // If billing address, update custom data (id in user.customer_invoice_id)
     if (params.billing_address) {
-      await User.updateDelivery(prod.vod_user, { ...params.billing_address, invoice: true })
+      await User.updateDelivery(prod.vod_user, { ...params.billing_address, is_invoice: true })
     }
 
     return { success: true }
