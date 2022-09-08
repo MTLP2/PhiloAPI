@@ -250,6 +250,14 @@ const DB = (tablee, idd) => {
       return db
     },
 
+    orWhereBetween (arg1, arg2) {
+      if (arg1 === undefined || arg2 === undefined) {
+        throw Error('Param Where undefined')
+      }
+      p.query.whereBetween(arg1, arg2)
+      return db
+    },
+
     whereIn (arg1, arg2) {
       if (arg1 === undefined || arg2 === undefined) {
         throw Error('Param Where undefined')
