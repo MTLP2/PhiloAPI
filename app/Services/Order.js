@@ -602,7 +602,11 @@ Order.refundOrderShop = async (id, type, params) => {
     await Invoice.insertRefund(order)
     if (type === 'cancel') {
       for (const item of order.order_items) {
-        await Stock.calcul({ id: item.project_id, isShop: order.type === 'shop', quantity: item.quantity, transporter: order.transporter })
+        try {
+          await Stock.calcul({ id: item.project_id, isShop: order.type === 'shop', quantity: item.quantity, transporter: order.transporter })
+        } catch (err) {
+          console.err(err)
+        }
       }
     }
   }
