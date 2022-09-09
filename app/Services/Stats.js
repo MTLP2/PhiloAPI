@@ -1508,6 +1508,7 @@ class Stats {
         total: { total: 0, dates: { ...dates } }
       },
       styles: {},
+      distrib: {},
       outstanding: 0,
       outstanding_delayed: 0,
       users: {
@@ -1581,7 +1582,7 @@ class Stats {
     const quantityPromise = await DB('order_shop as os')
       .select(
         'os.created_at', 'quantity', 'is_paid', 'os.type', 'is_licence', 'os.type',
-        'vod.project_id', 'project.artist_name', 'project.name', 'project.picture',
+        'vod.project_id', 'project.artist_name', 'project.name', 'project.picture', 'project.styles',
         'os.user_id', 'user.is_pro', 'user.name as user_name', 'user.country_id as user_country',
         'oi.price', 'os.total', 'os.currency', 'os.tax_rate'
       )
@@ -1594,9 +1595,10 @@ class Stats {
 
     const statementsPromise = DB()
       .select('statement.id', 'statement.date', 'vod.fee_distrib_date', 'vod.payback_distrib',
-        'vod.is_licence', 'vod.currency')
+        'vod.is_licence', 'vod.currency', 'project.styles')
       .from('statement')
       .join('vod', 'vod.project_id', 'statement.project_id')
+      .join('project', 'vod.project_id', 'project.id')
       .whereBetween(DB.raw('DATE_FORMAT(concat(statement.date, \'-01\'), \'%Y-%m-%d\')'), [params.start, params.end])
       .hasMany('statement_distributor', 'distributors')
       .all()
@@ -1642,7 +1644,13 @@ class Stats {
       .groupBy('type')
       .all()
 
-    const [quantity, invoices, invoicesNotPaid, statements, projects, productions, users, stocks, quotes, currenciesDb] = await Promise.all([
+    const stylesPromise = await DB('style')
+      .select('style.id', 'genre.name')
+      .join('genre', 'genre.id', 'style.genre_id')
+      .all()
+
+    const [quantity, invoices, invoicesNotPaid, statements, projects,
+      productions, users, stocks, quotes, stylesArray, currenciesDb] = await Promise.all([
       quantityPromise,
       invoicesPromise,
       invoicesNotPaidPromise,
@@ -1652,11 +1660,17 @@ class Stats {
       usersPromise,
       stocksPromise,
       quotesPromise,
+      stylesPromise,
       currenciesPromise
     ])
 
     console.log('TOP 1')
     const currencies = Utils.getCurrencies('EUR', currenciesDb)
+
+    const styles = {}
+    for (const s of stylesArray) {
+      styles[s.id] = s.name
+    }
 
     const orders = {}
     const ordersList = await DB('order_shop')
@@ -1825,6 +1839,13 @@ class Stats {
           d.quantity.direct_shop.dates[date] += quantity
         }
 
+        for (const style of qty.styles.split(',')) {
+          if (!d.styles[styles[style]]) {
+            d.styles[styles[style]] = 0
+          }
+          d.styles[styles[style]] += quantity
+        }
+
         if (!p[qty.project_id]) {
           p[qty.project_id] = {
             id: qty.project_id,
@@ -1871,6 +1892,8 @@ class Stats {
         }
       }
     }
+
+    console.log(d.styles)
     d.orders.projects.current = Object.values(p)
       .filter(a => a.current > 0)
       .sort((a, b) => a.current - b.current < 0 ? 1 : -1)
@@ -1892,8 +1915,20 @@ class Stats {
         d.quantity.distrib.total += distrib.quantity
         d.quantity.distrib.dates[date] += distrib.quantity
 
+        if (!d.distrib[distrib.name]) {
+          d.distrib[distrib.name] = 0
+        }
+        d.distrib[distrib.name] += distrib.quantity
+
         d.quantity.returned.total += Math.abs(distrib.returned)
         d.quantity.returned.dates[date] += Math.abs(distrib.returned)
+
+        for (const style of statement.styles.split(',')) {
+          if (!d.styles[styles[style]]) {
+            d.styles[styles[style]] = 0
+          }
+          d.styles[styles[style]] += distrib.quantity
+        }
       }
     }
 
@@ -1985,6 +2020,15 @@ class Stats {
       .map(([country, value]) => ({ country: country, value: value }))
       .sort((a, b) => a.value - b.value < 0 ? 1 : -1)
 
+    d.styles = Object.entries(d.styles)
+      .map(([id, value]) => ({ name: id, value: value }))
+      .sort((a, b) => a.value - b.value < 0 ? 1 : -1)
+
+    d.distrib = Object.entries(d.distrib)
+      .map(([id, value]) => ({ name: id, value: value }))
+      .sort((a, b) => a.value - b.value < 0 ? 1 : -1)
+    console.log(d.distrib)
+    // console.log(d.styles)
     console.log('TOP 3')
 
     return d
