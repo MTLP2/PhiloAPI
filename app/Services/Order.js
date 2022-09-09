@@ -560,6 +560,7 @@ Order.refundOrderShop = async (id, type, params) => {
       'order_item.project_id', 'order.id as order_id')
     .join('order', 'order.id', 'order_shop.order_id')
     .join('order_item', 'order.id', 'order_item.order_id')
+    .hasMany('order_item', 'order_items', 'order_shop_id')
     .where('order_shop.id', id)
     .first()
 
@@ -571,7 +572,7 @@ Order.refundOrderShop = async (id, type, params) => {
 
   // Proceed to transaction refund if order is not only history (or if params are not set)
   if (!params || (params && params.only_history === 'false')) {
-    await Order.refundPayment(order)
+    // await Order.refundPayment(order)
   }
 
   if (type === 'refund') {
@@ -599,8 +600,10 @@ Order.refundOrderShop = async (id, type, params) => {
 
   if ((params && params.credit_note === 'true') || !params) {
     await Invoice.insertRefund(order)
-    if (order.project_id && type === 'cancel') {
-      await Stock.calcul({ id: order.project_id })
+    if (type === 'cancel') {
+      for (const item of order.order_items) {
+        await Stock.calcul({ id: item.project_id, isShop: order.type === 'shop', quantity: item.quantity, transporter: order.transporter })
+      }
     }
   }
 
