@@ -153,6 +153,10 @@ class Invoice {
     invoice.order_number = params.order_number
     invoice.name = params.name
     invoice.date = params.date
+    invoice.date_payment = params.date_payment
+    if (params.status === 'paid' && invoice.status !== 'paid' && !params.date_payment) {
+      invoice.date_payment = Utils.date()
+    }
     invoice.status = params.status
     invoice.email = params.email
     invoice.payment_days = params.payment_days || 0
@@ -221,6 +225,7 @@ class Invoice {
     invoice.tax = order.tax
     invoice.total = order.total
     invoice.date = Utils.date()
+    invoice.date_payment = Utils.date()
     invoice.status = 'paid'
     invoice.currency = order.currency
     invoice.currency_rate = order.currency_rate
@@ -417,6 +422,7 @@ class Invoice {
         type: 'invoice',
         status: 'paid',
         date: order.created_at,
+        date_payment: order.created_at,
         number: number,
         code: `I${year}${number}`,
         year: year,
