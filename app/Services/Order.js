@@ -572,7 +572,7 @@ Order.refundOrderShop = async (id, type, params) => {
 
   // Proceed to transaction refund if order is not only history (or if params are not set)
   if (!params || (params && params.only_history === 'false')) {
-    // await Order.refundPayment(order)
+    await Order.refundPayment(order)
   }
 
   if (type === 'refund') {
