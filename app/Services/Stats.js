@@ -1499,6 +1499,17 @@ class Stats {
         users: {},
         projects: {}
       },
+      countries: {
+        quantity: {},
+        users: {},
+        turnover: {}
+      },
+      quotes: {
+        total: { total: 0, dates: { ...dates } }
+      },
+      styles: {},
+      outstanding: 0,
+      outstanding_delayed: 0,
       users: {
         total: { total: 0, dates: { ...dates } },
         digger: { total: 0, dates: { ...dates } },
@@ -1597,7 +1608,7 @@ class Stats {
       .all()
 
     const invoicesNotPaidPromise = await DB('invoice')
-      .select('total', 'tax_rate', 'date')
+      .select('total', 'currency', 'tax_rate', 'date')
       .where('type', 'invoice')
       .where('status', 'invoiced')
       .where('compatibility', true)
@@ -1610,10 +1621,14 @@ class Stats {
       .all()
 
     const usersPromise = await DB('user')
-      .select('created_at', 'type', DB.raw('count(*) as total'))
+      .select('created_at', 'country_id', 'type')
       .whereBetween('created_at', [params.start, params.end])
-      .groupBy('type')
-      .groupBy('created_at')
+      .all()
+
+    const quotesPromise = await DB('quote')
+      .select('created_at')
+      .where('site', true)
+      .whereBetween('created_at', [params.start, params.end])
       .all()
 
     const productionsPromise = await DB('production')
@@ -1627,7 +1642,7 @@ class Stats {
       .groupBy('type')
       .all()
 
-    const [quantity, invoices, invoicesNotPaid, statements, projects, productions, users, stocks, currenciesDb] = await Promise.all([
+    const [quantity, invoices, invoicesNotPaid, statements, projects, productions, users, stocks, quotes, currenciesDb] = await Promise.all([
       quantityPromise,
       invoicesPromise,
       invoicesNotPaidPromise,
@@ -1636,6 +1651,7 @@ class Stats {
       productionsPromise,
       usersPromise,
       stocksPromise,
+      quotesPromise,
       currenciesPromise
     ])
 
@@ -1762,44 +1778,51 @@ class Stats {
     }
 
     for (const invoice of invoicesNotPaid) {
-      const beforeDelayed = 0
+      const date = moment(invoice.date)
+      const start = moment(Object.keys(dates)[0])
+      const total = invoice.total / currencies[invoice.currency] / (1 + invoice.tax_rate)
+
+      d.outstanding += total
+      if (date < start) {
+        d.outstanding_delayed += total
+      }
     }
 
     const u = {}
     const p = {}
     for (const qty of quantity) {
       const date = moment(qty.created_at).format(format)
-      const value = qty.quantity
+      const quantity = qty.quantity
 
       if (!qty.is_paid) {
-        d.quantity.refund.total += value
-        d.quantity.refund.dates[date] += value
+        d.quantity.refund.total += quantity
+        d.quantity.refund.dates[date] += quantity
       } else {
-        d.quantity.total.total += value
-        d.quantity.total.dates[date] += value
+        d.quantity.total.total += quantity
+        d.quantity.total.dates[date] += quantity
 
-        d.quantity.site.total += value
-        d.quantity.site.dates[date] += value
+        d.quantity.site.total += quantity
+        d.quantity.site.dates[date] += quantity
 
         if (qty.type === 'shop') {
-          d.quantity.shop.total += value
-          d.quantity.shop.dates[date] += value
+          d.quantity.shop.total += quantity
+          d.quantity.shop.dates[date] += quantity
         } else if (qty.type === 'vod') {
-          d.quantity.vod.total += value
-          d.quantity.vod.dates[date] += value
+          d.quantity.vod.total += quantity
+          d.quantity.vod.dates[date] += quantity
         }
 
         if (qty.is_licence) {
-          d.quantity.licence.total += value
-          d.quantity.licence.dates[date] += value
+          d.quantity.licence.total += quantity
+          d.quantity.licence.dates[date] += quantity
         } else {
-          d.quantity.project.total += value
-          d.quantity.project.dates[date] += value
+          d.quantity.project.total += quantity
+          d.quantity.project.dates[date] += quantity
         }
 
         if (qty.is_pro) {
-          d.quantity.direct_shop.total += value
-          d.quantity.direct_shop.dates[date] += value
+          d.quantity.direct_shop.total += quantity
+          d.quantity.direct_shop.dates[date] += quantity
         }
 
         if (!p[qty.project_id]) {
@@ -1816,11 +1839,18 @@ class Stats {
         }
         const turnover = (qty.price * qty.quantity) / currencies[qty.currency] / (1 + qty.tax_rate)
 
-        p[qty.project_id].period += value
+        if (!d.countries.quantity[qty.user_country]) {
+          d.countries.quantity[qty.user_country] = 0
+          d.countries.turnover[qty.user_country] = 0
+        }
+        d.countries.quantity[qty.user_country] += quantity
+        d.countries.turnover[qty.user_country] += turnover
+
+        p[qty.project_id].period += quantity
         p[qty.project_id].period_tur += turnover
 
         if (date === lastDate) {
-          p[qty.project_id].current += value
+          p[qty.project_id].current += quantity
           p[qty.project_id].current_tur += turnover
         }
 
@@ -1834,10 +1864,10 @@ class Stats {
             turnover: 0
           }
         }
-        u[qty.user_id].period += value
+        u[qty.user_id].period += quantity
         u[qty.user_id].turnover += qty.total / currencies[qty.currency] / (1 + qty.tax_rate)
         if (date === lastDate) {
-          u[qty.user_id].current += value
+          u[qty.user_id].current += quantity
         }
       }
     }
@@ -1865,6 +1895,12 @@ class Stats {
         d.quantity.returned.total += Math.abs(distrib.returned)
         d.quantity.returned.dates[date] += Math.abs(distrib.returned)
       }
+    }
+
+    for (const quote of quotes) {
+      const date = moment(quote.created_at).format(format)
+      d.quotes.total.total++
+      d.quotes.total.dates[date]++
     }
 
     for (const project of projects) {
@@ -1905,11 +1941,16 @@ class Stats {
     for (const user of users) {
       const date = moment(user.created_at).format(format)
 
-      d.users.total.total += user.total
-      d.users.total.dates[date] += user.total
+      d.users.total.total++
+      d.users.total.dates[date]++
 
-      d.users[user.type].total += user.total
-      d.users[user.type].dates[date] += user.total
+      d.users[user.type].total++
+      d.users[user.type].dates[date]++
+
+      if (!d.countries.users[user.country_id]) {
+        d.countries.users[user.country_id] = 0
+      }
+      d.countries.users[user.country_id]++
     }
 
     for (const prod of productions) {
@@ -1931,8 +1972,21 @@ class Stats {
     }
 
     d.stocks = stocks.sort((a, b) => a.quantity - b.quantity < 0 ? 1 : -1)
-    console.log(stocks)
+
+    d.countries.turnover = Object.entries(d.countries.turnover)
+      .map(([country, value]) => ({ country: country, value: value }))
+      .sort((a, b) => a.value - b.value < 0 ? 1 : -1)
+
+    d.countries.users = Object.entries(d.countries.users)
+      .map(([country, value]) => ({ country: country, value: value }))
+      .sort((a, b) => a.value - b.value < 0 ? 1 : -1)
+
+    d.countries.quantity = Object.entries(d.countries.quantity)
+      .map(([country, value]) => ({ country: country, value: value }))
+      .sort((a, b) => a.value - b.value < 0 ? 1 : -1)
+
     console.log('TOP 3')
+
     return d
   }
 
