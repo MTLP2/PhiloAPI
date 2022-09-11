@@ -9,6 +9,8 @@ const Notification = use('App/Services/Notification')
 const Antl = use('Antl')
 const ApiError = use('App/ApiError')
 const View = use('View')
+const Admin = use('App/Services/Admin')
+const Cart = use('App/Services/Cart')
 
 class Invoice {
   static async all (params) {
@@ -56,7 +58,6 @@ class Invoice {
     if (!invoice) {
       throw new ApiError(404)
     }
-    const Admin = use('App/Services/Admin')
 
     if (invoice.order_id) {
       invoice.order = await Admin.getOrder(invoice.order_id)
@@ -74,7 +75,6 @@ class Invoice {
   }
 
   static async byOrderShopId (id) {
-    const Admin = use('App/Services/Admin')
     const invoice = {}
     const shop = await Admin.getOrderShop(id)
     invoice.order = {
@@ -404,7 +404,6 @@ class Invoice {
       .belongsTo('customer')
       .all()
 
-    const Cart = use('App/Services/Cart')
     let order = {}
     for (const i in orders) {
       if (order.id === orders[i].id) {

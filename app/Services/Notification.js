@@ -7,6 +7,7 @@ const DB = use('App/DB')
 const Antl = use('Antl')
 const Env = use('Env')
 const View = use('View')
+const User = use('App/Services/User')
 const api = new APIClient(Env.get('CIO_APP_KEY'), { region: RegionEU })
 
 Notification.add = async (params) => {
@@ -192,7 +193,6 @@ Notification.sendEmail = async (params) => {
 }
 
 Notification.template = (params) => {
-  const User = use('App/Services/User')
   const hash = User.encodeUnsubscribeNewseletter(params.user_id)
 
   const lang = params.user.lang

@@ -167,7 +167,6 @@ Vod.save = async (params, pp) => {
   }
 
   if (params.profile_picture_data) {
-    const User = use('App/Services/User')
     await User.updatePicture(
       vod.user_id,
       Buffer.from(params.profile_picture_data.replace(/^data:image\/(png|jpg|jpeg);base64,/, ''), 'base64')

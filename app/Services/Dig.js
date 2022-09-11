@@ -112,7 +112,6 @@ Dig.confirm = async (params) => {
 }
 
 Dig.setPointsAll = async () => {
-  const DB = use('App/DB')
   const users = await DB().from('user').all()
 
   await Promise.all(users.map(async user => {

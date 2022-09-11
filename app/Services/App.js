@@ -1156,7 +1156,6 @@ App.convertOrderBandcamp = async () => {
 }
 
 App.convertKissKiss = async (params) => {
-  const Daudin = use('App/Services/Daudin')
   const csv = fs.readFileSync('between-sleeps.tsv', 'utf8')
   const countries = await DB('country').where('lang', 'en').all()
   const lines = csv.split('\n')
