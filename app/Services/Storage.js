@@ -82,13 +82,13 @@ class StorageService {
     return Storage.delete(fileName, isPrivate)
   }
 
-  static async deleteImage (fileName, isPrivate, invalidate) {
+  static async deleteImage (fileName, isPrivate, invalidate = false) {
     await Storage.delete(fileName + '.jpg', isPrivate)
     await Storage.delete(fileName + '.png', isPrivate)
     await Storage.delete(fileName + '.webp', isPrivate)
 
     if (invalidate) {
-      await Storage.invalidate(invalidate)
+      await Storage.invalidate(`/${fileName}.*`)
     }
   }
 
