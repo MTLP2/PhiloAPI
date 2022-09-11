@@ -1,0 +1,303 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * {
+      -webkit-print-color-adjust: exact;
+    }
+    body,
+    html {
+      font-family:  "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font-size: 10px;
+      padding: 0px;
+      margin: 0px;
+    }
+    .header {
+      background: #000;
+      padding: 10px 30px;
+      color: #FFF;
+      line-height: 1.5em;
+      justify-content: space-between;
+      align-content: center;
+    }
+    .header img {
+      height: 40px;
+    }
+    .header .number {
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    .form {
+      padding: 30px;
+    }
+    .title {
+      font-size: 100%;
+      text-transform: uppercase;
+      font-weight: bold;
+      border-bottom: 1px solid #DDD;
+      margin-bottom: 10px;
+      margin-top: 20px;
+      padding: 10px 0;
+    }
+    .subtitle {
+      font-size: 100%;
+      text-transform: uppercase;
+      font-weight: bold;
+      border-bottom: 1px solid #DDD;
+      margin-bottom: 20px;
+      margin-top: 20px;
+      padding: 10px 0;
+    }
+
+    .preview {
+      display: flex;
+      background: #F0F0F0;
+      padding: 10px;
+      border-radius: 10px;
+      margin: 5px 0;
+    }
+    .vinyl {
+      width: 250px;
+      margin-right: 10px;
+    }
+    .vinyl img {
+      width: 100%;
+    }
+    .artist, .name {
+      font-weight: bold;
+      font-size: 150%;
+      text-transform: uppercase;
+      padding: 5px;
+      font-weight: bold;
+    }
+    .name {
+      font-size: 120%;
+    }
+    .label, .barcode, .catnumber {
+      font-size: 90%;
+      display: inline-block;
+      border-radius: 15px;
+      border: 1px solid #000;
+      padding: 4px 12px;
+      margin: 5px;
+    }
+    .barcode {
+      background: #000;
+      color: #FFF;
+    }
+    table {
+      width: 100%;
+    }
+    th {
+      color: #888;
+      text-align: left;
+      text-transform: uppercase;
+      font-size: 90%;
+    }
+    th, td {
+      padding: 3px 0px;
+    }
+    .value {
+      text-align: right;
+    }
+    /**
+    tr.total td {
+      border-top: 1px solid #DDD;
+      font-weight: bold;
+      font-size: 18px;
+      padding-top: 8px;
+    }
+    **/
+    .total.first {
+      padding-top: 15px;
+      border-top: 1px solid #DDD;
+    }
+    .total {
+      font-size: 120%;
+      text-align: right;
+      padding-top: 5px;
+      margin-top: 5px;
+    }
+    .total.last {
+      font-size: 130%;
+    }
+    .total span:first-child {
+      margin-right: 10px;
+    }
+    .total span.tax {
+      font-size: 90%;
+      color: #999;
+    }
+    .total .number {
+      font-weight: bold;
+    }
+    .address table tr:nth-child(even) {
+      background: #F0F0F0;
+    }
+    .address table td {
+      padding: 10px 15px;
+    }
+    .warning {
+      color: #999;
+      font-size: 90%;
+    }
+    .sign_outer {
+      text-align: right;
+    }
+    .sign {
+      background: #F0F0F0;
+      display: inline-block;
+      width: 250px;
+      height: 60px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="header">
+    <table>
+      <tr>
+        <td width="60%">
+          <div class="logo">
+            <img src="https://storage.diggersfactory.com/assets/images/logo_w.png" alt="Diggers Factory" />
+          </div>
+        </td>
+        <td>
+          <div class="info">
+            <div class="number">
+              {{t('order_form')}} n°{{prod.id}} - {{date.format('DD/MM/YYYY')}}
+            </div>
+            <div class="address">
+              {{project.customer.firstname}} {{project.customer.lastname}}<br />
+              {{project.customer.address}}<br />
+              {{project.customer.zip_code}} {{project.customer.city}}, {{project.customer.country_id}}<br />
+            </div>
+          </div>
+        </td>
+      </tr>
+    </table>
+  </div>
+  <div class="form">
+    <div class="preview">
+    <table>
+      <tr>
+        <td>
+          <div class="vinyl">
+            <img src="{{image}}" />
+          </div>
+        </td>
+        <td width="80%">
+          <div class="info">
+            <div class="artist">
+              {{project.artist_name}}
+            </div>
+            <div class="name">
+              {{project.name}}
+            </div>
+            <div>
+              <div class="catnumber">
+                {{t('cat_number')}} {{project.cat_number}}
+              </div>
+              <br />
+              <div class="barcode">
+                {{project.barcode}}
+              </div>
+            </div>
+          </div>
+        </td>
+      </tr>
+    </table>
+    </div>
+    <div class="title">{{t('detail_order_form')}}</div>
+    <table>
+      <thead>
+        <tr>
+          <th>{{t('description')}}</th>
+          <th class="value">{{t('amount')}}</th>
+        </tr>
+      </thead>
+      <tbody>
+        @each(line in prod.lines)
+          <tr>
+            <td>{{line.label}}</td>
+            <td class="value">{{line.price}} {{currency}}</td>
+          </tr>
+        @endeach
+      </tbody>
+    </table>
+    <div class="total first">
+      <span>{{t('total_ht')}}</span>
+      <span class="number">{{prod.sub_total}} {{prod.currency}}</span>
+    </div>
+    <div class="total last">
+      <span>{{t('total_ttc')}} <span class="tax">(TVA {{prod.tax_rate}}%)</span></span>
+      <span class="number">{{prod.total}} {{prod.currency}}</span>
+    </div>
+
+    <!--
+    <div class="title">Détails de livraison</div>
+    <div class="subtitle">Point de livraison</div>
+    <div class="address">
+      <table>
+        <thead>
+          <tr>
+            <th>Adresse</th>
+            <th>Type de Produit</th>
+            <th>Quantités</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <strong>Alexis Castiel</strong><br />
+              10 boulevard Arago 75013 Paris<br />
+              FRANCE<br />
+              +336 32 38 87 24
+            </td>
+            <td>Test pressing</td>
+            <td><div class="label">40</div></td>
+          </tr>
+          <tr>
+            <td>
+              <strong>Alexis Castiel</strong><br />
+              10 boulevard Arago 75013 Paris<br />
+              FRANCE<br />
+              +336 32 38 87 24
+            </td>
+            <td>Test pressing</td>
+            <td><div class="label">40</div></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    -->
+
+    <div class="title">{{t('sign_customer')}}</div>
+
+    <div class="sign_outer">
+      <div class="sign">
+      </div>
+    </div>
+  
+    <div class="warning">
+      @if(lang=== "fr")
+        <p>Attention le prix peut varier en fonction de la quantité pressée. En effet il y a une
+          tolérance négative ou positive de 10% sur la production des vinyles. De fait s’il y a une production
+          de 1000 exemplaires vous pouvez recevoir entre 900 et 1100 vinyles. Le prix final de la production
+          s'adapte en fonction bien évidemment.
+          <br />
+          Les délais de livraisons sont estimées entre 12 et 16 semaines et 97% des produits sortent avant
+          16 semaines. Mais étant dépendant des usines, nous ne pouvons garantir ces délais et nous ne pourrons
+          offrir de compensation en cas de retard.
+          <br />
+          Les prix sont garanties pour un délai de 2 semaines. Si vous signez ce bon de
+          commande après ce délai, il se peut que le prix varie.
+        </p>
+      @else
+      @endif
+    </div>
+  </div>
+</body>
+</html>

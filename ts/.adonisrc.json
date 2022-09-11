@@ -1,0 +1,23 @@
+{
+  "typescript": true,
+  "commands": ["@adonisjs/core/build/commands/index.js"],
+  "exceptionHandlerNamespace": "App/Exceptions/Handler",
+  "aliases": {
+    "App": "app",
+    "Config": "config",
+    "Database": "database",
+    "Contracts": "contracts"
+  },
+  "preloads": ["./start/routes", "./start/kernel"],
+  "providers": ["@adonisjs/core", "@adonisjs/view", "@adonisjs/i18n"],
+  "tests": {
+    "suites": [
+      {
+        "name": "functional",
+        "files": ["tests/functional/**/*.spec(.ts|.js)"],
+        "timeout": 60000
+      }
+    ]
+  },
+  "testProviders": ["@japa/preset-adonis/TestsProvider"]
+}

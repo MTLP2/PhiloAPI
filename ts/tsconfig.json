@@ -1,0 +1,16 @@
+{
+  "extends": "adonis-preset-ts/tsconfig.json",
+  "include": ["**/*"],
+  "exclude": ["node_modules", "build"],
+  "compilerOptions": {
+    "allowUnreachableCode": true,
+    "outDir": "build",
+    "rootDir": "./",
+    "sourceMap": true,
+    "paths": {
+      "App/*": ["./app/*"],
+      "Config/*": ["./config/*"]
+    },
+    "types": ["@adonisjs/core", "@japa/preset-adonis/build/adonis-typings"]
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "quote": "Quote",
+  "order_form": "Order form",
+  "cat_number": "CAT. NUMBER",
+  "detail_order_form": "Purchase order details",
+  "description": "Description",
+  "quantity": "Quantity",
+  "amount": "Amount",
+  "total_ht": "Total",
+  "total_ttc": "Total with tax",
+  "sign_customer": "Client's signature"
+}
