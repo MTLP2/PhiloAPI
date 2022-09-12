@@ -502,7 +502,7 @@ class Production {
   }
 
   static async saveAction (params) {
-    console.log('🚀 ~ file: Production.js ~ line 504 ~ Production ~ saveAction ~ params', params)
+    // console.log('🚀 ~ file: Production.js ~ line 504 ~ Production ~ saveAction ~ params', params)
     let item = await DB('production_action')
       .select('production_action.*', 'user.is_admin as user_is_admin')
       .join('user', 'user.id', params.user.id)
@@ -520,7 +520,7 @@ class Production {
     }
 
     const prod = await DB('production')
-      .select('production.project_id', 'resp.email as resp_email', 'com.email as com_email', 'project.name as project_name', 'project.artist_name as artist_name', 'vod.id as vod_id', 'vod.user_id as vod_user')
+      .select('production.project_id', 'resp.email as resp_email', 'resp.id as resp_id', 'com.email as com_email', 'project.name as project_name', 'project.artist_name as artist_name', 'vod.id as vod_id', 'vod.user_id as vod_user')
       .join('project', 'project.id', 'production.project_id')
       .join('vod', 'vod.project_id', 'project.id')
       .join('user as resp', 'resp.id', 'production.resp_id')
@@ -640,6 +640,19 @@ class Production {
       // Send valid notif to respo prod for some types
       if (['payment', 'pressing_proof'].includes(params.type)) {
         sendRespoProdNotif()
+      }
+    }
+
+    // Dispatch pending notification for some actions
+    if (params.status === 'pending') {
+      if (['billing', 'information'].includes(params.type)) {
+        Production.notif({
+          production_id: params.id,
+          user_id: prod.resp_id,
+          type: 'production_pending_action',
+          data: params.type,
+          resp: true
+        })
       }
     }
 
