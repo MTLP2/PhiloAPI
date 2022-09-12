@@ -22,6 +22,7 @@ const Stock = use('App/Services/Stock')
 const Sna = use('App/Services/Sna')
 const Deepl = use('App/Services/Deepl')
 const cio = use('App/Services/CIO')
+const Song = use('App/Services/Song')
 const Env = use('Env')
 const moment = require('moment')
 const google = require('googleapis')
@@ -782,7 +783,6 @@ Admin.saveWishlist = async (params) => {
 
   if (wishlist.step === 'checking') {
     if (params.step === 'in_progress') {
-      const Project = use('App/Services/Project')
       await Project.wish(wishlist.project_id, wishlist.user_id)
       notification = 'my_project_create_validate'
     } else if (params.step === 'refused') {
@@ -990,7 +990,6 @@ Admin.saveVod = async (params) => {
   }
 
   if (params.songs) {
-    const Song = use('App/Services/Song')
     await Song.uploadSongs(params)
   }
 
@@ -1424,17 +1423,14 @@ Admin.sendProjectNotif = async (projectId, success) => {
 }
 
 Admin.reverseStripe = (params) => {
-  const Payment = use('App/Services/Payment')
   return Payment.reverse(params)
 }
 
 Admin.transferStripe = (params) => {
-  const Payment = use('App/Services/Payment')
   return Payment.transfer(params)
 }
 
 Admin.payoutStripe = (params) => {
-  const Payment = use('App/Services/Payment')
   return Payment.payout(params)
 }
 

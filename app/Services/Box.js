@@ -6,6 +6,7 @@ const Project = use('App/Services/Project')
 const Customer = use('App/Services/Customer')
 const PromoCode = use('App/Services/PromoCode')
 const Order = use('App/Services/Order')
+const Cart = use('App/Services/Cart')
 const Stock = use('App/Services/Stock')
 const Payment = require('./Payment')
 const moment = require('moment')
@@ -333,7 +334,6 @@ class Box {
   }
 
   static async calculate (params) {
-    const Cart = use('App/Services/Cart')
     const res = {}
 
     let shipping

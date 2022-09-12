@@ -6,8 +6,6 @@ const config = require('../../config')
 const Artwork = require('./Artwork')
 const Vod = require('./Vod')
 const Notification = require('./Notification')
-const Discogs = require('disconnect').Client
-
 const Project = DB('project')
 
 Project.find = async (params) => {
