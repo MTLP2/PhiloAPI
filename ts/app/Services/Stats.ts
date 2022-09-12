@@ -172,6 +172,8 @@ class Stats {
     names.push('invoices')
     promises.push(DB().execute(query))
 
+    console.log(query)
+
     query = `
       SELECT invoice.id, invoice.tax_rate, invoice.currency, invoice.currency_rate,
         order_item.currency_rate as order_curency_rate,
@@ -821,6 +823,7 @@ class Stats {
     })
   }
 
+  /**
   static async getStatsTop(params) {
     const names = []
     const promises = []
@@ -1493,14 +1496,6 @@ class Stats {
       })
       res.users = users
 
-      /**
-      const inscriptions = { ...columns }
-      data.inscriptions.map(v => {
-        inscriptions[v.date] += v.total
-      })
-      res.inscriptions = inscriptions
-      **/
-
       res.ages = data.ages
       res.gender = data.gender
       res.types = data.types
@@ -1534,6 +1529,57 @@ class Stats {
       return res
     })
   }
+  **/
+
+  /**
+  static async getBigCustomer(params = {}) {
+    if (!params.start) {
+      params.start = '2020-01-01'
+    }
+    if (!params.end) {
+      params.end = '2022-01-01'
+    }
+    const promises = []
+
+    promises.push({
+      name: 'customers',
+      query: DB('order')
+        .select(
+          'user_id',
+          'user.name',
+          'user.email',
+          DB.raw('AVG(total * currency_rate) AS moy'),
+          DB.raw('SUM(total * currency_rate) AS totals'),
+          DB.raw('count(total) AS quantity')
+        )
+        .whereBetween('order.created_at', [params.start, params.end])
+        .whereNotIn('status', ['creating', 'failed'])
+        .join('user', 'user.id', 'user_id')
+        .having('quantity', '>', 3)
+        .groupBy('user_id')
+        .orderBy('totals', 'desc')
+        .all()
+    })
+
+    const d = await Promise.all(promises.map((p) => p.query))
+    const data = {}
+    for (const i in d) {
+      data[promises[i].name] = d[i]
+    }
+
+    return Utils.arrayToCsv(
+      [
+        { index: 'user_id', name: 'id' },
+        { index: 'name', name: 'name' },
+        { index: 'email', name: 'email' },
+        { index: 'totals', name: 'total' },
+        { index: 'moy', name: 'moy' },
+        { index: 'quantity', name: 'quantity' }
+      ],
+      data.customers
+    )
+  }
+  **/
 
   static async getStats2(params) {
     let format
@@ -1602,6 +1648,7 @@ class Stats {
         distributor: { total: 0, dates: { ...dates } },
         mastering_studio: { total: 0, dates: { ...dates } }
       },
+      plays: { total: 0, dates: { ...dates } },
       projects: {
         created: { total: 0, dates: { ...dates } },
         saved: { total: 0, dates: { ...dates } },
@@ -1619,22 +1666,59 @@ class Stats {
         vod: { total: 0, dates: { ...dates } },
         direct_shop: { total: 0, dates: { ...dates } },
         distrib: { total: 0, dates: { ...dates } },
+        distrib_project: { total: 0, dates: { ...dates } },
+        distrib_licence: { total: 0, dates: { ...dates } },
         returned: { total: 0, dates: { ...dates } }
       },
       turnover: {
         total: { total: 0, dates: { ...dates } },
-        project: { total: 0, dates: { ...dates } },
-        project_site: { total: 0, dates: { ...dates } },
-        project_invoice: { total: 0, dates: { ...dates } },
-        licence: { total: 0, dates: { ...dates } },
-        shipping: { total: 0, dates: { ...dates } },
-        distrib: { total: 0, dates: { ...dates } },
-        direct_shop: { total: 0, dates: { ...dates } },
-        direct_pressing: { total: 0, dates: { ...dates } },
-        box: { total: 0, dates: { ...dates } },
-        box_site: { total: 0, dates: { ...dates } },
-        box_invoice: { total: 0, dates: { ...dates } },
-        digital: { total: 0, dates: { ...dates } },
+        all: { total: 0, dates: { ...dates } },
+        credit_note: { total: 0, dates: { ...dates } },
+        project: {
+          total: { total: 0, dates: { ...dates } },
+          all: { total: 0, dates: { ...dates } },
+          site: { total: 0, dates: { ...dates } },
+          invoice: { total: 0, dates: { ...dates } },
+          credit_note: { total: 0, dates: { ...dates } }
+        },
+        licence: {
+          total: { total: 0, dates: { ...dates } },
+          all: { total: 0, dates: { ...dates } },
+          credit_note: { total: 0, dates: { ...dates } }
+        },
+        shipping: {
+          total: { total: 0, dates: { ...dates } },
+          all: { total: 0, dates: { ...dates } },
+          site: { total: 0, dates: { ...dates } },
+          invoice: { total: 0, dates: { ...dates } },
+          credit_note: { total: 0, dates: { ...dates } }
+        },
+        distrib: {
+          total: { total: 0, dates: { ...dates } },
+          all: { total: 0, dates: { ...dates } },
+          project: { total: 0, dates: { ...dates } },
+          licence: { total: 0, dates: { ...dates } },
+          credit_note: { total: 0, dates: { ...dates } }
+        },
+        direct_shop: {
+          total: { total: 0, dates: { ...dates } },
+          all: { total: 0, dates: { ...dates } },
+          project: { total: 0, dates: { ...dates } },
+          licence: { total: 0, dates: { ...dates } },
+          credit_note: { total: 0, dates: { ...dates } }
+        },
+        direct_pressing: {
+          total: { total: 0, dates: { ...dates } },
+          all: { total: 0, dates: { ...dates } },
+          credit_note: { total: 0, dates: { ...dates } }
+        },
+        box: {
+          total: { total: 0, dates: { ...dates } },
+          all: { total: 0, dates: { ...dates } },
+          site: { total: 0, dates: { ...dates } },
+          invoice: { total: 0, dates: { ...dates } },
+          credit_note: { total: 0, dates: { ...dates } }
+        },
         error: { total: 0, dates: { ...dates } },
         other: { total: 0, dates: { ...dates } }
       },
@@ -1660,7 +1744,7 @@ class Stats {
     console.log('TOP 0')
     const currenciesPromise = DB('currency').all()
 
-    const quantityPromise = await DB('order_shop as os')
+    const quantityPromise = DB('order_shop as os')
       .select(
         'os.order_id',
         'os.created_at',
@@ -1756,6 +1840,11 @@ class Stats {
       .join('genre', 'genre.id', 'style.genre_id')
       .all()
 
+    const playPromise = await DB('song_play')
+      .select('created_at')
+      .whereBetween('created_at', [params.start, params.end])
+      .all()
+
     const [
       quantity,
       invoices,
@@ -1767,6 +1856,7 @@ class Stats {
       stocks,
       quotes,
       stylesArray,
+      plays,
       currenciesDb
     ] = await Promise.all([
       quantityPromise,
@@ -1779,10 +1869,11 @@ class Stats {
       stocksPromise,
       quotesPromise,
       stylesPromise,
+      playPromise,
       currenciesPromise
     ])
 
-    console.log('TOP 1')
+    console.log('-> TOP 1')
     const currencies = Utils.getCurrencies('EUR', currenciesDb)
 
     const styles = {}
@@ -1857,16 +1948,33 @@ class Stats {
       })
     }
 
-    console.log('TOP 2')
+    console.log('--> TOP 2')
+
+    const addPrice = (type, cat, cat2, date, value) => {
+      if (type === 'invoice') {
+        d.turnover[cat].total.dates[date] += value
+        d.turnover[cat].all.dates[date] += value
+
+        if (cat2) {
+          d.turnover[cat][cat2].dates[date] += value
+        }
+      } else {
+        d.turnover[cat].total.dates[date] -= value
+        d.turnover[cat].credit_note.dates[date] += value
+      }
+    }
 
     for (const invoice of invoices) {
       const total = invoice.sub_total * invoice.currency_rate
       const date = moment(invoice.date).format(format)
 
-      const type = invoice.type === 'invoice' ? 'turnover' : 'credit_note'
-
-      d[type].total.total += total
-      d[type].total.dates[date] += total
+      if (invoice.type === 'invoice') {
+        d.turnover.total.dates[date] += total
+        d.turnover.all.dates[date] += total
+      } else {
+        d.turnover.total.dates[date] -= total
+        d.turnover.credit_note.dates[date] += total
+      }
 
       const ods = orders[invoice.order_id]
       if (ods) {
@@ -1875,56 +1983,43 @@ class Stats {
           if (order.tax_rate) {
             shipping = shipping / (1 + order.tax_rate)
           }
-          d[type].shipping.total += shipping
-          d[type].shipping.dates[date] += shipping
+
+          addPrice(invoice.type, 'shipping', 'site', date, shipping)
 
           for (const item of order.items) {
             let total = item.total / (1 + order.tax_rate)
             if (order.type === 'box') {
               total = item.price / (1 + order.tax_rate)
-              d[type].box.total += total
-              d[type].box.dates[date] += total
-              d[type].box_site.total += total
-              d[type].box_site.dates[date] += total
+              addPrice(invoice.type, 'box', 'site', date, total)
             } else if (order.is_pro) {
-              d[type].direct_shop.total += total
-              d[type].direct_shop.dates[date] += total
+              if (item.is_licence) {
+                addPrice(invoice.type, 'direct_shop', 'licence', date, total)
+              } else {
+                addPrice(invoice.type, 'direct_shop', 'project', date, total)
+              }
             } else if (item.is_licence) {
-              d[type].licence.total += total
-              d[type].licence.dates[date] += total
+              addPrice(invoice.type, 'licence', null, date, total)
             } else {
-              d[type].project.total += total
-              d[type].project.dates[date] += total
-              d[type].project_site.total += total
-              d[type].project_site.dates[date] += total
+              addPrice(invoice.type, 'project', 'site', date, total)
             }
           }
         }
       } else if (invoice.category === 'box') {
-        d[type].box.total += total
-        d[type].box.dates[date] += total
-        d[type].box_invoice.total += total
-        d[type].box_invoice.dates[date] += total
+        addPrice(invoice.type, 'box', 'invoice', date, total)
       } else if (invoice.category === 'distribution') {
-        d[type].distrib.total += total
-        d[type].distrib.dates[date] += total
+        addPrice(invoice.type, 'distrib', null, date, total)
       } else if (invoice.category === 'direct_pressing') {
-        d[type].direct_pressing.total += total
-        d[type].direct_pressing.dates[date] += total
+        addPrice(invoice.type, 'direct_pressing', null, date, total)
       } else if (invoice.category === 'shipping') {
-        d[type].shipping.total += total
-        d[type].shipping.dates[date] += total
+        addPrice(invoice.type, 'shipping', 'invoice', date, total)
       } else if (invoice.category === 'project') {
-        d[type].project.total += total
-        d[type].project.dates[date] += total
-        d[type].project_invoice.total += total
-        d[type].project_invoice.dates[date] += total
+        addPrice(invoice.type, 'project', 'invoice', date, total)
       } else if (invoice.name.includes('Order ')) {
-        d[type].error.total += total
-        d[type].error.dates[date] += total
+        d.turnover.error.total += total
+        d.turnover.error.dates[date] += total
       } else {
-        d[type].other.total += total
-        d[type].other.dates[date] += total
+        d.turnover.other.total += total
+        d.turnover.other.dates[date] += total
       }
     }
 
@@ -2080,6 +2175,14 @@ class Stats {
         d.quantity.returned.total += Math.abs(distrib.returned)
         d.quantity.returned.dates[date] += Math.abs(distrib.returned)
 
+        if (statement.is_licence) {
+          d.quantity.distrib_licence.total += distrib.quantity
+          d.quantity.distrib_licence.dates[date] += distrib.quantity
+        } else {
+          d.quantity.distrib_project.total += distrib.quantity
+          d.quantity.distrib_project.dates[date] += distrib.quantity
+        }
+
         for (const style of statement.styles.split(',')) {
           if (!d.styles[styles[style]]) {
             d.styles[styles[style]] = 0
@@ -2087,6 +2190,12 @@ class Stats {
           d.styles[styles[style]] += distrib.quantity
         }
       }
+    }
+
+    for (const play of plays) {
+      const date = moment(play.created_at).format(format)
+      d.plays.total++
+      d.plays.dates[date]++
     }
 
     for (const quote of quotes) {
@@ -2193,57 +2302,9 @@ class Stats {
       .map(([id, value]) => ({ name: id, value: value }))
       .sort((a, b) => (a.value - b.value < 0 ? 1 : -1))
 
-    console.log('TOP 3')
+    console.log('---> TOP 3')
 
     return d
-  }
-
-  static async getBigCustomer(params = {}) {
-    if (!params.start) {
-      params.start = '2020-01-01'
-    }
-    if (!params.end) {
-      params.end = '2022-01-01'
-    }
-    const promises = []
-
-    promises.push({
-      name: 'customers',
-      query: DB('order')
-        .select(
-          'user_id',
-          'user.name',
-          'user.email',
-          DB.raw('AVG(total * currency_rate) AS moy'),
-          DB.raw('SUM(total * currency_rate) AS totals'),
-          DB.raw('count(total) AS quantity')
-        )
-        .whereBetween('order.created_at', [params.start, params.end])
-        .whereNotIn('status', ['creating', 'failed'])
-        .join('user', 'user.id', 'user_id')
-        .having('quantity', '>', 3)
-        .groupBy('user_id')
-        .orderBy('totals', 'desc')
-        .all()
-    })
-
-    const d = await Promise.all(promises.map((p) => p.query))
-    const data = {}
-    for (const i in d) {
-      data[promises[i].name] = d[i]
-    }
-
-    return Utils.arrayToCsv(
-      [
-        { index: 'user_id', name: 'id' },
-        { index: 'name', name: 'name' },
-        { index: 'email', name: 'email' },
-        { index: 'totals', name: 'total' },
-        { index: 'moy', name: 'moy' },
-        { index: 'quantity', name: 'quantity' }
-      ],
-      data.customers
-    )
   }
 }
 

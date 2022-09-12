@@ -1476,7 +1476,8 @@ class Stats {
     }
 
     params.end = params.end + ' 23:59'
-    const now = periodicity === 'months' ? moment(params.start).startOf('month') : moment(params.start)
+    const now =
+      periodicity === 'months' ? moment(params.start).startOf('month') : moment(params.start)
 
     const dates = {}
     let lastDate
@@ -1487,6 +1488,10 @@ class Stats {
     }
 
     const d = {
+      cart: {
+        avg_total: 0,
+        avg_quantity: 0
+      },
       productions: {
         total_start: { total: 0, dates: { ...dates } },
         total_end: { total: 0, dates: { ...dates } },
@@ -1505,7 +1510,8 @@ class Stats {
         turnover: {}
       },
       quotes: {
-        total: { total: 0, dates: { ...dates } }
+        total: { total: 0, dates: { ...dates } },
+        success: { total: 0, dates: { ...dates } }
       },
       styles: {},
       distrib: {},
@@ -1521,6 +1527,7 @@ class Stats {
         distributor: { total: 0, dates: { ...dates } },
         mastering_studio: { total: 0, dates: { ...dates } }
       },
+      plays: { total: 0, dates: { ...dates } },
       projects: {
         created: { total: 0, dates: { ...dates } },
         saved: { total: 0, dates: { ...dates } },
@@ -1538,22 +1545,59 @@ class Stats {
         vod: { total: 0, dates: { ...dates } },
         direct_shop: { total: 0, dates: { ...dates } },
         distrib: { total: 0, dates: { ...dates } },
+        distrib_project: { total: 0, dates: { ...dates } },
+        distrib_licence: { total: 0, dates: { ...dates } },
         returned: { total: 0, dates: { ...dates } }
       },
       turnover: {
         total: { total: 0, dates: { ...dates } },
-        project: { total: 0, dates: { ...dates } },
-        project_site: { total: 0, dates: { ...dates } },
-        project_invoice: { total: 0, dates: { ...dates } },
-        licence: { total: 0, dates: { ...dates } },
-        shipping: { total: 0, dates: { ...dates } },
-        distrib: { total: 0, dates: { ...dates } },
-        direct_shop: { total: 0, dates: { ...dates } },
-        direct_pressing: { total: 0, dates: { ...dates } },
-        box: { total: 0, dates: { ...dates } },
-        box_site: { total: 0, dates: { ...dates } },
-        box_invoice: { total: 0, dates: { ...dates } },
-        digital: { total: 0, dates: { ...dates } },
+        all: { total: 0, dates: { ...dates } },
+        credit_note: { total: 0, dates: { ...dates } },
+        project: {
+          total: { total: 0, dates: { ...dates } },
+          all: { total: 0, dates: { ...dates } },
+          site: { total: 0, dates: { ...dates } },
+          invoice: { total: 0, dates: { ...dates } },
+          credit_note: { total: 0, dates: { ...dates } }
+        },
+        licence: {
+          total: { total: 0, dates: { ...dates } },
+          all: { total: 0, dates: { ...dates } },
+          credit_note: { total: 0, dates: { ...dates } }
+        },
+        shipping: {
+          total: { total: 0, dates: { ...dates } },
+          all: { total: 0, dates: { ...dates } },
+          site: { total: 0, dates: { ...dates } },
+          invoice: { total: 0, dates: { ...dates } },
+          credit_note: { total: 0, dates: { ...dates } }
+        },
+        distrib: {
+          total: { total: 0, dates: { ...dates } },
+          all: { total: 0, dates: { ...dates } },
+          project: { total: 0, dates: { ...dates } },
+          licence: { total: 0, dates: { ...dates } },
+          credit_note: { total: 0, dates: { ...dates } }
+        },
+        direct_shop: {
+          total: { total: 0, dates: { ...dates } },
+          all: { total: 0, dates: { ...dates } },
+          project: { total: 0, dates: { ...dates } },
+          licence: { total: 0, dates: { ...dates } },
+          credit_note: { total: 0, dates: { ...dates } }
+        },
+        direct_pressing: {
+          total: { total: 0, dates: { ...dates } },
+          all: { total: 0, dates: { ...dates } },
+          credit_note: { total: 0, dates: { ...dates } }
+        },
+        box: {
+          total: { total: 0, dates: { ...dates } },
+          all: { total: 0, dates: { ...dates } },
+          site: { total: 0, dates: { ...dates } },
+          invoice: { total: 0, dates: { ...dates } },
+          credit_note: { total: 0, dates: { ...dates } }
+        },
         error: { total: 0, dates: { ...dates } },
         other: { total: 0, dates: { ...dates } }
       },
@@ -1579,12 +1623,28 @@ class Stats {
     console.log('TOP 0')
     const currenciesPromise = DB('currency').all()
 
-    const quantityPromise = await DB('order_shop as os')
+    const quantityPromise = DB('order_shop as os')
       .select(
-        'os.created_at', 'quantity', 'is_paid', 'os.type', 'is_licence', 'os.type',
-        'vod.project_id', 'project.artist_name', 'project.name', 'project.picture', 'project.styles',
-        'os.user_id', 'user.is_pro', 'user.name as user_name', 'user.country_id as user_country',
-        'oi.price', 'os.total', 'os.currency', 'os.tax_rate'
+        'os.order_id',
+        'os.created_at',
+        'quantity',
+        'is_paid',
+        'os.type',
+        'is_licence',
+        'os.type',
+        'vod.project_id',
+        'project.artist_name',
+        'project.name',
+        'project.picture',
+        'project.styles',
+        'os.user_id',
+        'user.is_pro',
+        'user.name as user_name',
+        'user.country_id as user_country',
+        'oi.price',
+        'os.total',
+        'os.currency',
+        'os.tax_rate'
       )
       .join('order_item as oi', 'oi.order_shop_id', 'os.id')
       .join('vod', 'vod.project_id', 'oi.project_id')
@@ -1594,12 +1654,22 @@ class Stats {
       .all()
 
     const statementsPromise = DB()
-      .select('statement.id', 'statement.date', 'vod.fee_distrib_date', 'vod.payback_distrib',
-        'vod.is_licence', 'vod.currency', 'project.styles')
+      .select(
+        'statement.id',
+        'statement.date',
+        'vod.fee_distrib_date',
+        'vod.payback_distrib',
+        'vod.is_licence',
+        'vod.currency',
+        'project.styles'
+      )
       .from('statement')
       .join('vod', 'vod.project_id', 'statement.project_id')
       .join('project', 'vod.project_id', 'project.id')
-      .whereBetween(DB.raw('DATE_FORMAT(concat(statement.date, \'-01\'), \'%Y-%m-%d\')'), [params.start, params.end])
+      .whereBetween(DB.raw("DATE_FORMAT(concat(statement.date, '-01'), '%Y-%m-%d')"), [
+        params.start,
+        params.end
+      ])
       .hasMany('statement_distributor', 'distributors')
       .all()
 
@@ -1628,7 +1698,7 @@ class Stats {
       .all()
 
     const quotesPromise = await DB('quote')
-      .select('created_at')
+      .select('created_at', 'project_id')
       .where('site', true)
       .whereBetween('created_at', [params.start, params.end])
       .all()
@@ -1649,8 +1719,25 @@ class Stats {
       .join('genre', 'genre.id', 'style.genre_id')
       .all()
 
-    const [quantity, invoices, invoicesNotPaid, statements, projects,
-      productions, users, stocks, quotes, stylesArray, currenciesDb] = await Promise.all([
+    const playPromise = await DB('song_play')
+      .select('created_at')
+      .whereBetween('created_at', [params.start, params.end])
+      .all()
+
+    const [
+      quantity,
+      invoices,
+      invoicesNotPaid,
+      statements,
+      projects,
+      productions,
+      users,
+      stocks,
+      quotes,
+      stylesArray,
+      plays,
+      currenciesDb
+    ] = await Promise.all([
       quantityPromise,
       invoicesPromise,
       invoicesNotPaidPromise,
@@ -1661,10 +1748,11 @@ class Stats {
       stocksPromise,
       quotesPromise,
       stylesPromise,
+      playPromise,
       currenciesPromise
     ])
 
-    console.log('TOP 1')
+    console.log('-> TOP 1')
     const currencies = Utils.getCurrencies('EUR', currenciesDb)
 
     const styles = {}
@@ -1674,10 +1762,21 @@ class Stats {
 
     const orders = {}
     const ordersList = await DB('order_shop')
-      .select('order_shop.id as order_shop_id', 'order_shop.order_id', 'shipping',
-        'sub_total', 'tax_rate', 'order_shop.currency', 'currency_rate', 'user.is_pro')
+      .select(
+        'order_shop.id as order_shop_id',
+        'order_shop.order_id',
+        'shipping',
+        'sub_total',
+        'tax_rate',
+        'order_shop.currency',
+        'currency_rate',
+        'user.is_pro'
+      )
       .join('user', 'user.id', 'order_shop.user_id')
-      .whereIn('order_id', invoices.map(i => i.order_id))
+      .whereIn(
+        'order_id',
+        invoices.map((i) => i.order_id)
+      )
       .all()
 
     for (const order of ordersList) {
@@ -1693,17 +1792,25 @@ class Stats {
     const projectsList = await DB('vod')
       .select('order_shop_id', 'order_id', 'order_item.total', 'is_licence')
       .join('order_item', 'order_item.project_id', 'vod.project_id')
-      .whereIn('order_shop_id', ordersList.map(i => i.order_shop_id))
+      .whereIn(
+        'order_shop_id',
+        ordersList.map((i) => i.order_shop_id)
+      )
       .all()
 
     for (const project of projectsList) {
-      const idx = orders[project.order_id].findIndex(o => o.order_shop_id === project.order_shop_id)
+      const idx = orders[project.order_id].findIndex(
+        (o) => o.order_shop_id === project.order_shop_id
+      )
       orders[project.order_id][idx].items.push(project)
     }
 
     const boxesList = await DB('order_box')
       .select('order_id', 'price', 'tax_rate', 'currency', 'shipping', 'currency_rate')
-      .whereIn('order_id', invoices.map(i => i.order_id))
+      .whereIn(
+        'order_id',
+        invoices.map((i) => i.order_id)
+      )
       .all()
     for (const order of boxesList) {
       if (!orders[order.order_id]) {
@@ -1712,24 +1819,41 @@ class Stats {
       orders[order.order_id].push({
         ...order,
         type: 'box',
-        items: [{
-          ...order
-        }]
+        items: [
+          {
+            ...order
+          }
+        ]
       })
     }
 
-    console.log('TOP 2')
+    console.log('--> TOP 2')
+
+    const addPrice = (type, cat, cat2, date, value) => {
+      if (type === 'invoice') {
+        d.turnover[cat].total.dates[date] += value
+        d.turnover[cat].all.dates[date] += value
+
+        if (cat2) {
+          d.turnover[cat][cat2].dates[date] += value
+        }
+      } else {
+        d.turnover[cat].total.dates[date] -= value
+        d.turnover[cat].credit_note.dates[date] += value
+      }
+    }
 
     for (const invoice of invoices) {
       const total = invoice.sub_total * invoice.currency_rate
       const date = moment(invoice.date).format(format)
 
-      const type = invoice.type === 'invoice'
-        ? 'turnover'
-        : 'credit_note'
-
-      d[type].total.total += total
-      d[type].total.dates[date] += total
+      if (invoice.type === 'invoice') {
+        d.turnover.total.dates[date] += total
+        d.turnover.all.dates[date] += total
+      } else {
+        d.turnover.total.dates[date] -= total
+        d.turnover.credit_note.dates[date] += total
+      }
 
       const ods = orders[invoice.order_id]
       if (ods) {
@@ -1738,56 +1862,43 @@ class Stats {
           if (order.tax_rate) {
             shipping = shipping / (1 + order.tax_rate)
           }
-          d[type].shipping.total += shipping
-          d[type].shipping.dates[date] += shipping
+
+          addPrice(invoice.type, 'shipping', 'site', date, shipping)
 
           for (const item of order.items) {
             let total = item.total / (1 + order.tax_rate)
             if (order.type === 'box') {
               total = item.price / (1 + order.tax_rate)
-              d[type].box.total += total
-              d[type].box.dates[date] += total
-              d[type].box_site.total += total
-              d[type].box_site.dates[date] += total
+              addPrice(invoice.type, 'box', 'site', date, total)
             } else if (order.is_pro) {
-              d[type].direct_shop.total += total
-              d[type].direct_shop.dates[date] += total
+              if (item.is_licence) {
+                addPrice(invoice.type, 'direct_shop', 'licence', date, total)
+              } else {
+                addPrice(invoice.type, 'direct_shop', 'project', date, total)
+              }
             } else if (item.is_licence) {
-              d[type].licence.total += total
-              d[type].licence.dates[date] += total
+              addPrice(invoice.type, 'licence', null, date, total)
             } else {
-              d[type].project.total += total
-              d[type].project.dates[date] += total
-              d[type].project_site.total += total
-              d[type].project_site.dates[date] += total
+              addPrice(invoice.type, 'project', 'site', date, total)
             }
           }
         }
       } else if (invoice.category === 'box') {
-        d[type].box.total += total
-        d[type].box.dates[date] += total
-        d[type].box_invoice.total += total
-        d[type].box_invoice.dates[date] += total
+        addPrice(invoice.type, 'box', 'invoice', date, total)
       } else if (invoice.category === 'distribution') {
-        d[type].distrib.total += total
-        d[type].distrib.dates[date] += total
+        addPrice(invoice.type, 'distrib', null, date, total)
       } else if (invoice.category === 'direct_pressing') {
-        d[type].direct_pressing.total += total
-        d[type].direct_pressing.dates[date] += total
+        addPrice(invoice.type, 'direct_pressing', null, date, total)
       } else if (invoice.category === 'shipping') {
-        d[type].shipping.total += total
-        d[type].shipping.dates[date] += total
+        addPrice(invoice.type, 'shipping', 'invoice', date, total)
       } else if (invoice.category === 'project') {
-        d[type].project.total += total
-        d[type].project.dates[date] += total
-        d[type].project_invoice.total += total
-        d[type].project_invoice.dates[date] += total
+        addPrice(invoice.type, 'project', 'invoice', date, total)
       } else if (invoice.name.includes('Order ')) {
-        d[type].error.total += total
-        d[type].error.dates[date] += total
+        d.turnover.error.total += total
+        d.turnover.error.dates[date] += total
       } else {
-        d[type].other.total += total
-        d[type].other.dates[date] += total
+        d.turnover.other.total += total
+        d.turnover.other.dates[date] += total
       }
     }
 
@@ -1804,6 +1915,9 @@ class Stats {
 
     const u = {}
     const p = {}
+
+    const cart = {}
+
     for (const qty of quantity) {
       const date = moment(qty.created_at).format(format)
       const quantity = qty.quantity
@@ -1858,6 +1972,16 @@ class Stats {
             current_tur: 0
           }
         }
+
+        if (!cart[qty.order_id]) {
+          cart[qty.order_id] = {
+            total: 0,
+            quantity: 0
+          }
+        }
+        cart[qty.order_id].total += qty.total / currencies[qty.currency]
+        cart[qty.order_id].quantity += qty.quantity
+
         const turnover = (qty.price * qty.quantity) / currencies[qty.currency] / (1 + qty.tax_rate)
 
         if (!d.countries.quantity[qty.user_country]) {
@@ -1893,20 +2017,27 @@ class Stats {
       }
     }
 
-    console.log(d.styles)
+    d.cart.avg_total =
+      Object.values(cart).reduce((prev, cur) => prev + cur.total, 0) /
+      Object.values(cart).length
+
+    d.cart.avg_quantity =
+      Object.values(cart).reduce((prev, cur) => prev + cur.quantity, 0) /
+      Object.values(cart).length
+
     d.orders.projects.current = Object.values(p)
-      .filter(a => a.current > 0)
-      .sort((a, b) => a.current - b.current < 0 ? 1 : -1)
+      .filter((a) => a.current > 0)
+      .sort((a, b) => (a.current - b.current < 0 ? 1 : -1))
       .slice(0, 20)
 
     d.orders.projects.period = Object.values(p)
-      .filter(a => a.period > 0)
-      .sort((a, b) => a.period - b.period < 0 ? 1 : -1)
+      .filter((a) => a.period > 0)
+      .sort((a, b) => (a.period - b.period < 0 ? 1 : -1))
       .slice(0, 20)
 
     d.orders.users.period = Object.values(u)
-      .filter(a => a.period > 0)
-      .sort((a, b) => a.period - b.period < 0 ? 1 : -1)
+      .filter((a) => a.period > 0)
+      .sort((a, b) => (a.period - b.period < 0 ? 1 : -1))
       .slice(0, 20)
 
     for (const statement of statements) {
@@ -1923,6 +2054,14 @@ class Stats {
         d.quantity.returned.total += Math.abs(distrib.returned)
         d.quantity.returned.dates[date] += Math.abs(distrib.returned)
 
+        if (statement.is_licence) {
+          d.quantity.distrib_licence.total += distrib.quantity
+          d.quantity.distrib_licence.dates[date] += distrib.quantity
+        } else {
+          d.quantity.distrib_project.total += distrib.quantity
+          d.quantity.distrib_project.dates[date] += distrib.quantity
+        }
+
         for (const style of statement.styles.split(',')) {
           if (!d.styles[styles[style]]) {
             d.styles[styles[style]] = 0
@@ -1932,10 +2071,21 @@ class Stats {
       }
     }
 
+    for (const play of plays) {
+      const date = moment(play.created_at).format(format)
+      d.plays.total++
+      d.plays.dates[date]++
+    }
+
     for (const quote of quotes) {
       const date = moment(quote.created_at).format(format)
       d.quotes.total.total++
       d.quotes.total.dates[date]++
+
+      if (quote.project_id) {
+        d.quotes.success.total++
+        d.quotes.success.dates[date]++
+      }
     }
 
     for (const project of projects) {
@@ -1958,12 +2108,15 @@ class Stats {
         if (project.is_licence) {
           d.projects.licence.total++
           d.projects.licence.dates[date]++
-        } else if (!project.com_id || [
-          80490, // Tom
-          122330, // Paul
-          103096, // Léopold
-          10913 // Margot
-        ].includes(project.com_id)) {
+        } else if (
+          !project.com_id ||
+          [
+            80490, // Tom
+            122330, // Paul
+            103096, // Léopold
+            10913 // Margot
+          ].includes(project.com_id)
+        ) {
           d.projects.organic.total++
           d.projects.organic.dates[date]++
         } else {
@@ -2006,30 +2159,29 @@ class Stats {
       d.productions.total_end.dates[end] += prod.quantity
     }
 
-    d.stocks = stocks.sort((a, b) => a.quantity - b.quantity < 0 ? 1 : -1)
+    d.stocks = stocks.sort((a, b) => (a.quantity - b.quantity < 0 ? 1 : -1))
 
     d.countries.turnover = Object.entries(d.countries.turnover)
       .map(([country, value]) => ({ country: country, value: value }))
-      .sort((a, b) => a.value - b.value < 0 ? 1 : -1)
+      .sort((a, b) => (a.value - b.value < 0 ? 1 : -1))
 
     d.countries.users = Object.entries(d.countries.users)
       .map(([country, value]) => ({ country: country, value: value }))
-      .sort((a, b) => a.value - b.value < 0 ? 1 : -1)
+      .sort((a, b) => (a.value - b.value < 0 ? 1 : -1))
 
     d.countries.quantity = Object.entries(d.countries.quantity)
       .map(([country, value]) => ({ country: country, value: value }))
-      .sort((a, b) => a.value - b.value < 0 ? 1 : -1)
+      .sort((a, b) => (a.value - b.value < 0 ? 1 : -1))
 
     d.styles = Object.entries(d.styles)
       .map(([id, value]) => ({ name: id, value: value }))
-      .sort((a, b) => a.value - b.value < 0 ? 1 : -1)
+      .sort((a, b) => (a.value - b.value < 0 ? 1 : -1))
 
     d.distrib = Object.entries(d.distrib)
       .map(([id, value]) => ({ name: id, value: value }))
-      .sort((a, b) => a.value - b.value < 0 ? 1 : -1)
-    console.log(d.distrib)
-    // console.log(d.styles)
-    console.log('TOP 3')
+      .sort((a, b) => (a.value - b.value < 0 ? 1 : -1))
+
+    console.log('---> TOP 3')
 
     return d
   }
