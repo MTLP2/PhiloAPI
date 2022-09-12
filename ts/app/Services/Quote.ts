@@ -234,6 +234,7 @@ class Quote {
     }
 
     // Frais supplementaire + échentillon diggers
+    logs.push({ type: 'test_pressing', comment: '+35€' })
     quote.test_pressing += 35
     if (data.project) {
       if (!quote.test_pressing) {
