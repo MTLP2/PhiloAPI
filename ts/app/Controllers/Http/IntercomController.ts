@@ -18,11 +18,11 @@ class IntercomController {
   //! ----ORDER BOT--------------
   // * CONFIGURE CANVAS - Only for admins
   async configureLanguage({ request, response }) {
-    // If request.body contains input_values, it means that the admin has submitted the card with the options requested. End the config by sending a result back to the App and launch init Canvas.
-    if (request.body.input_values) {
+    // If request.body() contains input_values, it means that the admin has submitted the card with the options requested. End the config by sending a result back to the App and launch init Canvas.
+    if (request.body().input_values) {
       return response.json({
         results: {
-          language: request.body.input_values['language-dropdown']
+          language: request.body().input_values['language-dropdown']
         }
       })
     }
@@ -73,10 +73,10 @@ class IntercomController {
   async initOrder({ request, response }) {
     try {
       // Get language from app config (defaults to EN)
-      const lang: 'FR' | 'EN' = request.body.card_creation_options.language || 'EN'
+      const lang: 'FR' | 'EN' = request.body().card_creation_options.language || 'EN'
 
       // Conversation ID
-      const conversationId = request.body.context.conversation_id
+      const conversationId = request.body().context.conversation_id
 
       // If no conversation, it means that we're trying to setup the bot in the operator. Return the appropriate card
       if (!conversationId) {
@@ -142,11 +142,11 @@ class IntercomController {
   // * SUBMIT CANVAS
   async submitOrder({ request, response }) {
     try {
-      const currentAction = request.body.component_id
+      const currentAction = request.body().component_id
 
       // Retrieve  Diggers User ID + language from stored_data (in )
       const { lang, botData }: { lang: 'FR' | 'EN'; botData: any } =
-        request.body.current_canvas.stored_data
+        request.body().current_canvas.stored_data
 
       // Handle back to main menu action
       if (currentAction === 'main-order-menu') {
@@ -243,11 +243,12 @@ class IntercomController {
   async submitAccount({ request, response }) {
     try {
       // Getting the email from the input, lang from the stored data, failCount and currentAction (button if clicked)
-      const email = request.body.input_values.email || request.body.current_canvas.stored_data.email
-      const lang: 'FR' | 'EN' = request.body.current_canvas.stored_data.lang || 'EN'
-      const currentAction = request.body.component_id
+      const email =
+        request.body().input_values.email || request.body().current_canvas.stored_data.email
+      const lang: 'FR' | 'EN' = request.body().current_canvas.stored_data.lang || 'EN'
+      const currentAction = request.body().component_id
       // Get failCount to limit DB call on input retry (if undefined, init to 0)
-      const failCount = request.body.current_canvas.stored_data.failCount || 0
+      const failCount = request.body().current_canvas.stored_data.failCount || 0
 
       // If action is 'reset-password', send confirmation or error/catch reset password email
       if (currentAction === 'reset-password') {

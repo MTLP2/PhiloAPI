@@ -8,12 +8,12 @@ class Intercom {
     // Generate both order and account apps signatures
     const accountSignature = crypto
       .createHmac('sha256', Env.get('INTERCOM_ACCOUNT_CLIENT'))
-      .update(JSON.stringify(request.body))
+      .update(JSON.stringify(request.body()))
       .digest('hex')
 
     const orderSignature = crypto
       .createHmac('sha256', Env.get('INTERCOM_ORDER_CLIENT'))
-      .update(JSON.stringify(request.body))
+      .update(JSON.stringify(request.body()))
       .digest('hex')
 
     // const boxSignature = crypto
