@@ -502,7 +502,6 @@ class Production {
   }
 
   static async saveAction (params) {
-    // console.log('🚀 ~ file: Production.js ~ line 504 ~ Production ~ saveAction ~ params', params)
     let item = await DB('production_action')
       .select('production_action.*', 'user.is_admin as user_is_admin')
       .join('user', 'user.id', params.user.id)
@@ -644,8 +643,8 @@ class Production {
     }
 
     // Dispatch pending notification for some actions
-    if (params.status === 'pending') {
-      if (['billing', 'information'].includes(params.type)) {
+    if (item.status === 'pending') {
+      if (['billing'].includes(params.type)) {
         Production.notif({
           production_id: params.id,
           user_id: prod.resp_id,
