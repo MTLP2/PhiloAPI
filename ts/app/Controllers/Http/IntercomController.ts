@@ -1,23 +1,9 @@
 import Env from '@ioc:Adonis/Core/Env'
-const {
-  replyWithOrderInit,
-  replyWithOrderList,
-  replyWithOrderCard,
-  replyWithAccountInit,
-  replyWithForgotConfirmation,
-  replyWithInputFlow,
-  replyWithErrorCard,
-  replyWithCheckAddressCard,
-  replyWithDownloadList,
-  replyWithDownloadCard,
-  replyWithBoxList,
-  replyWithBoxCard,
-  replyWithBoxHelp,
-  replyWithBoxRenew
-} = use('App/Services/Intercom')
-const { getOrders } = use('App/Services/Order')
-const { getBoxes } = use('App/Services/User')
-const { getGenres } = use('App/Services/App')
+import Intercom from 'App/Services/Intercom'
+
+import Order from 'App/Services/Order'
+import User from 'App/Services/User'
+import App from 'App/Services/App'
 
 // client boot for Intercom
 const { Client } = require('intercom-client')
@@ -87,7 +73,7 @@ class IntercomController {
   async initOrder({ request, response }) {
     try {
       // Get language from app config (defaults to EN)
-      const lang = request.body.card_creation_options.language || 'EN'
+      const lang: 'FR' | 'EN' = request.body.card_creation_options.language || 'EN'
 
       // Conversation ID
       const conversationId = request.body.context.conversation_id
@@ -132,9 +118,9 @@ class IntercomController {
       const { external_id: diggersUserId } = await client.contacts.find({ id: intercomUserId })
 
       // Getting data from user.
-      const { orders } = await getOrders({ user_id: diggersUserId })
-      const boxes = await getBoxes({ user_id: diggersUserId })
-      const genres = await getGenres()
+      const { orders } = await Order.getOrders({ user_id: diggersUserId })
+      const boxes = await User.getBoxes({ user_id: diggersUserId })
+      const genres = await App.getGenres()
 
       // These data will always be passed to stored_data inside responses from and to the canvas, in order to avoid a new DB call on each canvas interaction/refresh.
       const botData = {
@@ -144,11 +130,11 @@ class IntercomController {
         genres
       }
 
-      const canvas = await replyWithOrderInit({ botData, lang })
+      const canvas = await Intercom.replyWithOrderInit({ botData, lang })
       return response.json(canvas)
     } catch (err) {
       console.log('err in init', err)
-      const canvas = await replyWithErrorCard({ lang: 'EN' })
+      const canvas = await Intercom.replyWithErrorCard({ lang: 'EN' })
       return response.json(canvas)
     }
   }
@@ -159,24 +145,25 @@ class IntercomController {
       const currentAction = request.body.component_id
 
       // Retrieve  Diggers User ID + language from stored_data (in )
-      const { lang, botData } = request.body.current_canvas.stored_data
+      const { lang, botData }: { lang: 'FR' | 'EN'; botData: any } =
+        request.body.current_canvas.stored_data
 
       // Handle back to main menu action
       if (currentAction === 'main-order-menu') {
-        const canvas = await replyWithOrderInit({ lang, botData })
+        const canvas = await Intercom.replyWithOrderInit({ lang, botData })
         return response.json(canvas)
       }
 
       // Handle "download code" list action
       if (currentAction === 'download-code') {
-        const canvas = await replyWithDownloadList({ lang, botData })
+        const canvas = await Intercom.replyWithDownloadList({ lang, botData })
         return response.json(canvas)
       }
 
       // Handle "download code" single item action
       if (currentAction.includes('redeem-download')) {
         const itemId = currentAction.split('-')[2]
-        const canvas = await replyWithDownloadCard({ itemId, lang, botData })
+        const canvas = await Intercom.replyWithDownloadCard({ itemId, lang, botData })
         return response.json(canvas)
       }
 
@@ -189,7 +176,7 @@ class IntercomController {
         'see-other-orders'
       ]
       if (actionsWithOrderList.includes(currentAction)) {
-        const canvas = await replyWithOrderList({ botData, currentAction, lang })
+        const canvas = await Intercom.replyWithOrderList({ botData, currentAction, lang })
         return response.json(canvas)
       }
 
@@ -197,39 +184,39 @@ class IntercomController {
       if (currentAction.includes('order-card')) {
         // Splitting the component_id to get the order id
         const orderShopId = +currentAction.split('-')[2]
-        const canvas = await replyWithOrderCard({ orderShopId, botData, lang })
+        const canvas = await Intercom.replyWithOrderCard({ orderShopId, botData, lang })
         return response.json(canvas)
       }
 
       // Handle user click on 'Resend check address' button
       if (currentAction === 'resend-check-address') {
-        const canvas = await replyWithCheckAddressCard({ botData, lang })
+        const canvas = await Intercom.replyWithCheckAddressCard({ botData, lang })
         return response.json(canvas)
       }
 
       // Handle boxes list
       if (currentAction === 'all-boxes') {
-        const canvas = await replyWithBoxList({ botData, lang })
+        const canvas = await Intercom.replyWithBoxList({ botData, lang })
         return response.json(canvas)
       }
 
       // Handle box card
       if (currentAction.includes('box-card')) {
         const boxId = +currentAction.split('-')[2]
-        const canvas = await replyWithBoxCard({ boxId, botData, lang })
+        const canvas = await Intercom.replyWithBoxCard({ boxId, botData, lang })
         return response.json(canvas)
       }
 
       // Handle box help
       if (currentAction.includes('box-help')) {
         const boxId = botData.boxId
-        const canvas = await replyWithBoxHelp({ boxId, botData, lang })
+        const canvas = await Intercom.replyWithBoxHelp({ boxId, botData, lang })
         return response.json(canvas)
       }
 
       // Handle box renew
       if (currentAction === 'box-renew') {
-        const canvas = await replyWithBoxRenew({ botData, lang })
+        const canvas = await Intercom.replyWithBoxRenew({ botData, lang })
         return response.json(canvas)
       }
     } catch (err) {
@@ -237,7 +224,7 @@ class IntercomController {
         '🚀 ~ file: IntercomController.js ~ line 177 ~ IntercomController ~ submitOrder ~ err',
         err
       )
-      const canvas = await replyWithErrorCard({ lang: 'EN' })
+      const canvas = await Intercom.replyWithErrorCard({ lang: 'EN' })
       return response.json(canvas)
     }
   }
@@ -246,9 +233,9 @@ class IntercomController {
   // * INIT CANVAS
   async initAccount({ request, response }) {
     try {
-      return await replyWithAccountInit(request, response)
+      return await Intercom.replyWithAccountInit(request, response)
     } catch (err) {
-      const canvas = await replyWithErrorCard({ lang: 'EN' })
+      const canvas = await Intercom.replyWithErrorCard({ lang: 'EN' })
       return response.json(canvas)
     }
   }
@@ -257,21 +244,21 @@ class IntercomController {
     try {
       // Getting the email from the input, lang from the stored data, failCount and currentAction (button if clicked)
       const email = request.body.input_values.email || request.body.current_canvas.stored_data.email
-      const lang = request.body.current_canvas.stored_data.lang || 'EN'
+      const lang: 'FR' | 'EN' = request.body.current_canvas.stored_data.lang || 'EN'
       const currentAction = request.body.component_id
       // Get failCount to limit DB call on input retry (if undefined, init to 0)
       const failCount = request.body.current_canvas.stored_data.failCount || 0
 
       // If action is 'reset-password', send confirmation or error/catch reset password email
       if (currentAction === 'reset-password') {
-        await replyWithForgotConfirmation(email, response, lang)
+        await Intercom.replyWithForgotConfirmation(email, response, lang)
         return
       }
 
       // Else, process with the input flow (ask input, check if valid, check if exists, respond accordingly)
-      await replyWithInputFlow({ email, response, lang, failCount })
+      await Intercom.replyWithInputFlow({ email, response, lang, failCount })
     } catch (err) {
-      const canvas = await replyWithErrorCard({ lang: 'EN' })
+      const canvas = await Intercom.replyWithErrorCard({ lang: 'EN' })
       return response.json(canvas)
     }
   }
