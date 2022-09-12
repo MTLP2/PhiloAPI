@@ -1873,6 +1873,7 @@ class Production {
 
     const html = View.render('invoice', {
       ...invoice,
+      type: 'invoice',
       t: v => Antl.forLocale(params.lang).formatMessage(v)
     })
 

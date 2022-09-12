@@ -153,9 +153,13 @@ class Invoice {
     invoice.order_number = params.order_number
     invoice.name = params.name
     invoice.date = params.date
+    invoice.date_payment = params.date_payment
+    if (params.status === 'paid' && invoice.status !== 'paid' && !params.date_payment) {
+      invoice.date_payment = Utils.date()
+    }
     invoice.status = params.status
     invoice.email = params.email
-    invoice.payment_days = params.payment_days
+    invoice.payment_days = params.payment_days || 0
     invoice.compatibility = params.compatibility
     invoice.sub_total = params.sub_total || 0
     invoice.margin = params.margin || 0
@@ -179,8 +183,7 @@ class Invoice {
     return invoice
   }
 
-  static async newNumber (type) {
-    const year = (new Date()).getYear() - 100
+  static async newNumber (type, year = (new Date()).getYear() - 100) {
     const number = await DB('invoice')
       .select(DB.raw('max(number) as max'))
       .where('type', type)
@@ -222,6 +225,7 @@ class Invoice {
     invoice.tax = order.tax
     invoice.total = order.total
     invoice.date = Utils.date()
+    invoice.date_payment = Utils.date()
     invoice.status = 'paid'
     invoice.currency = order.currency
     invoice.currency_rate = order.currency_rate
@@ -418,6 +422,7 @@ class Invoice {
         type: 'invoice',
         status: 'paid',
         date: order.created_at,
+        date_payment: order.created_at,
         number: number,
         code: `I${year}${number}`,
         year: year,
@@ -825,6 +830,95 @@ class Invoice {
     }
 
     return zip.generateAsync({ type: 'nodebuffer' })
+  }
+
+  static async clean () {
+    await DB('invoice')
+      .whereNull('category')
+      .where(query => {
+        query.where('name', 'like', '%shipping return%')
+          .orWhere('name', 'like', '%return box%')
+      })
+      .update({
+        category: 'shipping'
+      })
+
+    /**
+    await DB('invoice')
+      .whereNull('currency_rate')
+      .where('currency', 'EUR')
+      .update({
+        currency_rate: 1
+      })
+
+    const invoices = await DB('invoice')
+      .select('id', 'date', 'currency')
+      .whereNull('currency_rate')
+      .whereNotNull('total')
+      .all()
+
+    const months = {}
+    for (const invoice of invoices) {
+      const date = moment(invoice.date).format('YYYY-MM')
+      if (!months[date]) {
+        months[date] = []
+      }
+      months[date].push(invoice)
+    }
+
+    for (const [month, list] of Object.entries(months)) {
+      const currencies = await Utils.getCurrenciesApi(`${month}-01`, 'EUR,USD,GBP,AUD')
+      // const currencies = { EUR: 1, USD: 1.20496, GBP: 0.865101, AUD: 1.550459 }
+      console.log(currencies)
+
+      for (const invoice of list) {
+        console.log(invoice.id, month, invoice.currency, currencies[invoice.currency])
+        DB('invoice')
+          .where('id', invoice.id)
+          .update({
+            currency_rate: currencies[invoice.currency]
+          })
+      }
+    }
+
+    return months
+    **/
+    /**
+    await DB('invoice')
+      .whereNull('category')
+      .where(query => {
+        query.where('name', 'like', '%shipping return%')
+          .orWhere('name', 'like', '%return box%')
+      })
+      .update({
+        category: 'shipping'
+      })
+
+    const invoices = await DB('invoice as i1')
+      .whereExists(
+        DB('invoice as i2')
+          .where('i1.code', 'i2.code')
+          .where('i1.id', '!=', 'i2.code')
+          .query()
+      )
+      .whereNotNull('code')
+      .where('year', 22)
+      .all()
+
+    console.log(invoices)
+    const invoices = await DB('invoice')
+      .whereNull('code')
+      .where('compatibility', true)
+      .all()
+
+    for (const invoice of invoices) {
+      const year = invoice.date.substring(2, 4)
+      invoice.number = await Invoice.newNumber(invoice.type, year)
+      invoice.code = `${invoice.type[0].toUpperCase()}${year}${invoice.number}`
+
+      break
+    }
+    **/
   }
 }
 
