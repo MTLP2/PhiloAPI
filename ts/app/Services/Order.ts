@@ -641,6 +641,7 @@ static toJuno = async (params) => {
       )
       .join('order', 'order.id', 'order_shop.order_id')
       .join('order_item', 'order.id', 'order_item.order_id')
+      .hasMany('order_item', 'order_items', 'order_shop_id')
       .where('order_shop.id', id)
       .first()
 
