@@ -1,8 +1,9 @@
 import Env from '@ioc:Adonis/Core/Env'
 import crypto from 'crypto'
+import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 
 class Intercom {
-  async handle({ request, response }, next) {
+  async handle({ request, response }: HttpContextContract, next: () => Promise<void>) {
     const headers = request.headers()
 
     // Generate both order and account apps signatures

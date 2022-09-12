@@ -1275,7 +1275,7 @@ const replyWithDownloadCard = async ({ itemId, botData, lang }) => {
 }
 
 const replyWithDownloadList = async ({ lang, botData }) => {
-  const downloadableItems = []
+  const downloadableItems: any[] = []
   for (const order of botData.orders) {
     for (const shop of order.shops) {
       for (const item of shop.items) {

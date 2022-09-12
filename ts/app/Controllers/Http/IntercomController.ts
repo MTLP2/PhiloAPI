@@ -1,4 +1,5 @@
 import Env from '@ioc:Adonis/Core/Env'
+import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import Intercom from 'App/Services/Intercom'
 
 import Order from 'App/Services/Order'
@@ -17,7 +18,7 @@ const client = new Client({
 class IntercomController {
   //! ----ORDER BOT--------------
   // * CONFIGURE CANVAS - Only for admins
-  async configureLanguage({ request, response }) {
+  async configureLanguage({ request, response }: HttpContextContract) {
     // If request.body() contains input_values, it means that the admin has submitted the card with the options requested. End the config by sending a result back to the App and launch init Canvas.
     if (request.body().input_values) {
       return response.json({
@@ -70,7 +71,7 @@ class IntercomController {
   }
 
   // * INIT CANVAS
-  async initOrder({ request, response }) {
+  async initOrder({ request, response }: HttpContextContract) {
     try {
       // Get language from app config (defaults to EN)
       const lang: 'FR' | 'EN' = request.body().card_creation_options.language || 'EN'
@@ -140,7 +141,7 @@ class IntercomController {
   }
 
   // * SUBMIT CANVAS
-  async submitOrder({ request, response }) {
+  async submitOrder({ request, response }: HttpContextContract) {
     try {
       const currentAction = request.body().component_id
 
@@ -231,7 +232,7 @@ class IntercomController {
 
   //! ----ACCOUNT BOT--------------
   // * INIT CANVAS
-  async initAccount({ request, response }) {
+  async initAccount({ request, response }: HttpContextContract) {
     try {
       return await Intercom.replyWithAccountInit(request, response)
     } catch (err) {
@@ -240,7 +241,7 @@ class IntercomController {
     }
   }
 
-  async submitAccount({ request, response }) {
+  async submitAccount({ request, response }: HttpContextContract) {
     try {
       // Getting the email from the input, lang from the stored data, failCount and currentAction (button if clicked)
       const email =
