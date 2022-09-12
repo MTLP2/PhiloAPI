@@ -209,7 +209,14 @@ class UserController {
     return sponsor || {}
   }
 
-  event({ params, user }) {
+  async event({ params, user }) {
+    await validator.validate({
+      schema: schema.create({
+        type: schema.string()
+      }),
+      data: params
+    })
+
     params.user_id = user.id
     return User.event(params)
   }

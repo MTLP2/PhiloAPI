@@ -208,7 +208,14 @@ class UserController {
     return sponsor || {}
   }
 
-  event ({ params, user }) {
+  async event ({ params, user, response }) {
+    const validation = await validateAll(params, {
+      type: 'required',
+      name: 'required'
+    })
+    if (validation.fails()) {
+      return response.status(400).send({ error: validation.messages() })
+    }
     params.user_id = user.id
     return User.event(params)
   }
