@@ -17,7 +17,7 @@ class Api {
     let jwt
 
     try {
-      jwt = jsonwebtoken.verify(token, Env.get('APP_KEY_OLD'))
+      jwt = jsonwebtoken.verify(token, Env.get('APP_KEY'))
     } catch (err) {
       return ctx.response.json({
         error: 'Bad credentials'

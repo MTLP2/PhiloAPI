@@ -28,7 +28,7 @@ class Auth {
       }
     }
     try {
-      const user = jwt.verify(token, Env.get('APP_KEY_OLD'))
+      const user = jwt.verify(token, Env.get('APP_KEY'))
       user.id = user.user_id
       ctx.user = user
     } catch (e) {
@@ -52,7 +52,7 @@ class Auth {
   async wsHandle(ctx, next, properties) {
     const token = ctx.request.input('token')
     if (token || properties[0] !== 'optional') {
-      const user = jwt.verify(token, Env.get('APP_KEY_OLD'))
+      const user = jwt.verify(token, Env.get('APP_KEY'))
       user.id = user.user_id
       ctx.user = user
     }

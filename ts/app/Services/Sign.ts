@@ -18,7 +18,7 @@ class Sign {
         id: params.id,
         user_id: params.id
       },
-      Env.get('APP_KEY_OLD')
+      Env.get('APP_KEY')
     )
   }
 
