@@ -5,7 +5,6 @@ const Utils = use('App/Utils')
 const Invoice = use('App/Services/Invoice')
 const Customer = use('App/Services/Customer')
 const Order = use('App/Services/Order')
-const Paypal = use('App/Services/Paypal')
 const ApiError = use('App/ApiError')
 const fs = require('fs')
 
@@ -630,6 +629,8 @@ Payment.getTransactions = async (date, start) => {
 }
 
 Payment.getBalanceProject = async (params) => {
+  const Paypal = use('App/Services/Paypal')
+
   const payments = await DB('order')
     .select('order.id', 'transaction_id', 'payment_id', 'payment_type', 'order.total', 'order_shop.total as total_shop')
     .join('order_item', 'order.id', 'order_item.order_id')

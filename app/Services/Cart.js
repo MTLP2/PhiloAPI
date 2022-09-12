@@ -1400,6 +1400,8 @@ Cart.createStripePayment = (params) =>
   })
 
 Cart.confirmStripePayment = async (params) => {
+  const stripe = require('stripe')(config.stripe.client_secret)
+
   const confirm = await stripe.paymentIntents.confirm(params.payment_intent_id)
 
   params.order = await DB('order').find(params.order_id)
@@ -1410,6 +1412,8 @@ Cart.confirmStripePayment = async (params) => {
 }
 
 Cart.validStripePayment = async (params, charge) => {
+  const stripe = require('stripe')(config.stripe.client_secret)
+
   const txn = await stripe.balanceTransactions.retrieve(charge.charges.data[0].balance_transaction)
 
   await DB('order').where('id', params.order.id).update({

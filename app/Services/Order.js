@@ -564,6 +564,8 @@ Order.refundOrderShop = async (id, type, params) => {
     .where('order_shop.id', id)
     .first()
 
+  const Order = use('App/Services/Order')
+
   if (order.total <= 0) {
     return false
   }

@@ -13,7 +13,6 @@ const Dig = use('App/Services/Dig')
 const cio = use('App/Services/CIO')
 const User = use('App/Services/User')
 const Utils = use('App/Utils')
-const Payment = use('App/Services/Payment')
 const DB = use('App/DB')
 
 const sitemap = require('sitemap')
@@ -129,15 +128,18 @@ class AppController {
   }
 
   getPayment ({ params }) {
+    const Payment = use('App/Services/Payment')
     return Payment.find(params.id)
   }
 
   editPaymentAddress ({ params, user }) {
     params.user = user
+    const Payment = use('App/Services/Payment')
     return Payment.editAddress(params)
   }
 
   payPayment ({ params }) {
+    const Payment = use('App/Services/Payment')
     return Payment.pay(params)
   }
 
