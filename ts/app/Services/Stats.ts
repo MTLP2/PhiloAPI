@@ -1563,6 +1563,10 @@ class Stats {
     }
 
     const d = {
+      cart: {
+        avg_total: 0,
+        avg_quantity: 0
+      },
       productions: {
         total_start: { total: 0, dates: { ...dates } },
         total_end: { total: 0, dates: { ...dates } },
@@ -1581,7 +1585,8 @@ class Stats {
         turnover: {}
       },
       quotes: {
-        total: { total: 0, dates: { ...dates } }
+        total: { total: 0, dates: { ...dates } },
+        success: { total: 0, dates: { ...dates } }
       },
       styles: {},
       distrib: {},
@@ -1657,6 +1662,7 @@ class Stats {
 
     const quantityPromise = await DB('order_shop as os')
       .select(
+        'os.order_id',
         'os.created_at',
         'quantity',
         'is_paid',
@@ -1729,7 +1735,7 @@ class Stats {
       .all()
 
     const quotesPromise = await DB('quote')
-      .select('created_at')
+      .select('created_at', 'project_id')
       .where('site', true)
       .whereBetween('created_at', [params.start, params.end])
       .all()
@@ -1935,6 +1941,9 @@ class Stats {
 
     const u = {}
     const p = {}
+
+    const cart = {}
+
     for (const qty of quantity) {
       const date = moment(qty.created_at).format(format)
       const quantity = qty.quantity
@@ -1989,6 +1998,16 @@ class Stats {
             current_tur: 0
           }
         }
+
+        if (!cart[qty.order_id]) {
+          cart[qty.order_id] = {
+            total: 0,
+            quantity: 0
+          }
+        }
+        cart[qty.order_id].total += qty.total / currencies[qty.currency]
+        cart[qty.order_id].quantity += qty.quantity
+
         const turnover = (qty.price * qty.quantity) / currencies[qty.currency] / (1 + qty.tax_rate)
 
         if (!d.countries.quantity[qty.user_country]) {
@@ -2024,7 +2043,14 @@ class Stats {
       }
     }
 
-    console.log(d.styles)
+    d.cart.avg_total =
+      Object.values(cart).reduce((prev: number, cur: number) => prev + cur.total, 0) /
+      Object.values(cart).length
+
+    d.cart.avg_quantity =
+      Object.values(cart).reduce((prev: number, cur: number) => prev + cur.quantity, 0) /
+      Object.values(cart).length
+
     d.orders.projects.current = Object.values(p)
       .filter((a) => a.current > 0)
       .sort((a, b) => (a.current - b.current < 0 ? 1 : -1))
@@ -2067,6 +2093,11 @@ class Stats {
       const date = moment(quote.created_at).format(format)
       d.quotes.total.total++
       d.quotes.total.dates[date]++
+
+      if (quote.project_id) {
+        d.quotes.success.total++
+        d.quotes.success.dates[date]++
+      }
     }
 
     for (const project of projects) {
@@ -2161,8 +2192,7 @@ class Stats {
     d.distrib = Object.entries(d.distrib)
       .map(([id, value]) => ({ name: id, value: value }))
       .sort((a, b) => (a.value - b.value < 0 ? 1 : -1))
-    console.log(d.distrib)
-    // console.log(d.styles)
+
     console.log('TOP 3')
 
     return d
