@@ -10,6 +10,7 @@ class Quote {
     params.query = DB('quote')
       .select('quote.*', 'user.name as resp')
       .leftJoin('user', 'user.id', 'quote.resp_id')
+      .leftJoin('project', 'project.id', 'quote.project_id')
 
     if (!params.sort) {
       params.sort = 'quote.id'
@@ -19,7 +20,11 @@ class Quote {
   }
 
   static async find(id) {
-    const quote = await DB('quote').where('id', id).first()
+    const quote = await DB('quote')
+      .select('quote.*', 'project.artist_name', 'project.name as project_name')
+      .where('quote.id', id)
+      .leftJoin('project', 'project.id', 'quote.project_id')
+      .first()
 
     quote.lines = quote.lines ? JSON.parse(quote.lines) : []
 
@@ -47,6 +52,7 @@ class Quote {
     quote.total = params.total
     quote.lang = params.lang
     quote.resp_id = params.resp_id
+    quote.project_id = params.project_id
     quote.lines = JSON.stringify(
       params.lines
         .filter((i) => i.label.length > 0 && i.value > 0)
