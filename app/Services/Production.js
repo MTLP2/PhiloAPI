@@ -115,7 +115,7 @@ class Production {
       {
         category: 'preprod',
         type: 'mechanical_rights',
-        action: 'check',
+        action: 'file',
         for: 'artist'
       },
       {
