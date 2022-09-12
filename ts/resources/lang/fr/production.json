@@ -12,5 +12,6 @@
   "test_pressing": "Test pressing",
   "dispatchs": "Dispatchs",
   "delivery_note": "Bon de livraison et tracking",
-  "receipt": "Bon de reception et quantité reçue"
+  "receipt": "Bon de reception et quantité reçue",
+  "billing": "Adresse de facturation"
 }

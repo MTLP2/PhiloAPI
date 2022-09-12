@@ -333,6 +333,7 @@ App.notification = async (notif, test = false) => {
   if ([
     'production_new_action',
     'production_valid_action',
+    'production_pending_action',
     'production_refuse_action'
   ].includes(notif.type)) {
     data.action = Antl.forLocale(data.lang).formatMessage(`production.${JSON.parse(notif.data)}`)

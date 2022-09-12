@@ -319,7 +319,7 @@ class App {
       }
     }
 
-    const data = {
+    const data: any = {
       lang: 'en',
       user: {}
     }
@@ -338,9 +338,12 @@ class App {
     data.date = n.date
 
     if (
-      ['production_new_action', 'production_valid_action', 'production_refuse_action'].includes(
-        notif.type
-      )
+      [
+        'production_new_action',
+        'production_valid_action',
+        'production_pending_action',
+        'production_refuse_action'
+      ].includes(notif.type)
     ) {
       data.action = I18n.locale(data.lang).formatMessage(`production.${JSON.parse(notif.data)}`)
       n.order_id = null
@@ -1473,7 +1476,7 @@ class App {
       .join('user', 'user.id', 'box.user_id')
       .where('')
       .all()
-  
+
     for (const box of boxes) {
       if (postcodeValidatorExistsForCountry(box.country_id) &&
       !postcodeValidator(box.zip_code.trim(), box.country_id)) {

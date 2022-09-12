@@ -4,6 +4,7 @@ import ProjectEdit from 'App/Services/ProjectEdit'
 import Notification from 'App/Services/Notification'
 import MondialRelay from 'App/Services/MondialRelay'
 import Customer from 'App/Services/Customer'
+import User from 'App/Services/User'
 import File from 'App/Services/File'
 import Excel from 'exceljs'
 import Storage from 'App/Services/Storage'
@@ -105,7 +106,12 @@ class Production {
     return Utils.getRows(params)
   }
 
-  static listActions() {
+  static listActions(): {
+    category: 'preprod' | 'prod' | 'postprod'
+    type: string
+    action: 'check' | 'file' | 'dispatch'
+    for: 'artist' | 'team' | 'all'
+  }[] {
     return [
       {
         category: 'preprod',
@@ -155,6 +161,13 @@ class Production {
         action: 'check',
         for: 'team'
       },
+      {
+        category: 'preprod',
+        type: 'billing',
+        action: 'check',
+        for: 'artist'
+      },
+
       {
         category: 'prod',
         type: 'pressing_proof',
@@ -230,8 +243,13 @@ class Production {
 
   static async find(params) {
     const item = await DB('production')
-      .select('production.*', 'vod.currency as vod_currency')
+      .select(
+        'production.*',
+        'vod.currency as vod_currency',
+        'user.customer_invoice_id as billing_customer'
+      )
       .join('vod', 'vod.project_id', 'production.project_id')
+      .leftJoin('user', 'vod.user_id', 'user.id')
       .where('production.id', params.id)
       .first()
 
@@ -315,6 +333,8 @@ class Production {
       .where('is_delete', 0)
       .all()
 
+    item.billing_address = await DB('customer').find(item.billing_customer)
+
     return item
   }
 
@@ -325,12 +345,13 @@ class Production {
 
     const project = await ProjectEdit.find({ id: params.project_id, user: params.user })
 
-    const item = DB('production')
+    const item: any = DB('production')
     item.step = 'preprod'
     item.project_id = params.project_id
     item.resp_id = params.resp_id || null
     item.quantity = project.stage1 || project.quantity
     item.notif = params.notif
+    item.is_billing = params.is_billing
     item.date_preprod = Utils.date()
     item.created_at = Utils.date()
     item.updated_at = Utils.date()
@@ -433,6 +454,7 @@ class Production {
     item.shipping_final = params.shipping_final || null
     item.final_price = params.final_price || null
     item.notif = params.notif
+    item.is_billing = params.is_billing
     item.updated_at = Utils.date()
 
     await item.save()
@@ -536,10 +558,12 @@ class Production {
       .select(
         'production.project_id',
         'resp.email as resp_email',
+        'resp.id as resp_id',
         'com.email as com_email',
         'project.name as project_name',
         'project.artist_name as artist_name',
-        'vod.id as vod_id'
+        'vod.id as vod_id',
+        'vod.user_id as vod_user'
       )
       .join('project', 'project.id', 'production.project_id')
       .join('vod', 'vod.project_id', 'project.id')
@@ -664,6 +688,19 @@ class Production {
       }
     }
 
+    // Dispatch pending notification for some actions
+    if (item.status === 'pending') {
+      if (['billing'].includes(params.type)) {
+        Production.notif({
+          production_id: params.id,
+          user_id: prod.resp_id,
+          type: 'production_pending_action',
+          data: params.type,
+          resp: true
+        })
+      }
+    }
+
     if (params.status === 'refused') {
       Production.notif({
         production_id: params.id,
@@ -697,6 +734,11 @@ class Production {
           cat_number: params.cat_number
         })
       }
+    }
+
+    // If billing address, update custom data (id in user.customer_invoice_id)
+    if (params.billing_address) {
+      await User.updateDelivery(prod.vod_user, { ...params.billing_address, is_invoice: true })
     }
 
     return { success: true }
