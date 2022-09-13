@@ -131,7 +131,7 @@ class Sna {
 
   static async getOrders () {
     const orders = await Sna.getApi('Order_Status')
-    return orders
+    return orders.reverse()
   }
 
   static async setCost (date, buffer) {
