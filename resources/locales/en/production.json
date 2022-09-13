@@ -12,5 +12,6 @@
   "test_pressing": "Test pressing",
   "dispatchs": "Dispatchs",
   "delivery_note": "Delivery note and tracking",
-  "receipt": "Receipt and quantity received"
+  "receipt": "Receipt and quantity received",
+  "billing": "Billing information"
 }

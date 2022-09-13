@@ -375,10 +375,12 @@ User.updateDelivery = async (userId, params) => {
     data.customer_id = user.customer_id
   }
   const customer = await Customer.save(data)
+
+  // Checking params.is_invoice to update either user.customer_id or user.customer_invoice_id
   await DB('user')
     .where('id', userId)
     .update({
-      customer_id: customer.id,
+      [params.is_invoice ? 'customer_invoice_id' : 'customer_id']: customer.id,
       country_id: customer.country_id
     })
   return customer

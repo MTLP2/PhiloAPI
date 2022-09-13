@@ -359,17 +359,19 @@ class User {
     })
   }
 
-  static updateDelivery = async (userId, params) => {
+  static updateDelivery = async (userId: number, params) => {
     const data = params
     const user = await DB('user').where('id', userId).first()
     if (user.customer_id) {
       data.customer_id = user.customer_id
     }
     const customer = await Customer.save(data)
-    await DB('user').where('id', userId).update({
-      customer_id: customer.id,
-      country_id: customer.country_id
-    })
+    await DB('user')
+      .where('id', userId)
+      .update({
+        [params.is_invoice ? 'customer_invoice_id' : 'customer_id']: customer.id,
+        country_id: customer.country_id
+      })
     return customer
   }
 
