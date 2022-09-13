@@ -1083,7 +1083,12 @@ class Quote {
         border: 1px solid #000;
       }
     </style>
-    <h1>Quote</h1><table>`
+    <h1>Quote</h1><table>
+    <tr>
+      <td><b>Id</b></td>
+      <td>${quote.id}</td>
+    </tr>
+  `
     for (const p of params.list) {
       html += `<tr>
         <td width="100"><b>${p.label}</b></td>
@@ -1096,6 +1101,7 @@ class Quote {
     delete p.country_id
     delete p.name
     delete p.email
+    delete p.logs
 
     html += `<tr>
       <td><b>Name</b></td>
