@@ -1,7 +1,8 @@
 import juice from 'juice'
 import Excel from 'exceljs'
-import marked from 'marked'
+import { marked } from 'marked'
 import moment from 'moment'
+import { postcodeValidator, postcodeValidatorExistsForCountry } from 'postcode-validator'
 
 import DB from 'App/DB'
 import config from 'Config/index'
@@ -26,8 +27,6 @@ import I18n from '@ioc:Adonis/Addons/I18n'
 import Env from '@ioc:Adonis/Core/Env'
 import Whiplash from './Whiplash'
 import fs from 'fs'
-
-const { postcodeValidator, postcodeValidatorExistsForCountry } = require('postcode-validator')
 
 class App {
   static daily = async () => {
@@ -374,7 +373,7 @@ class App {
       data.days_left = project.days_left
       data.date_shipping = project.date_shipping
       if (vod && vod.message_order) {
-        data.message_order = marked(vod.message_order, { breaks: true, sanitize: true })
+        data.message_order = marked.parse(vod.message_order, { breaks: true })
       }
 
       if (vod?.shipping_delay_reason) {
@@ -493,7 +492,7 @@ class App {
         return {
           ...item,
           message_order: item.message_order
-            ? marked(item.message_order, { breaks: true, sanitize: true })
+            ? marked.parse(item.message_order, { breaks: true })
             : ''
         }
       })
