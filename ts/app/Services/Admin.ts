@@ -4459,6 +4459,7 @@ class Admin {
       cover4: { name: 'cover4', withOriginal: true },
       cover5: { name: 'cover5', withOriginal: true },
       label: { name: 'label' },
+      label_bside: { name: 'label_bside' },
       custom_disc: { name: 'disc' }
     }
 
@@ -4472,10 +4473,14 @@ class Admin {
       await Storage.deleteImage(path, null, true)
       if (files.withOriginal) await Storage.deleteImage(`${path}_original`, null, true)
 
-      // update DB
+      // update DB for some types
       switch (type) {
         case 'custom_disc':
           await DB('vod').where('project_id', projectId).update({ url_vinyl: null })
+          break
+
+        case 'label_bside':
+          await DB('vod').where('project_id', projectId).update({ is_label_bside: 0 })
           break
 
         default:
