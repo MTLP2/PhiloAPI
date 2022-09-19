@@ -23,10 +23,6 @@ import Route from '@ioc:Adonis/Core/Route'
 Route.get('/', 'AppController.index')
 Route.get('/test', 'TestController.test')
 
-Route.group(() => {
-  Route.get('/test2', 'TestController.test')
-}).middleware('auth')
-
 Route.get('/cron', 'AppController.cron')
 Route.get('/hourly', 'AppController.hourly')
 Route.get('/daily', 'AppController.daily')
