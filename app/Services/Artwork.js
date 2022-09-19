@@ -82,6 +82,11 @@ class Artwork {
       if (params.label_bside) {
         const labelBsidePicture = Buffer.from(params.label_bside.replace(/^data:image\/(png|jpg|jpeg);base64,/, ''), 'base64')
         await Artwork.convertLabel(uid, labelBsidePicture, 'label_bside_picture')
+        await DB('vod')
+          .where('project_id', params.id)
+          .update({
+            is_label_bside: 1
+          })
       }
       if (params.picture) {
         const picture = Buffer.from(params.picture.replace(/^data:image\/(png|jpg|jpeg);base64,/, ''), 'base64')
