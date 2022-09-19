@@ -234,7 +234,7 @@
       <th width="70%">{{ t('invoice.operations') }}</th>
       <th>{{ t('invoice.unit_price') }}</th>
       <th>{{ t('invoice.quantity') }}</th>
-      @if(order.shops)
+      @if(order && order.shops)
         <th>{{ t('invoice.donation') }}</th>
       @endif
       <th>{{ t('invoice.total') }}</th>
