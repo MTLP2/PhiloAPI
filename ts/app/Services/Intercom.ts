@@ -1,13 +1,69 @@
 import Env from '@ioc:Adonis/Core/Env'
-// import Order from 'App/Services/Order'
+
 import Production from 'App/Services/Production'
-import { getTransporterLink, getOriginFromTransporter, isEmail } from 'App/Utils'
-import { forgotPassword } from 'App/Services/Sign'
-import { existsByEmail } from 'App/Services/User'
-import { checkDownloadCode, generateDownload } from 'App/Services/Project'
+import Utils from 'App/Utils'
+import Sign from 'App/Services/Sign'
+import User from 'App/Services/User'
+import Project from 'App/Services/Project'
+
+// TYPES
+type CardComponentItem = {
+  type: string
+  id: string
+  title: string
+  subtitle: string | string[]
+  tertiary_text?: string
+  image?: string
+  image_height?: number
+  image_width?: number
+}
+
+type CardComponentSubmitAction = {
+  type: 'submit'
+}
+
+type CardComponentURLAction = {
+  type: 'url'
+  url: string
+}
+
+type CardComponentList = {
+  type: 'list'
+  items: CardComponentItem[]
+}
+
+type CardComponentDataTableItem = {
+  type: 'field-value'
+  field: string
+  value: string
+}
+
+type CardComponentDataTable = {
+  type: 'data-table'
+  items: CardComponentDataTableItem[]
+}
+
+type CardComponent = {
+  type: 'spacer' | 'text' | 'image' | 'button' | 'divider' | 'item' | 'list' | 'data-table'
+  text?: string | string[]
+  style?: string
+  url?: string
+  height?: number
+  width?: number
+  items?: CardComponentItem[] | CardComponentDataTableItem[]
+  size?: 'xs' | 's' | 'm' | 'l' | 'xl'
+  bottom_margin?: 'none'
+  id?: string
+  label?: string
+  action?: CardComponentSubmitAction | CardComponentURLAction
+}[]
 
 // Translates an order step into a human readable string
-const translate = (key, lang = 'EN', payload) => {
+const translate: (key: string, lang?: 'FR' | 'EN', payload?: string) => string | string[] = (
+  key,
+  lang = 'EN',
+  payload
+) => {
   const wording = {
     // Error
     error:
@@ -407,7 +463,7 @@ const translate = (key, lang = 'EN', payload) => {
 }
 
 // Helper for localized dates from lang string
-const getLocaleDateFromString = (date, lang = 'EN') => {
+const getLocaleDateFromString: (date: any, lang: 'FR' | 'EN') => any = (date, lang = 'EN') => {
   return new Date(date).toLocaleDateString(lang === 'EN' ? 'en-US' : 'fr-FR', {
     day: 'numeric',
     month: '2-digit',
@@ -415,7 +471,10 @@ const getLocaleDateFromString = (date, lang = 'EN') => {
   })
 }
 
-const getMultiParagraph = (text, lang = 'EN') => {
+const getMultiParagraph: (text: string, lang: 'EN' | 'FR') => { type: 'text'; text: string }[] = (
+  text,
+  lang = 'EN'
+) => {
   const paragraphs = []
 
   if (Array.isArray(translate(text, lang))) {
@@ -525,11 +584,15 @@ const generateDownloadButtons = (downloadItems, lang) => {
 }
 
 // Generates a complete canvas component for order data display
-const generateOrderCard = async (order, lang, single = false) => {
+const generateOrderCard: (order: any, lang: 'FR' | 'EN', single?: boolean) => any = async (
+  order,
+  lang,
+  single = false
+) => {
   // Get rid of mispelled cancel
   order.step = order.step === 'cancelled' ? 'canceled' : order.step
 
-  const cardComponent = [
+  const cardComponent: CardComponent = [
     {
       type: 'text',
       text: `*${getLocaleDateFromString(order.created_at, lang)} | ${translate('order', lang)} n°${
@@ -563,7 +626,7 @@ const generateOrderCard = async (order, lang, single = false) => {
   } else {
     // Item list
     // Create a list for canvas kit
-    const listItems = {
+    const listItems: CardComponentList = {
       type: 'list',
       items: []
     }
@@ -599,7 +662,7 @@ const generateOrderCard = async (order, lang, single = false) => {
 
   // Display general order info (as a table)
   // Create the info table on its own (some fields are conditional)
-  const infoTable = {
+  const infoTable: CardComponentDataTable = {
     type: 'data-table',
     items: []
   }
@@ -608,12 +671,12 @@ const generateOrderCard = async (order, lang, single = false) => {
   infoTable.items.push(
     {
       type: 'field-value',
-      field: translate('total', lang),
+      field: translate('total', lang) as string,
       value: `${order.total}${translate(order.currency)}`
     },
     {
       type: 'field-value',
-      field: translate('shipping', lang),
+      field: translate('shipping', lang) as string,
       value: `${order.shipping}${translate(order.currency)}`
     }
   )
@@ -622,7 +685,7 @@ const generateOrderCard = async (order, lang, single = false) => {
   if (order.items.length === 1) {
     infoTable.items.push({
       type: 'field-value',
-      field: translate('quantity', lang),
+      field: translate('quantity', lang) as string,
       value: `x${order.items[0].quantity}`
     })
   }
@@ -631,7 +694,7 @@ const generateOrderCard = async (order, lang, single = false) => {
   if (order.step === 'refund' || order.step === 'refunded') {
     infoTable.items.push({
       type: 'field-value',
-      field: translate('refund_text', lang),
+      field: translate('refund_text', lang) as string,
       value: order.step === 'refund' || order.step === 'refunded' ? '✅' : '❌'
     })
   }
@@ -640,7 +703,7 @@ const generateOrderCard = async (order, lang, single = false) => {
   if (order.step === 'canceled' || order.step === 'cancelled') {
     infoTable.items.push({
       type: 'field-value',
-      field: translate('cancelled', lang),
+      field: translate('cancelled', lang) as string,
       value: order.step === 'canceled' || order.step === 'cancelled' ? '✅' : '❌'
     })
   }
@@ -648,15 +711,15 @@ const generateOrderCard = async (order, lang, single = false) => {
   // Add tracking info (if any)
   infoTable.items.push({
     type: 'field-value',
-    field: translate('tracking_link_available', lang),
-    value: order.tracking_link || getTransporterLink(order) ? '✅' : '❌'
+    field: translate('tracking_link_available', lang) as string,
+    value: order.tracking_link || Utils.getTransporterLink(order) ? '✅' : '❌'
   })
 
   // Info shipment origin
   infoTable.items.push({
     type: 'field-value',
-    field: translate('shipment_origin', lang),
-    value: translate(`country_${getOriginFromTransporter(order.transporter)}`, lang)
+    field: translate('shipment_origin', lang) as string,
+    value: translate(`country_${Utils.getOriginFromTransporter(order.transporter)}`, lang) as string
   })
 
   // Push the info table to the card
@@ -710,7 +773,7 @@ const generateOrderCard = async (order, lang, single = false) => {
         cardComponent.push({
           type: 'button',
           id: 'resend-check-address',
-          label: translate('resend_check_address', lang),
+          label: translate('resend_check_address', lang) as string,
           style: 'secondary',
           action: {
             type: 'submit'
@@ -731,7 +794,7 @@ const generateOrderCard = async (order, lang, single = false) => {
     } = await Production.findByProjectId({ projectId: order.items[0].project_id, userId: 1 })
 
     // Prepare date list
-    const datesProd = {
+    const datesProd: CardComponentList = {
       type: 'list',
       items: []
     }
@@ -786,7 +849,7 @@ const generateOrderCard = async (order, lang, single = false) => {
 
   // Display tracking information (if any)
   if (order.tracking_number) {
-    const trackingLink = order.tracking_link || getTransporterLink(order)
+    const trackingLink = order.tracking_link || Utils.getTransporterLink(order)
 
     // If trackingLink ends up an empty string, create an appropriate response (to avoid confusion for the user and an Intercom app crash)
     if (!trackingLink) {
@@ -805,7 +868,7 @@ const generateOrderCard = async (order, lang, single = false) => {
         {
           type: 'button',
           id: 'tracking-url-action',
-          label: translate('see_tracking_link', lang),
+          label: translate('see_tracking_link', lang) as string,
           style: 'primary',
           action: {
             type: 'url',
@@ -833,7 +896,7 @@ const generateOrderCard = async (order, lang, single = false) => {
       {
         type: 'button',
         id: 'see-other-orders',
-        label: translate('see_other_orders', lang),
+        label: translate('see_other_orders', lang) as string,
         style: 'secondary',
         action: {
           type: 'submit'
@@ -856,7 +919,7 @@ const generateDownloadbleItemCard = async ({ item, userId, lang }) => {
     ]
   }
 
-  const { codeIsUsed } = await checkDownloadCode({ projectId: item.project_id, userId })
+  const { codeIsUsed } = await Project.checkDownloadCode({ projectId: item.project_id, userId })
 
   if (codeIsUsed) {
     return [
@@ -868,7 +931,7 @@ const generateDownloadbleItemCard = async ({ item, userId, lang }) => {
     ]
   }
 
-  const code = await generateDownload({ project_id: item.project_id })
+  const code = await Project.generateDownload({ project_id: item.project_id })
 
   return [
     {
@@ -942,7 +1005,7 @@ const replyWithCheckAddressCard = async ({ botData, lang }) => {
 }
 
 // Generates and return a canvas component with error notification for the user
-const replyWithErrorCard = ({ lang = 'EN' }) => {
+const replyWithErrorCard: ({ lang }: { lang: 'FR' | 'EN' }) => any = ({ lang = 'EN' }) => {
   return {
     canvas: {
       content: {
@@ -1212,7 +1275,7 @@ const replyWithDownloadCard = async ({ itemId, botData, lang }) => {
 }
 
 const replyWithDownloadList = async ({ lang, botData }) => {
-  const downloadableItems = []
+  const downloadableItems: any[] = []
   for (const order of botData.orders) {
     for (const shop of order.shops) {
       for (const item of shop.items) {
@@ -1337,7 +1400,7 @@ const replyWithAccountInit = async (request, response) => {
 
 const replyWithForgotConfirmation = async (email, response, lang) => {
   // Launch email reset
-  await forgotPassword({ email })
+  await Sign.forgotPassword({ email })
 
   // Return info to Intercom
   return response.json({
@@ -1363,7 +1426,7 @@ const replyWithForgotConfirmation = async (email, response, lang) => {
 
 const replyWithInputFlow = async ({ email, response, lang, failCount, currentAction, orders }) => {
   // If input is not an email, display error
-  if (!isEmail(email)) {
+  if (!Utils.isEmail(email)) {
     return response.json({
       canvas: {
         content: {
@@ -1411,7 +1474,7 @@ const replyWithInputFlow = async ({ email, response, lang, failCount, currentAct
     })
   }
 
-  const userExists = await existsByEmail(email)
+  const userExists = await User.existsByEmail(email)
 
   // If email is not an account, return an error/retry
   if (!userExists) {
@@ -1732,7 +1795,7 @@ const replyWithBoxHelp = async ({ lang, botData, boxId }) => {
   return addBackMenu({ canvas, lang })
 }
 
-const replyWithBoxRenew = async ({ lang, botData, boxId }) => {
+const replyWithBoxRenew = async ({ lang, botData }) => {
   const canvas = {
     canvas: {
       content: {
