@@ -67,6 +67,7 @@
     "googleapis": "^105.0.0",
     "hashids": "^2.2.10",
     "html-pdf": "^3.0.1",
+    "intercom-client": "^3.1.5",
     "jsonwebtoken": "^8.5.1",
     "jszip": "^3.10.1",
     "juice": "^8.1.0",
