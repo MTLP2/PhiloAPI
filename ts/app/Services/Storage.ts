@@ -18,7 +18,7 @@ class StorageService {
     return Storage.get(fileName, isPrivate)
   }
 
-  static url(pathname, filename, expire, isPrivate = false) {
+  static url(pathname, filename, expire?, isPrivate = true) {
     return Storage.url(pathname, filename, expire, isPrivate)
   }
 
