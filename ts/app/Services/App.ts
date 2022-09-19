@@ -74,7 +74,7 @@ class App {
       await Notification.sendEmail({
         to: 'victor@diggersfactory.com',
         subject: 'Error daily task',
-        html: err
+        html: err.message
       })
       throw err
     }
@@ -130,7 +130,7 @@ class App {
       await Notification.sendEmail({
         to: 'victor@diggersfactory.com',
         subject: 'Error hourly task',
-        html: err
+        html: err.message
       })
       throw err
     }
