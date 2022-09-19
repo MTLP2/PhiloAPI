@@ -79,6 +79,10 @@ class Artwork {
         const label = Buffer.from(params.label.replace(/^data:image\/(png|jpg|jpeg);base64,/, ''), 'base64')
         await Artwork.convertLabel(uid, label)
       }
+      if (params.label_bside) {
+        const labelBsidePicture = Buffer.from(params.label_bside.replace(/^data:image\/(png|jpg|jpeg);base64,/, ''), 'base64')
+        await Artwork.convertLabel(uid, labelBsidePicture, 'label_bside_picture')
+      }
       if (params.picture) {
         const picture = Buffer.from(params.picture.replace(/^data:image\/(png|jpg|jpeg);base64,/, ''), 'base64')
         await Artwork.convertPicture(uid, picture)
@@ -231,7 +235,7 @@ class Artwork {
     })
   }
 
-  static async convertLabel (id, buffer) {
+  static async convertLabel (id, buffer, type = 'label') {
     return new Promise((resolve, reject) => {
       const path = `projects/${id}`
       const image = sharp(buffer)
@@ -239,7 +243,7 @@ class Artwork {
       image.jpeg({ quality: 100 })
         .toBuffer()
         .then(buffer => {
-          Storage.upload(`${path}/label.jpg`, buffer)
+          Storage.upload(`${path}/${type === 'label' ? 'label' : 'label_bside'}.jpg`, buffer)
         })
         .catch(err => reject(err))
 
@@ -251,7 +255,7 @@ class Artwork {
         .png()
         .toBuffer()
         .then(async buffer => {
-          await Storage.uploadImage(`${path}/label`, buffer, { type: 'png' })
+          await Storage.uploadImage(`${path}/${type === 'label' ? 'label' : 'label_bside'}`, buffer, { type: 'png' })
           resolve(buffer)
         })
         .catch(err => reject(err))
