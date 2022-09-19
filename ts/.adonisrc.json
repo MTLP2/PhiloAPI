@@ -10,6 +10,12 @@
   },
   "preloads": ["./start/routes", "./start/kernel"],
   "providers": ["@adonisjs/core", "@adonisjs/view", "@adonisjs/i18n"],
+  "metaFiles": [
+    {
+      "pattern": "resources",
+      "reloadServer": false
+    }
+  ],
   "tests": {
     "suites": [
       {
