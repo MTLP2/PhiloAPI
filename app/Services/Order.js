@@ -600,7 +600,7 @@ Order.refundOrderShop = async (id, type, params) => {
 
   if ((params && params.credit_note === 'true') || !params) {
     await Invoice.insertRefund(order)
-    if (type === 'cancel' && order.order_items.length) {
+    if (type === 'cancel' && order.order_items?.length) {
       for (const item of order.order_items) {
         try {
           await Stock.calcul({ id: item.project_id, isShop: order.type === 'shop', quantity: item.quantity, transporter: order.transporter })

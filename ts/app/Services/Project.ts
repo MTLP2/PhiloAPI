@@ -719,7 +719,8 @@ class Project {
         'stage3',
         'only_country',
         'exclude_country',
-        'v.step'
+        'v.step',
+        'v.is_label_bside'
       )
       .from('project as p')
       .leftJoin('vod as v', 'p.id', 'v.project_id')

@@ -134,6 +134,7 @@ Project.saveProject = async (params) => {
 
   if (params.cover_picture ||
     params.label_picture ||
+    params.label_bside_picture ||
     params.back_picture ||
     params.cover2_picture ||
     params.cover3_picture ||
@@ -155,6 +156,7 @@ Project.saveProject = async (params) => {
       vinyl_picture: params.vinyl_picture,
       back: params.back_picture,
       label: params.label_picture,
+      label_bside: params.label_bside_picture,
       background: params.background,
       color: params.color_vinyl,
       sleeve: params.sleeve
