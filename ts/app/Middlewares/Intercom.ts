@@ -1,19 +1,20 @@
 import Env from '@ioc:Adonis/Core/Env'
 import crypto from 'crypto'
+import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 
 class Intercom {
-  async handle({ request, response }, next) {
+  async handle({ request, response }: HttpContextContract, next: () => Promise<void>) {
     const headers = request.headers()
 
     // Generate both order and account apps signatures
     const accountSignature = crypto
       .createHmac('sha256', Env.get('INTERCOM_ACCOUNT_CLIENT'))
-      .update(JSON.stringify(request.body))
+      .update(JSON.stringify(request.body()))
       .digest('hex')
 
     const orderSignature = crypto
       .createHmac('sha256', Env.get('INTERCOM_ORDER_CLIENT'))
-      .update(JSON.stringify(request.body))
+      .update(JSON.stringify(request.body()))
       .digest('hex')
 
     // const boxSignature = crypto
