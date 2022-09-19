@@ -20,6 +20,7 @@ import HttpExceptionHandler from '@ioc:Adonis/Core/HttpExceptionHandler'
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import Env from '@ioc:Adonis/Core/Env'
 import Notification from 'App/Services/Notification'
+import View from '@ioc:Adonis/Core/View'
 
 const options = {
   // Defaults to false
@@ -44,6 +45,9 @@ export default class ExceptionHandler extends HttpExceptionHandler {
   }
 
   public async handle(error: any, ctx: HttpContextContract) {
+    if (!error.status) {
+      error.status = 500
+    }
     if (process.env.NODE_ENV === 'production' && error.status === 500) {
       let file
       try {
@@ -54,30 +58,23 @@ export default class ExceptionHandler extends HttpExceptionHandler {
       const data = {
         code: error.status,
         message: error.message,
-        detail: error.detail,
-        request: ctx.request,
         url: ctx.request.url(),
         file: file && file[0],
         line: file && file[1],
         method: ctx.request.method(),
-        post: JSON.stringify(ctx.request.post()).substring(0, 2000),
-        get: JSON.stringify(ctx.request.get()),
+        post: JSON.stringify(ctx.request.body()).substring(0, 2000),
+        get: JSON.stringify(ctx.request.qs()),
         stack: error.stack && error.stack.replace(/\n/g, '<br />')
       }
 
+      const html = await View.render('emails/error', data)
+
       await Notification.sendEmail({
         to: Env.get('DEBUG_EMAIL'),
-        subject: `Error: ${error.message}`,
-        html: data
+        subject: `Error: ${error.message.substring(0, 900)}`,
+        html: html
       })
-      /**
-      await Mail.send('emails.error', data, message => {
-        message
-          .from('noreply@diggersfactory.com', 'Diggers Factory')
-          .subject(`Error: ${error.message}`)
-          .to(Env.get('DEBUG_EMAIL'))
-      })
-      **/
+
       if (error.message) {
         error.message = 'Sorry, something went wrong.'
       }
@@ -87,15 +84,12 @@ export default class ExceptionHandler extends HttpExceptionHandler {
       error.message = 'Validation Failed'
     }
 
-    if (!error.status) {
-      error.status = 500
-    }
     return ctx.response
       .status(error.status)
       .send({ error: error.message || error, errors: error.messages, status: error.status })
   }
 
-  public async report(error: any, ctx: HttpContextContract) {
+  public async report(error: any) {
     if (process.env.NODE_ENV === 'production') {
       console.log(error)
     } else {
