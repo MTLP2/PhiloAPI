@@ -1,11 +1,11 @@
 import Storage from 'App/Services/Storage'
 import sharp from 'sharp'
-const Vibrant = require('node-vibrant')
 import Color from 'color'
 import config from 'Config/index'
 import Utils from 'App/Utils'
 import DB from 'App/DB'
 import splatter from 'App/Splatter'
+const Vibrant = require('node-vibrant')
 
 class Artwork {
   static async updateArtwork(params) {
@@ -114,6 +114,17 @@ class Artwork {
         )
         await Artwork.convertLabel(uid, label)
       }
+      if (params.label_bside) {
+        const labelBsidePicture = Buffer.from(
+          params.label_bside.replace(/^data:image\/(png|jpg|jpeg);base64,/, ''),
+          'base64'
+        )
+        await Artwork.convertLabel(uid, labelBsidePicture, 'label_bside_picture')
+        await DB('vod').where('project_id', params.id).update({
+          is_label_bside: 1
+        })
+      }
+
       if (params.picture) {
         const picture = Buffer.from(
           params.picture.replace(/^data:image\/(png|jpg|jpeg);base64,/, ''),
@@ -275,7 +286,7 @@ class Artwork {
     })
   }
 
-  static async convertLabel(id, buffer) {
+  static async convertLabel(id, buffer, type = 'label') {
     return new Promise((resolve, reject) => {
       const path = `projects/${id}`
       const image = sharp(buffer)
@@ -284,7 +295,7 @@ class Artwork {
         .jpeg({ quality: 100 })
         .toBuffer()
         .then((buffer) => {
-          Storage.upload(`${path}/label.jpg`, buffer)
+          Storage.upload(`${path}/${type === 'label' ? 'label' : 'label_bside'}.jpg`, buffer)
         })
         .catch((err) => reject(err))
 
@@ -301,7 +312,11 @@ class Artwork {
         .png()
         .toBuffer()
         .then(async (buffer) => {
-          await Storage.uploadImage(`${path}/label`, buffer, { type: 'png' })
+          await Storage.uploadImage(
+            `${path}/${type === 'label' ? 'label' : 'label_bside'}`,
+            buffer,
+            { type: 'png' }
+          )
           resolve(buffer)
         })
         .catch((err) => reject(err))
