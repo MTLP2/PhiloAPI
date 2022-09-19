@@ -209,7 +209,7 @@ const DB = (tablee?, idd?) => {
       return db
     },
 
-    where(arg1, arg2, arg3?) {
+    where(arg1, arg2?, arg3?) {
       if (typeof arg1 === 'function' || typeof arg1 === 'object') {
         p.query.where(arg1)
         p.where.push(arg1)
