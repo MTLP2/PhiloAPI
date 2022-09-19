@@ -555,8 +555,11 @@ class StatementService {
       columns.push({ header: month, key: month, width: 15 })
     }
 
-    const name = params.number ? `${params.number}. ${project.name}` : `${project.name}`
-    const worksheet = workbook.addWorksheet(name.replace(/:/gi, '').replace(/\//gi, ''))
+    let name = params.number ? `${params.number}. ${project.name}` : `${project.name}`
+    name = name.replace(/:/gi, '').replace(/\//gi, '').replace(/\[/gi, '-').replace(/\]/gi, '-')
+
+    const worksheet = workbook.addWorksheet(name)
+
     worksheet.columns = columns
     worksheet.addRows(rows)
 
