@@ -1,18 +1,17 @@
+import juice from 'juice'
+import Excel from 'exceljs'
 import DB from 'App/DB'
 import Env from '@ioc:Adonis/Core/Env'
 import Order from 'App/Services/Order'
 import Notification from 'App/Services/Notification'
-import Storage from 'App/Services/Storage'
 import Stock from 'App/Services/Stock'
 import ApiError from 'App/ApiError'
 import config from 'Config/index'
 import Utils from 'App/Utils'
 import request from 'request'
-import juice from 'juice'
-import Excel from 'exceljs'
 
 class Whiplash {
-  whiplash = (endpoint, options = {}) => {
+  static api = (endpoint, options = {}) => {
     return new Promise((resolve, reject) => {
       request(
         {
@@ -33,22 +32,22 @@ class Whiplash {
   }
 
   static getOrders = () => {
-    return whiplash('orders')
+    return Whiplash.api('orders')
   }
 
   static getOrder = (id) => {
-    return whiplash(`orders/${id}`)
+    return Whiplash.api(`orders/${id}`)
   }
 
   static saveOrder = (params) => {
-    return whiplash('orders', {
+    return Whiplash.api('orders', {
       method: 'POST',
       body: params
     })
   }
 
   static getItems = () => {
-    return whiplash('items')
+    return Whiplash.api('items')
   }
 
   static validOrder = async (shop, items) => {
@@ -101,7 +100,7 @@ class Whiplash {
   }
 
   static saveOrderItem = (params) => {
-    return whiplash('order_items', {
+    return Whiplash.api('order_items', {
       method: 'POST',
       body: {
         order_id: params.order_id,
@@ -115,7 +114,7 @@ class Whiplash {
     if (process.env.NODE_ENV !== 'production') {
       sku = 'TEST'
     }
-    return whiplash(`/items/sku/${sku}`).then((res) => {
+    return Whiplash.api(`/items/sku/${sku}`).then((res) => {
       if (!res) {
         return null
         // If eligible for media mail is not activited we return null
@@ -591,12 +590,12 @@ class Whiplash {
         whiplash_stock: Utils.date()
       })
 
-      const res = await whiplash(`items/sku/${project.barcode}`)
+      const res = await Whiplash.api(`items/sku/${project.barcode}`)
 
       if (!res[0]) {
         continue
       }
-      const warehouses = await whiplash(`items/${res[0].id}/warehouse_quantities`)
+      const warehouses = await Whiplash.api(`items/${res[0].id}/warehouse_quantities`)
 
       let us = 0
       let uk = 0
