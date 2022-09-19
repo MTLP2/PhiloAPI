@@ -116,6 +116,12 @@ class StatementService {
       case 'KAI':
         data = this.parseKAI(workbook)
         break
+      case 'Altafonte':
+        data = this.parseAltafonte(workbook)
+        break
+      case 'FAB':
+        data = this.parseFab(workbook)
+        break
     }
 
     data = Object.values(data)
@@ -501,6 +507,53 @@ class StatementService {
     })
 
     return 'wip'
+  }
+
+  static parseFab(workbook) {
+    const worksheet = workbook.getWorksheet(1)
+
+    const data = {}
+    worksheet.eachRow((row) => {
+      const barcode = row.getCell('A').value
+      const quantity = row.getCell('F').value
+      const total = row.getCell('J').result
+
+      if (Number.isInteger(quantity)) {
+        data[barcode] = {
+          barcode: barcode,
+          country_id: 'CA',
+          quantity: quantity || 0,
+          returned: 0,
+          total: total
+        }
+      }
+    })
+
+    return data
+  }
+
+  static parseAltafonte(workbook) {
+    const worksheet = workbook.getWorksheet(1)
+
+    const data = {}
+    worksheet.eachRow((row) => {
+      const catNumber = row.getCell('A').value
+      const quantity = row.getCell('D').value
+      const returned = row.getCell('E').value
+      const total = row.getCell('H').result
+
+      if (Number.isInteger(quantity) || Number.isInteger(returned)) {
+        data[catNumber] = {
+          cat_number: catNumber,
+          country_id: 'ES',
+          quantity: quantity || 0,
+          returned: returned || 0,
+          total: total
+        }
+      }
+    })
+
+    return data
   }
 
   static async download(params) {
