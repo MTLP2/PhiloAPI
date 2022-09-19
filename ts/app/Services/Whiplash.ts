@@ -642,25 +642,27 @@ class Whiplash {
     return projects
   }
 
-  static setCost = async (buffer) => {
+  static setCost = async (buffer, force = false) => {
     const lines = Utils.csvToArray(buffer)
     const date = lines[0].transaction_date.substring(0, 10)
-
     let currencies
 
-    if (lines[0].warehouse_id === 3) {
+    if (+lines[0].warehouse_id === 3) {
       currencies = await Utils.getCurrenciesApi(date, 'EUR,USD,GBP,AUD', 'GBP')
     } else {
       currencies = await Utils.getCurrenciesApi(date, 'EUR,USD,GBP,AUD', 'USD')
     }
 
-    const shops = await DB('order_shop')
-      .whereIn(
-        'whiplash_id',
-        lines.filter((s) => s.creator_id).map((s) => s.creator_id)
-      )
-      // .whereNull('shipping_cost')
-      .all()
+    let shops = DB('order_shop').whereIn(
+      'whiplash_id',
+      lines.filter((s) => s.creator_id).map((s) => s.creator_id)
+    )
+
+    if (!force) {
+      shops.whereNull('shipping_cost')
+    }
+
+    shops = await shops.all()
 
     const dispatchs = []
     for (const dispatch of lines) {
@@ -688,9 +690,8 @@ class Whiplash {
         dispatchs.push(dispatch)
         // console.log(shop.order_id, dispatch.creator_id, dispatch.warehouse_id, -dispatch.total, shop.shipping_cost)
       }
-
-      return dispatchs
     }
+    return dispatchs
   }
 
   static parseShippings = async () => {

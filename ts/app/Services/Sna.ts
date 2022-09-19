@@ -143,7 +143,7 @@ class Sna {
     return orders.reverse()
   }
 
-  static async setCost(date, buffer) {
+  static async setCost(date, buffer, force) {
     const dispatchs = []
     const workbook = new Excel.Workbook()
     await workbook.xlsx.load(buffer)
@@ -177,10 +177,12 @@ class Sna {
         dispatch.cost += (dispatch.quantity - 1) * 0.45
       }
 
-      const order = await DB('order_shop')
-        .where('id', dispatch.id.toString())
-        // .whereNull('shipping_cost')
-        .first()
+      let order = DB('order_shop').where('id', dispatch.id.toString()).whereNull('shipping_cost')
+      if (!force) {
+        order.whereNull('shipping_cost')
+      }
+      order = await order.first()
+
       if (!order) {
         return
       }

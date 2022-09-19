@@ -1220,7 +1220,7 @@ class Daudin {
     return orders
   }
 
-  static async setCost(date, buffer) {
+  static async setCost(date, buffer, force) {
     const dispatchs = []
 
     const workbook = new Excel.Workbook()
@@ -1275,30 +1275,37 @@ class Daudin {
       const dispatch = dispatchs[d]
 
       if (dispatch.id[0] === 'M') {
-        const order = await DB('order_manual')
-          .where('id', dispatch.id.substring(1).replace('b', ''))
-          .whereNull('shipping_cost')
-          .first()
+        let order = DB('order_manual').where('id', dispatch.id.substring(1).replace('b', ''))
+        if (!force) {
+          order.whereNull('shipping_cost')
+        }
+
+        order = await order.first()
+
         if (!order) {
           continue
         }
         order.shipping_cost = dispatch.cost
         await order.save()
       } else if (dispatch.id[0] === 'B') {
-        const order = await DB('box_dispatch')
-          .where('id', dispatch.id.replace(/B/g, ''))
-          .whereNull('shipping_cost')
-          .first()
+        let order = DB('box_dispatch').where('id', dispatch.id.replace(/B/g, ''))
+        if (!force) {
+          order.whereNull('shipping_cost')
+        }
+        order = await order.first()
+
         if (!order) {
           continue
         }
         order.shipping_cost = dispatch.cost
         await order.save()
       } else {
-        const order = await DB('order_shop')
-          .where('id', dispatch.id.toString().replace('A', ''))
-          // .whereNull('shipping_cost')
-          .first()
+        let order = DB('order_shop').where('id', dispatch.id.toString().replace('A', ''))
+        if (!force) {
+          order.whereNull('shipping_cost')
+        }
+
+        order = await order.first()
 
         if (!order) {
           continue

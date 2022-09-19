@@ -571,35 +571,40 @@ class Dispatch {
 
   static setCosts = async (params) => {
     const files = await Storage.list(`shippings/${params.transporter}`, true)
-
     const dispatchs = []
     for (const file of files) {
       if (file.size === 0) {
         continue
       }
       const path = file.path.split('.')[0].split(' ')
+
+      if (path[0] !== 'shippings/whiplash/invoice_97369') {
+        continue
+      }
+
       console.log(path)
+
       const date = path[path.length - 1]
 
       const buffer = await Storage.get(file.path, true)
 
-      const dis = await setCost(params.transporter, date, buffer)
+      const dis = await Dispatch.setCost(params.transporter, date, buffer, params.force)
       // console.log(dis.length)
       dispatchs.push(...dis)
     }
     return dispatchs.length
   }
 
-  static setCost = async (transporter, date, buffer) => {
+  static setCost = async (transporter, date, buffer, force = false) => {
     const dispatchs = []
 
     let dis
     if (transporter === 'daudin') {
-      dis = await Daudin.setCost(date, buffer)
+      dis = await Daudin.setCost(date, buffer, force)
     } else if (transporter === 'sna') {
-      dis = await Sna.setCost(date, buffer)
+      dis = await Sna.setCost(date, buffer, force)
     } else if (transporter === 'whiplash') {
-      dis = await Whiplash.setCost(buffer)
+      dis = await Whiplash.setCost(buffer, force)
     }
     dispatchs.push(...dis)
 
