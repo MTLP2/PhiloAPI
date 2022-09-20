@@ -43,8 +43,18 @@ class Shop {
   static async update(params) {
     let item = DB('shop')
 
+    const code = params.code ? params.code : Utils.slugify(params.name)
+    const codeUsed = await DB('shop').where('code', code).where('id', '!=', params.id).first()
+
+    if (codeUsed) {
+      throw new ApiError(406, 'code_used')
+    }
+
     if (params.id) {
       item = await DB('shop').find(params.id)
+      if (!item) {
+        throw new ApiError(404)
+      }
     } else {
       item.created_at = Utils.date()
     }
