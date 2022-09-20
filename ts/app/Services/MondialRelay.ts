@@ -1,9 +1,9 @@
-import soap from 'soap'
 import md5 from 'md5'
+import moment from 'moment'
 import Utils from 'App/Utils'
 import DB from 'App/DB'
-import moment from 'moment'
 import Notification from 'App/Services/Notification'
+const soap = require('soap')
 
 class MondialRelay {
   static track(number, lang) {
@@ -16,7 +16,6 @@ class MondialRelay {
           return
         }
         const privateKey = 'SKuHmWzZ'
-
         const params = {
           Enseigne: 'F2DIGGER',
           Expedition: number,
