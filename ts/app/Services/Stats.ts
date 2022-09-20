@@ -1800,7 +1800,17 @@ class Stats {
       .all()
 
     const invoicesPromise = await DB('invoice')
-      .select('id', 'type', 'name', 'date', 'category', 'sub_total', 'currency_rate', 'order_id')
+      .select(
+        'id',
+        'type',
+        'name',
+        'date',
+        'category',
+        'sub_total',
+        'margin',
+        'currency_rate',
+        'order_id'
+      )
       .whereBetween('date', [params.start, params.end])
       .where('compatibility', true)
       .all()
@@ -2055,6 +2065,9 @@ class Stats {
       } else if (invoice.category === 'distribution') {
         addTurnover(invoice.type, 'distrib', null, date, total)
       } else if (invoice.category === 'direct_pressing') {
+        if (invoice.margin) {
+          addMarge('direct_pressing', null, date, invoice.margin * invoice.currency_rate)
+        }
         addTurnover(invoice.type, 'direct_pressing', null, date, total)
       } else if (invoice.category === 'shipping') {
         addTurnover(invoice.type, 'shipping', 'invoice', date, total)
@@ -2292,9 +2305,7 @@ class Stats {
     for (const cost of costs) {
       const date = moment(cost.date).format(format)
 
-      if (cost.type === 'direct_pressing') {
-        addMarge('direct_pressing', null, date, cost.margin)
-      } else {
+      if (cost.type !== 'direct_pressing') {
         addMarge('prod', null, date, cost.margin)
       }
     }
