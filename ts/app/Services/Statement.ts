@@ -609,7 +609,14 @@ class StatementService {
     }
 
     let name = params.number ? `${params.number}. ${project.name}` : `${project.name}`
-    name = name.replace(/:/gi, '').replace(/\//gi, '').replace(/\[/gi, '-').replace(/\]/gi, '-')
+    name = name
+      .replace(/\*/gi, '')
+      .replace(/\?/gi, '')
+      .replace(/:/gi, '')
+      .replace(/\//gi, '')
+      .replace(/\\/gi, '')
+      .replace(/\[/gi, '-')
+      .replace(/\]/gi, '-')
 
     const worksheet = workbook.addWorksheet(name)
 
