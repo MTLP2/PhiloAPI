@@ -31,7 +31,11 @@ class Shop {
       throw new ApiError(404)
     }
 
-    shop.projects = await Project.findAll({ shop_id: shop.id, all_project: params.all_project })
+    shop.projects = await Project.findAll({
+      shop_id: shop.id,
+      all_project: params.all_project,
+      limit: 99999
+    })
 
     return shop
   }
