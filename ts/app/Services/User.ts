@@ -846,6 +846,10 @@ static extractProjectOrders = async (params) => {
   static unsubscribeNewsletter = async (params) => {
     const id = User.decodeUnsubscribeNewseletter(params.t)
 
+    if (!id) {
+      return { error: 'bad_code' }
+    }
+
     // we search the user with the decrypted id and the params email
     const user = await DB('user')
       .where('id', id)
