@@ -149,7 +149,7 @@ class ProjectsController {
     if (params.user_id && user.id !== +params.user_id && !(await Utils.isTeam(user.id))) {
       throw new ApiError(403)
     }
-    if (params.project_id !== 'all' && params.project_id !== '') {
+    if (params.project_id && params.project_id !== 'all' && params.project_id !== '') {
       await Utils.checkProjectOwner({ project_id: params.project_id, user: user })
     }
 
@@ -161,7 +161,7 @@ class ProjectsController {
     if (params.id !== 'all') {
       await Utils.checkProjectOwner({ project_id: params.id, user: user })
     }
-    if (params.user_id && params.user_id !== user.id && !(await Utils.isTeam(user.id))) {
+    if (params.user_id && +params.user_id !== user.id && !(await Utils.isTeam(user.id))) {
       throw new ApiError(403)
     }
     return Project.getOrdersForTable(params)
