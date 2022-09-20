@@ -172,8 +172,6 @@ class Stats {
     names.push('invoices')
     promises.push(DB().execute(query))
 
-    console.log(query)
-
     query = `
       SELECT invoice.id, invoice.tax_rate, invoice.currency, invoice.currency_rate,
         order_item.currency_rate as order_curency_rate,
@@ -1635,7 +1633,7 @@ class Stats {
         success: { total: 0, dates: { ...dates } }
       },
       styles: {},
-      distrib: {},
+      distrib: { list: {}, projects: {} },
       outstanding: 0,
       outstanding_delayed: 0,
       users: {
@@ -1722,26 +1720,28 @@ class Stats {
         error: { total: 0, dates: { ...dates } },
         other: { total: 0, dates: { ...dates } }
       },
-      credit_note: {
+      margin: {
         total: { total: 0, dates: { ...dates } },
         project: { total: 0, dates: { ...dates } },
-        project_site: { total: 0, dates: { ...dates } },
-        project_invoice: { total: 0, dates: { ...dates } },
-        licence: { total: 0, dates: { ...dates } },
+        licence: {
+          total: { total: 0, dates: { ...dates } },
+          invoiced: { total: 0, dates: { ...dates } },
+          cost: { total: 0, dates: { ...dates } }
+        },
         shipping: { total: 0, dates: { ...dates } },
-        distrib: { total: 0, dates: { ...dates } },
+        distrib: {
+          total: { total: 0, dates: { ...dates } },
+          project: { total: 0, dates: { ...dates } },
+          licence: { total: 0, dates: { ...dates } }
+        },
         direct_shop: { total: 0, dates: { ...dates } },
         direct_pressing: { total: 0, dates: { ...dates } },
         box: { total: 0, dates: { ...dates } },
-        box_site: { total: 0, dates: { ...dates } },
-        box_invoice: { total: 0, dates: { ...dates } },
-        digital: { total: 0, dates: { ...dates } },
-        error: { total: 0, dates: { ...dates } },
-        other: { total: 0, dates: { ...dates } }
+        prod: { total: 0, dates: { ...dates } },
+        storage: { total: 0, dates: { ...dates } }
       }
     }
 
-    console.log('TOP 0')
     const currenciesPromise = DB('currency').all()
 
     const quantityPromise = DB('order_shop as os')
@@ -1778,10 +1778,15 @@ class Stats {
       .select(
         'statement.id',
         'statement.date',
+        'statement.storage',
         'vod.fee_distrib_date',
         'vod.payback_distrib',
         'vod.is_licence',
         'vod.currency',
+        'vod.project_id',
+        'project.name',
+        'project.picture',
+        'project.artist_name',
         'project.styles'
       )
       .from('statement')
@@ -1796,7 +1801,7 @@ class Stats {
 
     const invoicesPromise = await DB('invoice')
       .select('id', 'type', 'name', 'date', 'category', 'sub_total', 'currency_rate', 'order_id')
-      .whereBetween('created_at', [params.start, params.end])
+      .whereBetween('date', [params.start, params.end])
       .where('compatibility', true)
       .all()
 
@@ -1830,6 +1835,14 @@ class Stats {
       .orWhereBetween('date_factory', [params.start, params.end])
       .all()
 
+    const costsPromise = await DB('production_cost')
+      .select('date', 'type', 'margin')
+      .join('vod', 'vod.project_id', 'production_cost.project_id')
+      .where('is_licence', false)
+      .whereBetween('date', [params.start, params.end])
+      .whereNotNull('margin')
+      .all()
+
     const stocksPromise = await DB('stock')
       .select('type', DB.raw('sum(quantity) as quantity'))
       .groupBy('type')
@@ -1852,6 +1865,7 @@ class Stats {
       statements,
       projects,
       productions,
+      costs,
       users,
       stocks,
       quotes,
@@ -1865,6 +1879,7 @@ class Stats {
       statementsPromise,
       projectsPromise,
       productionsPromise,
+      costsPromise,
       usersPromise,
       stocksPromise,
       quotesPromise,
@@ -1873,7 +1888,6 @@ class Stats {
       currenciesPromise
     ])
 
-    console.log('-> TOP 1')
     const currencies = Utils.getCurrencies('EUR', currenciesDb)
 
     const styles = {}
@@ -1887,6 +1901,7 @@ class Stats {
         'order_shop.id as order_shop_id',
         'order_shop.order_id',
         'shipping',
+        'shipping_cost',
         'sub_total',
         'tax_rate',
         'order_shop.currency',
@@ -1911,7 +1926,15 @@ class Stats {
     }
 
     const projectsList = await DB('vod')
-      .select('order_shop_id', 'order_id', 'order_item.total', 'is_licence')
+      .select(
+        'order_shop_id',
+        'order_id',
+        'order_item.total',
+        'quantity',
+        'fee_date',
+        'payback_site',
+        'is_licence'
+      )
       .join('order_item', 'order_item.project_id', 'vod.project_id')
       .whereIn(
         'order_shop_id',
@@ -1948,9 +1971,7 @@ class Stats {
       })
     }
 
-    console.log('--> TOP 2')
-
-    const addPrice = (type, cat, cat2, date, value) => {
+    const addTurnover = (type, cat, cat2, date, value) => {
       if (type === 'invoice') {
         d.turnover[cat].total.dates[date] += value
         d.turnover[cat].all.dates[date] += value
@@ -1962,6 +1983,16 @@ class Stats {
         d.turnover[cat].total.dates[date] -= value
         d.turnover[cat].credit_note.dates[date] += value
       }
+    }
+
+    const addMarge = (type, cat, date, value) => {
+      if (cat) {
+        d.margin[type][cat].dates[date] += value
+        d.margin[type].total.dates[date] += value
+      } else {
+        d.margin[type].dates[date] += value
+      }
+      d.margin.total.dates[date] += value
     }
 
     for (const invoice of invoices) {
@@ -1983,37 +2014,52 @@ class Stats {
           if (order.tax_rate) {
             shipping = shipping / (1 + order.tax_rate)
           }
+          if (order.shipping_cost) {
+            const shippingCost =
+              (order.shipping_cost * invoice.currency_rate) / (1 + order.tax_rate)
+            addMarge('shipping', null, date, shipping - shippingCost)
+          }
 
-          addPrice(invoice.type, 'shipping', 'site', date, shipping)
+          addTurnover(invoice.type, 'shipping', 'site', date, shipping)
 
           for (const item of order.items) {
             let total = item.total / (1 + order.tax_rate)
+            let marge
+            if (item.payback_site) {
+              marge = total - item.payback_site * item.quantity
+            } else if (item.fee_date) {
+              const fee = Utils.getFee(JSON.parse(item.fee_date), date) / 100
+              marge = total * fee
+            }
             if (order.type === 'box') {
               total = item.price / (1 + order.tax_rate)
-              addPrice(invoice.type, 'box', 'site', date, total)
+              addTurnover(invoice.type, 'box', 'site', date, total)
             } else if (order.is_pro) {
+              addMarge('direct_shop', null, date, marge)
               if (item.is_licence) {
-                addPrice(invoice.type, 'direct_shop', 'licence', date, total)
+                addTurnover(invoice.type, 'direct_shop', 'licence', date, total)
               } else {
-                addPrice(invoice.type, 'direct_shop', 'project', date, total)
+                addTurnover(invoice.type, 'direct_shop', 'project', date, total)
               }
             } else if (item.is_licence) {
-              addPrice(invoice.type, 'licence', null, date, total)
+              addMarge('licence', 'invoiced', date, marge)
+              addTurnover(invoice.type, 'licence', null, date, total)
             } else {
-              addPrice(invoice.type, 'project', 'site', date, total)
+              addMarge('project', null, date, marge)
+              addTurnover(invoice.type, 'project', 'site', date, total)
             }
           }
         }
       } else if (invoice.category === 'box') {
-        addPrice(invoice.type, 'box', 'invoice', date, total)
+        addTurnover(invoice.type, 'box', 'invoice', date, total)
       } else if (invoice.category === 'distribution') {
-        addPrice(invoice.type, 'distrib', null, date, total)
+        addTurnover(invoice.type, 'distrib', null, date, total)
       } else if (invoice.category === 'direct_pressing') {
-        addPrice(invoice.type, 'direct_pressing', null, date, total)
+        addTurnover(invoice.type, 'direct_pressing', null, date, total)
       } else if (invoice.category === 'shipping') {
-        addPrice(invoice.type, 'shipping', 'invoice', date, total)
+        addTurnover(invoice.type, 'shipping', 'invoice', date, total)
       } else if (invoice.category === 'project') {
-        addPrice(invoice.type, 'project', 'invoice', date, total)
+        addTurnover(invoice.type, 'project', 'invoice', date, total)
       } else if (invoice.name.includes('Order ')) {
         d.turnover.error.total += total
         d.turnover.error.dates[date] += total
@@ -2161,34 +2207,95 @@ class Stats {
       .sort((a, b) => (a.period - b.period < 0 ? 1 : -1))
       .slice(0, 20)
 
-    for (const statement of statements) {
-      for (const distrib of statement.distributors) {
-        const date = moment(statement.date).format(format)
-        d.quantity.distrib.total += distrib.quantity
-        d.quantity.distrib.dates[date] += distrib.quantity
+    for (const stat of statements) {
+      for (const dis of stat.distributors) {
+        dis.name = dis.name.toLowerCase().trim()
 
-        if (!d.distrib[distrib.name]) {
-          d.distrib[distrib.name] = 0
-        }
-        d.distrib[distrib.name] += distrib.quantity
+        const date = moment(stat.date).format(format)
+        d.quantity.distrib.total += dis.quantity
+        d.quantity.distrib.dates[date] += dis.quantity
 
-        d.quantity.returned.total += Math.abs(distrib.returned)
-        d.quantity.returned.dates[date] += Math.abs(distrib.returned)
+        d.quantity.returned.total += Math.abs(dis.returned)
+        d.quantity.returned.dates[date] += Math.abs(dis.returned)
 
-        if (statement.is_licence) {
-          d.quantity.distrib_licence.total += distrib.quantity
-          d.quantity.distrib_licence.dates[date] += distrib.quantity
+        if (stat.is_licence) {
+          d.quantity.distrib_licence.total += dis.quantity
+          d.quantity.distrib_licence.dates[date] += dis.quantity
         } else {
-          d.quantity.distrib_project.total += distrib.quantity
-          d.quantity.distrib_project.dates[date] += distrib.quantity
+          d.quantity.distrib_project.total += dis.quantity
+          d.quantity.distrib_project.dates[date] += dis.quantity
         }
 
-        for (const style of statement.styles.split(',')) {
+        let marge
+        if (stat.payback_distrib) {
+          marge = dis.total / currencies[stat.currency] - stat.payback_distrib * dis.quantity
+        } else {
+          const fee = Utils.getFee(JSON.parse(stat.fee_distrib_date), stat.date) / 100
+          marge = (dis.total / currencies[stat.currency]) * fee
+        }
+
+        addMarge('distrib', stat.is_licence ? 'licence' : 'project', date, marge)
+        if (stat.storage) {
+          addMarge('storage', null, date, stat.storage / currencies[stat.currency])
+        }
+
+        if (!d.distrib.list[dis.name]) {
+          d.distrib.list[dis.name] = {
+            total: 0,
+            projects: {}
+          }
+        }
+        d.distrib.list[dis.name].total += dis.quantity
+
+        const p = {
+          name: stat.name,
+          artist: stat.artist_name,
+          picture: stat.picture,
+          quantity: 0
+        }
+        if (!d.distrib.projects[stat.project_id]) {
+          d.distrib.projects[stat.project_id] = { ...p }
+        }
+        d.distrib.projects[stat.project_id].quantity += dis.quantity
+
+        if (!d.distrib.list[dis.name].projects[stat.project_id]) {
+          d.distrib.list[dis.name].projects[stat.project_id] = { ...p }
+        }
+        d.distrib.list[dis.name].projects[stat.project_id].quantity += dis.quantity
+
+        for (const style of stat.styles.split(',')) {
           if (!d.styles[styles[style]]) {
             d.styles[styles[style]] = 0
           }
-          d.styles[styles[style]] += distrib.quantity
+          d.styles[styles[style]] += dis.quantity
         }
+      }
+    }
+
+    for (const p of Object.keys(d.distrib.list)) {
+      d.distrib.list[p].projects = Object.values(d.distrib.list[p].projects).sort((a, b) =>
+        a.quantity - b.quantity < 0 ? 1 : -1
+      )
+    }
+    d.distrib.projects = Object.values(d.distrib.projects).sort((a, b) =>
+      a.quantity - b.quantity < 0 ? 1 : -1
+    )
+    d.distrib.total = Object.keys(d.distrib.list)
+      .map((dist) => {
+        return {
+          name: dist,
+          quantity: d.distrib.list[dist].total
+        }
+      })
+      .sort((a, b) => (a.quantity - b.quantity < 0 ? 1 : -1))
+
+    for (const cost of costs) {
+      const date = moment(cost.date).format(format)
+
+      if (cost.type === 'direct_pressing') {
+        addMarge('direct_pressing', null, date, cost.margin)
+      } else {
+        addMarge('prod', null, date, cost.margin)
       }
     }
 
@@ -2297,12 +2404,6 @@ class Stats {
     d.styles = Object.entries(d.styles)
       .map(([id, value]) => ({ name: id, value: value }))
       .sort((a, b) => (a.value - b.value < 0 ? 1 : -1))
-
-    d.distrib = Object.entries(d.distrib)
-      .map(([id, value]) => ({ name: id, value: value }))
-      .sort((a, b) => (a.value - b.value < 0 ? 1 : -1))
-
-    console.log('---> TOP 3')
 
     return d
   }
