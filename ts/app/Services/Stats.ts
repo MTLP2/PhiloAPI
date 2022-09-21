@@ -1846,9 +1846,8 @@ class Stats {
       .all()
 
     const costsPromise = await DB('production_cost')
-      .select('date', 'type', 'margin')
+      .select('date', 'type', 'is_licence', 'margin')
       .join('vod', 'vod.project_id', 'production_cost.project_id')
-      .where('is_licence', false)
       .whereBetween('date', [params.start, params.end])
       .whereNotNull('margin')
       .all()
@@ -2305,7 +2304,9 @@ class Stats {
     for (const cost of costs) {
       const date = moment(cost.date).format(format)
 
-      if (cost.type !== 'direct_pressing') {
+      if (cost.is_licence) {
+        addMarge('licence', 'cost', date, cost.margin)
+      } else if (cost.type !== 'direct_pressing') {
         addMarge('prod', null, date, cost.margin)
       }
     }
