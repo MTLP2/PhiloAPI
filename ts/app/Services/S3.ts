@@ -71,7 +71,12 @@ class S3 {
     })
   }
 
-  static async url(path, filename, expires = 10, isPrivate = true) {
+  static async url(
+    path: string,
+    filename: string,
+    expires: number = 10,
+    isPrivate: boolean = true
+  ): Promise<string | null> {
     return new Promise((resolve, reject) => {
       s3.getSignedUrl(
         'getObject',
@@ -81,7 +86,7 @@ class S3 {
           Expires: expires,
           ResponseContentDisposition: 'attachment; filename ="' + encodeURI(filename) + '"'
         },
-        (err, data) => {
+        (err, data: string) => {
           if (err) {
             resolve(null)
           } else {
