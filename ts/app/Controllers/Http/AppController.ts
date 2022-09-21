@@ -530,11 +530,20 @@ class AppController {
 
   // Subscribe to the newsletter without account
   async subscribeNewsletterWithoutAccount({ params }) {
+    // Email already in users ?
+    const account = await DB('user').where('email', params.email).first()
+    if (account) {
+      return { error: 'account' }
+    }
+
     // Email already in database ?
     const exists = await DB('newsletter_no_account').where('email', params.email).first()
 
+    if (exists) {
+      return { error: 'exists' }
+    }
     // If not
-    if (!exists) {
+    else if (!exists) {
       // Insert in db
       const [id] = await DB('newsletter_no_account').insert({
         email: params.email,
