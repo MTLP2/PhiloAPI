@@ -39,7 +39,7 @@ class File {
     await Storage.delete(`files/${file.uuid}`, true)
   }
 
-  static async url(id: number): Promise<{ name: string; url: string } | { error: string }> {
+  static async url(id?: number): Promise<{ name: string; url: string } | { error: string }> {
     try {
       // Throw if id is not specified
       if (!id) throw new Error('File not found')
