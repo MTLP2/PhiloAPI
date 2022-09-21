@@ -148,6 +148,7 @@ Route.put('/boxes/code', 'CartController.checkBoxCode')
 Route.post('/newsletter', 'AppController.subscribeNewsletterWithoutAccount')
 
 Route.get('/catalog', 'AdminController.exportCatalog')
+Route.get('/stats/top-projects', 'ProjectsController.getTopProjects')
 
 Route.group(() => {
   Route.get('/cart', 'CartController.getCart')

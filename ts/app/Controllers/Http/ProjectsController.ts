@@ -7,6 +7,7 @@ import Category from 'App/Services/Category'
 import Statement from 'App/Services/Statement'
 import ApiError from 'App/ApiError'
 import Utils from 'App/Utils'
+import Stats from 'App/Services/Stats'
 
 class ProjectsController {
   async getProjects({ params }) {
@@ -176,6 +177,12 @@ class ProjectsController {
       params.id = params.user.id
       return Statement.userDownload(params)
     }
+  }
+
+  async getTopProjects({ params }) {
+    const days: number = +params.days || 366
+    const limit: number = +params.limit || 5
+    return Stats.getTopProjects({ fromDays: days, limit })
   }
 }
 
