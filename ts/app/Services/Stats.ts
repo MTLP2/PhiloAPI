@@ -2418,6 +2418,25 @@ class Stats {
 
     return d
   }
+
+  static getTopProjects: (params: { fromDays?: number; limit?: number } | void) => Promise<
+    {
+      id: number
+      name: string
+      artist_name: string
+      color: string
+      picture: string
+    }[]
+  > = async (params) => {
+    return DB('order_item as oi')
+      .select('oi.project_id', 'p.name', 'p.artist_name', 'p.color', 'p.picture')
+      .join('project as p', 'p.id', 'oi.project_id')
+      .whereRaw(`DATEDIFF(NOW(), oi.created_at) < ${params?.fromDays || 366}`)
+      .groupBy('oi.project_id')
+      .orderByRaw('SUM(oi.quantity) DESC')
+      .limit(params?.limit || 5)
+      .all()
+  }
 }
 
 export default Stats
