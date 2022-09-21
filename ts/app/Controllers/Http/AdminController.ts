@@ -7,7 +7,6 @@ import Goodie from 'App/Services/Goodie'
 import Sponsor from 'App/Services/Sponsor'
 import Payment from 'App/Services/Payment'
 import Customer from 'App/Services/Customer'
-import Blog from 'App/Services/Blog'
 import Quote from 'App/Services/Quote'
 import Stock from 'App/Services/Stock'
 import Invoice from 'App/Services/Invoice'
@@ -480,22 +479,6 @@ class AdminController {
 
   deleteNewsletter({ params }) {
     return Admin.deleteNewsletter(params.id)
-  }
-
-  getArticles({ params }) {
-    return Blog.getArticles(params)
-  }
-
-  getArticle({ params }) {
-    return Blog.getArticle(params.id)
-  }
-
-  saveArticle({ params }) {
-    return Blog.save(params)
-  }
-
-  deleteArticle({ params }) {
-    return Blog.delete(params.id)
   }
 
   getCategories({ params }) {
