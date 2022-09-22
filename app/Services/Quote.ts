@@ -622,6 +622,9 @@ class Quote {
       quote.color += getCost(11, 'type_vinyl', ` x ${params.quantity}`) / params.nb_vinyl
     }
 
+    // sticker
+    quote.sleeve = getCost(21, 'sleeve') / params.nb_vinyl
+
     // print finish
     quote.print_finish = 0
     if (params.print_finish === 'matt_varnish') {
