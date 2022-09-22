@@ -1720,6 +1720,16 @@ class Stats {
         error: { total: 0, dates: { ...dates } },
         other: { total: 0, dates: { ...dates } }
       },
+      sent: {
+        total: { total: 0, dates: { ...dates } },
+        project: { total: 0, dates: { ...dates } },
+        licence: { total: 0, dates: { ...dates } },
+        shipping: { total: 0, dates: { ...dates } },
+        distrib: { total: 0, dates: { ...dates } },
+        direct_shop: { total: 0, dates: { ...dates } },
+        direct_pressing: { total: 0, dates: { ...dates } },
+        box: { total: 0, dates: { ...dates } }
+      },
       margin: {
         total: { total: 0, dates: { ...dates } },
         project: { total: 0, dates: { ...dates } },
@@ -1762,7 +1772,7 @@ class Stats {
         'user.is_pro',
         'user.name as user_name',
         'user.country_id as user_country',
-        'oi.price',
+        'oi.total as item_total',
         'os.total',
         'os.currency',
         'os.tax_rate'
@@ -1772,6 +1782,29 @@ class Stats {
       .join('project', 'project.id', 'oi.project_id')
       .leftJoin('user', 'user.id', 'os.user_id')
       .whereBetween('os.created_at', [params.start, params.end])
+      .all()
+
+    const sentShopPromise = DB('order_shop as os')
+      .select('os.date_export', 'os.shipping', 'os.currency_rate', 'os.tax_rate')
+      .where('is_paid', true)
+      .whereBetween('os.date_export', [params.start, params.end])
+      .all()
+
+    const sentItemPromise = DB('order_shop as os')
+      .select(
+        'os.date_export',
+        'is_licence',
+        'os.total',
+        'os.currency_rate',
+        'os.tax_rate',
+        'user.is_pro',
+        'oi.total as item_total'
+      )
+      .join('order_item as oi', 'oi.order_shop_id', 'os.id')
+      .join('vod', 'vod.project_id', 'oi.project_id')
+      .leftJoin('user', 'user.id', 'os.user_id')
+      .where('is_paid', true)
+      .whereBetween('os.date_export', [params.start, params.end])
       .all()
 
     const statementsPromise = DB()
@@ -1845,6 +1878,14 @@ class Stats {
       .orWhereBetween('date_factory', [params.start, params.end])
       .all()
 
+    const productionsSentPromise = await DB('production')
+      .select('invoice.sub_total', 'invoice.currency_rate', 'production.date_factory')
+      .join('invoice', 'invoice.production_id', 'production.id')
+      .join('vod', 'vod.project_id', 'production.project_id')
+      .whereBetween('production.date_factory', [params.start, params.end])
+      .where('vod.type', 'direct_pressing')
+      .all()
+
     const costsPromise = await DB('production_cost')
       .select('date', 'type', 'is_licence', 'margin')
       .join('vod', 'vod.project_id', 'production_cost.project_id')
@@ -1869,11 +1910,14 @@ class Stats {
 
     const [
       quantity,
+      sentShop,
+      sentItem,
       invoices,
       invoicesNotPaid,
       statements,
       projects,
       productions,
+      productionsSent,
       costs,
       users,
       stocks,
@@ -1883,11 +1927,14 @@ class Stats {
       currenciesDb
     ] = await Promise.all([
       quantityPromise,
+      sentShopPromise,
+      sentItemPromise,
       invoicesPromise,
       invoicesNotPaidPromise,
       statementsPromise,
       projectsPromise,
       productionsPromise,
+      productionsSentPromise,
       costsPromise,
       usersPromise,
       stocksPromise,
@@ -2161,7 +2208,7 @@ class Stats {
         cart[qty.order_id].total += qty.total / currencies[qty.currency]
         cart[qty.order_id].quantity += qty.quantity
 
-        const turnover = (qty.price * qty.quantity) / currencies[qty.currency] / (1 + qty.tax_rate)
+        const turnover = qty.item_total / currencies[qty.currency] / (1 + qty.tax_rate)
 
         if (!d.countries.quantity[qty.user_country]) {
           d.countries.quantity[qty.user_country] = 0
@@ -2194,6 +2241,33 @@ class Stats {
           u[qty.user_id].current += quantity
         }
       }
+    }
+
+    for (const s of sentShop) {
+      const date = moment(s.date_export).format(format)
+
+      let shipping = (s.shipping * s.currency_rate) / (1 + s.tax_rate)
+      d.sent.shipping.dates[date] += shipping
+    }
+
+    for (const s of sentItem) {
+      const date = moment(s.date_export).format(format)
+
+      let total = (s.item_total * s.currency_rate) / (1 + s.tax_rate)
+
+      if (s.is_pro) {
+        d.sent.direct_shop.dates[date] += total
+      } else if (s.is_licence) {
+        d.sent.licence.dates[date] += total
+      } else {
+        d.sent.project.dates[date] += total
+      }
+      d.sent.total.dates[date] += total
+    }
+
+    for (const prod of productionsSent) {
+      const date = moment(prod.date_factory).format(format)
+      d.sent.direct_pressing.dates[date] += prod.sub_total * prod.currency_rate
     }
 
     d.cart.avg_total =
@@ -2245,6 +2319,9 @@ class Stats {
           const fee = Utils.getFee(JSON.parse(stat.fee_distrib_date), stat.date) / 100
           marge = (dis.total / currencies[stat.currency]) * fee
         }
+
+        d.sent.distrib.dates[date] += dis.total / currencies[stat.currency]
+        d.sent.total.dates[date] += dis.total / currencies[stat.currency]
 
         addMarge('distrib', stat.is_licence ? 'licence' : 'project', date, marge)
         if (stat.storage) {
