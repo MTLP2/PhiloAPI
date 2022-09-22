@@ -39,13 +39,22 @@ class File {
     await Storage.delete(`files/${file.uuid}`, true)
   }
 
-  static async url(id) {
-    const file = await DB('file').find(id)
-    const url = await Storage.url(`files/${file.uuid}`, file.name)
+  static async url(id?: number): Promise<{ name: string; url: string } | { error: string }> {
+    try {
+      // Throw if id is not specified
+      if (!id) throw new Error('File not found')
 
-    return {
-      name: file.name,
-      url: url
+      const file = await DB('file').find(id)
+      const url = await Storage.url(`files/${file.uuid}`, file.name)
+      // Throw if file is not found
+      if (!url) throw new Error('File not found')
+
+      return {
+        name: file.name,
+        url: url
+      }
+    } catch (err) {
+      return { error: err.message }
     }
   }
 }
