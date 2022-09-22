@@ -4,7 +4,7 @@ import ApiError from 'App/ApiError'
 import Utils from 'App/Utils'
 
 class Blog {
-  static async all(params: any = {}) {
+  static async all(params?: { lang?: string; except?: string; tag?: string; limit?: number }) {
     let articles = DB('article')
       .select('id', 'title', 'slug', 'description', 'tags', 'lang', 'picture', 'created_at')
       .where('online', 1)
@@ -21,14 +21,14 @@ class Blog {
       articles = articles.where('tags', 'like', `%${params.tag.replace(/'/g, "\\'")}%`)
     }
 
-    if (params.limit) {
+    if (params && params.limit) {
       articles.limit(params.limit)
     }
 
     return articles.all()
   }
 
-  static async find(id, user) {
+  static async find(id: number, user) {
     const query = DB('article')
     const article = await query.find(id)
     if (!article) {
@@ -44,14 +44,14 @@ class Blog {
     return DB('article').orderBy('id', 'desc').all()
   }
 
-  static getArticle(id) {
+  static getArticle(id: number) {
     return DB('article').where('article.id', id).first()
   }
 
-  static async save(params) {
+  static async save(params: Article & { image?: string }) {
     let article: any = DB('article')
 
-    if (params.id !== '') {
+    if (params.id) {
       article = await DB('article').find(params.id)
     } else {
       article.created_at = Utils.date()
@@ -82,15 +82,12 @@ class Blog {
       })
       article.picture = file
       await article.save()
-      /**
-      const buffer = Buffer.from(params.image.replace(/^data:image\/(png|jpg|jpeg);base64,/, ''), 'base64')
-      Storage.uploadImage(`articles/${article.id}`, buffer, { width: 1000 })
-      **/
     }
+
     return article
   }
 
-  static async delete(id) {
+  static async delete(id: number) {
     return DB('article').where('id', id).delete()
   }
 }
