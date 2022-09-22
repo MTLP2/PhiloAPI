@@ -1,9 +1,8 @@
 node_modules
+build
+coverage
+.vscode
+.DS_STORE
 .env
-.DS_Store
-
-# Elastic Beanstalk Files
+tmp
 .elasticbeanstalk/*
-!.elasticbeanstalk/*.cfg.yml
-!.elasticbeanstalk/*.global.yml
-

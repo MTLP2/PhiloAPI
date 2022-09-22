@@ -1,0 +1,19 @@
+branch-defaults:
+  default:
+    environment: DiggersfactoryApi-prod
+environment-defaults:
+  DiggersfactoryApi-prod:
+    branch: null
+    repository: null
+global:
+  application_name: diggersfactory-api
+  default_ec2_keyname: aws-eb2
+  default_platform: Node.js 16 running on 64bit Amazon Linux 2
+  default_region: eu-west-3
+  include_git_submodules: true
+  instance_profile: null
+  platform_name: null
+  platform_version: null
+  profile: eb-cli
+  sc: null
+  workspace_type: Application

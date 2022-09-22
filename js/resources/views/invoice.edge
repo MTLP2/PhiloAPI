@@ -234,7 +234,7 @@
       <th width="70%">{{ t('invoice.operations') }}</th>
       <th>{{ t('invoice.unit_price') }}</th>
       <th>{{ t('invoice.quantity') }}</th>
-      @if(order && order.shops)
+      @if(order.shops)
         <th>{{ t('invoice.donation') }}</th>
       @endif
       <th>{{ t('invoice.total') }}</th>
@@ -261,29 +261,27 @@
       </tr>
       @endif
     @endeach
-    @if(order)
-      @each(shop in order.shops)
-        @each(item in shop.items)
-        <tr>
-            <td>{{item.name}} - {{item.artist_name}}</td>
-            <td class="nowrap">{{item.price}} {{currency}}</td>
-            <td class="nowrap">{{item.quantity}}</td>
-            <td class="nowrap">{{item.tips}} {{currency}}</td>
-            <td class="nowrap">{{item.total}} {{currency}}</td>
-        </tr>
-        @endeach
-      @endeach
-      @if(order.shipping || shipping)
+    @each(shop in order.shops)
+      @each(item in shop.items)
       <tr>
-        <td>{{ t('invoice.shipping_costs') }}</td>
-        <td class="nowrap">{{order.shipping || shipping}} {{currency}}</td>
-        <td>1</td>
-        @if(order.shops)
-          <td></td>
-        @endif
-        <td class="nowrap">{{order.shipping || shipping}} {{currency}}</td>
+          <td>{{item.name}} - {{item.artist_name}}</td>
+          <td class="nowrap">{{item.price}} {{currency}}</td>
+          <td class="nowrap">{{item.quantity}}</td>
+          <td class="nowrap">{{item.tips}} {{currency}}</td>
+          <td class="nowrap">{{item.total}} {{currency}}</td>
       </tr>
+      @endeach
+    @endeach
+    @if(order.shipping || shipping)
+    <tr>
+      <td>{{ t('invoice.shipping_costs') }}</td>
+      <td class="nowrap">{{order.shipping || shipping}} {{currency}}</td>
+      <td>1</td>
+      @if(order.shops)
+        <td></td>
       @endif
+      <td class="nowrap">{{order.shipping || shipping}} {{currency}}</td>
+    </tr>
     @endif
   </table>
 
