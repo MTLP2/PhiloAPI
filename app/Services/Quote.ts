@@ -143,6 +143,7 @@ class Quote {
         })
       }
     }
+
     return quote
   }
 
@@ -208,7 +209,7 @@ class Quote {
         logs.push({
           type: type,
           value: l,
-          comment: comment || `x 1`
+          comment: comment || `x ${params.nb_vinyl}`
         })
         return Math.ceil(data.nb_vinyl * line[`q${qty}`])
       } else {
@@ -217,6 +218,7 @@ class Quote {
           value: l,
           comment: comment || `x ${params.quantity * params.nb_vinyl}`
         })
+
         return Math.ceil(data.nb_vinyl * line[`q${qty}`] * (data.quantity + 5))
       }
     }
@@ -233,9 +235,6 @@ class Quote {
       quote = this.calculateKuroneko(data, getCost)
     }
 
-    // Frais supplementaire + échentillon diggers
-    logs.push({ type: 'test_pressing', comment: '+35€' })
-    quote.test_pressing += 35
     if (data.project) {
       if (!quote.test_pressing) {
         quote.test_pressing = 0
@@ -391,7 +390,6 @@ class Quote {
         'type_vinyl'
       )
       // extra charge splater
-      quote.type_vinyl += getCost(73, 'type_vinyl')
       quote.type_vinyl += getCost(74, 'type_vinyl')
       quote.type_vinyl += getCost(74, 'type_vinyl')
     } else if (params.type_vinyl === 'splatter') {
@@ -404,7 +402,6 @@ class Quote {
         'type_vinyl'
       )
       // extra charge splater
-      quote.type_vinyl += getCost(73, 'type_vinyl')
       quote.type_vinyl += getCost(74, 'type_vinyl')
     }
 
@@ -470,7 +467,10 @@ class Quote {
             'sleeve',
             ` x ${params.quantity}`
           ) / params.nb_vinyl
-        quote.sleeve += getCost(167, 'sleeve', ` x ${params.quantity}`)
+
+        if (params.nb_vinyl === 1) {
+          quote.sleeve += getCost(167, 'sleeve', ` x ${params.quantity}`)
+        }
       } else if (params.sleeve === 'triple_gatefold') {
         quote.sleeve =
           getCost(
@@ -576,8 +576,8 @@ class Quote {
     // test pressing
     quote.test_pressing = 0
     if (params.test_pressing) {
-      quote.test_pressing += params.nb_vinyl * getCost(20, 'test_pressing', 'x 2')
-      quote.test_pressing += getCost(22, 'test_pressing', 'x 2') * 2
+      quote.test_pressing += getCost(20, 'test_pressing')
+      quote.test_pressing += (getCost(22, 'test_pressing', 'x 2') / params.nb_vinyl) * 2
     }
 
     quote.energy_cost = 0.5 * params.quantity * params.nb_vinyl
@@ -616,12 +616,11 @@ class Quote {
     }
 
     // color
+    quote.color = 0
     if (params.color_vinyl !== 'black') {
-      quote.type_vinyl += getCost(12, 'type_vinyl', ` x ${params.quantity}`) / params.nb_vinyl
+      quote.color += getCost(31, 'type_vinyl', ` x ${params.quantity}`) / params.nb_vinyl
+      quote.color += getCost(11, 'type_vinyl', ` x ${params.quantity}`) / params.nb_vinyl
     }
-
-    // sleeve
-    // quote.sleeve = getCost(21) / params.nb_vinyl
 
     // print finish
     quote.print_finish = 0
@@ -644,17 +643,14 @@ class Quote {
       quote.shrink = getCost(27, 'shrink', ` x ${params.quantity}`) / params.nb_vinyl
     }
 
-    // insert
-    if (params.insert !== 'none') {
-      quote.insert = getCost(29, 'insert')
-    }
-
     // sticker
     if (params.sticker) {
       quote.sticker = getCost(30, 'sticker')
     }
 
-    quote.test_pressing = 0
+    // Frais supplementaire + échentillon diggers
+    // logs.push({ type: 'test_pressing', comment: '+40' })
+    quote.test_pressing = 35
 
     return quote
   }
@@ -983,11 +979,12 @@ class Quote {
           costs[worksheet.name].push({
             id: rowNumber,
             label: row.getCell('A').toString(),
-            q300: +row.getCell('B').toString(),
-            q500: +row.getCell('C').toString(),
-            q1000: +row.getCell('D').toString(),
-            q3000: +row.getCell('E').toString(),
-            q5000: +row.getCell('F').toString()
+            type: row.getCell('B').toString(),
+            q300: +row.getCell('C').toString(),
+            q500: +row.getCell('D').toString(),
+            q1000: +row.getCell('E').toString(),
+            q3000: +row.getCell('F').toString(),
+            q5000: +row.getCell('G').toString()
           })
         } else if (worksheet.name === 'kuroneko') {
           const line = {
