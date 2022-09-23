@@ -556,7 +556,7 @@ class Quote {
     // print finish
     quote.print_finish = 0
     if (params.print_finish === 'returned_cardboard') {
-      quote.print_finish = getCost(341, 'print_finish')
+      quote.print_finish = getCost(352, 'print_finish')
     }
 
     // insert
