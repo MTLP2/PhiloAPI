@@ -1,4 +1,4 @@
-import soap from 'soap'
+const soap = require('soap')
 import Box from 'App/Services/Box'
 import DB from 'App/DB'
 

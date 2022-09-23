@@ -14,10 +14,10 @@ import config from 'Config/index'
 import View from '@ioc:Adonis/Core/View'
 import I18n from '@ioc:Adonis/Addons/I18n'
 import JSZip from 'jszip'
-import soap from 'soap'
 import Env from '@ioc:Adonis/Core/Env'
 const stripe = require('stripe')(config.stripe.client_secret)
 const bwipjs = require('bwip-js')
+const soap = require('soap')
 
 class Box {
   static all(params) {
