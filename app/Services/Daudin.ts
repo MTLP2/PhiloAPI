@@ -852,7 +852,10 @@ class Daudin {
   }
 
   static getTransporter(order) {
-    if (order.shipping_type === 'letter') {
+    // Force colissimo for HHV and Vinyl Digital
+    if (order.user_id === 6077 || order.user_id === 4017) {
+      return { id: 'COL', name: 'COL' }
+    } else if (order.shipping_type === 'letter') {
       return { id: 'LTS', name: 'LTS' }
     } else if (order.shipping_type === 'pickup') {
       return { id: 'MDR', name: 'MONDIAL RELAIS' }
