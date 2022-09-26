@@ -1,3 +1,5 @@
+import sitemap from 'sitemap'
+
 import App from 'App/Services/App'
 import Press from 'App/Services/Press'
 import Storage from 'App/Services/Storage'
@@ -15,8 +17,6 @@ import User from 'App/Services/User'
 import Utils from 'App/Utils'
 import Payment from 'App/Services/Payment'
 import DB from 'App/DB'
-
-import sitemap from 'sitemap'
 
 class AppController {
   index() {
