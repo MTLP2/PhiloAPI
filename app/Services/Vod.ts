@@ -928,7 +928,7 @@ class Vod {
     return { success: true }
   }
 
-  static checkCampaignEnd = async (hour, minutes) => {
+  static checkCampaignEnd = async (hour: number, minutes: number) => {
     const vodToEnd = await DB('vod')
       .whereNotIn('step', ['successful'])
       // where day is today
