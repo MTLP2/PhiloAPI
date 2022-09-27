@@ -578,10 +578,10 @@ class AppController {
       // Schema
       const newPassCultureSubscriptionSchema = schema.create({
         email: schema.string({ trim: true }, [rules.email()]),
-        origin: schema.string()
+        origin: schema.string.nullable()
       })
 
-      const payload = await request.validate({
+      const payload: { email: string; origin: string | null } = await request.validate({
         schema: newPassCultureSubscriptionSchema
       })
 
@@ -594,8 +594,7 @@ class AppController {
       await DB('pass_culture').insert({
         email: payload.email,
         origin: payload.origin,
-        created_at: Utils.date(),
-        updated_at: Utils.date()
+        created_at: Utils.date()
       })
 
       return { success: true }
