@@ -937,6 +937,31 @@ class AdminController {
       return { error: err.message }
     }
   }
+
+  async exportPassCulture({ params }: HttpContextContract) {
+    try {
+      params.size = 0
+      const data = await Utils.getRows({ query: DB('pass_culture') })
+
+      return Utils.arrayToCsv(
+        [
+          { name: 'ID', index: 'id' },
+          { name: 'Email', index: 'email' },
+          { name: 'Status', index: 'status' },
+          { name: 'Name', index: 'name' },
+          { name: 'Phone', index: 'phone' },
+          { name: 'Code', index: 'code' },
+          { name: 'Price', index: 'price' },
+          { name: 'Comment', index: 'comment' },
+          { name: 'Created at', index: 'created_at' },
+          { name: 'Updated at', index: 'updated_at' }
+        ],
+        data.data
+      )
+    } catch (err) {
+      return { error: err.message }
+    }
+  }
 }
 
 export default AdminController
