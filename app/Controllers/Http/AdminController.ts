@@ -1,3 +1,6 @@
+import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
+import { schema, rules } from '@ioc:Adonis/Core/Validator'
+
 import Admin from 'App/Services/Admin'
 import DB from 'App/DB'
 import Notification from 'App/Services/Notification'
@@ -895,8 +898,24 @@ class AdminController {
     return Admin.getPassCulture()
   }
 
-  savePassCulture() {
-    return Admin.savePassCulture()
+  async savePassCulture({ request }: HttpContextContract) {
+    try {
+      const subscriptionSchema = schema.create({
+        id: schema.number.nullable(),
+        email: schema.string({ trim: true }, [rules.email()]),
+        name: schema.string.nullableAndOptional({ trim: true }),
+        phone: schema.string.nullableAndOptional({ trim: true }),
+        code: schema.string.nullableAndOptional({ trim: true }),
+        price: schema.number.optional(),
+        status: schema.enum([-1, 0, 1, 2, 3, 4] as const),
+        comment: schema.string.optional({ trim: true })
+      })
+
+      const payload = await request.validate({ schema: subscriptionSchema })
+      return Admin.savePassCulture(payload)
+    } catch (err) {
+      return { error: 'validation', messages: err.messages }
+    }
   }
 }
 
