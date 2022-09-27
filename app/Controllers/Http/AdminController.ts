@@ -912,9 +912,29 @@ class AdminController {
       })
 
       const payload = await request.validate({ schema: subscriptionSchema })
-      return Admin.savePassCulture(payload)
+
+      if (payload.id) {
+        await DB('pass_culture')
+          .where('id', payload.id)
+          .update({ ...payload, updated_at: Utils.date() })
+      } else {
+        const exists = await DB('pass_culture').where('email', payload.email).first()
+        if (exists) throw new Error('Email already exists')
+        await DB('pass_culture').insert(payload)
+      }
+
+      return { success: true }
     } catch (err) {
-      return { error: 'validation', messages: err.messages }
+      return { error: err.message, messages: err.messages }
+    }
+  }
+
+  async deletePassCulture({ params }: HttpContextContract) {
+    try {
+      await DB('pass_culture').where('id', params.id).delete()
+      return { success: true }
+    } catch (err) {
+      return { error: err.message }
     }
   }
 }

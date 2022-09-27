@@ -466,6 +466,7 @@ Route.group(() => {
   Route.group(() => {
     Route.get('/', 'AdminController.getPassCulture')
     Route.put('/save', 'AdminController.savePassCulture')
+    Route.delete('/delete/:id', 'AdminController.deletePassCulture')
   }).prefix('pass-culture')
 })
   .prefix('admin')

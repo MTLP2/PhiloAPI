@@ -2,8 +2,6 @@ import Excel from 'exceljs'
 import moment from 'moment'
 import google from 'googleapis'
 import fs from 'fs'
-import { RequestContract } from '@ioc:Adonis/Core/Request'
-import { schema, rules } from '@ioc:Adonis/Core/Validator'
 
 import DB from 'App/DB'
 import Notification from 'App/Services/Notification'
@@ -4511,29 +4509,6 @@ class Admin {
   static getPassCulture = async () => {
     const passCulture = DB('pass_culture')
     return Utils.getRows({ query: passCulture })
-  }
-
-  static savePassCulture = async (payload: {
-    id: number | null
-    email: string
-    name: string | null | undefined
-    phone: string | null | undefined
-    code: string | null | undefined
-    price: number | undefined
-    status: 0 | 1 | 2 | 3 | 4 | -1
-    comment: string | undefined
-  }) => {
-    if (payload.id) {
-      await DB('pass_culture')
-        .where('id', payload.id)
-        .update({ ...payload, updated_at: Utils.date() })
-    } else {
-      const exists = await DB('pass_culture').where('email', payload.email).first()
-      if (exists) throw new Error('Email already exists')
-      await DB('pass_culture').insert(payload)
-    }
-
-    return { success: true }
   }
 }
 
