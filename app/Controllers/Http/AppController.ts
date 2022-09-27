@@ -15,6 +15,7 @@ import User from 'App/Services/User'
 import Utils from 'App/Utils'
 import Payment from 'App/Services/Payment'
 import DB from 'App/DB'
+import { schema, rules } from '@ioc:Adonis/Core/Validator'
 
 import sitemap from 'sitemap'
 
@@ -570,6 +571,37 @@ class AppController {
     }
 
     return { success: true }
+  }
+
+  async subscribeToPassCulture({ request }) {
+    try {
+      // Schema
+      const newPassCultureSubscriptionSchema = schema.create({
+        email: schema.string({ trim: true }, [rules.email()]),
+        origin: schema.string()
+      })
+
+      const payload = await request.validate({
+        schema: newPassCultureSubscriptionSchema
+      })
+
+      // Email already in database ?
+      const exists = !!(await DB('pass_culture').where('email', payload.email).first())
+
+      if (exists) throw new Error('exists')
+      // If not
+      // Insert in db
+      await DB('pass_culture').insert({
+        email: payload.email,
+        origin: payload.origin,
+        created_at: Utils.date(),
+        updated_at: Utils.date()
+      })
+
+      return { success: true }
+    } catch (err) {
+      return { error: err.message === 'exists' ? err.message : 'invalid' }
+    }
   }
 }
 
