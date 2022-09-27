@@ -462,6 +462,11 @@ Route.group(() => {
   Route.post('/contests/:id/extract', 'ContestController.extract')
   Route.get('/shipping-costs', 'AdminController.getShippingCosts')
   Route.get('/stocks', 'AdminController.getStocks')
+
+  Route.group(() => {
+    Route.get('/', 'AdminController.getPassCulture')
+    Route.put('/save', 'AdminController.savePassCulture')
+  }).prefix('pass-culture')
 })
   .prefix('admin')
   .middleware(['auth', 'admin'])

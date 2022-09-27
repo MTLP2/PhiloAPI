@@ -890,6 +890,14 @@ class AdminController {
   deeplTranslate({ params }) {
     return Admin.deeplTranslate(params)
   }
+
+  getPassCulture() {
+    return Admin.getPassCulture()
+  }
+
+  savePassCulture() {
+    return Admin.savePassCulture()
+  }
 }
 
 export default AdminController
