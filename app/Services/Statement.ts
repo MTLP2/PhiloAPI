@@ -903,14 +903,37 @@ class StatementService {
   }
 
   static async getBalances(params) {
-    const projects = await DB()
+    let projectsPromise = DB()
       .from('project')
       .select('project.id', 'name', 'artist_name', 'currency', 'step')
       .join('vod', 'vod.project_id', 'project.id')
       .orderBy('artist_name', 'name')
       .whereIn('step', ['in_progress', 'successful', 'failed'])
+
+    if (params.type === 'follow_up') {
+      projectsPromise.where('balance_followup', true)
+    }
+
+    projectsPromise = projectsPromise.all()
+
+    const invoicesPromise = DB('invoice')
+      .join('vod', 'vod.project_id', 'project.id')
+      .where('balance_followup', true)
       .all()
 
+    const costsPromise = DB('production_cost')
+      .join('vod', 'vod.project_id', 'project.id')
+      .where('balance_followup', true)
+      .all()
+
+
+    const [projects, invoices, costs] =
+      await Promise.all([
+        projectsPromise,
+        invoicesPromise,
+        costsPromise
+      ])
+    
     const rows = {
       in_progress: [],
       successful: [],
@@ -934,26 +957,44 @@ class StatementService {
       rows[projects[p].step].push(projects[p])
     }
 
-    const columns = [
-      { header: 'Id', key: 'id' },
-      { header: 'Artist', key: 'artist_name', width: 30 },
-      { header: 'Project', key: 'name', width: 30 },
-      { header: 'Profits', key: 'profits', width: 15 },
-      { header: 'Costs', key: 'costs', width: 15 },
-      { header: 'Storage', key: 'storage', width: 15 },
-      // { header: 'Storage Distrib', key: 'storage_distrib', width: 15 },
-      { header: 'Payment Artist', key: 'payment_artist', width: 15 },
-      { header: 'Payment Diggers', key: 'payment_diggers', width: 15 },
-      { header: 'Balance', key: 'balance', width: 15 },
-      { header: 'Currency', key: 'currency', width: 15 }
-    ]
 
     const workbook = new Excel.Workbook()
-    for (const type of Object.keys(rows)) {
-      const worksheet = workbook.addWorksheet(type)
-      worksheet.columns = columns
-      rows[type].sort((a, b) => b.balance - a.balance)
-      worksheet.addRows(rows[type])
+
+
+    if (params.type === 'follow_up') {
+      const columns = [
+        { header: 'User', key: 'user', width: 25 },
+        { header: 'Artist', key: 'artist_name', width: 25 },
+        { header: 'Project', key: 'name', width: 25 },
+        { header: 'Profits', key: 'profits', width: 15 },
+        { header: 'Costs', key: 'costs', width: 15 },
+        { header: 'Benefits', key: 'benefits', width: 15 },
+        { header: 'To pay', key: 'To pay', width: 15 }
+      ]
+      const worksheet = workbook.addWorksheet('Project')
+      for (const type of Object.keys(rows)) {
+        worksheet.columns = columns
+        worksheet.addRows(rows[type])
+      }
+    } else {
+      const columns = [
+        { header: 'Id', key: 'id' },
+        { header: 'Artist', key: 'artist_name', width: 30 },
+        { header: 'Project', key: 'name', width: 30 },
+        { header: 'Profits', key: 'profits', width: 15 },
+        { header: 'Costs', key: 'costs', width: 15 },
+        { header: 'Storage', key: 'storage', width: 15 },
+        { header: 'Payment Artist', key: 'payment_artist', width: 15 },
+        { header: 'Payment Diggers', key: 'payment_diggers', width: 15 },
+        { header: 'Balance', key: 'balance', width: 15 },
+        { header: 'Currency', key: 'currency', width: 15 }
+      ]
+      for (const type of Object.keys(rows)) {
+        const worksheet = workbook.addWorksheet(type)
+        worksheet.columns = columns
+        rows[type].sort((a, b) => b.balance - a.balance)
+        worksheet.addRows(rows[type])
+      }
     }
 
     return workbook.xlsx.writeBuffer()
