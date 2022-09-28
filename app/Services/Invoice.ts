@@ -364,7 +364,7 @@ class Invoice {
         code = `C${invoice.year}${incC}`
       }
 
-      DB('invoice').where('id', invoice.id).update({
+      await DB('invoice').where('id', invoice.id).update({
         number: number,
         code: code
       })
