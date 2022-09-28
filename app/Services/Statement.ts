@@ -905,89 +905,159 @@ class StatementService {
   static async getBalances(params) {
     let projectsPromise = DB()
       .from('project')
-      .select('project.id', 'name', 'artist_name', 'currency', 'step')
+      .select(
+        'project.id',
+        'project.name',
+        'artist_name',
+        'vod.currency',
+        'user.name as user',
+        'vod.type',
+        'step'
+      )
       .join('vod', 'vod.project_id', 'project.id')
+      .join('user', 'user.id', 'vod.user_id')
       .orderBy('artist_name', 'name')
-      .whereIn('step', ['in_progress', 'successful', 'failed'])
 
     if (params.type === 'follow_up') {
       projectsPromise.where('balance_followup', true)
+    } else {
+      projectsPromise.whereIn('step', ['in_progress', 'successful', 'failed'])
     }
 
     projectsPromise = projectsPromise.all()
 
     const invoicesPromise = DB('invoice')
-      .join('vod', 'vod.project_id', 'project.id')
+      .join('vod', 'vod.project_id', 'invoice.project_id')
       .where('balance_followup', true)
+      .where('invoice.type', 'invoice')
       .all()
 
     const costsPromise = DB('production_cost')
-      .join('vod', 'vod.project_id', 'project.id')
+      .select('vod.project_id', 'cost_real')
+      .join('vod', 'vod.project_id', 'production_cost.project_id')
       .where('balance_followup', true)
       .all()
 
+    const [projectsList, invoices, costs] = await Promise.all([
+      projectsPromise,
+      invoicesPromise,
+      costsPromise
+    ])
 
-    const [projects, invoices, costs] =
-      await Promise.all([
-        projectsPromise,
-        invoicesPromise,
-        costsPromise
-      ])
-    
-    const rows = {
-      in_progress: [],
-      successful: [],
-      failed: []
-    }
+    const projects = {}
 
-    for (const p in projects) {
+    const rows = {}
+
+    for (const project of projectsList) {
       const balance = await this.getBalance({
-        id: projects[p].id,
+        id: project.id,
         start: params.start,
         end: params.end
       })
-      projects[p].balance = balance.balance
-      projects[p].profits = balance.profits
-      projects[p].storage = balance.storage
-      projects[p].storage_distrib = balance.storage_distrib
-      projects[p].payment_artist = balance.payment_artist
-      projects[p].payment_diggers = balance.payment_diggers
-      projects[p].costs = balance.costs
+      project.balance = balance.balance
+      project.profits = balance.profits
+      project.storage = balance.storage
+      project.storage_distrib = balance.storage_distrib
+      project.payment_artist = balance.payment_artist
+      project.payment_diggers = balance.payment_diggers
+      project.costs = balance.costs
+      project.invoiced = 0
+      project.direct_costs = 0
+      project.direct_balance = 0
 
-      rows[projects[p].step].push(projects[p])
+      projects[project.id] = project
+
+      if (!rows[project.step]) {
+        rows[project.step] = []
+      }
+      rows[project.step].push(project)
     }
 
+    if (params.type === 'follow_up') {
+      for (const invoice of invoices) {
+        projects[invoice.project_id].invoiced += invoice.sub_total * invoice.currency_rate
+        projects[invoice.project_id].direct_balance = projects[invoice.project_id].invoiced
+      }
+      for (const cost of costs) {
+        projects[cost.project_id].direct_costs += cost.cost_real
+        console.log(projects[cost.project_id].invoiced)
+        projects[cost.project_id].direct_balance =
+          projects[cost.project_id].invoiced - projects[cost.project_id].direct_costs
+      }
+    }
 
     const workbook = new Excel.Workbook()
 
-
     if (params.type === 'follow_up') {
       const columns = [
-        { header: 'User', key: 'user', width: 25 },
-        { header: 'Artist', key: 'artist_name', width: 25 },
+        { header: 'Id', key: 'id' },
+        { header: 'User', key: 'user', width: 15 },
+        { header: 'Artist', key: 'artist_name', width: 15 },
         { header: 'Project', key: 'name', width: 25 },
-        { header: 'Profits', key: 'profits', width: 15 },
-        { header: 'Costs', key: 'costs', width: 15 },
-        { header: 'Benefits', key: 'benefits', width: 15 },
-        { header: 'To pay', key: 'To pay', width: 15 }
+        { header: 'Profits', key: 'profits', width: 10 },
+        { header: 'Costs', key: 'costs', width: 10 },
+        { header: 'Storage', key: 'storage', width: 10 },
+        { header: 'Pay Artist', key: 'payment_artist', width: 10 },
+        { header: 'Pay Diggers', key: 'payment_diggers', width: 10 },
+        { header: 'Balance', key: 'balance', width: 10 },
+        { header: 'Currency', key: 'currency', width: 10 }
       ]
       const worksheet = workbook.addWorksheet('Project')
-      for (const type of Object.keys(rows)) {
-        worksheet.columns = columns
-        worksheet.addRows(rows[type])
+
+      worksheet.getRow(1).font = { bold: true }
+      worksheet.columns = columns
+
+      let i = 1
+      for (const project of Object.values(projects).filter((p) => p.type !== 'direct_pressing')) {
+        i++
+        worksheet.addRow(project)
+        if (project.balance !== 0) {
+          worksheet.getRow(i).fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: project.balance > 0 ? 'ecffe5' : 'ffe5e5' }
+          }
+        }
+      }
+
+      const directPressing = workbook.addWorksheet('Direct Pressing')
+
+      directPressing.getRow(1).font = { bold: true }
+      directPressing.columns = [
+        { header: 'Id', key: 'id' },
+        { header: 'User', key: 'user', width: 15 },
+        { header: 'Artist', key: 'artist_name', width: 15 },
+        { header: 'Project', key: 'name', width: 25 },
+        { header: 'Invoiced', key: 'invoiced', width: 10 },
+        { header: 'Costs', key: 'direct_costs', width: 10 },
+        { header: 'Balance', key: 'direct_balance', width: 10 }
+      ]
+
+      let j = 1
+      for (const project of Object.values(projects).filter((p) => p.type === 'direct_pressing')) {
+        j++
+        directPressing.addRow(project)
+        if (project.direct_balance !== 0) {
+          directPressing.getRow(j).fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: project.direct_balance > 0 ? 'ecffe5' : 'ffe5e5' }
+          }
+        }
       }
     } else {
       const columns = [
         { header: 'Id', key: 'id' },
-        { header: 'Artist', key: 'artist_name', width: 30 },
-        { header: 'Project', key: 'name', width: 30 },
-        { header: 'Profits', key: 'profits', width: 15 },
-        { header: 'Costs', key: 'costs', width: 15 },
-        { header: 'Storage', key: 'storage', width: 15 },
-        { header: 'Payment Artist', key: 'payment_artist', width: 15 },
-        { header: 'Payment Diggers', key: 'payment_diggers', width: 15 },
-        { header: 'Balance', key: 'balance', width: 15 },
-        { header: 'Currency', key: 'currency', width: 15 }
+        { header: 'User', key: 'user', width: 15 },
+        { header: 'Artist', key: 'artist_name', width: 15 },
+        { header: 'Project', key: 'name', width: 20 },
+        { header: 'Profits', key: 'profits', width: 10 },
+        { header: 'Costs', key: 'costs', width: 10 },
+        { header: 'Storage', key: 'storage', width: 10 },
+        { header: 'Pay Artist', key: 'payment_artist', width: 10 },
+        { header: 'Pay Diggers', key: 'payment_diggers', width: 10 },
+        { header: 'Balance', key: 'balance', width: 10 },
+        { header: 'Currency', key: 'currency', width: 10 }
       ]
       for (const type of Object.keys(rows)) {
         const worksheet = workbook.addWorksheet(type)
