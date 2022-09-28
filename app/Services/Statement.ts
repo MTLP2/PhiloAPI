@@ -910,6 +910,8 @@ class StatementService {
         'project.name',
         'artist_name',
         'vod.currency',
+        'vod.resp_prod_id',
+        'vod.com_id',
         'user.name as user',
         'vod.type',
         'step'
@@ -947,6 +949,10 @@ class StatementService {
     const projects = {}
 
     const rows = {}
+    const team = {}
+    for (const user of Utils.getTeam) {
+      team[user.id] = user
+    }
 
     for (const project of projectsList) {
       const balance = await this.getBalance({
@@ -961,6 +967,8 @@ class StatementService {
       project.payment_artist = balance.payment_artist
       project.payment_diggers = balance.payment_diggers
       project.costs = balance.costs
+      project.resp_prod = team[project.resp_prod_id]?.name
+      project.resp_com = team[project.com_id]?.name
       project.invoiced = 0
       project.direct_costs = 0
       project.direct_balance = 0
@@ -994,6 +1002,8 @@ class StatementService {
         { header: 'User', key: 'user', width: 15 },
         { header: 'Artist', key: 'artist_name', width: 15 },
         { header: 'Project', key: 'name', width: 25 },
+        { header: 'Resp Prod', key: 'resp_prod', width: 15 },
+        { header: 'Resp Com', key: 'resp_com', width: 15 },
         { header: 'Profits', key: 'profits', width: 10 },
         { header: 'Costs', key: 'costs', width: 10 },
         { header: 'Storage', key: 'storage', width: 10 },
@@ -1028,6 +1038,8 @@ class StatementService {
         { header: 'User', key: 'user', width: 15 },
         { header: 'Artist', key: 'artist_name', width: 15 },
         { header: 'Project', key: 'name', width: 25 },
+        { header: 'Resp Prod', key: 'resp_prod', width: 15 },
+        { header: 'Resp Com', key: 'resp_com', width: 15 },
         { header: 'Invoiced', key: 'invoiced', width: 10 },
         { header: 'Costs', key: 'direct_costs', width: 10 },
         { header: 'Balance', key: 'direct_balance', width: 10 }

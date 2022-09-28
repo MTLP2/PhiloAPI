@@ -1149,6 +1149,135 @@ class Utils {
     }
     **/
   }
+
+  static getTeam = [
+    {
+      id: 0,
+      name: 'Site',
+      picture:
+        'https://storage.diggersfactory.com/profiles/3fe4dff0-cb35-4a52-aa4b-47d912333666/cover.jpg'
+    },
+    {
+      id: 1,
+      name: 'Casti',
+      picture: 'https://ca.slack-edge.com/T0UHRUB19-U0UKF9GL9-8ffec41040fe-512'
+    },
+    {
+      id: 35980,
+      name: 'Mathilde Com',
+      picture: 'https://ca.slack-edge.com/T0UHRUB19-U01022Z62FJ-6a03da72193c-512'
+    },
+    {
+      id: 57976,
+      name: 'Armory',
+      picture: 'https://ca.slack-edge.com/T0UHRUB19-U01GL0M4LSK-140726ffc156-512'
+    },
+    {
+      id: 81293,
+      name: 'Mathilde Prod',
+      picture: 'https://ca.slack-edge.com/T0UHRUB19-U024VAMACNA-6ff129765f87-512'
+    },
+    {
+      id: 40281,
+      name: 'Manon',
+      picture: 'https://ca.slack-edge.com/T0UHRUB19-U0162B8AG1M-44a85c3ae6ac-512'
+    },
+    {
+      id: 103096,
+      name: 'Léopold',
+      picture: 'https://ca.slack-edge.com/T0UHRUB19-U02PFC76U3Y-c8b8e5168283-512'
+    },
+    {
+      id: 26584,
+      name: 'Cyril',
+      picture: 'https://ca.slack-edge.com/T0UHRUB19-UC38PSBKL-bd0ae6f3b220-512'
+    },
+    {
+      id: 6140,
+      name: 'Benjamin',
+      picture: 'https://ca.slack-edge.com/T0UHRUB19-U6AM3358X-c34a04fa3170-512'
+    },
+    {
+      id: 68210,
+      name: 'Daniel',
+      picture: 'https://ca.slack-edge.com/T0UHRUB19-U01PNS24AAE-bfe18853488c-192'
+    },
+    {
+      id: 106246,
+      name: 'Corentin',
+      picture: 'https://ca.slack-edge.com/T0UHRUB19-U02S6LN6GF4-d32f69db13e1-512'
+    },
+    {
+      id: 31727,
+      name: 'Marianne',
+      picture: 'https://ca.slack-edge.com/T0UHRUB19-UL5GYJYBU-e0d8d98fd007-512'
+    },
+    {
+      id: 80490,
+      name: 'Tom',
+      picture: 'https://ca.slack-edge.com/T0UHRUB19-U02473HJNGK-962016807a63-512'
+    },
+    {
+      id: 109131,
+      name: 'Margot',
+      picture: 'https://ca.slack-edge.com/T0UHRUB19-U031NLZNRNK-819399c41aca-512'
+    },
+    {
+      id: 38631,
+      name: 'Fany',
+      picture: 'https://ca.slack-edge.com/T0UHRUB19-U01519EHNHX-6ecae7247517-512'
+    },
+    {
+      id: 39568,
+      name: 'Julie',
+      picture: 'https://ca.slack-edge.com/T0UHRUB19-U01571R4Z8W-9274eb69deab-512'
+    },
+    {
+      id: 122330,
+      name: 'Paul',
+      picture: 'https://ca.slack-edge.com/T0UHRUB19-U03KE8VG4AY-8506af0e1eed-512'
+    },
+    {
+      id: 122387,
+      name: 'Sofian',
+      picture: 'https://ca.slack-edge.com/T0UHRUB19-U03KF8WU11T-8182bf81d7fc-512'
+    },
+    {
+      id: 104595,
+      name: 'Olivia C',
+      picture: 'https://ca.slack-edge.com/T0UHRUB19-U02R5ULBBUY-a1d5e9bb13ee-512'
+    },
+    {
+      id: 42122,
+      name: 'Ben G',
+      picture: 'https://ca.slack-edge.com/T0UHRUB19-U0175UPJ7CN-cef4c24300ae-512'
+    },
+    {
+      id: 56494,
+      name: 'Léo Rosina',
+      picture: 'https://ca.slack-edge.com/T0UHRUB19-U01GA1XEVBQ-fb11fde661a9-512'
+    },
+    {
+      id: 17878,
+      name: 'Martin',
+      picture: 'https://ca.slack-edge.com/T0UHRUB19-U9G1SMH0T-32051ff042bc-512'
+    },
+    {
+      id: 125461,
+      name: 'Matthieu',
+      picture: 'https://ca.slack-edge.com/T0UHRUB19-U03N6RF53D0-87cea0b0a780-512'
+    },
+    {
+      id: 112318,
+      name: 'Diane',
+      picture: 'https://ca.slack-edge.com/T0UHRUB19-U035Z01J10U-ffa81a725ae4-512'
+    },
+    {
+      id: 132242,
+      name: 'Ferdinand',
+      picture: 'https://ca.slack-edge.com/T0UHRUB19-U0400N4T139-5922e3df99a0-512'
+    }
+  ]
 }
 
 export default Utils
