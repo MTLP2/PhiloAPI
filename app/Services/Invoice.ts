@@ -18,7 +18,7 @@ class Invoice {
       .leftJoin('customer as c', 'c.id', 'invoice.customer_id')
 
     if (!params.sort) {
-      params.query.orderBy('invoice.created_at', 'desc').orderBy('number', 'desc')
+      params.query.orderBy('invoice.id', 'desc')
     }
 
     return Utils.getRows(params)
@@ -208,7 +208,7 @@ class Invoice {
     invoice.year = year
     invoice.order_id = order.order_id || null
     invoice.order_box_id = order.order_box_id || null
-    invoice.order_shop_id = order.id || null
+    invoice.order_shop_id = order.order_shop_id || null
     invoice.customer_id = order.customer_id
     invoice.sub_total = order.sub_total
     invoice.tax_rate = order.tax_rate * 100
@@ -472,6 +472,9 @@ class Invoice {
     const invoice = await DB('invoice').belongsTo('customer').find(params.id)
 
     invoice.id = null
+    invoice.number = null
+    invoice.code = null
+    invoice.inc = 1
     invoice.year = moment().format('YY')
     invoice.date = moment().format('YYYY-MM-DD')
     invoice.type = params.type
@@ -486,6 +489,8 @@ class Invoice {
     console.log(invoice.year)
     console.log(invoice.date)
     const insert = await DB('invoice').insert(JSON.parse(JSON.stringify(invoice)))
+
+    await Invoice.setNumbers()
 
     return { id: insert[0] }
   }
