@@ -146,6 +146,7 @@ Route.get('/contests/:id', 'ContestController.find')
 Route.put('/boxes/code', 'CartController.checkBoxCode')
 
 Route.post('/newsletter', 'AppController.subscribeNewsletterWithoutAccount')
+Route.post('/pass-culture', 'AppController.subscribeToPassCulture')
 
 Route.get('/catalog', 'AdminController.exportCatalog')
 Route.get('/stats/top-projects', 'ProjectsController.getTopProjects')
@@ -462,6 +463,13 @@ Route.group(() => {
   Route.post('/contests/:id/extract', 'ContestController.extract')
   Route.get('/shipping-costs', 'AdminController.getShippingCosts')
   Route.get('/stocks', 'AdminController.getStocks')
+
+  Route.group(() => {
+    Route.get('/', 'AdminController.getPassCulture')
+    Route.put('/save', 'AdminController.savePassCulture')
+    Route.delete('/delete/:id', 'AdminController.deletePassCulture')
+    Route.get('/export', 'AdminController.exportPassCulture')
+  }).prefix('pass-culture')
 })
   .prefix('admin')
   .middleware(['auth', 'admin'])
