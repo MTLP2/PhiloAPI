@@ -4506,6 +4506,11 @@ class Admin {
       return err
     }
   }
+
+  static getPassCulture = async () => {
+    const passCulture = DB('pass_culture')
+    return Utils.getRows({ query: passCulture })
+  }
 }
 
 export default Admin
