@@ -2034,6 +2034,7 @@ class Admin {
     if (params.credit_note || params.credit_note === undefined) {
       await Invoice.insertRefund({
         ...order,
+        order_shop_id: params.order_shop_id,
         customer_id: customer.customer_id,
         order_id: order.id
       })
