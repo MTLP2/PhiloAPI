@@ -682,7 +682,10 @@ static toJuno = async (params) => {
     }
 
     if ((params && params.credit_note === 'true') || !params) {
-      await Invoice.insertRefund(order)
+      await Invoice.insertRefund({
+        ...order,
+        order_shop_id: id
+      })
 
       if (type === 'cancel' && order.order_items.length) {
         for (const item of order.order_items) {
