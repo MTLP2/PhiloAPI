@@ -48,6 +48,11 @@ const DB = (tablee?, idd?) => {
       return db.get('first')
     },
 
+    model() {
+      const castDb: any = db
+      return castDb
+    },
+
     first(columns?) {
       const error = new Error()
       if (columns) {
