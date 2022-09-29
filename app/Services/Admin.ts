@@ -897,8 +897,6 @@ class Admin {
     vod.show_stock = params.show_stock
     vod.show_prod = params.show_prod
     vod.show_countdown = params.show_countdown
-    vod.send_statement = params.send_statement
-    vod.storage_costs = params.storage_costs
     vod.scheduled_end = params.scheduled_end
     vod.is_licence = params.is_licence
     vod.shipping_delay_reason = params.shipping_delay_reason
@@ -966,6 +964,9 @@ class Admin {
       vod.price_unit = params.price_unit || null
     }
     if (params.edit_statement) {
+      vod.send_statement = params.send_statement
+      vod.storage_costs = params.storage_costs
+      vod.balance_followup = params.balance_followup
       vod.statement_comment = params.statement_comment || null
     }
     if (params.com) {
@@ -2033,6 +2034,7 @@ class Admin {
     if (params.credit_note || params.credit_note === undefined) {
       await Invoice.insertRefund({
         ...order,
+        order_shop_id: params.order_shop_id,
         customer_id: customer.customer_id,
         order_id: order.id
       })
@@ -4506,6 +4508,11 @@ class Admin {
     } catch (err) {
       return err
     }
+  }
+
+  static getPassCulture = async () => {
+    const passCulture = DB('pass_culture')
+    return Utils.getRows({ query: passCulture })
   }
 }
 

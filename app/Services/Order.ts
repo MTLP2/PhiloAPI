@@ -682,7 +682,10 @@ static toJuno = async (params) => {
     }
 
     if ((params && params.credit_note === 'true') || !params) {
-      await Invoice.insertRefund(order)
+      await Invoice.insertRefund({
+        ...order,
+        order_shop_id: id
+      })
 
       if (type === 'cancel' && order.order_items.length) {
         for (const item of order.order_items) {
@@ -981,7 +984,7 @@ static toJuno = async (params) => {
       .first()
 
     const items = await DB('order_item')
-      .select('order_item.quantity', 'order_item.price', 'barcode')
+      .select('order_item.quantity', 'order_item.price', 'barcode', 'size', 'sizes')
       .join('vod', 'vod.project_id', 'order_item.project_id')
       .where('order_shop_id', params.id)
       .all()
@@ -991,7 +994,10 @@ static toJuno = async (params) => {
         sending: true
       })
     } else if (['whiplash', 'whiplash_uk'].includes(shop.transporter)) {
-      await Whiplash.validOrder(shop, items)
+      const res = await Whiplash.validOrder(shop, items)
+      if (!res) {
+        return { error: 'not_found' }
+      }
     } else if (shop.transporter === 'sna') {
       const customer = await DB('customer').find(shop.customer_id)
 

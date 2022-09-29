@@ -68,7 +68,14 @@ class Whiplash {
 
     for (const i in items) {
       const barcodes = (items[i].item_barcode || items[i].barcode).split(',')
-      for (const barcode of barcodes) {
+      for (let barcode of barcodes) {
+        const sizes = items[i].sizes ? JSON.parse(items[i].sizes) : null
+        if (barcode === 'SIZE') {
+          barcode = sizes[items[i].size].split(',')[0]
+        } else if (barcode === 'SIZE2') {
+          barcode = sizes[items[i].size].split(',')[1]
+        }
+
         const item = await Whiplash.findItem(barcode)
         if (!item || !item.id) {
           await Notification.sendEmail({
@@ -114,8 +121,8 @@ class Whiplash {
     if (process.env.NODE_ENV !== 'production') {
       sku = 'TEST'
     }
-    return Whiplash.api(`/items/sku/${sku}`).then((res) => {
-      if (!res) {
+    return Whiplash.api(`/items/sku/${sku}`).then((res: any[]) => {
+      if (!res || res.length === 0) {
         return null
         // If eligible for media mail is not activited we return null
       } else if (!res[0].media_mail) {

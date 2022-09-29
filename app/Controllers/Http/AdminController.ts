@@ -1,3 +1,6 @@
+import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
+import { schema, rules } from '@ioc:Adonis/Core/Validator'
+
 import Admin from 'App/Services/Admin'
 import DB from 'App/DB'
 import Notification from 'App/Services/Notification'
@@ -889,6 +892,75 @@ class AdminController {
 
   deeplTranslate({ params }) {
     return Admin.deeplTranslate(params)
+  }
+
+  getPassCulture() {
+    return Admin.getPassCulture()
+  }
+
+  async savePassCulture({ request }: HttpContextContract) {
+    try {
+      const subscriptionSchema = schema.create({
+        id: schema.number.nullable(),
+        email: schema.string({ trim: true }, [rules.email()]),
+        name: schema.string.nullableAndOptional({ trim: true }),
+        phone: schema.string.nullableAndOptional({ trim: true }),
+        code: schema.string.nullableAndOptional({ trim: true }),
+        price: schema.number.optional(),
+        status: schema.enum([-1, 0, 1, 2, 3, 4] as const),
+        comment: schema.string.optional({ trim: true })
+      })
+
+      const payload = await request.validate({ schema: subscriptionSchema })
+
+      if (payload.id) {
+        await DB('pass_culture')
+          .where('id', payload.id)
+          .update({ ...payload, updated_at: Utils.date() })
+      } else {
+        const exists = await DB('pass_culture').where('email', payload.email).first()
+        if (exists) throw new Error('Email already exists')
+        await DB('pass_culture').insert(payload)
+      }
+
+      return { success: true }
+    } catch (err) {
+      return { error: err.message, messages: err.messages }
+    }
+  }
+
+  async deletePassCulture({ params }: HttpContextContract) {
+    try {
+      await DB('pass_culture').where('id', params.id).delete()
+      return { success: true }
+    } catch (err) {
+      return { error: err.message }
+    }
+  }
+
+  async exportPassCulture({ params }: HttpContextContract) {
+    try {
+      params.size = 0
+      const data = await Utils.getRows({ query: DB('pass_culture') })
+
+      return Utils.arrayToCsv(
+        [
+          { name: 'ID', index: 'id' },
+          { name: 'Email', index: 'email' },
+          { name: 'Status', index: 'status' },
+          { name: 'Name', index: 'name' },
+          { name: 'Phone', index: 'phone' },
+          { name: 'Code', index: 'code' },
+          { name: 'Price', index: 'price' },
+          { name: 'Comment', index: 'comment' },
+          { name: 'Created at', index: 'created_at' },
+          { name: 'Updated at', index: 'updated_at' }
+        ],
+        data.data
+      )
+    } catch (err) {
+      return { error: err.message }
+    }
   }
 }
 
