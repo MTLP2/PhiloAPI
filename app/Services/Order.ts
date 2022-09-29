@@ -103,7 +103,7 @@ class Order {
         'os.tracking_transporter',
         'os.transporter',
         'os.type',
-        'whiplash_id',
+        'logistician_id',
         'os.created_at',
         'user.name',
         'user.slug'
@@ -892,7 +892,7 @@ static toJuno = async (params) => {
         }
       ])
     }
-    if (['whiplash', 'whiplash_uk'].includes(params.transporter) && !item.whiplash_id) {
+    if (['whiplash', 'whiplash_uk'].includes(params.transporter) && !item.logistician_id) {
       const pp = {
         shipping_name: `${customer.firstname} ${customer.lastname}`,
         shipping_address_1: customer.address,
@@ -914,13 +914,13 @@ static toJuno = async (params) => {
       }
 
       const order = await Whiplash.saveOrder(pp)
-      item.whiplash_id = order.id
+      item.logistician_id = order.id
       item.date_export = Utils.date()
       await item.save()
 
       if (item.order_shop_id) {
         await DB('order_shop').where('id', item.order_shop_id).update({
-          whiplash_id: order.id,
+          logistician_id: order.id,
           tracking_number: null,
           tracking_transporter: null,
           updated_at: Utils.date()

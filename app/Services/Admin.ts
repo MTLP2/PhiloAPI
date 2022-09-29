@@ -209,7 +209,7 @@ class Admin {
         'quantity',
         'size',
         'date_export',
-        'whiplash_id',
+        'logistician_id',
         'os.transporter',
         'sending',
         'quantity',
@@ -1552,7 +1552,7 @@ class Admin {
         query
           .where('date_export', '>', '2020-01-01')
           .whereNull('tracking_number')
-          .whereNull('whiplash_id')
+          .whereNull('logistician_id')
           .where('os.transporter', '!=', 'whiplash')
           .where(DB.raw('date_export < DATE_SUB(NOW(), INTERVAL 7 DAY)'))
           .where('is_paid', 1)
@@ -1569,7 +1569,7 @@ class Admin {
     if (params.type === 'no_export') {
       orders.whereNull('date_export')
       orders.whereNull('tracking_number')
-      orders.whereNull('whiplash_id')
+      orders.whereNull('logistician_id')
       orders.where('is_paid', 1)
       orders.where(DB.raw('os.created_at < DATE_SUB(NOW(), INTERVAL 4 DAY)'))
       orders.where((query) => {
@@ -2079,7 +2079,7 @@ class Admin {
         query
           .where('date_export', '>', '2020-01-01')
           .whereNull('tracking_number')
-          .whereNull('whiplash_id')
+          .whereNull('logistician_id')
           .where('transporter', '!=', 'whiplash')
           .where(DB.raw('date_export < DATE_SUB(NOW(), INTERVAL 7 DAY)'))
           .where('is_paid', 1)
@@ -2091,7 +2091,7 @@ class Admin {
       .join('vod', 'vod.project_id', 'oi.project_id')
       .whereNull('date_export')
       .whereNull('tracking_number')
-      .whereNull('whiplash_id')
+      .whereNull('logistician_id')
       .where('is_paid', 1)
       .where(DB.raw('os.created_at < DATE_SUB(NOW(), INTERVAL 4 DAY)'))
       .where((query) => {
