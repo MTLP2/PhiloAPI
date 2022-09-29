@@ -4309,8 +4309,9 @@ class Admin {
 
   static exportOrdersRefunds = async (params) => {
     const refundsRaw = await DB('refund')
-      .select('refund.*', 'order.currency', 'order.user_id', 'order.payment_type')
+      .select('refund.*', 'order.currency', 'order.user_id', 'order.payment_type', 'os.transporter')
       .join('order', 'order.id', 'refund.order_id')
+      .leftJoin('order_shop as os', 'os.id', 'refund.order_shop_id')
       .where('refund.created_at', '>=', params.start)
       .where('refund.created_at', '<=', `${params.end} 23:59`)
       .all()
@@ -4328,6 +4329,7 @@ class Admin {
         { name: 'User ID', index: 'user_id' },
         { name: 'OShop ID', index: 'order_shop_id' },
         { name: 'Payment Type', index: 'payment_type' },
+        { name: 'Transporter', index: 'transporter' },
         { name: 'Date', index: 'created_at' },
         { name: 'Amount', index: 'amount' },
         { name: 'Currency', index: 'currency' },
