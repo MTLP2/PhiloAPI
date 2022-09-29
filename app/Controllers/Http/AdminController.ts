@@ -917,7 +917,7 @@ class AdminController {
           'two_12_months'
         ] as const),
         status: schema.enum([-1, 0, 1, 2, 3, 4] as const),
-        comment: schema.string.optional({ trim: true })
+        comment: schema.string.nullableAndOptional({ trim: true })
       })
 
       const payload = await request.validate({ schema: subscriptionSchema })
