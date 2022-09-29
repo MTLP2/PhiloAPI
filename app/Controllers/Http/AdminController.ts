@@ -906,7 +906,16 @@ class AdminController {
         name: schema.string.nullableAndOptional({ trim: true }),
         phone: schema.string.nullableAndOptional({ trim: true }),
         code: schema.string.nullableAndOptional({ trim: true }),
-        price: schema.number.optional(),
+        type: schema.enum([
+          'one_monthly',
+          'two_monthly',
+          'one_3_months',
+          'two_3_months',
+          'one_6_months',
+          'two_6_months',
+          'one_12_months',
+          'two_12_months'
+        ] as const),
         status: schema.enum([-1, 0, 1, 2, 3, 4] as const),
         comment: schema.string.optional({ trim: true })
       })
