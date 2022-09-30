@@ -20,6 +20,8 @@ type Level = {
   data: string
   created_at: string
   updated_at: string
+  passes?: number
+  ratio?: number
 }
 
 type Badge = {
@@ -242,15 +244,15 @@ export default class Pass {
   }
 
   static async getHistory(params: { userId: number }) {
-    params.query = DB('pass_history as ph')
+    let query = DB('pass_history as ph')
       .select('ph.*', 'pq.type', 'pq.points', 'u.name as user_name', 'u.id as user_id')
       .join('pass_quest as pq', 'pq.id', 'ph.quest_id')
       .join('user as u', 'u.id', 'ph.user_id')
 
     // if userId is provided, only return history for that user
-    if (params.userId) params.query = params.query.where('ph.user_id', params.userId)
+    if (params.userId) query = query.where('ph.user_id', params.userId)
 
-    return Utils.getRows<History>(params)
+    return Utils.getRows<History>({ query })
   }
 
   addHistory = async ({ type, userId, refId }: { type: string; userId: number; refId: number }) => {
@@ -350,11 +352,12 @@ export default class Pass {
     return questToDelete.delete()
   }
 
-  static getLevels = async (params: { size: number; [key: string]: any }) => {
-    params.query = DB('pass_level')
-    params.sort = 'level'
-    params.order = 'asc'
-    const { data: levels } = await Utils.getRows(params)
+  static getLevels = async (params: any) => {
+    const { data: levels } = await Utils.getRows<Level>({
+      query: DB('pass_level'),
+      sort: 'level',
+      order: 'asc'
+    })
     const passes = await DB('pass').select('id', 'level_id').all()
 
     // ! UGLY - TO REWRITE

@@ -4,6 +4,7 @@ import ApiError from 'App/ApiError'
 import DB from 'App/DB'
 import PromoCode from 'App/Services/PromoCode'
 import Storage from 'App/Services/Storage'
+import Pass from 'App/Services/Pass'
 import Statement from 'App/Services/Statement'
 import Bid from 'App/Services/Bid'
 import Review from 'App/Services/Review'
@@ -937,6 +938,12 @@ class Project {
       .select(DB.raw('count(project_id) as count'))
       .where('project_id', projectId)
       .first()
+
+    await Pass.addHistory({
+      userId,
+      type: 'user_like',
+      refId: projectId
+    })
 
     await DB('project')
       .where({

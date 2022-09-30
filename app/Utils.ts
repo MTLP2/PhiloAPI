@@ -286,7 +286,17 @@ class Utils {
     }
   }
 
-  static getRows = async (params) => {
+  static getRows: <T>(params: {
+    query: any
+    filters?: any
+    page?: number
+    size?: number | undefined
+    sort?: any
+    order?: any
+  }) => Promise<{
+    count: number
+    data: T[]
+  }> = async (params) => {
     const { query } = params
 
     let filters
@@ -347,9 +357,6 @@ class Utils {
       }
     }
 
-    const res = {}
-    res.count = await query.count()
-
     const page = params.page > 0 ? params.page : 1
     const size = params.size > 0 ? params.size : 50
 
@@ -363,9 +370,11 @@ class Utils {
     if (params.size !== 0) {
       query.limit(size).offset((page - 1) * size)
     }
-    res.data = await query.all()
 
-    return res
+    return {
+      count: await query.count(),
+      data: await query.all()
+    }
   }
 
   static removeAccents = (s) => {
