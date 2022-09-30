@@ -939,6 +939,7 @@ class Project {
       .where('project_id', projectId)
       .first()
 
+    // Adding pass history
     await Pass.addHistory({
       userId,
       type: 'user_like',
@@ -1947,7 +1948,7 @@ class Project {
     }
 
     if (!params.sort) {
-      params.sort = 'id'
+      params.sort = 'order_shop.id'
       params.order = 'desc'
     }
     const res = await Utils.getRows(params)
