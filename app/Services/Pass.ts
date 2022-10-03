@@ -90,6 +90,35 @@ type Ranking = {
   user_picture: string
 }
 
+type UserBadgeProgress = {
+  id: number
+  name_fr: string
+  name_en: string
+  description_fr: string
+  description_en: string
+  image: string
+  progress: number
+  total_quests: number
+  completed_quests: number
+}
+
+interface Gift {
+  id: number
+  name_fr: string
+  name_en: string
+  level_id: number
+  image: string
+  is_active: TinyIntBool
+  is_preium: TinyIntBool
+  created_at: string
+  updated_at: string
+}
+
+interface UserGift extends Gift {
+  claimable: boolean
+  claimed_date: string
+}
+
 export default class Pass {
   static async getUserPass(params: { userId: number }) {
     // Aggregate all quests for user
@@ -234,7 +263,7 @@ export default class Pass {
       'image'
     ]
 
-    return DB('pass_badge')
+    const userBadgeProgress: UserBadgeProgress[] = await DB('pass_badge')
       .select(
         ...selects,
         DB.raw('ROUND((COUNT(completed_quests.id) / COUNT(pq.id)),3) * 100 as progress'),
@@ -257,6 +286,8 @@ export default class Pass {
       .where('pass_badge.is_active', 1)
       .groupBy(selects)
       .all()
+
+    return userBadgeProgress
   }
 
   static async getHistory(params: { userId: number }) {
@@ -517,7 +548,7 @@ export default class Pass {
 
   static getUserGifts = async (params) => {
     // Gets all gifts + user gift status (claimable and claimed)
-    const userGifts = await DB('pass_gift as pg')
+    const userGifts: UserGift[] = await DB('pass_gift as pg')
       .select(
         'pg.*',
         DB.raw(
