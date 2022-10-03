@@ -249,6 +249,7 @@ export default class Pass {
      END completed_by_user`)
       )
       .belongsTo('pass_badge', '*', 'badge', 'badge_id')
+      .where('pq.is_active', 1)
       .orderBy('completed_by_user', 'desc')
       .all()
   }
