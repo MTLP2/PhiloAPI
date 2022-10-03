@@ -78,6 +78,18 @@ type PassData = {
   is_premium: TinyIntBool
 }
 
+type Ranking = {
+  id: number
+  total_points: number
+  current_level: number
+  pass_id: number
+  user_name: string
+  badge_name_fr: string
+  badge_name_en: string
+  image: string
+  user_picture: string
+}
+
 export default class Pass {
   static async getUserPass(params: { userId: number }) {
     // Aggregate all quests for user
@@ -472,7 +484,7 @@ export default class Pass {
   }
 
   // --- RANKING
-  static getRanking = async () => {
+  static getRanking: () => Promise<Ranking[]> = async () => {
     return DB('pass_history as ph')
       .select(
         'p.total_points',
