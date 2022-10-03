@@ -304,7 +304,7 @@ class Whiplash {
     return count
   }
 
-  static setTrackingLinks = async (params) => {
+  static setTrackingLinks = async () => {
     const manuals = await DB('order_manual')
       .select('order_manual.*', 'customer.country_id')
       .whereNotNull('logistician_id')
