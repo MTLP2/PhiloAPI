@@ -123,16 +123,6 @@ export default class Pass {
   }
 
   static async calculateScore({ userId }: { userId: number }) {
-    // ! OLD
-    // return DB('pass_history as ph')
-    //   .select(DB.raw('sum(pq.points) as current_points'), 'p.id as pass_id', 'pl.level as current_level')
-    //   .join('pass as p', 'p.user_id', 'ph.user_id')
-    //   .join('pass_quest as pq', 'pq.id', 'ph.quest_id')
-    //   .join('pass_level as pl', 'pl.id', 'p.level_id')
-    //   .where('ph.user_id', userId)
-    //   .groupBy('p.id', 'pl.level')
-    //   .first()
-
     const history: PassHistory[] = await DB('pass_history as ph')
       .select(
         'pq.id',
@@ -178,7 +168,7 @@ export default class Pass {
 
     return {
       ...score,
-      current_level: history[0]?.current_level ?? 0,
+      current_level: history[0]?.current_level ?? 1,
       pass_id: history[0]?.pass_id ?? 0
     }
   }
@@ -212,8 +202,8 @@ export default class Pass {
      CASE
        WHEN (SELECT COUNT(ph.id) FROM pass_history as ph WHERE ph.user_id = ${params.userId} AND ph.quest_id = pq.id) < pq.count_repeatable
          THEN false
-       WHEN pq.is_infinite = 1
-         THEN true
+       WHEN pq.is_infinite = 1 AND (SELECT COUNT(ph.id) FROM pass_history as ph WHERE ph.user_id = ${params.userId} AND ph.quest_id = pq.id) = 0
+         THEN false
        ELSE true
      END completed_by_user`)
       )
