@@ -372,7 +372,7 @@ class Utils {
     return _.deburr(s)
   }
 
-  static nl2br = (str, isXhtml) => {
+  static nl2br = (str, isXhtml?) => {
     if (typeof str === 'undefined' || str === null) {
       return ''
     }
