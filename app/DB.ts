@@ -197,13 +197,13 @@ const DB = (tablee?, idd?) => {
       return db
     },
 
-    join(arg1, arg2, arg3) {
+    join(arg1, arg2, arg3?) {
       p.query.join(arg1, arg2, arg3)
       p.join.push([arg1, arg2, arg3])
       return db
     },
 
-    leftJoin(arg1, arg2, arg3) {
+    leftJoin(arg1, arg2, arg3?) {
       p.query.leftJoin(arg1, arg2, arg3)
       p.leftJoin.push([arg1, arg2, arg3])
       return db
