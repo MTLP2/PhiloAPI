@@ -32,7 +32,7 @@ class Quote {
   }
 
   static async save(params) {
-    let quote = DB('quote')
+    let quote: any = DB('quote')
     if (params.id) {
       quote = await DB('quote').find(params.id)
     } else {
@@ -159,9 +159,9 @@ class Quote {
     } else if (params.factory === 'kuroneko') {
       f = 'kuroneko'
     }
-    const factory = Object.values(params.costs[f])
+    const factory: any = Object.values(params.costs[f])
 
-    const q = {}
+    const q: any = {}
     for (const f of factory) {
       q[f.id] = f
     }
@@ -170,7 +170,7 @@ class Quote {
 
     data.project = data.id !== undefined
 
-    const logs = []
+    const logs: any[] = []
     const getCost = (l, type, comment) => {
       if (!l) {
         logs.push({
@@ -223,7 +223,7 @@ class Quote {
       }
     }
 
-    let quote = {}
+    let quote: any = {}
 
     if (data.factory === 'sna') {
       quote = this.calculateSna(data, getCost)
@@ -317,7 +317,7 @@ class Quote {
   }
 
   static calculateSna(params, getCost) {
-    const quote = {}
+    const quote: any = {}
 
     // Cutting
     if (params.cutting === 'DMM') {
@@ -406,14 +406,25 @@ class Quote {
     }
 
     // label
-    quote.label = getCost(
-      {
-        '12"': 96,
-        '10"': 96,
-        '7"': 99
-      },
-      'label'
-    )
+    if (params.label_color === 'white') {
+      quote.label = getCost(
+        {
+          '12"': 91,
+          '10"': 91,
+          '7"': 91
+        },
+        'label'
+      )
+    } else {
+      quote.label = getCost(
+        {
+          '12"': 96,
+          '10"': 96,
+          '7"': 99
+        },
+        'label'
+      )
+    }
 
     // inner sleeve
     quote.inner_sleeve = 0
@@ -444,7 +455,18 @@ class Quote {
 
     // sleeve
     quote.sleeve = 0
-    if (params.sleeve === 'discobag') {
+    if (params.sleeve === 'pvc') {
+      quote.sleeve =
+        getCost(
+          {
+            '12"': 111,
+            '10"': 111,
+            '7"': 114
+          },
+          'sleeve',
+          ` x ${params.quantity}`
+        ) / params.nb_vinyl
+    } else if (params.sleeve === 'discobag') {
       quote.sleeve =
         getCost(
           {
@@ -482,7 +504,10 @@ class Quote {
             'sleeve',
             ` x ${params.quantity}`
           ) / params.nb_vinyl
-        quote.sleeve += getCost(167)
+
+        if (params.nb_vinyl === 1) {
+          quote.sleeve += getCost(167)
+        }
       } else {
         if (params.nb_vinyl === 1) {
           if (params.quantity < 300) {
@@ -562,7 +587,9 @@ class Quote {
     // insert
     if (params.insert !== 'none') {
       if (params.insert === 'two_sides_printed') {
-        quote.insert = getCost(364, 'insert')
+        quote.insert = getCost(368, 'insert')
+      } else if (params.insert === 'one_side_printed') {
+        quote.insert = getCost(367, 'insert')
       } else if (params.insert === 'booklet_printed') {
         quote.insert = getCost(366, 'insert')
       }
@@ -570,7 +597,8 @@ class Quote {
 
     // sticker
     if (params.sticker) {
-      quote.sticker = getCost(237, 'sticker')
+      quote.sticker = getCost(237, 'sticker', ` x ${params.quantity}`) / params.nb_vinyl
+      quote.sticker += getCost(238, 'sticker', ` x ${params.quantity}`) / params.nb_vinyl
     }
 
     // test pressing
@@ -592,7 +620,7 @@ class Quote {
   }
 
   static calculateVdp(params, getCost) {
-    const quote = {}
+    const quote: any = {}
 
     if (params.sleeve === 'double_gatefold') {
       if (params.nb_vinyl === 1) {
@@ -618,8 +646,7 @@ class Quote {
     // color
     quote.color = 0
     if (params.color_vinyl !== 'black') {
-      quote.color += getCost(31, 'type_vinyl', ` x ${params.quantity}`) / params.nb_vinyl
-      quote.color += getCost(11, 'type_vinyl', ` x ${params.quantity}`) / params.nb_vinyl
+      quote.color += getCost(11, 'color', ` x ${params.quantity}`) / params.nb_vinyl
     }
 
     // sticker
@@ -659,7 +686,7 @@ class Quote {
   }
 
   static calculateMpo(params, getCost) {
-    const quote = {}
+    const quote: any = {}
 
     quote.cutting = getCost(3, 'cutting') * 2
     quote.cutting += getCost(4, 'cutting') * 2
@@ -772,7 +799,7 @@ class Quote {
   }
 
   static calculateKuroneko(params, getCost) {
-    const quote = {}
+    const quote: any = {}
     // Cutting
     if (params.cutting === 'DMM') {
       quote.cutting = getCost(
@@ -926,7 +953,7 @@ class Quote {
 
     const costs = {}
 
-    workbook.eachSheet((worksheet, sheetId) => {
+    workbook.eachSheet((worksheet) => {
       costs[worksheet.name] = []
 
       let category1
@@ -986,6 +1013,7 @@ class Quote {
             q300: +row.getCell('C').toString(),
             q500: +row.getCell('D').toString(),
             q1000: +row.getCell('E').toString(),
+            q2000: +row.getCell('E').toString(),
             q3000: +row.getCell('F').toString(),
             q5000: +row.getCell('G').toString()
           })
@@ -1032,7 +1060,7 @@ class Quote {
   }
 
   static async send(params) {
-    const quote = DB('quote')
+    const quote: any = DB('quote')
     quote.user_id = params.user ? params.user.id : null
     quote.name = 'Quote direct pressing'
     quote.client = params.name
@@ -1137,36 +1165,36 @@ class Quote {
     })
     return true
   }
-}
 
-Quote.exportAll = async (params) => {
-  const query = DB('quote')
+  static exportAll = async (params) => {
+    const query = DB('quote')
 
-  if (params.start) {
-    query.where('quote.created_at', '>=', params.start)
+    if (params.start) {
+      query.where('quote.created_at', '>=', params.start)
+    }
+    if (params.end) {
+      query.where('quote.created_at', '<=', `${params.end} 23:59`)
+    }
+    query.orderBy('created_at', 'desc')
+
+    const quotes = await query.all()
+
+    return Utils.arrayToCsv(
+      [
+        { index: 'id', name: 'ID' },
+        { index: 'origin', name: 'Origin' },
+        { index: 'name', name: 'Name' },
+        { index: 'client', name: 'Client' },
+        { index: 'email', name: 'Email' },
+        { index: 'phone', name: 'Phone' },
+        { index: 'quantity', name: 'Quantity' },
+        { index: 'total', name: 'Total' },
+        { index: 'site', name: 'Site' },
+        { index: 'created_at', name: 'Date' }
+      ],
+      quotes
+    )
   }
-  if (params.end) {
-    query.where('quote.created_at', '<=', `${params.end} 23:59`)
-  }
-  query.orderBy('created_at', 'desc')
-
-  const quotes = await query.all()
-
-  return Utils.arrayToCsv(
-    [
-      { index: 'id', name: 'ID' },
-      { index: 'origin', name: 'Origin' },
-      { index: 'name', name: 'Name' },
-      { index: 'client', name: 'Client' },
-      { index: 'email', name: 'Email' },
-      { index: 'phone', name: 'Phone' },
-      { index: 'quantity', name: 'Quantity' },
-      { index: 'total', name: 'Total' },
-      { index: 'site', name: 'Site' },
-      { index: 'created_at', name: 'Date' }
-    ],
-    quotes
-  )
 }
 
 export default Quote
