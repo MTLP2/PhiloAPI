@@ -1655,18 +1655,22 @@ class Stats {
         organic: { total: 0, dates: { ...dates } }
       },
       quantity: {
+        all: { total: 0, dates: { ...dates } },
         total: { total: 0, dates: { ...dates } },
         site: { total: 0, dates: { ...dates } },
         project: { total: 0, dates: { ...dates } },
         licence: { total: 0, dates: { ...dates } },
         refund: { total: 0, dates: { ...dates } },
-        shop: { total: 0, dates: { ...dates } },
-        vod: { total: 0, dates: { ...dates } },
-        direct_shop: { total: 0, dates: { ...dates } },
         distrib: { total: 0, dates: { ...dates } },
         distrib_project: { total: 0, dates: { ...dates } },
         distrib_licence: { total: 0, dates: { ...dates } },
-        returned: { total: 0, dates: { ...dates } }
+        distrib_returned: { total: 0, dates: { ...dates } },
+        site_project: { total: 0, dates: { ...dates } },
+        site_licence: { total: 0, dates: { ...dates } },
+        site_refund: { total: 0, dates: { ...dates } },
+        site_shop: { total: 0, dates: { ...dates } },
+        site_vod: { total: 0, dates: { ...dates } },
+        site_direct_shop: { total: 0, dates: { ...dates } }
       },
       turnover: {
         total: { total: 0, dates: { ...dates } },
@@ -1874,8 +1878,6 @@ class Stats {
 
     const productionsPromise = await DB('production')
       .select('date_preprod', 'date_factory', 'factory', 'quantity', 'quantity_pressed')
-      .whereBetween('date_preprod', [params.start, params.end])
-      .orWhereBetween('date_factory', [params.start, params.end])
       .all()
 
     const productionsSentPromise = await DB('production')
@@ -2148,98 +2150,113 @@ class Stats {
       const date = moment(qty.created_at).format(format)
       const quantity = qty.quantity
 
+      d.quantity.all.total += quantity
+      d.quantity.all.dates[date] += quantity
+
+      d.quantity.total.total += quantity
+      d.quantity.total.dates[date] += quantity
+
+      d.quantity.site.total += quantity
+      d.quantity.site.dates[date] += quantity
+
+      if (qty.type === 'shop') {
+        d.quantity.site_shop.total += quantity
+        d.quantity.site_shop.dates[date] += quantity
+      } else if (qty.type === 'vod') {
+        d.quantity.site_vod.total += quantity
+        d.quantity.site_vod.dates[date] += quantity
+      }
+
+      if (qty.is_licence) {
+        d.quantity.licence.total += quantity
+        d.quantity.licence.dates[date] += quantity
+
+        d.quantity.site_licence.total += quantity
+        d.quantity.site_licence.dates[date] += quantity
+      } else {
+        d.quantity.project.total += quantity
+        d.quantity.project.dates[date] += quantity
+
+        d.quantity.site_project.total += quantity
+        d.quantity.site_project.dates[date] += quantity
+      }
+
+      if (qty.is_pro) {
+        d.quantity.site_direct_shop.total += quantity
+        d.quantity.site_direct_shop.dates[date] += quantity
+      }
+
       if (!qty.is_paid) {
         d.quantity.refund.total += quantity
         d.quantity.refund.dates[date] += quantity
-      } else {
-        d.quantity.total.total += quantity
-        d.quantity.total.dates[date] += quantity
 
-        d.quantity.site.total += quantity
-        d.quantity.site.dates[date] += quantity
+        d.quantity.site_refund.total += quantity
+        d.quantity.site_refund.dates[date] += quantity
 
-        if (qty.type === 'shop') {
-          d.quantity.shop.total += quantity
-          d.quantity.shop.dates[date] += quantity
-        } else if (qty.type === 'vod') {
-          d.quantity.vod.total += quantity
-          d.quantity.vod.dates[date] += quantity
+        d.quantity.total.total -= quantity
+        d.quantity.total.dates[date] -= quantity
+      }
+
+      for (const style of qty.styles.split(',')) {
+        if (!d.styles[styles[style]]) {
+          d.styles[styles[style]] = 0
         }
+        d.styles[styles[style]] += quantity
+      }
 
-        if (qty.is_licence) {
-          d.quantity.licence.total += quantity
-          d.quantity.licence.dates[date] += quantity
-        } else {
-          d.quantity.project.total += quantity
-          d.quantity.project.dates[date] += quantity
+      if (!p[qty.project_id]) {
+        p[qty.project_id] = {
+          id: qty.project_id,
+          name: qty.name,
+          artist: qty.artist_name,
+          picture: qty.picture,
+          period: 0,
+          period_tur: 0,
+          current: 0,
+          current_tur: 0
         }
+      }
 
-        if (qty.is_pro) {
-          d.quantity.direct_shop.total += quantity
-          d.quantity.direct_shop.dates[date] += quantity
+      if (!cart[qty.order_id]) {
+        cart[qty.order_id] = {
+          total: 0,
+          quantity: 0
         }
+      }
+      cart[qty.order_id].total += qty.total / currencies[qty.currency]
+      cart[qty.order_id].quantity += qty.quantity
 
-        for (const style of qty.styles.split(',')) {
-          if (!d.styles[styles[style]]) {
-            d.styles[styles[style]] = 0
-          }
-          d.styles[styles[style]] += quantity
+      const turnover = qty.item_total / currencies[qty.currency] / (1 + qty.tax_rate)
+
+      if (!d.countries.quantity[qty.user_country]) {
+        d.countries.quantity[qty.user_country] = 0
+        d.countries.turnover[qty.user_country] = 0
+      }
+      d.countries.quantity[qty.user_country] += quantity
+      d.countries.turnover[qty.user_country] += turnover
+
+      p[qty.project_id].period += quantity
+      p[qty.project_id].period_tur += turnover
+
+      if (date === lastDate) {
+        p[qty.project_id].current += quantity
+        p[qty.project_id].current_tur += turnover
+      }
+
+      if (!u[qty.user_id]) {
+        u[qty.user_id] = {
+          id: qty.user_id,
+          name: qty.user_name,
+          country: qty.user_country,
+          period: 0,
+          current: 0,
+          turnover: 0
         }
-
-        if (!p[qty.project_id]) {
-          p[qty.project_id] = {
-            id: qty.project_id,
-            name: qty.name,
-            artist: qty.artist_name,
-            picture: qty.picture,
-            period: 0,
-            period_tur: 0,
-            current: 0,
-            current_tur: 0
-          }
-        }
-
-        if (!cart[qty.order_id]) {
-          cart[qty.order_id] = {
-            total: 0,
-            quantity: 0
-          }
-        }
-        cart[qty.order_id].total += qty.total / currencies[qty.currency]
-        cart[qty.order_id].quantity += qty.quantity
-
-        const turnover = qty.item_total / currencies[qty.currency] / (1 + qty.tax_rate)
-
-        if (!d.countries.quantity[qty.user_country]) {
-          d.countries.quantity[qty.user_country] = 0
-          d.countries.turnover[qty.user_country] = 0
-        }
-        d.countries.quantity[qty.user_country] += quantity
-        d.countries.turnover[qty.user_country] += turnover
-
-        p[qty.project_id].period += quantity
-        p[qty.project_id].period_tur += turnover
-
-        if (date === lastDate) {
-          p[qty.project_id].current += quantity
-          p[qty.project_id].current_tur += turnover
-        }
-
-        if (!u[qty.user_id]) {
-          u[qty.user_id] = {
-            id: qty.user_id,
-            name: qty.user_name,
-            country: qty.user_country,
-            period: 0,
-            current: 0,
-            turnover: 0
-          }
-        }
-        u[qty.user_id].period += quantity
-        u[qty.user_id].turnover += qty.total / currencies[qty.currency] / (1 + qty.tax_rate)
-        if (date === lastDate) {
-          u[qty.user_id].current += quantity
-        }
+      }
+      u[qty.user_id].period += quantity
+      u[qty.user_id].turnover += qty.total / currencies[qty.currency] / (1 + qty.tax_rate)
+      if (date === lastDate) {
+        u[qty.user_id].current += quantity
       }
     }
 
@@ -2294,22 +2311,43 @@ class Stats {
       .slice(0, 20)
 
     for (const stat of statements) {
+      const date = moment(stat.date).format(format)
+      if (stat.storage) {
+        addMarge('storage', null, date, stat.storage / currencies[stat.currency])
+      }
       for (const dis of stat.distributors) {
         dis.name = dis.name.toLowerCase().trim()
 
-        const date = moment(stat.date).format(format)
+        d.quantity.all.total += dis.quantity
+        d.quantity.all.dates[date] += dis.quantity
+
+        d.quantity.total.total += dis.quantity
+        d.quantity.total.dates[date] += dis.quantity
+
         d.quantity.distrib.total += dis.quantity
         d.quantity.distrib.dates[date] += dis.quantity
 
-        d.quantity.returned.total += Math.abs(dis.returned)
-        d.quantity.returned.dates[date] += Math.abs(dis.returned)
+        d.quantity.distrib_returned.total += Math.abs(dis.returned)
+        d.quantity.distrib_returned.dates[date] += Math.abs(dis.returned)
+
+        d.quantity.total.total -= Math.abs(dis.returned)
+        d.quantity.total.dates[date] -= Math.abs(dis.returned)
+
+        d.quantity.refund.total += Math.abs(dis.returned)
+        d.quantity.refund.dates[date] += Math.abs(dis.returned)
 
         if (stat.is_licence) {
           d.quantity.distrib_licence.total += dis.quantity
           d.quantity.distrib_licence.dates[date] += dis.quantity
+
+          d.quantity.licence.total += dis.quantity
+          d.quantity.licence.dates[date] += dis.quantity
         } else {
           d.quantity.distrib_project.total += dis.quantity
           d.quantity.distrib_project.dates[date] += dis.quantity
+
+          d.quantity.project.total += dis.quantity
+          d.quantity.project.dates[date] += dis.quantity
         }
 
         let marge
@@ -2324,9 +2362,6 @@ class Stats {
         d.sent.total.dates[date] += dis.total / currencies[stat.currency]
 
         addMarge('distrib', stat.is_licence ? 'licence' : 'project', date, marge)
-        if (stat.storage) {
-          addMarge('storage', null, date, stat.storage / currencies[stat.currency])
-        }
 
         if (!d.distrib.list[dis.name]) {
           d.distrib.list[dis.name] = {
@@ -2463,17 +2498,19 @@ class Stats {
       const end = moment(prod.date_factory).format(format)
 
       if (prod.factory === 'sna' || prod.factory === 'vdp') {
-        d.productions[`${prod.factory}_start`].total += prod.quantity
-        d.productions[`${prod.factory}_start`].dates[start] += prod.quantity
-
-        d.productions[`${prod.factory}_end`].total += prod.quantity
-        d.productions[`${prod.factory}_end`].dates[end] += prod.quantity
+        if (dates[start] !== undefined) {
+          d.productions[`${prod.factory}_start`].dates[start] += prod.quantity
+        }
+        if (dates[end] !== undefined) {
+          d.productions[`${prod.factory}_end`].dates[end] += prod.quantity
+        }
       }
-      d.productions.total_start.total += prod.quantity
-      d.productions.total_start.dates[start] += prod.quantity
-
-      d.productions.total_end.total += prod.quantity
-      d.productions.total_end.dates[end] += prod.quantity
+      if (dates[start] !== undefined) {
+        d.productions.total_start.dates[start] += prod.quantity
+      }
+      if (dates[end] !== undefined) {
+        d.productions.total_end.dates[end] += prod.quantity
+      }
     }
 
     d.stocks = stocks.sort((a, b) => (a.quantity - b.quantity < 0 ? 1 : -1))
