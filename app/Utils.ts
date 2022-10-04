@@ -347,7 +347,7 @@ class Utils {
       }
     }
 
-    const res = {}
+    const res: any = {}
     res.count = await query.count()
 
     const page = params.page > 0 ? params.page : 1
@@ -384,7 +384,7 @@ class Utils {
     const id = Math.random().toString(36).substr(2, 9)
     if (!table) return id
     else {
-      const found = await DB(table).find('id', id)
+      const found = await DB(table).find(id)
       if (!found) return id
       else return Utils.id(table)
     }
@@ -418,7 +418,7 @@ class Utils {
     }
 
     const getColumns = (charA, charZ) => {
-      const a = []
+      const a: any[] = []
       let i = Utils.letterToColumn(splitColumn(charA).c)
       const j = Utils.letterToColumn(splitColumn(charZ).c)
 
@@ -442,7 +442,7 @@ class Utils {
       const columns = getColumns(cells[0], cells[1])
       const rows = getRows(cells[0], cells[1])
 
-      const range = []
+      const range: any[] = []
       for (let i = 0; i < columns.length; i++) {
         for (let j = 0; j < rows.length; j++) {
           range.push(`${columns[i]}${rows[j]}`)
@@ -475,7 +475,7 @@ class Utils {
   }
 
   static currencies = async () => {
-    const data = await Utils.request(
+    const data: any = await Utils.request(
       `http://data.fixer.io/api/latest?access_key=${config.fixer.api_key}`,
       {
         json: true
@@ -545,7 +545,7 @@ class Utils {
       currencies = await DB('currency').all()
     }
     **/
-    const res = {}
+    const res: any = {}
     for (const currency of currencies) {
       res[currency.id] = currency.value
     }
@@ -582,7 +582,7 @@ class Utils {
       {
         json: true
       }
-    ).then((res) => {
+    ).then((res: any) => {
       return res.rates
     })
   }
@@ -605,7 +605,7 @@ class Utils {
   static genetateAlphanumeric = (length = 10) => {
     return Array(length)
       .fill(0)
-      .map((x) => Math.random().toString(36).charAt(2))
+      .map(() => Math.random().toString(36).charAt(2))
       .join('')
   }
 
@@ -985,7 +985,7 @@ class Utils {
 
     const columns = lines[0].split(',')
 
-    const data = []
+    const data: any[] = []
     for (let i = 1; i < lines.length; i++) {
       const value = {}
       const values = lines[i].split(/,(?=(?:[^\"]*\"[^\"]*\")*(?![^\"]*\"))/)
@@ -1003,7 +1003,7 @@ class Utils {
 
   static upload = async (params) => {
     if (!params.uploadId) {
-      const res = await Storage.createMultipartUpload({
+      const res: any = await Storage.createMultipartUpload({
         fileName: params.fileName,
         isPrivate: params.isPrivate
       })
@@ -1014,7 +1014,7 @@ class Utils {
     }
 
     if (!params.files) {
-      const part = await Storage.uploadPart({
+      const part: any = await Storage.uploadPart({
         fileName: params.fileName,
         fileContent: Buffer.from(params.data, 'base64'),
         partNumber: params.i,

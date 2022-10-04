@@ -15,7 +15,7 @@ class Shop {
   }
 
   static async find(params) {
-    let shop = DB('shop').select('shop.*')
+    let shop: any = DB('shop').select('shop.*')
 
     if (params.code) {
       shop.where('code', params.code)
@@ -41,7 +41,7 @@ class Shop {
   }
 
   static async update(params) {
-    let item = DB('shop')
+    let item: any = DB('shop')
 
     const code = params.code ? params.code : Utils.slugify(params.name)
     const codeUsed = await DB('shop').where('code', code).where('id', '!=', params.id).first()
