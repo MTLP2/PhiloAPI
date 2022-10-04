@@ -53,7 +53,7 @@ class Whiplash {
   static validOrder = async (shop, items) => {
     const customer = await DB('customer').find(shop.customer_id)
 
-    const params = {
+    const params: any = {
       shipping_name: `${customer.firstname} ${customer.lastname}`,
       shipping_address_1: customer.address,
       shipping_city: customer.city,
@@ -62,7 +62,7 @@ class Whiplash {
       shipping_zip: customer.zip_code,
       shipping_phone: customer.phone,
       email: shop.email,
-      shop_shipping_method_text: Whiplash.getShippingMethod(customer.id, shop.shipping_type),
+      shop_shipping_method_text: Whiplash.getShippingMethod(),
       order_items: []
     }
 
@@ -95,7 +95,7 @@ class Whiplash {
       }
     }
 
-    const order = await Whiplash.saveOrder(params)
+    const order: any = await Whiplash.saveOrder(params)
 
     await DB('order_shop').where('id', shop.id).update({
       step: 'in_preparation',
@@ -133,22 +133,7 @@ class Whiplash {
     })
   }
 
-  static getShippingMethod = (countryId, type) => {
-    /**
-  const listUe = ['DE', 'AT', 'BE', 'BG', 'CY', 'HR', 'DK', 'ES', 'EE',
-    'FI', 'FR', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU',
-    'MT', 'NL', 'PL', 'PT', 'CZ', 'RO', 'GB', 'SK', 'SI', 'SE']
-  let shipping = ''
-  if (type === 'tracking') {
-    if (countryId === 'GB') {
-      shipping = ''
-    } else if (listUe.indexOf(countryId) !== -1) {
-      shipping = 'DPDUK Parcel Dpd Classic'
-    } else {
-      shipping = 'Whiplash Cheapest Tracked'
-    }
-  }
-  **/
+  static getShippingMethod = () => {
     return 'Whiplash Cheapest Tracked'
   }
 
@@ -193,7 +178,7 @@ class Whiplash {
       AND OI.order_shop_id = OS.id
   `
     const res = await DB().execute(query)
-    const orders = {}
+    const orders: any = {}
     for (const order of res) {
       if (!orders[order.id]) {
         orders[order.id] = {
@@ -204,7 +189,8 @@ class Whiplash {
       orders[order.id].items.push(order)
     }
 
-    for (const order of Object.values(orders)) {
+    const ordersArray: any = Object.values(orders)
+    for (const order of ordersArray) {
       for (const item of order.items) {
         const sizes = item.sizes ? JSON.parse(item.sizes) : null
         const bb = (item.item_barcode || item.barcode).split(',')
@@ -229,14 +215,14 @@ class Whiplash {
     }
 
     let count = 0
-    for (const order of Object.values(orders)) {
+    for (const order of ordersArray) {
       if (count + order.quantity > params.quantity) {
         break
       }
 
       if (order.transporter === params.type && !order.logistician_id) {
         count += order.quantity
-        const params = {
+        const params: any = {
           shipping_name: `${order.firstname} ${order.lastname}`,
           shipping_address_1: order.address,
           shipping_city: order.city,
@@ -245,7 +231,7 @@ class Whiplash {
           shipping_zip: order.zip_code,
           shipping_phone: order.phone,
           email: order.email,
-          shop_shipping_method_text: Whiplash.getShippingMethod(order.id, order.shipping_type),
+          shop_shipping_method_text: Whiplash.getShippingMethod(),
           order_items: []
         }
         for (const item of order.items) {
@@ -268,7 +254,7 @@ class Whiplash {
           continue
         }
 
-        const whiplash = await Whiplash.saveOrder(params)
+        const whiplash: any = await Whiplash.saveOrder(params)
         await DB('order_shop').where('id', order.order_shop_id).update({
           step: 'in_preparation',
           date_export: Utils.date(),
@@ -345,7 +331,7 @@ class Whiplash {
     const currenciesUSD = Utils.getCurrencies('USD', currenciesDb)
     const currenciesGBP = Utils.getCurrencies('GBP', currenciesDb)
 
-    const costs = []
+    const costs: any[] = []
     const total = {
       profits: 0,
       costs: 0,
@@ -353,7 +339,7 @@ class Whiplash {
     }
     Promise.all(
       shops.map(async (shop) => {
-        const order = await Whiplash.getOrder(shop.logistician_id)
+        const order: any = await Whiplash.getOrder(shop.logistician_id)
         const currencies = shop.transporter === 'whiplash_uk' ? currenciesGBP : currenciesUSD
 
         const packings = {
@@ -389,7 +375,7 @@ class Whiplash {
           **/
             }
           } else {
-            const cost = {
+            const cost: any = {
               order_id: shop.order_id,
               order_shop_id: shop.id,
               logistician_id: shop.logistician_id,
@@ -422,7 +408,7 @@ class Whiplash {
           }
         }
       })
-    ).then(async (res) => {
+    ).then(async () => {
       console.log(costs)
       if (costs.length === 0) {
         return { success: false }
@@ -509,7 +495,7 @@ class Whiplash {
     for (const shop of shops) {
       // shop.logistician_id = 22888898
       // console.log(shop.logistician_id)
-      const order = await Whiplash.getOrder(shop.logistician_id)
+      const order: any = await Whiplash.getOrder(shop.logistician_id)
       console.log(shop.id, shop.logistician_id, order.status_name, order.approximate_delivery_date)
       /**
     await DB('order_shop')
@@ -553,7 +539,7 @@ class Whiplash {
       csv += `"${order.state}",`
       csv += `"${order.zip_code}",`
       csv += `"${order.country_id}",`
-      csv += `"${Whiplash.getShippingMethod(order.country_id, order.shipping_type)}",`
+      csv += `"${Whiplash.getShippingMethod()}",`
       csv += `"${order.phone}",`
       csv += `"${order.email}",`
       csv += `"${project.barcode}",`
@@ -563,8 +549,8 @@ class Whiplash {
     return csv
   }
 
-  static syncStocks = async (params) => {
-    const projects = await DB('vod')
+  static syncStocks = async () => {
+    const projects: any = await DB('vod')
       .select(
         'vod.project_id',
         'whiplash_stock',
@@ -573,7 +559,7 @@ class Whiplash {
         'stock_uk.quantity as stock_whiplash_uk'
       )
       .whereNotNull('barcode')
-      .where((query) => {
+      .where((query: any) => {
         query
           .whereRaw('JSON_EXTRACT(transporters, "$.whiplash") = true')
           .orWhereRaw('JSON_EXTRACT(transporters, "$.whiplash_uk") = true')
@@ -597,12 +583,12 @@ class Whiplash {
         whiplash_stock: Utils.date()
       })
 
-      const res = await Whiplash.api(`items/sku/${project.barcode}`)
+      const res: any = await Whiplash.api(`items/sku/${project.barcode}`)
 
       if (!res[0]) {
         continue
       }
-      const warehouses = await Whiplash.api(`items/${res[0].id}/warehouse_quantities`)
+      const warehouses: any = await Whiplash.api(`items/${res[0].id}/warehouse_quantities`)
 
       let us = 0
       let uk = 0
@@ -650,7 +636,7 @@ class Whiplash {
   }
 
   static setCost = async (buffer, force = false) => {
-    const lines = Utils.csvToArray(buffer)
+    const lines: any = Utils.csvToArray(buffer)
     const date = lines[0].transaction_date.substring(0, 10)
     let currencies
 
@@ -671,7 +657,7 @@ class Whiplash {
 
     shops = await shops.all()
 
-    const dispatchs = []
+    const dispatchs: any[] = []
     for (const dispatch of lines) {
       if (dispatch.creator_id) {
         const shop = shops.find((s) => {
@@ -708,8 +694,8 @@ class Whiplash {
     await workbook.xlsx.readFile('../shipping_uk.xlsx')
     const worksheet = workbook.getWorksheet(1)
 
-    const data = []
-    worksheet.eachRow((row, rowNumber) => {
+    const data: any = []
+    worksheet.eachRow((row) => {
       const country = row.getCell('H').value
       if (country) {
         const d = {
