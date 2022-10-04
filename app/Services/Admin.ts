@@ -1422,9 +1422,7 @@ class Admin {
       return { success: false }
     }
 
-    await Elogik.sync(dispatchs)
-
-    return { success: true }
+    const res = await Elogik.sync(dispatchs)
 
     if (qty > 0) {
       await DB('project_export').insert({
@@ -1443,7 +1441,7 @@ class Admin {
       })
     }
 
-    return qty
+    return res
   }
 
   static syncProjectDaudin = async (params) => {
