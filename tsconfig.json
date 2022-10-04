@@ -11,6 +11,11 @@
       "App/*": ["./app/*"],
       "Config/*": ["./config/*"]
     },
-    "types": ["@adonisjs/core", "@japa/preset-adonis/build/adonis-typings"]
+    "types": [
+      "@adonisjs/core",
+      "@adonisjs/i18n",
+      "@adonisjs/view",
+      "@japa/preset-adonis/build/adonis-typings"
+    ]
   }
 }
