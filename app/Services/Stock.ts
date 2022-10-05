@@ -495,8 +495,13 @@ class Stock {
         refs[i].costs += cost.cost_real || 0
       }
       refs[i].costs = Utils.round(refs[i].costs, 2)
-      refs[i].unit_cost = Utils.round(refs[i].costs / refs[i].quantity, 2)
-      refs[i].price_stock = Utils.round(refs[i].stock * refs[i].unit_cost, 2)
+
+      refs[i].unit_cost = ''
+      refs[i].price_stock = ''
+      if (refs[i].costs && refs[i].quantity) {
+        refs[i].unit_cost = Utils.round(refs[i].costs / refs[i].quantity, 2)
+        refs[i].price_stock = Utils.round(refs[i].stock * refs[i].unit_cost, 2)
+      }
 
       refs[i].production = undefined
       refs[i].production_cost = undefined
