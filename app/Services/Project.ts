@@ -352,7 +352,7 @@ class Project {
       projects.join('shop_project', 'shop_project.project_id', 'p.id')
       projects.where('shop_project.shop_id', params.shop_id)
       if (!params.all_project) {
-        projects.whereIn('v.step', ['in_progress', 'coming_soon', 'successful'])
+        projects.whereIn('v.step', ['in_progress', 'coming_soon', 'successful', 'promo'])
       }
     }
 
@@ -569,7 +569,7 @@ class Project {
       })
     }
     if (type === 'shop') {
-      projects.whereIn('v.step', ['in_progress', 'successful'])
+      projects.whereIn('v.step', ['in_progress', 'successful', 'promo'])
     }
     if (userId) {
       projects.where('v.user_id', userId)
