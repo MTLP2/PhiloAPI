@@ -1,14 +1,17 @@
 import Shop from 'App/Services/Shop'
 import ApiError from 'App/ApiError'
 import Utils from 'App/Utils'
+import { validator, schema } from '@ioc:Adonis/Core/Validator'
 
 class ShopController {
   find({ params }) {
     return Shop.find({ code: params.id })
   }
 
-  getMyShop({ params, user }) {
-    params.user_id = user.id
+  async getShop({ params, user }) {
+    if (params.id && !(await Shop.canEdit(params.id, user.id))) {
+      throw new ApiError(403)
+    }
     return Shop.find(params)
   }
 
@@ -47,6 +50,19 @@ class ShopController {
       throw new ApiError(403)
     }
     return Shop.removeProject(params)
+  }
+
+  async checkCode({ request }) {
+    const payload = await validator.validate({
+      schema: schema.create({
+        code: schema.string()
+      }),
+      data: request.body()
+    })
+
+    console.log(payload)
+
+    return Shop.checkCode(payload.code)
   }
 }
 

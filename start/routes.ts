@@ -193,8 +193,9 @@ Route.group(() => {
   )
 
   Route.get('/shops', 'ShopController.getShops')
-  Route.get('/shop', 'ShopController.getMyShop')
+  Route.get('/shop', 'ShopController.getShop')
   Route.post('/shop', 'ShopController.updateShop')
+  Route.post('/shop/code', 'ShopController.checkCode')
   Route.post('/shop/project', 'ShopController.addProject')
   Route.delete('/shop/project', 'ShopController.removeProject')
   Route.delete('/shop/image', 'ShopController.removeShopImage')
