@@ -459,10 +459,11 @@ export default class Pass {
     // ! UGLY - TO REWRITE
     // Calculate ratio for top % of users
     for (const pass of passes) {
-      const currentLevel = levels.find((l) => l.id === pass.level_id).level
+      const currentLevel = levels.find((l) => l.id === pass.level_id)?.level ?? 1
       const levelsPassed = levels.filter((l) => l.level <= currentLevel)
       for (const level of levelsPassed) {
-        const levelToIncrement = levels.find((l) => l.id === level.id).id
+        const levelToIncrement = levels.find((l) => l.id === level.id)?.id
+        if (!levelToIncrement) continue
         for (const level of levels) {
           if (level.id === levelToIncrement) {
             level.passes = (level.passes || 0) + 1
