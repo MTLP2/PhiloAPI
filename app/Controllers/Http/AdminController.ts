@@ -160,6 +160,10 @@ class AdminController {
     return Stock.getAll(params)
   }
 
+  async exportStocksPrices() {
+    return Stock.exportStocksPrices()
+  }
+
   async uploadTracks({ params }) {
     return Utils.upload({
       ...params,

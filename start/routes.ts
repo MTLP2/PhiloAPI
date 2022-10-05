@@ -463,6 +463,7 @@ Route.group(() => {
   Route.post('/contests/:id/extract', 'ContestController.extract')
   Route.get('/shipping-costs', 'AdminController.getShippingCosts')
   Route.get('/stocks', 'AdminController.getStocks')
+  Route.get('/stocks/price', 'AdminController.exportStocksPrices')
   Route.get('/elogik/stock', 'ElogikController.getStock')
   Route.get('/elogik/orders', 'ElogikController.getOrders')
 

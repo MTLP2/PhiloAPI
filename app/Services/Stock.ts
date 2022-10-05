@@ -74,10 +74,22 @@ class Stock {
     }
   }
 
-  static async calcul({ id, isShop, quantity, transporter, recursive = true }) {
+  static async calcul({
+    id,
+    isShop = false,
+    quantity,
+    transporter,
+    recursive = true
+  }: {
+    id: number
+    isShop?: boolean
+    quantity?: number
+    transporter?: string
+    recursive?: boolean
+  }) {
     const p = await DB('vod').where('project_id', id).first()
 
-    const stock = await Stock.getProject(id)
+    const stock: any = await Stock.getProject(id)
 
     const count = await DB('order_item')
       .select(DB.raw('sum(quantity) as total'))
@@ -92,7 +104,7 @@ class Stock {
       p.updated_at = Utils.date()
     }
 
-    if (isShop) {
+    if (isShop && transporter && quantity) {
       stock[transporter] = stock[transporter] - quantity
       Stock.save({
         project_id: id,
@@ -136,7 +148,7 @@ class Stock {
         if (isShop) {
           for (const p of projects) {
             await Stock.calcul({
-              id: id,
+              id: p.project_id,
               quantity: quantity,
               isShop: isShop,
               transporter: transporter,
@@ -271,7 +283,7 @@ class Stock {
         updated_at: Utils.date()
       })
 
-      const exports = []
+      const exports: any[] = []
       if (v.daudin_export) {
         exports.push({ type: 'daudin', date: v.daudin_export })
       }
@@ -299,7 +311,7 @@ class Stock {
       .all()
 
     for (const v of vod) {
-      const exp = []
+      const exp: any[] = []
       if (v.daudin_export) {
         exp.push({ type: 'daudin', date: v.daudin_export })
       }
@@ -308,7 +320,7 @@ class Stock {
       }
 
       exp.sort(function (a, b) {
-        return new Date(a.date) - new Date(b.date)
+        return a.date - b.date
       })
 
       if (exp.length > 0) {
@@ -328,11 +340,11 @@ class Stock {
     const workbook = new Excel.Workbook()
     await workbook.xlsx.load(file)
 
-    const stocks = []
+    const stocks: any[] = []
     const worksheet = workbook.getWorksheet(1)
 
     worksheet.eachRow((row) => {
-      const stock = {}
+      const stock: any = {}
       stock.barcode = row.getCell(params.barcode).text
       stock.quantity = row.getCell(params.quantity).text
 
@@ -411,7 +423,7 @@ class Stock {
     return { success: true }
   }
 
-  static async fixBundle(params) {
+  static async fixBundle() {
     const vod = await DB('vod')
       .select('project_id', 'count_bundle', 'barcode')
       .where('count_bundle', '!=', 0)
@@ -450,6 +462,62 @@ class Stock {
       .all()
 
     return stocks
+  }
+
+  static async exportStocksPrices() {
+    const stockQuery = DB('stock')
+      .select(DB.raw('sum(stock.quantity)'))
+      .whereRaw('project_id = project.id')
+      .as('stock')
+      .query()
+
+    const refs = await DB('project')
+      .select('project.id', 'project.name', 'project.artist_name', 'vod.barcode', stockQuery)
+      .join('vod', 'vod.project_id', 'project.id')
+      .hasMany('production')
+      .hasMany('production_cost')
+      .whereExists(
+        DB('stock')
+          .select('stock.id')
+          .whereRaw('project_id = project.id')
+          .where('quantity', '>', 0)
+          .query()
+      )
+      .all()
+
+    for (const i in refs) {
+      refs[i].quantity = 0
+      refs[i].costs = 0
+      for (const prod of refs[i].production) {
+        refs[i].quantity += prod.quantity_pressed || 0
+      }
+      for (const cost of refs[i].production_cost) {
+        refs[i].costs += cost.cost_real || 0
+      }
+      refs[i].costs = Utils.round(refs[i].costs, 2)
+      refs[i].unit_cost = Utils.round(refs[i].costs / refs[i].quantity, 2)
+      refs[i].price_stock = Utils.round(refs[i].stock * refs[i].unit_cost, 2)
+
+      refs[i].production = undefined
+      refs[i].production_cost = undefined
+    }
+
+    return Utils.arrayToCsv(
+      [
+        { name: 'ID', index: 'id' },
+        { name: 'Barcode', index: 'barcode' },
+        { name: 'Artist', index: 'artist_name' },
+        { name: 'Title', index: 'name' },
+        { name: 'Stock', index: 'stock' },
+        { name: 'Quantity pressed', index: 'quantity' },
+        { name: 'Costs', index: 'costs' },
+        { name: 'Unit cost', index: 'unit_cost' },
+        { name: 'Price stock', index: 'price_stock' }
+      ],
+      refs
+    )
+
+    return refs
   }
 }
 
