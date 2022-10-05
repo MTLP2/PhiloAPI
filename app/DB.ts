@@ -291,7 +291,7 @@ const DB = (tablee?, idd?) => {
       return db
     },
 
-    orWhere(arg1, arg2, arg3) {
+    orWhere(arg1, arg2?, arg3?) {
       if (typeof arg1 === 'function' || typeof arg1 === 'object') {
         p.query.orWhere(arg1)
         p.where.push(arg1)
@@ -372,6 +372,11 @@ const DB = (tablee?, idd?) => {
 
     offset(arg1) {
       p.query.offset(arg1)
+      return db
+    },
+
+    as(arg1) {
+      p.query.as(arg1)
       return db
     },
 
