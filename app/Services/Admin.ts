@@ -1829,7 +1829,8 @@ class Admin {
         'project.slug',
         'item.name as item',
         'item.picture as item_picture',
-        'vod.barcode'
+        'vod.barcode',
+        'vod.type'
       )
       .where('order_id', id)
       .join('project', 'project.id', 'order_item.project_id')
