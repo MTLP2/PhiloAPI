@@ -119,6 +119,20 @@ interface UserGift extends Gift {
   claimed_date: string
 }
 
+type Quest = {
+  id: number
+  points: number
+  type: string
+  is_active: TinyIntBool
+  is_infinite: TinyIntBool
+  title_fr: string
+  title_en: string
+  description_fr: string
+  description_en: string
+  user_repeated: number
+  count_repeatable: number
+}
+
 export default class Pass {
   static async getUserPass(params: { userId: number }) {
     // Aggregate all quests for user
@@ -308,16 +322,32 @@ export default class Pass {
     userId,
     refId
   }: {
-    type: string
+    type: string | Array<string>
     userId: number
     refId: number
   }) {
     const quests = await Pass.findQuest({ type, userId })
-    const res: { id: number; success?: true; error?: string }[] = []
+
+    // If no quests is returned at all
+    if (!Array.isArray(quests)) throw new Error(quests.error || 'No quest found')
+
+    const res: {
+      pass_success: number
+      pass_error: number
+      data: {
+        id: number
+        success?: Pick<Quest, 'id' | 'title_en' | 'title_fr' | 'points'>
+        error?: string
+      }[]
+    } = {
+      pass_success: 0,
+      pass_error: 0,
+      data: []
+    }
 
     for (const quest of quests) {
       try {
-        if (quest.error || !quest.is_active) throw new Error(quest.error || 'Quest is not active')
+        if (!quest.is_active) throw new Error('Quest is not active')
 
         // Checking if user has already completed more or = the max amount of time a quest can be repeataed, and that this quest is not infinite, or if quest with same refId has been done. Returns error if so
         const history: History[] = await DB('pass_history')
@@ -337,9 +367,19 @@ export default class Pass {
           created_at: new Date()
         })
 
-        res.push({ id: quest.id, success: true })
+        res.data.push({
+          id: quest.id,
+          success: {
+            id: quest.id,
+            title_fr: quest.title_fr,
+            title_en: quest.title_en,
+            points: quest.points
+          }
+        })
+        res.pass_success++
       } catch (err) {
-        res.push({ id: quest.id, error: err.message })
+        res.data.push({ id: quest.id, error: err.message })
+        res.pass_error++
       }
     }
 
@@ -349,7 +389,7 @@ export default class Pass {
     return res
   }
 
-  static findQuest = async ({ type, userId }: { type: string; userId: number }) => {
+  static findQuest = async ({ type, userId }: { type: string | Array<string>; userId: number }) => {
     const singleType = typeof type === 'string'
     const query = DB('pass_quest').select(
       'pass_quest.*',
@@ -361,8 +401,8 @@ export default class Pass {
     if (singleType) query.where('type', type)
     else query.whereIn('type', type)
 
-    const quest = await query.all()
-    if (!quest) return { error: 'Quest not found' }
+    const quest: Quest[] = await query.all()
+    if (!quest) return { error: 'Quest(s) not found' }
 
     return quest
   }

@@ -290,7 +290,7 @@ class Utils {
     query: any
     filters?: any
     page?: number
-    size?: number | undefined
+    size?: number
     sort?: any
     order?: any
   }) => Promise<{
@@ -357,8 +357,8 @@ class Utils {
       }
     }
 
-    const page = params.page > 0 ? params.page : 1
-    const size = params.size > 0 ? params.size : 50
+    const page = params.page && params.page > 0 ? params.page : 1
+    const size = params.size && params.size > 0 ? params.size : 50
 
     if (params.sort && params.sort !== 'false') {
       const sorts = params.sort.split(' ')
@@ -393,7 +393,7 @@ class Utils {
     const id = Math.random().toString(36).substr(2, 9)
     if (!table) return id
     else {
-      const found = await DB(table).find('id', id)
+      const found = await DB(table).find(id)
       if (!found) return id
       else return Utils.id(table)
     }

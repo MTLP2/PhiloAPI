@@ -939,13 +939,6 @@ class Project {
       .where('project_id', projectId)
       .first()
 
-    // Adding pass history
-    await Pass.addHistory({
-      userId,
-      type: 'user_like',
-      refId: projectId
-    })
-
     await DB('project')
       .where({
         id: projectId
@@ -954,7 +947,14 @@ class Project {
         likes: likes.count
       })
 
-    return 1
+    // Adding pass history
+    const passRes = await Pass.addHistory({
+      userId,
+      type: 'user_like',
+      refId: projectId
+    })
+
+    return { result: 1, passRes }
   }
 
   static wish = async (projectId, userId) => {
