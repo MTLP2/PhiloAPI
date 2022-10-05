@@ -4,12 +4,12 @@ import moment from 'moment'
 
 class Stats {
   static async getStats(params) {
-    const names = []
-    const promises = []
+    const names: string[] = []
+    const promises: any[] = []
     let query
     let format
 
-    const dates = []
+    const dates: any[] = []
     const dateStart = moment(params.start)
     const dateEnd = moment(params.end)
 
@@ -300,8 +300,8 @@ class Stats {
     const currencies = Utils.getCurrencies('EUR', currenciesDb)
 
     return Promise.all(promises).then(async (d) => {
-      const data = {}
-      const res = {}
+      const data: any = {}
+      const res: any = {}
 
       for (const i in d) {
         data[names[i]] = d[i]
@@ -581,7 +581,7 @@ class Stats {
             quantity.distrib[s.date] += parseInt(d.quantity)
             quantity.returned[s.date] += parseInt(d.returned)
             turnover.distrib[s.date] = Utils.round(
-              turnover.distrib[s.date] + parseFloat(d.total / currencies[s.currency])
+              turnover.distrib[s.date] + d.total / currencies[s.currency]
             )
 
             let value
@@ -643,7 +643,7 @@ class Stats {
         )
         .whereIn(
           'project.id',
-          Object.values(res.pp).map((p) => p.project_id)
+          Object.values(res.pp).map((p: any) => p.project_id)
         )
         .join('vod', 'vod.project_id', 'project.id')
         .join('user', 'user.id', 'vod.user_id')
@@ -655,7 +655,7 @@ class Stats {
       }
 
       res.tt = []
-      for (const pp of Object.values(res.pp)) {
+      for (const pp of <any>Object.values(res.pp)) {
         pp.project = ppp[pp.project_id]
 
         pp.site.turnover = Utils.round(pp.site.turnover)
@@ -1607,6 +1607,8 @@ class Stats {
     }
 
     const d = {
+      stocks: {},
+      total: {},
       cart: {
         avg_total: 0,
         avg_quantity: 0
@@ -1620,8 +1622,13 @@ class Stats {
         vdp_end: { total: 0, dates: { ...dates } }
       },
       orders: {
-        users: {},
-        projects: {}
+        users: {
+          period: {}
+        },
+        projects: {
+          period: {},
+          current: {}
+        }
       },
       countries: {
         quantity: {},
@@ -1633,7 +1640,7 @@ class Stats {
         success: { total: 0, dates: { ...dates } }
       },
       styles: {},
-      distrib: { list: {}, projects: {} },
+      distrib: { list: {}, projects: {}, total: {} },
       outstanding: 0,
       outstanding_delayed: 0,
       users: {
@@ -2288,26 +2295,26 @@ class Stats {
     }
 
     d.cart.avg_total =
-      Object.values(cart).reduce((prev: number, cur: number) => prev + cur.total, 0) /
+      <number>Object.values(cart).reduce((prev: number, cur: any) => prev + cur.total, 0) /
       Object.values(cart).length
 
     d.cart.avg_quantity =
-      Object.values(cart).reduce((prev: number, cur: number) => prev + cur.quantity, 0) /
+      <number>Object.values(cart).reduce((prev: number, cur: any) => prev + cur.quantity, 0) /
       Object.values(cart).length
 
     d.orders.projects.current = Object.values(p)
-      .filter((a) => a.current > 0)
-      .sort((a, b) => (a.current - b.current < 0 ? 1 : -1))
+      .filter((a: any) => a.current > 0)
+      .sort((a: any, b: any) => (a.current - b.current < 0 ? 1 : -1))
       .slice(0, 20)
 
     d.orders.projects.period = Object.values(p)
-      .filter((a) => a.period > 0)
-      .sort((a, b) => (a.period - b.period < 0 ? 1 : -1))
+      .filter((a: any) => a.period > 0)
+      .sort((a: any, b: any) => (a.period - b.period < 0 ? 1 : -1))
       .slice(0, 20)
 
     d.orders.users.period = Object.values(u)
-      .filter((a) => a.period > 0)
-      .sort((a, b) => (a.period - b.period < 0 ? 1 : -1))
+      .filter((a: any) => a.period > 0)
+      .sort((a: any, b: any) => (a.period - b.period < 0 ? 1 : -1))
       .slice(0, 20)
 
     for (const stat of statements) {
@@ -2397,11 +2404,11 @@ class Stats {
     }
 
     for (const p of Object.keys(d.distrib.list)) {
-      d.distrib.list[p].projects = Object.values(d.distrib.list[p].projects).sort((a, b) =>
-        a.quantity - b.quantity < 0 ? 1 : -1
+      d.distrib.list[p].projects = Object.values(d.distrib.list[p].projects).sort(
+        (a: any, b: any) => (a.quantity - b.quantity < 0 ? 1 : -1)
       )
     }
-    d.distrib.projects = Object.values(d.distrib.projects).sort((a, b) =>
+    d.distrib.projects = Object.values(d.distrib.projects).sort((a: any, b: any) =>
       a.quantity - b.quantity < 0 ? 1 : -1
     )
     d.distrib.total = Object.keys(d.distrib.list)
@@ -2517,19 +2524,34 @@ class Stats {
 
     d.countries.turnover = Object.entries(d.countries.turnover)
       .map(([country, value]) => ({ country: country, value: value }))
-      .sort((a, b) => (a.value - b.value < 0 ? 1 : -1))
+      .sort((a: any, b: any) => (a.value - b.value < 0 ? 1 : -1))
 
     d.countries.users = Object.entries(d.countries.users)
       .map(([country, value]) => ({ country: country, value: value }))
-      .sort((a, b) => (a.value - b.value < 0 ? 1 : -1))
+      .sort((a: any, b: any) => (a.value - b.value < 0 ? 1 : -1))
 
     d.countries.quantity = Object.entries(d.countries.quantity)
       .map(([country, value]) => ({ country: country, value: value }))
-      .sort((a, b) => (a.value - b.value < 0 ? 1 : -1))
+      .sort((a: any, b: any) => (a.value - b.value < 0 ? 1 : -1))
 
     d.styles = Object.entries(d.styles)
       .map(([id, value]) => ({ name: id, value: value }))
-      .sort((a, b) => (a.value - b.value < 0 ? 1 : -1))
+      .sort((a: any, b: any) => (a.value - b.value < 0 ? 1 : -1))
+
+    const date = Object.keys(dates)[0]
+
+    const total = d.turnover.total.dates[date]
+    let toto = 0
+    toto += d.turnover.direct_pressing.total.dates[date]
+    toto += d.turnover.box.total.dates[date]
+    toto += d.turnover.direct_shop.total.dates[date]
+    toto += d.turnover.distrib.total.dates[date]
+    toto += d.turnover.licence.total.dates[date]
+    toto += d.turnover.other.dates[date]
+    toto += d.turnover.project.total.dates[date]
+    toto += d.turnover.shipping.total.dates[date]
+    toto += d.turnover.error.dates[date]
+    console.log(total, toto)
 
     return d
   }
