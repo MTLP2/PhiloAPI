@@ -512,7 +512,7 @@ export default class Pass {
 
   static updateBadgeQuests = async ({ questIds, badgeId }) => {
     // Loop through all quests and update their badge, then delete quests from params to update
-    const promises = []
+    const promises: Array<any> = []
     for (const id of questIds) {
       promises.push(DB('pass_quest').where('id', id).update('badge_id', badgeId))
     }
