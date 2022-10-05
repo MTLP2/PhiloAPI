@@ -1,13 +1,10 @@
-import App from 'App/Services/App'
-import Utils from 'App/Utils'
 class TestController {
-  async test({ params, response }) {
+  async test() {
     if (process.env.NODE_ENV === 'production') {
       return 'test'
     }
 
-    return Utils.uuid()
-    throw Error('Coucou toi')
+    return 'ok'
   }
 }
 
