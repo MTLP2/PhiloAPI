@@ -465,6 +465,7 @@ Route.group(() => {
   Route.get('/stocks', 'AdminController.getStocks')
   Route.get('/elogik/stock', 'ElogikController.getStock')
   Route.get('/elogik/orders', 'ElogikController.getOrders')
+  Route.post('/deepl-translate', 'AdminController.deeplTranslate')
 
   Route.group(() => {
     Route.get('/', 'AdminController.getPassCulture')
