@@ -1,7 +1,15 @@
-import { Knex, knex } from 'knex'
+import { Knex as KnexOriginal, knex } from 'knex'
 import Env from '@ioc:Adonis/Core/Env'
 
-const config: Knex.Config = {
+declare module 'knex' {
+  namespace Knex {
+    interface QueryBuilder {
+      all(): any[]
+    }
+  }
+}
+
+const config: KnexOriginal.Config = {
   client: 'mysql',
   connection: {
     host: Env.get('DB_HOST', 'localhost'),
@@ -17,6 +25,60 @@ const config: Knex.Config = {
 
 const knexInstance = knex(config)
 
+/**
+knex.QueryBuilder.extend('all', function () {
+  const error = new Error()
+  return this.catch((err) => {
+    error.message = err.message
+    throw error
+  })
+})
+
+knex.QueryBuilder.extend('one', function () {
+  const error = new Error()
+  return this.first().catch((err) => {
+    error.message = err.message
+    throw error
+  })
+})
+**/
+
+const db = knexInstance
+
+const proxy = new Proxy(db, {
+  apply: function (t, thisArg, argumentsList) {
+    const instance = t(...argumentsList)
+
+    const tata = new Proxy(instance, {
+      get(target, name: string) {
+        console.log(name)
+        if (name === 'then') {
+          return target
+        } else if (target[name]) {
+          return (...args) => {
+            if (name === 'all') {
+            } else {
+              target[name](...args)
+            }
+            return tata
+          }
+        } else {
+          return target
+          console.log('x => ', name)
+        }
+      }
+    })
+    return tata
+    // target =  target(...argumentsList)
+  }
+})
+
+// DB.query = knexInstance
+// DB.raw = (...args: any[]) => knexInstance.raw(...args)
+
+export default proxy
+
+/**
 interface Props extends Knex.QueryInterface {
   data: { [key: string]: string }
   get: (name: string) => string
@@ -99,16 +161,6 @@ const DB = (table: string) => {
       props.data = { ...res }
       return proxy
     }
-    /**
-    where: (...args: any[]) => {
-      p.query.where(...args)
-      return proxy
-    },
-    limit: (...args: any[]) => {
-      p.query.limit(...args)
-      return proxy
-    }
-    **/
   }
 
   const proxy = new Proxy(props, {
@@ -140,3 +192,4 @@ DB.query = knexInstance
 DB.raw = (...args: any[]) => knexInstance.raw(...args)
 
 export default DB
+**/
