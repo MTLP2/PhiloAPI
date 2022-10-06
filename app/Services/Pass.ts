@@ -329,7 +329,7 @@ export default class Pass {
   }
 
   static async putHistory(params: Pick<History, 'id' | 'user_id' | 'quest_id' | 'ref_id'>) {
-    params.ref_id = params.ref_id
+    params.ref_id = params.ref_id ? +params.ref_id : undefined
     // Create new history if no id is provided
     if (!params.id) return Pass.saveHistory(params)
 
