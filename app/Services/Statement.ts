@@ -1673,7 +1673,7 @@ class StatementService {
 
     const workbook = new Excel.Workbook()
 
-    for (const dist of ['ROM', 'PIAS', 'LITA', 'MGM', 'Altafonte', 'Good Co']) {
+    for (const dist of ['ROM', 'PIAS', 'LITA', 'MGM', 'Altafonte', 'Good']) {
       if (!data[dist]) {
         continue
       }
