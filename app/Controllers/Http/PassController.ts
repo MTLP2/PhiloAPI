@@ -19,6 +19,10 @@ class PassController {
     return Pass.getHistory(params)
   }
 
+  async putHistory({ params }) {
+    return Pass.putHistory(params)
+  }
+
   // LEVELS
   async getLevels(params) {
     return Pass.getLevels(params)

@@ -60,7 +60,7 @@ type History = {
   id: number
   points: number
   quest_id: number
-  ref_id: number
+  ref_id?: number
   type: string
   user_id: number
   user_name: string
@@ -315,6 +315,37 @@ export default class Pass {
     if (params.userId) query = query.where('ph.user_id', params.userId)
 
     return Utils.getRows<History>({ query })
+  }
+
+  static async saveHistory(params: Pick<History, 'id' | 'user_id' | 'quest_id' | 'ref_id'>) {
+    const res = await DB('pass_history').insert({
+      ...params,
+      created_at: new Date()
+    })
+
+    // Update totals (level and points)
+    await Pass.updateUserTotals({ userId: params.user_id })
+    return res[0]
+  }
+
+  static async putHistory(params: Pick<History, 'id' | 'user_id' | 'quest_id' | 'ref_id'>) {
+    params.ref_id = params.ref_id
+    // Create new history if no id is provided
+    if (!params.id) return Pass.saveHistory(params)
+
+    // Check history and return error if no match
+    const history = await DB('pass_history').where('id', params.id).first()
+    if (!history) return { error: 'History not found' }
+
+    // Update totals (level and points)
+    await Pass.updateUserTotals({ userId: params.user_id })
+
+    // Replace history and save
+    return history.save({
+      ...history,
+      ...params,
+      updated_at: new Date()
+    })
   }
 
   static async addHistory({

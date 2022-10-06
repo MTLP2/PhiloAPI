@@ -474,6 +474,7 @@ Route.group(() => {
     Route.put('/quest', 'PassController.putQuest')
     Route.delete('/quest', 'PassController.deleteQuest')
     Route.get('/history', 'PassController.getHistory')
+    Route.put('/history', 'PassController.putHistory')
     Route.get('/levels', 'PassController.getLevels')
     Route.put('/level', 'PassController.putLevel')
     Route.delete('/level', 'PassController.deleteLevel')
