@@ -1619,6 +1619,87 @@ class StatementService {
 
     return data
   }
+
+  static getStats = async (params) => {
+    let refs: any = DB('statement')
+      .select(
+        'statement.date',
+        'statement.project_id',
+        'vod.barcode',
+        'project.name',
+        'project.artist_name',
+        'dist.name as dist',
+        'dist.quantity'
+      )
+      .join('statement_distributor as dist', 'dist.statement_id', 'statement.id')
+      .join('project', 'project.id', 'statement.project_id')
+      .join('vod', 'vod.project_id', 'project.id')
+      .orderBy('statement.date')
+
+    if (params.start) {
+      refs.where('statement.date', '>=', params.start)
+    }
+    if (params.end) {
+      refs.where('statement.date', '<=', params.end)
+    }
+
+    refs = await refs.all()
+
+    const data: any = {}
+    for (const ref of refs) {
+      ref.dist = ref.dist.split(' ')[0]
+
+      if (!data[ref.dist]) {
+        data[ref.dist] = {
+          dates: {}
+        }
+      }
+      data[ref.dist].dates[ref.date] = true
+
+      if (!data[ref.dist][ref.barcode]) {
+        data[ref.dist][ref.barcode] = {
+          id: ref.project_id,
+          barcode: ref.barcode,
+          project: `${ref.artist_name} - ${ref.name}`,
+          quantity: 0
+        }
+      }
+      if (!data[ref.dist][ref.barcode][ref.date]) {
+        data[ref.dist][ref.barcode][ref.date] = 0
+      }
+      data[ref.dist][ref.barcode].quantity += ref.quantity
+      data[ref.dist][ref.barcode][ref.date] += ref.quantity
+    }
+
+    const workbook = new Excel.Workbook()
+
+    for (const dist of ['ROM', 'PIAS', 'LITA', 'MGM', 'Altafonte', 'Good Co']) {
+      if (!data[dist]) {
+        continue
+      }
+      const worksheet = workbook.addWorksheet(dist)
+
+      const columns = [
+        { header: 'Project', key: 'project', width: 50 },
+        { header: 'Barcode', key: 'barcode', width: 15 },
+        { header: 'Quantity', key: 'quantity' }
+      ]
+
+      for (const date of Object.keys(data[dist].dates)) {
+        columns.push({ header: date, key: date })
+      }
+      delete data[dist].dates
+
+      worksheet.columns = columns
+
+      const refs = Object.values(data[dist]).sort((a: any, b: any) =>
+        a.project.localeCompare(b.project)
+      )
+      worksheet.addRows(refs)
+    }
+
+    return workbook.xlsx.writeBuffer()
+  }
 }
 
 export default StatementService

@@ -234,6 +234,10 @@ class AdminController {
     return Statement.upload(params)
   }
 
+  getStatementStats({ params }) {
+    return Statement.getStats(params)
+  }
+
   uploadStocks({ params, user }) {
     params.user_id = user.id
     return Stock.upload(params)

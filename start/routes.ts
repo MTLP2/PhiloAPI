@@ -302,6 +302,7 @@ Route.group(() => {
   Route.get('/projects/facebook', 'AdminController.exportFacebookProjects')
   Route.delete('/projects/:id/remove-image', 'AdminController.removeImage')
   Route.post('/statements', 'AdminController.uploadStatement')
+  Route.get('/statements/stats', 'AdminController.getStatementStats')
   Route.post('/stocks', 'AdminController.uploadStocks')
   Route.post('/items', 'AdminController.saveProjectItem')
   Route.delete('/items/:id', 'AdminController.removeProjectItem')
