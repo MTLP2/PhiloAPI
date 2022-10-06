@@ -1637,10 +1637,10 @@ class StatementService {
       .orderBy('statement.date')
 
     if (params.start) {
-      refs.where('statement.date', '>=', params.start)
+      refs.where('statement.date', '>=', params.start.substring(0, 7))
     }
     if (params.end) {
-      refs.where('statement.date', '<=', params.end)
+      refs.where('statement.date', '<=', params.end.substring(0, 7))
     }
 
     refs = await refs.all()
