@@ -110,7 +110,8 @@ class ProjectEdit {
       params.type_project === 'funding' ||
       params.type_project === 'test_pressing' ||
       params.type_project === 'limited_edition' ||
-      params.type_project === 'direct_pressing'
+      params.type_project === 'direct_pressing' ||
+      params.type_project === 'deposit_sale'
     ) {
       await Vod.save(params, pp)
     }

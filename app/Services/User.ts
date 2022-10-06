@@ -27,6 +27,7 @@ class User {
         'color',
         'country_id',
         'customer_id',
+        'shop_id',
         DB.raw(`(
         select count(*)
         from \`message\`

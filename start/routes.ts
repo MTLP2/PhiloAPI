@@ -146,6 +146,7 @@ Route.get('/contests/:id', 'ContestController.find')
 Route.put('/boxes/code', 'CartController.checkBoxCode')
 
 Route.post('/newsletter', 'AppController.subscribeNewsletterWithoutAccount')
+Route.post('/pass-culture', 'AppController.subscribeToPassCulture')
 
 Route.get('/catalog', 'AdminController.exportCatalog')
 Route.get('/stats/top-projects', 'ProjectsController.getTopProjects')
@@ -192,8 +193,9 @@ Route.group(() => {
   )
 
   Route.get('/shops', 'ShopController.getShops')
-  Route.get('/shop', 'ShopController.getMyShop')
+  Route.get('/shop', 'ShopController.getShop')
   Route.post('/shop', 'ShopController.updateShop')
+  Route.post('/shop/code', 'ShopController.checkCode')
   Route.post('/shop/project', 'ShopController.addProject')
   Route.delete('/shop/project', 'ShopController.removeProject')
   Route.delete('/shop/image', 'ShopController.removeShopImage')
@@ -306,6 +308,7 @@ Route.group(() => {
   Route.get('/projects/facebook', 'AdminController.exportFacebookProjects')
   Route.delete('/projects/:id/remove-image', 'AdminController.removeImage')
   Route.post('/statements', 'AdminController.uploadStatement')
+  Route.get('/statements/stats', 'AdminController.getStatementStats')
   Route.post('/stocks', 'AdminController.uploadStocks')
   Route.post('/items', 'AdminController.saveProjectItem')
   Route.delete('/items/:id', 'AdminController.removeProjectItem')
@@ -320,6 +323,7 @@ Route.group(() => {
   Route.get('/ordershops/:id/invoice', 'AdminController.getOrderShopInvoice')
   Route.post('/orders', 'AdminController.saveOrder')
   Route.get('/order-export', 'AdminController.extractOrders')
+  Route.get('/order-export/refunds', 'AdminController.exportOrdersRefunds')
   Route.get('/order-export/commercial', 'AdminController.exportOrdersCommercial')
   Route.get('/sales-export', 'AdminController.exportSales')
   Route.get('/reviews-export', 'AdminController.exportReviews')
@@ -467,6 +471,17 @@ Route.group(() => {
   Route.post('/contests/:id/extract', 'ContestController.extract')
   Route.get('/shipping-costs', 'AdminController.getShippingCosts')
   Route.get('/stocks', 'AdminController.getStocks')
+  Route.get('/stocks/price', 'AdminController.exportStocksPrices')
+  Route.get('/elogik/stock', 'ElogikController.getStock')
+  Route.get('/elogik/orders', 'ElogikController.getOrders')
+  Route.post('/deepl-translate', 'AdminController.deeplTranslate')
+
+  Route.group(() => {
+    Route.get('/', 'AdminController.getPassCulture')
+    Route.put('/save', 'AdminController.savePassCulture')
+    Route.delete('/delete/:id', 'AdminController.deletePassCulture')
+    Route.get('/export', 'AdminController.exportPassCulture')
+  }).prefix('pass-culture')
 
   // Pass routes
   Route.group(() => {

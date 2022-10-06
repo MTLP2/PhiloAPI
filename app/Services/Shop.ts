@@ -11,13 +11,20 @@ class Shop {
       DB.query('shop_project').count('*').whereRaw('shop_id = shop.id').as('projects')
     )
 
+    if (!params.sort) {
+      params.sort = 'id'
+      params.order = 'desc'
+    }
+
     return Utils.getRows(params)
   }
 
   static async find(params) {
-    let shop = DB('shop').select('shop.*')
+    let shop: any = DB('shop').select('shop.*')
 
-    if (params.code) {
+    if (params.id) {
+      shop.where('shop.id', params.id)
+    } else if (params.code) {
       shop.where('code', params.code)
     }
     if (params.user_id) {
@@ -41,7 +48,7 @@ class Shop {
   }
 
   static async update(params) {
-    let item = DB('shop')
+    let item: any = DB('shop')
 
     const code = params.code ? params.code : Utils.slugify(params.name)
     const codeUsed = await DB('shop').where('code', code).where('id', '!=', params.id).first()
@@ -103,7 +110,7 @@ class Shop {
       })
     }
 
-    return { success: true }
+    return { id: item.id, success: true }
   }
 
   static async removeImage(params) {
@@ -170,6 +177,11 @@ class Shop {
       }
     }
     return false
+  }
+
+  static async checkCode(code: string) {
+    const shop = await DB('shop').where('code', code).first()
+    return { shop: shop ? shop.id : null }
   }
 }
 

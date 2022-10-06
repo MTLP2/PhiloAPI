@@ -103,7 +103,7 @@ class Order {
         'os.tracking_transporter',
         'os.transporter',
         'os.type',
-        'whiplash_id',
+        'logistician_id',
         'os.created_at',
         'user.name',
         'user.slug'
@@ -682,7 +682,10 @@ static toJuno = async (params) => {
     }
 
     if ((params && params.credit_note === 'true') || !params) {
-      await Invoice.insertRefund(order)
+      await Invoice.insertRefund({
+        ...order,
+        order_shop_id: id
+      })
 
       if (type === 'cancel' && order.order_items.length) {
         for (const item of order.order_items) {
@@ -889,7 +892,7 @@ static toJuno = async (params) => {
         }
       ])
     }
-    if (['whiplash', 'whiplash_uk'].includes(params.transporter) && !item.whiplash_id) {
+    if (['whiplash', 'whiplash_uk'].includes(params.transporter) && !item.logistician_id) {
       const pp = {
         shipping_name: `${customer.firstname} ${customer.lastname}`,
         shipping_address_1: customer.address,
@@ -911,13 +914,13 @@ static toJuno = async (params) => {
       }
 
       const order = await Whiplash.saveOrder(pp)
-      item.whiplash_id = order.id
+      item.logistician_id = order.id
       item.date_export = Utils.date()
       await item.save()
 
       if (item.order_shop_id) {
         await DB('order_shop').where('id', item.order_shop_id).update({
-          whiplash_id: order.id,
+          logistician_id: order.id,
           tracking_number: null,
           tracking_transporter: null,
           updated_at: Utils.date()
@@ -981,7 +984,7 @@ static toJuno = async (params) => {
       .first()
 
     const items = await DB('order_item')
-      .select('order_item.quantity', 'order_item.price', 'barcode')
+      .select('order_item.quantity', 'order_item.price', 'barcode', 'size', 'sizes')
       .join('vod', 'vod.project_id', 'order_item.project_id')
       .where('order_shop_id', params.id)
       .all()
@@ -991,7 +994,10 @@ static toJuno = async (params) => {
         sending: true
       })
     } else if (['whiplash', 'whiplash_uk'].includes(shop.transporter)) {
-      await Whiplash.validOrder(shop, items)
+      const res = await Whiplash.validOrder(shop, items)
+      if (!res) {
+        return { error: 'not_found' }
+      }
     } else if (shop.transporter === 'sna') {
       const customer = await DB('customer').find(shop.customer_id)
 

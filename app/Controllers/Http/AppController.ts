@@ -1,3 +1,5 @@
+import sitemap from 'sitemap'
+
 import App from 'App/Services/App'
 import Press from 'App/Services/Press'
 import Storage from 'App/Services/Storage'
@@ -15,8 +17,7 @@ import User from 'App/Services/User'
 import Utils from 'App/Utils'
 import Payment from 'App/Services/Payment'
 import DB from 'App/DB'
-
-import sitemap from 'sitemap'
+import { schema, rules } from '@ioc:Adonis/Core/Validator'
 
 class AppController {
   index() {
@@ -343,169 +344,6 @@ class AppController {
     return true
   }
 
-  async fixOrders({ user, params }) {
-    const shops = await DB('order_item as oi')
-      .select(DB.raw('distinct(order_shop_id)'))
-      .whereIn('oi.project_id', [231072, 231307, 231144, 231073, 230429])
-      .all()
-
-    const ids = {
-      231072: 5005903,
-      231307: 5005917,
-      231144: 5005915,
-      231073: 5005904,
-      230429: 5005902
-    }
-    // 231072 3760300312056 5005903
-    // 231307 3760300312285 5005917
-    // 231144 3760300312070 5005915
-    // 231073 3760300312063 5005904
-    // 230429 3760300312049 5005902
-
-    const items = await DB('order_item as oi')
-      .select(
-        'customer.*',
-        'user.email',
-        'user.lang',
-        'oi.id',
-        'oi.quantity',
-        'oi.order_shop_id',
-        'oi.project_id',
-        'vod.barcode',
-        'os.transporter',
-        'os.date_export',
-        'os.whiplash_id',
-        'os.whiplash_id2'
-      )
-      .join('order_shop as os', 'os.id', 'oi.order_shop_id')
-      .join('vod', 'vod.project_id', 'oi.project_id')
-      .join('customer', 'customer.id', 'os.customer_id')
-      .join('user', 'user.id', 'os.user_id')
-      .whereIn(
-        'oi.order_shop_id',
-        shops.map((s) => s.order_shop_id)
-      )
-      .all()
-
-    const dau = await DB('daudin').select('*').where('id', 1274).first()
-
-    const csv = Daudin.parse(dau.csv)
-
-    const orders = {}
-    for (const item of items) {
-      if (!orders[item.order_shop_id]) {
-        orders[item.order_shop_id] = {
-          ...item,
-          items: []
-        }
-      }
-      orders[item.order_shop_id].items.push(item)
-    }
-
-    const daudin = []
-    const misses = []
-    const users = []
-
-    for (const order of Object.values(orders)) {
-      if (order.transporter === 'daudin' && order.date_export) {
-        const miss = {
-          id: 'F' + order.order_shop_id,
-          firstname: order.firstname,
-          lastname: order.lastname,
-          customer_name: order.name,
-          zip_code: order.zip_code,
-          address: order.address,
-          city: order.city,
-          country_id: order.country_id,
-          phone: order.phone,
-          email: order.email
-        }
-        for (const i in order.items) {
-          let lines = []
-          if (csv[order.items[i].order_shop_id]) {
-            lines = csv[order.items[i].order_shop_id].items
-          }
-
-          order.items[i].found =
-            lines.findIndex((ii) => ii.barcode === order.items[i].barcode) !== -1
-          if (!order.items[i].found) {
-            daudin.push({
-              ...miss,
-              barcode: order.items[i].barcode,
-              quantity: order.items[i].quantity
-            })
-            order.error = true
-          }
-        }
-        if (order.error) {
-          users.push({ email: order.email, lang: order.lang })
-        }
-      }
-      if (order.transporter === 'whiplash' && order.whiplash_id && !order.whiplash_id2) {
-        let o
-        if (order.whiplash_id) {
-          o = await Whiplash.getOrder(order.whiplash_id)
-        } else {
-          o = { order_items: [] }
-        }
-        console.log(o.id)
-        /**
-        if (order.whiplash_id2) {
-          const oo = await Whiplash.getOrder(order.whiplash_id2)
-          o.order_items.push(...oo.order_items)
-        }
-        **/
-
-        const miss = {
-          shipping_name: `${order.firstname} ${order.lastname}`,
-          shipping_address_1: order.address,
-          shipping_city: order.city,
-          shipping_state: order.state,
-          shipping_country: order.country_id,
-          shipping_zip: order.zip_code,
-          shipping_phone: order.phone,
-          email: order.email,
-          shop_shipping_method_text: 'Whiplash Cheapest Tracked',
-          order_items: []
-        }
-        for (const i in order.items) {
-          order.items[i].found =
-            o.order_items.findIndex((ii) => ii.sku === order.items[i].barcode) !== -1
-          if (!order.items[i].found) {
-            miss.order_items.push({
-              item_id: ids[order.items[i].project_id],
-              // item_id: 2743163,
-              quantity: order.items[i].quantity
-            })
-            order.error = true
-          }
-        }
-        if (order.error) {
-          console.log('error')
-          misses.push(miss)
-          users.push({ email: order.email, lang: order.lang })
-          const whi = await Whiplash.saveOrder(miss)
-          await DB('order_shop').where('id', order.order_shop_id).update({
-            whiplash_id2: whi.id
-          })
-          console.log(whi.id)
-        } else {
-          await DB('order_shop').where('id', order.order_shop_id).update({
-            whiplash_id2: 1
-          })
-        }
-      }
-    }
-
-    // await Daudin.export(daudin)
-
-    let csvusers = ''
-    for (const user of users) {
-      csvusers += user.email + ',' + user.lang + '\n'
-    }
-    return csvusers
-  }
-
   async convertPictureItem() {
     const items = await DB('item')
       // .limit(10)
@@ -570,6 +408,36 @@ class AppController {
     }
 
     return { success: true }
+  }
+
+  async subscribeToPassCulture({ request }) {
+    try {
+      // Schema
+      const newPassCultureSubscriptionSchema = schema.create({
+        email: schema.string({ trim: true }, [rules.email()]),
+        origin: schema.string.nullable()
+      })
+
+      const payload: { email: string; origin: string | null } = await request.validate({
+        schema: newPassCultureSubscriptionSchema
+      })
+
+      // Email already in database ?
+      const exists = !!(await DB('pass_culture').where('email', payload.email).first())
+
+      if (exists) throw new Error('exists')
+      // If not
+      // Insert in db
+      await DB('pass_culture').insert({
+        email: payload.email,
+        origin: payload.origin,
+        created_at: Utils.date()
+      })
+
+      return { success: true }
+    } catch (err) {
+      return { error: err.message === 'exists' ? err.message : 'invalid' }
+    }
   }
 }
 

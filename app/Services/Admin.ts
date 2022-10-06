@@ -23,6 +23,7 @@ import Review from 'App/Services/Review'
 import Vod from 'App/Services/Vod'
 import Stock from 'App/Services/Stock'
 import Sna from 'App/Services/Sna'
+import Elogik from 'App/Services/Elogik'
 import Deepl from 'App/Services/Deepl'
 import cio from 'App/Services/CIO'
 import Env from '@ioc:Adonis/Core/Env'
@@ -209,7 +210,7 @@ class Admin {
         'quantity',
         'size',
         'date_export',
-        'whiplash_id',
+        'logistician_id',
         'os.transporter',
         'sending',
         'quantity',
@@ -897,8 +898,6 @@ class Admin {
     vod.show_stock = params.show_stock
     vod.show_prod = params.show_prod
     vod.show_countdown = params.show_countdown
-    vod.send_statement = params.send_statement
-    vod.storage_costs = params.storage_costs
     vod.scheduled_end = params.scheduled_end
     vod.is_licence = params.is_licence
     vod.shipping_delay_reason = params.shipping_delay_reason
@@ -966,6 +965,9 @@ class Admin {
       vod.price_unit = params.price_unit || null
     }
     if (params.edit_statement) {
+      vod.send_statement = params.send_statement
+      vod.storage_costs = params.storage_costs
+      vod.balance_followup = params.balance_followup
       vod.statement_comment = params.statement_comment || null
     }
     if (params.com) {
@@ -1323,6 +1325,125 @@ class Admin {
     return qty
   }
 
+  static syncProjectElogik = async (params) => {
+    const vod = await DB('vod').where('project_id', params.id).first()
+    if (!vod) {
+      return false
+    }
+
+    const orders = await DB()
+      .select('customer.*', 'os.*', 'user.email')
+      .from('order_shop as os')
+      .join('customer', 'customer.id', 'os.customer_id')
+      .join('user', 'user.id', 'os.user_id')
+      .whereIn('os.id', (query) => {
+        query.select('order_shop_id').from('order_item').where('project_id', params.id)
+      })
+      .where('os.transporter', 'daudin')
+      .where('os.type', 'vod')
+      .whereNull('date_export')
+      .where('is_paid', true)
+      .where('is_paused', false)
+      .orderBy('os.created_at')
+      .all()
+
+    const items = await DB()
+      .select(
+        'order_shop_id',
+        'oi.project_id',
+        'oi.quantity',
+        'oi.price',
+        'oi.size',
+        'vod.barcode',
+        'vod.weight',
+        'vod.sizes',
+        'project.nb_vinyl',
+        'vod.sleeve',
+        'vod.vinyl_weight'
+      )
+      .from('order_item as oi')
+      .whereIn(
+        'order_shop_id',
+        orders.map((o) => o.id)
+      )
+      .join('vod', 'vod.project_id', 'oi.project_id')
+      .join('project', 'project.id', 'oi.project_id')
+      .all()
+
+    for (const item of items) {
+      const idx = orders.findIndex((o) => o.id === item.order_shop_id)
+      orders[idx].items = orders[idx].items ? [...orders[idx].items, item] : [item]
+    }
+
+    const dispatchs: any = []
+
+    let qty = 0
+    for (const order of orders) {
+      if (qty >= params.quantity) {
+        break
+      }
+      if (order.shipping_type === 'pickup') {
+        const pickup = JSON.parse(order.address_pickup)
+        const available = await MondialRelay.checkPickupAvailable(pickup.number)
+
+        if (!available) {
+          const around = await MondialRelay.findPickupAround(pickup)
+
+          if (around) {
+            order.address_pickup = JSON.stringify(around)
+            await DB('order_shop')
+              .where('id', order.id)
+              .update({
+                address_pickup: JSON.stringify(around)
+              })
+
+            await Notification.add({
+              type: 'my_order_pickup_changed',
+              order_id: order.order_id,
+              order_shop_id: order.id,
+              user_id: order.user_id
+            })
+          } else {
+            continue
+          }
+        }
+      }
+
+      dispatchs.push(order)
+
+      for (const item of order.items) {
+        if (item.project_id === +params.id) {
+          qty = qty + item.quantity
+        }
+      }
+    }
+
+    if (dispatchs.length === 0) {
+      return { success: false }
+    }
+
+    const res = await Elogik.sync(dispatchs)
+
+    if (qty > 0) {
+      await DB('project_export').insert({
+        transporter: 'daudin',
+        project_id: vod.project_id,
+        quantity: qty,
+        date: Utils.date()
+      })
+
+      await Stock.save({
+        project_id: vod.project_id,
+        type: 'daudin',
+        quantity: -params.quantity,
+        diff: true,
+        comment: 'sync'
+      })
+    }
+
+    return res
+  }
+
   static syncProjectDaudin = async (params) => {
     const orders = await DB()
       .from('order_item as oi')
@@ -1551,7 +1672,7 @@ class Admin {
         query
           .where('date_export', '>', '2020-01-01')
           .whereNull('tracking_number')
-          .whereNull('whiplash_id')
+          .whereNull('logistician_id')
           .where('os.transporter', '!=', 'whiplash')
           .where(DB.raw('date_export < DATE_SUB(NOW(), INTERVAL 7 DAY)'))
           .where('is_paid', 1)
@@ -1568,7 +1689,7 @@ class Admin {
     if (params.type === 'no_export') {
       orders.whereNull('date_export')
       orders.whereNull('tracking_number')
-      orders.whereNull('whiplash_id')
+      orders.whereNull('logistician_id')
       orders.where('is_paid', 1)
       orders.where(DB.raw('os.created_at < DATE_SUB(NOW(), INTERVAL 4 DAY)'))
       orders.where((query) => {
@@ -1706,7 +1827,8 @@ class Admin {
         'project.slug',
         'item.name as item',
         'item.picture as item_picture',
-        'vod.barcode'
+        'vod.barcode',
+        'vod.type'
       )
       .where('order_id', id)
       .join('project', 'project.id', 'order_item.project_id')
@@ -2033,6 +2155,7 @@ class Admin {
     if (params.credit_note || params.credit_note === undefined) {
       await Invoice.insertRefund({
         ...order,
+        order_shop_id: params.order_shop_id,
         customer_id: customer.customer_id,
         order_id: order.id
       })
@@ -2077,7 +2200,7 @@ class Admin {
         query
           .where('date_export', '>', '2020-01-01')
           .whereNull('tracking_number')
-          .whereNull('whiplash_id')
+          .whereNull('logistician_id')
           .where('transporter', '!=', 'whiplash')
           .where(DB.raw('date_export < DATE_SUB(NOW(), INTERVAL 7 DAY)'))
           .where('is_paid', 1)
@@ -2089,7 +2212,7 @@ class Admin {
       .join('vod', 'vod.project_id', 'oi.project_id')
       .whereNull('date_export')
       .whereNull('tracking_number')
-      .whereNull('whiplash_id')
+      .whereNull('logistician_id')
       .where('is_paid', 1)
       .where(DB.raw('os.created_at < DATE_SUB(NOW(), INTERVAL 4 DAY)'))
       .where((query) => {
@@ -4309,8 +4432,9 @@ class Admin {
 
   static exportOrdersRefunds = async (params) => {
     const refundsRaw = await DB('refund')
-      .select('refund.*', 'order.currency', 'order.user_id', 'order.payment_type')
+      .select('refund.*', 'order.currency', 'order.user_id', 'order.payment_type', 'os.transporter')
       .join('order', 'order.id', 'refund.order_id')
+      .leftJoin('order_shop as os', 'os.id', 'refund.order_shop_id')
       .where('refund.created_at', '>=', params.start)
       .where('refund.created_at', '<=', `${params.end} 23:59`)
       .all()
@@ -4328,6 +4452,7 @@ class Admin {
         { name: 'User ID', index: 'user_id' },
         { name: 'OShop ID', index: 'order_shop_id' },
         { name: 'Payment Type', index: 'payment_type' },
+        { name: 'Transporter', index: 'transporter' },
         { name: 'Date', index: 'created_at' },
         { name: 'Amount', index: 'amount' },
         { name: 'Currency', index: 'currency' },
@@ -4504,6 +4629,11 @@ class Admin {
     } catch (err) {
       return err
     }
+  }
+
+  static getPassCulture = async () => {
+    const passCulture = DB('pass_culture')
+    return Utils.getRows({ query: passCulture })
   }
 }
 

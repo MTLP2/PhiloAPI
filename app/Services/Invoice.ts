@@ -1,15 +1,13 @@
 import moment from 'moment'
 import Excel from 'exceljs'
 import JSZip from 'jszip'
-
 import DB from 'App/DB'
 import Utils from 'App/Utils'
 import Customer from 'App/Services/Customer'
 import Notification from 'App/Services/Notification'
-import Cart from 'App/Services/Cart'
 import Admin from 'App/Services/Admin'
-import I18n from '@ioc:Adonis/Addons/I18n'
 import ApiError from 'App/ApiError'
+import I18n from '@ioc:Adonis/Addons/I18n'
 import View from '@ioc:Adonis/Core/View'
 
 class Invoice {
@@ -20,11 +18,7 @@ class Invoice {
       .leftJoin('customer as c', 'c.id', 'invoice.customer_id')
 
     if (!params.sort) {
-      params.query
-        .orderBy('date', 'desc')
-        .orderBy('year', 'desc')
-        .orderBy('invoice.created_at', 'desc')
-        .orderBy('number', 'desc')
+      params.query.orderBy('invoice.id', 'desc')
     }
 
     return Utils.getRows(params)
@@ -113,17 +107,8 @@ class Invoice {
 
     if (params.id) {
       invoice = await DB('invoice').find(params.id)
-      invoice.number = params.number
-      invoice.year = params.year
     } else {
       const year = new Date().getYear() - 100
-      if (params.compatibility) {
-        invoice.number = await Invoice.newNumber(params.type)
-        invoice.code = `${params.type[0].toUpperCase()}${year}${invoice.number}`
-      } else {
-        invoice.number = null
-        invoice.code = null
-      }
       invoice.year = year
       invoice.created_at = Utils.date()
     }
@@ -171,29 +156,12 @@ class Invoice {
 
     await invoice.save()
 
-    if (sort) {
-      await Invoice.sort(invoice.year)
-    }
+    await Invoice.setNumbers()
 
     return invoice
   }
 
-  static async newNumber(type, year = new Date().getYear() - 100) {
-    const number = await DB('invoice')
-      .select(DB.raw('max(number) as max'))
-      .where('type', type)
-      .where('year', year)
-      .first()
-
-    if (number) {
-      return number.max + 1
-    } else {
-      return 1
-    }
-  }
-
   static async insertOrder(order) {
-    const number = await Invoice.newNumber('invoice')
     const year = new Date().getYear() - 100
 
     let invoice = await DB('invoice').where('order_id', order.id).where('type', 'invoice').first()
@@ -205,8 +173,6 @@ class Invoice {
 
     invoice.name = `Order ${order.id}`
     invoice.type = 'invoice'
-    invoice.number = number
-    invoice.code = `I${year}${number}`
     invoice.year = year
     invoice.user_id = order.user_id
     invoice.order_id = order.id
@@ -224,38 +190,25 @@ class Invoice {
     invoice.updated_at = Utils.date()
 
     await invoice.save()
+    await Invoice.setNumbers()
 
     return invoice
   }
 
   static async insertRefund(order) {
-    const number = await Invoice.newNumber('credit_note')
     const year = new Date().getYear() - 100
 
     const invoice = DB('invoice')
     invoice.created_at = Utils.date()
 
-    /**
-    let invoice = await DB('invoice')
-      .where('order_shop_id', order.id)
-      .where('type', 'credit_note')
-      .first()
-    if (!invoice) {
-      invoice = DB('invoice')
-      invoice.created_at = Utils.date()
-    }
-    **/
-
     invoice.name = order.order_box_id
       ? `Refund Box ${order.box_id}-${order.id}`
       : `Refund ${order.id ? order.id : 'partial'}`
     invoice.type = 'credit_note'
-    invoice.code = `C${year}${number}`
-    invoice.number = number
     invoice.year = year
     invoice.order_id = order.order_id || null
     invoice.order_box_id = order.order_box_id || null
-    invoice.order_shop_id = order.id || null
+    invoice.order_shop_id = order.order_shop_id || null
     invoice.customer_id = order.customer_id
     invoice.sub_total = order.sub_total
     invoice.tax_rate = order.tax_rate * 100
@@ -268,6 +221,7 @@ class Invoice {
     invoice.updated_at = Utils.date()
 
     await invoice.save()
+    await Invoice.setNumbers()
 
     return invoice
   }
@@ -327,9 +281,7 @@ class Invoice {
         break
     }
     invoice.daudin = params.daudin
-    invoice.number = `${invoice.type === 'invoice' ? 'PRO' : 'AVO'}${invoice.year || ''}${(
-      '0000' + invoice.number
-    ).slice(-4)}`
+    invoice.number = invoice.code
     invoice.customer.country = country.name
     invoice.lines = Array.isArray(invoice.lines) ? invoice.lines : JSON.parse(invoice.lines)
     for (const i in invoice.lines) {
@@ -384,187 +336,41 @@ class Invoice {
     }
   }
 
-  static async generate() {
-    // PRO190367
-    const orders = await DB('order')
-      .select('order.*', 'customer_id')
-      .join('order_shop', 'order.id', 'order_shop.order_id')
-      .where('order.created_at', '>=', '2019-04-01')
-      .where('order.created_at', '<', '2019-05-01')
-      .where('is_paid', 1)
-      .orderBy('order.id', 'asc')
-      .belongsTo('customer')
+  static async setNumbers() {
+    const numbers = await DB('invoice')
+      .select('type', DB.raw('max(number) as max'))
+      .groupBy('type')
       .all()
 
-    let order = {}
-    for (const i in orders) {
-      if (order.id === orders[i].id) {
-        continue
-      }
-      order = orders[i]
-      const taxRate = await Cart.getTaxRate(order.customer)
-      const tax = order.total * taxRate
-
-      const number = await Invoice.newNumber('invoice')
-      const year = new Date().getYear() - 100
-
-      await DB('invoice').insert({
-        name: `Order ${order.id}`,
-        type: 'invoice',
-        status: 'paid',
-        date: order.created_at,
-        date_payment: order.created_at,
-        number: number,
-        code: `I${year}${number}`,
-        year: year,
-        order_id: order.id,
-        customer_id: order.customer_id,
-        tax_rate: taxRate * 100,
-        tax: tax,
-        sub_total: order.total - tax,
-        total: order.total,
-        currency: order.currency,
-        currency_rate: order.currency_rate,
-        created_at: order.created_at,
-        updated_at: order.updated_at
-      })
-    }
-
-    return orders
-  }
-
-  static async generateCredit() {
-    const orders = await DB('order_shop')
-      .select('order_shop.*', 'customer_id')
-      .where('order_shop.created_at', '>=', '2019-04-01')
-      .where('is_paid', 0)
-      .whereIn('step', ['canceled', 'refunded'])
-      .orderBy('order_shop.id', 'asc')
-      .belongsTo('customer')
-      .all()
-
-    for (const i in orders) {
-      const order = orders[i]
-
-      const number = await Invoice.newNumber('credit_note')
-      const year = new Date().getYear() - 100
-
-      await DB('invoice').insert({
-        name: `Refund ${order.id}`,
-        type: 'credit_note',
-        status: 'refunded',
-        date: order.created_at,
-        number: number,
-        year: year,
-        code: `C${year}${number}`,
-        order_shop_id: order.id,
-        customer_id: order.customer_id,
-        tax_rate: order.tax_rate * 100,
-        tax: order.tax,
-        sub_total: order.sub_total,
-        total: order.total,
-        currency: order.currency,
-        currency_rate: order.currency_rate,
-        created_at: order.created_at,
-        updated_at: order.updated_at
-      })
-    }
-    return orders
-  }
-
-  static async sort(year) {
-    const invoices = await DB('invoice').where('year', year).orderBy('date').orderBy('id').all()
-
-    let n = year === 19 ? 366 : 1
-    let c = year === 19 ? 1 : 1
-
-    for (const i in invoices) {
-      const invoice = invoices[i]
-      const number = invoice.type === 'invoice' ? n : c
-      if (invoice.number !== number) {
-        invoice.number = number
-        await DB('invoice').where('id', invoice.id).update({
-          number: number,
-          updated_at: Utils.date()
-        })
-      }
-      if (invoice.type === 'invoice') {
-        n++
-      } else {
-        c++
-      }
-    }
-  }
-
-  static async exportSfc() {
-    const workbook = new Excel.Workbook()
+    let incI = numbers.find((n) => n.type === 'invoice').max
+    let incC = numbers.find((n) => n.type === 'credit_note').max
 
     const invoices = await DB('invoice')
-      .select('invoice.*', 'user.code_client')
-      .where('invoice.type', 'invoice')
-      .leftJoin('user', 'user.id', 'invoice.user_id')
-      .limit(10)
+      .whereNull('code')
+      .where('compatibility', true)
+      .orderBy('id', 'asc')
       .all()
 
-    // await workbook.xlsx.readFile(require('path').resolve(__filename, '../../resources/invoices/gabarit.xls'))
-
-    const worksheet = workbook.addWorksheet('Factures')
-
-    const rows = []
-
-    for (let i = 0; i < invoices.length; i++) {
-      const invoice = invoices[i]
-      const date = invoice.date.split('-')
-
-      if (invoice.order_shop_id) {
+    for (const invoice of invoices) {
+      let number
+      let code
+      if (invoice.type === 'invoice') {
+        incI++
+        number = incI
+        code = `I${invoice.year}${incI}`
+      } else {
+        incC++
+        number = incC
+        code = `C${invoice.year}${incC}`
       }
 
-      //  `${invoice.type === 'invoice' ? 'PRO' : 'AVO'}${invoice.year}${('0000' + invoice.number).slice(-4)}
-
-      rows.push([
-        (invoice.number = `${invoice.code}`), // A : N° facture externe *
-        `${date[2]}/${date[1]}/${date[0]}`, // B : Date facture *
-        '', // C : Client
-        invoice.code_client, // D : Code client
-        '', // E : Total TVA
-        '', // F : Total HT
-        '', // G : Total TTC
-        '', // H : Total réglé
-        '', // I : Etat
-        '', // J : Date Etat
-        '', // K : Date de création
-        '', // L : Objet
-        '', // M : Date d'échéance
-        '', // N : Date d'exécution
-        '', // O : Taux de pénalité
-        '', // P : Frais de recouvrement
-        '', // Q : Taux d'escompte
-        'A réception', // R : Conditions de règlement *
-        'Paypal', // S : Mode de paiement
-        '', // T : Remise globale
-        '', // U : Acompte
-        '', // V : Nombre de relance
-        '', // W : Commentaires
-        '', // X : N° facture
-        '', // Y : Annulé
-        '', // Z : Catalogue
-        '', // AA : Réf.
-        'Vinyle', // AB : Désignation *
-        '1', // AC : Qté *
-        '', // AD : Unité
-        '10', // AE : PU HT *
-        '', // AF : Remise
-        '10', // AG : TVA
-        '', // AH : Total TVA
-        '', // AI : Total HT
-        '', // AJ : Classification vente
-        '', // AK : Code Classification vente
-        '' // AL : Créateur
-      ])
+      await DB('invoice').where('id', invoice.id).update({
+        number: number,
+        code: code
+      })
     }
 
-    worksheet.addRows(rows)
-    return workbook.xlsx.writeBuffer()
+    return { success: true }
   }
 
   static async export(params) {
@@ -666,11 +472,12 @@ class Invoice {
     const invoice = await DB('invoice').belongsTo('customer').find(params.id)
 
     invoice.id = null
+    invoice.number = null
+    invoice.code = null
+    invoice.inc = 1
     invoice.year = moment().format('YY')
     invoice.date = moment().format('YYYY-MM-DD')
-    invoice.number = await Invoice.newNumber(params.type)
     invoice.type = params.type
-    invoice.code = `${params.type[0].toUpperCase()}${invoice.year}${invoice.number}`
 
     const customer = await Customer.save({
       ...invoice.customer,
@@ -682,6 +489,8 @@ class Invoice {
     console.log(invoice.year)
     console.log(invoice.date)
     const insert = await DB('invoice').insert(JSON.parse(JSON.stringify(invoice)))
+
+    await Invoice.setNumbers()
 
     return { id: insert[0] }
   }
@@ -784,7 +593,7 @@ class Invoice {
     )
   }
 
-  static async reminder(params) {
+  static async reminder() {
     const first = await DB('invoice')
       .select('*')
       .whereNotNull('email')

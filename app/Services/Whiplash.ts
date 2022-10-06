@@ -53,7 +53,7 @@ class Whiplash {
   static validOrder = async (shop, items) => {
     const customer = await DB('customer').find(shop.customer_id)
 
-    const params = {
+    const params: any = {
       shipping_name: `${customer.firstname} ${customer.lastname}`,
       shipping_address_1: customer.address,
       shipping_city: customer.city,
@@ -62,13 +62,20 @@ class Whiplash {
       shipping_zip: customer.zip_code,
       shipping_phone: customer.phone,
       email: shop.email,
-      shop_shipping_method_text: Whiplash.getShippingMethod(customer.id, shop.shipping_type),
+      shop_shipping_method_text: Whiplash.getShippingMethod(),
       order_items: []
     }
 
     for (const i in items) {
       const barcodes = (items[i].item_barcode || items[i].barcode).split(',')
-      for (const barcode of barcodes) {
+      for (let barcode of barcodes) {
+        const sizes = items[i].sizes ? JSON.parse(items[i].sizes) : null
+        if (barcode === 'SIZE') {
+          barcode = sizes[items[i].size].split(',')[0]
+        } else if (barcode === 'SIZE2') {
+          barcode = sizes[items[i].size].split(',')[1]
+        }
+
         const item = await Whiplash.findItem(barcode)
         if (!item || !item.id) {
           await Notification.sendEmail({
@@ -88,11 +95,11 @@ class Whiplash {
       }
     }
 
-    const order = await Whiplash.saveOrder(params)
+    const order: any = await Whiplash.saveOrder(params)
 
     await DB('order_shop').where('id', shop.id).update({
       step: 'in_preparation',
-      whiplash_id: order.id,
+      logistician_id: order.id,
       date_export: Utils.date()
     })
 
@@ -114,8 +121,8 @@ class Whiplash {
     if (process.env.NODE_ENV !== 'production') {
       sku = 'TEST'
     }
-    return Whiplash.api(`/items/sku/${sku}`).then((res) => {
-      if (!res) {
+    return Whiplash.api(`/items/sku/${sku}`).then((res: any[]) => {
+      if (!res || res.length === 0) {
         return null
         // If eligible for media mail is not activited we return null
       } else if (!res[0].media_mail) {
@@ -126,22 +133,7 @@ class Whiplash {
     })
   }
 
-  static getShippingMethod = (countryId, type) => {
-    /**
-  const listUe = ['DE', 'AT', 'BE', 'BG', 'CY', 'HR', 'DK', 'ES', 'EE',
-    'FI', 'FR', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU',
-    'MT', 'NL', 'PL', 'PT', 'CZ', 'RO', 'GB', 'SK', 'SI', 'SE']
-  let shipping = ''
-  if (type === 'tracking') {
-    if (countryId === 'GB') {
-      shipping = ''
-    } else if (listUe.indexOf(countryId) !== -1) {
-      shipping = 'DPDUK Parcel Dpd Classic'
-    } else {
-      shipping = 'Whiplash Cheapest Tracked'
-    }
-  }
-  **/
+  static getShippingMethod = () => {
     return 'Whiplash Cheapest Tracked'
   }
 
@@ -179,14 +171,14 @@ class Whiplash {
       LEFT OUTER JOIN customer ON customer.id = OS.customer_id
       LEFT OUTER JOIN country ON country.id = customer.country_id AND country.lang = 'en'
     WHERE OI.order_id = O.id AND OS.Id IN (${shops.map((s) => s.order_shop_id).join(',')})
-      AND OS.whiplash_id IS NULL
+      AND OS.logistician_id IS NULL
       AND OS.transporter = '${params.type}'
       AND OS.is_paid = 1
       AND OS.is_paused = 0
       AND OI.order_shop_id = OS.id
   `
     const res = await DB().execute(query)
-    const orders = {}
+    const orders: any = {}
     for (const order of res) {
       if (!orders[order.id]) {
         orders[order.id] = {
@@ -197,7 +189,8 @@ class Whiplash {
       orders[order.id].items.push(order)
     }
 
-    for (const order of Object.values(orders)) {
+    const ordersArray: any = Object.values(orders)
+    for (const order of ordersArray) {
       for (const item of order.items) {
         const sizes = item.sizes ? JSON.parse(item.sizes) : null
         const bb = (item.item_barcode || item.barcode).split(',')
@@ -222,14 +215,14 @@ class Whiplash {
     }
 
     let count = 0
-    for (const order of Object.values(orders)) {
+    for (const order of ordersArray) {
       if (count + order.quantity > params.quantity) {
         break
       }
 
-      if (order.transporter === params.type && !order.whiplash_id) {
+      if (order.transporter === params.type && !order.logistician_id) {
         count += order.quantity
-        const params = {
+        const params: any = {
           shipping_name: `${order.firstname} ${order.lastname}`,
           shipping_address_1: order.address,
           shipping_city: order.city,
@@ -238,7 +231,7 @@ class Whiplash {
           shipping_zip: order.zip_code,
           shipping_phone: order.phone,
           email: order.email,
-          shop_shipping_method_text: Whiplash.getShippingMethod(order.id, order.shipping_type),
+          shop_shipping_method_text: Whiplash.getShippingMethod(),
           order_items: []
         }
         for (const item of order.items) {
@@ -257,15 +250,15 @@ class Whiplash {
           }
         }
         const oo = await DB('order_shop').where('id', order.order_shop_id).first()
-        if (oo.whiplash_id) {
+        if (oo.logistician_id) {
           continue
         }
 
-        const whiplash = await Whiplash.saveOrder(params)
+        const whiplash: any = await Whiplash.saveOrder(params)
         await DB('order_shop').where('id', order.order_shop_id).update({
           step: 'in_preparation',
           date_export: Utils.date(),
-          whiplash_id: whiplash.id
+          logistician_id: whiplash.id
         })
 
         await Notification.add({
@@ -297,10 +290,10 @@ class Whiplash {
     return count
   }
 
-  static setTrackingLinks = async (params) => {
+  static setTrackingLinks = async () => {
     const manuals = await DB('order_manual')
       .select('order_manual.*', 'customer.country_id')
-      .whereNotNull('whiplash_id')
+      .whereNotNull('logistician_id')
       .whereNull('tracking_number')
       .whereIn('transporter', ['whiplash', 'whiplash_uk'])
       .join('customer', 'customer.id', 'order_manual.customer_id')
@@ -316,7 +309,7 @@ class Whiplash {
           '(SELECT sum(quantity) FROM order_item WHERE order_shop_id = order_shop.id) as quantity'
         )
       )
-      .whereNotNull('whiplash_id')
+      .whereNotNull('logistician_id')
       .whereNull('tracking_number')
       .whereIn('transporter', ['whiplash', 'whiplash_uk'])
       .join('customer', 'customer.id', 'order_shop.customer_id')
@@ -338,7 +331,7 @@ class Whiplash {
     const currenciesUSD = Utils.getCurrencies('USD', currenciesDb)
     const currenciesGBP = Utils.getCurrencies('GBP', currenciesDb)
 
-    const costs = []
+    const costs: any[] = []
     const total = {
       profits: 0,
       costs: 0,
@@ -346,7 +339,7 @@ class Whiplash {
     }
     Promise.all(
       shops.map(async (shop) => {
-        const order = await Whiplash.getOrder(shop.whiplash_id)
+        const order: any = await Whiplash.getOrder(shop.logistician_id)
         const currencies = shop.transporter === 'whiplash_uk' ? currenciesGBP : currenciesUSD
 
         const packings = {
@@ -382,10 +375,10 @@ class Whiplash {
           **/
             }
           } else {
-            const cost = {
+            const cost: any = {
               order_id: shop.order_id,
               order_shop_id: shop.id,
-              whiplash_id: shop.whiplash_id,
+              logistician_id: shop.logistician_id,
               type: shop.type,
               transporter: shop.transporter,
               currency: shop.transporter === 'whiplash' ? '$' : '£',
@@ -415,7 +408,7 @@ class Whiplash {
           }
         }
       })
-    ).then(async (res) => {
+    ).then(async () => {
       console.log(costs)
       if (costs.length === 0) {
         return { success: false }
@@ -457,7 +450,7 @@ class Whiplash {
           cost.order_shop_id
         }</a></td>`
         html += `<td>${cost.type}</td>`
-        html += `<td>${cost.whiplash_id}</td>`
+        html += `<td>${cost.logistician_id}</td>`
         html += `<td>${cost.transporter}</td>`
         html += `<td>${cost.country_id}</td>`
         html += `<td>${cost.profits}${cost.currency}</td>`
@@ -489,7 +482,7 @@ class Whiplash {
 
   static setDelivered = async () => {
     const shops = await DB('order_shop')
-      .whereNotNull('whiplash_id')
+      .whereNotNull('logistician_id')
       .whereNull('tracking_number')
       .whereIn('transporter', ['whiplash', 'whiplash_uk'])
       .limit(1)
@@ -500,10 +493,10 @@ class Whiplash {
       .all()
 
     for (const shop of shops) {
-      // shop.whiplash_id = 22888898
-      // console.log(shop.whiplash_id)
-      const order = await Whiplash.getOrder(shop.whiplash_id)
-      console.log(shop.id, shop.whiplash_id, order.status_name, order.approximate_delivery_date)
+      // shop.logistician_id = 22888898
+      // console.log(shop.logistician_id)
+      const order: any = await Whiplash.getOrder(shop.logistician_id)
+      console.log(shop.id, shop.logistician_id, order.status_name, order.approximate_delivery_date)
       /**
     await DB('order_shop')
       .where('id', shop.id)
@@ -525,7 +518,7 @@ class Whiplash {
       return null
     }
 
-    return Whiplash.getOrder(shop.whiplash_id)
+    return Whiplash.getOrder(shop.logistician_id)
   }
 
   static extract = async (params) => {
@@ -546,7 +539,7 @@ class Whiplash {
       csv += `"${order.state}",`
       csv += `"${order.zip_code}",`
       csv += `"${order.country_id}",`
-      csv += `"${Whiplash.getShippingMethod(order.country_id, order.shipping_type)}",`
+      csv += `"${Whiplash.getShippingMethod()}",`
       csv += `"${order.phone}",`
       csv += `"${order.email}",`
       csv += `"${project.barcode}",`
@@ -556,8 +549,8 @@ class Whiplash {
     return csv
   }
 
-  static syncStocks = async (params) => {
-    const projects = await DB('vod')
+  static syncStocks = async () => {
+    const projects: any = await DB('vod')
       .select(
         'vod.project_id',
         'whiplash_stock',
@@ -566,7 +559,7 @@ class Whiplash {
         'stock_uk.quantity as stock_whiplash_uk'
       )
       .whereNotNull('barcode')
-      .where((query) => {
+      .where((query: any) => {
         query
           .whereRaw('JSON_EXTRACT(transporters, "$.whiplash") = true')
           .orWhereRaw('JSON_EXTRACT(transporters, "$.whiplash_uk") = true')
@@ -590,12 +583,12 @@ class Whiplash {
         whiplash_stock: Utils.date()
       })
 
-      const res = await Whiplash.api(`items/sku/${project.barcode}`)
+      const res: any = await Whiplash.api(`items/sku/${project.barcode}`)
 
       if (!res[0]) {
         continue
       }
-      const warehouses = await Whiplash.api(`items/${res[0].id}/warehouse_quantities`)
+      const warehouses: any = await Whiplash.api(`items/${res[0].id}/warehouse_quantities`)
 
       let us = 0
       let uk = 0
@@ -643,7 +636,7 @@ class Whiplash {
   }
 
   static setCost = async (buffer, force = false) => {
-    const lines = Utils.csvToArray(buffer)
+    const lines: any = Utils.csvToArray(buffer)
     const date = lines[0].transaction_date.substring(0, 10)
     let currencies
 
@@ -654,7 +647,7 @@ class Whiplash {
     }
 
     let shops = DB('order_shop').whereIn(
-      'whiplash_id',
+      'logistician_id',
       lines.filter((s) => s.creator_id).map((s) => s.creator_id)
     )
 
@@ -664,11 +657,11 @@ class Whiplash {
 
     shops = await shops.all()
 
-    const dispatchs = []
+    const dispatchs: any[] = []
     for (const dispatch of lines) {
       if (dispatch.creator_id) {
         const shop = shops.find((s) => {
-          return +s.whiplash_id === +dispatch.creator_id
+          return +s.logistician_id === +dispatch.creator_id
         })
 
         if (!shop) {
@@ -701,8 +694,8 @@ class Whiplash {
     await workbook.xlsx.readFile('../shipping_uk.xlsx')
     const worksheet = workbook.getWorksheet(1)
 
-    const data = []
-    worksheet.eachRow((row, rowNumber) => {
+    const data: any = []
+    worksheet.eachRow((row) => {
       const country = row.getCell('H').value
       if (country) {
         const d = {

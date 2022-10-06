@@ -25,7 +25,7 @@ class StatementService {
   }
 
   static async save(params) {
-    let item = DB('statement')
+    let item: any = DB('statement')
     if (params.id) {
       item = await DB('statement').find(params.id)
     } else {
@@ -76,9 +76,7 @@ class StatementService {
 
   static async delete(params) {
     await DB('statement').where('id', params.sid).delete()
-
     await DB('statement_distributor').where('statement_id', params.sid).delete()
-
     return { sucess: true }
   }
 
@@ -112,9 +110,6 @@ class StatementService {
         break
       case 'MGM':
         data = this.parseMGM(workbook)
-        break
-      case 'KAI':
-        data = this.parseKAI(workbook)
         break
       case 'Altafonte':
         data = this.parseAltafonte(workbook)
@@ -170,7 +165,7 @@ class StatementService {
     }
 
     if (params.type === 'save') {
-      const inserts = []
+      const inserts: any[] = []
       for (const ref of data) {
         if (ref.projects) {
           for (const project of ref.projects) {
@@ -259,7 +254,7 @@ class StatementService {
     const worksheet = workbook.getWorksheet('PHY')
     const data = {}
 
-    const columns = {
+    const columns: any = {
       barcode: null,
       catnumber: null,
       quantity: null,
@@ -497,18 +492,6 @@ class StatementService {
     return data
   }
 
-  // WIP (not working)
-  static parseKAI(workbook) {
-    const worksheet = workbook.getWorksheet('Sheet1')
-    const data = {}
-
-    worksheet.eachRow((row) => {
-      const articleNo = row.getCell('A')
-    })
-
-    return 'wip'
-  }
-
   static parseFab(workbook) {
     const worksheet = workbook.getWorksheet(1)
 
@@ -586,11 +569,11 @@ class StatementService {
         break
     }
 
-    const data = await this.getStatement(params)
+    const data: any = await this.getStatement(params)
     if (!data) {
       return null
     }
-    const months = []
+    const months: any[] = []
     for (const d of Object.keys(data.site_quantity)) {
       if (!['name', 'type', 'currency', 'total'].includes(d)) {
         months.push(d)
@@ -598,7 +581,7 @@ class StatementService {
     }
     months.push('Total')
 
-    const rows = []
+    const rows: any[] = []
     for (const d in data) {
       rows.push(data[d])
     }
@@ -623,10 +606,11 @@ class StatementService {
     worksheet.columns = columns
     worksheet.addRows(rows)
 
-    const totalExcl = 2 + 3 + Object.values(data).filter((d) => d.type === 'income').length
+    const totalExcl = 2 + 3 + Object.values(data).filter((d: any) => d.type === 'income').length
     const idxExpenses = totalExcl + 2
     const startExepense = idxExpenses + 1
-    const endExpenses = totalExcl + Object.values(data).filter((d) => d.type === 'expense').length
+    const endExpenses =
+      totalExcl + Object.values(data).filter((d: any) => d.type === 'expense').length
     const netCosts = endExpenses + 1
     const netTotal = netCosts + 2
     const paymentsIdx = netTotal + 2
@@ -642,7 +626,7 @@ class StatementService {
 
       // Last column total
       if (i === months.length) {
-        const ll = Utils.columnToLetter(parseInt(i))
+        const ll = Utils.columnToLetter(i)
 
         for (let j = 2; j <= idxExpenses + 13; j++) {
           // Calcul line cost
@@ -667,7 +651,7 @@ class StatementService {
         let letters = `${l}3`
 
         for (let i = 2; i < totalExcl - 2; i++) {
-          const split = Object.keys(data)[i].split('_')
+          const split: any = Object.keys(data)[i].split('_')
           const name = split[split.length - 1]
 
           if (
@@ -697,7 +681,7 @@ class StatementService {
     for (let i = 1; i <= months.length; i++) {
       const l = Utils.columnToLetter(i + 1)
       for (const d in Object.values(data)) {
-        const dd = Object.values(data)[d]
+        const dd: any = Object.values(data)[d]
         if (dd.currency === false) {
           worksheet.getCell(`${l}${parseInt(d) + 2}`).numFmt = ''
         }
@@ -840,7 +824,7 @@ class StatementService {
   }
 
   static async userDownload(params) {
-    let projects = DB()
+    let projects: any = DB()
       .select('project.id', 'artist_name', 'name')
       .table('project')
       .join('vod', 'vod.project_id', 'project.id')
@@ -854,7 +838,7 @@ class StatementService {
     projects = await projects.all()
     const workbook = new Excel.Workbook()
 
-    const worksheet = workbook.addWorksheet('Summary')
+    const worksheet: any = workbook.addWorksheet('Summary')
 
     worksheet.columns = [
       { header: 'Artist', key: 'artist_name', width: 30 },
@@ -903,57 +887,184 @@ class StatementService {
   }
 
   static async getBalances(params) {
-    const projects = await DB()
+    let projectsPromise = DB()
       .from('project')
-      .select('project.id', 'name', 'artist_name', 'currency', 'step')
+      .select(
+        'project.id',
+        'project.name',
+        'artist_name',
+        'vod.currency',
+        'vod.resp_prod_id',
+        'vod.com_id',
+        'user.name as user',
+        'vod.type',
+        'step'
+      )
       .join('vod', 'vod.project_id', 'project.id')
+      .join('user', 'user.id', 'vod.user_id')
       .orderBy('artist_name', 'name')
-      .whereIn('step', ['in_progress', 'successful', 'failed'])
-      .all()
 
-    const rows = {
-      in_progress: [],
-      successful: [],
-      failed: []
+    if (params.type === 'follow_up') {
+      projectsPromise.where('balance_followup', true)
+    } else {
+      projectsPromise.whereIn('step', ['in_progress', 'successful', 'failed'])
     }
 
-    for (const p in projects) {
+    projectsPromise = projectsPromise.all()
+
+    const invoicesPromise = DB('invoice')
+      .join('vod', 'vod.project_id', 'invoice.project_id')
+      .where('balance_followup', true)
+      .where('invoice.type', 'invoice')
+      .all()
+
+    const costsPromise = DB('production_cost')
+      .select('vod.project_id', 'cost_real')
+      .join('vod', 'vod.project_id', 'production_cost.project_id')
+      .where('balance_followup', true)
+      .all()
+
+    const [projectsList, invoices, costs] = await Promise.all([
+      projectsPromise,
+      invoicesPromise,
+      costsPromise
+    ])
+
+    const projects = {}
+
+    const rows = {}
+    const team = {}
+    for (const user of Utils.getTeam) {
+      team[user.id] = user
+    }
+
+    for (const project of <any>projectsList) {
       const balance = await this.getBalance({
-        id: projects[p].id,
+        id: project.id,
         start: params.start,
         end: params.end
       })
-      projects[p].balance = balance.balance
-      projects[p].profits = balance.profits
-      projects[p].storage = balance.storage
-      projects[p].storage_distrib = balance.storage_distrib
-      projects[p].payment_artist = balance.payment_artist
-      projects[p].payment_diggers = balance.payment_diggers
-      projects[p].costs = balance.costs
+      project.balance = balance.balance
+      project.profits = balance.profits
+      project.storage = balance.storage
+      project.storage_distrib = balance.storage_distrib
+      project.payment_artist = balance.payment_artist
+      project.payment_diggers = balance.payment_diggers
+      project.costs = balance.costs
+      project.resp_prod = team[project.resp_prod_id]?.name
+      project.resp_com = team[project.com_id]?.name
+      project.invoiced = 0
+      project.direct_costs = 0
+      project.direct_balance = 0
 
-      rows[projects[p].step].push(projects[p])
+      projects[project.id] = project
+
+      if (!rows[project.step]) {
+        rows[project.step] = []
+      }
+      rows[project.step].push(project)
     }
 
-    const columns = [
-      { header: 'Id', key: 'id' },
-      { header: 'Artist', key: 'artist_name', width: 30 },
-      { header: 'Project', key: 'name', width: 30 },
-      { header: 'Profits', key: 'profits', width: 15 },
-      { header: 'Costs', key: 'costs', width: 15 },
-      { header: 'Storage', key: 'storage', width: 15 },
-      // { header: 'Storage Distrib', key: 'storage_distrib', width: 15 },
-      { header: 'Payment Artist', key: 'payment_artist', width: 15 },
-      { header: 'Payment Diggers', key: 'payment_diggers', width: 15 },
-      { header: 'Balance', key: 'balance', width: 15 },
-      { header: 'Currency', key: 'currency', width: 15 }
-    ]
+    if (params.type === 'follow_up') {
+      for (const invoice of invoices) {
+        projects[invoice.project_id].invoiced += invoice.sub_total * invoice.currency_rate
+        projects[invoice.project_id].direct_balance = projects[invoice.project_id].invoiced
+      }
+      for (const cost of costs) {
+        projects[cost.project_id].direct_costs += cost.cost_real
+        console.log(projects[cost.project_id].invoiced)
+        projects[cost.project_id].direct_balance =
+          projects[cost.project_id].invoiced - projects[cost.project_id].direct_costs
+      }
+    }
 
     const workbook = new Excel.Workbook()
-    for (const type of Object.keys(rows)) {
-      const worksheet = workbook.addWorksheet(type)
+
+    if (params.type === 'follow_up') {
+      const columns = [
+        { header: 'Id', key: 'id' },
+        { header: 'User', key: 'user', width: 15 },
+        { header: 'Artist', key: 'artist_name', width: 15 },
+        { header: 'Project', key: 'name', width: 25 },
+        { header: 'Resp Prod', key: 'resp_prod', width: 15 },
+        { header: 'Resp Com', key: 'resp_com', width: 15 },
+        { header: 'Profits', key: 'profits', width: 10 },
+        { header: 'Costs', key: 'costs', width: 10 },
+        { header: 'Storage', key: 'storage', width: 10 },
+        { header: 'Pay Artist', key: 'payment_artist', width: 10 },
+        { header: 'Pay Diggers', key: 'payment_diggers', width: 10 },
+        { header: 'Balance', key: 'balance', width: 10 },
+        { header: 'Currency', key: 'currency', width: 10 }
+      ]
+      const worksheet = workbook.addWorksheet('Project')
+
+      worksheet.getRow(1).font = { bold: true }
       worksheet.columns = columns
-      rows[type].sort((a, b) => b.balance - a.balance)
-      worksheet.addRows(rows[type])
+
+      let i = 1
+      for (const project of <any>(
+        Object.values(projects).filter((p: any) => p.type !== 'direct_pressing')
+      )) {
+        i++
+        worksheet.addRow(project)
+        if (project.balance !== 0) {
+          worksheet.getRow(i).fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: project.balance > 0 ? 'ecffe5' : 'ffe5e5' }
+          }
+        }
+      }
+
+      const directPressing = workbook.addWorksheet('Direct Pressing')
+
+      directPressing.getRow(1).font = { bold: true }
+      directPressing.columns = [
+        { header: 'Id', key: 'id' },
+        { header: 'User', key: 'user', width: 15 },
+        { header: 'Artist', key: 'artist_name', width: 15 },
+        { header: 'Project', key: 'name', width: 25 },
+        { header: 'Resp Prod', key: 'resp_prod', width: 15 },
+        { header: 'Resp Com', key: 'resp_com', width: 15 },
+        { header: 'Invoiced', key: 'invoiced', width: 10 },
+        { header: 'Costs', key: 'direct_costs', width: 10 },
+        { header: 'Balance', key: 'direct_balance', width: 10 }
+      ]
+
+      let j = 1
+      for (const project of <any>(
+        Object.values(projects).filter((p: any) => p.type === 'direct_pressing')
+      )) {
+        j++
+        directPressing.addRow(project)
+        if (project.direct_balance !== 0) {
+          directPressing.getRow(j).fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: project.direct_balance > 0 ? 'ecffe5' : 'ffe5e5' }
+          }
+        }
+      }
+    } else {
+      const columns = [
+        { header: 'Id', key: 'id' },
+        { header: 'User', key: 'user', width: 15 },
+        { header: 'Artist', key: 'artist_name', width: 15 },
+        { header: 'Project', key: 'name', width: 20 },
+        { header: 'Profits', key: 'profits', width: 10 },
+        { header: 'Costs', key: 'costs', width: 10 },
+        { header: 'Storage', key: 'storage', width: 10 },
+        { header: 'Pay Artist', key: 'payment_artist', width: 10 },
+        { header: 'Pay Diggers', key: 'payment_diggers', width: 10 },
+        { header: 'Balance', key: 'balance', width: 10 },
+        { header: 'Currency', key: 'currency', width: 10 }
+      ]
+      for (const type of Object.keys(rows)) {
+        const worksheet = workbook.addWorksheet(type)
+        worksheet.columns = columns
+        rows[type].sort((a, b) => b.balance - a.balance)
+        worksheet.addRows(rows[type])
+      }
     }
 
     return workbook.xlsx.writeBuffer()
@@ -967,7 +1078,7 @@ class StatementService {
       params.start = '2001-01-01'
     }
 
-    const data = await this.getStatement(params)
+    const data: any = await this.getStatement(params)
 
     return {
       costs: data.total_cost ? data.total_cost.total : 0,
@@ -1042,7 +1153,7 @@ class StatementService {
       })
       .all()
 
-    const res = []
+    const res: any[] = []
     for (const project of projects) {
       const isActive = await this.isActive({
         id: project.id,
@@ -1060,33 +1171,7 @@ class StatementService {
         })
       }
     }
-    return res.map((row) => row.join(',')).join('\n')
-  }
-
-  static async refreshStatements(params) {
-    let statements = DB('statements')
-    if (params.distributor) {
-      statements.where('distributor', params.distributor)
-    }
-    statements = await await statements.all()
-    for (const statement of statements) {
-      const file = await Storage.get(`statements/${statement.id}.xlsx`)
-      const date = statement.date.split('-')
-      const stat = {
-        distributor: statement.distributor,
-        year: date[0],
-        month: date[1],
-        type: 'save',
-        file: file
-      }
-      if (file) {
-        const parse = await StatementService.upload(stat)
-        // console.log(parse)
-        // break
-      }
-    }
-
-    return { success: true }
+    return res.map((row: any) => row.join(',')).join('\n')
   }
 
   static async setStorageCosts() {
@@ -1202,7 +1287,7 @@ class StatementService {
       .orderBy('oi.created_at')
       .all()
 
-    let bb = []
+    let bb: any[] = []
     if (project.barcode) {
       bb = await DB()
         .select('barcodes', DB.raw("DATE_FORMAT(created_at, '%Y-%m') as date"))
@@ -1212,7 +1297,7 @@ class StatementService {
         .all()
     }
 
-    const boxes = []
+    const boxes: any[] = []
     for (const b of bb) {
       const barcode = b.barcodes.split(',').find((b) => b === project.barcode)
       if (barcode) {
@@ -1220,18 +1305,18 @@ class StatementService {
       }
     }
 
-    let startOrders = null
-    let endOrders = null
-    let startStatements = null
-    let endStatements = null
+    let startOrders: any = null
+    // let endOrders: any = null
+    let startStatements: any = null
+    // let endStatements: any = null
 
     if (orders.length > 0) {
       startOrders = moment(orders[0].date)
-      endOrders = moment(orders[orders.length - 1].date)
+      // endOrders = moment(orders[orders.length - 1].date)
     }
     if (statements.length > 0) {
       startStatements = moment(statements[0].date)
-      endStatements = moment(statements[statements.length - 1].date)
+      // endStatements = moment(statements[statements.length - 1].date)
     }
 
     let start
@@ -1248,7 +1333,7 @@ class StatementService {
       return false
     }
 
-    const months = []
+    const months: string[] = []
 
     while (end > start || start.format('M') === end.format('M')) {
       months.push(start.format('YYYY-MM'))
@@ -1256,7 +1341,7 @@ class StatementService {
     }
     months.push('total')
 
-    const data = {}
+    const data: any = {}
     data.site_quantity = { name: 'Site - Quantity', type: 'income', currency: false }
     data.site_total = { name: 'Site - Total', type: 'income' }
     data.site_tip = { name: 'Site - Tips', type: 'income' }
@@ -1345,7 +1430,6 @@ class StatementService {
         }
       }
     }
-    const d = Object.keys(distribs).length
     data.total_income = { name: 'Total EXCL' }
 
     data.line1 = { name: '', type: 'expense', currency: false }
@@ -1356,7 +1440,6 @@ class StatementService {
     data.marketing = { name: 'Marketing', type: 'expense' }
     data.logistic = { name: 'Logistic', type: 'expense' }
     data.distribution_cost = { name: 'Distribution cost', type: 'expense' }
-    // ata.distribution_quantity = {}
     if (project.storage_costs) {
       data.storage = { name: 'Storage', type: 'expense' }
     }
@@ -1452,21 +1535,19 @@ class StatementService {
         if (project.payback_distrib) {
           value = project.payback_distrib * dist.quantity
         } else {
-          value = parseFloat(dist.total * feeDistrib)
+          value = dist.total * feeDistrib
         }
 
         data[`${dist.name}_${dist.item}_total`][stat.date] += value
 
         if (data[`${dist.name}_${dist.item}_digital`] && parseFloat(dist.digital)) {
-          data[`${dist.name}_${dist.item}_digital`][stat.date] += parseFloat(
-            dist.digital * feeDistrib
-          )
+          data[`${dist.name}_${dist.item}_digital`][stat.date] += dist.digital * feeDistrib
 
-          data.distrib_total[stat.date] += parseFloat(dist.digital * feeDistrib)
-          data.distrib_total.total += parseFloat(dist.digital * feeDistrib)
+          data.distrib_total[stat.date] += dist.digital * feeDistrib
+          data.distrib_total.total += dist.digital * feeDistrib
         }
         if (project.storage_costs) {
-          data[`${dist.name}_${dist.item}_storage`][stat.date] += parseFloat(-dist.storage || 0)
+          data[`${dist.name}_${dist.item}_storage`][stat.date] += -dist.storage || 0
         }
 
         data.distrib_quantity[stat.date] += parseInt(dist.quantity)
@@ -1479,8 +1560,8 @@ class StatementService {
         data.distrib_total.total += value
 
         if (project.storage_costs) {
-          data.distrib_total[stat.date] += parseFloat(-dist.storage || 0)
-          data.distrib_total.total += parseFloat(-dist.storage || 0)
+          data.distrib_total[stat.date] += -dist.storage || 0
+          data.distrib_total.total += -dist.storage || 0
         }
       }
     }
@@ -1539,72 +1620,85 @@ class StatementService {
     return data
   }
 
-  static async convert(params) {
-    const stats = await DB('statement').select('*').all()
+  static getStats = async (params) => {
+    let refs: any = DB('statement')
+      .select(
+        'statement.date',
+        'statement.project_id',
+        'vod.barcode',
+        'project.name',
+        'project.artist_name',
+        'dist.name as dist',
+        'dist.quantity'
+      )
+      .join('statement_distributor as dist', 'dist.statement_id', 'statement.id')
+      .join('project', 'project.id', 'statement.project_id')
+      .join('vod', 'vod.project_id', 'project.id')
+      .orderBy('statement.date')
 
-    const data = {}
-
-    for (const s of stats) {
-      if (!data[s.project_id]) {
-        data[s.project_id] = {}
-      }
-      if (!data[s.project_id][s.date]) {
-        data[s.project_id][s.date] = []
-      }
-
-      data[s.project_id][s.date].push(s)
+    if (params.start) {
+      refs.where('statement.date', '>=', params.start.substring(0, 7))
+    }
+    if (params.end) {
+      refs.where('statement.date', '<=', params.end.substring(0, 7))
     }
 
-    const duplicate = {}
-    const ids = []
-    for (const p of Object.keys(data)) {
-      for (const d of Object.keys(data[p])) {
-        if (data[p][d].length > 1) {
-          const stat = data[p][d][0]
-          stat.custom = stat.custom ? JSON.parse(stat.custom) : []
-          for (let i = 1; i < data[p][d].length; i++) {
-            stat.production += data[p][d][i].production
-            stat.sdrm += data[p][d][i].sdrm
-            stat.mastering += data[p][d][i].mastering
-            stat.marketing += data[p][d][i].marketing
-            stat.logistic += data[p][d][i].logistic
-            stat.distribution_cost += data[p][d][i].distribution_cost
-            stat.payment_diggers += data[p][d][i].payment_diggers
-            stat.payment_artist += data[p][d][i].payment_artist
-            stat.storage += data[p][d][i].storage
-            stat.distributors = null
+    refs = await refs.all()
 
-            if (data[p][d][i].comment) {
-              if (stat.comment) {
-                stat.comment += '\n'
-              } else {
-                stat.comment = ''
-              }
-              stat.comment += `${data[p][d][i].comment}`
-            }
-            if (data[p][d][i].custom) {
-              stat.custom.push(...JSON.parse(data[p][d][i].custom))
-            }
+    const data: any = {}
+    for (const ref of refs) {
+      ref.dist = ref.dist.split(' ')[0]
 
-            try {
-              await DB('statement_distributor').where('statement_id', data[p][d][i].id).update({
-                statement_id: data[p][d][0].id
-              })
-              ids.push(data[p][d][i].id)
-            } catch (err) {
-              console.log('error', p, d, data[p][d][i].id)
-            }
-          }
-          stat.custom = stat.custom.length > 0 ? JSON.stringify(stat.custom) : null
-          await DB('statement').where('id', stat.id).update(stat)
-          duplicate[`${p}_${d}`] = data[p][d]
+      if (!data[ref.dist]) {
+        data[ref.dist] = {
+          dates: {}
         }
       }
+      data[ref.dist].dates[ref.date] = true
+
+      if (!data[ref.dist][ref.barcode]) {
+        data[ref.dist][ref.barcode] = {
+          id: ref.project_id,
+          barcode: ref.barcode,
+          project: `${ref.artist_name} - ${ref.name}`,
+          quantity: 0
+        }
+      }
+      if (!data[ref.dist][ref.barcode][ref.date]) {
+        data[ref.dist][ref.barcode][ref.date] = 0
+      }
+      data[ref.dist][ref.barcode].quantity += ref.quantity
+      data[ref.dist][ref.barcode][ref.date] += ref.quantity
     }
 
-    await DB('statement').whereIn('id', ids).delete()
+    const workbook = new Excel.Workbook()
 
-    return ids
+    for (const dist of ['ROM', 'PIAS', 'LITA', 'MGM', 'Altafonte', 'Good']) {
+      if (!data[dist]) {
+        continue
+      }
+      const worksheet = workbook.addWorksheet(dist)
+
+      const columns = [
+        { header: 'Project', key: 'project', width: 50 },
+        { header: 'Barcode', key: 'barcode', width: 15 },
+        { header: 'Quantity', key: 'quantity' }
+      ]
+
+      for (const date of Object.keys(data[dist].dates)) {
+        columns.push({ header: date, key: date })
+      }
+      delete data[dist].dates
+
+      worksheet.columns = columns
+
+      const refs = Object.values(data[dist]).sort((a: any, b: any) =>
+        a.project.localeCompare(b.project)
+      )
+      worksheet.addRows(refs)
+    }
+
+    return workbook.xlsx.writeBuffer()
   }
 }
 

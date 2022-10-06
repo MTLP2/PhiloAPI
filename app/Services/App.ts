@@ -158,7 +158,7 @@ class App {
       await MondialRelay.checkDelivered()
       await User.syncCIOs()
       await User.syncEvents()
-      // await Vod.checkCampaignEnd(new Date().getHours(), new Date().getMinutes())
+      await Vod.checkCampaignEnd(new Date().getHours(), new Date().getMinutes())
 
       cron.status = 'complete'
       cron.end = new Date()
@@ -347,7 +347,11 @@ class App {
       data.action = I18n.locale(data.lang).formatMessage(`production.${JSON.parse(notif.data)}`)
       n.order_id = null
     }
-    if (['', 'production_valid_file', 'production_refuse_file'].includes(notif.type)) {
+    if (
+      ['production_new_file', 'production_valid_file', 'production_refuse_file'].includes(
+        notif.type
+      )
+    ) {
       data.action = JSON.parse(notif.data)
       n.order_id = null
 
