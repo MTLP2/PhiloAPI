@@ -242,7 +242,7 @@ export default class Pass {
       total_points: currentPoints
     })
 
-    // Check badges
+    //? Check badges
     return { success: true }
   }
 
@@ -346,6 +346,15 @@ export default class Pass {
       ...params,
       updated_at: new Date()
     })
+  }
+
+  static deleteHistory = async ({ historyId }: { historyId: number }) => {
+    const history = await DB('pass_history').where('id', historyId).first()
+    if (!history) return { error: 'History not found' }
+
+    // Update totals and delete
+    await Pass.updateUserTotals({ userId: history.user_id })
+    return history.delete()
   }
 
   static async addHistory({

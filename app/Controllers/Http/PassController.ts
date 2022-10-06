@@ -23,6 +23,10 @@ class PassController {
     return Pass.putHistory(params)
   }
 
+  async deleteHistory({ params }) {
+    return Pass.deleteHistory(params)
+  }
+
   // LEVELS
   async getLevels(params) {
     return Pass.getLevels(params)
