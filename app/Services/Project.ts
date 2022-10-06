@@ -354,6 +354,7 @@ class Project {
       if (!params.all_project) {
         projects.whereIn('v.step', ['in_progress', 'coming_soon', 'successful', 'promo'])
       }
+      projects.orderBy('shop_project.position')
     }
 
     if (params.supported) {

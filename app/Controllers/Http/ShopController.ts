@@ -4,33 +4,6 @@ import Utils from 'App/Utils'
 import { validator, schema } from '@ioc:Adonis/Core/Validator'
 
 class ShopController {
-  find({ params }) {
-    return Shop.find({ code: params.id })
-  }
-
-  async getShop({ params, user }) {
-    if (params.id && !(await Shop.canEdit(params.id, user.id))) {
-      throw new ApiError(403)
-    }
-    return Shop.find(params)
-  }
-
-  async updateShop({ params, user }) {
-    if (params.id && !(await Shop.canEdit(params.id, user.id))) {
-      throw new ApiError(403)
-    }
-    params.user_id = user.id
-    return Shop.update(params)
-  }
-
-  async removeShopImage({ params, user }) {
-    if (!(await Shop.canEdit(params.shop_id, user.id))) {
-      throw new ApiError(403)
-    }
-    params.user_id = user.id
-    return Shop.removeImage(params)
-  }
-
   async all({ params, user }) {
     if (!(await Utils.isTeam(user.id))) {
       throw new ApiError(403)
@@ -38,18 +11,94 @@ class ShopController {
     return Shop.all(params)
   }
 
-  async addProject({ params, user }) {
-    if (!(await Shop.canEdit(params.shop_id, user.id))) {
-      throw new ApiError(403)
-    }
-    return Shop.addProject(params)
+  async find({ params }) {
+    params.code = params.id
+    const payload = await validator.validate({
+      schema: schema.create({
+        code: schema.string()
+      }),
+      data: params
+    })
+    return Shop.find({ code: payload.code })
   }
 
-  async removeProject({ params, user }) {
-    if (!(await Shop.canEdit(params.shop_id, user.id))) {
+  async getShop({ params, user }) {
+    const payload = await validator.validate({
+      schema: schema.create({
+        id: schema.number()
+      }),
+      data: params
+    })
+    if (payload.id && !(await Shop.canEdit(payload.id, user.id))) {
       throw new ApiError(403)
     }
-    return Shop.removeProject(params)
+    return Shop.find(payload)
+  }
+
+  async updateShop({ params, user }) {
+    params.user_id = user.id
+    const payload = await validator.validate({
+      schema: schema.create({
+        id: schema.number(),
+        user_id: schema.number(),
+        name: schema.string(),
+        code: schema.string(),
+        bg_color: schema.string(),
+        font_color: schema.string(),
+        title_color: schema.string(),
+        logo: schema.string.optional(),
+        banner: schema.string.optional(),
+        bg_image: schema.string.optional()
+      }),
+      data: params
+    })
+    if (payload.id && !(await Shop.canEdit(payload.id, user.id))) {
+      throw new ApiError(403)
+    }
+    return Shop.update(payload)
+  }
+
+  async removeShopImage({ request, user }) {
+    const payload = await validator.validate({
+      schema: schema.create({
+        shop_id: schema.number(),
+        type: schema.string()
+      }),
+      data: request.all()
+    })
+    if (!(await Shop.canEdit(payload.shop_id, user.id))) {
+      throw new ApiError(403)
+    }
+    return Shop.removeImage(payload)
+  }
+
+  async addProject({ request, user }) {
+    const payload = await validator.validate({
+      schema: schema.create({
+        shop_id: schema.number(),
+        project_id: schema.number()
+      }),
+      data: request.body()
+    })
+    if (!(await Shop.canEdit(payload.shop_id, user.id))) {
+      throw new ApiError(403)
+    }
+    return Shop.addProject(payload)
+  }
+
+  async removeProject({ request, user }) {
+    const payload = await validator.validate({
+      schema: schema.create({
+        shop_id: schema.number(),
+        project_id: schema.number()
+      }),
+      data: request.all()
+    })
+
+    if (!(await Shop.canEdit(payload.shop_id, user.id))) {
+      throw new ApiError(403)
+    }
+    return Shop.removeProject(payload)
   }
 
   async checkCode({ request }) {
@@ -63,6 +112,22 @@ class ShopController {
     console.log(payload)
 
     return Shop.checkCode(payload.code)
+  }
+
+  async changeProjectPosition({ request, user }) {
+    const payload = await validator.validate({
+      schema: schema.create({
+        shop_id: schema.number(),
+        project_id: schema.number(),
+        position: schema.string()
+      }),
+      data: request.body()
+    })
+
+    if (!(await Shop.canEdit(payload.shop_id, user.id))) {
+      throw new ApiError(403)
+    }
+    return Shop.changeProjectPosition(payload)
   }
 }
 

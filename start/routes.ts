@@ -198,6 +198,7 @@ Route.group(() => {
   Route.post('/shop/code', 'ShopController.checkCode')
   Route.post('/shop/project', 'ShopController.addProject')
   Route.delete('/shop/project', 'ShopController.removeProject')
+  Route.post('/shop/project/position', 'ShopController.changeProjectPosition')
   Route.delete('/shop/image', 'ShopController.removeShopImage')
 }).middleware('auth')
 

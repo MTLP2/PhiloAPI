@@ -19,17 +19,22 @@ class Shop {
     return Utils.getRows(params)
   }
 
-  static async find(params) {
+  static async find(payload: {
+    id?: number
+    user_id?: number
+    code?: string
+    all_project?: boolean
+  }) {
     let shop: any = DB('shop').select('shop.*')
 
-    if (params.id) {
-      shop.where('shop.id', params.id)
-    } else if (params.code) {
-      shop.where('code', params.code)
+    if (payload.id) {
+      shop.where('shop.id', payload.id)
+    } else if (payload.code) {
+      shop.where('code', payload.code)
     }
-    if (params.user_id) {
+    if (payload.user_id) {
       shop.join('user', 'user.shop_id', 'shop.id')
-      shop.where('user.id', params.user_id)
+      shop.where('user.id', payload.user_id)
     }
 
     shop = await shop.first()
@@ -40,72 +45,86 @@ class Shop {
 
     shop.projects = await Project.findAll({
       shop_id: shop.id,
-      all_project: params.all_project,
+      all_project: payload.all_project,
       limit: 99999
     })
 
     return shop
   }
 
-  static async update(params) {
+  static async update(payload: {
+    id: number
+    user_id: number
+    name: string
+    code: string
+    bg_color: string
+    font_color: string
+    title_color: string
+    logo?: string
+    banner?: string
+    bg_image?: string
+  }) {
     let item: any = DB('shop')
 
-    const code = params.code ? params.code : Utils.slugify(params.name)
-    const codeUsed = await DB('shop').where('code', code).where('id', '!=', params.id).first()
+    const code = payload.code ? payload.code : Utils.slugify(payload.name)
+    const codeUsed = await DB('shop').where('code', code).where('id', '!=', payload.id).first()
 
     if (codeUsed) {
       throw new ApiError(406, 'code_used')
     }
 
-    if (params.id) {
-      item = await DB('shop').find(params.id)
+    if (payload.id) {
+      item = await DB('shop').find(payload.id)
       if (!item) {
         throw new ApiError(404)
       }
     } else {
       item.created_at = Utils.date()
     }
-    item.name = params.name
-    item.code = params.code ? params.code : Utils.slugify(params.name)
-    item.bg_color = params.bg_color
-    item.font_color = params.font_color
-    item.title_color = params.title_color
+    item.name = payload.name
+    item.code = payload.code ? payload.code : Utils.slugify(payload.name)
+    item.bg_color = payload.bg_color
+    item.font_color = payload.font_color
+    item.title_color = payload.title_color
     item.updated_at = Utils.date()
 
-    if (params.logo) {
+    if (payload.logo) {
       if (item.logo) {
         Storage.deleteImage(item.logo)
       }
       const fileName = `shops/${Utils.uuid()}`
       item.logo = fileName
-      Storage.uploadImage(fileName, Buffer.from(params.logo, 'base64'), { type: 'png', width: 300 })
+      Storage.uploadImage(fileName, Buffer.from(payload.logo, 'base64'), {
+        type: 'png',
+        width: 300
+      })
     }
-    if (params.banner) {
+    if (payload.banner) {
       if (item.banner) {
         Storage.deleteImage(item.banner)
       }
       const fileName = `shops/${Utils.uuid()}`
       item.banner = fileName
-      Storage.uploadImage(fileName, Buffer.from(params.banner, 'base64'), {
+      Storage.uploadImage(fileName, Buffer.from(payload.banner, 'base64'), {
         type: 'jpg',
         width: 1600
       })
     }
-    if (params.bg_image) {
+    if (payload.bg_image) {
       if (item.bg_image) {
         Storage.deleteImage(item.bg_image)
       }
       const fileName = `shops/${Utils.uuid()}`
       item.bg_image = fileName
-      Storage.uploadImage(fileName, Buffer.from(params.bg_image, 'base64'), {
+      Storage.uploadImage(fileName, Buffer.from(payload.bg_image, 'base64'), {
         type: 'png',
         width: 300
       })
     }
 
     await item.save()
-    if (!params.id) {
-      DB('user').where('id', params.user_id).update({
+    if (!payload.id && payload.user_id) {
+      DB('user').where('id', payload.user_id).update({
         shop_id: item.id
       })
     }
@@ -113,16 +132,16 @@ class Shop {
     return { id: item.id, success: true }
   }
 
-  static async removeImage(params) {
-    const item = await DB('shop').find(params.shop_id)
+  static async removeImage(payload: { shop_id: number; type: string }) {
+    const item = await DB('shop').find(payload.shop_id)
 
-    if (params.type === 'banner') {
+    if (payload.type === 'banner') {
       Storage.deleteImage(item.banner)
       item.banner = null
-    } else if (params.type === 'logo') {
+    } else if (payload.type === 'logo') {
       Storage.deleteImage(item.logo)
       item.logo = null
-    } else if (params.type === 'bg_image') {
+    } else if (payload.type === 'bg_image') {
       Storage.deleteImage(item.bg_image)
       item.bg_image = null
     }
@@ -134,39 +153,36 @@ class Shop {
     return { success: true }
   }
 
-  static async addProject(params) {
-    if (!params.project_id || !params.shop_id) {
-      return { success: false }
-    }
+  static async addProject(payload: { shop_id: number; project_id: number }) {
     const exists = await DB('shop_project')
-      .where('shop_id', params.shop_id)
-      .where('project_id', params.project_id)
+      .where('shop_id', payload.shop_id)
+      .where('project_id', payload.project_id)
       .first()
 
     if (exists) {
       return false
     } else {
       await DB('shop_project').insert({
-        shop_id: params.shop_id,
-        project_id: params.project_id
+        shop_id: payload.shop_id,
+        project_id: payload.project_id
       })
     }
 
     return { success: true }
   }
 
-  static async removeProject(params) {
+  static async removeProject(payload: { shop_id: number; project_id: number }) {
     await DB('shop_project')
       .where({
-        shop_id: params.shop_id,
-        project_id: params.project_id
+        shop_id: payload.shop_id,
+        project_id: payload.project_id
       })
       .delete()
 
     return { success: true }
   }
 
-  static async canEdit(shopId, userId) {
+  static async canEdit(shopId: number, userId: number) {
     if (await Utils.isTeam(userId)) {
       return true
     } else {
@@ -182,6 +198,38 @@ class Shop {
   static async checkCode(code: string) {
     const shop = await DB('shop').where('code', code).first()
     return { shop: shop ? shop.id : null }
+  }
+
+  static async changeProjectPosition(payload: {
+    shop_id: number
+    project_id: number
+    position: string
+  }) {
+    const projects = await DB('shop_project')
+      .where('shop_id', payload.shop_id)
+      .orderBy('position', 'asc')
+      .all()
+
+    const pos = projects.findIndex((p) => p.project_id === payload.project_id)
+
+    if (payload.position === 'up' && pos !== 0) {
+      const moved = projects[pos - 1]
+      projects[pos - 1] = projects[pos]
+      projects[pos] = moved
+    } else if (payload.position === 'down' && pos !== projects.length - 1) {
+      const moved = projects[pos + 1]
+      projects[pos + 1] = projects[pos]
+      projects[pos] = moved
+    }
+
+    for (const p in projects) {
+      await DB('shop_project')
+        .where('id', projects[p].id)
+        .update({
+          position: +p + 1
+        })
+    }
+    return { success: true }
   }
 }
 
