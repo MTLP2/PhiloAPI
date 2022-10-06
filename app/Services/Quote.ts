@@ -582,16 +582,19 @@ class Quote {
     quote.print_finish = 0
     if (params.print_finish === 'returned_cardboard') {
       quote.print_finish = getCost(352, 'print_finish')
+    } else if (params.print_finish === 'matt_varnish') {
+      quote.print_finish = getCost(284, 'print_finish')
     }
 
     // insert
     if (params.insert !== 'none') {
+      quote.insert = getCost(252, 'insert')
       if (params.insert === 'two_sides_printed') {
-        quote.insert = getCost(368, 'insert')
+        quote.insert += getCost(368, 'insert')
       } else if (params.insert === 'one_side_printed') {
-        quote.insert = getCost(367, 'insert')
+        quote.insert += getCost(367, 'insert')
       } else if (params.insert === 'booklet_printed') {
-        quote.insert = getCost(366, 'insert')
+        quote.insert += getCost(366, 'insert')
       }
     }
 
