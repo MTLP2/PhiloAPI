@@ -99,7 +99,7 @@ class Production {
     params.query.select(...selects)
 
     if (!params.sort) {
-      params.sort = 'id'
+      params.sort = 'production.id'
       params.order = 'desc'
     }
 
