@@ -4,6 +4,7 @@ import ApiError from 'App/ApiError'
 import DB from 'App/DB'
 import PromoCode from 'App/Services/PromoCode'
 import Storage from 'App/Services/Storage'
+import Pass from 'App/Services/Pass'
 import Statement from 'App/Services/Statement'
 import Bid from 'App/Services/Bid'
 import Review from 'App/Services/Review'
@@ -947,7 +948,14 @@ class Project {
         likes: likes.count
       })
 
-    return 1
+    // Adding pass history
+    const passRes = await Pass.addHistory({
+      userId,
+      type: 'user_like',
+      refId: projectId
+    })
+
+    return { result: 1, passRes }
   }
 
   static wish = async (projectId, userId) => {
@@ -1941,7 +1949,7 @@ class Project {
     }
 
     if (!params.sort) {
-      params.sort = 'id'
+      params.sort = 'order_shop.id'
       params.order = 'desc'
     }
     const res = await Utils.getRows(params)

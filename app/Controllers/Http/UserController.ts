@@ -5,6 +5,7 @@ import Payment from 'App/Services/Payment'
 import Whiplash from 'App/Services/Whiplash'
 import Box from 'App/Services/Box'
 import Review from 'App/Services/Review'
+import Pass from 'App/Services/Pass'
 import DB from 'App/DB'
 import Utils from 'App/Utils'
 import ApiError from 'App/ApiError'
@@ -265,6 +266,23 @@ class UserController {
   async postReviewStat({ user, params }) {
     params.userId = user.id
     return Review.saveStat(params)
+  }
+
+  getPass({ user }) {
+    return Pass.getUserPass({ userId: user.id })
+  }
+
+  getPassQuestProgress({ user }) {
+    return Pass.getUserQuestProgress({ userId: user.id })
+  }
+
+  getPassBadgeProgress({ user }) {
+    return Pass.getUserBadgeProgress({ userId: user.id })
+  }
+
+  claimGift({ user, params }) {
+    params.user_id = user.id
+    return Pass.claimGift(params)
   }
 }
 

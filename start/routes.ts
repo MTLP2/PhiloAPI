@@ -244,6 +244,12 @@ Route.group(() => {
   Route.post('/reviews', 'UserController.postReview')
   Route.post('/reviews/stat', 'UserController.postReviewStat')
   Route.get('/projects/:pid/reviews', 'UserController.getProjectReviews')
+
+  // Pass
+  Route.get('/pass', 'UserController.getPass')
+  Route.get('/pass/quest-progress', 'UserController.getPassQuestProgress')
+  Route.get('/pass/badge-progress', 'UserController.getPassBadgeProgress')
+  Route.post('/pass/gift/:id/claim', 'UserController.claimGift')
 })
   .prefix('user')
   .middleware(['auth'])
@@ -477,6 +483,25 @@ Route.group(() => {
     Route.delete('/delete/:id', 'AdminController.deletePassCulture')
     Route.get('/export', 'AdminController.exportPassCulture')
   }).prefix('pass-culture')
+
+  // Pass routes
+  Route.group(() => {
+    Route.get('/quests', 'PassController.getQuests')
+    Route.put('/quest', 'PassController.putQuest')
+    Route.delete('/quest', 'PassController.deleteQuest')
+    Route.get('/history', 'PassController.getHistory')
+    Route.put('/history', 'PassController.putHistory')
+    Route.delete('/history', 'PassController.deleteHistory')
+    Route.get('/levels', 'PassController.getLevels')
+    Route.put('/level', 'PassController.putLevel')
+    Route.delete('/level', 'PassController.deleteLevel')
+    Route.get('/badges', 'PassController.getBadges')
+    Route.put('/badge', 'PassController.putBadge')
+    Route.delete('/badges/:id', 'PassController.deleteBadge')
+    Route.get('/gifts', 'PassController.getGifts')
+    Route.put('/gift', 'PassController.putGift')
+    Route.delete('/gift/:id', 'PassController.deleteGift')
+  }).prefix('pass')
 })
   .prefix('admin')
   .middleware(['auth', 'admin'])
