@@ -963,6 +963,7 @@ class Admin {
       vod.discount = params.discount || null
       // vod.tax_rate = params.tax_rate
       vod.price_unit = params.price_unit || null
+      vod.unit_cost = params.unit_cost || null
     }
     if (params.edit_statement) {
       vod.send_statement = params.send_statement
