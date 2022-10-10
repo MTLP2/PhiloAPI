@@ -8,7 +8,7 @@ import DB from 'App/DB'
 class Sna {
   static sync(orders) {
     return new Promise((resolve, reject) => {
-      const dispatchs = []
+      const dispatchs: any[] = []
 
       for (const order of orders) {
         const pickup = order.address_pickup ? JSON.parse(order.address_pickup) : null
@@ -17,7 +17,7 @@ class Sna {
         const id = order.id.toString()
         process.env.NODE_ENV !== 'production' ? Utils.randomString(10, '#') : order.id.toString()
 
-        const data = {
+        const data: any = {
           customerOrderNumber: id,
           orderLabel: '',
           orderDate: order.created_at,
@@ -121,7 +121,7 @@ class Sna {
   }
 
   static async getStock() {
-    const stock = await Sna.getApi('stock')
+    const stock: any = await Sna.getApi('stock')
     const projects = await DB('project as p')
       .select('p.id', 'p.artist_name', 'p.name', 'p.picture', 'vod.barcode')
       .join('vod', 'vod.project_id', 'p.id')
@@ -139,18 +139,18 @@ class Sna {
   }
 
   static async getOrders() {
-    const orders = await Sna.getApi('Order_Status')
+    const orders: any = await Sna.getApi('Order_Status')
     return orders.reverse()
   }
 
   static async setCost(date, buffer, force) {
-    const dispatchs = []
+    const dispatchs: any[] = []
     const workbook = new Excel.Workbook()
     await workbook.xlsx.load(buffer)
     const worksheet = workbook.getWorksheet(1)
 
     worksheet.eachRow(async (row) => {
-      const dispatch = {
+      const dispatch: any = {
         id: row.getCell('C').value,
         trans: Utils.round(row.getCell('P').toString().replace(',', '.')),
         quantity: row.getCell('E').toString(),
@@ -177,7 +177,9 @@ class Sna {
         dispatch.cost += (dispatch.quantity - 1) * 0.45
       }
 
-      let order = DB('order_shop').where('id', dispatch.id.toString()).whereNull('shipping_cost')
+      let order: any = DB('order_shop')
+        .where('id', dispatch.id.toString())
+        .whereNull('shipping_cost')
       if (!force) {
         order.whereNull('shipping_cost')
       }
@@ -197,6 +199,20 @@ class Sna {
     })
 
     return dispatchs
+  }
+
+  static async setTrackingLinks() {
+    const orders: any = await Sna.getApi('Order_Status')
+    const shops = await DB('order_shop')
+      .where('transporter', 'sna')
+      .whereNotNull('date_export')
+      .whereNull('tracking_number')
+      .all()
+
+
+    for (const order of orders.filter(o => shops.exists(s => s.id === o.customerOrderNumber)) {
+      console.log(order)
+    }
   }
 
   static getTransporter(country, weight) {
