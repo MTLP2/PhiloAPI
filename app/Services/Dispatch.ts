@@ -51,7 +51,7 @@ class Dispatch {
     }
 
     if (params.status === 'sent') {
-      const res = await setSent({
+      const res = await Dispatch.setSent({
         id: params.id,
         transporter: params.transporter,
         tracking: params.tracking_number
@@ -61,7 +61,7 @@ class Dispatch {
       }
     }
     if (params.status === 'returned') {
-      const res = await setReturned(params.id)
+      const res = await Dispatch.setReturned(params.id)
       if (!res) {
         return { succes: false }
       }
@@ -180,7 +180,7 @@ class Dispatch {
       await order.save()
 
       const subTotal = Utils.round(order.shipping / (1 + order.tax_rate))
-      const payment = await Payment.save({
+      const payment: any = await Payment.save({
         name: `Shipping return ${order.id}`,
         type: 'return',
         order_shop_id: order.id,
@@ -396,7 +396,7 @@ class Dispatch {
     countries.push({
       id: '00'
     })
-    const costs = {}
+    const costs: any = {}
     for (const country of countries) {
       costs[country.id] = {
         country_id: country.id,
@@ -492,7 +492,7 @@ class Dispatch {
       }
     }
 
-    let orders = DB('order_shop')
+    let orders: any = DB('order_shop')
       .select(
         'order_shop.id',
         'order_shop.order_id',
@@ -566,12 +566,14 @@ class Dispatch {
       costs['00'][`${order.transporter}_benefit`] += order.shipping - order.shipping_cost
     }
 
-    return Object.values(costs).sort((a, b) => b.daudin_costs.length - a.daudin_costs.length)
+    return Object.values(costs).sort(
+      (a: any, b: any) => b.daudin_costs.length - a.daudin_costs.length
+    )
   }
 
   static setCosts = async (params) => {
-    const files = await Storage.list(`shippings/${params.transporter}`, true)
-    const dispatchs = []
+    const files: any = await Storage.list(`shippings/${params.transporter}`, true)
+    const dispatchs: any = []
     for (const file of files) {
       if (file.size === 0) {
         continue
@@ -596,7 +598,7 @@ class Dispatch {
   }
 
   static setCost = async (transporter, date, buffer, force = false) => {
-    const dispatchs = []
+    const dispatchs: any[] = []
 
     let dis
     if (transporter === 'daudin') {
@@ -634,10 +636,6 @@ class Dispatch {
   static parsePriceList = async () => {
     const workbook = new Excel.Workbook()
 
-    workbook.eachSheet(function (worksheet, sheetId) {
-      console.log(sheetId)
-    })
-
     const file = fs.readFileSync('./resources/shippings/sna.xlsx')
     await workbook.xlsx.load(file)
 
@@ -650,13 +648,13 @@ class Dispatch {
       }
     }
 
-    const prices = []
+    const prices: any = []
     const standard = workbook.getWorksheet(1)
     standard.eachRow((row, rowNumber) => {
       if (rowNumber < 14 || rowNumber > 257) {
         return
       }
-      const price = {}
+      const price: any = {}
       price.country_id = row.getCell('C').toString()
       price.mode = 'standard'
       price.prices = {
