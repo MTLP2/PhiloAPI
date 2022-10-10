@@ -13,7 +13,7 @@ import moment from 'moment'
 import JSZip from 'jszip'
 
 class Project {
-  static setInfos = (p, currencies, sales, styles) => {
+  static setInfos = (p, currencies?, sales?, styles?) => {
     const project = p
     const oneDay = 24 * 60 * 60 * 1000
     const firstDate = new Date()
@@ -288,7 +288,7 @@ class Project {
       params.user_id = null
     }
 
-    let filters = []
+    let filters: any = []
     if (params.filters) {
       try {
         filters = JSON.parse(params.filters)
@@ -330,11 +330,14 @@ class Project {
       projects.where('p.home', '1')
     } else if (params.type === 'discount') {
       projects.where('v.discount', '>', '0')
-    } else if (params.search || (filters && filters.some((f) => f.type === 'category'))) {
+    } else if (params.search || (filters && filters.some((f: any) => f.type === 'category'))) {
       projects.where(function () {
         this.where('v.step', 'successful').orWhere('v.step', 'in_progress')
       })
-    } else if (filters && filters.find((f) => f.type === 'category' && parseInt(f.value) === 30)) {
+    } else if (
+      filters &&
+      filters.find((f: any) => f.type === 'category' && parseInt(f.value) === 30)
+    ) {
       projects.where('v.step', 'contest')
     } else if (params.type === 'all' || params.type === 'vinyl_shop') {
       projects.where('category', 'vinyl')
@@ -377,7 +380,7 @@ class Project {
     if (params.filters) {
       params.genres = []
 
-      const categories = []
+      const categories: any = []
       for (const filter of filters) {
         if (filter.type === 'type') {
           projects.where('v.type', filter.value)
@@ -804,7 +807,7 @@ class Project {
     })
     const p = Project.setInfo(project, currencies, sales)
 
-    let item = null
+    let item: any = null
     p.group_shipment = []
     for (const it of p.items) {
       if (it.id === vod.related_item_id) {
@@ -883,7 +886,7 @@ class Project {
     return p
   }
 
-  static getMore = async (id, userId) => {
+  static getMore = async (id) => {
     const comments = Comment.byProject(id)
     return Promise.all([comments]).then((data) => {
       return {
@@ -908,7 +911,7 @@ class Project {
         query.orWhere('item.related_id', id)
       })
       .all()
-    const res = []
+    const res: any = []
     for (const item of items) {
       res.push(`${item.project_user_id}_${item.project_id}`)
       res.push(`${item.related_user_id}_${item.related_id}`)
@@ -1012,7 +1015,7 @@ class Project {
   }
 
   static saveNews = async (params) => {
-    let news = null
+    let news: any = null
 
     Utils.checkProjectOwner(params)
 
@@ -1128,7 +1131,7 @@ class Project {
     }
   }
 
-  static getSoundcloud = async (params) => {
+  static getSoundcloud = async () => {
     return Project.findAll({
       ids: [
         226643, // Braxton Cook
@@ -1152,7 +1155,7 @@ class Project {
 
   static codeDownload = async (projectId) => {
     let found = true
-    let code = null
+    let code: any = null
     while (found) {
       code = Math.random().toString(36).substring(7) + Math.random().toString(36).substring(7)
       found = await DB('download').where('code', code).first()
@@ -1307,7 +1310,7 @@ class Project {
 
   static generateDownload = async (params) => {
     let found = true
-    let code = null
+    let code: any = null
     while (found) {
       code = Math.random().toString(36).substring(7) + Math.random().toString(36).substring(7)
       found = await DB('download').where('code', code).first()
@@ -1323,10 +1326,10 @@ class Project {
   }
 
   static getStats = async (params) => {
-    const names = []
-    const promises = []
+    const names: any = []
+    const promises: any = []
 
-    let pp = DB('project')
+    let pp: any = DB('project')
       .select('project.name', 'project.id', 'vod.currency', 'vod.fee_date')
       .join('vod', 'vod.project_id', 'project.id')
       .where('is_delete', '!=', '1')
@@ -1354,7 +1357,7 @@ class Project {
     }
 
     return Promise.all(promises).then(async (d) => {
-      const res = {
+      const res: any = {
         quantity: {
           site: 0,
           distrib: 0,
@@ -1366,7 +1369,7 @@ class Project {
         net: 0,
         currency: pp[0].currency
       }
-      const data = {}
+      const data: any = {}
 
       for (const dd in d) {
         const p = d[dd]
@@ -1374,7 +1377,7 @@ class Project {
       }
 
       for (let i = 1; i < d.length; i++) {
-        const stats = d[i]
+        const stats: any = d[i]
         if (stats) {
           res.quantity.site += stats.site_quantity ? stats.site_quantity.total : 0
           res.quantity.box += stats.box_quantity ? stats.box_quantity.total : 0
@@ -1505,7 +1508,7 @@ class Project {
       .join('box', 'box_dispatch.box_id', 'box.id')
       .join('customer', 'customer.id', 'box.customer_id')
       .where((query) => {
-        for (const p of Object.values(projects)) {
+        for (const p of <any>Object.values(projects)) {
           query.orWhere('barcodes', 'like', `%${p.barcode}%`)
         }
       })
@@ -1561,8 +1564,9 @@ class Project {
       now.add(1, periodicity)
     }
 
-    const s = {
-      currency: Object.values(projects)[0].currency,
+    const projectsValues: any = Object.values(projects)
+    const s: any = {
+      currency: projectsValues[0].currency,
       periodicity: periodicity,
       start: params.start,
       end: params.end,
@@ -1800,7 +1804,7 @@ class Project {
 
     for (const box of boxes) {
       const date = moment(box.created_at).format(format)
-      const project = Object.values(projects).find((p) =>
+      const project: any = Object.values(projects).find((p: any) =>
         box.barcodes.split(',').includes(p.barcode)
       )
 
@@ -1895,7 +1899,7 @@ class Project {
   }
 
   static getOrdersForTable = async (params) => {
-    let pp = DB('project')
+    let pp: any = DB('project')
       .select('project.name', 'project.id', 'vod.currency', 'vod.fee_date')
       .join('vod', 'vod.project_id', 'project.id')
 
@@ -1954,14 +1958,14 @@ class Project {
     }
     const res = await Utils.getRows(params)
 
-    for (const oo in res.data) {
-      const o = res.data[oo]
+    for (const oo in <any>res.data) {
+      const o: any = res.data[oo]
 
       const feeDate = JSON.parse(projects[o.project_id].fee_date)
       const fee = 1 - Utils.getFee(feeDate, o.created_at) / 100
 
-      if (oo.discount_artist) {
-        oo.total -= oo.discount
+      if (o.discount_artist) {
+        o.total -= o.discount
       }
 
       res.data[oo].tax = Utils.round(o.ue ? o.total - o.total / 1.2 : 0)
@@ -2057,7 +2061,7 @@ class Project {
       .all()
   }
 
-  static downloadPromoKit = async (id, force = true) => {
+  static downloadPromoKit = async (id) => {
     const path = `promo-kit/${id}.zip`
 
     const project = await DB().table('project').where('id', id).first()
@@ -2067,7 +2071,7 @@ class Project {
       return Storage.url(path, `Promokit (${project.artist_name} - ${project.name}).zip`)
     }
 
-    const storageList = await Storage.list(`projects/${project.picture || project.id}`)
+    const storageList: any = await Storage.list(`projects/${project.picture || project.id}`)
     // Keep only jpg/png files and excluse mini&low images
     const imagesToZip = storageList.filter(
       (item) => !item.path.endsWith('.webp') && !['mini', 'low'].some((i) => item.path.includes(i))
@@ -2075,7 +2079,7 @@ class Project {
 
     const zip = new JSZip()
     for (const image of imagesToZip) {
-      const buffer = await Storage.get(image.path)
+      const buffer: any = await Storage.get(image.path)
       const fileName = image.path.split('/').pop()
       zip.file(fileName, buffer)
     }
@@ -2096,7 +2100,7 @@ class Project {
     return items
   }
 
-  static convertExports = async (params) => {
+  static convertExports = async () => {
     const vod = await DB('vod').select('project_id', 'exports').whereNotNull('exports').all()
 
     await DB().execute('TRUNCATE TABLE project_export')
