@@ -357,6 +357,8 @@ class Utils {
       }
     }
 
+    const count = await query.count()
+
     const page = params.page && params.page > 0 ? params.page : 1
     const size = params.size && params.size > 0 ? params.size : 50
 
@@ -372,7 +374,7 @@ class Utils {
     }
 
     return {
-      count: await query.count(),
+      count,
       data: await query.all()
     }
   }
