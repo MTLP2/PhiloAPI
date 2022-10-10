@@ -575,7 +575,16 @@ class Quote {
 
     // shrink
     if (params.shrink !== 0) {
-      quote.shrink = getCost(255, 'shrink', ` x ${params.quantity}`) / params.nb_vinyl
+      quote.shrink =
+        getCost(
+          {
+            '12"': 255,
+            '10"': 262,
+            '7"': 263
+          },
+          'shrink',
+          ` x ${params.quantity}`
+        ) / params.nb_vinyl
     }
 
     // print finish
