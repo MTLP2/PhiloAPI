@@ -1678,8 +1678,10 @@ class Admin {
           .where(DB.raw('date_export < DATE_SUB(NOW(), INTERVAL 7 DAY)'))
           .where('is_paid', 1)
       })
-      params.sort = 'date_export'
-      params.order = 'asc'
+      if (!params.sort) {
+        params.sort = 'date_export'
+        params.order = 'desc'
+      }
     }
     if (params.start) {
       orders.where('os.created_at', '>=', params.start)
