@@ -579,8 +579,8 @@ class Quote {
         getCost(
           {
             '12"': 255,
-            '10"': 262,
-            '7"': 263
+            '10"': 256,
+            '7"': 257
           },
           'shrink',
           ` x ${params.quantity}`
