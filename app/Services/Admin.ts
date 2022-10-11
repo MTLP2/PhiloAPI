@@ -1617,7 +1617,16 @@ class Admin {
     })
   }
 
-  static getOrders = async (params) => {
+  static getOrders = async (params: {
+    project_id?: string
+    type?: 'no_tracking' | 'no_export'
+    sort?: string
+    order?: 'desc' | 'asc'
+    start?: string
+    end?: string
+    filters?: any
+    user_id?: number
+  }) => {
     const orders = DB('order_item as oi')
       .select(
         DB.raw('(os.shipping - os.shipping_cost) as shipping_diff'),
@@ -1661,10 +1670,12 @@ class Admin {
         'project.picture',
         'user.facebook_id',
         'user.soundcloud_id',
+        'om.id as order_manual_id',
         DB.raw("CONCAT(c.firstname, ' ', c.lastname) AS user_infos")
       )
       .join('order', 'oi.order_id', 'order.id')
       .join('order_shop as os', 'os.id', 'oi.order_shop_id')
+      .leftJoin('order_manual as om', 'om.order_shop_id', 'os.id')
       .join('user', 'user.id', 'order.user_id')
       .join('project', 'project.id', 'oi.project_id')
       .join('vod', 'vod.project_id', 'oi.project_id')
@@ -1745,8 +1756,7 @@ class Admin {
       orders.where('user.id', params.user_id)
     }
 
-    params.query = orders
-    return Utils.getRows(params)
+    return Utils.getRows<any>({ ...params, query: orders })
   }
 
   static getOrder = async (id) => {
