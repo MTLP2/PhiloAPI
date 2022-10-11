@@ -1604,7 +1604,12 @@ class Box {
     return boxes
   }
 
-  static async refund(params) {
+  static async refund(params: {
+    id: number
+    amount: number
+    only_history: boolean
+    credit_note: boolean
+  }) {
     const order = await DB('order_box')
       .select('order_box.*', 'order.payment_type', 'order.payment_id')
       .join('order', 'order.id', 'order_box.order_id')
@@ -1617,16 +1622,23 @@ class Box {
     order.tax = Utils.round(params.amount * order.tax_rate)
     order.sub_total = Utils.round(params.amount - order.tax)
 
-    await Order.refundPayment(order)
-    await Invoice.insertRefund(order)
+    //? Check params.only_history
+    // await Order.refundPayment(order)
 
-    await DB('order_box')
-      .where('id', order.id)
-      .update({
-        is_paid: 0,
-        step: 'refunded',
-        refund: Utils.round((order.refund || 0) + +params.amount)
-      })
+    //? Check params.credit_note
+    // await Invoice.insertRefund(order)
+
+    //? Insert into refund history
+    // ...
+
+    //? Check params.cancel_box
+    // await DB('order_box')
+    //   .where('id', order.id)
+    //   .update({
+    //     is_paid: 0,
+    //     step: 'refunded',
+    //     refund: Utils.round((order.refund || 0) + +params.amount)
+    //   })
 
     console.log(params)
     return { success: true }
