@@ -29,7 +29,15 @@ import cio from 'App/Services/CIO'
 import Env from '@ioc:Adonis/Core/Env'
 
 class Admin {
-  static getProjects = async (params) => {
+  static getProjects = async (params: {
+    type?: string
+    in_progress?: boolean
+    sort?: any
+    start?: string
+    end?: string
+    query?: any
+    size?: number
+  }) => {
     const projects = DB('project')
       .select(
         'vod.*',
@@ -90,8 +98,7 @@ class Admin {
       projects.where('vod.created_at', '<=', `${params.end} 23:59`)
     }
 
-    params.query = projects
-    return Utils.getRows(params)
+    return Utils.getRows({ ...params, query: projects })
   }
 
   static getWishlists = async (params) => {
