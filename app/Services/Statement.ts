@@ -896,6 +896,7 @@ class StatementService {
         'vod.currency',
         'vod.resp_prod_id',
         'vod.com_id',
+        'statement_comment',
         'user.name as user',
         'vod.type',
         'step'
@@ -972,7 +973,6 @@ class StatementService {
       }
       for (const cost of costs) {
         projects[cost.project_id].direct_costs += cost.cost_real
-        console.log(projects[cost.project_id].invoiced)
         projects[cost.project_id].direct_balance =
           projects[cost.project_id].invoiced - projects[cost.project_id].direct_costs
       }
@@ -994,7 +994,8 @@ class StatementService {
         { header: 'Pay Artist', key: 'payment_artist', width: 10 },
         { header: 'Pay Diggers', key: 'payment_diggers', width: 10 },
         { header: 'Balance', key: 'balance', width: 10 },
-        { header: 'Currency', key: 'currency', width: 10 }
+        { header: 'Currency', key: 'currency', width: 10 },
+        { header: 'Comment', key: 'statement_comment', width: 50 }
       ]
       const worksheet = workbook.addWorksheet('Project')
 
