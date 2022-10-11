@@ -14,9 +14,8 @@ const config: KnexOriginal.Config = {
     /**
     typeCast2: function (field: any, next: any) {
       if (field.type == 'TINY' && field.length == 1) {
-        console.log(field.name)
         let value = field.string()
-        if (value) return null
+        if (value === null) return null
         else if (value === '1' || value === '0') return value == '1'
         return next()
       }
@@ -53,12 +52,14 @@ declare module 'knex' {
   }
 }
 
-knex.QueryBuilder.extend('execute', function () {
+knex.QueryBuilder.extend('execute', async function () {
   const error = new Error()
-  return this.catch((err) => {
+  try {
+    return await this
+  } catch (err) {
     error.message = err.message
     throw error
-  })
+  }
 })
 
 const db = knex(config)
@@ -204,6 +205,7 @@ const DB = new Proxy(db, {
           } else if (name === 'model') {
             return Model(tableName)
           } else if (name === 'belongsTo' || name === 'hasMany') {
+            /**
             if (typeof args[1] === 'string' && name === 'belongsTo') {
               relations.push({
                 type: name,
@@ -226,17 +228,18 @@ const DB = new Proxy(db, {
                 }
               })
             } else {
-              relations.push({
-                type: name,
-                table: args[0],
-                localKey: args[1]?.localKey || `${args[0]}_id`,
-                foreignKey: args[1]?.foreignKey || `${tableName}_id`,
-                index: args[1]?.index || args[0],
-                query: (q: KnexOriginal.QueryBuilder) => {
-                  return args[1]?.query ? args[1].query(q) : q
-                }
-              })
-            }
+            **/
+            relations.push({
+              type: name,
+              table: args[0],
+              localKey: args[1]?.localKey || `${args[0]}_id`,
+              foreignKey: args[1]?.foreignKey || `${tableName}_id`,
+              index: args[1]?.index || args[0],
+              query: (q: KnexOriginal.QueryBuilder) => {
+                return args[1]?.query ? args[1].query(q) : q
+              }
+            })
+            // }
           } else {
             target[name](...args)
           }
