@@ -2015,7 +2015,7 @@ class Stats {
     }
 
     const boxesList = await DB('order_box')
-      .select('order_id', 'price', 'tax_rate', 'currency', 'shipping', 'currency_rate')
+      .select('order_id', 'total', 'tax_rate', 'currency', 'shipping', 'currency_rate')
       .whereIn(
         'order_id',
         invoices.map((i) => i.order_id)
@@ -2097,7 +2097,7 @@ class Stats {
               marge = total * fee
             }
             if (order.type === 'box') {
-              total = item.price / (1 + order.tax_rate)
+              total = (item.total - item.shipping) / (1 + order.tax_rate)
               addTurnover(invoice.type, 'box', 'site', date, total)
             } else if (order.is_pro) {
               addMarge('direct_shop', null, date, marge)
@@ -2131,6 +2131,7 @@ class Stats {
       } else if (invoice.name.includes('Order ')) {
         d.turnover.error.total += total
         d.turnover.error.dates[date] += total
+        console.log(total)
       } else {
         d.turnover.other.total += total
         d.turnover.other.dates[date] += total
@@ -2551,7 +2552,7 @@ class Stats {
     toto += d.turnover.project.total.dates[date]
     toto += d.turnover.shipping.total.dates[date]
     toto += d.turnover.error.dates[date]
-    console.log(total, toto)
+    console.log('diff =>', total, toto)
 
     return d
   }
