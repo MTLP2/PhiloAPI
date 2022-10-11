@@ -195,7 +195,7 @@ class Quote {
         qty = 2000
       } else if (data.quantity < 5000) {
         qty = 3000
-      } else if (data.quantity === 5000) {
+      } else if (data.quantity >= 5000) {
         qty = 5000
       }
 
