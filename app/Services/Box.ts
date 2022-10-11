@@ -569,7 +569,7 @@ class Box {
 
     res.tax_rate = params.tax_rate
     res.tax = Utils.round(res.total * res.tax_rate)
-    res.sub_total = Utils.round(res.total)
+    res.sub_total = Utils.round(res.total - res.tax)
     res.total = Utils.round(res.total)
 
     return {
