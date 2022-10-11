@@ -1627,7 +1627,7 @@ class Admin {
     filters?: any
     user_id?: number
   }) => {
-    const orders = DB('order_item as oi')
+    const orders = DB('order_shop as os')
       .select(
         DB.raw('(os.shipping - os.shipping_cost) as shipping_diff'),
         'os.*',
@@ -1673,12 +1673,12 @@ class Admin {
         'om.id as order_manual_id',
         DB.raw("CONCAT(c.firstname, ' ', c.lastname) AS user_infos")
       )
+      .join('order_item as oi', 'os.id', 'oi.order_shop_id')
       .join('order', 'oi.order_id', 'order.id')
-      .join('order_shop as os', 'os.id', 'oi.order_shop_id')
-      .leftJoin('order_manual as om', 'om.order_shop_id', 'os.id')
       .join('user', 'user.id', 'order.user_id')
       .join('project', 'project.id', 'oi.project_id')
       .join('vod', 'vod.project_id', 'oi.project_id')
+      .leftJoin('order_manual as om', 'om.order_shop_id', 'os.id')
       .leftJoin('customer as c', 'c.id', 'os.customer_id')
       .where('os.step', '!=', 'creating')
       .where('os.step', '!=', 'failed')
