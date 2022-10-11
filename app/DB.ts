@@ -1,4 +1,5 @@
 import Env from '@ioc:Adonis/Core/Env'
+import DB2 from './DB2'
 
 const knex = require('knex')({
   client: 'mysql',
