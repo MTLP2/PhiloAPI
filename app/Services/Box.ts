@@ -482,9 +482,8 @@ class Box {
 
     res.box_total = Utils.round(res.total)
     res.box_tax_rate = params.tax_rate
-    res.box_tax = Utils.round(res.box_total * res.box_tax_rate)
-    res.box_sub_total = Utils.round(res.box_total - res.box_tax)
-    res.box_total = Utils.round(res.box_total)
+    res.box_sub_total = Utils.round(res.box_total / (1 + params.tax_rate))
+    res.box_tax = Utils.round(res.box_total - res.box_sub_total)
 
     res.discount = 0
     /**
@@ -523,7 +522,6 @@ class Box {
         .first()
 
       if (promo) {
-        console.log(promo.box_one)
         if (promo && params.type === 'one' && !promo.box_one) {
           promo = null
         }
@@ -567,10 +565,10 @@ class Box {
       }
     }
 
-    res.tax_rate = params.tax_rate
-    res.tax = Utils.round(res.total * res.tax_rate)
-    res.sub_total = Utils.round(res.total - res.tax)
     res.total = Utils.round(res.total)
+    res.tax_rate = Utils.round(params.tax_rate)
+    res.sub_total = Utils.round(res.total / (1 + params.tax_rate))
+    res.tax = Utils.round(res.total - res.sub_total)
 
     return {
       ...params,
@@ -1613,9 +1611,8 @@ class Box {
 
     order.order_box_id = order.id
     order.total = params.amount
-    order.total = params.amount
-    order.tax = Utils.round(params.amount * order.tax_rate)
-    order.sub_total = Utils.round(params.amount - order.tax)
+    order.sub_total = Utils.round(order.total / (1 + order.tax_rate))
+    order.tax = Utils.round(order.total - order.sub_total)
 
     await Order.refundPayment(order)
     await Invoice.insertRefund(order)
