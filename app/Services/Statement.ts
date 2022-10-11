@@ -920,7 +920,7 @@ class StatementService {
       .all()
 
     const costsPromise = DB('production_cost')
-      .select('vod.project_id', 'cost_real')
+      .select('vod.project_id', 'cost_real', 'cost_invoiced')
       .join('vod', 'vod.project_id', 'production_cost.project_id')
       .where('balance_followup', true)
       .all()
@@ -951,7 +951,8 @@ class StatementService {
       project.storage_distrib = balance.storage_distrib
       project.payment_artist = balance.payment_artist
       project.payment_diggers = balance.payment_diggers
-      project.costs = balance.costs
+      project.costs_statement = balance.costs
+      project.costs_invoiced = 0
       project.resp_prod = team[project.resp_prod_id]?.name
       project.resp_com = team[project.com_id]?.name
       project.invoiced = 0
@@ -972,7 +973,9 @@ class StatementService {
         projects[invoice.project_id].direct_balance = projects[invoice.project_id].invoiced
       }
       for (const cost of costs) {
+        console.log(cost)
         projects[cost.project_id].direct_costs += cost.cost_real
+        projects[cost.project_id].costs_invoiced += cost.cost_invoiced
         projects[cost.project_id].direct_balance =
           projects[cost.project_id].invoiced - projects[cost.project_id].direct_costs
       }
@@ -989,7 +992,8 @@ class StatementService {
         { header: 'Resp Prod', key: 'resp_prod', width: 15 },
         { header: 'Resp Com', key: 'resp_com', width: 15 },
         { header: 'Profits', key: 'profits', width: 10 },
-        { header: 'Costs', key: 'costs', width: 10 },
+        { header: 'Invoiced Costs', key: 'costs_invoiced', width: 10 },
+        { header: 'Statement Costs', key: 'costs_statement', width: 10 },
         { header: 'Storage', key: 'storage', width: 10 },
         { header: 'Pay Artist', key: 'payment_artist', width: 10 },
         { header: 'Pay Diggers', key: 'payment_diggers', width: 10 },
