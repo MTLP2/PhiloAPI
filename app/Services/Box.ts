@@ -2293,11 +2293,9 @@ class Box {
     await Box.checkStock(params.month)
 
     barcodes.push('BOXDIGGERS')
-    /**
     if (box.dispatchs === 0 && ['3_months', '6_months', '12_months'].includes(box.periodicity)) {
       barcodes.push('TOTEBAGBLANC')
     }
-    **/
 
     const myGoodies = await Box.getMyGoodie(box, goodies, dispatchs)
     barcodes.push(...myGoodies.map((g: any) => g.barcode.split(',')))
