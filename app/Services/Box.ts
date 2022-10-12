@@ -1628,7 +1628,7 @@ class Box {
 
     //? Check params.only_history
     if (!params.only_history) {
-      // await Order.refundPayment(order)
+      await Order.refundPayment(order)
     }
 
     //? Check params.credit_note
