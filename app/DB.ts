@@ -198,11 +198,6 @@ const DB = (tablee?, idd?) => {
       return db
     },
 
-    selects(columns) {
-      p.columns = columns
-      return db
-    },
-
     select(...args) {
       p.columns = [].slice.call(args, 0)
       return db
@@ -635,4 +630,4 @@ DB.close = () => {
   return knex.destroy()
 }
 
-export default DB
+export default DB2
