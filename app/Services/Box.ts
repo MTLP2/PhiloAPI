@@ -1605,42 +1605,54 @@ class Box {
   }
 
   static async refund(params: {
-    id: number
-    amount: number
+    id: string
+    obid: string
+    amount: string
+    reason: string
+    order_box_id: number
+    comment: string
     only_history: boolean
     credit_note: boolean
+    cancel_box: boolean
   }) {
     const order = await DB('order_box')
       .select('order_box.*', 'order.payment_type', 'order.payment_id')
       .join('order', 'order.id', 'order_box.order_id')
-      .where('order_box.id', params.id)
+      .where('order_box.id', +params.obid)
       .first()
 
     order.order_box_id = order.id
-    order.total = params.amount
-    order.total = params.amount
-    order.tax = Utils.round(params.amount * order.tax_rate)
-    order.sub_total = Utils.round(params.amount - order.tax)
+    order.total = +params.amount
+    order.tax = Utils.round(+params.amount * order.tax_rate)
+    order.sub_total = Utils.round(+params.amount - order.tax)
 
     //? Check params.only_history
-    // await Order.refundPayment(order)
+    if (!params.only_history) {
+      // await Order.refundPayment(order)
+    }
 
     //? Check params.credit_note
-    // await Invoice.insertRefund(order)
-
-    //? Insert into refund history
-    // ...
+    if (params.credit_note) {
+      await Invoice.insertRefund(order)
+    }
 
     //? Check params.cancel_box
-    // await DB('order_box')
-    //   .where('id', order.id)
-    //   .update({
-    //     is_paid: 0,
-    //     step: 'refunded',
-    //     refund: Utils.round((order.refund || 0) + +params.amount)
-    //   })
+    await DB('order_box')
+      .where('id', order.id)
+      .update(
+        params.cancel_box
+          ? {
+              is_paid: 0,
+              step: 'refunded',
+              refund: Utils.round((order.refund || 0) + +params.amount)
+            }
+          : {
+              refund: Utils.round((order.refund || 0) + +params.amount)
+            }
+      )
 
-    console.log(params)
+    //? Insert into refund history
+
     return { success: true }
   }
 

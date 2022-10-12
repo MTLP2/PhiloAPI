@@ -362,7 +362,7 @@ Route.group(() => {
   Route.get('/boxes/dispatch/:id/invoice', 'BoxController.invoiceDispatch')
   Route.post('/boxes/:id', 'BoxController.saveBox')
   Route.post('/boxes/check', 'BoxController.checkPayments')
-  Route.delete('/boxes/:id/payments/:pid', 'BoxController.refundBoxPayment')
+  Route.post('/boxes/:id/payments/:obid', 'BoxController.refundBoxPayment')
   Route.delete('/boxes/dispatch/:id', 'BoxController.removeDispatch')
   Route.get('/barcodes/:code', 'ProjectsController.getBarcode')
   Route.get('/users', 'AdminController.getUsers')
