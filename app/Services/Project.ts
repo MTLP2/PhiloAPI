@@ -273,7 +273,7 @@ class Project {
     }
 
     const projects = DB()
-      .select(selects)
+      .column(selects)
       .from('project as p')
       .join('vod as v', 'p.id', 'v.project_id')
       .leftJoin('item', 'item.id', 'v.related_item_id')

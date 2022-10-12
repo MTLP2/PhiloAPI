@@ -198,6 +198,11 @@ const DB = (tablee?, idd?) => {
       return db
     },
 
+    column(columns) {
+      p.columns = columns
+      return db
+    },
+
     select(...args) {
       p.columns = [].slice.call(args, 0)
       return db
