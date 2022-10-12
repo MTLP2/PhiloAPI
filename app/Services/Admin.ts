@@ -4540,7 +4540,7 @@ class Admin {
     )
   }
 
-  static exportProjectsBox = async (params) => {
+  static exportProjectsBox = async () => {
     const projectsIsBox = await DB('vod')
       .select('project.id', 'project.name', 'project.artist_name')
       .join('project', 'project.id', 'vod.project_id')
