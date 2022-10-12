@@ -4450,7 +4450,7 @@ class Admin {
     return { success: true }
   }
 
-  static exportOrdersRefunds = async (params) => {
+  static exportOrdersRefunds = async (params: { start: string; end: string }) => {
     const refundsRaw = await DB('refund')
       .select('refund.*', 'order.currency', 'order.user_id', 'order.payment_type', 'os.transporter')
       .join('order', 'order.id', 'refund.order_id')
@@ -4459,11 +4459,9 @@ class Admin {
       .where('refund.created_at', '<=', `${params.end} 23:59`)
       .all()
 
-    // Change refund.amount dots to commas (otherwise numbers are treated as dates by Drive)
-    const refunds = refundsRaw.map((refund) => {
-      refund.amount = refund.amount.toString().replace('.', ',')
-      return refund
-    })
+    const refunds = refundsRaw.map((refund) =>
+      refund.order_box_id ? { ...refund, transporter: 'daudin' } : refund
+    )
 
     return Utils.arrayToCsv(
       [
@@ -4471,10 +4469,11 @@ class Admin {
         { name: 'Order ID', index: 'order_id' },
         { name: 'User ID', index: 'user_id' },
         { name: 'OShop ID', index: 'order_shop_id' },
+        { name: 'OBox ID', index: 'order_box_id' },
         { name: 'Payment Type', index: 'payment_type' },
         { name: 'Transporter', index: 'transporter' },
         { name: 'Date', index: 'created_at' },
-        { name: 'Amount', index: 'amount' },
+        { name: 'Amount', index: 'amount', format: 'number' },
         { name: 'Currency', index: 'currency' },
         { name: 'Reason', index: 'reason' },
         { name: 'Comment', index: 'comment' }

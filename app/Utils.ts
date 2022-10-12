@@ -960,12 +960,16 @@ class Utils {
     return value
   }
 
-  static arrayToCsv = (columns, array, del = ',') => {
+  static arrayToCsv = (
+    columns: Array<{ name: string; index: string; format?: 'number' } | string>,
+    array: any[],
+    del: string = ','
+  ) => {
     let csv = ''
 
     let line = ''
     for (const column of columns) {
-      const c = column.name || column
+      const c = typeof column === 'string' ? column : column.name
       if (line) {
         line += del
       }
@@ -976,11 +980,11 @@ class Utils {
     for (const a of array) {
       let line = ''
       for (const column of columns) {
-        const c = column.index || column
+        const c = typeof column === 'string' ? column : column.index
         if (line) {
           line += del
         }
-        if (column.format === 'number') {
+        if (typeof column === 'object' && column.format === 'number') {
           a[c] = a[c] ? a[c].toString().replace('.', ',') : 0
         }
         line += `"${a[c] === null || a[c] === undefined ? '' : a[c]}"`
