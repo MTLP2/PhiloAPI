@@ -823,10 +823,14 @@ class Box {
     const boxes = await query.all()
 
     for (const box of boxes) {
+      console.log('🚀 ~ file: Box.ts ~ line 826 ~ Box ~ setDispatchLeft ~ box', box)
       let left = 0
       let months = box.dispatch_gift
       if (box.periodicity === 'monthly' || box.monthly) {
-        const dispatchs = await DB('box_dispatch').where('box_id', box.id).all()
+        const dispatchs = await DB('box_dispatch')
+          .where('box_id', box.id)
+          .where('is_dispatch_active', 1)
+          .all()
 
         const dispatch = await DB('box_dispatch')
           .select('created_at')
@@ -887,6 +891,7 @@ class Box {
         }
         const dispatchs = await DB('box_dispatch')
           .where('box_id', box.id)
+          .where('is_dispatch_active', 1)
           .where('step', '!=', 'pending')
           .all()
 
@@ -2408,7 +2413,7 @@ class Box {
     }
   }
 
-  static getNbMonths(periodicity, monthly?) {
+  static getNbMonths(periodicity: string, monthly?: 0 | 1) {
     const p = periodicity.split('_')
     if (periodicity === 'monthly' || monthly) {
       return 1
