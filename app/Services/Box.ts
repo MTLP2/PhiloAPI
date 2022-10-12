@@ -811,13 +811,16 @@ class Box {
     return code
   }
 
-  static async setDispatchLeft() {
+  static async setDispatchLeft(params?: { boxId: number }) {
     let finished = 0
-    const boxes = await DB('box')
+    const query = DB('box')
       .select('box.*', 'box_code.periodicity as code_periodicity')
       .leftJoin('box_code', 'box_code.box_id', 'box.id')
       .whereNotIn('box.step', ['creating', 'refunded'])
-      .all()
+
+    if (params?.boxId) query.where('box.id', params.boxId)
+
+    const boxes = await query.all()
 
     for (const box of boxes) {
       let left = 0
@@ -1418,7 +1421,7 @@ class Box {
     await Box.setDispatchLeft()
   }
 
-  static async checkPayments(params) {
+  static async checkPayments(params?: { box_id: number }) {
     await Box.setDispatchLeft()
 
     const errors: any = []
