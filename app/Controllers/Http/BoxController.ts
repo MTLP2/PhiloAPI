@@ -1,5 +1,5 @@
 import Box from 'App/Services/Box'
-
+import { validator, schema } from '@ioc:Adonis/Core/Validator'
 class BoxController {
   getLastBoxes({ params }) {
     return Box.getLastBoxes(params)
@@ -64,8 +64,19 @@ class BoxController {
     return Box.refund(params)
   }
 
-  saveDispatch({ params }) {
-    return Box.saveDispatch(params)
+  async saveDispatch({ params }) {
+    const payload = await validator.validate({
+      schema: schema.create({
+        id: schema.number(),
+        box_id: schema.number(),
+        barcodes: schema.string(),
+        is_daudin: schema.enum([0, 1] as const),
+        force_quantity: schema.boolean(),
+        cancel_dispatch: schema.boolean()
+      }),
+      data: params
+    })
+    return Box.saveDispatch(payload)
   }
 
   removeDispatch({ params }) {

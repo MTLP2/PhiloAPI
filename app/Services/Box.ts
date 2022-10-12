@@ -1689,11 +1689,18 @@ class Box {
     })
   }
 
-  static async saveDispatch(params) {
+  static async saveDispatch(params: {
+    id: number
+    box_id: number
+    barcodes: string
+    is_daudin: 0 | 1
+    force_quantity: boolean
+    cancel_dispatch?: boolean
+  }) {
     let dispatch: any = DB('box_dispatch')
 
     const barcodes = params.barcodes.split(',')
-    if (params.id !== '0') {
+    if (params.id) {
       dispatch = await DB('box_dispatch').find(params.id)
     } else {
       for (const barcode of barcodes) {
@@ -1704,7 +1711,7 @@ class Box {
           .where('stock.type', 'daudin')
           .first()
 
-        if (params.force_quantity !== 'true' && vod && vod.stock < 1) {
+        if (!params.force_quantity && vod && vod.stock < 1) {
           return { error: 'No quantity' }
         } else if (vod) {
           Stock.save({
@@ -1727,7 +1734,7 @@ class Box {
 
     await dispatch.save()
 
-    if (params.id === '0') {
+    if (!params.id) {
       const box = await DB('box').where('id', params.box_id).first()
       const next = moment(box.next_dispatch)
 
