@@ -31,6 +31,7 @@ declare module 'knex' {
       model(): any
       all(): Promise<any[]>
       find(id: number): Promise<any>
+      count(): Promise<number>
       belongsTo(
         table: string,
         options?: {
@@ -129,16 +130,18 @@ const Model = (table: string, data?: any) => {
 }
 
 const DB = new Proxy(db, {
+  get: function () {},
   apply: function (t, args, argumentsList) {
-    const instance = t(...argumentsList)
+    const instance = argumentsList ? t(...argumentsList) : t
     const [tableName] = argumentsList
     const relations: any[] = []
 
     const proxyInstance = new Proxy(instance, {
       get(target, name: string) {
         return (...args: any[]) => {
-          console.log(name)
-          if (name === 'all' || name === 'first') {
+          if (name === 'raw') {
+            return db.raw(args)
+          } else if (name === 'all' || name === 'first') {
             if (name === 'first') {
               target.limit(1)
             }
@@ -162,7 +165,6 @@ const DB = new Proxy(db, {
                     }
                   })
                 } else if (rel.type === 'hasMany') {
-                  console.log(rel.foreignKey)
                   const rels = await rel
                     .query(DB(rel.table))
                     .whereIn(
@@ -202,10 +204,16 @@ const DB = new Proxy(db, {
               .then((data: any) => {
                 return Model(tableName, data)
               })
+          } else if (name === 'count') {
+            return target
+              .clone()
+              .clearSelect()
+              .select(db.raw('count(*) AS total'))
+              .first()
+              .then((res: { total: number }) => res.total)
           } else if (name === 'model') {
             return Model(tableName)
           } else if (name === 'belongsTo' || name === 'hasMany') {
-            /**
             if (typeof args[1] === 'string' && name === 'belongsTo') {
               relations.push({
                 type: name,
@@ -228,18 +236,17 @@ const DB = new Proxy(db, {
                 }
               })
             } else {
-            **/
-            relations.push({
-              type: name,
-              table: args[0],
-              localKey: args[1]?.localKey || `${args[0]}_id`,
-              foreignKey: args[1]?.foreignKey || `${tableName}_id`,
-              index: args[1]?.index || args[0],
-              query: (q: KnexOriginal.QueryBuilder) => {
-                return args[1]?.query ? args[1].query(q) : q
-              }
-            })
-            // }
+              relations.push({
+                type: name,
+                table: args[0],
+                localKey: args[1]?.localKey || `${args[0]}_id`,
+                foreignKey: args[1]?.foreignKey || `${tableName}_id`,
+                index: args[1]?.index || args[0],
+                query: (q: KnexOriginal.QueryBuilder) => {
+                  return args[1]?.query ? args[1].query(q) : q
+                }
+              })
+            }
           } else {
             target[name](...args)
           }

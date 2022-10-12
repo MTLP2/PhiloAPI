@@ -630,4 +630,4 @@ DB.close = () => {
   return knex.destroy()
 }
 
-export default DB2
+export default DB
