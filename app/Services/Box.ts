@@ -1609,7 +1609,7 @@ class Box {
     obid: string
     amount: string
     reason: string
-    order_box_id: number
+    order_id: number
     comment: string
     only_history: boolean
     credit_note: boolean
@@ -1652,6 +1652,13 @@ class Box {
       )
 
     //? Insert into refund history
+    Order.addRefund({
+      id: order.order_id,
+      amount: +params.amount,
+      reason: params.reason,
+      comment: params.comment,
+      order_box_id: +params.obid
+    })
 
     return { success: true }
   }

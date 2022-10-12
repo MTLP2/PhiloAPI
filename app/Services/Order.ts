@@ -959,8 +959,18 @@ static toJuno = async (params) => {
     return DB('refund').where('order_id', params.id).all()
   }
 
-  static addRefund = async (params) => {
+  static addRefund = async (params: {
+    id: number
+    order_id?: number
+    amount: number
+    reason: string
+    comment?: string
+    order_shop_id?: number
+    order_box_id?: number
+    data?: any
+  }) => {
     params.order_id = params.id
+    console.log(params)
 
     return DB('refund').insert({
       amount: params.amount,
@@ -968,6 +978,7 @@ static toJuno = async (params) => {
       order_id: params.order_id,
       comment: params.comment,
       order_shop_id: params.order_shop_id || 0,
+      order_box_id: params.order_box_id ?? null,
       created_at: Utils.date(),
       data: JSON.stringify(params.data)
     })
