@@ -6,14 +6,14 @@ import Storage from 'App/Services/Storage'
 import DB from 'App/DB'
 
 class StatementService {
-  static async get(params) {
+  static async get(params: { id: number }) {
     const items = (
       await DB('statement')
         .where('project_id', params.id)
         .hasMany('statement_distributor', 'distributors')
         .orderBy('date', 'desc')
         .all()
-    ).map((d) => {
+    ).map((d: any) => {
       d.custom = d.custom ? JSON.parse(d.custom) : null
       return d
     })
@@ -74,13 +74,19 @@ class StatementService {
     return item
   }
 
-  static async delete(params) {
+  static async delete(params: { sid: number }) {
     await DB('statement').where('id', params.sid).delete()
     await DB('statement_distributor').where('statement_id', params.sid).delete()
     return { sucess: true }
   }
 
-  static async upload(params) {
+  static async upload(params: {
+    file: string
+    year: string
+    month: string
+    distributor: string
+    type: string
+  }) {
     const file = Buffer.from(params.file, 'base64')
 
     const currencies = await Utils.getCurrenciesApi(
@@ -492,7 +498,7 @@ class StatementService {
     return data
   }
 
-  static parseFab(workbook) {
+  static parseFab(workbook: any) {
     const worksheet = workbook.getWorksheet(1)
 
     const data = {}
@@ -539,13 +545,16 @@ class StatementService {
     return data
   }
 
-  static async download(params) {
+  static async download(params: { id: number; number: number; start: string; end: string }) {
     const workbook = new Excel.Workbook()
     await this.setWorksheet(workbook, params)
     return workbook.xlsx.writeBuffer()
   }
 
-  static async setWorksheet(workbook, params) {
+  static async setWorksheet(
+    workbook: any,
+    params: { id: number; number: number; start: string; end: string }
+  ) {
     const project = await DB()
       .select('vod.*', 'project.name', 'project.artist_name')
       .from('vod')
@@ -823,7 +832,7 @@ class StatementService {
     return data
   }
 
-  static async userDownload(params) {
+  static async userDownload(params: { id: number; auto: boolean; start: string; end: string }) {
     let projects: any = DB()
       .select('project.id', 'artist_name', 'name')
       .table('project')
@@ -886,7 +895,7 @@ class StatementService {
     return workbook.xlsx.writeBuffer()
   }
 
-  static async getBalances(params) {
+  static async getBalances(params: { start: string; end: string; type: string }) {
     let projectsPromise = DB()
       .from('project')
       .select(
@@ -916,6 +925,7 @@ class StatementService {
     const invoicesPromise = DB('invoice')
       .join('vod', 'vod.project_id', 'invoice.project_id')
       .where('balance_followup', true)
+      .where('compatibility', true)
       .all()
 
     const costsPromise = DB('production_cost')
@@ -1101,7 +1111,7 @@ class StatementService {
     return workbook.xlsx.writeBuffer()
   }
 
-  static async getBalance(params) {
+  static async getBalance(params: { id: number; start: string; end: string }) {
     if (!params.end) {
       params.end = moment().format('YYYY-MM-DD')
     }
@@ -1122,7 +1132,7 @@ class StatementService {
     }
   }
 
-  static async isActive(params) {
+  static async isActive(params: { id: number; barcode: string; start: string; end: string }) {
     const statements = await DB()
       .from('statement')
       .where('project_id', params.id)
@@ -1262,7 +1272,7 @@ class StatementService {
     return i
   }
 
-  static async getStatement(params) {
+  static async getStatement(params: { id: number; start: string; end: string }) {
     if (!params.start) {
       params.start = '2001-01-01'
     }
@@ -1651,7 +1661,7 @@ class StatementService {
     return data
   }
 
-  static getStats = async (params) => {
+  static getStats = async (params: { start: string; end: string }) => {
     let refs: any = DB('statement')
       .select(
         'statement.date',
