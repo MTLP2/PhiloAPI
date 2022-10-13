@@ -257,6 +257,7 @@ Route.group(() => {
 Route.group(() => {
   Route.get('/stats', 'AdminController.getStats')
   Route.get('/stats2', 'AdminController.getStats2')
+  Route.get('/stats/more', 'AdminController.getMoreStats')
   Route.get('/business', 'AdminController.getBusiness')
   Route.get('/resp-prod', 'AdminController.getRespProd')
   Route.get('/stripe-balance', 'AdminController.getStripeBalance')

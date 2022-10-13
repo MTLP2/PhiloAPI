@@ -39,6 +39,10 @@ class AdminController {
     return Stats.getStats2(params)
   }
 
+  getStatsMore({ params }) {
+    return Stats.getMore(params)
+  }
+
   getStripeBalance({ params }) {
     return Admin.getStripeBalance(params)
   }

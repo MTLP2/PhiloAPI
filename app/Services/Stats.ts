@@ -1579,8 +1579,8 @@ class Stats {
   }
   **/
 
-  static async getStats2(params) {
-    let format
+  static async getStats2(params: { start?: string; end?: string; period?: string }) {
+    let format: string
 
     let periodicity
     if (params.period === 'day') {
@@ -1599,7 +1599,7 @@ class Stats {
       periodicity === 'months' ? moment(params.start).startOf('month') : moment(params.start)
 
     const dates = {}
-    let lastDate
+    let lastDate: string = ''
     while (now.isSameOrBefore(moment(params.end))) {
       dates[now.format(format)] = 0
       lastDate = now.format(format)
@@ -2556,6 +2556,8 @@ class Stats {
 
     return d
   }
+
+  static getMore: (params: { start?: string; end: string }) => {}
 
   static getTopProjects: (params: { fromDays?: number; limit?: number } | void) => Promise<
     {
