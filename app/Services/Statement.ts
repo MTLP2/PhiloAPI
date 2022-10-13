@@ -920,14 +920,21 @@ class StatementService {
       .all()
 
     const costsPromise = DB('production_cost')
-      .select('vod.project_id', 'cost_real', 'cost_invoiced')
+      .select('name', 'vod.project_id', 'cost_real', 'cost_invoiced')
       .join('vod', 'vod.project_id', 'production_cost.project_id')
       .where('balance_followup', true)
       .all()
 
-    const [projectsList, invoices, costs] = await Promise.all([
+    const prodsPromise = DB('production')
+      .select('production.project_id', 'quantity', 'quantity_pressed')
+      .join('vod', 'vod.project_id', 'production.project_id')
+      .where('balance_followup', true)
+      .all()
+
+    const [projectsList, invoices, prods, costs] = await Promise.all([
       projectsPromise,
       invoicesPromise,
+      prodsPromise,
       costsPromise
     ])
 
@@ -972,8 +979,17 @@ class StatementService {
         projects[invoice.project_id].invoiced += invoice.sub_total * invoice.currency_rate
         projects[invoice.project_id].direct_balance = projects[invoice.project_id].invoiced
       }
+      for (const prod of prods) {
+        projects[prod.project_id].quantity = prod.quantity
+        projects[prod.project_id].quantity_pressed = prod.quantity_pressed
+      }
       for (const cost of costs) {
-        console.log(cost)
+        const name = cost.name.split(' ')
+        if (!isNaN(name[1])) {
+          projects[cost.project_id].quantity_pressed2 = name[1]
+        } else if (!isNaN(name[2])) {
+          projects[cost.project_id].quantity_pressed2 = name[2]
+        }
         projects[cost.project_id].direct_costs += cost.cost_real
         projects[cost.project_id].costs_invoiced += cost.cost_invoiced
         projects[cost.project_id].direct_balance =
@@ -991,6 +1007,9 @@ class StatementService {
         { header: 'Project', key: 'name', width: 25 },
         { header: 'Resp Prod', key: 'resp_prod', width: 15 },
         { header: 'Resp Com', key: 'resp_com', width: 15 },
+        { header: 'Qty', key: 'quantity', width: 10 },
+        { header: 'Qty press', key: 'quantity_pressed', width: 10 },
+        { header: 'Qty press 2', key: 'quantity_pressed2', width: 10 },
         { header: 'Profits', key: 'profits', width: 10 },
         { header: 'Invoiced Costs', key: 'costs_invoiced', width: 10 },
         { header: 'Statement Costs', key: 'costs_statement', width: 10 },
@@ -1031,9 +1050,13 @@ class StatementService {
         { header: 'Project', key: 'name', width: 25 },
         { header: 'Resp Prod', key: 'resp_prod', width: 15 },
         { header: 'Resp Com', key: 'resp_com', width: 15 },
+        { header: 'Quantity', key: 'quantity', width: 10 },
+        { header: 'Quantity pressed', key: 'quantity_pressed', width: 10 },
+        { header: 'Quantity pressed 2', key: 'quantity_pressed2', width: 10 },
         { header: 'Invoiced', key: 'invoiced', width: 10 },
         { header: 'Costs', key: 'direct_costs', width: 10 },
-        { header: 'Balance', key: 'direct_balance', width: 10 }
+        { header: 'Balance', key: 'direct_balance', width: 10 },
+        { header: 'Comment', key: 'statement_comment', width: 50 }
       ]
 
       let j = 1
