@@ -2120,6 +2120,18 @@ class Project {
 
     return { success: true }
   }
+
+  static getProjectSelection = async () => {
+    const projectIds = [
+      258751, 250288, 253021, 246028, 252919, 242164, 251841, 243953, 233358, 244732, 242078,
+      231755, 230594, 244620, 250288
+    ]
+    return DB('project as p')
+      .select('p.id', 'p.name', 'p.artist_name', 'p.color', 'p.picture')
+      .whereIn('id', projectIds)
+      .orderByRaw('FIELD(id, ' + projectIds.join(',') + ')')
+      .all()
+  }
 }
 
 export default Project
