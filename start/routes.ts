@@ -149,6 +149,7 @@ Route.post('/newsletter', 'AppController.subscribeNewsletterWithoutAccount')
 Route.post('/pass-culture', 'AppController.subscribeToPassCulture')
 
 Route.get('/catalog', 'AdminController.exportCatalog')
+Route.get('/projects-selection', 'ProjectsController.getProjectSelection')
 Route.get('/stats/top-projects', 'ProjectsController.getTopProjects')
 
 Route.group(() => {
