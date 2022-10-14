@@ -704,13 +704,13 @@ static toJuno = async (params) => {
     }
 
     if (type === 'cancel' || (params && params.cancel_notification === 'true')) {
-      const data = {}
-      data.type = 'my_order_canceled'
-      data.user_id = order.user_id
-      data.order_id = order.order_id
-      data.order_shop_id = order.id
-      data.alert = 0
-      await Notification.new(data)
+      await Notification.new({
+        type: 'my_order_canceled',
+        user_id: order.user_id,
+        order_id: order.order_id,
+        order_shop_id: order.id,
+        alert: 0
+      })
     }
 
     return true
