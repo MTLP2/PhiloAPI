@@ -79,6 +79,16 @@ class BoxController {
     return Box.saveDispatch(payload)
   }
 
+  async refreshBoxDispatch({ params }) {
+    const payload = await validator.validate({
+      schema: schema.create({
+        id: schema.string()
+      }),
+      data: params
+    })
+    return Box.refreshBoxDispatch(payload)
+  }
+
   removeDispatch({ params }) {
     return Box.removeDispatch(params)
   }

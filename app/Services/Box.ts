@@ -1708,13 +1708,14 @@ class Box {
   }
 
   static async saveDispatch(params: {
-    id: number
+    id?: number
     box_id: number
     barcodes: string
     is_daudin: 0 | 1
     force_quantity: boolean
     cancel_dispatch: boolean
   }) {
+    console.log(params)
     let dispatch: any = DB('box_dispatch')
 
     const barcodes = params.barcodes.split(',')
@@ -1748,8 +1749,10 @@ class Box {
     dispatch.box_id = params.box_id
     dispatch.barcodes = params.barcodes
     dispatch.is_daudin = params.is_daudin
-    dispatch.is_dispatch_active = params.cancel_dispatch
+    dispatch.is_dispatch_active = !params.cancel_dispatch
     dispatch.updated_at = Utils.date()
+
+    console.log(dispatch)
 
     await dispatch.save()
 
@@ -1771,6 +1774,8 @@ class Box {
           })
       }
     }
+
+    await Box.setDispatchLeft({ boxId: params.box_id })
     return dispatch
   }
 
@@ -3202,6 +3207,11 @@ class Box {
     }
 
     return gg
+  }
+
+  static async refreshBoxDispatch(params: { id: string }) {
+    await Box.setDispatchLeft({ boxId: +params.id })
+    return { success: true }
   }
 }
 
