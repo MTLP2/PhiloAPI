@@ -1,5 +1,7 @@
 import DB from 'App/DB'
 import Utils from 'App/Utils'
+import Excel from 'exceljs'
+import Statement from 'App/Services/Statement'
 import moment from 'moment'
 
 class Stats {
@@ -1853,7 +1855,8 @@ class Stats {
         'sub_total',
         'margin',
         'currency_rate',
-        'order_id'
+        'order_id',
+        'order_shop_id'
       )
       .whereBetween('date', [params.start, params.end])
       .where('compatibility', true)
@@ -2015,7 +2018,15 @@ class Stats {
     }
 
     const boxesList = await DB('order_box')
-      .select('order_id', 'total', 'tax_rate', 'currency', 'shipping', 'currency_rate')
+      .select(
+        'order_id',
+        'id as order_box_id',
+        'total',
+        'tax_rate',
+        'currency',
+        'shipping',
+        'currency_rate'
+      )
       .whereIn(
         'order_id',
         invoices.map((i) => i.order_id)
@@ -2088,6 +2099,9 @@ class Stats {
           addTurnover(invoice.type, 'shipping', 'site', date, shipping)
 
           for (const item of order.items) {
+            if (invoice.order_shop_id && item.order_shop_id !== invoice.order_shop_id) {
+              continue
+            }
             let total = item.total / (1 + order.tax_rate)
             let marge
             if (item.payback_site) {
@@ -2131,7 +2145,6 @@ class Stats {
       } else if (invoice.name.includes('Order ')) {
         d.turnover.error.total += total
         d.turnover.error.dates[date] += total
-        console.log(total)
       } else {
         d.turnover.other.total += total
         d.turnover.other.dates[date] += total
@@ -2557,7 +2570,72 @@ class Stats {
     return d
   }
 
-  static getMore: (params: { start?: string; end: string }) => {}
+  static async getProjectsTurnover(params: { start?: string; end?: string }) {
+    const currenciesDb = await Utils.getCurrenciesDb()
+    const currencies = await Utils.getCurrencies('EUR', currenciesDb)
+    const projects = await DB('vod')
+      .select(
+        'project_id',
+        'artist_name',
+        'project.name',
+        'is_licence',
+        'currency',
+        'step',
+        'project.created_at'
+      )
+      .join('project', 'project.id', 'vod.project_id')
+      .where('step', 'successful')
+      .all()
+
+    const workbook = new Excel.Workbook()
+
+    const worksheet: any = workbook.addWorksheet()
+
+    worksheet.columns = [
+      { header: 'Id', key: 'project_id', width: 10 },
+      { header: 'Project', key: 'name', width: 30 },
+      { header: 'Date', key: 'created_at', width: 10 },
+      { header: 'Licence', key: 'licence', width: 10 },
+      { header: 'Qty Site', key: 'qty_site', width: 10 },
+      { header: 'Site', key: 'site', width: 10 },
+      { header: 'Qty Distrib', key: 'qty_distrib', width: 10 },
+      { header: 'Distrib', key: 'distrib', width: 10 },
+      { header: 'Qty Total', key: 'qty_total', width: 10 },
+      { header: 'Total', key: 'total', width: 10 }
+    ]
+
+    for (const project of projects) {
+      const statement = await Statement.getStatement({
+        id: project.project_id,
+        fee: 0,
+        start: params.start,
+        end: params.end
+      })
+
+      if (!statement) {
+        continue
+      }
+
+      let distrib = statement.distrib_total.total * currencies[project.currency]
+      let site =
+        (statement.site_total.total + statement.site_tip.total) * currencies[project.currency]
+
+      worksheet.addRow({
+        project_id: project.project_id,
+        name: `${project.artist_name} - ${project.name}`,
+        licence: project.is_licence ? 'Yes' : 'No',
+        created_at: project.created_at,
+        qty_site: statement.site_quantity.total,
+        site: site,
+        qty_distrib: statement.distrib_quantity.total,
+        distrib: distrib,
+        qty_total: statement.site_quantity.total + statement.distrib_quantity.total,
+        total: distrib + site
+      })
+    }
+
+    return workbook.xlsx.writeBuffer()
+  }
 
   static getTopProjects: (params: { fromDays?: number; limit?: number } | void) => Promise<
     {

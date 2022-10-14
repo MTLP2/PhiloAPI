@@ -258,7 +258,6 @@ Route.group(() => {
 Route.group(() => {
   Route.get('/stats', 'AdminController.getStats')
   Route.get('/stats2', 'AdminController.getStats2')
-  Route.get('/stats/more', 'AdminController.getMoreStats')
   Route.get('/business', 'AdminController.getBusiness')
   Route.get('/resp-prod', 'AdminController.getRespProd')
   Route.get('/stripe-balance', 'AdminController.getStripeBalance')
@@ -269,6 +268,7 @@ Route.group(() => {
   Route.get('/projects/export-raw', 'AdminController.exportRawProjects')
   Route.get('/projects/balance', 'AdminController.getBalances')
   Route.get('/projects/boxes-export', 'AdminController.exportProjectsBox')
+  Route.get('/projects/turnover', 'AdminController.getProjectsTurnover')
   Route.get('/projects/:id', 'AdminController.getProject')
   Route.post('/projects/:id', 'AdminController.saveProject')
   Route.get('/projects/:id/balance', 'AdminController.getBalance')
