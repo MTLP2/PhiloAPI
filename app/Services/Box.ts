@@ -823,7 +823,6 @@ class Box {
     const boxes = await query.all()
 
     for (const box of boxes) {
-      console.log('🚀 ~ file: Box.ts ~ line 826 ~ Box ~ setDispatchLeft ~ box', box)
       let left = 0
       let months = box.dispatch_gift
       if (box.periodicity === 'monthly' || box.monthly) {

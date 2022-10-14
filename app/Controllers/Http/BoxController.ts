@@ -65,6 +65,7 @@ class BoxController {
   }
 
   async saveDispatch({ params }) {
+    params.force_quantity = !!params.force_quantity
     const payload = await validator.validate({
       schema: schema.create({
         id: schema.number(),
