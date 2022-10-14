@@ -1128,25 +1128,25 @@ static toJuno = async (params) => {
       .whereNull('tracking_number')
       .all()
 
-    const workbook = new Excel.Workbook()
-    const worksheet: any = workbook.addWorksheet('Orders')
-
-    worksheet.columns = [
-      { header: 'Id', key: 'id', width: 15 },
-      { header: 'Transporter', key: 'transporter', width: 30 },
-      { header: 'Total', key: 'total', width: 15 },
-      { header: 'Step', key: 'step', width: 15 },
-      { header: 'User Id', key: 'user_id', width: 15 },
-      { header: 'Shipping', key: 'shipping', width: 15 },
-      { header: 'Shipping Type', key: 'shipping_type', width: 15 },
-      { header: 'Date Export', key: 'date_export', width: 30 },
-      { header: 'Created At', key: 'created_at', width: 30 }
-    ]
-
-    for (const order of orders) worksheet.addRow(order)
-    for (const cell of Utils.getCells(worksheet, 'A1:I1')) cell.font = { bold: true }
-
-    const file = await workbook.xlsx.writeBuffer()
+    const file = await Utils.arrayToXlsx(
+      [
+        {
+          worksheetName: 'Orders',
+          data: orders
+        }
+      ],
+      [
+        { header: 'Id', key: 'id', width: 15 },
+        { header: 'Transporter', key: 'transporter', width: 30 },
+        { header: 'Total', key: 'total', width: 15 },
+        { header: 'Step', key: 'step', width: 15 },
+        { header: 'User Id', key: 'user_id', width: 15 },
+        { header: 'Shipping', key: 'shipping', width: 15 },
+        { header: 'Shipping Type', key: 'shipping_type', width: 15 },
+        { header: 'Date Export', key: 'date_export', width: 30 },
+        { header: 'Created At', key: 'created_at', width: 30 }
+      ]
+    )
 
     await Notification.email({
       to: 'support@diggersfactory.com',

@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid'
 import Hashids from 'hashids'
 import fs from 'fs'
 import request from 'request'
+import Excel from 'exceljs'
 
 import ApiError from 'App/ApiError'
 import Storage from 'App/Services/Storage'
@@ -1163,6 +1164,30 @@ class Utils {
       // return response.status(400).send({ error: error.messages })
     }
     **/
+  }
+
+  static arrayToXlsx = (
+    sheets: { worksheetName: string; data: any[] }[],
+    columns: { header?: string; key: string; width: number }[]
+  ) => {
+    const workbook = new Excel.Workbook()
+
+    let i = 1
+    // For each sheet
+    for (const sheet of sheets) {
+      const worksheet: any = workbook.addWorksheet(sheet.worksheetName || `Sheet ${i}`)
+      worksheet.columns = columns
+
+      for (const element of sheet.data) worksheet.addRow(element)
+      for (const cell of Utils.getCells(
+        worksheet,
+        `A1:${String.fromCharCode(sheet.data.length + 64)}1`
+      ))
+        cell.font = { bold: true }
+      i++
+    }
+
+    return workbook.xlsx.writeBuffer()
   }
 
   static getTeam = [
