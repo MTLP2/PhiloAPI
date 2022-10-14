@@ -918,11 +918,21 @@ class Box {
           finished++
           console.log('finished', box.id, box.periodicity)
         }
+
+        // For setting step :
+        // If box is confirmed but no (dispatch) left --> finished
+        // If box is finished but some dispatch left found (in the case of one or more dispatch turned into is_dispatch_active = 0) --> confirmed
+        // Else, keep step
         DB('box')
           .where('id', box.id)
           .update({
             end: end,
-            step: box.step === 'confirmed' && left < 1 ? 'finished' : box.step,
+            step:
+              box.step === 'confirmed' && left < 1
+                ? 'finished'
+                : box.step === 'finished' && left > box.dispatch_left
+                ? 'confirmed'
+                : box.step,
             dispatchs: dispatchs.length,
             months: months,
             dispatch_left: left
@@ -1703,7 +1713,7 @@ class Box {
     barcodes: string
     is_daudin: 0 | 1
     force_quantity: boolean
-    cancel_dispatch?: boolean
+    cancel_dispatch: boolean
   }) {
     let dispatch: any = DB('box_dispatch')
 
@@ -1738,6 +1748,7 @@ class Box {
     dispatch.box_id = params.box_id
     dispatch.barcodes = params.barcodes
     dispatch.is_daudin = params.is_daudin
+    dispatch.is_dispatch_active = params.cancel_dispatch
     dispatch.updated_at = Utils.date()
 
     await dispatch.save()

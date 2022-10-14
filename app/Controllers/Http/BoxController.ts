@@ -5,8 +5,8 @@ class BoxController {
     return Box.getLastBoxes(params)
   }
 
-  getBoxesPrices({ params }) {
-    return Box.getPrices(params)
+  getBoxesPrices() {
+    return Box.getPrices()
   }
 
   checkSponsor({ params }) {
@@ -21,8 +21,8 @@ class BoxController {
     return Box.save(params)
   }
 
-  exportBoxes({ params }) {
-    return Box.export(params)
+  exportBoxes() {
+    return Box.export()
   }
 
   async getBoxCard({ params }) {
@@ -44,19 +44,19 @@ class BoxController {
     return Box.removeBoxMonth(params)
   }
 
-  statsDispatchs({ params }) {
-    return Box.statsDispatchs(params)
+  statsDispatchs() {
+    return Box.statsDispatchs()
   }
 
-  getBoxesStats({ params }) {
-    return Box.stats(params)
+  getBoxesStats() {
+    return Box.stats()
   }
 
   getBox({ params }) {
     return Box.find(params.id)
   }
 
-  checkPayments({ params }) {
+  checkPayments() {
     return Box.checkPayments()
   }
 
