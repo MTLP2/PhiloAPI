@@ -1715,7 +1715,6 @@ class Box {
     force_quantity: boolean
     cancel_dispatch: boolean
   }) {
-    console.log(params)
     let dispatch: any = DB('box_dispatch')
 
     const barcodes = params.barcodes.split(',')
@@ -1751,8 +1750,6 @@ class Box {
     dispatch.is_daudin = params.is_daudin
     dispatch.is_dispatch_active = !params.cancel_dispatch
     dispatch.updated_at = Utils.date()
-
-    console.log(dispatch)
 
     await dispatch.save()
 
