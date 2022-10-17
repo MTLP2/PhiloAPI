@@ -971,7 +971,6 @@ static toJuno = async (params) => {
     data?: any
   }) => {
     params.order_id = params.id
-    console.log(params)
 
     return DB('refund').insert({
       amount: params.amount,
