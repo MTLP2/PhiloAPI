@@ -1018,16 +1018,17 @@ class Utils {
   }
 
   static arrayToXlsx = <T extends any[]>(
-    columns: { header: string; key: string; width: number }[],
+    columns: { header: string; key: string; width: number }[][],
     sheets: { worksheetName: string; data: T[] }[]
   ) => {
     const workbook = new Excel.Workbook()
 
-    let i = 1
+    let i = 0
     // For each sheet
     for (const sheet of sheets) {
-      const worksheet: any = workbook.addWorksheet(sheet.worksheetName || `Sheet ${i}`)
-      worksheet.columns = columns
+      const worksheet: any = workbook.addWorksheet(sheet.worksheetName || `Sheet ${i + 1}`)
+      console.log(columns)
+      worksheet.columns = columns[i]
 
       for (const element of sheet.data) worksheet.addRow(element)
       for (const cell of Utils.getCells(
