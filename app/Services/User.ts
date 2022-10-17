@@ -36,6 +36,7 @@ class User {
       `),
         'styles',
         'website',
+        'picture',
         'lang',
         'label_name',
         'label_website',
