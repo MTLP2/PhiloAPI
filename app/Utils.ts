@@ -223,9 +223,9 @@ class Utils {
     }
   }
 
-  static toPdf = async (html) => {
+  static toPdf = async (html: string): Promise<Buffer> => {
     return new Promise((resolve, reject) => {
-      pdf.create(html).toBuffer(function (err, buffer) {
+      pdf.create(html).toBuffer(function (err, buffer: Buffer) {
         if (err) {
           reject(err)
         } else {
