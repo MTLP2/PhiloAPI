@@ -1690,15 +1690,15 @@ class Admin {
     if (params.type === 'no_tracking') {
       orders.where((query) => {
         query
-          .where('date_export', '>', '2020-01-01')
+          .where('os.date_export', '>', '2020-01-01')
           .whereNull('tracking_number')
           .whereNull('logistician_id')
           .where('os.transporter', '!=', 'whiplash')
-          .where(DB.raw('date_export < DATE_SUB(NOW(), INTERVAL 7 DAY)'))
+          .where(DB.raw('os.date_export < DATE_SUB(NOW(), INTERVAL 7 DAY)'))
           .where('is_paid', 1)
       })
       if (!params.sort) {
-        params.sort = 'date_export'
+        params.sort = 'os.date_export'
         params.order = 'desc'
       }
     }
@@ -1709,7 +1709,7 @@ class Admin {
       orders.where('os.created_at', '<=', `${params.end} 23:59`)
     }
     if (params.type === 'no_export') {
-      orders.whereNull('date_export')
+      orders.whereNull('os.date_export')
       orders.whereNull('tracking_number')
       orders.whereNull('logistician_id')
       orders.where('is_paid', 1)
