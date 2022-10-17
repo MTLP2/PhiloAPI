@@ -1017,6 +1017,30 @@ class Utils {
     return data
   }
 
+  static arrayToXlsx = <T extends any[]>(
+    columns: { header: string; key: string; width: number }[],
+    sheets: { worksheetName: string; data: T[] }[]
+  ) => {
+    const workbook = new Excel.Workbook()
+
+    let i = 1
+    // For each sheet
+    for (const sheet of sheets) {
+      const worksheet: any = workbook.addWorksheet(sheet.worksheetName || `Sheet ${i}`)
+      worksheet.columns = columns
+
+      for (const element of sheet.data) worksheet.addRow(element)
+      for (const cell of Utils.getCells(
+        worksheet,
+        `A1:${String.fromCharCode(sheet.data.length + 64)}1`
+      ))
+        cell.font = { bold: true }
+      i++
+    }
+
+    return workbook.xlsx.writeBuffer()
+  }
+
   static upload = async (params) => {
     if (!params.uploadId) {
       const res: any = await Storage.createMultipartUpload({
@@ -1164,30 +1188,6 @@ class Utils {
       // return response.status(400).send({ error: error.messages })
     }
     **/
-  }
-
-  static arrayToXlsx = <T extends any[]>(
-    sheets: { worksheetName: string; data: T[] }[],
-    columns: { header?: string; key: string; width: number }[]
-  ) => {
-    const workbook = new Excel.Workbook()
-
-    let i = 1
-    // For each sheet
-    for (const sheet of sheets) {
-      const worksheet: any = workbook.addWorksheet(sheet.worksheetName || `Sheet ${i}`)
-      worksheet.columns = columns
-
-      for (const element of sheet.data) worksheet.addRow(element)
-      for (const cell of Utils.getCells(
-        worksheet,
-        `A1:${String.fromCharCode(sheet.data.length + 64)}1`
-      ))
-        cell.font = { bold: true }
-      i++
-    }
-
-    return workbook.xlsx.writeBuffer()
   }
 
   static getTeam = [

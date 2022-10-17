@@ -1130,12 +1130,6 @@ static toJuno = async (params) => {
 
     const file = await Utils.arrayToXlsx(
       [
-        {
-          worksheetName: 'Orders',
-          data: orders
-        }
-      ],
-      [
         { header: 'Id', key: 'id', width: 15 },
         { header: 'Transporter', key: 'transporter', width: 30 },
         { header: 'Total', key: 'total', width: 15 },
@@ -1145,6 +1139,12 @@ static toJuno = async (params) => {
         { header: 'Shipping Type', key: 'shipping_type', width: 15 },
         { header: 'Date Export', key: 'date_export', width: 30 },
         { header: 'Created At', key: 'created_at', width: 30 }
+      ],
+      [
+        {
+          worksheetName: 'Orders',
+          data: orders
+        }
       ]
     )
 
