@@ -1166,8 +1166,8 @@ class Utils {
     **/
   }
 
-  static arrayToXlsx = (
-    sheets: { worksheetName: string; data: any[] }[],
+  static arrayToXlsx = <T extends any[]>(
+    sheets: { worksheetName: string; data: T[] }[],
     columns: { header?: string; key: string; width: number }[]
   ) => {
     const workbook = new Excel.Workbook()
