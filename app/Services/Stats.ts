@@ -2584,18 +2584,18 @@ class Stats {
         'project.created_at'
       )
       .join('project', 'project.id', 'vod.project_id')
-      .where('step', 'successful')
+      .whereIn('step', ['successful', 'in_progress'])
       .all()
 
     const workbook = new Excel.Workbook()
 
-    const worksheet: any = workbook.addWorksheet()
+    const projectWorkbook: any = workbook.addWorksheet('Project')
+    const licenceWorkbook: any = workbook.addWorksheet('Licence')
 
-    worksheet.columns = [
+    const columns = [
       { header: 'Id', key: 'project_id', width: 10 },
       { header: 'Project', key: 'name', width: 30 },
       { header: 'Date', key: 'created_at', width: 10 },
-      { header: 'Licence', key: 'licence', width: 10 },
       { header: 'Qty Site', key: 'qty_site', width: 10 },
       { header: 'Site', key: 'site', width: 10 },
       { header: 'Qty Distrib', key: 'qty_distrib', width: 10 },
@@ -2603,6 +2603,9 @@ class Stats {
       { header: 'Qty Total', key: 'qty_total', width: 10 },
       { header: 'Total', key: 'total', width: 10 }
     ]
+
+    projectWorkbook.columns = columns
+    licenceWorkbook.columns = columns
 
     for (const project of projects) {
       const statement = await Statement.getStatement({
@@ -2620,10 +2623,13 @@ class Stats {
       let site =
         (statement.site_total.total + statement.site_tip.total) * currencies[project.currency]
 
-      worksheet.addRow({
+      if (distrib + site < 500) {
+        continue
+      }
+
+      const row = {
         project_id: project.project_id,
         name: `${project.artist_name} - ${project.name}`,
-        licence: project.is_licence ? 'Yes' : 'No',
         created_at: project.created_at,
         qty_site: statement.site_quantity.total,
         site: site,
@@ -2631,7 +2637,12 @@ class Stats {
         distrib: distrib,
         qty_total: statement.site_quantity.total + statement.distrib_quantity.total,
         total: distrib + site
-      })
+      }
+      if (project.is_licence) {
+        licenceWorkbook.addRow(row)
+      } else {
+        projectWorkbook.addRow(row)
+      }
     }
 
     return workbook.xlsx.writeBuffer()
