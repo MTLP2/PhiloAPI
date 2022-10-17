@@ -571,44 +571,49 @@ class Dispatch {
     )
   }
 
-  static setCosts = async (params) => {
+  static setCosts = async (params: { transporter: string; force?: boolean }) => {
     const files: any = await Storage.list(`shippings/${params.transporter}`, true)
-    const dispatchs: any = []
+    let dispatchs: number = 0
     for (const file of files) {
       if (file.size === 0) {
         continue
       }
       const path = file.path.split('.')[0].split(' ')
-
-      if (path[0] !== 'shippings/whiplash/invoice_97369') {
+      console.log(path)
+      if (path[0] !== 'shippings/sna/sna_2022-09') {
         continue
       }
-
-      console.log(path)
+      console.log('=>', path)
 
       const date = path[path.length - 1]
-
-      const buffer = await Storage.get(file.path, true)
-
+      const buffer: Buffer = <Buffer>await Storage.get(file.path, true)
       const dis = await Dispatch.setCost(params.transporter, date, buffer, params.force)
-      // console.log(dis.length)
-      dispatchs.push(...dis)
+
+      dispatchs += dis
     }
-    return dispatchs.length
+
+    console.log('dispatchs => ', dispatchs)
+    return dispatchs
   }
 
-  static setCost = async (transporter, date, buffer, force = false) => {
-    const dispatchs: any[] = []
+  static setCost = async (
+    transporter: string,
+    date: string,
+    buffer: Buffer,
+    force: boolean = false
+  ) => {
+    let dispatchs: number = 0
 
     let dis
     if (transporter === 'daudin') {
       dis = await Daudin.setCost(date, buffer, force)
     } else if (transporter === 'sna') {
-      dis = await Sna.setCost(date, buffer, force)
+      console.log('ol')
+      dis = await Sna.setCost(buffer, force)
     } else if (transporter === 'whiplash') {
       dis = await Whiplash.setCost(buffer, force)
     }
-    dispatchs.push(...dis)
+    dispatchs += dis
 
     return dispatchs
   }

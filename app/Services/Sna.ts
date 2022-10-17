@@ -143,7 +143,7 @@ class Sna {
     return orders.reverse()
   }
 
-  static async setCost(date, buffer, force) {
+  static async setCost(buffer, force) {
     const dispatchs: any[] = []
     const workbook = new Excel.Workbook()
     await workbook.xlsx.load(buffer)
@@ -159,9 +159,11 @@ class Sna {
         weight: Utils.round(row.getCell('F').toString())
       }
 
+      // console.log(dispatch)
       if (!dispatch.id || isNaN(dispatch.id) || !dispatch.trans) {
         return
       }
+      console.log(dispatch)
 
       if (!Utils.inUE(dispatch.country)) {
         dispatch.trans += 0.5
@@ -198,7 +200,7 @@ class Sna {
       dispatchs.push(dispatch)
     })
 
-    return dispatchs
+    return dispatchs.length
   }
 
   static async setTrackingLinks() {

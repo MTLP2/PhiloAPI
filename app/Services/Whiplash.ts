@@ -686,7 +686,7 @@ class Whiplash {
         // console.log(shop.order_id, dispatch.creator_id, dispatch.warehouse_id, -dispatch.total, shop.shipping_cost)
       }
     }
-    return dispatchs
+    return dispatchs.length
   }
 
   static parseShippings = async () => {
