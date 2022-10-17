@@ -1111,7 +1111,7 @@ class StatementService {
     return workbook.xlsx.writeBuffer()
   }
 
-  static async getBalance(params: { id: number; start: string; end: string }) {
+  static async getBalance(params: { id: number; start?: string; end?: string }) {
     if (!params.end) {
       params.end = moment().format('YYYY-MM-DD')
     }
@@ -1272,9 +1272,12 @@ class StatementService {
     return i
   }
 
-  static async getStatement(params: { id: number; start: string; end: string }) {
+  static async getStatement(params: { id: number; fee?: number; start?: string; end?: string }) {
     if (!params.start) {
       params.start = '2001-01-01'
+    }
+    if (!params.end) {
+      params.end = moment().format('YYYY-MM-DD')
     }
 
     const project = await DB()
@@ -1511,7 +1514,8 @@ class StatementService {
       }
 
       const feeDate = JSON.parse(project.fee_date)
-      const fee = 1 - Utils.getFee(feeDate, order.created_at) / 100
+      const fee =
+        1 - (params.fee !== undefined ? params.fee : Utils.getFee(feeDate, order.created_at) / 100)
       const tax = 1 + order.tax_rate
       const discount = order.discount_artist ? order.discount : 0
       const total = order.price * order.quantity - discount
@@ -1563,7 +1567,8 @@ class StatementService {
       }
 
       const feeDistribDate = JSON.parse(project.fee_distrib_date)
-      const feeDistrib = 1 - Utils.getFee(feeDistribDate, stat.date) / 100
+      const feeDistrib =
+        1 - (params.fee !== undefined ? params.fee : Utils.getFee(feeDistribDate, stat.date) / 100)
 
       for (const dist of stat.distributors) {
         if (!dist.item) {
