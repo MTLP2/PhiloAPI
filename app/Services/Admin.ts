@@ -325,8 +325,8 @@ class Admin {
         if (!project.to_sizes[order.size].trans[order.transporter]) {
           project.to_sizes[order.size].trans[order.transporter] = 0
         }
-        project.to_sizes[order.size].trans[order.transporter]++
-        project.to_sizes[order.size].total++
+        project.to_sizes[order.size].trans[order.transporter] += order.quantity
+        project.to_sizes[order.size].total += order.quantity
       }
       if (!order.transporter) {
         order.transporter = 'daudin'
@@ -390,6 +390,7 @@ class Admin {
         }
       }
     }
+
     project.barcodes = barcodes
     project.historic = JSON.parse(project.historic)
     project.reviews = reviews
