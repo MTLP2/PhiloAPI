@@ -195,7 +195,7 @@ class Quote {
         qty = 2000
       } else if (data.quantity < 5000) {
         qty = 3000
-      } else if (data.quantity === 5000) {
+      } else if (data.quantity >= 5000) {
         qty = 5000
       }
 
@@ -579,8 +579,8 @@ class Quote {
         getCost(
           {
             '12"': 255,
-            '10"': 262,
-            '7"': 263
+            '10"': 256,
+            '7"': 257
           },
           'shrink',
           ` x ${params.quantity}`
@@ -590,9 +590,9 @@ class Quote {
     // print finish
     quote.print_finish = 0
     if (params.print_finish === 'returned_cardboard') {
-      quote.print_finish = getCost(352, 'print_finish')
+      quote.print_finish = getCost(352, 'print_finish') / params.nb_vinyl
     } else if (params.print_finish === 'matt_varnish') {
-      quote.print_finish = getCost(284, 'print_finish')
+      quote.print_finish = getCost(284, 'print_finish') / params.nb_vinyl
     }
 
     // insert
@@ -1107,7 +1107,7 @@ class Quote {
           return {
             position: ii + 1,
             label: i.label,
-            value: Math.round(+i.value.split(' ')[0] / (1 + quote.fee / 100))
+            value: Math.ceil(+i.value.split(' ')[0] / (1 + quote.fee / 100))
           }
         })
     )

@@ -24,6 +24,10 @@ class Daudin {
       const csv = Buffer.from(params.file.data, 'base64').toString('ascii')
 
       let lines = csv.split('\r\n')
+
+      if (lines.length <= 1) {
+        lines = csv.split('\n')
+      }
       if (lines.length <= 1) {
         lines = csv.split('\r')
       }
@@ -59,9 +63,12 @@ class Daudin {
           tracking = line[2]
         }
 
-        if (!orderShopId) {
+        console.log(line)
+
+        if (!orderShopId || !tracking) {
           continue
         }
+        console.log(tracking)
         orders.push({
           id: orderShopId.replace('X', '').trim(),
           tracking: tracking.trim(),

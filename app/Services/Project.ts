@@ -273,7 +273,7 @@ class Project {
     }
 
     const projects = DB()
-      .selects(selects)
+      .column(selects)
       .from('project as p')
       .join('vod as v', 'p.id', 'v.project_id')
       .leftJoin('item', 'item.id', 'v.related_item_id')
@@ -490,7 +490,7 @@ class Project {
       projects.orderBy(params.order, params.sort)
     } else if (params.sort) {
       if (params.sort === 'popularity') {
-        projects.orderBy('likes', 'desc')
+        projects.orderBy('home', 'desc').orderBy('likes', 'desc')
       } else if (params.sort === 'progress') {
         projects.orderBy('progress', 'desc')
       } else if (params.sort === 'date_add') {
@@ -2119,6 +2119,18 @@ class Project {
     }
 
     return { success: true }
+  }
+
+  static getProjectSelection = async () => {
+    const projectIds = [
+      258751, 250288, 253021, 246028, 252919, 242164, 251841, 243953, 233358, 244732, 242078,
+      231755, 230594, 244620, 250288
+    ]
+    return DB('project as p')
+      .select('p.id', 'p.name', 'p.artist_name', 'p.color', 'p.picture')
+      .whereIn('id', projectIds)
+      .orderByRaw('FIELD(id, ' + projectIds.join(',') + ')')
+      .all()
   }
 }
 

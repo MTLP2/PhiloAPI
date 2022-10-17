@@ -1,4 +1,5 @@
 import Env from '@ioc:Adonis/Core/Env'
+import DB2 from './DB2'
 
 const knex = require('knex')({
   client: 'mysql',
@@ -197,7 +198,7 @@ const DB = (tablee?, idd?) => {
       return db
     },
 
-    selects(columns) {
+    column(columns) {
       p.columns = columns
       return db
     },

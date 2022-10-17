@@ -149,6 +149,7 @@ Route.post('/newsletter', 'AppController.subscribeNewsletterWithoutAccount')
 Route.post('/pass-culture', 'AppController.subscribeToPassCulture')
 
 Route.get('/catalog', 'AdminController.exportCatalog')
+Route.get('/projects-selection', 'ProjectsController.getProjectSelection')
 Route.get('/stats/top-projects', 'ProjectsController.getTopProjects')
 
 Route.group(() => {
@@ -267,6 +268,7 @@ Route.group(() => {
   Route.get('/projects/export-raw', 'AdminController.exportRawProjects')
   Route.get('/projects/balance', 'AdminController.getBalances')
   Route.get('/projects/boxes-export', 'AdminController.exportProjectsBox')
+  Route.get('/projects/turnover', 'AdminController.getProjectsTurnover')
   Route.get('/projects/:id', 'AdminController.getProject')
   Route.post('/projects/:id', 'AdminController.saveProject')
   Route.get('/projects/:id/balance', 'AdminController.getBalance')
