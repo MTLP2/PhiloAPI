@@ -1124,7 +1124,7 @@ static toJuno = async (params) => {
         'os.created_at'
       )
       .join('order as o', 'o.id', 'os.order_id')
-      .whereRaw(`DATEDIFF(now(), date_export) <= ${nbOfDays}`)
+      .whereRaw(`DATEDIFF(now(), date_export) < ${nbOfDays}`)
       .whereNull('tracking_number')
       .all()
 
