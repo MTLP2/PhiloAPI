@@ -608,7 +608,6 @@ class Dispatch {
     if (transporter === 'daudin') {
       dis = await Daudin.setCost(date, buffer, force)
     } else if (transporter === 'sna') {
-      console.log('ol')
       dis = await Sna.setCost(buffer, force)
     } else if (transporter === 'whiplash') {
       dis = await Whiplash.setCost(buffer, force)
