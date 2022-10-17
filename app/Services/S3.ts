@@ -9,7 +9,7 @@ const s3 = new AWS.S3({
 const cloudfront = new AWS.CloudFront()
 
 class S3 {
-  static async list(path, isPrivate = false) {
+  static async list(path: string, isPrivate: boolean = false) {
     return new Promise((resolve, reject) => {
       s3.listObjects(
         {
@@ -35,7 +35,7 @@ class S3 {
     })
   }
 
-  static async fileExists(path, isPrivate = false) {
+  static async fileExists(path: string, isPrivate: boolean = false) {
     return new Promise((resolve, reject) => {
       s3.headObject(
         {
@@ -53,7 +53,7 @@ class S3 {
     })
   }
 
-  static async get(path, isPrivate = false) {
+  static async get(path: string, isPrivate: boolean = false) {
     return new Promise((resolve, reject) => {
       s3.getObject(
         {
@@ -97,7 +97,7 @@ class S3 {
     })
   }
 
-  static async copy(path1, path2, isPrivate = false) {
+  static async copy(path1: string, path2: string, isPrivate = false) {
     return new Promise((resolve, reject) => {
       const bucket = isPrivate ? Env.get('AWS_BUCKET_PRIVATE') : Env.get('AWS_BUCKET_PUBLIC')
       s3.copyObject(
@@ -117,7 +117,7 @@ class S3 {
     })
   }
 
-  static upload(fileName, fileContent, isPrivate = false) {
+  static upload(fileName: string, fileContent, isPrivate = false) {
     return new Promise((resolve, reject) => {
       s3.upload(
         {
@@ -199,7 +199,7 @@ class S3 {
     })
   }
 
-  static delete(fileName, isPrivate = false, invalidate = false) {
+  static delete(fileName: string, isPrivate = false, invalidate = false) {
     return new Promise((resolve, reject) => {
       s3.deleteObject(
         {
@@ -230,7 +230,7 @@ class S3 {
     })
   }
 
-  static invalidate(path) {
+  static invalidate(path: string) {
     // Path must be specified as a string in the form of '/path/to/resource.*' or '/path/resource.png
     return new Promise((resolve, reject) => {
       cloudfront.createInvalidation(
