@@ -1,3 +1,4 @@
+import moment from 'moment'
 import Excel from 'exceljs'
 import config from 'Config/index'
 import Utils from 'App/Utils'
@@ -959,7 +960,16 @@ static toJuno = async (params) => {
     return DB('refund').where('order_id', params.id).all()
   }
 
-  static addRefund = async (params) => {
+  static addRefund = async (params: {
+    id: number
+    order_id?: number
+    amount: number
+    reason: string
+    comment?: string
+    order_shop_id?: number
+    order_box_id?: number
+    data?: any
+  }) => {
     params.order_id = params.id
 
     return DB('refund').insert({
@@ -968,6 +978,7 @@ static toJuno = async (params) => {
       order_id: params.order_id,
       comment: params.comment,
       order_shop_id: params.order_shop_id || 0,
+      order_box_id: params.order_box_id ?? null,
       created_at: Utils.date(),
       data: JSON.stringify(params.data)
     })
@@ -1097,6 +1108,65 @@ static toJuno = async (params) => {
       ],
       rows
     )
+  }
+
+  static exportOrdersExportedWithoutTracking = async (nbOfDays: 3 | 4) => {
+    const orders = await DB('order_shop as os')
+      .select(
+        'os.id',
+        'transporter',
+        'os.total',
+        'os.step',
+        'os.user_id',
+        'os.shipping',
+        'os.shipping_type',
+        'os.date_export',
+        'os.created_at'
+      )
+      .join('order as o', 'o.id', 'os.order_id')
+      .whereRaw(`DATEDIFF(now(), date_export) < ${nbOfDays}`)
+      .whereNull('tracking_number')
+      .all()
+
+    const file = await Utils.arrayToXlsx(
+      [
+        [
+          { header: 'Id', key: 'id', width: 15 },
+          { header: 'Transporter', key: 'transporter', width: 30 },
+          { header: 'Total', key: 'total', width: 15 },
+          { header: 'Step', key: 'step', width: 15 },
+          { header: 'User Id', key: 'user_id', width: 15 },
+          { header: 'Shipping', key: 'shipping', width: 15 },
+          { header: 'Shipping Type', key: 'shipping_type', width: 15 },
+          { header: 'Date Export', key: 'date_export', width: 30 },
+          { header: 'Created At', key: 'created_at', width: 30 }
+        ]
+      ],
+      [
+        {
+          worksheetName: 'Orders',
+          data: orders
+        }
+      ]
+    )
+
+    await Notification.email({
+      to: 'support@diggersfactory.com',
+      type: 'order_exported_without_tracking',
+      lang: 'en',
+      user: {
+        email: 'support@diggersfactory.com',
+        lang: 'en'
+      },
+      attachments: [
+        {
+          filename: `Orders_Exported_No_Tracking_${moment().format('YYYY-MM-DD')}.xlsx`,
+          content: file
+        }
+      ]
+    })
+
+    return { success: true }
   }
 }
 

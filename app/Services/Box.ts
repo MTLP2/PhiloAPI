@@ -809,19 +809,25 @@ class Box {
     return code
   }
 
-  static async setDispatchLeft() {
+  static async setDispatchLeft(params?: { boxId: number }) {
     let finished = 0
-    const boxes = await DB('box')
+    const query = DB('box')
       .select('box.*', 'box_code.periodicity as code_periodicity')
       .leftJoin('box_code', 'box_code.box_id', 'box.id')
       .whereNotIn('box.step', ['creating', 'refunded'])
-      .all()
+
+    if (params?.boxId) query.where('box.id', params.boxId)
+
+    const boxes = await query.all()
 
     for (const box of boxes) {
       let left = 0
       let months = box.dispatch_gift
       if (box.periodicity === 'monthly' || box.monthly) {
-        const dispatchs = await DB('box_dispatch').where('box_id', box.id).all()
+        const dispatchs = await DB('box_dispatch')
+          .where('box_id', box.id)
+          .where('is_dispatch_active', 1)
+          .all()
 
         const dispatch = await DB('box_dispatch')
           .select('created_at')
@@ -882,6 +888,7 @@ class Box {
         }
         const dispatchs = await DB('box_dispatch')
           .where('box_id', box.id)
+          .where('is_dispatch_active', 1)
           .where('step', '!=', 'pending')
           .all()
 
@@ -908,11 +915,21 @@ class Box {
           finished++
           console.log('finished', box.id, box.periodicity)
         }
+
+        // For setting step :
+        // If box is confirmed but no (dispatch) left --> finished
+        // If box is finished but some dispatch left found (in the case of one or more dispatch turned into is_dispatch_active = 0) --> confirmed
+        // Else, keep step
         DB('box')
           .where('id', box.id)
           .update({
             end: end,
-            step: box.step === 'confirmed' && left < 1 ? 'finished' : box.step,
+            step:
+              box.step === 'confirmed' && left < 1
+                ? 'finished'
+                : box.step === 'finished' && left > box.dispatch_left
+                ? 'confirmed'
+                : box.step,
             dispatchs: dispatchs.length,
             months: months,
             dispatch_left: left
@@ -1416,7 +1433,7 @@ class Box {
     await Box.setDispatchLeft()
   }
 
-  static async checkPayments(params) {
+  static async checkPayments(params?: { box_id: number }) {
     await Box.setDispatchLeft()
 
     const errors: any = []
@@ -1602,11 +1619,21 @@ class Box {
     return boxes
   }
 
-  static async refund(params) {
+  static async refund(params: {
+    id: string
+    obid: string
+    amount: string
+    reason: string
+    order_id: number
+    comment: string
+    only_history: boolean
+    credit_note: boolean
+    cancel_box: boolean
+  }) {
     const order = await DB('order_box')
       .select('order_box.*', 'order.payment_type', 'order.payment_id')
       .join('order', 'order.id', 'order_box.order_id')
-      .where('order_box.id', params.id)
+      .where('order_box.id', +params.obid)
       .first()
 
     order.order_box_id = order.id
@@ -1614,18 +1641,40 @@ class Box {
     order.sub_total = Utils.round(order.total / (1 + order.tax_rate))
     order.tax = Utils.round(order.total - order.sub_total)
 
-    await Order.refundPayment(order)
-    await Invoice.insertRefund(order)
+    //? Check params.only_history
+    if (!params.only_history) {
+      await Order.refundPayment(order)
+    }
 
+    //? Check params.credit_note
+    if (params.credit_note) {
+      await Invoice.insertRefund(order)
+    }
+
+    //? Check params.cancel_box
     await DB('order_box')
       .where('id', order.id)
-      .update({
-        is_paid: 0,
-        step: 'refunded',
-        refund: Utils.round((order.refund || 0) + +params.amount)
-      })
+      .update(
+        params.cancel_box
+          ? {
+              is_paid: 0,
+              step: 'refunded',
+              refund: Utils.round((order.refund || 0) + +params.amount)
+            }
+          : {
+              refund: Utils.round((order.refund || 0) + +params.amount)
+            }
+      )
 
-    console.log(params)
+    //? Insert into refund history
+    Order.addRefund({
+      id: order.order_id,
+      amount: +params.amount,
+      reason: params.reason,
+      comment: params.comment,
+      order_box_id: +params.obid
+    })
+
     return { success: true }
   }
 
@@ -1655,11 +1704,18 @@ class Box {
     })
   }
 
-  static async saveDispatch(params) {
+  static async saveDispatch(params: {
+    id?: number
+    box_id: number
+    barcodes: string
+    is_daudin: 0 | 1
+    force_quantity: boolean
+    cancel_dispatch: boolean
+  }) {
     let dispatch: any = DB('box_dispatch')
 
     const barcodes = params.barcodes.split(',')
-    if (params.id !== '0') {
+    if (params.id) {
       dispatch = await DB('box_dispatch').find(params.id)
     } else {
       for (const barcode of barcodes) {
@@ -1670,7 +1726,7 @@ class Box {
           .where('stock.type', 'daudin')
           .first()
 
-        if (params.force_quantity !== 'true' && vod && vod.stock < 1) {
+        if (!params.force_quantity && vod && vod.stock < 1) {
           return { error: 'No quantity' }
         } else if (vod) {
           Stock.save({
@@ -1689,11 +1745,12 @@ class Box {
     dispatch.box_id = params.box_id
     dispatch.barcodes = params.barcodes
     dispatch.is_daudin = params.is_daudin
+    dispatch.is_dispatch_active = !params.cancel_dispatch
     dispatch.updated_at = Utils.date()
 
     await dispatch.save()
 
-    if (params.id === '0') {
+    if (!params.id) {
       const box = await DB('box').where('id', params.box_id).first()
       const next = moment(box.next_dispatch)
 
@@ -1711,6 +1768,8 @@ class Box {
           })
       }
     }
+
+    await Box.setDispatchLeft({ boxId: params.box_id })
     return dispatch
   }
 
@@ -2362,7 +2421,7 @@ class Box {
     }
   }
 
-  static getNbMonths(periodicity, monthly?) {
+  static getNbMonths(periodicity: string, monthly?: 0 | 1) {
     const p = periodicity.split('_')
     if (periodicity === 'monthly' || monthly) {
       return 1
@@ -3140,6 +3199,11 @@ class Box {
     }
 
     return gg
+  }
+
+  static async refreshBoxDispatch(params: { id: string }) {
+    await Box.setDispatchLeft({ boxId: +params.id })
+    return { success: true }
   }
 }
 
