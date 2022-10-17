@@ -2142,7 +2142,7 @@ class Stats {
         addTurnover(invoice.type, 'shipping', 'invoice', date, total)
       } else if (invoice.category === 'project') {
         addTurnover(invoice.type, 'project', 'invoice', date, total)
-      } else if (invoice.name.includes('Order ')) {
+      } else if (invoice.name?.includes('Order ')) {
         d.turnover.error.total += total
         d.turnover.error.dates[date] += total
       } else {
