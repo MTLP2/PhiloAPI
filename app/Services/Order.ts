@@ -1,3 +1,4 @@
+import moment from 'moment'
 import Excel from 'exceljs'
 import config from 'Config/index'
 import Utils from 'App/Utils'
@@ -1110,7 +1111,7 @@ static toJuno = async (params) => {
     )
   }
 
-  static exportOrderExportedWithoutTracking = async () => {
+  static exportOrdersExportedWithoutTracking = async (nbOfDays: 3 | 4) => {
     const orders = await DB('order_shop as os')
       .select(
         'os.id',
@@ -1124,7 +1125,7 @@ static toJuno = async (params) => {
         'os.created_at'
       )
       .join('order as o', 'o.id', 'os.order_id')
-      .whereRaw('DATEDIFF(now(), date_export) <= 3')
+      .whereRaw(`DATEDIFF(now(), date_export) <= ${nbOfDays}`)
       .whereNull('tracking_number')
       .all()
 
@@ -1160,7 +1161,7 @@ static toJuno = async (params) => {
       },
       attachments: [
         {
-          filename: `Report.xlsx`,
+          filename: `Orders_Exported_No_Tracking_${moment().format('YYYY-MM-DD')}.xlsx`,
           content: file
         }
       ]

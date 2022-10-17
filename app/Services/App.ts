@@ -56,7 +56,7 @@ class App {
       }
 
       if (moment().format('E') !== '1' && moment().format('E') !== '4') {
-        await Order.exportOrderExportedWithoutTracking()
+        await Order.exportOrdersExportedWithoutTracking(moment().format('E') !== '1' ? 4 : 3)
       }
 
       if (+moment().format('D') === 28) {
