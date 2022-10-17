@@ -7,9 +7,6 @@ import Project from 'App/Services/Project'
 import Blog from 'App/Services/Blog'
 import Category from 'App/Services/Category'
 import Banner from 'App/Services/Banner'
-import Artwork from 'App/Services/Artwork'
-import Whiplash from 'App/Services/Whiplash'
-import Daudin from 'App/Services/Daudin'
 import Quote from 'App/Services/Quote'
 import Dig from 'App/Services/Dig'
 import cio from 'App/Services/CIO'
@@ -37,7 +34,7 @@ class AppController {
   }
 
   async getBanners({ params }) {
-    const banners = await Banner.getHome({ lang: params.lang })
+    const banners: any = await Banner.getHome({ lang: params.lang })
     if (params.banner !== '1') {
       banners.unshift({
         link: '/vinyl-shop',
@@ -52,8 +49,8 @@ class AppController {
     if (!params.lang) {
       params.lang = 'en'
     }
-    const banners = Banner.getHome({ lang: params.lang })
-    const categories = Category.getHome({ currency: params.currency })
+    const banners: any = Banner.getHome({ lang: params.lang })
+    const categories = Category.getHome()
     const articles = params.all ? Blog.all({ lang: params.lang, limit: 3 }) : null
 
     return Promise.all([banners, categories, articles]).then((res) => {
@@ -72,24 +69,6 @@ class AppController {
         banners: banners,
         categories: params.all ? categories : [],
         articles: params.all ? articles : []
-      }
-    })
-  }
-
-  async getHome2({ params }) {
-    if (!params.lang) {
-      params.lang = 'en'
-    }
-    const articles = Blog.all({ lang: params.lang, limit: 3 })
-    const categories = Category.getHome({ currency: params.currency })
-
-    return Promise.all([categories, articles]).then((res) => {
-      const categories = res[0]
-      const articles = res[1]
-
-      return {
-        articles: articles,
-        categories: categories
       }
     })
   }
@@ -119,10 +98,6 @@ class AppController {
   calculateQuote({ params, user }) {
     params.user = user
     return Quote.calculate(params)
-  }
-
-  test() {
-    return Storage.list()
   }
 
   async previewEmail({ params }) {
@@ -272,76 +247,6 @@ class AppController {
 
     response.header('Content-Type', 'application/xml')
     response.send(sm.toString())
-  }
-
-  async convertDaudin(params) {
-    return App.convertDaudin(params)
-  }
-
-  async convertWebP({ user, params }) {
-    return Artwork.convertWebP(params)
-  }
-
-  async generatePromCodeAppChoose({ user, params }) {
-    await DB.raw('DELETE FROM promo_code WHERE type_box IS NOT NULL')
-
-    for (let i = 0; i < 50; i++) {
-      const number = Utils.genetateAlphanumeric(14)
-      await DB('promo_code').insert({
-        code: number,
-        is_once: 1,
-        on_box: 1,
-        is_enabled: 1,
-        value: 100,
-        on_price: 1,
-        type_box: 'one_3_months',
-        created_at: new Date(),
-        updated_at: new Date()
-      })
-    }
-    for (let i = 0; i < 150; i++) {
-      const number = Utils.genetateAlphanumeric(14)
-      await DB('promo_code').insert({
-        code: number,
-        is_once: 1,
-        on_box: 1,
-        is_enabled: 1,
-        value: 100,
-        on_price: 1,
-        type_box: 'two_monthly',
-        created_at: new Date(),
-        updated_at: new Date()
-      })
-    }
-    for (let i = 0; i < 50; i++) {
-      const number = Utils.genetateAlphanumeric(14)
-      await DB('promo_code').insert({
-        code: number,
-        is_once: 1,
-        on_box: 1,
-        is_enabled: 1,
-        value: 100,
-        on_price: 1,
-        type_box: 'two_3_months',
-        created_at: new Date(),
-        updated_at: new Date()
-      })
-    }
-    for (let i = 0; i < 50; i++) {
-      const number = Utils.genetateAlphanumeric(14)
-      await DB('promo_code').insert({
-        code: number,
-        is_once: 1,
-        on_box: 1,
-        is_enabled: 1,
-        value: 100,
-        on_price: 1,
-        type_box: 'two_6_months',
-        created_at: new Date(),
-        updated_at: new Date()
-      })
-    }
-    return true
   }
 
   async convertPictureItem() {
