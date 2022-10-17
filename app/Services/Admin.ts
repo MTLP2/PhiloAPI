@@ -29,7 +29,15 @@ import cio from 'App/Services/CIO'
 import Env from '@ioc:Adonis/Core/Env'
 
 class Admin {
-  static getProjects = async (params) => {
+  static getProjects = async (params: {
+    type?: string
+    in_progress?: boolean
+    sort?: any
+    start?: string
+    end?: string
+    query?: any
+    size?: number
+  }) => {
     const projects = DB('project')
       .select(
         'vod.*',
@@ -90,8 +98,7 @@ class Admin {
       projects.where('vod.created_at', '<=', `${params.end} 23:59`)
     }
 
-    params.query = projects
-    return Utils.getRows(params)
+    return Utils.getRows({ ...params, query: projects })
   }
 
   static getWishlists = async (params) => {
@@ -1611,8 +1618,17 @@ class Admin {
     })
   }
 
-  static getOrders = async (params) => {
-    const orders = DB('order_item as oi')
+  static getOrders = async (params: {
+    project_id?: string
+    type?: 'no_tracking' | 'no_export'
+    sort?: string
+    order?: 'desc' | 'asc'
+    start?: string
+    end?: string
+    filters?: any
+    user_id?: number
+  }) => {
+    const orders = DB('order_shop as os')
       .select(
         DB.raw('(os.shipping - os.shipping_cost) as shipping_diff'),
         'os.*',
@@ -1655,13 +1671,15 @@ class Admin {
         'project.picture',
         'user.facebook_id',
         'user.soundcloud_id',
+        'om.id as order_manual_id',
         DB.raw("CONCAT(c.firstname, ' ', c.lastname) AS user_infos")
       )
+      .join('order_item as oi', 'os.id', 'oi.order_shop_id')
       .join('order', 'oi.order_id', 'order.id')
-      .join('order_shop as os', 'os.id', 'oi.order_shop_id')
       .join('user', 'user.id', 'order.user_id')
       .join('project', 'project.id', 'oi.project_id')
       .join('vod', 'vod.project_id', 'oi.project_id')
+      .leftJoin('order_manual as om', 'om.order_shop_id', 'os.id')
       .leftJoin('customer as c', 'c.id', 'os.customer_id')
       .where('os.step', '!=', 'creating')
       .where('os.step', '!=', 'failed')
@@ -1739,8 +1757,7 @@ class Admin {
       orders.where('user.id', params.user_id)
     }
 
-    params.query = orders
-    return Utils.getRows(params)
+    return Utils.getRows<any>({ ...params, query: orders })
   }
 
   static getOrder = async (id) => {
@@ -4434,7 +4451,7 @@ class Admin {
     return { success: true }
   }
 
-  static exportOrdersRefunds = async (params) => {
+  static exportOrdersRefunds = async (params: { start: string; end: string }) => {
     const refundsRaw = await DB('refund')
       .select('refund.*', 'order.currency', 'order.user_id', 'order.payment_type', 'os.transporter')
       .join('order', 'order.id', 'refund.order_id')
@@ -4443,11 +4460,9 @@ class Admin {
       .where('refund.created_at', '<=', `${params.end} 23:59`)
       .all()
 
-    // Change refund.amount dots to commas (otherwise numbers are treated as dates by Drive)
-    const refunds = refundsRaw.map((refund) => {
-      refund.amount = refund.amount.toString().replace('.', ',')
-      return refund
-    })
+    const refunds = refundsRaw.map((refund) =>
+      refund.order_box_id ? { ...refund, transporter: 'daudin' } : refund
+    )
 
     return Utils.arrayToCsv(
       [
@@ -4455,10 +4470,11 @@ class Admin {
         { name: 'Order ID', index: 'order_id' },
         { name: 'User ID', index: 'user_id' },
         { name: 'OShop ID', index: 'order_shop_id' },
+        { name: 'OBox ID', index: 'order_box_id' },
         { name: 'Payment Type', index: 'payment_type' },
         { name: 'Transporter', index: 'transporter' },
         { name: 'Date', index: 'created_at' },
-        { name: 'Amount', index: 'amount' },
+        { name: 'Amount', index: 'amount', format: 'number' },
         { name: 'Currency', index: 'currency' },
         { name: 'Reason', index: 'reason' },
         { name: 'Comment', index: 'comment' }
@@ -4525,7 +4541,7 @@ class Admin {
     )
   }
 
-  static exportProjectsBox = async (params) => {
+  static exportProjectsBox = async () => {
     const projectsIsBox = await DB('vod')
       .select('project.id', 'project.name', 'project.artist_name')
       .join('project', 'project.id', 'vod.project_id')

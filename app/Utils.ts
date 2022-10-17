@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid'
 import Hashids from 'hashids'
 import fs from 'fs'
 import request from 'request'
+import Excel from 'exceljs'
 
 import ApiError from 'App/ApiError'
 import Storage from 'App/Services/Storage'
@@ -960,12 +961,16 @@ class Utils {
     return value
   }
 
-  static arrayToCsv = (columns, array, del = ',') => {
+  static arrayToCsv = (
+    columns: Array<{ name: string; index: string; format?: 'number' } | string>,
+    array: any[],
+    del: string = ','
+  ) => {
     let csv = ''
 
     let line = ''
     for (const column of columns) {
-      const c = column.name || column
+      const c = typeof column === 'string' ? column : column.name
       if (line) {
         line += del
       }
@@ -976,11 +981,11 @@ class Utils {
     for (const a of array) {
       let line = ''
       for (const column of columns) {
-        const c = column.index || column
+        const c = typeof column === 'string' ? column : column.index
         if (line) {
           line += del
         }
-        if (column.format === 'number') {
+        if (typeof column === 'object' && column.format === 'number') {
           a[c] = a[c] ? a[c].toString().replace('.', ',') : 0
         }
         line += `"${a[c] === null || a[c] === undefined ? '' : a[c]}"`
@@ -1010,6 +1015,30 @@ class Utils {
       }
     }
     return data
+  }
+
+  static arrayToXlsx = <T extends any[]>(
+    columns: { header: string; key: string; width: number }[][],
+    sheets: { worksheetName?: string; data: T[] }[]
+  ) => {
+    const workbook = new Excel.Workbook()
+
+    let i = 0
+    // For each sheet
+    for (const sheet of sheets) {
+      const worksheet: any = workbook.addWorksheet(sheet.worksheetName || `Sheet ${i + 1}`)
+      worksheet.columns = columns[i]
+
+      for (const element of sheet.data) worksheet.addRow(element)
+      for (const cell of Utils.getCells(
+        worksheet,
+        `A1:${String.fromCharCode(sheet.data.length + 64)}1`
+      ))
+        cell.font = { bold: true }
+      i++
+    }
+
+    return workbook.xlsx.writeBuffer()
   }
 
   static upload = async (params) => {
