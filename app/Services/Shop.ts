@@ -24,6 +24,7 @@ class Shop {
     user_id?: number
     code?: string
     all_project?: boolean
+    projects?: boolean
   }) {
     let shop: any = DB('shop').select('shop.*')
 
@@ -42,12 +43,13 @@ class Shop {
     if (!shop) {
       throw new ApiError(404)
     }
-
-    shop.projects = await Project.findAll({
-      shop_id: shop.id,
-      all_project: payload.all_project,
-      limit: 99999
-    })
+    if (payload.projects !== false) {
+      shop.projects = await Project.findAll({
+        shop_id: shop.id,
+        all_project: payload.all_project,
+        limit: 99999
+      })
+    }
 
     return shop
   }
@@ -107,7 +109,7 @@ class Shop {
       item.banner = fileName
       Storage.uploadImage(fileName, Buffer.from(payload.banner, 'base64'), {
         type: 'jpg',
-        width: 1600
+        width: 2200
       })
     }
     if (payload.bg_image) {
