@@ -16,3 +16,13 @@ type ChatDb = {
 }
 
 type ChatModel = ChatDb & Model
+
+enum Transporters {
+  daudin = 'daudin',
+  diggers = 'diggers',
+  whiplash = 'whiplash',
+  whiplash_uk = 'whiplash_uk',
+  sna = 'sna',
+  soundmerch = 'soundmerch',
+  shipehype = 'shipehype'
+}

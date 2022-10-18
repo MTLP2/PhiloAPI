@@ -912,7 +912,7 @@ class Admin {
 
     vod.historic = vod.historic ? JSON.parse(vod.historic) : []
     if (params.edit_stock) {
-      const transporters = {}
+      const transporters: { [key in Transporters]?: boolean } = {}
       if (params.transporter_daudin) {
         transporters.daudin = true
       }
@@ -994,7 +994,7 @@ class Admin {
 
     vod.updated_at = Utils.date()
 
-    let notification = false
+    let notification: string | boolean = false
 
     if (vod.step === 'checking') {
       if (params.step === 'in_progress') {
@@ -1043,7 +1043,7 @@ class Admin {
       await Song.uploadSongs(params)
     }
 
-    const status = {}
+    const status: { [index: string]: string } = {}
     status.launched = 'my_order_launched'
     status.in_production = 'my_order_in_production'
     status.test_pressing_ok = 'my_order_test_pressing_ok'
@@ -1077,7 +1077,13 @@ class Admin {
         type: 'status',
         user_id: params.user.id,
         old: vod.status,
-        new: params.status,
+        new: `${params.status}${
+          params.transporter_choice
+            ? params.transporter_choice.includes('all')
+              ? ' (all)'
+              : ` (${params.transporter_choice.join(', ')})`
+            : ''
+        }`,
         notif: params.notif,
         date: Utils.date()
       })
@@ -1089,7 +1095,7 @@ class Admin {
       (vod.status !== params.status && status[params.status]) ||
       (vod.date_shipping !== params.date_shipping && params.notif)
     ) {
-      const orders = await DB()
+      const ordersQuery = DB()
         .select('os.*', 'os.id as order_shop_id')
         .from('order_shop as os')
         .join('order_item as oi', 'oi.order_shop_id', 'os.id')
@@ -1097,10 +1103,15 @@ class Admin {
         .where('oi.vod_id', vod.id)
         .where('os.is_paid', 1)
         .whereNull('date_export')
-        .all()
+
+      // If transporter choice is provided (when passing to check address) AND if it does not contain 'all' (which is the same as accepting all transporters), filter orders by specified transporters
+      if (params.transporter_choice && !params.transporter_choice.includes('all'))
+        ordersQuery.whereIn('os.transporter', params.transporter_choice)
+
+      const orders = await ordersQuery.all()
 
       for (const order of orders) {
-        let type = null
+        let type: string | null = null
         if (
           params.notif &&
           params.status === vod.status &&
@@ -1161,15 +1172,14 @@ class Admin {
     vod.step = params.step
 
     if (notification) {
-      const data = {}
-      data.type = notification
-      data.user_id = vod.user_id
-      data.project_id = project.id
-      data.project_name = project.name
-      data.vod_id = vod.id
-      data.alert = 1
-
-      await Notification.new(data)
+      await Notification.new({
+        type: notification,
+        user_id: vod.user_id,
+        project_id: project.id,
+        project_name: project.name,
+        vod_id: vod.id,
+        alert: 1
+      })
     }
 
     // Assign to prod for some statuses
