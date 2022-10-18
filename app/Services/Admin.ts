@@ -912,7 +912,7 @@ class Admin {
 
     vod.historic = vod.historic ? JSON.parse(vod.historic) : []
     if (params.edit_stock) {
-      const transporters = {}
+      const transporters: { [key in Transporters]?: boolean } = {}
       if (params.transporter_daudin) {
         transporters.daudin = true
       }
@@ -1077,7 +1077,13 @@ class Admin {
         type: 'status',
         user_id: params.user.id,
         old: vod.status,
-        new: params.status,
+        new: `${params.status}${
+          params.transporter_choice
+            ? params.transporter_choice.includes('all')
+              ? ' (all)'
+              : ` (${params.transporter_choice.join(', ')})`
+            : ''
+        }`,
         notif: params.notif,
         date: Utils.date()
       })
