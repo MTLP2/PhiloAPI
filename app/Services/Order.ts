@@ -1130,8 +1130,6 @@ static toJuno = async (params) => {
       .whereNull('tracking_number')
       .all()
 
-    return orders
-
     const file = await Utils.arrayToXlsx(
       [
         [
