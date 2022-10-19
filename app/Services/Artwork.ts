@@ -139,6 +139,7 @@ class Artwork {
           'base64'
         )
         await Artwork.convertVinylPicture(uid, vinyl)
+        project.url_vinyl = '1'
         await DB('vod').where('project_id', params.id).update({
           url_vinyl: 1
         })
@@ -431,7 +432,7 @@ class Artwork {
       return false
     }
 
-    const composite = []
+    const composite: any[] = []
     const label = await sharp(await Storage.get(`${path}/label.png`))
       .resize({ width: 200, height: 200 })
       .toBuffer()
@@ -522,7 +523,7 @@ class Artwork {
   static async generateSleeve(id, type, nb) {
     const path = `projects/${id}`
 
-    const composite = []
+    const composite: any[] = []
     const bg = await Storage.get(
       type === 'cd'
         ? 'assets/images/vinyl/background_cd.png'
@@ -586,7 +587,7 @@ class Artwork {
     return buffer
   }
 
-  static async compressWebP(path, to, params = {}) {
+  static async compressWebP(path: string, to?: string, params?: any) {
     const buffer = await Storage.get(path)
     if (!buffer) {
       return false
