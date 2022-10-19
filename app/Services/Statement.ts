@@ -923,6 +923,7 @@ class StatementService {
     projectsPromise = projectsPromise.all()
 
     const invoicesPromise = DB('invoice')
+      .select('invoice.*')
       .join('vod', 'vod.project_id', 'invoice.project_id')
       .where('balance_followup', true)
       .where('compatibility', true)
@@ -985,11 +986,13 @@ class StatementService {
 
     if (params.type === 'follow_up') {
       for (const invoice of invoices) {
+        console.log(invoice.type)
         if (invoice.type === 'invoice') {
           projects[invoice.project_id].invoiced += invoice.sub_total * invoice.currency_rate
         } else {
           projects[invoice.project_id].invoiced -= invoice.sub_total * invoice.currency_rate
         }
+        console.log(projects[invoice.project_id].invoiced, invoice.sub_total)
         projects[invoice.project_id].direct_balance = projects[invoice.project_id].invoiced
       }
       for (const prod of prods) {
