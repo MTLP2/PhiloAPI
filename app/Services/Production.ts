@@ -312,7 +312,10 @@ class Production {
       item.postprod = item.postprod.filter((a) => a.for !== 'team')
     }
 
-    item.preprod_actions = item.preprod.filter((a) => a.status === 'to_do').length
+    item.preprod_actions = item.preprod.filter((a) => {
+      if (!item.is_billing && a.type === 'billing') return false
+      return a.status === 'to_do'
+    }).length
     item.prod_actions = item.prod.filter((a) => a.status === 'to_do').length
     item.postprod_actions = item.postprod.filter((a) => a.status === 'to_do').length
 
@@ -1441,7 +1444,21 @@ class Production {
     }
   }
 
-  static async addNotif({ id, type, date, data, overrideNotif = false, userId }) {
+  static async addNotif({
+    id,
+    type,
+    date,
+    data,
+    overrideNotif = false,
+    userId
+  }: {
+    id: number
+    type: string
+    date?: string
+    data?: any
+    overrideNotif?: boolean
+    userId?: number
+  }) {
     const prod = await DB('vod')
       .select(
         'production.id',
