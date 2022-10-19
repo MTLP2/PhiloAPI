@@ -2218,6 +2218,10 @@ class Stats {
         d.quantity.total.dates[date] -= quantity
       }
 
+      if (qty.is_paid) {
+        continue
+      }
+
       for (const style of qty.styles.split(',')) {
         if (!d.styles[styles[style]]) {
           d.styles[styles[style]] = 0
