@@ -25,6 +25,7 @@ import Stock from 'App/Services/Stock'
 import Sna from 'App/Services/Sna'
 import Elogik from 'App/Services/Elogik'
 import Deepl from 'App/Services/Deepl'
+import Artwork from 'App/Services/Artwork'
 import cio from 'App/Services/CIO'
 import Env from '@ioc:Adonis/Core/Env'
 
@@ -4644,7 +4645,7 @@ class Admin {
     }
 
     // Update project artwork
-    // await Artwork.updateArtwork({ id: projectId })
+    await Artwork.updateArtwork({ id: projectId })
 
     return { success: true, type }
   }
