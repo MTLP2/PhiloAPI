@@ -17,6 +17,22 @@ type ChatDb = {
 
 type ChatModel = ChatDb & Model
 
+type ShopDb = {
+  id: number
+  code: string
+  name: string
+  bg_color: string
+  font_color: string
+  title_color: string
+  logo: string | null
+  banner: string | null
+  bg_image: string | null
+  created_at: string
+  updated_at: string
+}
+
+type ShopModel = ShopDb & Model
+
 enum Transporters {
   daudin = 'daudin',
   diggers = 'diggers',
