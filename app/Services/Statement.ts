@@ -1275,7 +1275,13 @@ class StatementService {
     return i
   }
 
-  static async getStatement(params: { id: number; fee?: number; start?: string; end?: string }) {
+  static async getStatement(params: {
+    id: number
+    fee?: number
+    payback?: boolean
+    start?: string
+    end?: string
+  }) {
     if (!params.start) {
       params.start = '2001-01-01'
     }
@@ -1525,7 +1531,7 @@ class StatementService {
 
       if (order.item_id) {
         data[`${order.item_id}_quantity`][order.date] += order.quantity
-        if (project.payback_site) {
+        if (params.payback !== false && project.payback_site) {
           data[`${order.item_id}_total`][order.date] += order.quantity * project.payback_site
         } else {
           const total = order.price * order.currency_rate_project * order.quantity
@@ -1535,7 +1541,7 @@ class StatementService {
       } else {
         data.site_quantity[order.date] += order.quantity
         data.site_quantity.total += order.quantity
-        if (project.payback_site) {
+        if (params.payback !== false && project.payback_site) {
           data.site_total[order.date] += project.payback_site * order.quantity
         } else {
           data.site_total[order.date] += ((total * order.currency_rate_project) / tax) * fee
@@ -1581,7 +1587,7 @@ class StatementService {
         data[`${dist.name}_${dist.item}_returned`][stat.date] += parseInt(dist.returned)
 
         let value
-        if (project.payback_distrib) {
+        if (params.payback !== false && project.payback_distrib) {
           value = project.payback_distrib * dist.quantity
         } else {
           value = dist.total * feeDistrib

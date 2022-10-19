@@ -2611,6 +2611,7 @@ class Stats {
       const statement = await Statement.getStatement({
         id: project.project_id,
         fee: 0,
+        payback: false,
         start: params.start,
         end: params.end
       })
