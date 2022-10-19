@@ -37,9 +37,10 @@ class ShopController {
 
   async updateShop({ params, user }) {
     params.user_id = user.id
+
     const payload = await validator.validate({
       schema: schema.create({
-        id: schema.number(),
+        id: schema.number.optional(),
         user_id: schema.number(),
         name: schema.string(),
         code: schema.string(),
