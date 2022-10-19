@@ -61,7 +61,7 @@ class Utils {
     return array
   }
 
-  static slugify = (text) =>
+  static slugify = (text: string): string =>
     text
       .toString()
       .toLowerCase()
