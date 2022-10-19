@@ -16,7 +16,7 @@ class Shop {
       params.order = 'desc'
     }
 
-    return Utils.getRows(params)
+    return Utils.getRows<ShopDb[]>(params)
   }
 
   static async find(payload: {
@@ -55,7 +55,7 @@ class Shop {
   }
 
   static async update(payload: {
-    id: number
+    id?: number
     user_id: number
     name: string
     code: string
@@ -66,7 +66,7 @@ class Shop {
     banner?: string
     bg_image?: string
   }) {
-    let item: any = DB('shop')
+    let item: ShopModel = <any>DB('shop')
 
     const code = payload.code ? payload.code : Utils.slugify(payload.name)
     const codeUsed = await DB('shop').where('code', code).where('id', '!=', payload.id).first()
@@ -135,15 +135,15 @@ class Shop {
   }
 
   static async removeImage(payload: { shop_id: number; type: string }) {
-    const item = await DB('shop').find(payload.shop_id)
+    const item: ShopModel = await DB('shop').find(payload.shop_id)
 
-    if (payload.type === 'banner') {
+    if (payload.type === 'banner' && item.banner) {
       Storage.deleteImage(item.banner)
       item.banner = null
-    } else if (payload.type === 'logo') {
+    } else if (payload.type === 'logo' && item.logo) {
       Storage.deleteImage(item.logo)
       item.logo = null
-    } else if (payload.type === 'bg_image') {
+    } else if (payload.type === 'bg_image' && item.bg_image) {
       Storage.deleteImage(item.bg_image)
       item.bg_image = null
     }
