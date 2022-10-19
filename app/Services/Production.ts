@@ -246,9 +246,11 @@ class Production {
       .select(
         'production.*',
         'vod.currency as vod_currency',
-        'user.customer_invoice_id as billing_customer'
+        'user.customer_invoice_id as billing_customer',
+        'project.category as project_category'
       )
       .join('vod', 'vod.project_id', 'production.project_id')
+      .join('project', 'project.id', 'production.project_id')
       .leftJoin('user', 'vod.user_id', 'user.id')
       .where('production.id', params.id)
       .first()
@@ -313,10 +315,24 @@ class Production {
     }
 
     item.preprod_actions = item.preprod.filter((a) => {
+      // Don't count billing if is_billing is false
       if (!item.is_billing && a.type === 'billing') return false
+
+      // Don't count shipping if project is cd
+      if (item.project_category === 'cd' && ['shipping'].includes(a.type)) return false
+
+      // Then count to_dos
       return a.status === 'to_do'
     }).length
-    item.prod_actions = item.prod.filter((a) => a.status === 'to_do').length
+
+    item.prod_actions = item.prod.filter((a) => {
+      // Don't count shipping if project is cd
+      if (item.project_category === 'cd' && ['test_pressing'].includes(a.type)) return false
+
+      // Then count to_dos
+      return a.status === 'to_do'
+    }).length
+
     item.postprod_actions = item.postprod.filter((a) => a.status === 'to_do').length
 
     item.dispatches = await DB('production_dispatch')
