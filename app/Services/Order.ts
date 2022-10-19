@@ -629,7 +629,7 @@ static toJuno = async (params) => {
     return workbook.xlsx.writeBuffer()
   }
 
-  static refundOrderShop = async (id, type, params) => {
+  static refundOrderShop = async (id: string | number, type, params?) => {
     const order = await DB('order_shop')
       .select(
         'order_shop.*',
@@ -671,6 +671,7 @@ static toJuno = async (params) => {
         .where('id', id)
         .update({
           is_paid: 0,
+          is_paused: 1,
           ask_cancel: 0,
           step: type === 'cancel' ? 'canceled' : 'refunded'
         })
@@ -1110,7 +1111,7 @@ static toJuno = async (params) => {
     )
   }
 
-  static exportOrdersExportedWithoutTracking = async (nbOfDays: 3 | 4) => {
+  static exportOrdersExportedWithoutTracking = async (nbOfDays: 3 | 2) => {
     const orders = await DB('order_shop as os')
       .select(
         'os.id',
@@ -1124,9 +1125,12 @@ static toJuno = async (params) => {
         'os.created_at'
       )
       .join('order as o', 'o.id', 'os.order_id')
-      .whereRaw(`DATEDIFF(now(), date_export) < ${nbOfDays}`)
+      .whereRaw(`DATEDIFF(now(), date_export) > 5`)
+      .whereRaw(`DATEDIFF(now(), date_export) <= ${5 + nbOfDays}`)
       .whereNull('tracking_number')
       .all()
+
+    return orders
 
     const file = await Utils.arrayToXlsx(
       [
