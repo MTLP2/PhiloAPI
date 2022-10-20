@@ -4496,7 +4496,7 @@ class Admin {
       if (project.historic && project.historic.length) {
         project.historic = JSON.parse(project.historic)
           .sort((a, b) => {
-            return new Date(b.date) - new Date(a.date)
+            return new Date(b.date).getTime() - new Date(a.date).getTime()
           })
           .map((h) => `- ${h.old || 'Unknown'} (${h.date})`)
           .join('\n')
