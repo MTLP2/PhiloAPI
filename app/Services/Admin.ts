@@ -425,6 +425,7 @@ class Admin {
       quantity_distrib: 0,
       quantity_box: 0,
       quantity_refund: 0,
+      quantity_cancel: 0,
       benefit_artist: 0,
       benefit_site: 0,
       benefit_prod: 0,
@@ -481,7 +482,7 @@ class Admin {
 
     for (const o of orders) {
       if (!o.is_paid) {
-        stats.quantity_refund += o.quantity
+        stats[`quantity_${o.step === 'refunded' ? 'refund' : 'cancel'}`] += o.quantity
         continue
       }
       stats.quantity_site += o.quantity
