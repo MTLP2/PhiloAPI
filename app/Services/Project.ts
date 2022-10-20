@@ -74,22 +74,25 @@ class Project {
     }
 
     if (sales) {
-      let discount = false
+      for (const sale of sales) {
+        let discount = false
 
-      if (!sales.projects) {
-        discount = true
-      } else if (sales.projects.split(',').indexOf(project.id.toString()) !== -1) {
-        discount = true
-      }
+        if (!sale.projects) {
+          discount = true
+        } else if (sale.projects.split(',').indexOf(project.id.toString()) !== -1) {
+          discount = true
+        }
 
-      if (discount) {
-        project.promo = sales.value
-        const discount = Utils.round(project.price * (sales.value / 100))
-        project.prices_discount = Utils.getPrices({
-          price: Utils.round(project.price - discount),
-          currencies,
-          currency: project.currency
-        })
+        if (discount) {
+          project.promo = sale.value
+          const discount = Utils.round(project.price * (sale.value / 100))
+          project.prices_discount = Utils.getPrices({
+            price: Utils.round(project.price - discount),
+            currencies,
+            currency: project.currency
+          })
+          break
+        }
       }
     }
 
@@ -188,24 +191,28 @@ class Project {
     }
 
     if (sales) {
-      let discount = false
+      for (const sale of sales) {
+        let discount = false
 
-      if (!sales.projects) {
-        discount = true
-      } else if (sales.projects.split(',').indexOf(project.id.toString()) !== -1) {
-        discount = true
-      }
+        if (!sale.projects) {
+          discount = true
+        } else if (sale.projects.split(',').indexOf(project.id.toString()) !== -1) {
+          discount = true
+        }
 
-      if (discount) {
-        project.promo = sales.value
-        const discount = Utils.round(project.price * (sales.value / 100))
-        project.prices_discount = Utils.getPrices({
-          price: Utils.round(project.price - discount),
-          currencies,
-          currency: project.currency
-        })
-        project.discount = discount
-        project.discount_artist = sales.artist_pay
+        if (discount) {
+          project.promo = sale.value
+          const discount = Utils.round(project.price * (sale.value / 100))
+          project.prices_discount = Utils.getPrices({
+            price: Utils.round(project.price - discount),
+            currencies,
+            currency: project.currency
+          })
+          project.discount = discount
+          project.discount_artist = sale.artist_pay
+
+          break
+        }
       }
     }
 

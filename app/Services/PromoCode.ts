@@ -127,7 +127,7 @@ class PromoCode {
       sales.where('on_vod', 1)
     }
 
-    return sales.first()
+    return sales.all()
   }
 
   static getByItem = async ({ itemId, type }) => {
