@@ -426,6 +426,7 @@ class Admin {
       quantity_box: 0,
       quantity_refund: 0,
       quantity_cancel: 0,
+      quantity_not_paid: 0,
       benefit_artist: 0,
       benefit_site: 0,
       benefit_prod: 0,
@@ -482,8 +483,13 @@ class Admin {
 
     for (const o of orders) {
       if (!o.is_paid) {
-        stats[`quantity_${o.step === 'refunded' ? 'refund' : 'cancel'}`] += o.quantity
-        continue
+        if (o.step === 'refunded') {
+          stats.quantity_refund += o.quantity
+        }
+        if (o.step === 'canceled' || o.step === 'cancelled') {
+          stats.quantity_cancel += o.quantity
+        }
+        stats.quantity_not_paid += o.quantity
       }
       stats.quantity_site += o.quantity
       if (o.tax_rate === 0) {
