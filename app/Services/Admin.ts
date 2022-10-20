@@ -426,6 +426,8 @@ class Admin {
       quantity_distrib: 0,
       quantity_box: 0,
       quantity_refund: 0,
+      quantity_cancel: 0,
+      quantity_not_paid: 0,
       benefit_artist: 0,
       benefit_site: 0,
       benefit_prod: 0,
@@ -482,8 +484,13 @@ class Admin {
 
     for (const o of orders) {
       if (!o.is_paid) {
-        stats.quantity_refund += o.quantity
-        continue
+        if (o.step === 'refunded') {
+          stats.quantity_refund += o.quantity
+        }
+        if (o.step === 'canceled' || o.step === 'cancelled') {
+          stats.quantity_cancel += o.quantity
+        }
+        stats.quantity_not_paid += o.quantity
       }
       stats.quantity_site += o.quantity
       if (o.tax_rate === 0) {
@@ -4464,7 +4471,16 @@ class Admin {
 
   static exportOrdersRefunds = async (params: { start: string; end: string }) => {
     const refundsRaw = await DB('refund')
-      .select('refund.*', 'order.currency', 'order.user_id', 'order.payment_type', 'os.transporter')
+      .select(
+        'refund.*',
+        'order.currency',
+        'order.user_id',
+        'order.payment_type',
+        'os.transporter',
+        'os.total',
+        'os.shipping',
+        'os.shipping_cost'
+      )
       .join('order', 'order.id', 'refund.order_id')
       .leftJoin('order_shop as os', 'os.id', 'refund.order_shop_id')
       .where('refund.created_at', '>=', params.start)
@@ -4472,7 +4488,20 @@ class Admin {
       .all()
 
     const refunds = refundsRaw.map((refund) =>
-      refund.order_box_id ? { ...refund, transporter: 'daudin' } : refund
+      refund.order_box_id
+        ? {
+            ...refund,
+            transporter: 'daudin',
+            shipping_diff: refund.shipping_cost
+              ? Math.round((refund.shipping - refund.shipping_cost) * 100) / 100
+              : 0
+          }
+        : {
+            ...refund,
+            shipping_diff: refund.shipping_cost
+              ? Math.round((refund.shipping - refund.shipping_cost) * 100) / 100
+              : 0
+          }
     )
 
     return Utils.arrayToCsv(
@@ -4487,6 +4516,10 @@ class Admin {
         { name: 'Date', index: 'created_at' },
         { name: 'Amount', index: 'amount', format: 'number' },
         { name: 'Currency', index: 'currency' },
+        { name: 'OShop Total', index: 'total', format: 'number' },
+        { name: 'Shipping', index: 'shipping', format: 'number' },
+        { name: 'Shipping Cost', index: 'shipping_cost', format: 'number' },
+        { name: 'Shipping Diff', index: 'shipping_diff', format: 'number' },
         { name: 'Reason', index: 'reason' },
         { name: 'Comment', index: 'comment' }
       ],
