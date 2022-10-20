@@ -14,6 +14,7 @@ class Artwork {
       const project = await DB('project')
         .select(
           'project.*',
+          'vod.type',
           'vod.step',
           'vod.splatter1',
           'vod.splatter2',
@@ -152,6 +153,9 @@ class Artwork {
       if (project.category === 'cd') {
         await Artwork.generateSleeve(uid, 'cd')
       } else {
+        if (project.type === 'test_pressing') {
+          project.sleeve = 'test_pressing'
+        }
         await Artwork.generateSleeve(uid, project.sleeve, project.nb_vinyl)
       }
 
@@ -427,15 +431,13 @@ class Artwork {
     let color = project.color_vinyl
     const path = `projects/${id}`
 
-    const labelExists = await Storage.get(`${path}/label.png`)
-    if (!labelExists) {
-      return false
+    let labelBuffer = await Storage.get(`${path}/label.png`)
+    if (!labelBuffer || project.type === 'test_pressing') {
+      labelBuffer = await Storage.get('assets/images/vinyl/white_label.png')
     }
 
     const composite: any[] = []
-    const label = await sharp(await Storage.get(`${path}/label.png`))
-      .resize({ width: 200, height: 200 })
-      .toBuffer()
+    const label = await sharp(labelBuffer).resize(200, 200).toBuffer()
 
     let vinyl
 
@@ -520,7 +522,7 @@ class Artwork {
     return buffer
   }
 
-  static async generateSleeve(id, type, nb) {
+  static async generateSleeve(id, type, nb?) {
     const path = `projects/${id}`
 
     const composite: any[] = []
@@ -531,7 +533,9 @@ class Artwork {
     )
 
     const img =
-      type === 'discobag'
+      type === 'test_pressing'
+        ? await Storage.get('assets/images/vinyl/test_pressing/test_pressing.png')
+        : type === 'discobag'
         ? await Storage.get('assets/images/vinyl/discobag_black.png')
         : await Storage.get(`${path}/original.jpg`)
 
@@ -541,7 +545,11 @@ class Artwork {
     const cover = await sharp(img).resize({ width: 602, height: 602 }).toBuffer()
 
     if (type !== 'cd') {
-      const vinyl = await sharp(await Storage.get(`${path}/only_vinyl.png`)).toBuffer()
+      let vinylBuffer = await Storage.get(`${path}/only_vinyl.png`)
+      if (!vinylBuffer) {
+        vinylBuffer = await Artwork.generateVinyl(id, {})
+      }
+      const vinyl = await sharp(vinylBuffer).toBuffer()
 
       composite.push({
         input: vinyl,
@@ -549,9 +557,7 @@ class Artwork {
         top: 40
       })
 
-      console.log(nb)
       if (nb === 2) {
-        console.log(path)
         composite.push({
           input: vinyl,
           left: 700,
