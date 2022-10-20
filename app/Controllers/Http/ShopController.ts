@@ -49,10 +49,14 @@ class ShopController {
         title_color: schema.string(),
         logo: schema.string.optional(),
         banner: schema.string.optional(),
-        bg_image: schema.string.optional()
+        bg_image: schema.string.optional(),
+        white_label: schema.boolean.optional()
       }),
       data: params
     })
+    if (payload.white_label && !(await Utils.isTeam(user.id))) {
+      throw new ApiError(401)
+    }
     if (payload.id && !(await Shop.canEdit(payload.id, user.id))) {
       throw new ApiError(403)
     }

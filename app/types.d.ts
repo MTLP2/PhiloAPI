@@ -19,16 +19,17 @@ type ChatModel = ChatDb & Model
 
 type ShopDb = {
   id: number
-  code: string | null
-  name: string | null
-  bg_color: string | null
-  font_color: string | null
-  title_color: string | null
-  logo: string | null
-  banner: string | null
-  bg_image: string | null
-  created_at: string | null
-  updated_at: string | null
+  code?: string | null
+  name?: string | null
+  bg_color?: string | null
+  font_color?: string | null
+  title_color?: string | null
+  logo?: string | null
+  banner?: string | null
+  bg_image?: string | null
+  white_label?: boolean | null
+  created_at?: string | null
+  updated_at?: string | null
 }
 
 type ShopModel = ShopDb & Model
