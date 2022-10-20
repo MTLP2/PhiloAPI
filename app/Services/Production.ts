@@ -326,7 +326,7 @@ class Production {
     }).length
 
     item.prod_actions = item.prod.filter((a) => {
-      // Don't count shipping if project is cd
+      // Don't count test pressing if project is cd
       if (item.project_category === 'cd' && ['test_pressing'].includes(a.type)) return false
 
       // Then count to_dos
