@@ -35,6 +35,7 @@ class Category {
         'p.artist_name',
         'p.color',
         'p.picture',
+        'v.picture_project',
         'p.styles',
         'p.banner',
         'v.type',
