@@ -2387,6 +2387,13 @@ class Stats {
         d.sent.total.dates[date] += dis.total / currencies[stat.currency]
 
         addMarge('distrib', stat.is_licence ? 'licence' : 'project', date, marge)
+        addTurnover(
+          'invoice',
+          'distrib',
+          stat.is_licence ? 'licence' : 'project',
+          date,
+          dis.total / currencies[stat.currency] + marge
+        )
 
         if (!d.distrib.list[dis.name]) {
           d.distrib.list[dis.name] = {
