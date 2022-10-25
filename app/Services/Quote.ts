@@ -125,11 +125,7 @@ class Quote {
     }
 
     if (!params.factory) {
-      if (params.quantity < 300) {
-        params.factory = 'sna'
-      } else {
-        params.factory = 'kuroneko'
-      }
+      params.factory = 'sna'
     }
 
     const quote = await Quote.calculateFactory(params)
