@@ -3132,12 +3132,12 @@ class Admin {
     const projectsPromise = DB().execute(query)
 
     query = `
-    select invoice.id, com_id, sub_total, currency_rate
-    from vod, invoice
-    where invoice.date between '${params.start}' and '${params.end} 23:59'
-    AND invoice.project_id = vod.project_id
-    AND vod.type = 'direct_pressing'
-  `
+      select invoice.id, invoice.type, com_id, sub_total, currency_rate
+      from vod, invoice
+      where invoice.date between '${params.start}' and '${params.end} 23:59'
+      AND invoice.project_id = vod.project_id
+      AND vod.type = 'direct_pressing'
+    `
     if (!admin.includes(params.user_id)) {
       query += `AND vod.com_id = '${params.user_id}' `
     }
@@ -3225,8 +3225,17 @@ class Admin {
       if (!com[item.com_id]) {
         com[item.com_id] = setDefault(item.user_id)
       }
-      com[item.com_id].direct_pressing += item.sub_total * item.currency_rate
-      com[item.com_id].total += item.sub_total * item.currency_rate
+
+      if (item.com_id === 57976) {
+        console.log(item)
+      }
+      if (item.type === 'invoice') {
+        com[item.com_id].direct_pressing += item.sub_total * item.currency_rate
+        com[item.com_id].total += item.sub_total * item.currency_rate
+      } else {
+        com[item.com_id].direct_pressing -= item.sub_total * item.currency_rate
+        com[item.com_id].total -= item.sub_total * item.currency_rate
+      }
     }
 
     for (const item of prospects) {
