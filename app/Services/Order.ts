@@ -802,7 +802,7 @@ static toJuno = async (params) => {
   }
 
   static saveManual = async (params) => {
-    let item = DB('order_manual')
+    let item: any = DB('order_manual')
 
     const prices = {}
     const projects = {}
@@ -855,7 +855,7 @@ static toJuno = async (params) => {
     item.quantity = params.quantity
     item.comment = params.comment
     item.order_shop_id = params.order_shop_id || null
-    item.tracking_number = params.tracking_number
+    item.tracking_number = params.tracking_number || null
     item.barcodes = JSON.stringify(params.barcodes)
     item.updated_at = Utils.date()
 
@@ -895,7 +895,7 @@ static toJuno = async (params) => {
       ])
     }
     if (['whiplash', 'whiplash_uk'].includes(params.transporter) && !item.logistician_id) {
-      const pp = {
+      const pp: any = {
         shipping_name: `${customer.firstname} ${customer.lastname}`,
         shipping_address_1: customer.address,
         shipping_city: customer.city,
