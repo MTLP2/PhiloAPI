@@ -27,6 +27,7 @@ type ShopDb = {
   logo?: string | null
   banner?: string | null
   bg_image?: string | null
+  line_items?: number
   white_label?: boolean | null
   created_at?: string | null
   updated_at?: string | null
