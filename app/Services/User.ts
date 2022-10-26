@@ -699,7 +699,7 @@ class User {
       } else {
         await DB('order_shop').where('id', params.order_shop_id).update({
           ask_cancel: 1,
-          is_paused: 1
+          sending: 0
         })
         await Notification.sendEmail({
           to: 'support@diggersfactory.com',
