@@ -250,7 +250,7 @@ class Quote {
     for (const c of Object.keys(quote)) {
       quote[c] = Math.round(quote[c] * (1 + feeProd / 100))
       if (data.factory === 'vdp') {
-        quote[c] = Math.round(quote[c] * 1.14)
+        quote[c] = Math.round(quote[c] * 1.19)
       }
     }
 
@@ -294,7 +294,7 @@ class Quote {
     }
 
     if (data.factory === 'vdp') {
-      logs.push({ type: 'surcharge', comment: '14%' })
+      logs.push({ type: 'surcharge', comment: '19%' })
     }
 
     const quantitySell = params.quantity - params.count_other
