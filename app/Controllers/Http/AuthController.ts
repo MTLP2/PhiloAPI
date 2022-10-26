@@ -173,6 +173,8 @@ class AuthController {
   }
 
   async signup({ params, response }) {
+    params.name = params.name || params.email.split('@')[0]
+
     await validator.validate({
       schema: schema.create({
         name: schema.string(),
