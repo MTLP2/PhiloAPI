@@ -4552,7 +4552,8 @@ class Admin {
         'u.name as com_name',
         'v.origin',
         'v.historic',
-        'p.category'
+        'p.category',
+        'v.status'
       )
       .join('vod as v', 'v.project_id', 'p.id')
       .leftJoin('user as u', 'u.id', 'v.com_id')
@@ -4586,6 +4587,7 @@ class Admin {
         { index: 'artist_name', name: 'Artist Name' },
         { index: 'origin', name: 'Origin' },
         { index: 'step', name: 'Step' },
+        { index: 'status', name: 'Status' },
         { index: 'type', name: 'Type' },
         { index: 'category', name: 'Category' },
         { index: 'historic', name: 'Previous steps' }
