@@ -6,14 +6,14 @@ import Storage from 'App/Services/Storage'
 import DB from 'App/DB'
 
 class StatementService {
-  static async get(params) {
+  static async get(params: { id: number }) {
     const items = (
       await DB('statement')
         .where('project_id', params.id)
         .hasMany('statement_distributor', 'distributors')
         .orderBy('date', 'desc')
         .all()
-    ).map((d) => {
+    ).map((d: any) => {
       d.custom = d.custom ? JSON.parse(d.custom) : null
       return d
     })
@@ -74,13 +74,19 @@ class StatementService {
     return item
   }
 
-  static async delete(params) {
+  static async delete(params: { sid: number }) {
     await DB('statement').where('id', params.sid).delete()
     await DB('statement_distributor').where('statement_id', params.sid).delete()
     return { sucess: true }
   }
 
-  static async upload(params) {
+  static async upload(params: {
+    file: string
+    year: string
+    month: string
+    distributor: string
+    type: string
+  }) {
     const file = Buffer.from(params.file, 'base64')
 
     const currencies = await Utils.getCurrenciesApi(
@@ -492,7 +498,7 @@ class StatementService {
     return data
   }
 
-  static parseFab(workbook) {
+  static parseFab(workbook: any) {
     const worksheet = workbook.getWorksheet(1)
 
     const data = {}
@@ -539,13 +545,16 @@ class StatementService {
     return data
   }
 
-  static async download(params) {
+  static async download(params: { id: number; number: number; start: string; end: string }) {
     const workbook = new Excel.Workbook()
     await this.setWorksheet(workbook, params)
     return workbook.xlsx.writeBuffer()
   }
 
-  static async setWorksheet(workbook, params) {
+  static async setWorksheet(
+    workbook: any,
+    params: { id: number; number: number; start: string; end: string }
+  ) {
     const project = await DB()
       .select('vod.*', 'project.name', 'project.artist_name')
       .from('vod')
@@ -823,7 +832,7 @@ class StatementService {
     return data
   }
 
-  static async userDownload(params) {
+  static async userDownload(params: { id: number; auto: boolean; start: string; end: string }) {
     let projects: any = DB()
       .select('project.id', 'artist_name', 'name')
       .table('project')
@@ -886,7 +895,7 @@ class StatementService {
     return workbook.xlsx.writeBuffer()
   }
 
-  static async getBalances(params) {
+  static async getBalances(params: { start: string; end: string; type: string }) {
     let projectsPromise = DB()
       .from('project')
       .select(
@@ -896,6 +905,7 @@ class StatementService {
         'vod.currency',
         'vod.resp_prod_id',
         'vod.com_id',
+        'statement_comment',
         'user.name as user',
         'vod.type',
         'step'
@@ -913,20 +923,28 @@ class StatementService {
     projectsPromise = projectsPromise.all()
 
     const invoicesPromise = DB('invoice')
+      .select('invoice.*')
       .join('vod', 'vod.project_id', 'invoice.project_id')
       .where('balance_followup', true)
-      .where('invoice.type', 'invoice')
+      .where('compatibility', true)
       .all()
 
     const costsPromise = DB('production_cost')
-      .select('vod.project_id', 'cost_real')
+      .select('name', 'vod.project_id', 'cost_real', 'cost_invoiced')
       .join('vod', 'vod.project_id', 'production_cost.project_id')
       .where('balance_followup', true)
       .all()
 
-    const [projectsList, invoices, costs] = await Promise.all([
+    const prodsPromise = DB('production')
+      .select('production.project_id', 'quantity', 'quantity_pressed')
+      .join('vod', 'vod.project_id', 'production.project_id')
+      .where('balance_followup', true)
+      .all()
+
+    const [projectsList, invoices, prods, costs] = await Promise.all([
       projectsPromise,
       invoicesPromise,
+      prodsPromise,
       costsPromise
     ])
 
@@ -950,7 +968,8 @@ class StatementService {
       project.storage_distrib = balance.storage_distrib
       project.payment_artist = balance.payment_artist
       project.payment_diggers = balance.payment_diggers
-      project.costs = balance.costs
+      project.costs_statement = balance.costs
+      project.costs_invoiced = 0
       project.resp_prod = team[project.resp_prod_id]?.name
       project.resp_com = team[project.com_id]?.name
       project.invoiced = 0
@@ -967,12 +986,28 @@ class StatementService {
 
     if (params.type === 'follow_up') {
       for (const invoice of invoices) {
-        projects[invoice.project_id].invoiced += invoice.sub_total * invoice.currency_rate
+        console.log(invoice.type)
+        if (invoice.type === 'invoice') {
+          projects[invoice.project_id].invoiced += invoice.sub_total * invoice.currency_rate
+        } else {
+          projects[invoice.project_id].invoiced -= invoice.sub_total * invoice.currency_rate
+        }
+        console.log(projects[invoice.project_id].invoiced, invoice.sub_total)
         projects[invoice.project_id].direct_balance = projects[invoice.project_id].invoiced
       }
+      for (const prod of prods) {
+        projects[prod.project_id].quantity = prod.quantity
+        projects[prod.project_id].quantity_pressed = prod.quantity_pressed
+      }
       for (const cost of costs) {
+        const name = cost.name.split(' ')
+        if (!isNaN(name[1])) {
+          projects[cost.project_id].quantity_pressed2 = name[1]
+        } else if (!isNaN(name[2])) {
+          projects[cost.project_id].quantity_pressed2 = name[2]
+        }
         projects[cost.project_id].direct_costs += cost.cost_real
-        console.log(projects[cost.project_id].invoiced)
+        projects[cost.project_id].costs_invoiced += cost.cost_invoiced
         projects[cost.project_id].direct_balance =
           projects[cost.project_id].invoiced - projects[cost.project_id].direct_costs
       }
@@ -988,13 +1023,18 @@ class StatementService {
         { header: 'Project', key: 'name', width: 25 },
         { header: 'Resp Prod', key: 'resp_prod', width: 15 },
         { header: 'Resp Com', key: 'resp_com', width: 15 },
+        { header: 'Qty', key: 'quantity', width: 10 },
+        { header: 'Qty press', key: 'quantity_pressed', width: 10 },
+        { header: 'Qty press 2', key: 'quantity_pressed2', width: 10 },
         { header: 'Profits', key: 'profits', width: 10 },
-        { header: 'Costs', key: 'costs', width: 10 },
+        { header: 'Invoiced Costs', key: 'costs_invoiced', width: 10 },
+        { header: 'Statement Costs', key: 'costs_statement', width: 10 },
         { header: 'Storage', key: 'storage', width: 10 },
         { header: 'Pay Artist', key: 'payment_artist', width: 10 },
         { header: 'Pay Diggers', key: 'payment_diggers', width: 10 },
         { header: 'Balance', key: 'balance', width: 10 },
-        { header: 'Currency', key: 'currency', width: 10 }
+        { header: 'Currency', key: 'currency', width: 10 },
+        { header: 'Comment', key: 'statement_comment', width: 50 }
       ]
       const worksheet = workbook.addWorksheet('Project')
 
@@ -1026,9 +1066,13 @@ class StatementService {
         { header: 'Project', key: 'name', width: 25 },
         { header: 'Resp Prod', key: 'resp_prod', width: 15 },
         { header: 'Resp Com', key: 'resp_com', width: 15 },
+        { header: 'Quantity', key: 'quantity', width: 10 },
+        { header: 'Quantity pressed', key: 'quantity_pressed', width: 10 },
+        { header: 'Quantity pressed 2', key: 'quantity_pressed2', width: 10 },
         { header: 'Invoiced', key: 'invoiced', width: 10 },
         { header: 'Costs', key: 'direct_costs', width: 10 },
-        { header: 'Balance', key: 'direct_balance', width: 10 }
+        { header: 'Balance', key: 'direct_balance', width: 10 },
+        { header: 'Comment', key: 'statement_comment', width: 50 }
       ]
 
       let j = 1
@@ -1070,7 +1114,7 @@ class StatementService {
     return workbook.xlsx.writeBuffer()
   }
 
-  static async getBalance(params) {
+  static async getBalance(params: { id: number; start?: string; end?: string }) {
     if (!params.end) {
       params.end = moment().format('YYYY-MM-DD')
     }
@@ -1091,7 +1135,7 @@ class StatementService {
     }
   }
 
-  static async isActive(params) {
+  static async isActive(params: { id: number; barcode: string; start: string; end: string }) {
     const statements = await DB()
       .from('statement')
       .where('project_id', params.id)
@@ -1231,9 +1275,18 @@ class StatementService {
     return i
   }
 
-  static async getStatement(params) {
+  static async getStatement(params: {
+    id: number
+    fee?: number
+    payback?: boolean
+    start?: string
+    end?: string
+  }) {
     if (!params.start) {
       params.start = '2001-01-01'
+    }
+    if (!params.end) {
+      params.end = moment().format('YYYY-MM-DD')
     }
 
     const project = await DB()
@@ -1470,14 +1523,15 @@ class StatementService {
       }
 
       const feeDate = JSON.parse(project.fee_date)
-      const fee = 1 - Utils.getFee(feeDate, order.created_at) / 100
+      const fee =
+        1 - (params.fee !== undefined ? params.fee : Utils.getFee(feeDate, order.created_at) / 100)
       const tax = 1 + order.tax_rate
       const discount = order.discount_artist ? order.discount : 0
       const total = order.price * order.quantity - discount
 
       if (order.item_id) {
         data[`${order.item_id}_quantity`][order.date] += order.quantity
-        if (project.payback_site) {
+        if (params.payback !== false && project.payback_site) {
           data[`${order.item_id}_total`][order.date] += order.quantity * project.payback_site
         } else {
           const total = order.price * order.currency_rate_project * order.quantity
@@ -1487,7 +1541,7 @@ class StatementService {
       } else {
         data.site_quantity[order.date] += order.quantity
         data.site_quantity.total += order.quantity
-        if (project.payback_site) {
+        if (params.payback !== false && project.payback_site) {
           data.site_total[order.date] += project.payback_site * order.quantity
         } else {
           data.site_total[order.date] += ((total * order.currency_rate_project) / tax) * fee
@@ -1522,7 +1576,8 @@ class StatementService {
       }
 
       const feeDistribDate = JSON.parse(project.fee_distrib_date)
-      const feeDistrib = 1 - Utils.getFee(feeDistribDate, stat.date) / 100
+      const feeDistrib =
+        1 - (params.fee !== undefined ? params.fee : Utils.getFee(feeDistribDate, stat.date) / 100)
 
       for (const dist of stat.distributors) {
         if (!dist.item) {
@@ -1532,7 +1587,7 @@ class StatementService {
         data[`${dist.name}_${dist.item}_returned`][stat.date] += parseInt(dist.returned)
 
         let value
-        if (project.payback_distrib) {
+        if (params.payback !== false && project.payback_distrib) {
           value = project.payback_distrib * dist.quantity
         } else {
           value = dist.total * feeDistrib
@@ -1620,7 +1675,7 @@ class StatementService {
     return data
   }
 
-  static getStats = async (params) => {
+  static getStats = async (params: { start: string; end: string }) => {
     let refs: any = DB('statement')
       .select(
         'statement.date',

@@ -51,7 +51,7 @@ class Dispatch {
     }
 
     if (params.status === 'sent') {
-      const res = await setSent({
+      const res = await Dispatch.setSent({
         id: params.id,
         transporter: params.transporter,
         tracking: params.tracking_number
@@ -61,7 +61,7 @@ class Dispatch {
       }
     }
     if (params.status === 'returned') {
-      const res = await setReturned(params.id)
+      const res = await Dispatch.setReturned(params.id)
       if (!res) {
         return { succes: false }
       }
@@ -180,7 +180,7 @@ class Dispatch {
       await order.save()
 
       const subTotal = Utils.round(order.shipping / (1 + order.tax_rate))
-      const payment = await Payment.save({
+      const payment: any = await Payment.save({
         name: `Shipping return ${order.id}`,
         type: 'return',
         order_shop_id: order.id,
@@ -396,7 +396,7 @@ class Dispatch {
     countries.push({
       id: '00'
     })
-    const costs = {}
+    const costs: any = {}
     for (const country of countries) {
       costs[country.id] = {
         country_id: country.id,
@@ -492,7 +492,7 @@ class Dispatch {
       }
     }
 
-    let orders = DB('order_shop')
+    let orders: any = DB('order_shop')
       .select(
         'order_shop.id',
         'order_shop.order_id',
@@ -566,47 +566,53 @@ class Dispatch {
       costs['00'][`${order.transporter}_benefit`] += order.shipping - order.shipping_cost
     }
 
-    return Object.values(costs).sort((a, b) => b.daudin_costs.length - a.daudin_costs.length)
+    return Object.values(costs).sort(
+      (a: any, b: any) => b.daudin_costs.length - a.daudin_costs.length
+    )
   }
 
-  static setCosts = async (params) => {
-    const files = await Storage.list(`shippings/${params.transporter}`, true)
-    const dispatchs = []
+  static setCosts = async (params: { transporter: string; force?: boolean }) => {
+    const files: any = await Storage.list(`shippings/${params.transporter}`, true)
+    let dispatchs: number = 0
     for (const file of files) {
       if (file.size === 0) {
         continue
       }
       const path = file.path.split('.')[0].split(' ')
-
-      if (path[0] !== 'shippings/whiplash/invoice_97369') {
+      console.log(path)
+      if (path[0] !== 'shippings/sna/sna_2022-09') {
         continue
       }
-
-      console.log(path)
+      console.log('=>', path)
 
       const date = path[path.length - 1]
-
-      const buffer = await Storage.get(file.path, true)
-
+      const buffer: Buffer = <Buffer>await Storage.get(file.path, true)
       const dis = await Dispatch.setCost(params.transporter, date, buffer, params.force)
-      // console.log(dis.length)
-      dispatchs.push(...dis)
+
+      dispatchs += dis
     }
-    return dispatchs.length
+
+    console.log('dispatchs => ', dispatchs)
+    return dispatchs
   }
 
-  static setCost = async (transporter, date, buffer, force = false) => {
-    const dispatchs = []
+  static setCost = async (
+    transporter: string,
+    date: string,
+    buffer: Buffer,
+    force: boolean = false
+  ) => {
+    let dispatchs: number = 0
 
     let dis
     if (transporter === 'daudin') {
       dis = await Daudin.setCost(date, buffer, force)
     } else if (transporter === 'sna') {
-      dis = await Sna.setCost(date, buffer, force)
+      dis = await Sna.setCost(buffer, force)
     } else if (transporter === 'whiplash') {
       dis = await Whiplash.setCost(buffer, force)
     }
-    dispatchs.push(...dis)
+    dispatchs += dis
 
     return dispatchs
   }
@@ -634,10 +640,6 @@ class Dispatch {
   static parsePriceList = async () => {
     const workbook = new Excel.Workbook()
 
-    workbook.eachSheet(function (worksheet, sheetId) {
-      console.log(sheetId)
-    })
-
     const file = fs.readFileSync('./resources/shippings/sna.xlsx')
     await workbook.xlsx.load(file)
 
@@ -650,13 +652,13 @@ class Dispatch {
       }
     }
 
-    const prices = []
+    const prices: any = []
     const standard = workbook.getWorksheet(1)
     standard.eachRow((row, rowNumber) => {
       if (rowNumber < 14 || rowNumber > 257) {
         return
       }
-      const price = {}
+      const price: any = {}
       price.country_id = row.getCell('C').toString()
       price.mode = 'standard'
       price.prices = {

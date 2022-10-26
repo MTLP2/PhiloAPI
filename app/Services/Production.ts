@@ -18,6 +18,7 @@ class Production {
       .join('project', 'project.id', 'production.project_id')
       .join('vod', 'vod.project_id', 'project.id')
       .leftJoin('user', 'user.id', 'production.resp_id')
+      .leftJoin('user as com', 'com.id', 'vod.com_id')
       .where('production.is_delete', false)
 
     if (params.project_id) {
@@ -34,7 +35,9 @@ class Production {
         'vod.barcode',
         'project.picture',
         'project.country_id',
-        'user.name as user'
+        'user.name as user',
+        'vod.com_id',
+        'com.name as com_name'
       ]
       // params.query.select(
       //   'production.*', 'project.artist_name', 'project.name as project', 'vod.barcode',
@@ -55,7 +58,8 @@ class Production {
         'user.name as user',
         'production.name as prod_name',
         'production.quantity as prod_quantity',
-        'production.created_at'
+        'production.created_at',
+        'vod.com_id'
       ]
       // params.query.select('production.id', 'production.step', 'production.date_preprod', 'production.date_prod',
       //   'production.date_postprod', 'project.artist_name', 'project.name as project', 'vod.barcode',
@@ -246,9 +250,11 @@ class Production {
       .select(
         'production.*',
         'vod.currency as vod_currency',
-        'user.customer_invoice_id as billing_customer'
+        'user.customer_invoice_id as billing_customer',
+        'project.category as project_category'
       )
       .join('vod', 'vod.project_id', 'production.project_id')
+      .join('project', 'project.id', 'production.project_id')
       .leftJoin('user', 'vod.user_id', 'user.id')
       .where('production.id', params.id)
       .first()
@@ -312,8 +318,25 @@ class Production {
       item.postprod = item.postprod.filter((a) => a.for !== 'team')
     }
 
-    item.preprod_actions = item.preprod.filter((a) => a.status === 'to_do').length
-    item.prod_actions = item.prod.filter((a) => a.status === 'to_do').length
+    item.preprod_actions = item.preprod.filter((a) => {
+      // Don't count billing if is_billing is false
+      if (!item.is_billing && a.type === 'billing') return false
+
+      // Don't count shipping if project is cd
+      if (item.project_category === 'cd' && ['shipping'].includes(a.type)) return false
+
+      // Then count to_dos
+      return a.status === 'to_do'
+    }).length
+
+    item.prod_actions = item.prod.filter((a) => {
+      // Don't count test pressing if project is cd
+      if (item.project_category === 'cd' && ['test_pressing'].includes(a.type)) return false
+
+      // Then count to_dos
+      return a.status === 'to_do'
+    }).length
+
     item.postprod_actions = item.postprod.filter((a) => a.status === 'to_do').length
 
     item.dispatches = await DB('production_dispatch')
@@ -1441,7 +1464,21 @@ class Production {
     }
   }
 
-  static async addNotif({ id, type, date, data, overrideNotif = false, userId }) {
+  static async addNotif({
+    id,
+    type,
+    date,
+    data,
+    overrideNotif = false,
+    userId
+  }: {
+    id: number
+    type: string
+    date?: string
+    data?: any
+    overrideNotif?: boolean
+    userId?: number
+  }) {
     const prod = await DB('vod')
       .select(
         'production.id',
@@ -1794,6 +1831,7 @@ class Production {
         { name: 'Artist', index: 'artist_name' },
         { name: 'Country', index: 'country_id' },
         { name: 'Resp', index: 'user' },
+        { name: 'Commercial', index: 'com_id' },
         { name: 'Name', index: 'name' },
         { name: 'Step', index: 'step' },
         { name: 'Factory', index: 'factory' },

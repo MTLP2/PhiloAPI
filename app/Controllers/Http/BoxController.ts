@@ -1,12 +1,12 @@
 import Box from 'App/Services/Box'
-
+import { validator, schema } from '@ioc:Adonis/Core/Validator'
 class BoxController {
   getLastBoxes({ params }) {
     return Box.getLastBoxes(params)
   }
 
-  getBoxesPrices({ params }) {
-    return Box.getPrices(params)
+  getBoxesPrices() {
+    return Box.getPrices()
   }
 
   checkSponsor({ params }) {
@@ -21,8 +21,8 @@ class BoxController {
     return Box.save(params)
   }
 
-  exportBoxes({ params }) {
-    return Box.export(params)
+  exportBoxes() {
+    return Box.export()
   }
 
   async getBoxCard({ params }) {
@@ -44,19 +44,19 @@ class BoxController {
     return Box.removeBoxMonth(params)
   }
 
-  statsDispatchs({ params }) {
-    return Box.statsDispatchs(params)
+  statsDispatchs() {
+    return Box.statsDispatchs()
   }
 
-  getBoxesStats({ params }) {
-    return Box.stats(params)
+  getBoxesStats() {
+    return Box.stats()
   }
 
   getBox({ params }) {
     return Box.find(params.id)
   }
 
-  checkPayments({ params }) {
+  checkPayments() {
     return Box.checkPayments()
   }
 
@@ -64,8 +64,30 @@ class BoxController {
     return Box.refund(params)
   }
 
-  saveDispatch({ params }) {
-    return Box.saveDispatch(params)
+  async saveDispatch({ params }) {
+    params.force_quantity = !!params.force_quantity
+    const payload = await validator.validate({
+      schema: schema.create({
+        id: schema.number(),
+        box_id: schema.number(),
+        barcodes: schema.string(),
+        is_daudin: schema.enum([0, 1] as const),
+        force_quantity: schema.boolean(),
+        cancel_dispatch: schema.boolean()
+      }),
+      data: params
+    })
+    return Box.saveDispatch(payload)
+  }
+
+  async refreshBoxDispatch({ params }) {
+    const payload = await validator.validate({
+      schema: schema.create({
+        id: schema.string()
+      }),
+      data: params
+    })
+    return Box.refreshBoxDispatch(payload)
   }
 
   removeDispatch({ params }) {

@@ -63,6 +63,7 @@ class Whiplash {
       shipping_phone: customer.phone,
       email: shop.email,
       shop_shipping_method_text: Whiplash.getShippingMethod(),
+      shop_warehouse_id: shop.transporter === 'whiplash_uk' ? 3 : 4,
       order_items: []
     }
 
@@ -222,7 +223,7 @@ class Whiplash {
 
       if (order.transporter === params.type && !order.logistician_id) {
         count += order.quantity
-        const params: any = {
+        const data: any = {
           shipping_name: `${order.firstname} ${order.lastname}`,
           shipping_address_1: order.address,
           shipping_city: order.city,
@@ -232,6 +233,7 @@ class Whiplash {
           shipping_phone: order.phone,
           email: order.email,
           shop_shipping_method_text: Whiplash.getShippingMethod(),
+          shop_warehouse_id: params.type === 'whiplash_uk' ? 3 : 4,
           order_items: []
         }
         for (const item of order.items) {
@@ -243,7 +245,7 @@ class Whiplash {
             } else if (barcode === 'SIZE2') {
               barcode = sizes[item.size].split(',')[1]
             }
-            params.order_items.push({
+            data.order_items.push({
               item_id: barcodes[barcode],
               quantity: item.quantity
             })
@@ -254,7 +256,7 @@ class Whiplash {
           continue
         }
 
-        const whiplash: any = await Whiplash.saveOrder(params)
+        const whiplash: any = await Whiplash.saveOrder(data)
         await DB('order_shop').where('id', order.order_shop_id).update({
           step: 'in_preparation',
           date_export: Utils.date(),
@@ -684,7 +686,7 @@ class Whiplash {
         // console.log(shop.order_id, dispatch.creator_id, dispatch.warehouse_id, -dispatch.total, shop.shipping_cost)
       }
     }
-    return dispatchs
+    return dispatchs.length
   }
 
   static parseShippings = async () => {

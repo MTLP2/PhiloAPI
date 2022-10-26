@@ -54,7 +54,7 @@ class Review {
     return { count: ordersToReview.length, ordersToReview }
   }
 
-  static all = async (params) => {
+  static all = async (params: any) => {
     const selects = [
       'r.*',
       'u.id as user_id',
@@ -62,7 +62,7 @@ class Review {
       'u.picture as user_picture',
       'u.name as user_name'
     ]
-    const joins = []
+    const joins: { elements: string[] }[] = []
 
     // Selects and join for projects
     if (!params.type || params.type === 'project') {
@@ -87,7 +87,7 @@ class Review {
       else params.query.join(...join.elements)
     }
 
-    params.query.orderBy('r.created_at', 'desc')
+    params.query.orderBy(params.sort || 'r.created_at', params.order || 'desc')
 
     if (params.start) {
       params.query.where('r.created_at', '>=', params.start)

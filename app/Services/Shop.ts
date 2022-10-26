@@ -16,7 +16,7 @@ class Shop {
       params.order = 'desc'
     }
 
-    return Utils.getRows(params)
+    return Utils.getRows<ShopDb[]>(params)
   }
 
   static async find(payload: {
@@ -24,6 +24,7 @@ class Shop {
     user_id?: number
     code?: string
     all_project?: boolean
+    projects?: boolean
   }) {
     let shop: any = DB('shop').select('shop.*')
 
@@ -42,18 +43,19 @@ class Shop {
     if (!shop) {
       throw new ApiError(404)
     }
-
-    shop.projects = await Project.findAll({
-      shop_id: shop.id,
-      all_project: payload.all_project,
-      limit: 99999
-    })
+    if (payload.projects !== false) {
+      shop.projects = await Project.findAll({
+        shop_id: shop.id,
+        all_project: payload.all_project,
+        limit: 99999
+      })
+    }
 
     return shop
   }
 
   static async update(payload: {
-    id: number
+    id?: number
     user_id: number
     name: string
     code: string
@@ -63,8 +65,9 @@ class Shop {
     logo?: string
     banner?: string
     bg_image?: string
+    white_label?: boolean
   }) {
-    let item: any = DB('shop')
+    let item: ShopModel = <any>DB('shop')
 
     const code = payload.code ? payload.code : Utils.slugify(payload.name)
     const codeUsed = await DB('shop').where('code', code).where('id', '!=', payload.id).first()
@@ -86,6 +89,7 @@ class Shop {
     item.bg_color = payload.bg_color
     item.font_color = payload.font_color
     item.title_color = payload.title_color
+    item.white_label = payload.white_label
     item.updated_at = Utils.date()
 
     if (payload.logo) {
@@ -107,7 +111,7 @@ class Shop {
       item.banner = fileName
       Storage.uploadImage(fileName, Buffer.from(payload.banner, 'base64'), {
         type: 'jpg',
-        width: 1600
+        width: 2200
       })
     }
     if (payload.bg_image) {
@@ -133,15 +137,15 @@ class Shop {
   }
 
   static async removeImage(payload: { shop_id: number; type: string }) {
-    const item = await DB('shop').find(payload.shop_id)
+    const item: ShopModel = await DB('shop').find(payload.shop_id)
 
-    if (payload.type === 'banner') {
+    if (payload.type === 'banner' && item.banner) {
       Storage.deleteImage(item.banner)
       item.banner = null
-    } else if (payload.type === 'logo') {
+    } else if (payload.type === 'logo' && item.logo) {
       Storage.deleteImage(item.logo)
       item.logo = null
-    } else if (payload.type === 'bg_image') {
+    } else if (payload.type === 'bg_image' && item.bg_image) {
       Storage.deleteImage(item.bg_image)
       item.bg_image = null
     }

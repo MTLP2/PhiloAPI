@@ -1,14 +1,6 @@
 import { Knex as KnexOriginal, knex } from 'knex'
 import Env from '@ioc:Adonis/Core/Env'
 
-declare module 'knex' {
-  namespace Knex {
-    interface QueryBuilder {
-      all(): any[]
-    }
-  }
-}
-
 const config: KnexOriginal.Config = {
   client: 'mysql',
   connection: {
@@ -17,163 +9,112 @@ const config: KnexOriginal.Config = {
     user: Env.get('DB_USER', 'root'),
     password: Env.get('DB_PASSWORD', ''),
     database: Env.get('DB_DATABASE', 'diggersfactory'),
-    ssl: true,
     charset: 'utf8mb4',
     dateStrings: true
-  }
-}
-
-const knexInstance = knex(config)
-
-/**
-knex.QueryBuilder.extend('all', function () {
-  const error = new Error()
-  return this.catch((err) => {
-    error.message = err.message
-    throw error
-  })
-})
-
-knex.QueryBuilder.extend('one', function () {
-  const error = new Error()
-  return this.first().catch((err) => {
-    error.message = err.message
-    throw error
-  })
-})
-**/
-
-const db = knexInstance
-
-const proxy = new Proxy(db, {
-  apply: function (t, thisArg, argumentsList) {
-    const instance = t(...argumentsList)
-
-    const tata = new Proxy(instance, {
-      get(target, name: string) {
-        console.log(name)
-        if (name === 'then') {
-          return target
-        } else if (target[name]) {
-          return (...args) => {
-            if (name === 'all') {
-            } else {
-              target[name](...args)
-            }
-            return tata
-          }
-        } else {
-          return target
-          console.log('x => ', name)
-        }
+    /**
+    typeCast2: function (field: any, next: any) {
+      if (field.type == 'TINY' && field.length == 1) {
+        let value = field.string()
+        if (value === null) return null
+        else if (value === '1' || value === '0') return value == '1'
+        return next()
       }
-    })
-    return tata
-    // target =  target(...argumentsList)
+      return next()
+    }
+    **/
+  }
+}
+
+declare module 'knex' {
+  namespace Knex {
+    interface QueryBuilder {
+      model(): any
+      all(): Promise<any[]>
+      find(id: number): Promise<any>
+      count(): Promise<number>
+      belongsTo(
+        table: string,
+        options?: {
+          localKey?: string
+          index?: string
+          query?: (query: QueryBuilder) => QueryBuilder
+        }
+      ): QueryBuilder
+      hasMany(
+        table: string,
+        options?: {
+          foreignKey?: string
+          index?: string
+          query?: (query: QueryBuilder) => QueryBuilder
+        }
+      ): QueryBuilder
+      execute: any
+    }
+  }
+}
+
+knex.QueryBuilder.extend('execute', async function () {
+  const error = new Error()
+  try {
+    return await this
+  } catch (err) {
+    error.message = err.message
+    throw error
   }
 })
 
-// DB.query = knexInstance
-// DB.raw = (...args: any[]) => knexInstance.raw(...args)
+const db = knex(config)
 
-export default proxy
-
-/**
-interface Props extends Knex.QueryInterface {
-  data: { [key: string]: string }
-  get: (name: string) => string
-  set: (name: string, value: string) => void
-  toJSON: () => any
-  execute: () => any
-  newQuery: () => void
-  getSql: () => {}
-  model: () => any
-  find: () => any
-  first: () => {}
-  all: () => {}
-  queryFunc: (name: string, args: any) => Props
-  save: () => {}
-  orderBy: () => Props
-}
-
-const DB = (table: string) => {
-  const p = {
-    query: knexInstance.queryBuilder(),
-    lastSql: '',
-    table: table
-  }
-
-  const props: Props = {
-    data: {},
-    get: (name) => {
-      return props.data[name]
+const Model = (table: string, data?: any) => {
+  const _ = {
+    table: table,
+    data: data ? { ...data } : {},
+    values: data ? { ...data } : {},
+    get: (name: string) => {
+      return _.values[name]
     },
-    set: (name, value) => {
-      props.data[name] = value
-    },
-    toJSON: () => {
-      return props.data
-    },
-    execute: async () => {
-      return p.query.catch((err) => {
-        throw new Error(err)
-      })
-    },
-    newQuery: () => {
-      p.lastSql = p.query.toString()
-      p.query = knexInstance.queryBuilder()
-    },
-    getSql: () => {
-      return p.lastSql
-    },
-    model: () => {
-      const proxyCast: any = proxy
-      return proxyCast
-    },
-    first: async () => {
-      p.query.from(table).first()
-      const res = await props.execute()
-      props.data = { ...res }
-      return proxy
-    },
-    all: async () => {
-      p.query.from(table)
-      return props.execute()
-    },
-    queryFunc: (name, args) => {
-      p.query[name](...args)
-      return proxy
+    set: (name: string, value: any) => {
+      _.values[name] = value
     },
     save: async () => {
-      let id: number | string
-      if (props.data.id) {
-        id = props.data.id
-        p.query.from(table).where('id', props.data.id).update(props.data)
-      } else {
-        p.query.from(table).insert(props.data)
-        id = <number>await props.execute()
+      let fields = {}
+      for (const field in _.values) {
+        if (_.data[field] !== _.values[field]) {
+          fields[field] = _.values[field]
+        }
       }
-
-      props.newQuery()
-      p.query.from(table).where('id', id)
-      props.first()
-      const res = await props.execute()
-      props.data = { ...res }
-      return proxy
+      if (Object.keys(fields).length === 0) {
+        return false
+      } else {
+        let data: any
+        if (_.data.id) {
+          await db.from(table).where('id', _.data.id).update(fields).execute()
+          data = await db.from(table).where('id', _.data.id).first().execute()
+        } else {
+          const [id] = await db.from(table).insert(fields).execute()
+          data = await db.from(table).where('id', id).first().execute()
+        }
+        _.data = { ...data }
+        _.values = { ...data }
+        return true
+      }
+    },
+    delete: async () => {
+      return db
+        .from(table)
+        .where('id', _.data.id)
+        .delete()
+        .execute()
+        .then((res: number) => res !== 0)
+    },
+    toJSON: () => {
+      return _.values
     }
   }
 
-  const proxy = new Proxy(props, {
+  const proxy = new Proxy(_, {
     get(target, name: string) {
       if (!target[name]) {
-        if (name === 'then') {
-          return target[name]
-        }
-        if (p.query[name]) {
-          return (...args) => {
-            return props.queryFunc(name, args)
-          }
-        }
         return target.get(name)
       } else {
         return target[name]
@@ -188,8 +129,133 @@ const DB = (table: string) => {
   return proxy
 }
 
-DB.query = knexInstance
-DB.raw = (...args: any[]) => knexInstance.raw(...args)
+const DB = new Proxy(db, {
+  get: function () {},
+  apply: function (t, args, argumentsList) {
+    const instance = argumentsList ? t(...argumentsList) : t
+    const [tableName] = argumentsList
+    const relations: any[] = []
+
+    const proxyInstance = new Proxy(instance, {
+      get(target, name: string) {
+        return (...args: any[]) => {
+          if (name === 'raw') {
+            return db.raw(args)
+          } else if (name === 'all' || name === 'first') {
+            if (name === 'first') {
+              target.limit(1)
+            }
+            return target.execute().then(async (rows: any[]) => {
+              for (const rel of relations) {
+                if (rel.type === 'belongsTo') {
+                  const rels = await rel
+                    .query(DB(rel.table))
+                    .whereIn(
+                      'id',
+                      rows.map((r) => r[rel.localKey])
+                    )
+                    .all()
+                    .then((rows) => {
+                      return rows.reduce((acc, curr) => ((acc[curr.id] = curr), acc), {})
+                    })
+                  rows = rows.map((row) => {
+                    return {
+                      ...row,
+                      [rel.index]: rels[row[rel.localKey]] || null
+                    }
+                  })
+                } else if (rel.type === 'hasMany') {
+                  const rels = await rel
+                    .query(DB(rel.table))
+                    .whereIn(
+                      rel.foreignKey,
+                      rows.map((r) => r.id)
+                    )
+                    .all()
+                    .then((rows) => {
+                      return rows.reduce((acc, curr) => {
+                        if (!acc[curr[rel.foreignKey]]) {
+                          acc[curr[rel.foreignKey]] = []
+                        }
+                        acc[curr[rel.foreignKey]].push(curr)
+                        return acc, acc
+                      }, {})
+                    })
+                  rows = rows.map((row) => {
+                    return {
+                      ...row,
+                      [rel.index]: rels[row.id] || []
+                    }
+                  })
+                }
+              }
+
+              if (name === 'first') {
+                return rows[0] || null
+              } else {
+                return rows
+              }
+            })
+          } else if (name === 'find') {
+            return target
+              .where('id', args[0])
+              .first()
+              .execute()
+              .then((data: any) => {
+                return Model(tableName, data)
+              })
+          } else if (name === 'count') {
+            return target
+              .clone()
+              .clearSelect()
+              .select(db.raw('count(*) AS total'))
+              .first()
+              .then((res: { total: number }) => res.total)
+          } else if (name === 'model') {
+            return Model(tableName)
+          } else if (name === 'belongsTo' || name === 'hasMany') {
+            if (typeof args[1] === 'string' && name === 'belongsTo') {
+              relations.push({
+                type: name,
+                table: args[0],
+                localKey: args[3] || `${args[0]}_id`,
+                index: args[2] || args[0],
+                query: (q: KnexOriginal.QueryBuilder) => {
+                  return q.select(args[1] || '*')
+                }
+              })
+            }
+            if (typeof args[1] === 'string' && name === 'hasMany') {
+              relations.push({
+                type: name,
+                table: args[0],
+                foreignKey: args[2] || `${tableName}_id`,
+                index: args[1] || args[0],
+                query: (q: KnexOriginal.QueryBuilder) => {
+                  return q.select(args[3] || '*')
+                }
+              })
+            } else {
+              relations.push({
+                type: name,
+                table: args[0],
+                localKey: args[1]?.localKey || `${args[0]}_id`,
+                foreignKey: args[1]?.foreignKey || `${tableName}_id`,
+                index: args[1]?.index || args[0],
+                query: (q: KnexOriginal.QueryBuilder) => {
+                  return args[1]?.query ? args[1].query(q) : q
+                }
+              })
+            }
+          } else {
+            target[name](...args)
+          }
+          return proxyInstance
+        }
+      }
+    })
+    return proxyInstance
+  }
+})
 
 export default DB
-**/

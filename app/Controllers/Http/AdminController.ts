@@ -39,6 +39,10 @@ class AdminController {
     return Stats.getStats2(params)
   }
 
+  getProjectsTurnover({ params }) {
+    return Stats.getProjectsTurnover(params)
+  }
+
   getStripeBalance({ params }) {
     return Admin.getStripeBalance(params)
   }

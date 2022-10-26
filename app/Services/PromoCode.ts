@@ -14,7 +14,7 @@ class PromoCode {
   }
 
   static save = async (params) => {
-    let code = DB('promo_code')
+    let code: any = DB('promo_code')
 
     if (params.id) {
       code = await DB('promo_code').find(params.id)
@@ -41,6 +41,12 @@ class PromoCode {
     code.users = params.users || null
     code.countries = params.countries || null
     code.gift = params.gift || null
+    code.box_one = params.box_one
+    code.box_two = params.box_two
+    code.box_monthly = params.box_monthly
+    code.box_3_months = params.box_3_months
+    code.box_6_months = params.box_6_months
+    code.box_12_months = params.box_12_months
     code.max_quantity = params.max_quantity || null
     code.max_total = params.max_total || null
 
@@ -121,15 +127,15 @@ class PromoCode {
       sales.where('on_vod', 1)
     }
 
-    return sales.first()
+    return sales.all()
   }
 
   static getByItem = async ({ itemId, type }) => {
     const { data } = await PromoCode.all({ size: 0 })
     // Codes that have a name, are enabled, and with end date not passed
     const codes = data
-      .filter((c) => c.code && c.is_enabled && !(c.end <= moment().format('YYYY-MM-DD')))
-      .map((code) => ({
+      .filter((c: any) => c.code && c.is_enabled && !(c.end <= moment().format('YYYY-MM-DD')))
+      .map((code: any) => ({
         id: code.id,
         label: code.code,
         [`${type}_registered`]: !!code[`${type}s`]?.split(',').find((u) => +u === +itemId, type)
@@ -145,7 +151,7 @@ class PromoCode {
 
     // Check if a itemId is present in promo_code but not in codes
     const { data } = await PromoCode.all({ size: 0 })
-    const promoCodes = data.filter((c) => c[`${type}s`]?.includes(itemId))
+    const promoCodes: any = data.filter((c: any) => c[`${type}s`]?.includes(itemId))
 
     // remove itemId from promoCodes that are not in codes
     if (promoCodes.length > codes.length) {

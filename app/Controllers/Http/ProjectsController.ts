@@ -184,6 +184,10 @@ class ProjectsController {
     const limit: number = +params.limit || 5
     return Stats.getTopProjects({ fromDays: days, limit })
   }
+
+  async getProjectSelection() {
+    return Project.getProjectSelection()
+  }
 }
 
 export default ProjectsController

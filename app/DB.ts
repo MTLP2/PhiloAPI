@@ -1,4 +1,5 @@
 import Env from '@ioc:Adonis/Core/Env'
+import DB2 from './DB2'
 
 const knex = require('knex')({
   client: 'mysql',
@@ -10,7 +11,17 @@ const knex = require('knex')({
     database: Env.get('DB_DATABASE', 'diggersfactory'),
     ssl: true,
     charset: 'utf8mb4',
-    dateStrings: true
+    dateStrings: true,
+    typeCast2: function (field, next) {
+      if (field.type == 'TINY' && field.length == 1) {
+        console.log(field.name)
+        let value = field.string()
+        if (value) return null
+        else if (value === '1' || value === '0') return value == '1'
+        return next()
+      }
+      return next()
+    }
   }
 })
 
@@ -187,7 +198,7 @@ const DB = (tablee?, idd?) => {
       return db
     },
 
-    selects(columns) {
+    column(columns) {
       p.columns = columns
       return db
     },

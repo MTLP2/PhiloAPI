@@ -25,11 +25,20 @@ import Stock from 'App/Services/Stock'
 import Sna from 'App/Services/Sna'
 import Elogik from 'App/Services/Elogik'
 import Deepl from 'App/Services/Deepl'
+import Artwork from 'App/Services/Artwork'
 import cio from 'App/Services/CIO'
 import Env from '@ioc:Adonis/Core/Env'
 
 class Admin {
-  static getProjects = async (params) => {
+  static getProjects = async (params: {
+    type?: string
+    in_progress?: boolean
+    sort?: any
+    start?: string
+    end?: string
+    query?: any
+    size?: number
+  }) => {
     const projects = DB('project')
       .select(
         'vod.*',
@@ -90,8 +99,7 @@ class Admin {
       projects.where('vod.created_at', '<=', `${params.end} 23:59`)
     }
 
-    params.query = projects
-    return Utils.getRows(params)
+    return Utils.getRows({ ...params, query: projects })
   }
 
   static getWishlists = async (params) => {
@@ -325,8 +333,8 @@ class Admin {
         if (!project.to_sizes[order.size].trans[order.transporter]) {
           project.to_sizes[order.size].trans[order.transporter] = 0
         }
-        project.to_sizes[order.size].trans[order.transporter]++
-        project.to_sizes[order.size].total++
+        project.to_sizes[order.size].trans[order.transporter] += order.quantity
+        project.to_sizes[order.size].total += order.quantity
       }
       if (!order.transporter) {
         order.transporter = 'daudin'
@@ -390,6 +398,7 @@ class Admin {
         }
       }
     }
+
     project.barcodes = barcodes
     project.historic = JSON.parse(project.historic)
     project.reviews = reviews
@@ -417,6 +426,8 @@ class Admin {
       quantity_distrib: 0,
       quantity_box: 0,
       quantity_refund: 0,
+      quantity_cancel: 0,
+      quantity_not_paid: 0,
       benefit_artist: 0,
       benefit_site: 0,
       benefit_prod: 0,
@@ -473,8 +484,13 @@ class Admin {
 
     for (const o of orders) {
       if (!o.is_paid) {
-        stats.quantity_refund += o.quantity
-        continue
+        if (o.step === 'refunded') {
+          stats.quantity_refund += o.quantity
+        }
+        if (o.step === 'canceled' || o.step === 'cancelled') {
+          stats.quantity_cancel += o.quantity
+        }
+        stats.quantity_not_paid += o.quantity
       }
       stats.quantity_site += o.quantity
       if (o.tax_rate === 0) {
@@ -904,7 +920,7 @@ class Admin {
 
     vod.historic = vod.historic ? JSON.parse(vod.historic) : []
     if (params.edit_stock) {
-      const transporters = {}
+      const transporters: { [key in Transporters]?: boolean } = {}
       if (params.transporter_daudin) {
         transporters.daudin = true
       }
@@ -986,7 +1002,7 @@ class Admin {
 
     vod.updated_at = Utils.date()
 
-    let notification = false
+    let notification: string | boolean = false
 
     if (vod.step === 'checking') {
       if (params.step === 'in_progress') {
@@ -1035,7 +1051,7 @@ class Admin {
       await Song.uploadSongs(params)
     }
 
-    const status = {}
+    const status: { [index: string]: string } = {}
     status.launched = 'my_order_launched'
     status.in_production = 'my_order_in_production'
     status.test_pressing_ok = 'my_order_test_pressing_ok'
@@ -1069,7 +1085,13 @@ class Admin {
         type: 'status',
         user_id: params.user.id,
         old: vod.status,
-        new: params.status,
+        new: `${params.status}${
+          params.transporter_choice
+            ? params.transporter_choice.includes('all')
+              ? ' (all)'
+              : ` (${params.transporter_choice.join(', ')})`
+            : ''
+        }`,
         notif: params.notif,
         date: Utils.date()
       })
@@ -1081,7 +1103,7 @@ class Admin {
       (vod.status !== params.status && status[params.status]) ||
       (vod.date_shipping !== params.date_shipping && params.notif)
     ) {
-      const orders = await DB()
+      const ordersQuery = DB()
         .select('os.*', 'os.id as order_shop_id')
         .from('order_shop as os')
         .join('order_item as oi', 'oi.order_shop_id', 'os.id')
@@ -1089,10 +1111,15 @@ class Admin {
         .where('oi.vod_id', vod.id)
         .where('os.is_paid', 1)
         .whereNull('date_export')
-        .all()
+
+      // If transporter choice is provided (when passing to check address) AND if it does not contain 'all' (which is the same as accepting all transporters), filter orders by specified transporters
+      if (params.transporter_choice && !params.transporter_choice.includes('all'))
+        ordersQuery.whereIn('os.transporter', params.transporter_choice)
+
+      const orders = await ordersQuery.all()
 
       for (const order of orders) {
-        let type = null
+        let type: string | null = null
         if (
           params.notif &&
           params.status === vod.status &&
@@ -1153,15 +1180,14 @@ class Admin {
     vod.step = params.step
 
     if (notification) {
-      const data = {}
-      data.type = notification
-      data.user_id = vod.user_id
-      data.project_id = project.id
-      data.project_name = project.name
-      data.vod_id = vod.id
-      data.alert = 1
-
-      await Notification.new(data)
+      await Notification.new({
+        type: notification,
+        user_id: vod.user_id,
+        project_id: project.id,
+        project_name: project.name,
+        vod_id: vod.id,
+        alert: 1
+      })
     }
 
     // Assign to prod for some statuses
@@ -1610,8 +1636,17 @@ class Admin {
     })
   }
 
-  static getOrders = async (params) => {
-    const orders = DB('order_item as oi')
+  static getOrders = async (params: {
+    project_id?: string
+    type?: 'no_tracking' | 'no_export'
+    sort?: string
+    order?: 'desc' | 'asc'
+    start?: string
+    end?: string
+    filters?: any
+    user_id?: number
+  }) => {
+    const orders = DB('order_shop as os')
       .select(
         DB.raw('(os.shipping - os.shipping_cost) as shipping_diff'),
         'os.*',
@@ -1654,13 +1689,15 @@ class Admin {
         'project.picture',
         'user.facebook_id',
         'user.soundcloud_id',
+        'om.id as order_manual_id',
         DB.raw("CONCAT(c.firstname, ' ', c.lastname) AS user_infos")
       )
+      .join('order_item as oi', 'os.id', 'oi.order_shop_id')
       .join('order', 'oi.order_id', 'order.id')
-      .join('order_shop as os', 'os.id', 'oi.order_shop_id')
       .join('user', 'user.id', 'order.user_id')
       .join('project', 'project.id', 'oi.project_id')
       .join('vod', 'vod.project_id', 'oi.project_id')
+      .leftJoin('order_manual as om', 'om.order_shop_id', 'os.id')
       .leftJoin('customer as c', 'c.id', 'os.customer_id')
       .where('os.step', '!=', 'creating')
       .where('os.step', '!=', 'failed')
@@ -1671,15 +1708,17 @@ class Admin {
     if (params.type === 'no_tracking') {
       orders.where((query) => {
         query
-          .where('date_export', '>', '2020-01-01')
-          .whereNull('tracking_number')
-          .whereNull('logistician_id')
+          .where('os.date_export', '>', '2020-01-01')
+          .whereNull('os.tracking_number')
+          .whereNull('os.logistician_id')
           .where('os.transporter', '!=', 'whiplash')
-          .where(DB.raw('date_export < DATE_SUB(NOW(), INTERVAL 7 DAY)'))
+          .where(DB.raw('os.date_export < DATE_SUB(NOW(), INTERVAL 7 DAY)'))
           .where('is_paid', 1)
       })
-      params.sort = 'date_export'
-      params.order = 'asc'
+      if (!params.sort) {
+        params.sort = 'os.date_export'
+        params.order = 'desc'
+      }
     }
     if (params.start) {
       orders.where('os.created_at', '>=', params.start)
@@ -1688,9 +1727,9 @@ class Admin {
       orders.where('os.created_at', '<=', `${params.end} 23:59`)
     }
     if (params.type === 'no_export') {
-      orders.whereNull('date_export')
-      orders.whereNull('tracking_number')
-      orders.whereNull('logistician_id')
+      orders.whereNull('os.date_export')
+      orders.whereNull('os.tracking_number')
+      orders.whereNull('os.logistician_id')
       orders.where('is_paid', 1)
       orders.where(DB.raw('os.created_at < DATE_SUB(NOW(), INTERVAL 4 DAY)'))
       orders.where((query) => {
@@ -1736,8 +1775,7 @@ class Admin {
       orders.where('user.id', params.user_id)
     }
 
-    params.query = orders
-    return Utils.getRows(params)
+    return Utils.getRows<any>({ ...params, query: orders })
   }
 
   static getOrder = async (id) => {
@@ -3094,12 +3132,12 @@ class Admin {
     const projectsPromise = DB().execute(query)
 
     query = `
-    select invoice.id, com_id, sub_total, currency_rate
-    from vod, invoice
-    where invoice.date between '${params.start}' and '${params.end} 23:59'
-    AND invoice.project_id = vod.project_id
-    AND vod.type = 'direct_pressing'
-  `
+      select invoice.id, invoice.type, com_id, sub_total, currency_rate
+      from vod, invoice
+      where invoice.date between '${params.start}' and '${params.end} 23:59'
+      AND invoice.project_id = vod.project_id
+      AND vod.type = 'direct_pressing'
+    `
     if (!admin.includes(params.user_id)) {
       query += `AND vod.com_id = '${params.user_id}' `
     }
@@ -3187,8 +3225,17 @@ class Admin {
       if (!com[item.com_id]) {
         com[item.com_id] = setDefault(item.user_id)
       }
-      com[item.com_id].direct_pressing += item.sub_total * item.currency_rate
-      com[item.com_id].total += item.sub_total * item.currency_rate
+
+      if (item.com_id === 57976) {
+        console.log(item)
+      }
+      if (item.type === 'invoice') {
+        com[item.com_id].direct_pressing += item.sub_total * item.currency_rate
+        com[item.com_id].total += item.sub_total * item.currency_rate
+      } else {
+        com[item.com_id].direct_pressing -= item.sub_total * item.currency_rate
+        com[item.com_id].total -= item.sub_total * item.currency_rate
+      }
     }
 
     for (const item of prospects) {
@@ -4431,20 +4478,40 @@ class Admin {
     return { success: true }
   }
 
-  static exportOrdersRefunds = async (params) => {
+  static exportOrdersRefunds = async (params: { start: string; end: string }) => {
     const refundsRaw = await DB('refund')
-      .select('refund.*', 'order.currency', 'order.user_id', 'order.payment_type', 'os.transporter')
+      .select(
+        'refund.*',
+        'order.currency',
+        'order.user_id',
+        'order.payment_type',
+        'os.transporter',
+        'os.total',
+        'os.shipping',
+        'os.shipping_cost'
+      )
       .join('order', 'order.id', 'refund.order_id')
       .leftJoin('order_shop as os', 'os.id', 'refund.order_shop_id')
       .where('refund.created_at', '>=', params.start)
       .where('refund.created_at', '<=', `${params.end} 23:59`)
       .all()
 
-    // Change refund.amount dots to commas (otherwise numbers are treated as dates by Drive)
-    const refunds = refundsRaw.map((refund) => {
-      refund.amount = refund.amount.toString().replace('.', ',')
-      return refund
-    })
+    const refunds = refundsRaw.map((refund) =>
+      refund.order_box_id
+        ? {
+            ...refund,
+            transporter: 'daudin',
+            shipping_diff: refund.shipping_cost
+              ? Math.round((refund.shipping - refund.shipping_cost) * 100) / 100
+              : 0
+          }
+        : {
+            ...refund,
+            shipping_diff: refund.shipping_cost
+              ? Math.round((refund.shipping - refund.shipping_cost) * 100) / 100
+              : 0
+          }
+    )
 
     return Utils.arrayToCsv(
       [
@@ -4452,11 +4519,16 @@ class Admin {
         { name: 'Order ID', index: 'order_id' },
         { name: 'User ID', index: 'user_id' },
         { name: 'OShop ID', index: 'order_shop_id' },
+        { name: 'OBox ID', index: 'order_box_id' },
         { name: 'Payment Type', index: 'payment_type' },
         { name: 'Transporter', index: 'transporter' },
         { name: 'Date', index: 'created_at' },
-        { name: 'Amount', index: 'amount' },
+        { name: 'Amount', index: 'amount', format: 'number' },
         { name: 'Currency', index: 'currency' },
+        { name: 'OShop Total', index: 'total', format: 'number' },
+        { name: 'Shipping', index: 'shipping', format: 'number' },
+        { name: 'Shipping Cost', index: 'shipping_cost', format: 'number' },
+        { name: 'Shipping Diff', index: 'shipping_diff', format: 'number' },
         { name: 'Reason', index: 'reason' },
         { name: 'Comment', index: 'comment' }
       ],
@@ -4480,7 +4552,8 @@ class Admin {
         'u.name as com_name',
         'v.origin',
         'v.historic',
-        'p.category'
+        'p.category',
+        'v.status'
       )
       .join('vod as v', 'v.project_id', 'p.id')
       .leftJoin('user as u', 'u.id', 'v.com_id')
@@ -4514,6 +4587,7 @@ class Admin {
         { index: 'artist_name', name: 'Artist Name' },
         { index: 'origin', name: 'Origin' },
         { index: 'step', name: 'Step' },
+        { index: 'status', name: 'Status' },
         { index: 'type', name: 'Type' },
         { index: 'category', name: 'Category' },
         { index: 'historic', name: 'Previous steps' }
@@ -4522,7 +4596,7 @@ class Admin {
     )
   }
 
-  static exportProjectsBox = async (params) => {
+  static exportProjectsBox = async () => {
     const projectsIsBox = await DB('vod')
       .select('project.id', 'project.name', 'project.artist_name')
       .join('project', 'project.id', 'vod.project_id')
@@ -4615,7 +4689,7 @@ class Admin {
     }
 
     // Update project artwork
-    // await Artwork.updateArtwork({ id: projectId })
+    await Artwork.updateArtwork({ id: projectId })
 
     return { success: true, type }
   }

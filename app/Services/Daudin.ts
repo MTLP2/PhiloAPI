@@ -18,12 +18,16 @@ class Daudin {
 
   static async import(params) {
     const file = params.file.name.split('.')
-    const orders = []
+    const orders: any[] = []
 
     if (file[1].toLowerCase() === 'csv') {
       const csv = Buffer.from(params.file.data, 'base64').toString('ascii')
 
       let lines = csv.split('\r\n')
+
+      if (lines.length <= 1) {
+        lines = csv.split('\n')
+      }
       if (lines.length <= 1) {
         lines = csv.split('\r')
       }
@@ -36,7 +40,7 @@ class Daudin {
 
         let orderShopId
         let tracking
-        let transporter = null
+        let transporter: any = null
         if (params.transporter === 'ALL') {
           orderShopId = line[0]
           tracking = line[2]
@@ -59,9 +63,12 @@ class Daudin {
           tracking = line[2]
         }
 
-        if (!orderShopId) {
+        console.log(line)
+
+        if (!orderShopId || !tracking) {
           continue
         }
+        console.log(tracking)
         orders.push({
           id: orderShopId.replace('X', '').trim(),
           tracking: tracking.trim(),
@@ -206,14 +213,12 @@ class Daudin {
       .where('type', 'export')
       .all()
 
-    const date = exps ? exps[0].date : '2018-01-01'
-
-    const oo = []
+    const oo: any[] = []
     for (const exp of exps) {
       oo.push(...exp.orders.split(','))
     }
 
-    let lines = []
+    let lines: any[] = []
 
     const vod = await DB('order_item as oi')
       .select(
@@ -509,7 +514,7 @@ class Daudin {
       })
     }
 
-    const lines2 = []
+    const lines2: any[] = []
     for (const line of lines) {
       if (line.country_id !== 'RU' && oo.findIndex((v) => parseInt(v) === line.id) === -1) {
         lines2.push(line)
@@ -778,16 +783,9 @@ class Daudin {
     const zip = new JSZip()
     const invoices = {}
 
-    let quantity = 0
-    const lines = []
+    const lines: any[] = []
     for (let i = 0; i < lines2.length; i++) {
       const line = lines2[i]
-      quantity += line.quantity
-      /**
-      if (quantity <= 100) {
-        continue
-      }
-      **/
       lines.push(line)
     }
 
@@ -834,7 +832,7 @@ class Daudin {
       const invoice = invoices[i]
       invoice.lines = JSON.stringify(invoice.items)
 
-      const pdf = await Invoice.download({
+      const pdf: any = await Invoice.download({
         params: {
           invoice: invoice,
           lang: 'en',
@@ -906,7 +904,7 @@ class Daudin {
       .where('type', 'export')
       .all()
 
-    const exports = []
+    const exports: any[] = []
     for (const exp of exps) {
       const orders = exp.orders.split(',')
       for (const order of orders) {
@@ -944,7 +942,7 @@ class Daudin {
 
     const lines = file.split('\n')
     for (const line of lines) {
-      const columns = line.split(',')
+      const columns: any[] = line.split(',')
 
       if (columns[6]) {
         columns[6] = +columns[6].replace(/\s/g, '')
@@ -995,7 +993,7 @@ class Daudin {
       stock[p.barcode].diff = Math.abs(p.stock - stock[p.barcode].qty)
     }
 
-    const stocks = Object.values(stock)
+    const stocks: any[] = Object.values(stock)
 
     stocks.sort((a, b) => {
       return -a.diff - -b.diff
@@ -1005,7 +1003,7 @@ class Daudin {
   }
 
   static async missingProjects(params) {
-    const stock = []
+    const stock: any[] = []
     const file = Buffer.from(params.file, 'base64').toString('ascii')
 
     const lines = file.split('\n')
@@ -1035,15 +1033,15 @@ class Daudin {
     return projects
   }
 
-  static async parseTrackings(params) {
+  static async parseTrackings() {
     const workbook = new Excel.Workbook()
     await workbook.xlsx.readFile('./factory/tracking.xlsx')
 
     const worksheet = workbook.getWorksheet(1)
 
-    const trackings = []
-    worksheet.eachRow((row, rowNumber) => {
-      const tracking = {}
+    const trackings: any[] = []
+    worksheet.eachRow((row) => {
+      const tracking: any = {}
 
       tracking.id = row.getCell('A').toString()
       tracking.code = row.getCell('C').toString().toString().trim()
@@ -1083,7 +1081,7 @@ class Daudin {
     await workbook.xlsx.load(file)
     const worksheet = workbook.getWorksheet(1)
 
-    const orders = []
+    const orders: any[] = []
     worksheet.eachRow(async (row) => {
       orders.push({
         id: row.getCell('A').value
@@ -1122,7 +1120,7 @@ class Daudin {
         await order.save()
 
         const subTotal = Utils.round(order.shipping / (1 + order.tax_rate))
-        const payment = await Payment.save({
+        const payment: any = await Payment.save({
           name: `Shipping return ${order.id}`,
           type: 'return',
           order_shop_id: order.id,
@@ -1205,26 +1203,8 @@ class Daudin {
     return orders
   }
 
-  static async refundReturns() {
-    const orders = await DB('order_shop')
-      .select('order_shop.id', 'payment.status')
-      .leftJoin('payment', 'order_shop_id', 'order_shop.id')
-      .where('step', 'returned')
-      .where('is_paid', true)
-      .whereNull('payment.status')
-      .whereRaw('payment.created_at < DATE_SUB(now(), INTERVAL 6 DAY)')
-      .orderBy('order_shop.id', 'asc')
-      .all()
-
-    for (const order of orders) {
-      // await Order.refundOrderShop(order.id, 'cancel')
-    }
-
-    return orders
-  }
-
   static async setCost(date, buffer, force) {
-    const dispatchs = []
+    const dispatchs: any[] = []
 
     const workbook = new Excel.Workbook()
     await workbook.xlsx.load(buffer)
@@ -1238,7 +1218,7 @@ class Daudin {
       if (!row.getCell('G').value) {
         return
       }
-      const dispatch = {
+      const dispatch: any = {
         id: row.getCell('C') && row.getCell('C').value,
         trans: row.getCell('G') && +row.getCell('G').toString(),
         weight: row.getCell('D') && +row.getCell('D').toString(),
@@ -1274,11 +1254,12 @@ class Daudin {
       dispatchs.push(dispatch)
     })
 
+    let i = 0
     for (const d in dispatchs) {
       const dispatch = dispatchs[d]
 
       if (dispatch.id[0] === 'M') {
-        let order = DB('order_manual').where('id', dispatch.id.substring(1).replace('b', ''))
+        let order: any = DB('order_manual').where('id', dispatch.id.substring(1).replace('b', ''))
         if (!force) {
           order.whereNull('shipping_cost')
         }
@@ -1291,7 +1272,7 @@ class Daudin {
         order.shipping_cost = dispatch.cost
         await order.save()
       } else if (dispatch.id[0] === 'B') {
-        let order = DB('box_dispatch').where('id', dispatch.id.replace(/B/g, ''))
+        let order: any = DB('box_dispatch').where('id', dispatch.id.replace(/B/g, ''))
         if (!force) {
           order.whereNull('shipping_cost')
         }
@@ -1303,7 +1284,7 @@ class Daudin {
         order.shipping_cost = dispatch.cost
         await order.save()
       } else {
-        let order = DB('order_shop').where('id', dispatch.id.toString().replace('A', ''))
+        let order: any = DB('order_shop').where('id', dispatch.id.toString().replace('A', ''))
         if (!force) {
           order.whereNull('shipping_cost')
         }
@@ -1320,9 +1301,10 @@ class Daudin {
         order.shipping_cost = (dispatch.cost + dispatch.cost * order.tax_rate) / order.currency_rate
         await order.save()
       }
+      i++
     }
 
-    return dispatchs
+    return i
   }
 }
 

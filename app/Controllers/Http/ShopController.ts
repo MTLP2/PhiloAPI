@@ -37,9 +37,10 @@ class ShopController {
 
   async updateShop({ params, user }) {
     params.user_id = user.id
+
     const payload = await validator.validate({
       schema: schema.create({
-        id: schema.number(),
+        id: schema.number.optional(),
         user_id: schema.number(),
         name: schema.string(),
         code: schema.string(),
@@ -48,10 +49,14 @@ class ShopController {
         title_color: schema.string(),
         logo: schema.string.optional(),
         banner: schema.string.optional(),
-        bg_image: schema.string.optional()
+        bg_image: schema.string.optional(),
+        white_label: schema.boolean.optional()
       }),
       data: params
     })
+    if (payload.white_label && !(await Utils.isTeam(user.id))) {
+      throw new ApiError(401)
+    }
     if (payload.id && !(await Shop.canEdit(payload.id, user.id))) {
       throw new ApiError(403)
     }

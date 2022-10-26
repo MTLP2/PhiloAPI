@@ -1,6 +1,7 @@
 import DB from 'App/DB'
 import Utils from 'App/Utils'
 import Excel from 'exceljs'
+import fs from 'fs'
 
 class Stock {
   static async getProject(id) {
@@ -472,7 +473,14 @@ class Stock {
       .query()
 
     const refs = await DB('project')
-      .select('project.id', 'project.name', 'project.artist_name', 'vod.barcode', stockQuery)
+      .select(
+        'project.id',
+        'project.name',
+        'project.artist_name',
+        'vod.barcode',
+        'vod.unit_cost',
+        stockQuery
+      )
       .join('vod', 'vod.project_id', 'project.id')
       .hasMany('production')
       .hasMany('production_cost')
@@ -496,10 +504,12 @@ class Stock {
       }
       refs[i].costs = Utils.round(refs[i].costs, 2)
 
-      refs[i].unit_cost = ''
-      refs[i].price_stock = ''
-      if (refs[i].costs && refs[i].quantity) {
+      if (!refs[i].unit_cost && refs[i].costs && refs[i].quantity) {
         refs[i].unit_cost = Utils.round(refs[i].costs / refs[i].quantity, 2)
+      }
+
+      refs[i].price_stock = ''
+      if (refs[i].stock && refs[i].unit_cost) {
         refs[i].price_stock = Utils.round(refs[i].stock * refs[i].unit_cost, 2)
       }
 
@@ -523,6 +533,42 @@ class Stock {
     )
 
     return refs
+  }
+
+  static async parseStockExcel() {
+    const workbook = new Excel.Workbook()
+
+    const file = fs.readFileSync('./resources/Stock.xlsx')
+    await workbook.xlsx.load(file)
+    const whiplashUs = workbook.getWorksheet('Whiplash US')
+
+    whiplashUs.eachRow(async (row) => {
+      const d = {
+        unit_cost: row.getCell('D').value,
+        barcode: row.getCell('B').value?.toString()
+      }
+      if (d.barcode) {
+        await DB('vod').where('barcode', d.barcode).update({
+          unit_cost: d.unit_cost
+        })
+      }
+    })
+
+    const daudin = workbook.getWorksheet('Daudin')
+
+    daudin.eachRow(async (row) => {
+      const d = {
+        unit_cost: <number>row.getCell('D').value,
+        barcode: row.getCell('B').value?.toString()
+      }
+      if (d.barcode && d.unit_cost && !isNaN(d.unit_cost)) {
+        await DB('vod').where('barcode', d.barcode).update({
+          unit_cost: d.unit_cost
+        })
+      }
+    })
+
+    return { test: 'ok' }
   }
 }
 

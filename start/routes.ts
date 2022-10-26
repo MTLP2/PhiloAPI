@@ -149,6 +149,7 @@ Route.post('/newsletter', 'AppController.subscribeNewsletterWithoutAccount')
 Route.post('/pass-culture', 'AppController.subscribeToPassCulture')
 
 Route.get('/catalog', 'AdminController.exportCatalog')
+Route.get('/projects-selection', 'ProjectsController.getProjectSelection')
 Route.get('/stats/top-projects', 'ProjectsController.getTopProjects')
 
 Route.group(() => {
@@ -267,6 +268,7 @@ Route.group(() => {
   Route.get('/projects/export-raw', 'AdminController.exportRawProjects')
   Route.get('/projects/balance', 'AdminController.getBalances')
   Route.get('/projects/boxes-export', 'AdminController.exportProjectsBox')
+  Route.get('/projects/turnover', 'AdminController.getProjectsTurnover')
   Route.get('/projects/:id', 'AdminController.getProject')
   Route.post('/projects/:id', 'AdminController.saveProject')
   Route.get('/projects/:id/balance', 'AdminController.getBalance')
@@ -361,8 +363,9 @@ Route.group(() => {
   Route.post('/boxes/dispatch', 'BoxController.saveDispatch')
   Route.get('/boxes/dispatch/:id/invoice', 'BoxController.invoiceDispatch')
   Route.post('/boxes/:id', 'BoxController.saveBox')
+  Route.get('/boxes/:id/dispatch-refresh', 'BoxController.refreshBoxDispatch')
   Route.post('/boxes/check', 'BoxController.checkPayments')
-  Route.delete('/boxes/:id/payments/:pid', 'BoxController.refundBoxPayment')
+  Route.post('/boxes/:id/payments/:obid', 'BoxController.refundBoxPayment')
   Route.delete('/boxes/dispatch/:id', 'BoxController.removeDispatch')
   Route.get('/barcodes/:code', 'ProjectsController.getBarcode')
   Route.get('/users', 'AdminController.getUsers')

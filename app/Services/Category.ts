@@ -25,8 +25,8 @@ class Category {
     return item
   }
 
-  static async getHome(params) {
-    let items = DB('category_project')
+  static async getHome() {
+    let items: any = DB('category_project')
       .select(
         'category.id as category_id',
         'p.id',
@@ -35,6 +35,7 @@ class Category {
         'p.artist_name',
         'p.color',
         'p.picture',
+        'v.picture_project',
         'p.styles',
         'p.banner',
         'v.type',
@@ -83,7 +84,7 @@ class Category {
     const currencies = await Utils.getCurrenciesDb()
     const styles = await Project.listStyles()
 
-    let list = {}
+    let list: any = {}
     for (const item of items) {
       if (!list[item.category_id]) {
         list[item.category_id] = {
@@ -125,7 +126,7 @@ class Category {
   // Controller to update the category with projects from multiple categories all at once
   static async populateProjects(params) {
     // Check if params are emtpy
-    const filtersAreEmpty = Object.values(params.filters).every((value) => !value.length)
+    const filtersAreEmpty = Object.values(params.filters).every((value: any) => !value.length)
     if (filtersAreEmpty) {
       return { noParams: true }
     }
@@ -157,11 +158,11 @@ class Category {
     rawItems.orderBy('project.created_at', params.order || 'asc')
     rawItems.limit(params.limit || 10)
 
-    const res = {}
-    const duplicates = []
+    const res: any = {}
+    const duplicates: any[] = []
     const items = await rawItems.all()
 
-    res.items = items.filter((item) => {
+    res.items = items.filter((item: any) => {
       const isDuplicate = duplicates.includes(item.id)
       if (!isDuplicate) {
         duplicates.push(item.id)
@@ -195,7 +196,7 @@ class Category {
   }
 
   static async save(params) {
-    let item = DB('category')
+    let item: any = DB('category')
 
     if (params.id) {
       item = await DB('category').find(params.id)
@@ -264,6 +265,18 @@ class Category {
         updated_at: Utils.date()
       })
     }
+
+    // If staff picks we set `home` field to true on projects
+    if (item.id === 9) {
+      await DB('project').where('home', true).update('home', false)
+      await DB('project')
+        .whereIn(
+          'id',
+          params.projects.map((p) => p.project_id)
+        )
+        .update('home', true)
+    }
+
     return item
   }
 

@@ -1,3 +1,4 @@
+import moment from 'moment'
 import Excel from 'exceljs'
 import config from 'Config/index'
 import Utils from 'App/Utils'
@@ -628,7 +629,7 @@ static toJuno = async (params) => {
     return workbook.xlsx.writeBuffer()
   }
 
-  static refundOrderShop = async (id, type, params) => {
+  static refundOrderShop = async (id: string | number, type, params?) => {
     const order = await DB('order_shop')
       .select(
         'order_shop.*',
@@ -671,6 +672,7 @@ static toJuno = async (params) => {
         .update({
           is_paid: 0,
           ask_cancel: 0,
+          sending: 0,
           step: type === 'cancel' ? 'canceled' : 'refunded'
         })
 
@@ -704,13 +706,13 @@ static toJuno = async (params) => {
     }
 
     if (type === 'cancel' || (params && params.cancel_notification === 'true')) {
-      const data = {}
-      data.type = 'my_order_canceled'
-      data.user_id = order.user_id
-      data.order_id = order.order_id
-      data.order_shop_id = order.id
-      data.alert = 0
-      await Notification.new(data)
+      await Notification.new({
+        type: 'my_order_canceled',
+        user_id: order.user_id,
+        order_id: order.order_id,
+        order_shop_id: order.id,
+        alert: 0
+      })
     }
 
     return true
@@ -800,7 +802,7 @@ static toJuno = async (params) => {
   }
 
   static saveManual = async (params) => {
-    let item = DB('order_manual')
+    let item: any = DB('order_manual')
 
     const prices = {}
     const projects = {}
@@ -853,7 +855,7 @@ static toJuno = async (params) => {
     item.quantity = params.quantity
     item.comment = params.comment
     item.order_shop_id = params.order_shop_id || null
-    item.tracking_number = params.tracking_number
+    item.tracking_number = params.tracking_number || null
     item.barcodes = JSON.stringify(params.barcodes)
     item.updated_at = Utils.date()
 
@@ -893,7 +895,7 @@ static toJuno = async (params) => {
       ])
     }
     if (['whiplash', 'whiplash_uk'].includes(params.transporter) && !item.logistician_id) {
-      const pp = {
+      const pp: any = {
         shipping_name: `${customer.firstname} ${customer.lastname}`,
         shipping_address_1: customer.address,
         shipping_city: customer.city,
@@ -959,7 +961,16 @@ static toJuno = async (params) => {
     return DB('refund').where('order_id', params.id).all()
   }
 
-  static addRefund = async (params) => {
+  static addRefund = async (params: {
+    id: number
+    order_id?: number
+    amount: number
+    reason: string
+    comment?: string
+    order_shop_id?: number
+    order_box_id?: number
+    data?: any
+  }) => {
     params.order_id = params.id
 
     return DB('refund').insert({
@@ -968,6 +979,7 @@ static toJuno = async (params) => {
       order_id: params.order_id,
       comment: params.comment,
       order_shop_id: params.order_shop_id || 0,
+      order_box_id: params.order_box_id ?? null,
       created_at: Utils.date(),
       data: JSON.stringify(params.data)
     })
@@ -1097,6 +1109,90 @@ static toJuno = async (params) => {
       ],
       rows
     )
+  }
+
+  static exportOrdersExportedWithoutTracking = async (nbOfDays: 3 | 2) => {
+    const orders = await DB('order_shop as os')
+      .select(
+        'os.id',
+        'transporter',
+        'os.total',
+        'os.step',
+        'os.user_id',
+        'os.shipping',
+        'os.shipping_type',
+        'os.date_export',
+        'os.created_at'
+      )
+      .join('order as o', 'o.id', 'os.order_id')
+      .whereRaw(`DATEDIFF(now(), date_export) > 5`)
+      .whereRaw(`DATEDIFF(now(), date_export) <= ${5 + nbOfDays}`)
+      .whereNull('tracking_number')
+      .orderBy('date_export', 'asc')
+      .orderBy('transporter', 'asc')
+      .all()
+
+    const barcodes = await DB('order_item as oi')
+      .select('oi.order_shop_id', 'v.barcode')
+      .join('vod as v', 'v.id', 'oi.vod_id')
+      .whereIn(
+        'oi.order_shop_id',
+        orders.map((o) => o.id)
+      )
+      .all()
+
+    const rows = orders.map((order) => {
+      const barcodesForOrder = barcodes
+        .filter((b) => b.order_shop_id === order.id)
+        .map((b) => b.barcode)
+        .join(', ')
+
+      return {
+        ...order,
+        barcodes: barcodesForOrder
+      }
+    })
+
+    const file = await Utils.arrayToXlsx(
+      [
+        [
+          { header: 'OShop Id', key: 'id', width: 15 },
+          { header: 'Transporter', key: 'transporter', width: 30 },
+          // { header: 'Total', key: 'total', width: 15 },
+          { header: 'Step', key: 'step', width: 15 },
+          // { header: 'User Id', key: 'user_id', width: 15 },
+          { header: 'Shipping', key: 'shipping', width: 15 },
+          // { header: 'Shipping Type', key: 'shipping_type', width: 15 },
+          { header: 'Date Export', key: 'date_export', width: 30 },
+          { header: 'Barcodes', key: 'barcodes', width: 30 }
+          // { header: 'Created At', key: 'created_at', width: 30 }
+        ]
+      ],
+      [
+        {
+          worksheetName: 'Orders',
+          data: rows
+        }
+      ]
+    )
+
+    await Notification.email({
+      to: 'support@diggersfactory.com',
+      type: 'order_exported_without_tracking',
+      lang: 'en',
+      user: {
+        email: 'support@diggersfactory.com',
+        lang: 'en'
+      },
+      attachments: [
+        {
+          filename: `Orders_Exported_No_Tracking_${moment().format('YYYY-MM-DD')}.xlsx`,
+          content: file
+        }
+      ]
+    })
+
+    return { success: true }
   }
 }
 

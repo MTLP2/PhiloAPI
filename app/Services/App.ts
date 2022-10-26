@@ -55,6 +55,14 @@ class App {
         await Daudin.export()
       }
 
+      if (
+        moment().format('E') === '1' ||
+        moment().format('E') === '3' ||
+        moment().format('E') === '5'
+      ) {
+        await Order.exportOrdersExportedWithoutTracking(moment().format('E') === '1' ? 3 : 2)
+      }
+
       if (+moment().format('D') === 28) {
         await Statement.setStorageCosts()
         await Statement.sendStatements()

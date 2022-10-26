@@ -1,5 +1,7 @@
 import DB from 'App/DB'
 import Utils from 'App/Utils'
+import Excel from 'exceljs'
+import Statement from 'App/Services/Statement'
 import moment from 'moment'
 
 class Stats {
@@ -1579,8 +1581,8 @@ class Stats {
   }
   **/
 
-  static async getStats2(params) {
-    let format
+  static async getStats2(params: { start?: string; end?: string; period?: string }) {
+    let format: string
 
     let periodicity
     if (params.period === 'day') {
@@ -1599,7 +1601,7 @@ class Stats {
       periodicity === 'months' ? moment(params.start).startOf('month') : moment(params.start)
 
     const dates = {}
-    let lastDate
+    let lastDate: string = ''
     while (now.isSameOrBefore(moment(params.end))) {
       dates[now.format(format)] = 0
       lastDate = now.format(format)
@@ -1853,7 +1855,8 @@ class Stats {
         'sub_total',
         'margin',
         'currency_rate',
-        'order_id'
+        'order_id',
+        'order_shop_id'
       )
       .whereBetween('date', [params.start, params.end])
       .where('compatibility', true)
@@ -2015,7 +2018,15 @@ class Stats {
     }
 
     const boxesList = await DB('order_box')
-      .select('order_id', 'price', 'tax_rate', 'currency', 'shipping', 'currency_rate')
+      .select(
+        'order_id',
+        'id as order_box_id',
+        'total',
+        'tax_rate',
+        'currency',
+        'shipping',
+        'currency_rate'
+      )
       .whereIn(
         'order_id',
         invoices.map((i) => i.order_id)
@@ -2088,6 +2099,9 @@ class Stats {
           addTurnover(invoice.type, 'shipping', 'site', date, shipping)
 
           for (const item of order.items) {
+            if (invoice.order_shop_id && item.order_shop_id !== invoice.order_shop_id) {
+              continue
+            }
             let total = item.total / (1 + order.tax_rate)
             let marge
             if (item.payback_site) {
@@ -2097,7 +2111,7 @@ class Stats {
               marge = total * fee
             }
             if (order.type === 'box') {
-              total = item.price / (1 + order.tax_rate)
+              total = (item.total - item.shipping) / (1 + order.tax_rate)
               addTurnover(invoice.type, 'box', 'site', date, total)
             } else if (order.is_pro) {
               addMarge('direct_shop', null, date, marge)
@@ -2128,7 +2142,7 @@ class Stats {
         addTurnover(invoice.type, 'shipping', 'invoice', date, total)
       } else if (invoice.category === 'project') {
         addTurnover(invoice.type, 'project', 'invoice', date, total)
-      } else if (invoice.name.includes('Order ')) {
+      } else if (invoice.name?.includes('Order ')) {
         d.turnover.error.total += total
         d.turnover.error.dates[date] += total
       } else {
@@ -2202,6 +2216,10 @@ class Stats {
 
         d.quantity.total.total -= quantity
         d.quantity.total.dates[date] -= quantity
+      }
+
+      if (qty.is_paid) {
+        continue
       }
 
       for (const style of qty.styles.split(',')) {
@@ -2369,6 +2387,13 @@ class Stats {
         d.sent.total.dates[date] += dis.total / currencies[stat.currency]
 
         addMarge('distrib', stat.is_licence ? 'licence' : 'project', date, marge)
+        addTurnover(
+          'invoice',
+          'distrib',
+          stat.is_licence ? 'licence' : 'project',
+          date,
+          dis.total / currencies[stat.currency] + marge
+        )
 
         if (!d.distrib.list[dis.name]) {
           d.distrib.list[dis.name] = {
@@ -2551,9 +2576,88 @@ class Stats {
     toto += d.turnover.project.total.dates[date]
     toto += d.turnover.shipping.total.dates[date]
     toto += d.turnover.error.dates[date]
-    console.log(total, toto)
+    console.log('diff =>', total, toto)
 
     return d
+  }
+
+  static async getProjectsTurnover(params: { start?: string; end?: string }) {
+    const currenciesDb = await Utils.getCurrenciesDb()
+    const currencies = await Utils.getCurrencies('EUR', currenciesDb)
+    const projects = await DB('vod')
+      .select(
+        'project_id',
+        'artist_name',
+        'project.name',
+        'is_licence',
+        'currency',
+        'step',
+        'project.created_at'
+      )
+      .join('project', 'project.id', 'vod.project_id')
+      .whereIn('step', ['successful', 'in_progress'])
+      .all()
+
+    const workbook = new Excel.Workbook()
+
+    const projectWorkbook: any = workbook.addWorksheet('Project')
+    const licenceWorkbook: any = workbook.addWorksheet('Licence')
+
+    const columns = [
+      { header: 'Id', key: 'project_id', width: 10 },
+      { header: 'Project', key: 'name', width: 30 },
+      { header: 'Date', key: 'created_at', width: 10 },
+      { header: 'Qty Site', key: 'qty_site', width: 10 },
+      { header: 'Site', key: 'site', width: 10 },
+      { header: 'Qty Distrib', key: 'qty_distrib', width: 10 },
+      { header: 'Distrib', key: 'distrib', width: 10 },
+      { header: 'Qty Total', key: 'qty_total', width: 10 },
+      { header: 'Total', key: 'total', width: 10 }
+    ]
+
+    projectWorkbook.columns = columns
+    licenceWorkbook.columns = columns
+
+    for (const project of projects) {
+      const statement = await Statement.getStatement({
+        id: project.project_id,
+        fee: 0,
+        payback: false,
+        start: params.start,
+        end: params.end
+      })
+
+      if (!statement) {
+        continue
+      }
+
+      let distrib = statement.distrib_total.total * currencies[project.currency]
+      let site =
+        (statement.site_total.total + statement.site_tip.total) * currencies[project.currency]
+
+      if (distrib + site < 500) {
+        continue
+      }
+
+      const row = {
+        project_id: project.project_id,
+        name: `${project.artist_name} - ${project.name}`,
+        created_at: project.created_at,
+        qty_site: statement.site_quantity.total,
+        site: site,
+        qty_distrib: statement.distrib_quantity.total,
+        distrib: distrib,
+        qty_total: statement.site_quantity.total + statement.distrib_quantity.total,
+        total: distrib + site
+      }
+      if (project.is_licence) {
+        licenceWorkbook.addRow(row)
+      } else {
+        projectWorkbook.addRow(row)
+      }
+    }
+
+    return workbook.xlsx.writeBuffer()
   }
 
   static getTopProjects: (params: { fromDays?: number; limit?: number } | void) => Promise<

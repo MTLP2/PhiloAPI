@@ -1,3 +1,7 @@
+const bwipjs = require('bwip-js')
+import JSZip from 'jszip'
+import moment from 'moment'
+
 import DB from 'App/DB'
 import Utils from 'App/Utils'
 import Notification from 'App/Services/Notification'
@@ -9,14 +13,11 @@ import Order from 'App/Services/Order'
 import Stock from 'App/Services/Stock'
 import Cart from 'App/Services/Cart'
 import Payment from './Payment'
-import moment from 'moment'
 import config from 'Config/index'
 import View from '@ioc:Adonis/Core/View'
 import I18n from '@ioc:Adonis/Addons/I18n'
-import JSZip from 'jszip'
 import Env from '@ioc:Adonis/Core/Env'
 const stripe = require('stripe')(config.stripe.client_secret)
-const bwipjs = require('bwip-js')
 const soap = require('soap')
 
 class Box {
@@ -146,7 +147,7 @@ class Box {
       box.records[r].gifts = JSON.parse(box.records[r].gifts)
     }
 
-    const barcodes = []
+    const barcodes: any[] = []
     box.dispatch = (
       await DB('box_dispatch').orderBy('id', 'asc').where('box_id', box.id).all()
     ).map((d) => {
@@ -178,7 +179,7 @@ class Box {
   }
 
   static async save(params) {
-    let box = DB('box')
+    let box: any = DB('box')
     if (+params.id === 0) {
       const customer = await DB('customer').insert({})
       box.created_at = Utils.date()
@@ -218,7 +219,7 @@ class Box {
       return { error: 'code_exists' }
     }
 
-    let code = DB('box_code')
+    let code: any = DB('box_code')
     if (!params.id) {
       code.step = 'confirmed'
       code.by_id = params.user.id
@@ -238,7 +239,7 @@ class Box {
     return { success: true }
   }
 
-  static async stats(params) {
+  static async stats() {
     const boxes = await DB('box')
       .select('box.*', 'box_code.partner', 'order_box.total as payment')
       .whereNotIn('box.step', ['creating', 'refunded'])
@@ -375,7 +376,7 @@ class Box {
   }
 
   static async calculate(params) {
-    const res = {}
+    const res: any = {}
 
     let shipping
     let price
@@ -481,9 +482,8 @@ class Box {
 
     res.box_total = Utils.round(res.total)
     res.box_tax_rate = params.tax_rate
-    res.box_tax = Utils.round(res.box_total * res.box_tax_rate)
-    res.box_sub_total = Utils.round(res.box_total - res.box_tax)
-    res.box_total = Utils.round(res.box_total)
+    res.box_sub_total = Utils.round(res.box_total / (1 + params.tax_rate))
+    res.box_tax = Utils.round(res.box_total - res.box_sub_total)
 
     res.discount = 0
     /**
@@ -494,7 +494,7 @@ class Box {
     **/
 
     if (params.promo_code) {
-      const promo = await DB('promo_code')
+      let promo: any = await DB('promo_code')
         .where('code', params.promo_code.toUpperCase())
         .where('on_box', 1)
         .where('is_enabled', 1)
@@ -522,6 +522,26 @@ class Box {
         .first()
 
       if (promo) {
+        if (promo && params.type === 'one' && !promo.box_one) {
+          promo = null
+        }
+        if (promo && params.type === 'two' && !promo.box_two) {
+          promo = null
+        }
+        if (promo && params.periodicity === 'monthly' && !promo.box_monthly) {
+          promo = null
+        }
+        if (promo && params.periodicity === '3_months' && !promo.box_3_months) {
+          promo = null
+        }
+        if (promo && params.periodicity === '6_months' && !promo.box_6_months) {
+          promo = null
+        }
+        if (promo && params.periodicity === '12_months' && !promo.box_12_months) {
+          promo = null
+        }
+      }
+      if (promo) {
         if (promo.first_month) {
           res.discount = (promo.value / 100) * res.price
         } else if (promo.discount) {
@@ -545,10 +565,10 @@ class Box {
       }
     }
 
-    res.tax_rate = params.tax_rate
-    res.tax = Utils.round(res.total * res.tax_rate)
-    res.sub_total = Utils.round(res.total)
     res.total = Utils.round(res.total)
+    res.tax_rate = Utils.round(params.tax_rate)
+    res.sub_total = Utils.round(res.total / (1 + params.tax_rate))
+    res.tax = Utils.round(res.total - res.sub_total)
 
     return {
       ...params,
@@ -761,15 +781,15 @@ class Box {
   }
 
   static async checkSponsor(params) {
-    const boxId = Utils.unhashId(params.sponsor)
+    const boxId: any = Utils.unhashId(params.sponsor)
     if (!boxId || boxId.length === 0) {
       return { error: 'box_not_found' }
     } else {
-      const box = await DB('box').where('id', boxId).first()
+      const box: any = await DB('box').where('id', boxId).first()
 
       if (!box) {
         return { error: 'box_not_found' }
-      } else if (!box.status === 'confirmed') {
+      } else if (box.status === 'confirmed') {
         return { error: 'box_not_active' }
       } else if (params.type === 'one') {
         return { error: 'type_must_be_two' }
@@ -780,7 +800,7 @@ class Box {
 
   static async generateCode() {
     let found = true
-    let code = null
+    let code: any = null
     while (found) {
       code = Math.random().toString(36).substring(7) + Math.random().toString(36).substring(7)
       found = await DB('box_code').where('code', code).first()
@@ -789,19 +809,25 @@ class Box {
     return code
   }
 
-  static async setDispatchLeft() {
+  static async setDispatchLeft(params?: { boxId: number }) {
     let finished = 0
-    const boxes = await DB('box')
+    const query = DB('box')
       .select('box.*', 'box_code.periodicity as code_periodicity')
       .leftJoin('box_code', 'box_code.box_id', 'box.id')
       .whereNotIn('box.step', ['creating', 'refunded'])
-      .all()
+
+    if (params?.boxId) query.where('box.id', params.boxId)
+
+    const boxes = await query.all()
 
     for (const box of boxes) {
       let left = 0
       let months = box.dispatch_gift
       if (box.periodicity === 'monthly' || box.monthly) {
-        const dispatchs = await DB('box_dispatch').where('box_id', box.id).all()
+        const dispatchs = await DB('box_dispatch')
+          .where('box_id', box.id)
+          .where('is_dispatch_active', 1)
+          .all()
 
         const dispatch = await DB('box_dispatch')
           .select('created_at')
@@ -862,6 +888,7 @@ class Box {
         }
         const dispatchs = await DB('box_dispatch')
           .where('box_id', box.id)
+          .where('is_dispatch_active', 1)
           .where('step', '!=', 'pending')
           .all()
 
@@ -888,11 +915,21 @@ class Box {
           finished++
           console.log('finished', box.id, box.periodicity)
         }
+
+        // For setting step :
+        // If box is confirmed but no (dispatch) left --> finished
+        // If box is finished but some dispatch left found (in the case of one or more dispatch turned into is_dispatch_active = 0) --> confirmed
+        // Else, keep step
         DB('box')
           .where('id', box.id)
           .update({
             end: end,
-            step: box.step === 'confirmed' && left < 1 ? 'finished' : box.step,
+            step:
+              box.step === 'confirmed' && left < 1
+                ? 'finished'
+                : box.step === 'finished' && left > box.dispatch_left
+                ? 'confirmed'
+                : box.step,
             dispatchs: dispatchs.length,
             months: months,
             dispatch_left: left
@@ -1033,8 +1070,8 @@ class Box {
     `)
     const stocks = {}
     const selected = {}
-    const success = []
-    const errors = []
+    const success: any = []
+    const errors: any = []
     for (const p in projects) {
       const project = projects[p]
       project.genres = project.styles
@@ -1070,7 +1107,7 @@ class Box {
     }
 
     for (const box of boxes) {
-      const barcodes = []
+      const barcodes: any = []
       box.gifts = JSON.parse(box.gifts)
       for (let i = 1; i < 6; i++) {
         if (box[`project${i}`]) {
@@ -1189,7 +1226,7 @@ class Box {
         barcodes.push('QOBUZFLYER')
       }
 
-      const gg = await Box.getMyGoodie(
+      const gg: any = await Box.getMyGoodie(
         box,
         goodies,
         boxDispatchs[box.id] ? Object.keys(boxDispatchs[box.id]) : []
@@ -1396,12 +1433,12 @@ class Box {
     await Box.setDispatchLeft()
   }
 
-  static async checkPayments(params) {
+  static async checkPayments(params?: { box_id: number }) {
     await Box.setDispatchLeft()
 
-    const errors = []
+    const errors: any = []
 
-    let boxes = await DB('box')
+    let boxes: any = await DB('box')
       .select('box.*', 'user.stripe_customer')
       .join('user', 'user.id', 'box.buy_id')
       .whereIn('step', ['confirmed'])
@@ -1413,7 +1450,7 @@ class Box {
     }
     boxes = await boxes.all()
 
-    const payments = []
+    const payments: any = []
 
     for (const box of boxes) {
       const lastPayment = await DB('order_box')
@@ -1582,31 +1619,62 @@ class Box {
     return boxes
   }
 
-  static async refund(params) {
+  static async refund(params: {
+    id: string
+    obid: string
+    amount: string
+    reason: string
+    order_id: number
+    comment: string
+    only_history: boolean
+    credit_note: boolean
+    cancel_box: boolean
+  }) {
     const order = await DB('order_box')
       .select('order_box.*', 'order.payment_type', 'order.payment_id')
       .join('order', 'order.id', 'order_box.order_id')
-      .where('order_box.id', params.id)
+      .where('order_box.id', +params.obid)
       .first()
 
     order.order_box_id = order.id
     order.total = params.amount
-    order.total = params.amount
-    order.tax = Utils.round(params.amount * order.tax_rate)
-    order.sub_total = Utils.round(params.amount - order.tax)
+    order.sub_total = Utils.round(order.total / (1 + order.tax_rate))
+    order.tax = Utils.round(order.total - order.sub_total)
 
-    await Order.refundPayment(order)
-    await Invoice.insertRefund(order)
+    //? Check params.only_history
+    if (!params.only_history) {
+      await Order.refundPayment(order)
+    }
 
+    //? Check params.credit_note
+    if (params.credit_note) {
+      await Invoice.insertRefund(order)
+    }
+
+    //? Check params.cancel_box
     await DB('order_box')
       .where('id', order.id)
-      .update({
-        is_paid: 0,
-        step: 'refunded',
-        refund: Utils.round((order.refund || 0) + +params.amount)
-      })
+      .update(
+        params.cancel_box
+          ? {
+              is_paid: 0,
+              step: 'refunded',
+              refund: Utils.round((order.refund || 0) + +params.amount)
+            }
+          : {
+              refund: Utils.round((order.refund || 0) + +params.amount)
+            }
+      )
 
-    console.log(params)
+    //? Insert into refund history
+    Order.addRefund({
+      id: order.order_id,
+      amount: +params.amount,
+      reason: params.reason,
+      comment: params.comment,
+      order_box_id: +params.obid
+    })
+
     return { success: true }
   }
 
@@ -1636,11 +1704,18 @@ class Box {
     })
   }
 
-  static async saveDispatch(params) {
-    let dispatch = DB('box_dispatch')
+  static async saveDispatch(params: {
+    id?: number
+    box_id: number
+    barcodes: string
+    is_daudin: 0 | 1
+    force_quantity: boolean
+    cancel_dispatch: boolean
+  }) {
+    let dispatch: any = DB('box_dispatch')
 
     const barcodes = params.barcodes.split(',')
-    if (params.id !== '0') {
+    if (params.id) {
       dispatch = await DB('box_dispatch').find(params.id)
     } else {
       for (const barcode of barcodes) {
@@ -1651,7 +1726,7 @@ class Box {
           .where('stock.type', 'daudin')
           .first()
 
-        if (params.force_quantity !== 'true' && vod && vod.stock < 1) {
+        if (!params.force_quantity && vod && vod.stock < 1) {
           return { error: 'No quantity' }
         } else if (vod) {
           Stock.save({
@@ -1670,11 +1745,12 @@ class Box {
     dispatch.box_id = params.box_id
     dispatch.barcodes = params.barcodes
     dispatch.is_daudin = params.is_daudin
+    dispatch.is_dispatch_active = !params.cancel_dispatch
     dispatch.updated_at = Utils.date()
 
     await dispatch.save()
 
-    if (params.id === '0') {
+    if (!params.id) {
       const box = await DB('box').where('id', params.box_id).first()
       const next = moment(box.next_dispatch)
 
@@ -1692,6 +1768,8 @@ class Box {
           })
       }
     }
+
+    await Box.setDispatchLeft({ boxId: params.box_id })
     return dispatch
   }
 
@@ -1737,7 +1815,7 @@ class Box {
       ]
     }
 
-    const pdf = await Invoice.download({
+    const pdf: any = await Invoice.download({
       params: {
         invoice: invoice,
         lang: 'en',
@@ -1788,7 +1866,7 @@ class Box {
     const boxes = await DB().execute(query)
 
     for (const box of boxes) {
-      const data = {}
+      const data: any = {}
       data.type = 'my_box_last_dispatch'
       data.user_id = box.user_id
       data.box_id = box.id
@@ -1817,7 +1895,7 @@ class Box {
     const boxes = await DB().execute(query)
 
     for (const box of boxes) {
-      const data = {}
+      const data: any = {}
       data.type = 'my_box_will_finish'
       data.user_id = box.user_id
       data.box_id = box.id
@@ -1846,7 +1924,7 @@ class Box {
     const boxes = await DB().execute(query)
 
     for (const box of boxes) {
-      const data = {}
+      const data: any = {}
       data.type = 'my_box_selection_reminder'
       data.user_id = box.user_id
       data.box_id = box.id
@@ -1873,7 +1951,7 @@ class Box {
     const boxes = await DB().execute(query)
 
     for (const box of boxes) {
-      const data = {}
+      const data: any = {}
       data.type = 'my_box_finished'
       data.user_id = box.user_id
       data.box_id = box.id
@@ -1893,7 +1971,7 @@ class Box {
 
     const sales = await PromoCode.getSales({ box: true })
 
-    const res = {
+    const res: any = {
       prices: {
         one: {},
         two: {}
@@ -1952,7 +2030,7 @@ class Box {
   }
 
   static async getLastBoxes(params) {
-    let projects = DB('box_month')
+    let projects: any = DB('box_month')
       .select(
         'box_month.*',
         'p.*',
@@ -1973,7 +2051,7 @@ class Box {
 
     projects = await projects.all()
 
-    const months = {}
+    const months: any = {}
     for (const project of projects) {
       if (!months[project.date]) {
         months[project.date] = []
@@ -2017,7 +2095,7 @@ class Box {
   }
 
   static async saveBoxMonth(params) {
-    let item = DB('box_month')
+    let item: any = DB('box_month')
     if (params.id) {
       item = await DB('box_month').find(params.id)
       item.created_at = Utils.date()
@@ -2142,7 +2220,7 @@ class Box {
       return { success: false }
     }
 
-    let item = await DB('box_project')
+    let item: any = await DB('box_project')
       .where('box_id', params.box_id)
       .where('date', params.month)
       .where('user_id', params.user_id)
@@ -2152,11 +2230,11 @@ class Box {
       item = {}
     }
 
-    const add = []
-    const sub = []
-    const barcodes = []
+    const add: any = []
+    const sub: any = []
+    const barcodes: any = []
 
-    const gifts = []
+    const gifts: any = []
     let i = 0
 
     for (const pp in params.projects) {
@@ -2271,14 +2349,12 @@ class Box {
     await Box.checkStock(params.month)
 
     barcodes.push('BOXDIGGERS')
-    /**
     if (box.dispatchs === 0 && ['3_months', '6_months', '12_months'].includes(box.periodicity)) {
       barcodes.push('TOTEBAGBLANC')
     }
-    **/
 
     const myGoodies = await Box.getMyGoodie(box, goodies, dispatchs)
-    barcodes.push(...myGoodies.map((g) => g.barcode.split(',')))
+    barcodes.push(...myGoodies.map((g: any) => g.barcode.split(',')))
 
     if (dispatch) {
       dispatch.barcodes = barcodes.join(',')
@@ -2345,7 +2421,7 @@ class Box {
     }
   }
 
-  static getNbMonths(periodicity, monthly) {
+  static getNbMonths(periodicity: string, monthly?: 0 | 1) {
     const p = periodicity.split('_')
     if (periodicity === 'monthly' || monthly) {
       return 1
@@ -2454,16 +2530,13 @@ class Box {
       lang: code.lang,
       t: (v) => I18n.locale(code.lang).formatMessage(v)
     })
-    const pdf = await Utils.toPdf(html, {
-      width: 1372,
-      height: 2000
-    })
+    const pdf = await Utils.toPdf(html)
 
     return pdf
   }
 
   static async generateCodes(params) {
-    const codes = []
+    const codes: any = []
     for (let i = 0; i < params.quantity; i++) {
       let exists
       do {
@@ -2646,7 +2719,7 @@ class Box {
 
     const customer = await DB('customer').where('id', box.customer_id).first()
 
-    const invoice = {}
+    const invoice: any = {}
     invoice.customer = customer
     invoice.number = 1
     invoice.type = 'invoice'
@@ -2742,7 +2815,7 @@ class Box {
     const dispatchs = await DB('box_dispatch').orderBy('created_at', 'desc').all()
 
     const res = {}
-    const bb = []
+    const bb: any = []
     for (const dispatch of dispatchs) {
       const barcodes = dispatch.barcodes.split(',').map((b) => b.trim())
       bb.push(...barcodes)
@@ -2770,7 +2843,7 @@ class Box {
       projects[v.barcode] = v
     }
 
-    const lines = []
+    const lines: any[] = []
     for (const d of Object.keys(res)) {
       for (const b of Object.keys(res[d])) {
         lines.push({
@@ -2985,7 +3058,7 @@ class Box {
 
         if (payments.length === 1) {
           const payment = payments[0]
-          const cost = {}
+          const cost: any = {}
           cost.shipping = Utils.round(payment.shipping / +box.periodicity.split('_')[0])
           cost.price = payment.price
           cost.sub_total = payment.sub_total
@@ -3016,7 +3089,7 @@ class Box {
       .where('date', `${moment().format('YYYY-MM')}-01`)
       .all()
 
-    const ids = []
+    const ids: any = []
     for (const select of selects) {
       for (let i = 1; i < 6; i++) {
         if (select[`project${i}`]) {
@@ -3108,20 +3181,11 @@ class Box {
       .leftJoin('vod as p6', 'p6.project_id', 'project6')
       .all()
 
-    console.log(selects)
-
-    const dispatchs = await DB('box_dispatch').all()
-
-    for (const select of selects) {
-      for (const dispath of dispatchs) {
-      }
-    }
-
     return selects
   }
 
   static async getMyGoodie(box, goodies, dispatchs) {
-    const gg = []
+    const gg: any = []
 
     for (let i = 0; i < 1; i++) {
       for (const goodie of goodies
@@ -3135,6 +3199,11 @@ class Box {
     }
 
     return gg
+  }
+
+  static async refreshBoxDispatch(params: { id: string }) {
+    await Box.setDispatchLeft({ boxId: +params.id })
+    return { success: true }
   }
 }
 

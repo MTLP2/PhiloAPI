@@ -8,7 +8,7 @@ import DB from 'App/DB'
 class Sna {
   static sync(orders) {
     return new Promise((resolve, reject) => {
-      const dispatchs = []
+      const dispatchs: any[] = []
 
       for (const order of orders) {
         const pickup = order.address_pickup ? JSON.parse(order.address_pickup) : null
@@ -17,7 +17,7 @@ class Sna {
         const id = order.id.toString()
         process.env.NODE_ENV !== 'production' ? Utils.randomString(10, '#') : order.id.toString()
 
-        const data = {
+        const data: any = {
           customerOrderNumber: id,
           orderLabel: '',
           orderDate: order.created_at,
@@ -121,7 +121,7 @@ class Sna {
   }
 
   static async getStock() {
-    const stock = await Sna.getApi('stock')
+    const stock: any = await Sna.getApi('stock')
     const projects = await DB('project as p')
       .select('p.id', 'p.artist_name', 'p.name', 'p.picture', 'vod.barcode')
       .join('vod', 'vod.project_id', 'p.id')
@@ -139,64 +139,87 @@ class Sna {
   }
 
   static async getOrders() {
-    const orders = await Sna.getApi('Order_Status')
+    const orders: any = await Sna.getApi('Order_Status')
     return orders.reverse()
   }
 
-  static async setCost(date, buffer, force) {
-    const dispatchs = []
+  static async setCost(buffer, force) {
+    const dispatchs: any[] = []
     const workbook = new Excel.Workbook()
     await workbook.xlsx.load(buffer)
     const worksheet = workbook.getWorksheet(1)
 
-    worksheet.eachRow(async (row) => {
-      const dispatch = {
-        id: row.getCell('C').value,
-        trans: Utils.round(row.getCell('P').toString().replace(',', '.')),
-        quantity: row.getCell('E').toString(),
-        country: row.getCell('H').toString(),
-        mode: row.getCell('K').toString(),
-        weight: Utils.round(row.getCell('F').toString())
+    const promises: any[] = []
+    worksheet.eachRow((row) => {
+      const pro = async () => {
+        const dispatch: any = {
+          id: row.getCell('C').value,
+          trans: Utils.round(row.getCell('P').toString().replace(',', '.')),
+          quantity: row.getCell('E').toString(),
+          country: row.getCell('H').toString(),
+          mode: row.getCell('K').toString(),
+          weight: Utils.round(row.getCell('F').toString())
+        }
+
+        // console.log(dispatch)
+        if (!dispatch.id || isNaN(dispatch.id) || !dispatch.trans) {
+          return
+        }
+
+        if (!Utils.inUE(dispatch.country)) {
+          dispatch.trans += 0.5
+        }
+
+        dispatch.cost = dispatch.trans
+
+        // Packing => 1 €
+        dispatch.cost += 1
+
+        // Picking => 0,45 €
+        if (dispatch.quantity > 1) {
+          dispatch.cost += (dispatch.quantity - 1) * 0.45
+        }
+
+        let order: any = DB('order_shop').where('id', dispatch.id.toString())
+        if (!force) {
+          order.whereNull('shipping_cost')
+        }
+        order = await order.first()
+
+        if (!order) {
+          return
+        }
+        order.shipping_trans = dispatch.trans
+        order.shipping_cost = dispatch.cost + dispatch.cost * order.tax_rate
+        order.shipping_mode = dispatch.mode
+        order.shipping_quantity = dispatch.quantity
+        order.shipping_weight = dispatch.weight
+        await order.save()
+
+        dispatchs.push(dispatch)
       }
-
-      if (!dispatch.id || isNaN(dispatch.id) || !dispatch.trans) {
-        return
-      }
-
-      if (!Utils.inUE(dispatch.country)) {
-        dispatch.trans += 0.5
-      }
-
-      dispatch.cost = dispatch.trans
-
-      // Packing => 1 €
-      dispatch.cost += 1
-
-      // Picking => 0,45 €
-      if (dispatch.quantity > 1) {
-        dispatch.cost += (dispatch.quantity - 1) * 0.45
-      }
-
-      let order = DB('order_shop').where('id', dispatch.id.toString()).whereNull('shipping_cost')
-      if (!force) {
-        order.whereNull('shipping_cost')
-      }
-      order = await order.first()
-
-      if (!order) {
-        return
-      }
-      order.shipping_trans = dispatch.trans
-      order.shipping_cost = dispatch.cost + dispatch.cost * order.tax_rate
-      order.shipping_mode = dispatch.mode
-      order.shipping_quantity = dispatch.quantity
-      order.shipping_weight = dispatch.weight
-      await order.save()
-
-      dispatchs.push(dispatch)
+      promises.push(pro)
     })
 
-    return dispatchs
+    console.log(promises)
+
+    await Promise.all(promises)
+
+    console.log(dispatchs)
+    return dispatchs.length
+  }
+
+  static async setTrackingLinks() {
+    const orders: any = await Sna.getApi('Order_Status')
+    const shops = await DB('order_shop')
+      .where('transporter', 'sna')
+      .whereNotNull('date_export')
+      .whereNull('tracking_number')
+      .all()
+
+    for (const order of orders.filter((o) => shops.exists((s) => s.id === o.customerOrderNumber))) {
+      console.log(order)
+    }
   }
 
   static getTransporter(country, weight) {
