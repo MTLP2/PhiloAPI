@@ -1128,26 +1128,50 @@ static toJuno = async (params) => {
       .whereRaw(`DATEDIFF(now(), date_export) > 5`)
       .whereRaw(`DATEDIFF(now(), date_export) <= ${5 + nbOfDays}`)
       .whereNull('tracking_number')
+      .orderBy('date_export', 'asc')
+      .orderBy('transporter', 'asc')
       .all()
+
+    const barcodes = await DB('order_item as oi')
+      .select('oi.order_shop_id', 'v.barcode')
+      .join('vod as v', 'v.id', 'oi.vod_id')
+      .whereIn(
+        'oi.order_shop_id',
+        orders.map((o) => o.id)
+      )
+      .all()
+
+    const rows = orders.map((order) => {
+      const barcodesForOrder = barcodes
+        .filter((b) => b.order_shop_id === order.id)
+        .map((b) => b.barcode)
+        .join(', ')
+
+      return {
+        ...order,
+        barcodes: barcodesForOrder
+      }
+    })
 
     const file = await Utils.arrayToXlsx(
       [
         [
-          { header: 'Id', key: 'id', width: 15 },
+          { header: 'OShop Id', key: 'id', width: 15 },
           { header: 'Transporter', key: 'transporter', width: 30 },
-          { header: 'Total', key: 'total', width: 15 },
+          // { header: 'Total', key: 'total', width: 15 },
           { header: 'Step', key: 'step', width: 15 },
-          { header: 'User Id', key: 'user_id', width: 15 },
+          // { header: 'User Id', key: 'user_id', width: 15 },
           { header: 'Shipping', key: 'shipping', width: 15 },
-          { header: 'Shipping Type', key: 'shipping_type', width: 15 },
+          // { header: 'Shipping Type', key: 'shipping_type', width: 15 },
           { header: 'Date Export', key: 'date_export', width: 30 },
-          { header: 'Created At', key: 'created_at', width: 30 }
+          { header: 'Barcodes', key: 'barcodes', width: 30 }
+          // { header: 'Created At', key: 'created_at', width: 30 }
         ]
       ],
       [
         {
           worksheetName: 'Orders',
-          data: orders
+          data: rows
         }
       ]
     )
