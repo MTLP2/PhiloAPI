@@ -18,6 +18,7 @@ class Production {
       .join('project', 'project.id', 'production.project_id')
       .join('vod', 'vod.project_id', 'project.id')
       .leftJoin('user', 'user.id', 'production.resp_id')
+      .leftJoin('user as com', 'com.id', 'vod.com_id')
       .where('production.is_delete', false)
 
     if (params.project_id) {
@@ -34,7 +35,9 @@ class Production {
         'vod.barcode',
         'project.picture',
         'project.country_id',
-        'user.name as user'
+        'user.name as user',
+        'vod.com_id',
+        'com.name as com_name'
       ]
       // params.query.select(
       //   'production.*', 'project.artist_name', 'project.name as project', 'vod.barcode',
@@ -55,7 +58,8 @@ class Production {
         'user.name as user',
         'production.name as prod_name',
         'production.quantity as prod_quantity',
-        'production.created_at'
+        'production.created_at',
+        'vod.com_id'
       ]
       // params.query.select('production.id', 'production.step', 'production.date_preprod', 'production.date_prod',
       //   'production.date_postprod', 'project.artist_name', 'project.name as project', 'vod.barcode',
@@ -1827,6 +1831,7 @@ class Production {
         { name: 'Artist', index: 'artist_name' },
         { name: 'Country', index: 'country_id' },
         { name: 'Resp', index: 'user' },
+        { name: 'Commercial', index: 'com_id' },
         { name: 'Name', index: 'name' },
         { name: 'Step', index: 'step' },
         { name: 'Factory', index: 'factory' },
