@@ -3226,9 +3226,6 @@ class Admin {
         com[item.com_id] = setDefault(item.user_id)
       }
 
-      if (item.com_id === 57976) {
-        console.log(item)
-      }
       if (item.type === 'invoice') {
         com[item.com_id].direct_pressing += item.sub_total * item.currency_rate
         com[item.com_id].total += item.sub_total * item.currency_rate
