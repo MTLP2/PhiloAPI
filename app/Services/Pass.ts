@@ -615,6 +615,7 @@ export default class Pass {
     const file = Utils.uuid()
     const fileName = `pass/gifts/${file}`
     Storage.uploadImage(fileName, Buffer.from(params.image, 'base64'), {
+      type: 'png',
       width: 800,
       quality: 85
     })
@@ -629,7 +630,7 @@ export default class Pass {
   }
 
   static putGift = async (params) => {
-    console.log('🚀 ~ file: Pass.ts ~ line 618 ~ Pass ~ putGift= ~ params', params)
+    // console.log('🚀 ~ file: Pass.ts ~ line 618 ~ Pass ~ putGift= ~ params', params)
     // Create new gift if no id is provided
     if (!params.id) return Pass.saveGift(params)
 
@@ -649,7 +650,7 @@ export default class Pass {
         width: 800,
         quality: 85
       })
-      gift.image = file
+      params.image = file
     }
 
     // Replace gift and save
