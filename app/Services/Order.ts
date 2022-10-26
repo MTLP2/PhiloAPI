@@ -671,8 +671,8 @@ static toJuno = async (params) => {
         .where('id', id)
         .update({
           is_paid: 0,
-          is_paused: 1,
           ask_cancel: 0,
+          sending: 0,
           step: type === 'cancel' ? 'canceled' : 'refunded'
         })
 
