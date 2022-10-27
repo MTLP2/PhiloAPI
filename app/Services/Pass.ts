@@ -1,6 +1,7 @@
 import DB from 'App/DB'
 import Utils from 'App/Utils'
-import Storage from 'App/Services/Storage'
+
+type TinyIntBool = 0 | 1
 
 type PassHistory = {
   id: number
@@ -10,6 +11,29 @@ type PassHistory = {
   current_level: number
   count_repeatable: number
   user_repeated: number
+}
+
+type Level = {
+  id: number
+  points: number
+  level: number
+  data: string
+  created_at: string
+  updated_at: string
+  passes?: number
+  ratio?: number
+}
+
+type Badge = {
+  id: number
+  description_fr: string
+  description_en: string
+  title_en: string
+  title_fr: string
+  is_active: TinyIntBool
+  image: string
+  created_at: string
+  updated_at: string
 }
 
 type UserQuestProgress = {
@@ -78,9 +102,35 @@ type UserBadgeProgress = {
   completed_quests: number
 }
 
-interface UserGift extends GiftModel {
+interface Gift {
+  id: number
+  name_fr: string
+  name_en: string
+  level_id: number
+  image: string
+  is_active: TinyIntBool
+  is_preium: TinyIntBool
+  created_at: string
+  updated_at: string
+}
+
+interface UserGift extends Gift {
   claimable: boolean
   claimed_date: string
+}
+
+type Quest = {
+  id: number
+  points: number
+  type: string
+  is_active: TinyIntBool
+  is_infinite: TinyIntBool
+  title_fr: string
+  title_en: string
+  description_fr: string
+  description_en: string
+  user_repeated: number
+  count_repeatable: number
 }
 
 export default class Pass {
@@ -109,7 +159,7 @@ export default class Pass {
     const userScore = await Pass.calculateScore(params)
 
     // Get current and next levels
-    const [currentLevel, nextLevel]: LevelModel[] = await DB('pass_level as pl')
+    const [currentLevel, nextLevel]: Level[] = await DB('pass_level as pl')
       .where('pl.level', userScore.current_level)
       .orWhere('pl.level', userScore.current_level + 1, undefined)
       .orderBy('pl.level', 'asc')
@@ -182,7 +232,7 @@ export default class Pass {
     // Check Level
     const { current_points: currentPoints } = await Pass.calculateScore(params)
 
-    const currentLevel: LevelModel = await DB('pass_level as pl')
+    const currentLevel: Level = await DB('pass_level as pl')
       .where('pl.points', '<=', currentPoints)
       .orderBy('pl.points', 'desc')
       .first()
@@ -326,7 +376,7 @@ export default class Pass {
       pass_error: number
       data: {
         id: number
-        success?: Pick<QuestModel, 'id' | 'title_en' | 'title_fr' | 'points'>
+        success?: Pick<Quest, 'id' | 'title_en' | 'title_fr' | 'points'>
         error?: string
       }[]
     } = {
@@ -391,7 +441,7 @@ export default class Pass {
     if (singleType) query.where('type', type)
     else query.whereIn('type', type)
 
-    const quest: QuestModel[] = await query.all()
+    const quest: Quest[] = await query.all()
     if (!quest) return { error: 'Quest(s) not found' }
 
     return quest
@@ -438,16 +488,8 @@ export default class Pass {
     return questToDelete.delete()
   }
 
-  static getRawLevels = async () => {
-    return Utils.getRows<LevelModel>({
-      query: DB('pass_level'),
-      sort: 'level',
-      order: 'asc'
-    })
-  }
-
-  static getLevels = async (params?: any) => {
-    const { data: levels } = await Utils.getRows<LevelModel>({
+  static getLevels = async (params: any) => {
+    const { data: levels } = await Utils.getRows<Level>({
       query: DB('pass_level'),
       sort: 'level',
       order: 'asc'
@@ -592,7 +634,7 @@ export default class Pass {
       .select(
         'pg.*',
         DB.raw(
-          'IF (pl.level >= (SELECT level FROM pass_level spl WHERE spl.id = pg.level_id), true, false) as claimable'
+          'IF (pl.level >= (SELECT level FROM pass_level spl WHERE spl.id = pg.level_id) - 1, true, false) as claimable'
         ),
         'pbc.created_at as claimed_date'
       )
@@ -612,14 +654,6 @@ export default class Pass {
   }
 
   static saveGift = async (params) => {
-    const file = Utils.uuid()
-    const fileName = `pass/gifts/${file}`
-    Storage.uploadImage(fileName, Buffer.from(params.image, 'base64'), {
-      width: 800,
-      quality: 85
-    })
-    params.image = file
-
     const [gift] = await DB('pass_gift').insert({
       ...params,
       created_at: new Date()
@@ -629,28 +663,12 @@ export default class Pass {
   }
 
   static putGift = async (params) => {
-    console.log('🚀 ~ file: Pass.ts ~ line 618 ~ Pass ~ putGift= ~ params', params)
     // Create new gift if no id is provided
     if (!params.id) return Pass.saveGift(params)
 
     // Check gift and return error if no match
-    const gift: GiftModel = await DB('pass_gift').where('id', params.id).first()
+    const gift = await DB('pass_gift').where('id', params.id).first()
     if (!gift) return { error: 'Gift not found' }
-
-    // Upload image
-    if (params.image) {
-      if (gift.image) {
-        Storage.deleteImage(`pass/gifts/${gift.image}`)
-      }
-      const file = Utils.uuid()
-      const fileName = `pass/gifts/${file}`
-      Storage.uploadImage(fileName, Buffer.from(params.image, 'base64'), {
-        type: 'png',
-        width: 800,
-        quality: 85
-      })
-      gift.image = file
-    }
 
     // Replace gift and save
     return gift.save({

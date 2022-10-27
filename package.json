@@ -64,6 +64,7 @@
     "customerio-node": "^3.3.6",
     "exceljs": "^4.3.0",
     "fluent-ffmpeg": "^2.1.2",
+    "google-auth-library": "^8.6.0",
     "googleapis": "^105.0.0",
     "hashids": "^2.2.10",
     "html-pdf": "^3.0.1",

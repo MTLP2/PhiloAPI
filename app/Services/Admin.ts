@@ -3226,9 +3226,6 @@ class Admin {
         com[item.com_id] = setDefault(item.user_id)
       }
 
-      if (item.com_id === 57976) {
-        console.log(item)
-      }
       if (item.type === 'invoice') {
         com[item.com_id].direct_pressing += item.sub_total * item.currency_rate
         com[item.com_id].total += item.sub_total * item.currency_rate
@@ -4552,7 +4549,8 @@ class Admin {
         'u.name as com_name',
         'v.origin',
         'v.historic',
-        'p.category'
+        'p.category',
+        'v.status'
       )
       .join('vod as v', 'v.project_id', 'p.id')
       .leftJoin('user as u', 'u.id', 'v.com_id')
@@ -4568,7 +4566,7 @@ class Admin {
       if (project.historic && project.historic.length) {
         project.historic = JSON.parse(project.historic)
           .sort((a, b) => {
-            return new Date(b.date) - new Date(a.date)
+            return new Date(b.date).getTime() - new Date(a.date).getTime()
           })
           .map((h) => `- ${h.old || 'Unknown'} (${h.date})`)
           .join('\n')
@@ -4586,6 +4584,7 @@ class Admin {
         { index: 'artist_name', name: 'Artist Name' },
         { index: 'origin', name: 'Origin' },
         { index: 'step', name: 'Step' },
+        { index: 'status', name: 'Status' },
         { index: 'type', name: 'Type' },
         { index: 'category', name: 'Category' },
         { index: 'historic', name: 'Previous steps' }

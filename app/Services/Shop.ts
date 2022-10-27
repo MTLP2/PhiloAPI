@@ -63,6 +63,7 @@ class Shop {
     font_color: string
     title_color: string
     logo?: string
+    line_items?: number
     banner?: string
     bg_image?: string
     white_label?: boolean
@@ -89,6 +90,7 @@ class Shop {
     item.bg_color = payload.bg_color
     item.font_color = payload.font_color
     item.title_color = payload.title_color
+    item.line_items = payload.line_items
     item.white_label = payload.white_label
     item.updated_at = Utils.date()
 
