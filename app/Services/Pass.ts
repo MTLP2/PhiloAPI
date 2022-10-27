@@ -592,7 +592,7 @@ export default class Pass {
       .select(
         'pg.*',
         DB.raw(
-          'IF (pl.level >= (SELECT level FROM pass_level spl WHERE spl.id = pg.level_id), true, false) as claimable'
+          'IF (pl.level >= (SELECT level FROM pass_level spl WHERE spl.id = pg.level_id) - 1, true, false) as claimable'
         ),
         'pbc.created_at as claimed_date'
       )
