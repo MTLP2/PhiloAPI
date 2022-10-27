@@ -28,6 +28,10 @@ class PassController {
   }
 
   // LEVELS
+  async getRawLevels() {
+    return Pass.getRawLevels()
+  }
+
   async getLevels(params) {
     return Pass.getLevels(params)
   }
