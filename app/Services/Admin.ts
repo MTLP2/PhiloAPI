@@ -1673,6 +1673,7 @@ class Admin {
         'user.name as user_name',
         'user.email as user_email',
         'user.picture as user_picture',
+        'user.newsletter as user_newsletter',
         'order.user_agent',
         'c.country_id',
         'c.name',
