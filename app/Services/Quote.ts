@@ -588,7 +588,7 @@ class Quote {
     if (params.print_finish === 'returned_cardboard') {
       quote.print_finish = getCost(352, 'print_finish') / params.nb_vinyl
     } else if (params.print_finish === 'matt_varnish') {
-      quote.print_finish = getCost(284, 'print_finish') / params.nb_vinyl
+      // quote.print_finish = getCost(284, 'print_finish') / params.nb_vinyl
     }
 
     // insert
