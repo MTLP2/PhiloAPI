@@ -1,4 +1,5 @@
 import Pass from 'App/Services/Pass'
+import { validator, schema } from '@ioc:Adonis/Core/Validator'
 
 class PassController {
   // QUESTS
@@ -7,7 +8,33 @@ class PassController {
   }
 
   async putQuest({ params }) {
-    return Pass.putQuest(params)
+    try {
+      params.count_repeatable = params.count_repeatable || 0
+      // Validation
+      const payload = await validator.validate({
+        schema: schema.create({
+          id: schema.number.nullable(),
+          type: schema.string(),
+          points: schema.number(),
+          is_active: schema.enum([0, 1] as const),
+          is_infinite: schema.enum([0, 1] as const),
+          title_fr: schema.string(),
+          title_en: schema.string(),
+          description_fr: schema.string(),
+          description_en: schema.string(),
+          count_repeatable: schema.number()
+        }),
+        data: params
+      })
+
+      return Pass.putQuest(payload)
+    } catch (err) {
+      // Stringify err.messages from adonis
+      const messages = Object.keys(err.messages)
+        .map((key) => `${key}: ${err.messages[key]}`)
+        .join(', ')
+      return { error: messages }
+    }
   }
 
   async deleteQuest({ params }) {

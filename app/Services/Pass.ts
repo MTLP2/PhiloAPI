@@ -463,7 +463,18 @@ export default class Pass {
     return Utils.getRows(params)
   }
 
-  static putQuest = async (params: { id: number }) => {
+  static putQuest = async (params: {
+    id: number | null
+    type: string
+    points: number
+    is_active: 0 | 1
+    is_infinite: 0 | 1
+    title_fr: string
+    title_en: string
+    description_fr: string
+    description_en: string
+    count_repeatable: number
+  }) => {
     // Create new quest if no id is provided
     if (!params.id) return Pass.saveQuest(params)
 
