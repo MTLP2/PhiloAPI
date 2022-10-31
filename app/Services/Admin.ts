@@ -1999,6 +1999,7 @@ class Admin {
       [
         { name: 'ID', index: 'id' },
         { name: 'User ID', index: 'user_id' },
+        { name: 'Email', index: 'user_email' },
         { name: 'Project ID', index: 'project_id' },
         { name: 'Project Name', index: 'name' },
         { name: 'Box ID', index: 'box_id' },

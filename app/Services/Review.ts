@@ -60,7 +60,8 @@ class Review {
       'u.id as user_id',
       'u.country_id',
       'u.picture as user_picture',
-      'u.name as user_name'
+      'u.name as user_name',
+      'u.email as user_email'
     ]
     const joins: { elements: string[] }[] = []
 
