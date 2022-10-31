@@ -328,10 +328,11 @@ class AppController {
       })
 
       // Email already in database ?
-      const exists = !!(await DB('pass_culture').where('email', payload.email).first())
-
-      if (exists) throw new Error('exists')
+      // Commented by Aaron's request
+      // const exists = !!(await DB('pass_culture').where('email', payload.email).first())
+      // if (exists) throw new Error('exists')
       // If not
+
       // Insert in db
       await DB('pass_culture').insert({
         email: payload.email,

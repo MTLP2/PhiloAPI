@@ -588,16 +588,17 @@ class Quote {
     if (params.print_finish === 'returned_cardboard') {
       quote.print_finish = getCost(352, 'print_finish') / params.nb_vinyl
     } else if (params.print_finish === 'matt_varnish') {
-      quote.print_finish = getCost(284, 'print_finish') / params.nb_vinyl
+      // quote.print_finish = getCost(284, 'print_finish') / params.nb_vinyl
     }
 
     // insert
+    console.log(params.insert)
     if (params.insert !== 'none') {
       quote.insert = getCost(252, 'insert')
       if (params.insert === 'two_sides_printed') {
         quote.insert += getCost(368, 'insert')
       } else if (params.insert === 'one_side_printed') {
-        quote.insert += getCost(367, 'insert')
+        quote.insert += getCost(366, 'insert')
       } else if (params.insert === 'booklet_printed') {
         quote.insert += getCost(366, 'insert')
       }
@@ -633,6 +634,9 @@ class Quote {
     if (params.sleeve === 'double_gatefold') {
       if (params.nb_vinyl === 1) {
         quote.cutting = getCost(3, 'cutting')
+        if (params.nb_vinyl === 1) {
+          quote.gatefold = getCost(35, 'gatefold')
+        }
       } else if (params.nb_vinyl === 2) {
         quote.cutting = getCost(2, 'cutting')
       }
@@ -688,7 +692,7 @@ class Quote {
 
     // Frais supplementaire + échentillon diggers
     // logs.push({ type: 'test_pressing', comment: '+40' })
-    quote.test_pressing = 35
+    quote.test_pressing = 45
 
     return quote
   }

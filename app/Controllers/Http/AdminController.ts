@@ -941,8 +941,9 @@ class AdminController {
           .where('id', payload.id)
           .update({ ...payload, updated_at: Utils.date() })
       } else {
-        const exists = await DB('pass_culture').where('email', payload.email).first()
-        if (exists) throw new Error('Email already exists')
+        // Commented by Aaron's request
+        // const exists = await DB('pass_culture').where('email', payload.email).first()
+        // if (exists) throw new Error('Email already exists')
         await DB('pass_culture').insert(payload)
       }
 
