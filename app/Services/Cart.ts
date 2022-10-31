@@ -18,6 +18,7 @@ import Order from 'App/Services/Order'
 import cio from 'App/Services/CIO'
 import I18n from '@ioc:Adonis/Addons/I18n'
 import moment from 'moment'
+import Pass from './Pass'
 const stripe = require('stripe')(config.stripe.client_secret)
 
 const paypal = require('paypal-rest-sdk')
@@ -1702,6 +1703,7 @@ class Cart {
     }
 
     let customerId = null
+    let orderGenres: string[] = []
     await Promise.all(
       shops.map(async (shop) => {
         customerId = shop.customer_invoice_id || shop.customer_id
@@ -1770,6 +1772,7 @@ class Cart {
               project.genres = project.styles.map((s) => genres[styles[s.id || s].genre_id])
               project.genres = [...new Set(project.genres)]
               project.styles = project.styles.map((s) => styles[s.id || s].name)
+              orderGenres.push(project.genres)
 
               cio.track(user.id, {
                 name: 'purchase',
@@ -1844,9 +1847,6 @@ class Cart {
                 transporter: shop.transporter
               })
               await Project.forceLike(project.id, user.id)
-
-              // Gamification handle
-              // Check if it's the first ever purchase of the user
             })
           )
         }
@@ -1919,6 +1919,28 @@ class Cart {
         name: `${order.artist} - ${order.project}`,
         category: 'vinyl'
       })
+    }
+
+    // Gamification handle
+    try {
+      // First purchase
+      if (user.orders.length === 1) {
+        console.log('here')
+        const res = await Pass.addHistory({
+          userId: user.id,
+          type: 'first_order'
+        })
+        console.log('res of gamification', res)
+      }
+
+      // Genre quests
+      const resGenres = await Pass.addGenreHistory({
+        userId: user.id,
+        genreList: orderGenres.flatMap((g) => g)
+      })
+      console.log(resGenres)
+    } catch (err) {
+      console.log('err in gamification', err)
     }
 
     return {

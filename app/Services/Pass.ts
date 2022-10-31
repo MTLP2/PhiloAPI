@@ -314,13 +314,19 @@ export default class Pass {
   }: {
     type: string | Array<string>
     userId: number
-    refId: number
+    refId?: number
   }) {
+    console.log('addHistory', type, userId, refId)
     const quests = await Pass.findQuest({ type, userId })
+    console.log('🚀 ~ file: Pass.ts ~ line 321 ~ Pass ~ quests', quests)
 
     // If no quests is returned at all
     if (!Array.isArray(quests)) throw new Error(quests.error || 'No quest found')
+    if (!quests.length) throw new Error('No quest found')
 
+    console.log('quest(s) found', quests.length)
+
+    // Build res for each history to display toast
     const res: {
       pass_success: number
       pass_error: number
@@ -346,10 +352,11 @@ export default class Pass {
           .all()
         if (
           (quest.user_repeated >= quest.count_repeatable && !quest.is_infinite) ||
-          history.find((h) => h.ref_id === +refId)
+          (refId && history.find((h) => h.ref_id === +refId))
         )
           throw new Error('User has already completed this quest')
 
+        // Insert history
         await DB('pass_history').insert({
           user_id: userId,
           quest_id: quest.id,
@@ -357,6 +364,7 @@ export default class Pass {
           created_at: new Date()
         })
 
+        // Push success to response
         res.data.push({
           id: quest.id,
           success: {
@@ -368,6 +376,7 @@ export default class Pass {
         })
         res.pass_success++
       } catch (err) {
+        // Push error to response
         res.data.push({ id: quest.id, error: err.message })
         res.pass_error++
       }
@@ -377,6 +386,17 @@ export default class Pass {
     Pass.updateUserTotals({ userId })
 
     return res
+  }
+
+  static async addGenreHistory({ userId, genreList }: { userId: number; genreList: string[] }) {
+    const genres = await DB('genre')
+      .select('type')
+      .join('pass_quest as pq', 'quest_id', 'pq.id')
+      .whereIn('name', genreList)
+      .all()
+
+    if (!genres.length) throw new Error('No quest found for these genres: ' + genreList)
+    return Pass.addHistory({ type: genres.map((genre) => genre.type), userId })
   }
 
   static findQuest = async ({ type, userId }: { type: string | Array<string>; userId: number }) => {
