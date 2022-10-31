@@ -1623,6 +1623,12 @@ class Cart {
     })
 
   static validPayment = async (orderId, transactionId, status = 'confirmed') => {
+    console.log(
+      '🚀 ~ file: Cart.ts ~ line 1626 ~ Cart ~ validPayment= ~ orderId, transactionId, status',
+      orderId,
+      transactionId,
+      status
+    )
     const order = await DB()
       .select(
         'order.id',
@@ -1660,8 +1666,11 @@ class Cart {
     const user = await DB()
       .select('id', 'name', 'email', 'sponsor')
       .from('user')
+      .hasMany('order', 'orders', 'user_id', 'id')
       .where('id', order.user_id)
       .first()
+
+    console.log(user)
 
     const boxes = []
     const allItems = []
@@ -1835,6 +1844,9 @@ class Cart {
                 transporter: shop.transporter
               })
               await Project.forceLike(project.id, user.id)
+
+              // Gamification handle
+              // Check if it's the first ever purchase of the user
             })
           )
         }
