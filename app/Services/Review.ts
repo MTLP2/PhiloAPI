@@ -11,7 +11,7 @@ class Review {
       .where((query) => {
         query.where((query) => {
           query.where('os.step', 'sent')
-          query.whereRaw('DATEDIFF(now(), os.date_export) = 14')
+          query.whereRaw('DATEDIFF(now(), os.date_export) = 21')
         })
         query.orWhere((query) => {
           query.where('os.step', 'delivered')
