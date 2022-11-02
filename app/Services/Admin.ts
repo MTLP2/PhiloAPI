@@ -28,6 +28,7 @@ import Deepl from 'App/Services/Deepl'
 import Artwork from 'App/Services/Artwork'
 import cio from 'App/Services/CIO'
 import Env from '@ioc:Adonis/Core/Env'
+import { Transporter } from 'google-auth-library/build/src/transporters'
 
 class Admin {
   static getProjects = async (params: {
@@ -867,6 +868,7 @@ class Admin {
   }
 
   static saveVod = async (params) => {
+    console.log('🚀 ~ file: Admin.ts ~ line 870 ~ Admin ~ saveVod= ~ params', params)
     const vod = await DB('vod').where('id', params.vod_id).first()
     const vodArchive = { ...vod }
 
@@ -4707,6 +4709,66 @@ class Admin {
   static getPassCulture = async () => {
     const passCulture = DB('pass_culture')
     return Utils.getRows({ query: passCulture })
+  }
+
+  static redoCheckAddress = async (params: {
+    vodId: number
+    transporterChoice: Transporters[]
+  }) => {
+    // Check if current VOD has "check_address" step. Else, throw error
+    const vod = await DB('vod')
+      .select('vod.step', 'project.name as project_name', 'project.id as project_id')
+      .join('project as p', 'p.id', 'vod.project_id')
+      .find(params.vodId)
+    if (vod.step !== 'check_address')
+      throw new Error('This project must be in check_address to use this function')
+
+    const orders = DB()
+      .select('os.*', 'os.id as order_shop_id')
+      .from('order_shop as os')
+      .join('order_item as oi', 'oi.order_shop_id', 'os.id')
+      .where('oi.project_id', vod.project_id)
+      .where('oi.vod_id', params.vodId)
+      .where('os.is_paid', 1)
+      .whereIn('os.transporter', params.transporterChoice)
+      .whereNull('date_export')
+      .all()
+
+    // If transporter choice is provided (when passing to check address) AND if it does not contain 'all' (which is the same as accepting all transporters), filter orders by specified transporters
+
+    for (const order of orders) {
+      let type: string | null = null
+
+      let pickupNotFound = false
+      if (type) {
+        const data = {
+          user_id: order.user_id,
+          type: 'my_order_check_address',
+          project_id: vod.project_id,
+          project_name: vod.project_name,
+          vod_id: params.vodId,
+          order_shop_id: order.id,
+          order_id: order.order_id,
+          alert: 0
+        }
+
+        if (order.shipping_type === 'pickup') {
+          const pickup = JSON.parse(order.address_pickup)
+          if (!pickup || !pickup.number) {
+            continue
+          }
+          const avaiblable = await MondialRelay.checkPickupAvailable(pickup.number)
+          if (!avaiblable) {
+            data.type = 'my_order_pickup_must_change'
+            pickupNotFound = true
+          }
+        }
+        const exist = await Notification.exist(data)
+        if (!exist) {
+          await Notification.new(data)
+        }
+      }
+    }
   }
 }
 

@@ -46,6 +46,7 @@ class Notification {
     email?: 0 | 1
     data?: any
   }) => {
+    console.log('notification new', params)
     return DB('notification').insert({
       type: params.type,
       user_id: params.user_id,

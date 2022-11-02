@@ -1,5 +1,5 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
-import { schema, rules } from '@ioc:Adonis/Core/Validator'
+import { schema, rules, validator } from '@ioc:Adonis/Core/Validator'
 
 import Admin from 'App/Services/Admin'
 import DB from 'App/DB'
@@ -984,6 +984,22 @@ class AdminController {
       )
     } catch (err) {
       return { error: err.message }
+    }
+  }
+
+  async redoCheckAddress({ params }) {
+    try {
+      params.projectId = params.id
+      const payload = await validator.validate({
+        schema: schema.create({
+          vodId: schema.number(),
+          transporterChoice: schema.enumSet(Object.values(Transporters))
+        }),
+        data: params
+      })
+      return Admin.redoCheckAddress(payload)
+    } catch (err) {
+      return { error: err.message, validation: err.messages }
     }
   }
 }
