@@ -36,6 +36,7 @@ type ShopDb = {
 type ShopModel = ShopDb & Model
 
 enum Transporters {
+  all = 'all',
   daudin = 'daudin',
   diggers = 'diggers',
   whiplash = 'whiplash',

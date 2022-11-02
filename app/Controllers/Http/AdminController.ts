@@ -988,12 +988,23 @@ class AdminController {
   }
 
   async redoCheckAddress({ params }) {
+    enum Transporters {
+      all = 'all',
+      daudin = 'daudin',
+      diggers = 'diggers',
+      whiplash = 'whiplash',
+      whiplash_uk = 'whiplash_uk',
+      sna = 'sna',
+      soundmerch = 'soundmerch',
+      shipehype = 'shipehype'
+    }
+
     try {
       params.projectId = params.id
       const payload = await validator.validate({
         schema: schema.create({
-          vodId: schema.number(),
-          transporterChoice: schema.enumSet(Object.values(Transporters))
+          projectId: schema.number(),
+          transporter_choice: schema.enumSet(Object.values(Transporters))
         }),
         data: params
       })
