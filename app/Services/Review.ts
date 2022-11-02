@@ -11,7 +11,7 @@ class Review {
       .where((query) => {
         query.where((query) => {
           query.where('os.step', 'sent')
-          query.whereRaw('DATEDIFF(now(), os.date_export) = 14')
+          query.whereRaw('DATEDIFF(now(), os.date_export) = 21')
         })
         query.orWhere((query) => {
           query.where('os.step', 'delivered')
@@ -60,7 +60,8 @@ class Review {
       'u.id as user_id',
       'u.country_id',
       'u.picture as user_picture',
-      'u.name as user_name'
+      'u.name as user_name',
+      'u.email as user_email'
     ]
     const joins: { elements: string[] }[] = []
 
