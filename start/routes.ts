@@ -312,6 +312,8 @@ Route.group(() => {
   Route.get('/projects/facebook', 'AdminController.exportFacebookProjects')
   Route.delete('/projects/:id/remove-image', 'AdminController.removeImage')
   Route.post('/projects/:id/redo-check-address', 'AdminController.redoCheckAddress')
+  Route.get('/projects/:id/delay-nl', 'AdminController.getDelayNewsletters')
+  Route.put('/projects/:id/delay-nl', 'AdminController.putDelayNewsletter')
   Route.post('/statements', 'AdminController.uploadStatement')
   Route.get('/statements/stats', 'AdminController.getStatementStats')
   Route.post('/stocks', 'AdminController.uploadStocks')

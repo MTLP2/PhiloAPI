@@ -4818,6 +4818,50 @@ class Admin {
 
     return true
   }
+
+  static getDelayNewsletters = async () => {
+    const delayNewsletters = DB('project_delay_nl')
+    return Utils.getRows({ query: delayNewsletters })
+  }
+
+  static putDelayNewsletter = async (params: {
+    id: number | null
+    sent: boolean
+    text_fr: string
+    text_en: string
+    cio_id: number | null | undefined
+  }) => {
+    console.log(params)
+
+    // Create if id is null
+    if (!params.id) return Admin.createDelayNewsletter(params)
+
+    // Else update
+    const delayNewsletter = await DB('project_delay_nl').find(params.id)
+    if (!delayNewsletter) throw new Error('Delay newsletter not found')
+
+    await DB('project_delay_nl')
+      .where('id', params.id)
+      .update({
+        sent: params.sent ? Utils.date() : null,
+        text_fr: params.text_fr,
+        text_en: params.text_en,
+        cio_id: params.cio_id || null,
+        updated_at: Utils.date()
+      })
+
+    return true
+  }
+
+  static createDelayNewsletter = async (params) => {
+    await DB('project_delay_nl').insert({
+      sent: params.sent ? Utils.date() : null,
+      text_fr: params.text_fr,
+      text_en: params.text_en,
+      cio_id: params.cio_id || null
+    })
+    return true
+  }
 }
 
 export default Admin

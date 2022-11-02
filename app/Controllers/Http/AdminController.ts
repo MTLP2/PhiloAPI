@@ -1013,6 +1013,31 @@ class AdminController {
       return { error: err.message, validation: err.messages }
     }
   }
+
+  async getDelayNewsletters() {
+    return Admin.getDelayNewsletters()
+  }
+
+  async putDelayNewsletter({ params }) {
+    try {
+      params.projectId = params.id
+      params.sent = !!params.sent
+
+      const payload = await validator.validate({
+        schema: schema.create({
+          id: schema.number.nullable(),
+          sent: schema.boolean(),
+          text_fr: schema.string({ trim: true }),
+          text_en: schema.string({ trim: true }),
+          cio_id: schema.number.nullableAndOptional()
+        }),
+        data: params
+      })
+      return Admin.putDelayNewsletter(payload)
+    } catch (err) {
+      return { error: err.message, validation: err.messages }
+    }
+  }
 }
 
 export default AdminController
