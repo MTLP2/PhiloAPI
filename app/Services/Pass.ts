@@ -24,18 +24,6 @@ type Level = {
   ratio?: number
 }
 
-type Badge = {
-  id: number
-  description_fr: string
-  description_en: string
-  title_en: string
-  title_fr: string
-  is_active: TinyIntBool
-  image: string
-  created_at: string
-  updated_at: string
-}
-
 type UserQuestProgress = {
   id: number
   is_active: TinyIntBool
@@ -117,20 +105,6 @@ interface Gift {
 interface UserGift extends Gift {
   claimable: boolean
   claimed_date: string
-}
-
-type Quest = {
-  id: number
-  points: number
-  type: string
-  is_active: TinyIntBool
-  is_infinite: TinyIntBool
-  title_fr: string
-  title_en: string
-  description_fr: string
-  description_en: string
-  user_repeated: number
-  count_repeatable: number
 }
 
 export default class Pass {
@@ -382,7 +356,7 @@ export default class Pass {
       pass_error: number
       data: {
         id: number
-        success?: Pick<Quest, 'id' | 'title_en' | 'title_fr' | 'points'>
+        success?: Pick<QuestModel, 'id' | 'title_en' | 'title_fr' | 'points'>
         error?: string
       }[]
     } = {
@@ -461,7 +435,7 @@ export default class Pass {
     if (singleType) query.where('type', type)
     else query.whereIn('type', type)
 
-    const quest: Quest[] = await query.all()
+    const quest: QuestModel[] = await query.all()
     if (!quest) return { error: 'Quest(s) not found' }
 
     return quest
