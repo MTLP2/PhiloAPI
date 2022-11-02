@@ -535,6 +535,7 @@ class Cart {
         shop.quantity += c.quantity_coef
         shop.weight += c.weight
         shop.insert += c.insert
+        shop.category = c.category
 
         let cur = 1
         if (c.currency !== shop.currency) {
@@ -569,6 +570,7 @@ class Cart {
       insert: shop.insert,
       currency: shop.currency,
       transporter: shop.transporter,
+      category: shop.category,
       transporters:
         shop.type === 'shop' ? { [shop.transporter || 'all']: true } : shop.transporters,
       country_id: p.country_id,
@@ -789,8 +791,14 @@ class Cart {
       .all()
 
     let weight = params.weight
-    if (weight < 750) {
-      weight = '750g'
+    if (params.category === 'cd' && params.country_id === 'GB') {
+      if (weight < 500) {
+        weight = '500g'
+      } else if (weight < 750) {
+        weight = '750g'
+      } else {
+        weight = Math.ceil(params.weight / 1000) + 'kg'
+      }
     } else {
       weight = Math.ceil(params.weight / 1000) + 'kg'
     }
@@ -800,6 +808,9 @@ class Cart {
     for (const transporter of transporters) {
       if (params.quantity > 1) {
         transporter.picking = 1
+      }
+      if (params.category === 'cd' && params.country_id === 'GB') {
+        transporter.packing = 0.2
       }
       const cost = transporter.packing + transporter.picking * params.insert
 
@@ -1037,6 +1048,8 @@ class Cart {
     res.coefficient = 1
     res.insert = p.quantity * (p.project.barcode ? p.project.barcode.split(',').length : 1)
     res.weight = p.quantity * (p.project.weight || Vod.calculateWeight(p.project))
+    res.category = p.project.category
+
     if (p.item_id) {
       for (const i of p.project.items) {
         if (i.id === p.item_id) {

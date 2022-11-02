@@ -50,6 +50,7 @@ class ShopController {
         logo: schema.string.optional(),
         banner: schema.string.optional(),
         bg_image: schema.string.optional(),
+        line_items: schema.number.optional(),
         white_label: schema.boolean.optional()
       }),
       data: params

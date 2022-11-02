@@ -130,6 +130,7 @@ Route.group(() => {
 Route.get('/auth/check', 'AuthController.check').middleware(['auth'])
 Route.post('/auth/login', 'AuthController.login')
 Route.post('/auth/facebook', 'AuthController.facebook')
+Route.post('/auth/google', 'AuthController.google')
 Route.get('/auth/soundcloud', 'AuthController.soundcloud')
 Route.post('/auth/soundcloud', 'AuthController.soundcloud')
 Route.post('/auth/signup', 'AuthController.signup')

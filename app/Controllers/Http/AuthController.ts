@@ -5,6 +5,7 @@ import ApiError from 'App/ApiError'
 import DB from 'App/DB'
 import Env from '@ioc:Adonis/Core/Env'
 import { validator, schema } from '@ioc:Adonis/Core/Validator'
+const { OAuth2Client } = require('google-auth-library')
 
 class AuthController {
   async check({ user }) {
@@ -87,6 +88,98 @@ class AuthController {
     const me = await User.me(resss.user_id)
     response.json({ token: resss.token, me, new: resss.new })
     User.lastVisit(resss.user_id).then()
+  }
+
+  async google({ params }) {
+    try {
+      const client = new OAuth2Client(Env.get('GOOGLE_API'))
+      const ticket = await client.verifyIdToken({ idToken: params.credential })
+
+      const payload = ticket.getPayload()
+
+      let user = await DB('user').where('email', payload.email).first()
+      if (!user) {
+        const profile = await Sign.createProfile({
+          email: payload.email,
+          name: payload.name,
+          currency: params.currency,
+          lang: params.lang,
+          origin: params.origin,
+          referrer: params.referrer,
+          newsletter: params.newsletter
+        })
+        user = { id: profile }
+        if (payload.picture) {
+          User.updatePictureFromUrl(user.id, payload.picture, false)
+        }
+      }
+
+      const res = {
+        me: await User.me(user.id),
+        token: Sign.getToken({ id: user.id })
+      }
+
+      return res
+    } catch (err) {
+      return { error: true }
+    }
+
+    return { error: true }
+    /**
+    const profile = await Utils.request('https://graph.facebook.com/me', {
+      qs: {
+        access_token: params.access_token,
+        fields: 'id,name,email'
+      },
+      json: true
+    })
+
+    if (profile.error) {
+      throw new ApiError(500, profile.error, profile.error.message)
+    }
+    const profilee = profile
+    profilee.facebook_id = profile.id
+    profilee.lang = params.lang ? params.lang : 'en'
+    profilee.referrer = params.referrer
+    profilee.styles = params.styles
+    profilee.origin = params.origin
+    profilee.type = params.type
+    profilee.currency = params.currency
+    profilee.sponsor = params.sponsor
+    profilee.newsletter = params.newsletter
+
+    if (profile.gender) {
+      profilee.gender = profile.gender === 'male' ? 'M' : 'F'
+    } else {
+      profilee.gender = null
+    }
+    if (profile.birthday) {
+      const date = profile.birthday.split('/')
+      profilee.birthday = date.length === 3 ? `${date[2]}-${date[0]}-${date[1]}` : null
+    } else {
+      profilee.birthday = null
+    }
+    if (profile.location && profile.location.location.country) {
+      const country = await DB('country').where('name', profile.location.location.country).first()
+      if (country) {
+        profilee.country_id = country.id
+      }
+    }
+
+    if (!profile.email) {
+      response.json({ error: 'no_email' })
+      return false
+    }
+    const resss = await Sign.loginFacebook(profilee)
+    if (resss.error) {
+      response.json(resss)
+      return false
+    }
+
+    const me = await User.me(resss.user_id)
+    response.json({ token: resss.token, me, new: resss.new })
+    User.lastVisit(resss.user_id).then()
+    **/
   }
 
   async soundcloud({ params, response }) {
@@ -173,6 +266,8 @@ class AuthController {
   }
 
   async signup({ params, response }) {
+    params.name = params.name || params.email.split('@')[0]
+
     await validator.validate({
       schema: schema.create({
         name: schema.string(),

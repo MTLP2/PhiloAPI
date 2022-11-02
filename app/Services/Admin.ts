@@ -1673,6 +1673,7 @@ class Admin {
         'user.name as user_name',
         'user.email as user_email',
         'user.picture as user_picture',
+        'user.newsletter as user_newsletter',
         'order.user_agent',
         'c.country_id',
         'c.name',
@@ -1998,6 +1999,7 @@ class Admin {
       [
         { name: 'ID', index: 'id' },
         { name: 'User ID', index: 'user_id' },
+        { name: 'Email', index: 'user_email' },
         { name: 'Project ID', index: 'project_id' },
         { name: 'Project Name', index: 'name' },
         { name: 'Box ID', index: 'box_id' },
@@ -3226,9 +3228,6 @@ class Admin {
         com[item.com_id] = setDefault(item.user_id)
       }
 
-      if (item.com_id === 57976) {
-        console.log(item)
-      }
       if (item.type === 'invoice') {
         com[item.com_id].direct_pressing += item.sub_total * item.currency_rate
         com[item.com_id].total += item.sub_total * item.currency_rate
