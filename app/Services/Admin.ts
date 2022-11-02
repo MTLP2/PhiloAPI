@@ -4713,6 +4713,7 @@ class Admin {
   static redoCheckAddress = async (params: {
     projectId: number
     transporter_choice: Transporters[]
+    user: any
   }) => {
     enum Transporters {
       all = 'all',
@@ -4727,7 +4728,13 @@ class Admin {
 
     // Check if current VOD has "check_address" status. Else, throw error
     const vod = await DB('vod')
-      .select('vod.id', 'vod.status', 'p.name as project_name', 'p.id as project_id')
+      .select(
+        'vod.id',
+        'vod.status',
+        'p.name as project_name',
+        'p.id as project_id',
+        'vod.historic'
+      )
       .join('project as p', 'p.id', 'vod.project_id')
       .where('vod.project_id', params.projectId)
       .first()
@@ -4781,11 +4788,33 @@ class Admin {
         await Notification.new(data)
       }
 
+      // Update step of order
       await DB('order_shop').where('id', order.id).where('is_paid', 1).update({
         step: 'check_address',
         pickup_not_found: pickupNotFound
       })
     }
+
+    // Update history of vod
+    const newHistory = JSON.parse(vod.historic)
+    newHistory.push({
+      type: 'status',
+      user_id: params.user.id,
+      old: vod.status,
+      new: `check_address ${
+        params.transporter_choice
+          ? params.transporter_choice.includes(Transporters.all)
+            ? ' (all)'
+            : ` (${params.transporter_choice.join(', ')})`
+          : ''
+      }`,
+      notif: 1,
+      date: Utils.date()
+    })
+
+    await DB('vod')
+      .where('id', vod.id)
+      .update({ historic: JSON.stringify(newHistory) })
 
     return true
   }

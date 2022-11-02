@@ -987,7 +987,7 @@ class AdminController {
     }
   }
 
-  async redoCheckAddress({ params }) {
+  async redoCheckAddress({ params, user }) {
     enum Transporters {
       all = 'all',
       daudin = 'daudin',
@@ -1008,7 +1008,7 @@ class AdminController {
         }),
         data: params
       })
-      return Admin.redoCheckAddress(payload)
+      return Admin.redoCheckAddress({ ...payload, user })
     } catch (err) {
       return { error: err.message, validation: err.messages }
     }
