@@ -87,7 +87,7 @@ class Invoice {
   }
 
   static async save(params) {
-    let invoice = DB('invoice')
+    let invoice: any = DB('invoice')
     let sort = false
 
     if (params.user_id === 0) {

@@ -105,7 +105,7 @@ class Payment {
   }
 
   static createInvoice = async (payment) => {
-    let invoice = {}
+    let invoice: any = {}
     if (!payment.invoice_id) {
       const p = {
         id: '',
