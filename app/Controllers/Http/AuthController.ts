@@ -103,6 +103,7 @@ class AuthController {
           email: payload.email,
           name: payload.name,
           currency: params.currency,
+          google_id: 1,
           lang: params.lang,
           origin: params.origin,
           referrer: params.referrer,
