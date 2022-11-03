@@ -909,6 +909,9 @@ class Admin {
     if (params.signed_id !== undefined) {
       vod.signed_id = params.signed_id || null
     }
+    if (params.weight !== vod.weight) {
+      vod.weight_custom = true
+    }
     vod.weight = params.weight || null
     vod.is_notif = params.is_notif || null
     vod.show_stock = params.show_stock
