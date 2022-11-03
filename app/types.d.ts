@@ -94,7 +94,17 @@ type QuestDb = {
 
 type QuestModel = QuestDb & Model
 
-enum Transporters {
+// ENUMS
+
+enum InvoiceStatus {
+  invoiced = 'invoiced',
+  paid = 'paid',
+  refunded = 'refunded',
+  prepaid = 'prepaid',
+  '404' = '404'
+}
+
+export enum Transporters {
   daudin = 'daudin',
   diggers = 'diggers',
   whiplash = 'whiplash',

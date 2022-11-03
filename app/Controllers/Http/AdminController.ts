@@ -1,5 +1,5 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
-import { schema, rules } from '@ioc:Adonis/Core/Validator'
+import { schema, rules, validator } from '@ioc:Adonis/Core/Validator'
 
 import Admin from 'App/Services/Admin'
 import DB from 'App/DB'
@@ -748,6 +748,46 @@ class AdminController {
 
   async zipInvoices({ params }) {
     return Invoice.zip(params)
+  }
+
+  async putPaymentInvoice({ params }) {
+    try {
+      enum InvoiceStatus {
+        invoiced = 'invoiced',
+        paid = 'paid',
+        refunded = 'refunded',
+        prepaid = 'prepaid',
+        notFound = '404'
+      }
+
+      params.invoice_id = params.id
+      params.id = params.piid
+
+      console.log(params)
+
+      const payload = await validator.validate({
+        schema: schema.create({
+          id: schema.number.optional(),
+          invoice_id: schema.number(),
+          name: schema.string(),
+          status: schema.enum(Object.values(InvoiceStatus)),
+          date: schema.string(),
+          date_payment: schema.string(),
+          payment_days: schema.number(),
+          sub_total: schema.number(),
+          tax_rate: schema.number(),
+          tax: schema.number(),
+          total: schema.number(),
+          currency: schema.string(),
+          comment: schema.string.optional()
+        }),
+        data: params
+      })
+      return Invoice.putPaymentInvoice(payload)
+    } catch (err) {
+      console.log(err)
+      return { error: err.message, validation: err.messages }
+    }
   }
 
   getDaudin({ params }) {

@@ -40,7 +40,7 @@ class Payment {
   }
 
   static save = async (params) => {
-    let payment = DB('payment')
+    let payment: any = DB('payment')
     payment.created_at = Utils.date()
 
     if (!params.id) {
@@ -66,6 +66,7 @@ class Payment {
     payment.currency = params.currency
     payment.currency_rate = await Utils.getCurrency(params.currency)
     payment.updated_at = Utils.date()
+    payment.invoice_id = params.invoice_id || null
     await payment.save()
 
     return payment

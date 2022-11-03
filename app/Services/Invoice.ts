@@ -39,6 +39,7 @@ class Invoice {
       .leftJoin('user', 'user.id', 'invoice.user_id')
       .leftJoin('project', 'project.id', 'invoice.project_id')
       .leftJoin('production', 'production.id', 'invoice.production_id')
+      .hasMany('invoice_payment', 'payments', 'invoice_id')
       .where('invoice.id', id)
       .belongsTo('customer')
       .belongsTo('order')
@@ -754,6 +755,28 @@ class Invoice {
       break
     }
     **/
+  }
+
+  static async putPaymentInvoice(params) {
+    console.log(params)
+
+    if (!params.id) return Invoice.savePaymentInvoice(params)
+    const paymentInvoice = await DB('invoice_payment').find(params.id)
+    if (!paymentInvoice) throw new Error('Payment Invoice does not exist')
+
+    await DB('invoice_payment')
+      .where('id', params.id)
+      .update({
+        ...params,
+        id: undefined
+      })
+    return true
+  }
+
+  static async savePaymentInvoice(params) {
+    console.log('creating...')
+    await DB('invoice_payment').insert(params)
+    return true
   }
 }
 
