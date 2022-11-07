@@ -64,6 +64,7 @@ class Payment {
     currency_rate?: number
     payment_days?: number
     sub_total?: number
+    date?: string
     date_payment?: string
     order_shop_id?: number
     order_manual_id?: number
@@ -100,6 +101,7 @@ class Payment {
     // }
 
     payment.status = params.status || payment.status || PaymentStatus.unpaid
+    payment.date = params.date || payment.date || null
     payment.date_payment = params.date_payment || null
     payment.type = params.type
     payment.payment_type = params.payment_type
@@ -313,13 +315,16 @@ class Payment {
   }
 
   static delete = async (params) => {
+    console.log('🚀 ~ file: Payment.ts ~ line 316 ~ Payment ~ staticdelete ~ params', params)
     const payment = await DB('payment').where('id', params.id).first()
 
     payment.is_delete = true
     payment.updated_at = Utils.date()
     await payment.save()
 
-    await DB('invoice').where('id', payment.invoice_id).delete()
+    if (!params.keep_invoice) {
+      await DB('invoice').where('id', payment.invoice_id).delete()
+    }
 
     return { success: true }
   }
