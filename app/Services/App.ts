@@ -1852,6 +1852,13 @@ class App {
       [...manuals, ...boxes, ...orders]
     )
   }
+
+  static invoicesToPayments = async () => {
+    const invoices = await DB('invoice').where('type', 'invoice').limit(50).all()
+    for (const invoice of invoices) {
+      await Invoice.save(invoice)
+    }
+  }
 }
 
 export default App

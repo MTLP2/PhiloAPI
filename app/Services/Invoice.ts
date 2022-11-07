@@ -9,6 +9,7 @@ import Admin from 'App/Services/Admin'
 import ApiError from 'App/ApiError'
 import I18n from '@ioc:Adonis/Addons/I18n'
 import View from '@ioc:Adonis/Core/View'
+import Payment, { PaymentStatus } from './Payment'
 
 class Invoice {
   static async all(params) {
@@ -39,7 +40,7 @@ class Invoice {
       .leftJoin('user', 'user.id', 'invoice.user_id')
       .leftJoin('project', 'project.id', 'invoice.project_id')
       .leftJoin('production', 'production.id', 'invoice.production_id')
-      .hasMany('invoice_payment', 'payments', 'invoice_id')
+      .hasMany('payment', 'payments', 'invoice_id')
       .where('invoice.id', id)
       .belongsTo('customer')
       .belongsTo('order')
@@ -133,7 +134,7 @@ class Invoice {
     invoice.order_number = params.order_number
     invoice.name = params.name
     invoice.date = params.date
-    invoice.date_payment = params.date_payment
+    invoice.date_payment = params.date_payment || null
     if (params.status === 'paid' && invoice.status !== 'paid' && !params.date_payment) {
       invoice.date_payment = Utils.date()
     }
@@ -152,12 +153,33 @@ class Invoice {
     invoice.lines = JSON.stringify(params.lines)
     invoice.payment_id = params.payment_id
     invoice.comment = params.comment
-    invoice.updated_at = Utils.date()
-    invoice.updated_at = Utils.date()
+    invoice.updated_at = params.created_at || Utils.date()
+    invoice.updated_at = params.updated_at || Utils.date()
 
     await invoice.save()
 
     await Invoice.setNumbers()
+
+    // ! Include order, manual, box ?
+    await Payment.save({
+      type: params.type,
+      customer_id: invoice.customer_id,
+      invoice_id: invoice.id,
+      name: invoice.name,
+      tax: invoice.tax,
+      tax_rate: invoice.tax_rate,
+      total: invoice.total,
+      currency: invoice.currency,
+      currency_rate: invoice.currency_rate,
+      status: params.status || PaymentStatus.unpaid,
+      payment_days: invoice.payment_days,
+      sub_total: invoice.sub_total,
+      order_shop_id: params.order_shop_id,
+      order_manual_id: params.order_manual_id,
+      box_dispatch_id: params.box_dispatch_id,
+      created_at: params.created_at || Utils.date(),
+      updated_at: params.updated_at || null
+    })
 
     return invoice
   }
@@ -755,28 +777,6 @@ class Invoice {
       break
     }
     **/
-  }
-
-  static async putPaymentInvoice(params) {
-    console.log(params)
-
-    if (!params.id) return Invoice.savePaymentInvoice(params)
-    const paymentInvoice = await DB('invoice_payment').find(params.id)
-    if (!paymentInvoice) throw new Error('Payment Invoice does not exist')
-
-    await DB('invoice_payment')
-      .where('id', params.id)
-      .update({
-        ...params,
-        id: undefined
-      })
-    return true
-  }
-
-  static async savePaymentInvoice(params) {
-    console.log('creating...')
-    await DB('invoice_payment').insert(params)
-    return true
   }
 }
 

@@ -9,6 +9,15 @@ import ApiError from 'App/ApiError'
 import fs from 'fs'
 const stripe = require('stripe')(config.stripe.client_secret)
 
+export enum PaymentStatus {
+  unpaid = 'unpaid',
+  confirmed = 'confirmed',
+  failed = 'failed',
+  refund = 'refund',
+  creating = 'creating',
+  created = 'created'
+}
+
 class Payment {
   static all = (params) => {
     params.query = DB('payment').where('is_delete', false)
@@ -39,7 +48,29 @@ class Payment {
     return payment
   }
 
-  static save = async (params) => {
+  static save = async (params: {
+    id?: number
+    type?: string
+    customer_id: number
+    customer?: any
+    invoice_id: number
+    name?: string
+    tax?: number
+    tax_rate?: number
+    total?: number
+    currency?: string
+    status?: PaymentStatus | null
+    currency_rate?: number
+    payment_days?: number
+    sub_total?: number
+    date_payment?: string
+    order_shop_id?: number
+    order_manual_id?: number
+    box_dispatch_id?: number
+    comment?: string
+    created_at?: string
+    updated_at?: string
+  }) => {
     let payment: any = DB('payment')
     payment.created_at = Utils.date()
 
@@ -56,6 +87,8 @@ class Payment {
       payment.customer_id = customer.id
     }
 
+    payment.status = params.status || payment.status
+    payment.date_payment = params.date_payment || null
     payment.type = params.type
     payment.order_shop_id = params.order_shop_id
     payment.name = params.name
@@ -67,6 +100,12 @@ class Payment {
     payment.currency_rate = await Utils.getCurrency(params.currency)
     payment.updated_at = Utils.date()
     payment.invoice_id = params.invoice_id || null
+    payment.payment_days = params.payment_days || null
+    payment.comment = params.comment || null
+    payment.order_manual_id = params.order_manual_id || null
+    payment.box_dispatch_id = params.box_dispatch_id || null
+    payment.created_at = params.created_at || Utils.date()
+    payment.updated_at = params.updated_at || payment.updated_at
     await payment.save()
 
     return payment
@@ -216,6 +255,7 @@ class Payment {
     payment.status = 'confirmed'
     payment.date_payment = Utils.date()
     payment.updated_at = Utils.date()
+    payment.payment_type = 'stripe'
     await payment.save()
 
     await Payment.createInvoice(payment)
