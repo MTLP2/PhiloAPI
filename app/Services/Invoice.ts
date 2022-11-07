@@ -148,9 +148,11 @@ class Invoice {
     invoice.tax_rate = params.tax_rate || 0
     invoice.total = params.total || 0
     invoice.currency = params.currency
-    invoice.currency_rate =
-      params.currency && (await Utils.getCurrencyRate(params.currency, params.date))
-    invoice.lines = JSON.stringify(params.lines)
+    if (!params.invoice_to_payment) {
+      invoice.currency_rate =
+        params.currency && (await Utils.getCurrencyRate(params.currency, params.date))
+    }
+    invoice.lines = params.invoice_to_payment ? params.lines : JSON.stringify(params.lines)
     invoice.payment_id = params.payment_id
     invoice.comment = params.comment
     invoice.updated_at = params.created_at || Utils.date()
@@ -160,7 +162,6 @@ class Invoice {
 
     await Invoice.setNumbers()
 
-    // ! Include order, manual, box ?
     await Payment.save({
       type: params.type,
       customer_id: invoice.customer_id,
@@ -171,13 +172,16 @@ class Invoice {
       total: invoice.total,
       currency: invoice.currency,
       currency_rate: invoice.currency_rate,
-      status: params.status || PaymentStatus.unpaid,
+      status: params.status !== PaymentStatus.paid ? PaymentStatus.unpaid : PaymentStatus.paid,
       payment_days: invoice.payment_days,
+      date_payment: invoice.date_payment,
       sub_total: invoice.sub_total,
-      order_id: invoice.order_id,
       order_shop_id: params.order_shop_id,
       order_manual_id: params.order_manual_id,
       box_dispatch_id: params.box_dispatch_id,
+      invoice_to_payment: params.invoice_to_payment,
+      payment_type: params.payment_type,
+      payment_id: params.payment_id,
       created_at: params.created_at || Utils.date(),
       updated_at: params.updated_at || null
     })

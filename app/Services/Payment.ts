@@ -11,6 +11,7 @@ const stripe = require('stripe')(config.stripe.client_secret)
 
 export enum PaymentStatus {
   unpaid = 'unpaid',
+  paid = 'paid',
   confirmed = 'confirmed',
   failed = 'failed',
   refund = 'refund',
@@ -68,11 +69,12 @@ class Payment {
     order_manual_id?: number
     box_dispatch_id?: number
     comment?: string
-    order_id?: number
+    invoice_to_payment?: boolean
+    payment_type?: string
+    payment_id?: string
     created_at?: string
     updated_at?: string
   }) => {
-    console.log(params.name, params)
     let payment: any = DB('payment')
     payment.created_at = Utils.date()
 
@@ -89,14 +91,19 @@ class Payment {
       payment.customer_id = customer.id
     }
 
-    if (params.order_id) {
-      const { payment_id: paymentId } = await DB('order').select('payment_id').find(params.order_id)
-      payment.payment_id = paymentId
-    }
+    // if (params.order_id) {
+    //   const { payment_id: paymentId, payment_type: paymentType } = await DB('order')
+    //     .select('payment_id', 'payment_type')
+    //     .find(params.order_id)
+    //   payment.payment_id = paymentId
+    //   payment.payment_type = paymentType
+    // }
 
     payment.status = params.status || payment.status || PaymentStatus.unpaid
     payment.date_payment = params.date_payment || null
     payment.type = params.type
+    payment.payment_type = params.payment_type
+    payment.payment_id = params.payment_id
     payment.order_shop_id = params.order_shop_id
     payment.name = params.name
     payment.sub_total = params.sub_total
@@ -105,6 +112,7 @@ class Payment {
     payment.total = params.total
     payment.currency = params.currency
     payment.currency_rate = await Utils.getCurrency(params.currency)
+    payment.date_payment = params.date_payment || null
     payment.updated_at = Utils.date()
     payment.invoice_id = params.invoice_id || null
     payment.payment_days = params.payment_days || null

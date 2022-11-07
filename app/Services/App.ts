@@ -1854,11 +1854,31 @@ class App {
   }
 
   static invoicesToPayments = async () => {
-    const invoices = await DB('invoice').where('type', 'invoice').limit(10).all()
+    const invoices = await DB('invoice').where('type', 'invoice').limit(50).all()
+
+    const orders = await DB('order')
+      .select('payment_type', 'payment_id', 'id')
+      .whereIn(
+        'id',
+        invoices.map((i) => i.order_id)
+      )
+      .all()
+
+    const invoicesWithOrders = invoices.map((i) => {
+      const order = orders.find((o) => o.id === i.order_id)
+      return {
+        ...i,
+        payment_type: order?.payment_type || null,
+        payment_id: order?.payment_id || null
+      }
+    })
+
     let count = 0
-    for (const invoice of invoices) {
+    for (const invoice of invoicesWithOrders) {
       count++
-      await Invoice.save(invoice)
+      console.log(invoice.id)
+      console.log(((count / invoicesWithOrders.length) * 100).toFixed(2) + '%')
+      await Invoice.save({ ...invoice, invoice_to_payment: true })
     }
 
     return 'ok : ' + count
