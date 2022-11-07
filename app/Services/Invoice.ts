@@ -635,6 +635,8 @@ class Invoice {
       )
       .all()
 
+    console.log('first length', first.length)
+
     for (const f of first) {
       await Notification.add({
         type: 'invoice_reminder_first',
@@ -670,6 +672,59 @@ class Invoice {
         invoice_id: f.id
       })
     }
+
+    console.log('second length', second.length)
+
+    // const first = await DB('payment')
+    //   .select('*')
+    //   .join('invoice', 'invoice.id', 'invoice_id')
+    //   .whereNotNull('email')
+    //   .where('payment.status', 'unpaid')
+    //   .whereRaw('DATE_ADD(payment.date, INTERVAL (payment.payment_days + 7) DAY) < NOW()')
+    //   .whereNotExists((query) =>
+    //     query
+    //       .from('notification')
+    //       .where('type', 'like', 'invoice_reminder%')
+    //       .whereRaw('invoice_id = invoice.id')
+    //   )
+    //   .all()
+
+    // for (const f of first) {
+    //   await Notification.add({
+    //     type: 'invoice_reminder_first',
+    //     date: Utils.date({ time: false }),
+    //     invoice_id: f.id
+    //   })
+    // }
+
+    // const second = await DB('payment')
+    //   .select('*')
+    //   .join('invoice', 'invoice.id', 'invoice_id')
+    //   .whereNotNull('email')
+    //   .where('payment.status', 'unpaid')
+    //   .whereExists((query) =>
+    //     query
+    //       .from('notification')
+    //       .where('type', 'like', 'invoice_reminder%')
+    //       .whereRaw('invoice_id = invoice.id')
+    //   )
+    //   .whereNotExists((query) =>
+    //     query
+    //       .from('notification')
+    //       .where('type', 'like', 'invoice_reminder%')
+    //       .whereRaw('invoice_id = invoice.id')
+    //       .whereRaw('DATE_ADD(payment.date, INTERVAL 7 DAY) > NOW()')
+    //   )
+    //   .whereRaw('DATE_ADD(payment.date, INTERVAL (payment.payment_days + 7) DAY) < NOW()')
+    //   .all()
+
+    // for (const f of second) {
+    //   await Notification.add({
+    //     type: 'invoice_reminder_second',
+    //     date: Utils.date({ time: false }),
+    //     invoice_id: f.id
+    //   })
+    // }
 
     return { success: true }
   }
