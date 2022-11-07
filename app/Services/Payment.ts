@@ -68,9 +68,11 @@ class Payment {
     order_manual_id?: number
     box_dispatch_id?: number
     comment?: string
+    order_id?: number
     created_at?: string
     updated_at?: string
   }) => {
+    console.log(params.name, params)
     let payment: any = DB('payment')
     payment.created_at = Utils.date()
 
@@ -87,7 +89,12 @@ class Payment {
       payment.customer_id = customer.id
     }
 
-    payment.status = params.status || payment.status
+    if (params.order_id) {
+      const { payment_id: paymentId } = await DB('order').select('payment_id').find(params.order_id)
+      payment.payment_id = paymentId
+    }
+
+    payment.status = params.status || payment.status || PaymentStatus.unpaid
     payment.date_payment = params.date_payment || null
     payment.type = params.type
     payment.order_shop_id = params.order_shop_id

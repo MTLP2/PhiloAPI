@@ -1854,10 +1854,14 @@ class App {
   }
 
   static invoicesToPayments = async () => {
-    const invoices = await DB('invoice').where('type', 'invoice').limit(50).all()
+    const invoices = await DB('invoice').where('type', 'invoice').limit(10).all()
+    let count = 0
     for (const invoice of invoices) {
+      count++
       await Invoice.save(invoice)
     }
+
+    return 'ok : ' + count
   }
 }
 

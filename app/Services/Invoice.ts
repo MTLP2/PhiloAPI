@@ -174,6 +174,7 @@ class Invoice {
       status: params.status || PaymentStatus.unpaid,
       payment_days: invoice.payment_days,
       sub_total: invoice.sub_total,
+      order_id: invoice.order_id,
       order_shop_id: params.order_shop_id,
       order_manual_id: params.order_manual_id,
       box_dispatch_id: params.box_dispatch_id,
