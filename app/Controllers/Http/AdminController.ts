@@ -986,6 +986,70 @@ class AdminController {
       return { error: err.message }
     }
   }
+
+  async redoCheckAddress({ params, user }) {
+    enum Transporters {
+      all = 'all',
+      daudin = 'daudin',
+      diggers = 'diggers',
+      whiplash = 'whiplash',
+      whiplash_uk = 'whiplash_uk',
+      sna = 'sna',
+      soundmerch = 'soundmerch',
+      shipehype = 'shipehype'
+    }
+
+    try {
+      params.projectId = params.id
+      const payload = await validator.validate({
+        schema: schema.create({
+          projectId: schema.number(),
+          transporter_choice: schema.enumSet(Object.values(Transporters))
+        }),
+        data: params
+      })
+      return Admin.redoCheckAddress({ ...payload, user })
+    } catch (err) {
+      return { error: err.message, validation: err.messages }
+    }
+  }
+
+  async getDelayNewsletters({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          pid: schema.number()
+        }),
+        data: params
+      })
+
+      return Admin.getDelayNewsletters({ id: payload.pid })
+    } catch (err) {
+      return { error: err.message, validation: err.messages }
+    }
+  }
+
+  async putDelayNewsletter({ params }) {
+    try {
+      params.project_id = params.pid
+      params.sent = !!params.sent
+
+      const payload = await validator.validate({
+        schema: schema.create({
+          id: schema.number.nullable(),
+          sent: schema.boolean(),
+          text_fr: schema.string({ trim: true }),
+          text_en: schema.string({ trim: true }),
+          cio_id: schema.number.nullableAndOptional(),
+          project_id: schema.number()
+        }),
+        data: params
+      })
+      return Admin.putDelayNewsletter(payload)
+    } catch (err) {
+      return { error: err.message, validation: err.messages }
+    }
+  }
 }
 
 export default AdminController
