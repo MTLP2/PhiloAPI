@@ -223,6 +223,28 @@ class Invoice {
     await invoice.save()
     await Invoice.setNumbers()
 
+    try {
+      await Payment.save({
+        type: 'invoice',
+        customer_id: invoice.customer_id,
+        invoice_id: invoice.id,
+        name: invoice.name,
+        tax: invoice.tax,
+        tax_rate: invoice.tax_rate,
+        total: invoice.total,
+        currency: invoice.currency,
+        currency_rate: invoice.currency_rate,
+        status: PaymentStatus.paid,
+        payment_days: invoice.payment_days,
+        date_payment: invoice.date_payment,
+        sub_total: invoice.sub_total,
+        payment_type: order.payment_type,
+        payment_id: order.payment_id
+      })
+    } catch (err) {
+      console.error(err)
+    }
+
     return invoice
   }
 
