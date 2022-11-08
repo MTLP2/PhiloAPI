@@ -1014,13 +1014,24 @@ class AdminController {
     }
   }
 
-  async getDelayNewsletters() {
-    return Admin.getDelayNewsletters()
+  async getDelayNewsletters({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          pid: schema.number()
+        }),
+        data: params
+      })
+
+      return Admin.getDelayNewsletters({ id: payload.pid })
+    } catch (err) {
+      return { error: err.message, validation: err.messages }
+    }
   }
 
   async putDelayNewsletter({ params }) {
     try {
-      params.projectId = params.id
+      params.project_id = params.pid
       params.sent = !!params.sent
 
       const payload = await validator.validate({
@@ -1029,7 +1040,8 @@ class AdminController {
           sent: schema.boolean(),
           text_fr: schema.string({ trim: true }),
           text_en: schema.string({ trim: true }),
-          cio_id: schema.number.nullableAndOptional()
+          cio_id: schema.number.nullableAndOptional(),
+          project_id: schema.number()
         }),
         data: params
       })

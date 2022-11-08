@@ -4819,8 +4819,8 @@ class Admin {
     return true
   }
 
-  static getDelayNewsletters = async () => {
-    const delayNewsletters = DB('project_delay_nl')
+  static getDelayNewsletters = async ({ id }: { id: number }) => {
+    const delayNewsletters = DB('project_nl').where('project_id', id)
     return Utils.getRows({ query: delayNewsletters })
   }
 
@@ -4829,7 +4829,8 @@ class Admin {
     sent: boolean
     text_fr: string
     text_en: string
-    cio_id: number | null | undefined
+    cio_id?: number | null
+    project_id: number
   }) => {
     console.log(params)
 
@@ -4837,10 +4838,10 @@ class Admin {
     if (!params.id) return Admin.createDelayNewsletter(params)
 
     // Else update
-    const delayNewsletter = await DB('project_delay_nl').find(params.id)
+    const delayNewsletter = await DB('project_nl').find(params.id)
     if (!delayNewsletter) throw new Error('Delay newsletter not found')
 
-    await DB('project_delay_nl')
+    await DB('project_nl')
       .where('id', params.id)
       .update({
         sent: params.sent ? Utils.date() : null,
@@ -4854,11 +4855,12 @@ class Admin {
   }
 
   static createDelayNewsletter = async (params) => {
-    await DB('project_delay_nl').insert({
+    await DB('project_nl').insert({
       sent: params.sent ? Utils.date() : null,
       text_fr: params.text_fr,
       text_en: params.text_en,
-      cio_id: params.cio_id || null
+      cio_id: params.cio_id || null,
+      project_id: params.project_id
     })
     return true
   }
