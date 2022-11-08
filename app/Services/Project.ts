@@ -69,7 +69,8 @@ class Project {
       project.prices_distribution = Utils.getPrices({
         price: project.price_distribution,
         currencies,
-        currency: project.currency
+        currency: project.currency,
+        shippingDiscount: project.shipping_discount
       })
     }
 
@@ -89,7 +90,8 @@ class Project {
           project.prices_discount = Utils.getPrices({
             price: Utils.round(project.price - discount),
             currencies,
-            currency: project.currency
+            currency: project.currency,
+            shippingDiscount: project.shipping_discount
           })
           break
         }
@@ -101,7 +103,8 @@ class Project {
       project.prices = Utils.getPrices({
         price: project.price,
         currencies,
-        currency: project.currency
+        currency: project.currency,
+        shippingDiscount: project.shipping_discount
       })
     }
 
@@ -160,7 +163,8 @@ class Project {
       project.prices_distribution = Utils.getPrices({
         price: project.price_distribution,
         currencies,
-        currency: project.currency
+        currency: project.currency,
+        shippingDiscount: project.shipping_discount
       })
     }
 
@@ -169,7 +173,8 @@ class Project {
       project.prices = Utils.getPrices({
         price: project.price,
         currencies,
-        currency: project.currency
+        currency: project.currency,
+        shippingDiscount: project.shipping_discount
       })
       if (project.items) {
         for (const i in project.items) {
@@ -178,7 +183,8 @@ class Project {
           project.items[i].prices = Utils.getPrices({
             price: price,
             currencies,
-            currency: currency
+            currency: currency,
+            shippingDiscount: project.shipping_discount
           })
           project.items[i].sizes = project.items[i].sizes
             ? Object.keys(JSON.parse(project.items[i].sizes)).filter((k) => {
@@ -189,6 +195,8 @@ class Project {
         }
       }
     }
+
+    console.log(project)
 
     if (sales) {
       for (const sale of sales) {
@@ -206,7 +214,8 @@ class Project {
           project.prices_discount = Utils.getPrices({
             price: Utils.round(project.price - discount),
             currencies,
-            currency: project.currency
+            currency: project.currency,
+            shippingDiscount: project.shipping_discount
           })
           project.discount = discount
           project.discount_artist = sale.artist_pay
@@ -733,7 +742,8 @@ class Project {
         'only_country',
         'exclude_country',
         'v.step',
-        'v.is_label_bside'
+        'v.is_label_bside',
+        'v.shipping_discount'
       )
       .from('project as p')
       .leftJoin('vod as v', 'p.id', 'v.project_id')

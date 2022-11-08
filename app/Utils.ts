@@ -533,7 +533,7 @@ class Utils {
       let currencies
       if (!date || date === Utils.date({ time: false })) {
         const currenciesDb = await Utils.getCurrenciesDb()
-        currencies = await Utils.getCurrencies('EUR', currenciesDb)
+        currencies = await Utils.getCurrencies(Currencies.EUR, currenciesDb)
       } else {
         currencies = await Utils.getCurrenciesApi(date)
       }
@@ -551,13 +551,23 @@ class Utils {
     return Utils.round(1 / (c1.value / c2.value), 4)
   }
 
-  static getCurrencies = (base = 'EUR', currencies) => {
+  static getCurrencies = (
+    base: Currencies = Currencies.EUR,
+    currencies: { id: string; value: Currencies; updated_at: string }[]
+  ) => {
     /**
     if (!currencies) {
       currencies = await DB('currency').all()
     }
     **/
-    const res: any = {}
+    const res: {
+      [key in Currencies]: number
+    } = {
+      [Currencies.EUR]: 1,
+      [Currencies.USD]: 1,
+      [Currencies.AUD]: 1,
+      [Currencies.GBP]: 1
+    }
     for (const currency of currencies) {
       res[currency.id] = currency.value
     }
@@ -1081,14 +1091,38 @@ class Utils {
     }
   }
 
-  static getPrices = ({ price, currency, currencies }) => {
+  static getPrices = ({
+    price,
+    currency,
+    currencies,
+    shippingDiscount
+  }: {
+    price: number
+    currency: string
+    currencies: { id: string; value: Currencies; updated_at: string }[]
+    shippingDiscount: number
+  }) => {
     const curr = Utils.getCurrencies(currency, currencies)
 
+    const priceWithShippingDiscount = price + shippingDiscount
+
     return {
-      EUR: currency === 'EUR' ? price : Math.ceil(price * curr.EUR),
-      USD: currency === 'USD' ? price : Math.ceil(price * curr.USD),
-      GBP: currency === 'GBP' ? price : Math.ceil(price * curr.GBP),
-      AUD: currency === 'AUD' ? price : Math.ceil(price * curr.AUD)
+      EUR:
+        currency === 'EUR'
+          ? priceWithShippingDiscount
+          : Math.ceil(priceWithShippingDiscount * curr.EUR),
+      USD:
+        currency === 'USD'
+          ? priceWithShippingDiscount
+          : Math.ceil(priceWithShippingDiscount * curr.USD),
+      GBP:
+        currency === 'GBP'
+          ? priceWithShippingDiscount
+          : Math.ceil(priceWithShippingDiscount * curr.GBP),
+      AUD:
+        currency === 'AUD'
+          ? priceWithShippingDiscount
+          : Math.ceil(priceWithShippingDiscount * curr.AUD)
     }
   }
 
