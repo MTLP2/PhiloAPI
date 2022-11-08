@@ -48,7 +48,7 @@ class StorageService {
   static async uploadImage(
     fileName: string,
     fileContent: Buffer | string,
-    params: any = { type: 'jpg' }
+    params: { type?: string; width?: number; quality?: number } = { type: 'jpg' }
   ) {
     const image = await this.compressImage(fileContent, {
       ...params,

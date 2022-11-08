@@ -61,6 +61,7 @@
     "aws-sdk": "^2.1198.0",
     "bcryptjs": "^2.4.3",
     "bwip-js": "^3.1.0",
+    "canvas": "^2.10.2",
     "customerio-node": "^3.3.6",
     "exceljs": "^4.3.0",
     "fluent-ffmpeg": "^2.1.2",

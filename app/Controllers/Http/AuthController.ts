@@ -103,6 +103,7 @@ class AuthController {
           email: payload.email,
           name: payload.name,
           currency: params.currency,
+          google_id: 1,
           lang: params.lang,
           origin: params.origin,
           referrer: params.referrer,
@@ -266,7 +267,10 @@ class AuthController {
   }
 
   async signup({ params, response }) {
-    params.name = params.name || params.email.split('@')[0]
+    if (!params.name) {
+      params.name = params.email.split('@')[0]
+      params.name = params.name[0].toUpperCase() + params.name.slice(1)
+    }
 
     await validator.validate({
       schema: schema.create({

@@ -9,6 +9,7 @@ import Admin from 'App/Services/Admin'
 import ApiError from 'App/ApiError'
 import I18n from '@ioc:Adonis/Addons/I18n'
 import View from '@ioc:Adonis/Core/View'
+import Payment, { PaymentStatus } from './Payment'
 
 class Invoice {
   static async all(params) {
@@ -39,6 +40,7 @@ class Invoice {
       .leftJoin('user', 'user.id', 'invoice.user_id')
       .leftJoin('project', 'project.id', 'invoice.project_id')
       .leftJoin('production', 'production.id', 'invoice.production_id')
+      .hasMany('payment', 'payments', 'invoice_id')
       .where('invoice.id', id)
       .belongsTo('customer')
       .belongsTo('order')
@@ -87,7 +89,7 @@ class Invoice {
   }
 
   static async save(params) {
-    let invoice = DB('invoice')
+    let invoice: any = DB('invoice')
     let sort = false
 
     if (params.user_id === 0) {
@@ -132,7 +134,7 @@ class Invoice {
     invoice.order_number = params.order_number
     invoice.name = params.name
     invoice.date = params.date
-    invoice.date_payment = params.date_payment
+    invoice.date_payment = params.date_payment || null
     if (params.status === 'paid' && invoice.status !== 'paid' && !params.date_payment) {
       invoice.date_payment = Utils.date()
     }
@@ -146,17 +148,46 @@ class Invoice {
     invoice.tax_rate = params.tax_rate || 0
     invoice.total = params.total || 0
     invoice.currency = params.currency
-    invoice.currency_rate =
-      params.currency && (await Utils.getCurrencyRate(params.currency, params.date))
-    invoice.lines = JSON.stringify(params.lines)
+    if (!params.invoice_to_payment) {
+      invoice.currency_rate =
+        params.currency && (await Utils.getCurrencyRate(params.currency, params.date))
+    }
+    invoice.lines = params.invoice_to_payment ? params.lines : JSON.stringify(params.lines)
     invoice.payment_id = params.payment_id
     invoice.comment = params.comment
-    invoice.updated_at = Utils.date()
-    invoice.updated_at = Utils.date()
+    invoice.updated_at = params.created_at || Utils.date()
+    invoice.updated_at = params.updated_at || Utils.date()
 
     await invoice.save()
 
     await Invoice.setNumbers()
+
+    await Payment.save({
+      type: params.type,
+      customer_id: invoice.customer_id,
+      invoice_id: invoice.id,
+      name: invoice.name,
+      tax: invoice.tax,
+      tax_rate: invoice.tax_rate,
+      total: invoice.total,
+      currency: invoice.currency,
+      currency_rate: invoice.currency_rate,
+      status:
+        params.status === PaymentStatus.paid || params.status === PaymentStatus.refunded
+          ? PaymentStatus.paid
+          : PaymentStatus.unpaid,
+      payment_days: invoice.payment_days,
+      date_payment: invoice.date_payment,
+      sub_total: invoice.sub_total,
+      order_shop_id: params.order_shop_id,
+      order_manual_id: params.order_manual_id,
+      box_dispatch_id: params.box_dispatch_id,
+      invoice_to_payment: params.invoice_to_payment,
+      payment_type: params.payment_type,
+      payment_id: params.payment_id,
+      created_at: params.created_at || Utils.date(),
+      updated_at: params.updated_at || null
+    })
 
     return invoice
   }
@@ -192,13 +223,35 @@ class Invoice {
     await invoice.save()
     await Invoice.setNumbers()
 
+    try {
+      await Payment.save({
+        type: 'invoice',
+        customer_id: invoice.customer_id,
+        invoice_id: invoice.id,
+        name: invoice.name,
+        tax: invoice.tax,
+        tax_rate: invoice.tax_rate,
+        total: invoice.total,
+        currency: invoice.currency,
+        currency_rate: invoice.currency_rate,
+        status: PaymentStatus.paid,
+        payment_days: invoice.payment_days,
+        date_payment: invoice.date_payment,
+        sub_total: invoice.sub_total,
+        payment_type: order.payment_type,
+        payment_id: order.payment_id
+      })
+    } catch (err) {
+      console.error(err)
+    }
+
     return invoice
   }
 
   static async insertRefund(order) {
     const year = new Date().getYear() - 100
 
-    const invoice = DB('invoice')
+    const invoice: any = DB('invoice')
     invoice.created_at = Utils.date()
 
     invoice.name = order.order_box_id
@@ -222,6 +275,28 @@ class Invoice {
 
     await invoice.save()
     await Invoice.setNumbers()
+
+    try {
+      await Payment.save({
+        type: 'credit_note',
+        customer_id: invoice.customer_id,
+        invoice_id: invoice.id,
+        name: invoice.name,
+        tax: invoice.tax,
+        tax_rate: invoice.tax_rate,
+        total: invoice.total,
+        currency: invoice.currency,
+        currency_rate: invoice.currency_rate,
+        status: PaymentStatus.paid,
+        payment_days: invoice.payment_days,
+        date_payment: invoice.date_payment,
+        sub_total: invoice.sub_total,
+        payment_type: order.payment_type,
+        payment_id: order.payment_id
+      })
+    } catch (err) {
+      console.error(err)
+    }
 
     return invoice
   }
@@ -594,11 +669,65 @@ class Invoice {
   }
 
   static async reminder() {
-    const first = await DB('invoice')
+    // const first = await DB('invoice')
+    //   .select('*')
+    //   .whereNotNull('email')
+    //   .where('status', 'invoiced')
+    //   .whereRaw('DATE_ADD(date, INTERVAL (payment_days + 7) DAY) < NOW()')
+    //   .whereNotExists((query) =>
+    //     query
+    //       .from('notification')
+    //       .where('type', 'like', 'invoice_reminder%')
+    //       .whereRaw('invoice_id = invoice.id')
+    //   )
+    //   .all()
+
+    // console.log('first length', first.length)
+
+    // for (const f of first) {
+    //   await Notification.add({
+    //     type: 'invoice_reminder_first',
+    //     date: Utils.date({ time: false }),
+    //     invoice_id: f.id
+    //   })
+    // }
+
+    // const second = await DB('invoice')
+    //   .select('*')
+    //   .whereNotNull('email')
+    //   .where('status', 'invoiced')
+    //   .whereExists((query) =>
+    //     query
+    //       .from('notification')
+    //       .where('type', 'like', 'invoice_reminder%')
+    //       .whereRaw('invoice_id = invoice.id')
+    //   )
+    //   .whereNotExists((query) =>
+    //     query
+    //       .from('notification')
+    //       .where('type', 'like', 'invoice_reminder%')
+    //       .whereRaw('invoice_id = invoice.id')
+    //       .whereRaw('DATE_ADD(date, INTERVAL 7 DAY) > NOW()')
+    //   )
+    //   .whereRaw('DATE_ADD(date, INTERVAL (payment_days + 7) DAY) < NOW()')
+    //   .all()
+
+    // for (const f of second) {
+    //   await Notification.add({
+    //     type: 'invoice_reminder_second',
+    //     date: Utils.date({ time: false }),
+    //     invoice_id: f.id
+    //   })
+    // }
+
+    // console.log('second length', second.length)
+
+    const first = await DB('payment')
       .select('*')
+      .join('invoice', 'invoice.id', 'invoice_id')
       .whereNotNull('email')
-      .where('status', 'invoiced')
-      .whereRaw('DATE_ADD(date, INTERVAL (payment_days + 7) DAY) < NOW()')
+      .where('payment.status', 'unpaid')
+      .whereRaw('DATE_ADD(payment.date, INTERVAL (payment.payment_days + 7) DAY) < NOW()')
       .whereNotExists((query) =>
         query
           .from('notification')
@@ -615,10 +744,11 @@ class Invoice {
       })
     }
 
-    const second = await DB('invoice')
+    const second = await DB('payment')
       .select('*')
+      .leftJoin('invoice', 'invoice.id', 'invoice_id')
       .whereNotNull('email')
-      .where('status', 'invoiced')
+      .where('payment.status', 'unpaid')
       .whereExists((query) =>
         query
           .from('notification')
@@ -630,9 +760,9 @@ class Invoice {
           .from('notification')
           .where('type', 'like', 'invoice_reminder%')
           .whereRaw('invoice_id = invoice.id')
-          .whereRaw('DATE_ADD(date, INTERVAL 7 DAY) > NOW()')
+          .whereRaw('DATE_ADD(payment.date, INTERVAL 7 DAY) > NOW()')
       )
-      .whereRaw('DATE_ADD(date, INTERVAL (payment_days + 7) DAY) < NOW()')
+      .whereRaw('DATE_ADD(payment.date, INTERVAL (payment.payment_days + 7) DAY) < NOW()')
       .all()
 
     for (const f of second) {

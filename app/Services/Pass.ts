@@ -51,7 +51,7 @@ type UserQuestProgress = {
   type: string
   badge_id?: number
   user_repeated: number
-  badge?: Badge
+  badge?: BadgeModel
   created_at: string
   updated_at: string
 }
@@ -463,7 +463,18 @@ export default class Pass {
     return Utils.getRows(params)
   }
 
-  static putQuest = async (params: { id: number }) => {
+  static putQuest = async (params: {
+    id: number | null
+    type: string
+    points: number
+    is_active: 0 | 1
+    is_infinite: 0 | 1
+    title_fr: string
+    title_en: string
+    description_fr: string
+    description_en: string
+    count_repeatable: number
+  }) => {
     // Create new quest if no id is provided
     if (!params.id) return Pass.saveQuest(params)
 
@@ -634,7 +645,7 @@ export default class Pass {
       .select(
         'pg.*',
         DB.raw(
-          'IF (pl.level >= (SELECT level FROM pass_level spl WHERE spl.id = pg.level_id), true, false) as claimable'
+          'IF (pl.level >= (SELECT level FROM pass_level spl WHERE spl.id = pg.level_id) - 1, true, false) as claimable'
         ),
         'pbc.created_at as claimed_date'
       )

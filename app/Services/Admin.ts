@@ -909,6 +909,9 @@ class Admin {
     if (params.signed_id !== undefined) {
       vod.signed_id = params.signed_id || null
     }
+    if (params.weight !== vod.weight) {
+      vod.weight_custom = true
+    }
     vod.weight = params.weight || null
     vod.is_notif = params.is_notif || null
     vod.show_stock = params.show_stock
@@ -1923,6 +1926,7 @@ class Admin {
   }
 
   static saveOrderShop = async (params) => {
+    console.log(params)
     const shop = await DB('order_shop').find(params.id)
 
     const customer = await Customer.save(params.customer)
@@ -1999,6 +2003,7 @@ class Admin {
       [
         { name: 'ID', index: 'id' },
         { name: 'User ID', index: 'user_id' },
+        { name: 'Email', index: 'user_email' },
         { name: 'Project ID', index: 'project_id' },
         { name: 'Project Name', index: 'name' },
         { name: 'Box ID', index: 'box_id' },
@@ -4567,7 +4572,7 @@ class Admin {
       if (project.historic && project.historic.length) {
         project.historic = JSON.parse(project.historic)
           .sort((a, b) => {
-            return new Date(b.date) - new Date(a.date)
+            return new Date(b.date).getTime() - new Date(a.date).getTime()
           })
           .map((h) => `- ${h.old || 'Unknown'} (${h.date})`)
           .join('\n')

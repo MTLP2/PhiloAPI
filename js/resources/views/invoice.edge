@@ -323,7 +323,7 @@
   </p>
   @endif
 
-  
+
   @if(comment)
     <p>
     @each(com in comment)
@@ -342,24 +342,34 @@
 
 
   @if(lang === 'fr')
-  <p class="small">
-    Conformément aux articles L.441-6 et D.441-5 du Code de commerce,
-    tout retard de paiement entraînera l'exigibilité des pénalités de retard
-    équivalent au taux BCE (Banque Centrale Européenne), majoré de 10 points,
-    et d'une indemnité forfaitaire de (40) quarante euros pour frais de recouvrement.
-    Si les frais de recouvrement réellement engagés sont supérieurs au montant forfaitaire
-    de 40 €, une indemnisation complémentaire sur justification peut être demandée.
-  </p>
+  <div>
+    <p class="small">
+      Conformément aux articles L.441-6 et D.441-5 du Code de commerce,
+      tout retard de paiement entraînera l'exigibilité des pénalités de retard
+      équivalent au taux BCE (Banque Centrale Européenne), majoré de 10 points,
+      et d'une indemnité forfaitaire de (40) quarante euros pour frais de recouvrement.
+      Si les frais de recouvrement réellement engagés sont supérieurs au montant forfaitaire
+      de 40 €, une indemnisation complémentaire sur justification peut être demandéeaaa.
+    </p>
+    <p class="small">
+      Toutes les commandes peuvent faire l'objet d'une sur ou sous production de l'ordre de 10 %. Les coûts de transports sont estimés à la commande et peuvent différer du prix final. Les coûts de production peuvent varier en fonction de l'évolution du prix de l'énergie et des matières premières.
+    </p>
+  </div>
   @endif
 
   @if(lang === 'en')
-  <p class="small">
-    In accordance with Articles L.441-6 and D.441-5 of the Code of Commerce, any
-    delay in payment will result in the penalty of late penalties equivalent to
-    the ECB rate (European Central Bank),ten percent increase and a lump sum payment of (40)
-    forty euros for collection costs. If the recovery costs actually incurred are higher
-    than the lump sum of 40 euros, an additional compensation justification may be requested.
-  </p>
+  <div>
+    <p class="small">
+      In accordance with Articles L.441-6 and D.441-5 of the Code of Commerce, any
+      delay in payment will result in the penalty of late penalties equivalent to
+      the ECB rate (European Central Bank),ten percent increase and a lump sum payment of (40)
+      forty euros for collection costs. If the recovery costs actually incurred are higher
+      than the lump sum of 40 euros, an additional compensation justification may be requested.
+    </p>
+    <p class="small">
+      All orders are subject to 10% over or under tolerance. Shipping costs are based on an estimation and subject to change. All production costs are subject to an increase based on the variation of the price of energy and raw materials
+    </p>
+  </div>
   @endif
 
   @if(invoice_comment)
