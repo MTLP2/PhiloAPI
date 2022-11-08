@@ -867,7 +867,6 @@ class Admin {
   }
 
   static saveVod = async (params) => {
-    console.log('🚀 ~ file: Admin.ts ~ line 870 ~ Admin ~ saveVod= ~ params', params)
     const vod = await DB('vod').where('id', params.vod_id).first()
     const vodArchive = { ...vod }
 
@@ -4756,8 +4755,6 @@ class Admin {
       )
       .whereNull('date_export')
       .all()
-
-    console.log(orders.length)
 
     for (const order of orders) {
       let pickupNotFound = false
