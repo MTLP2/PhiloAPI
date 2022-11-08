@@ -55,6 +55,7 @@ class Review {
   }
 
   static all = async (params: any) => {
+    console.log('🚀 ~ file: Review.ts ~ line 58 ~ Review ~ all= ~ params', params)
     const selects = [
       'r.*',
       'u.id as user_id',
@@ -87,7 +88,8 @@ class Review {
       else params.query.join(...join.elements)
     }
 
-    params.query.orderBy(params.sort || 'r.created_at', params.order || 'desc')
+    params.order = params.order === 'false' ? 'desc' : params.order
+    params.query.orderBy(params.sort || 'r.created_at', params.order || 'asc')
 
     if (params.start) {
       params.query.where('r.created_at', '>=', params.start)
