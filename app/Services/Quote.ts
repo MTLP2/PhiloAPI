@@ -592,8 +592,7 @@ class Quote {
     }
 
     // insert
-    console.log(params.insert)
-    if (params.insert !== 'none') {
+    if (params.insert && params.insert !== 'none') {
       quote.insert = getCost(252, 'insert')
       if (params.insert === 'two_sides_printed') {
         quote.insert += getCost(368, 'insert')
