@@ -1926,6 +1926,7 @@ class Admin {
   }
 
   static saveOrderShop = async (params) => {
+    console.log(params)
     const shop = await DB('order_shop').find(params.id)
 
     const customer = await Customer.save(params.customer)

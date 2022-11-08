@@ -9,6 +9,17 @@ import ApiError from 'App/ApiError'
 import fs from 'fs'
 const stripe = require('stripe')(config.stripe.client_secret)
 
+export enum PaymentStatus {
+  unpaid = 'unpaid',
+  paid = 'paid',
+  confirmed = 'confirmed',
+  failed = 'failed',
+  refund = 'refund',
+  refunded = 'refunded',
+  creating = 'creating',
+  created = 'created'
+}
+
 class Payment {
   static all = (params) => {
     params.query = DB('payment').where('is_delete', false)
@@ -39,8 +50,34 @@ class Payment {
     return payment
   }
 
-  static save = async (params) => {
-    let payment = DB('payment')
+  static save = async (params: {
+    id?: number
+    type?: string
+    customer_id: number
+    customer?: any
+    invoice_id: number
+    name?: string
+    tax?: number
+    tax_rate?: number
+    total?: number
+    currency?: string
+    status?: PaymentStatus | null
+    currency_rate?: number
+    payment_days?: number
+    sub_total?: number
+    date?: string
+    date_payment?: string
+    order_shop_id?: number
+    order_manual_id?: number
+    box_dispatch_id?: number
+    comment?: string
+    invoice_to_payment?: boolean
+    payment_type?: string
+    payment_id?: string
+    created_at?: string
+    updated_at?: string
+  }) => {
+    let payment: any = DB('payment')
     payment.created_at = Utils.date()
 
     if (!params.id) {
@@ -56,7 +93,20 @@ class Payment {
       payment.customer_id = customer.id
     }
 
+    // if (params.order_id) {
+    //   const { payment_id: paymentId, payment_type: paymentType } = await DB('order')
+    //     .select('payment_id', 'payment_type')
+    //     .find(params.order_id)
+    //   payment.payment_id = paymentId
+    //   payment.payment_type = paymentType
+    // }
+
+    payment.status = params.status || payment.status || PaymentStatus.unpaid
+    payment.date = params.date || payment.date || null
+    payment.date_payment = params.date_payment || null
     payment.type = params.type
+    payment.payment_type = params.payment_type
+    payment.payment_id = params.payment_id
     payment.order_shop_id = params.order_shop_id
     payment.name = params.name
     payment.sub_total = params.sub_total
@@ -65,7 +115,15 @@ class Payment {
     payment.total = params.total
     payment.currency = params.currency
     payment.currency_rate = await Utils.getCurrency(params.currency)
+    payment.date_payment = params.date_payment || null
     payment.updated_at = Utils.date()
+    payment.invoice_id = params.invoice_id || null
+    payment.payment_days = params.payment_days || null
+    payment.comment = params.comment || null
+    payment.order_manual_id = params.order_manual_id || null
+    payment.box_dispatch_id = params.box_dispatch_id || null
+    payment.created_at = params.created_at || Utils.date()
+    payment.updated_at = params.updated_at || payment.updated_at
     await payment.save()
 
     return payment
@@ -105,7 +163,7 @@ class Payment {
   }
 
   static createInvoice = async (payment) => {
-    let invoice = {}
+    let invoice: any = {}
     if (!payment.invoice_id) {
       const p = {
         id: '',
@@ -215,6 +273,7 @@ class Payment {
     payment.status = 'confirmed'
     payment.date_payment = Utils.date()
     payment.updated_at = Utils.date()
+    payment.payment_type = 'stripe'
     await payment.save()
 
     await Payment.createInvoice(payment)
@@ -257,13 +316,16 @@ class Payment {
   }
 
   static delete = async (params) => {
+    console.log('🚀 ~ file: Payment.ts ~ line 316 ~ Payment ~ staticdelete ~ params', params)
     const payment = await DB('payment').where('id', params.id).first()
 
     payment.is_delete = true
     payment.updated_at = Utils.date()
     await payment.save()
 
-    await DB('invoice').where('id', payment.invoice_id).delete()
+    if (!params.keep_invoice) {
+      await DB('invoice').where('id', payment.invoice_id).delete()
+    }
 
     return { success: true }
   }
