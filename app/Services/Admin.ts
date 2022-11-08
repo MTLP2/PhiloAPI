@@ -920,6 +920,7 @@ class Admin {
     vod.scheduled_end = params.scheduled_end
     vod.is_licence = params.is_licence
     vod.shipping_delay_reason = params.shipping_delay_reason
+    vod.shipping_discount = params.shipping_discount || 0
 
     vod.historic = vod.historic ? JSON.parse(vod.historic) : []
     if (params.edit_stock) {
