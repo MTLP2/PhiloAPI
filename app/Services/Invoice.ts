@@ -172,7 +172,10 @@ class Invoice {
       total: invoice.total,
       currency: invoice.currency,
       currency_rate: invoice.currency_rate,
-      status: params.status !== PaymentStatus.paid ? PaymentStatus.unpaid : PaymentStatus.paid,
+      status:
+        params.status === PaymentStatus.paid || params.status === PaymentStatus.refunded
+          ? PaymentStatus.paid
+          : PaymentStatus.unpaid,
       payment_days: invoice.payment_days,
       date_payment: invoice.date_payment,
       sub_total: invoice.sub_total,

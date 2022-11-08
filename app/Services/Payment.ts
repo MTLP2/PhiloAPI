@@ -15,6 +15,7 @@ export enum PaymentStatus {
   confirmed = 'confirmed',
   failed = 'failed',
   refund = 'refund',
+  refunded = 'refunded',
   creating = 'creating',
   created = 'created'
 }
