@@ -1888,6 +1888,7 @@ class Project {
     s.balance.all = s.income.all.all - s.costs.all.all
     s.balance.total = s.income.all.total - s.costs.all.total
     s.outstanding.all = s.balance.all + s.payments.diggers.all - s.payments.artist.all
+    s.outstanding.total = s.balance.total + s.payments.diggers.total - s.payments.artist.total
 
     let balance = 0
     let outstanding = 0
