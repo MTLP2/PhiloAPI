@@ -86,12 +86,13 @@ class Project {
 
         if (discount) {
           project.promo = sale.value
-          const discount = Utils.round(project.price * (sale.value / 100))
+          const discount = Utils.round(
+            (project.price + project.shipping_discount) * (sale.value / 100)
+          )
           project.prices_discount = Utils.getPrices({
-            price: Utils.round(project.price - discount),
+            price: Utils.round(project.price + project.shipping_discount - discount),
             currencies,
-            currency: project.currency,
-            shippingDiscount: project.shipping_discount
+            currency: project.currency
           })
           break
         }
@@ -101,10 +102,9 @@ class Project {
     project.currency_project = project.currency
     if (currencies) {
       project.prices = Utils.getPrices({
-        price: project.price,
+        price: project.price + project.shipping_discount,
         currencies,
-        currency: project.currency,
-        shippingDiscount: project.shipping_discount
+        currency: project.currency
       })
     }
 
@@ -160,11 +160,11 @@ class Project {
     if (!project.partner_distribution) {
       project.price_distribution = null
     } else if (project.price_distribution) {
+      // ! TO CONFIRM
       project.prices_distribution = Utils.getPrices({
         price: project.price_distribution,
         currencies,
-        currency: project.currency,
-        shippingDiscount: project.shipping_discount
+        currency: project.currency
       })
     }
 
@@ -173,20 +173,18 @@ class Project {
     project.currency_project = project.currency
     if (currencies) {
       project.prices = Utils.getPrices({
-        price: project.price,
+        price: project.price + project.shipping_discount,
         currencies,
-        currency: project.currency,
-        shippingDiscount: project.shipping_discount
+        currency: project.currency
       })
       if (project.items) {
         for (const i in project.items) {
           const price = project.items[i].related_price || project.items[i].price
           const currency = project.items[i].related_currency || project.currency
           project.items[i].prices = Utils.getPrices({
-            price: price,
+            price: price + price.shipping_discount,
             currencies,
-            currency: currency,
-            shippingDiscount: project.shipping_discount
+            currency: currency
           })
           project.items[i].sizes = project.items[i].sizes
             ? Object.keys(JSON.parse(project.items[i].sizes)).filter((k) => {
@@ -197,8 +195,6 @@ class Project {
         }
       }
     }
-
-    console.log('before if sales', project.prices)
 
     if (sales) {
       for (const sale of sales) {
@@ -211,13 +207,15 @@ class Project {
         }
 
         if (discount) {
+          console.log('this')
           project.promo = sale.value
-          const discount = Utils.round(project.price * (sale.value / 100))
+          const discount = Utils.round(
+            (project.price + project.shipping_discount) * (sale.value / 100)
+          )
           project.prices_discount = Utils.getPrices({
-            price: Utils.round(project.price - discount),
+            price: Utils.round(project.price + project.shipping_discount - discount),
             currencies,
-            currency: project.currency,
-            shippingDiscount: project.shipping_discount
+            currency: project.currency
           })
           project.discount = discount
           project.discount_artist = sale.artist_pay
@@ -227,7 +225,7 @@ class Project {
       }
     }
 
-    console.log('before return', project.prices)
+    console.log(project)
 
     return project
   }

@@ -150,7 +150,7 @@ class Utils {
     return result
   }
 
-  static round = (num, decimal = 2, step?) => {
+  static round = (num: number, decimal = 2, step?: number) => {
     const d = Math.pow(10, decimal)
     const v = Math.round(num * d) / d
     if (!step) {
@@ -555,7 +555,6 @@ class Utils {
     base: Currencies = Currencies.EUR,
     currencies: { id: string; value: Currencies; updated_at: string }[]
   ) => {
-    console.log(base)
     /**
     if (!currencies) {
       currencies = await DB('currency').all()
@@ -1093,36 +1092,19 @@ class Utils {
   static getPrices = ({
     price,
     currency,
-    currencies,
-    shippingDiscount
+    currencies
   }: {
     price: number
     currency: Currencies
     currencies: { id: string; value: Currencies; updated_at: string }[]
-    shippingDiscount: number
   }) => {
     const curr = Utils.getCurrencies(currency, currencies)
-    console.log('🚀 ~ file: Utils.ts ~ line 1104 ~ Utils ~ curr', curr)
-
-    const priceWithShippingDiscount = price + shippingDiscount
 
     return {
-      EUR:
-        currency === 'EUR'
-          ? priceWithShippingDiscount
-          : Math.ceil(priceWithShippingDiscount * curr.EUR),
-      USD:
-        currency === 'USD'
-          ? priceWithShippingDiscount
-          : Math.ceil(priceWithShippingDiscount * curr.USD),
-      GBP:
-        currency === 'GBP'
-          ? priceWithShippingDiscount
-          : Math.ceil(priceWithShippingDiscount * curr.GBP),
-      AUD:
-        currency === 'AUD'
-          ? priceWithShippingDiscount
-          : Math.ceil(priceWithShippingDiscount * curr.AUD)
+      EUR: currency === 'EUR' ? price : Utils.round(price * curr.EUR, 2, 0.5),
+      USD: currency === 'USD' ? price : Utils.round(price * curr.USD, 2, 0.5),
+      GBP: currency === 'GBP' ? price : Utils.round(price * curr.GBP, 2, 0.5),
+      AUD: currency === 'AUD' ? price : Utils.round(price * curr.AUD, 2, 0.5)
     }
   }
 
