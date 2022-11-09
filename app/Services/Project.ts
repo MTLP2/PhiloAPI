@@ -168,8 +168,6 @@ class Project {
       })
     }
 
-    console.log(project.price, project.shipping_discount)
-
     project.currency_project = project.currency
     if (currencies) {
       project.prices = Utils.getPrices({
@@ -207,7 +205,6 @@ class Project {
         }
 
         if (discount) {
-          console.log('this')
           project.promo = sale.value
           const discount = Utils.round(
             (project.price + project.shipping_discount) * (sale.value / 100)
@@ -224,8 +221,6 @@ class Project {
         }
       }
     }
-
-    console.log(project)
 
     return project
   }

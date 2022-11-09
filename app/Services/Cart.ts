@@ -312,7 +312,6 @@ class Cart {
   }
 
   static calculateCart = async (cart, params) => {
-    console.log('cart', cart)
     await Utils.sequence(
       Object.keys(params.shops).map((s) => async () => {
         const shop = params.shops[s]
@@ -411,7 +410,6 @@ class Cart {
   }
 
   static calculateShop = async (p) => {
-    console.log('🚀 ~ file: Cart.ts ~ line 414 ~ Cart ~ calculateShop= ~ p', p)
     let shop: any = {}
     const sales = await DB('promo_code')
       .where('is_sales', 1)
@@ -584,15 +582,37 @@ class Cart {
       state: p.customer.state
     })
 
+    console.log('going in here')
+
     shop.tax_rate = await Cart.getTaxRate(p.customer)
     shipping.letter = 0
+    // Standard
+    shipping.original_standard = Utils.round(
+      shipping.standard + shipping.standard * shop.tax_rate,
+      2,
+      0.1
+    )
     shipping.standard = Utils.round(
       shipping.standard - totalShippingDiscount + shipping.standard * shop.tax_rate,
       2,
       0.1
     )
+
+    // Tracking
+    shipping.original_tracking = Utils.round(
+      shipping.tracking + shipping.tracking * shop.tax_rate,
+      2,
+      0.1
+    )
     shipping.tracking = Utils.round(
       shipping.tracking - totalShippingDiscount + shipping.tracking * shop.tax_rate,
+      2,
+      0.1
+    )
+
+    // Pickup
+    shipping.original_pickup = Utils.round(
+      shipping.pickup + shipping.pickup * shop.tax_rate,
       2,
       0.1
     )
@@ -615,26 +635,35 @@ class Cart {
 
     if (!p.shipping_type && shipping.pickup > 0) {
       shop.shipping = shipping.pickup
+      shop.original_shipping = shipping.original_pickup
       shop.shipping_type = 'pickup'
     } else if (p.shipping_type === 'standard' && shipping.standard > 0) {
       shop.shipping = shipping.standard
+      shop.original_shipping = shipping.original_standard
     } else if (p.shipping_type === 'tracking' && shipping.tracking > 0) {
       shop.shipping = shipping.tracking
+      shop.original_shipping = shipping.original_tracking
     } else if (p.shipping_type === 'letter' && shipping.letter > 0) {
       shop.shipping = shipping.letter
+      shop.original_shipping = shipping.letter
     } else if (p.shipping_type === 'pickup' && shipping.pickup > 0) {
       shop.shipping = shipping.pickup
+      shop.original_shipping = shipping.original_pickup
     } else if (shipping.letter > 0) {
       shop.shipping = shipping.letter
       shop.shipping_type = 'letter'
+      shop.original_shipping = shipping.letter
     } else if (shipping.standard > 0) {
       shop.shipping = shipping.standard
+      shop.original_shipping = shipping.original_standard
       shop.shipping_type = 'standard'
     } else if (shipping.tracking > 0) {
       shop.shipping = shipping.tracking
+      shop.original_shipping = shipping.original_tracking
       shop.shipping_type = 'tracking'
     } else if (shipping.pickup > 0) {
       shop.shipping = shipping.pickup
+      shop.original_shipping = shipping.original_pickup
       shop.shipping_type = 'pickup'
     }
 
@@ -678,6 +707,7 @@ class Cart {
     }
 
     shop.promo_code = p.promo_code
+    console.log(shop)
     return shop
   }
 
@@ -1267,6 +1297,7 @@ class Cart {
       await Promise.all(
         Object.keys(calculate.shops).map(async (s) => {
           const ss = calculate.shops[s]
+          console.log('checking s', ss)
           const currencyRate = await Utils.getCurrency(ss.currency)
 
           const shop = await DB('order_shop').save({
@@ -1283,7 +1314,8 @@ class Cart {
             tax_rate: ss.tax_rate,
             tax: ss.tax,
             total: ss.total,
-            shipping: ss.shipping,
+            shipping: ss.original_shipping, //! TO CHANGE WITH DYNAMIC VALUE
+            shipping_display: ss.shipping,
             shipping_type: ss.shipping_type ? ss.shipping_type : 'standard',
             transporter: ss.transporter,
             address_pickup: JSON.stringify(calculate.pickup),
