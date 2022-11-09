@@ -114,9 +114,9 @@ enum Transporters {
   shipehype = 'shipehype'
 }
 
-const enum Currencies {
-  EUR = 'EUR',
-  USD = 'USD',
-  GBP = 'GBP',
-  AUD = 'AUD'
-}
+const Currencies = {
+  EUR: 'EUR',
+  USD: 'USD',
+  GBP: 'GBP',
+  AUD: 'AUD'
+} as const

@@ -555,19 +555,13 @@ class Utils {
     base: Currencies = Currencies.EUR,
     currencies: { id: string; value: Currencies; updated_at: string }[]
   ) => {
+    console.log(base)
     /**
     if (!currencies) {
       currencies = await DB('currency').all()
     }
     **/
-    const res: {
-      [key in Currencies]: number
-    } = {
-      [Currencies.EUR]: 1,
-      [Currencies.USD]: 1,
-      [Currencies.AUD]: 1,
-      [Currencies.GBP]: 1
-    }
+    const res: any = {}
     for (const currency of currencies) {
       res[currency.id] = currency.value
     }
@@ -591,7 +585,12 @@ class Utils {
       }
     }
 
-    return res
+    return res as {
+      EUR: number
+      USD: number
+      GBP: number
+      AUD: number
+    }
   }
 
   static getCurrenciesDb = async () => {
@@ -1098,11 +1097,12 @@ class Utils {
     shippingDiscount
   }: {
     price: number
-    currency: string
+    currency: Currencies
     currencies: { id: string; value: Currencies; updated_at: string }[]
     shippingDiscount: number
   }) => {
     const curr = Utils.getCurrencies(currency, currencies)
+    console.log('🚀 ~ file: Utils.ts ~ line 1104 ~ Utils ~ curr', curr)
 
     const priceWithShippingDiscount = price + shippingDiscount
 

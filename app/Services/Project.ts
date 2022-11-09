@@ -168,6 +168,8 @@ class Project {
       })
     }
 
+    console.log(project.price, project.shipping_discount)
+
     project.currency_project = project.currency
     if (currencies) {
       project.prices = Utils.getPrices({
@@ -196,7 +198,7 @@ class Project {
       }
     }
 
-    console.log(project)
+    console.log('before if sales', project.prices)
 
     if (sales) {
       for (const sale of sales) {
@@ -224,6 +226,8 @@ class Project {
         }
       }
     }
+
+    console.log('before return', project.prices)
 
     return project
   }
@@ -282,7 +286,8 @@ class Project {
       'v.color_vinyl',
       'v.show_stock',
       'item.stock as item_stock',
-      'item.price as item_price'
+      'item.price as item_price',
+      'v.shipping_discount'
     ]
     if (params.type === 'banner') {
       selects.push('v.description_fr', 'v.description_en')
@@ -850,6 +855,8 @@ class Project {
       p.count = 0
     }
 
+    console.log('prices', p.prices)
+
     if (p && p.category === 'bid') {
       p.bid = await Bid.find(p.id)
     }
@@ -1222,7 +1229,8 @@ class Project {
       'v.count_distrib',
       'v.count_bundle',
       'v.goal',
-      'v.end'
+      'v.end',
+      'v.shipping_discount'
     ]
 
     const currencies = await Utils.getCurrenciesDb()
