@@ -59,7 +59,7 @@ class Sna {
 
             data.orderLines.push({
               itemRef: barcode,
-              itemQty: item.quantity,
+              itemQty: +item.quantity,
               unitPrice: item.price || 0
             })
           }
