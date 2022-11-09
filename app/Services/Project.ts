@@ -853,8 +853,6 @@ class Project {
       p.count = 0
     }
 
-    console.log('prices', p.prices)
-
     if (p && p.category === 'bid') {
       p.bid = await Bid.find(p.id)
     }

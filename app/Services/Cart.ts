@@ -58,7 +58,7 @@ class Cart {
   }
 
   static calculate = async (params) => {
-    const cart = {
+    const cart: any = {
       id: params.id,
       shops: {},
       currency: null,
@@ -142,7 +142,7 @@ class Cart {
     }
 
     if (params.shops) {
-      const items = []
+      const items: any = []
       if (params.country_id) {
         if (params.shops.s_1_shop) {
           params.shops.s_1_shop.items = params.shops.s_1_shop.items.map((i) => {
@@ -211,7 +211,7 @@ class Cart {
 
           const weight = item.quantity * (project.weight || Vod.calculateWeight(project))
 
-          const shipping = await Cart.calculateShipping({
+          const shipping: any = await Cart.calculateShipping({
             quantity: item.quantity,
             insert: item.quantity,
             currency: project.currency,
@@ -312,6 +312,7 @@ class Cart {
   }
 
   static calculateCart = async (cart, params) => {
+    console.log('cart', cart)
     await Utils.sequence(
       Object.keys(params.shops).map((s) => async () => {
         const shop = params.shops[s]
@@ -377,7 +378,7 @@ class Cart {
       boxes: []
     }
     Object.keys(cart.shops).map((key) => {
-      const shop = {
+      const shop: any = {
         id: cart.shops[key].id,
         shipping_type: cart.shops[key].shipping_type,
         type: cart.shops[key].type,
@@ -410,7 +411,8 @@ class Cart {
   }
 
   static calculateShop = async (p) => {
-    let shop = {}
+    console.log('🚀 ~ file: Cart.ts ~ line 414 ~ Cart ~ calculateShop= ~ p', p)
+    let shop: any = {}
     const sales = await DB('promo_code')
       .where('is_sales', 1)
       .where('is_enabled', 1)
@@ -563,7 +565,13 @@ class Cart {
       shop.error = 'shipping_limit_weight'
     }
 
-    const shipping = await Cart.calculateShipping({
+    // Calculate shipping displayed to customer by doing shipping - total of shipping discounts of shop
+    // ! CHECK FOR DISTRIB PRICE
+    const totalShippingDiscount: number = p.items.reduce((acc, cur) => {
+      return acc + cur.project.shipping_discount
+    }, 0)
+
+    const shipping: any = await Cart.calculateShipping({
       quantity: shop.quantity,
       weight: shop.weight,
       insert: shop.insert,
@@ -578,9 +586,21 @@ class Cart {
 
     shop.tax_rate = await Cart.getTaxRate(p.customer)
     shipping.letter = 0
-    shipping.standard = Utils.round(shipping.standard + shipping.standard * shop.tax_rate, 2, 0.1)
-    shipping.tracking = Utils.round(shipping.tracking + shipping.tracking * shop.tax_rate, 2, 0.1)
-    shipping.pickup = Utils.round(shipping.pickup + shipping.pickup * shop.tax_rate, 2, 0.1)
+    shipping.standard = Utils.round(
+      shipping.standard - totalShippingDiscount + shipping.standard * shop.tax_rate,
+      2,
+      0.1
+    )
+    shipping.tracking = Utils.round(
+      shipping.tracking - totalShippingDiscount + shipping.tracking * shop.tax_rate,
+      2,
+      0.1
+    )
+    shipping.pickup = Utils.round(
+      shipping.pickup - totalShippingDiscount + shipping.pickup * shop.tax_rate,
+      2,
+      0.1
+    )
 
     if (shipping.letter > shipping.standard) {
       shipping.letter = 0
@@ -658,7 +678,6 @@ class Cart {
     }
 
     shop.promo_code = p.promo_code
-
     return shop
   }
 
@@ -904,7 +923,7 @@ class Cart {
     return costs
   }
 
-  static calculateShipping = async (params) => {
+  static calculateShipping = async (params: any) => {
     // add packaging
     params.weight += 340
     const cc = await DB('currency').all()
@@ -913,14 +932,14 @@ class Cart {
       currencies[c.id] = 1 / c.value
     }
 
-    let transporters = {}
+    let transporters: any = {}
     if (params.is_shop) {
       transporters.all = true
     } else {
       transporters = params.transporters
     }
 
-    const shippings = []
+    const shippings: any[] = []
     if (transporters.all || transporters.daudin) {
       const daudin = await Cart.calculateShippingByTransporter({
         ...params,
@@ -1017,8 +1036,7 @@ class Cart {
       return { error: 'no_shipping' }
     }
 
-    const res = {}
-
+    const res: any = {}
     res.standard = Utils.round(shipping.standard / currencies[params.currency], 2)
     res.tracking = Utils.round(shipping.tracking / currencies[params.currency], 2)
     res.pickup = shipping.pickup
@@ -1029,12 +1047,18 @@ class Cart {
       : null
     res.transporter = shipping.transporter
 
-    return res
+    return res as {
+      standard: number
+      tracking: number
+      pickup: number
+      letter: number
+      transporter: string
+    }
   }
 
   static calculateItem = async (params) => {
     const p = params
-    const res = {}
+    const res: any = {}
     p.quantity = parseInt(params.quantity, 10)
     p.quantity = p.quantity < 1 || isNaN(p.quantity) ? 1 : p.quantity
     p.tips = params.tips < 0 ? 0 : parseFloat(params.tips || 0)
