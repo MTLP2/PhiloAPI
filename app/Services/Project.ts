@@ -171,6 +171,11 @@ class Project {
     project.currency_project = project.currency
     if (currencies) {
       project.prices = Utils.getPrices({
+        price: project.price,
+        currencies,
+        currency: project.currency
+      })
+      project.prices_ship_discount = Utils.getPrices({
         price: project.price + project.shipping_discount,
         currencies,
         currency: project.currency
@@ -180,6 +185,11 @@ class Project {
           const price = project.items[i].related_price || project.items[i].price
           const currency = project.items[i].related_currency || project.currency
           project.items[i].prices = Utils.getPrices({
+            price: price,
+            currencies,
+            currency: currency
+          })
+          project.items[i].prices_ship_discount = Utils.getPrices({
             price: price + price.shipping_discount,
             currencies,
             currency: currency
@@ -840,6 +850,7 @@ class Project {
       p.item_id = item.id
       p.picture_project = `${item.picture}.${item.picture_trans ? 'png' : 'jpg'}`
       p.prices = item.prices
+      p.prices_ship_discount = item.prices_ship_discount
       p.copies_left = item.stock
       p.step = item.stock <= 0 ? 'successful' : 'in_progress'
       p.sold_out = item.stock <= 0
@@ -898,6 +909,8 @@ class Project {
     if (projectImages.length) {
       p.project_images = projectImages
     }
+
+    console.log('checking p', p)
 
     return p
   }

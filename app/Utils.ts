@@ -1093,10 +1093,12 @@ class Utils {
     price,
     currency,
     currencies
-  }: {
+  }: // shippingDiscount,
+  {
     price: number
     currency: Currencies
     currencies: { id: string; value: Currencies; updated_at: string }[]
+    // shippingDiscount: number
   }) => {
     const curr = Utils.getCurrencies(currency, currencies)
 

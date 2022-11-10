@@ -1338,6 +1338,8 @@ class Cart {
                 item.currency_project
               )
 
+              console.log('🚀 ~ file: Cart.ts ~ line 1362 ~ Cart ~ ss.items.map ~ item', item)
+
               const i = await DB('order_item').save({
                 order_id: order.id,
                 order_shop_id: shop.id,
