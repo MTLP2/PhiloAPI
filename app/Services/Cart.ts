@@ -499,6 +499,7 @@ class Cart {
         item.country_id = p.country_id
         item.customer = p.customer
         item.currency = p.currency
+        item.shipping_discount = p.shipping_discount
         const c = await Cart.calculateItem(item)
 
         if (!shop.currency) {
@@ -518,6 +519,7 @@ class Cart {
         item.country_id = p.country_id
         item.customer = p.customer
         item.currency = p.currency
+        item.shipping_discount = p.shipping_discount
         const c = await Cart.calculateItem(item)
         if (c.error) {
           shop.error = c.error
@@ -1102,6 +1104,7 @@ class Cart {
     res.insert = p.quantity * (p.project.barcode ? p.project.barcode.split(',').length : 1)
     res.weight = p.quantity * (p.project.weight || Vod.calculateWeight(p.project))
     res.category = p.project.category
+    res.shipping_discount = p.project.shipping_discount
 
     if (p.item_id) {
       for (const i of p.project.items) {
@@ -1314,7 +1317,7 @@ class Cart {
             tax_rate: ss.tax_rate,
             tax: ss.tax,
             total: ss.total,
-            shipping: ss.original_shipping, //! TO CHANGE WITH DYNAMIC VALUE
+            shipping: ss.original_shipping,
             shipping_display: ss.shipping,
             shipping_type: ss.shipping_type ? ss.shipping_type : 'standard',
             transporter: ss.transporter,
@@ -1348,6 +1351,7 @@ class Cart {
                 price: item.price,
                 discount: item.discount,
                 discount_artist: item.discount_artist,
+                shipping_discount: item.shipping_discount,
                 tips: item.tips,
                 size: item.size,
                 quantity: item.quantity,
