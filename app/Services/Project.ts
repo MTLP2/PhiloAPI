@@ -914,7 +914,7 @@ class Project {
       p.project_images = projectImages
     }
 
-    console.log('checking p', p)
+    // console.log('checking p', p)
 
     return p
   }

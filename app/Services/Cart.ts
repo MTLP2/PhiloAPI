@@ -322,6 +322,10 @@ class Cart {
         shop.currency = params.currency
 
         cart.shops[s] = await Cart.calculateShop(shop)
+        console.log(
+          '🚀 ~ file: Cart.ts ~ line 325 ~ Cart ~ Object.keys ~ cart.shops[s]',
+          cart.shops[s]
+        )
 
         if (cart.shops[s].shipping_type === 'pickup') {
           cart.hasPickup = true
@@ -487,6 +491,7 @@ class Cart {
     shop.sub_total = 0
     shop.total = 0
     shop.discount = 0
+    shop.total_ship_discount = 0
 
     shop.paypal = false
     shop.stripe = false
@@ -520,38 +525,48 @@ class Cart {
         item.customer = p.customer
         item.currency = p.currency
         item.shipping_discount = p.shipping_discount
-        const c = await Cart.calculateItem(item)
-        if (c.error) {
-          shop.error = c.error
+        const calculatedItem = await Cart.calculateItem(item)
+        console.log(
+          '🚀 ~ file: Cart.ts ~ line 528 ~ Cart ~ p.items.map ~ calculatedItem',
+          calculatedItem
+        )
+        if (calculatedItem.error) {
+          shop.error = calculatedItem.error
         }
-        if (c.discount) {
-          shop.discount += c.discount
+        if (calculatedItem.discount) {
+          shop.discount += calculatedItem.discount
         }
-        shop.items.push(c)
+        if (calculatedItem.shipping_discount) {
+          shop.total_ship_discount += calculatedItem.shipping_discount
+        }
+        shop.items.push(calculatedItem)
 
         if (shop.type !== 'shop') {
-          shop.transporter = c.transporter
-          shop.transporters = c.transporters
+          shop.transporter = calculatedItem.transporter
+          shop.transporters = calculatedItem.transporters
         }
-        shop.quantity += c.quantity_coef
-        shop.weight += c.weight
-        shop.insert += c.insert
-        shop.category = c.category
+        shop.quantity += calculatedItem.quantity_coef
+        shop.weight += calculatedItem.weight
+        shop.insert += calculatedItem.insert
+        shop.category = calculatedItem.category
 
         let cur = 1
-        if (c.currency !== shop.currency) {
-          cur = await Utils.getCurrencyComp(c.currency, shop.currency)
+        if (calculatedItem.currency !== shop.currency) {
+          cur = await Utils.getCurrencyComp(calculatedItem.currency, shop.currency)
         }
-        if (c.total_distrib) {
-          shop.total += c.total_distrib * cur
+
+        if (calculatedItem.total_distrib) {
+          shop.total += calculatedItem.total_distrib * cur
+        } else if (calculatedItem.total_ship_discount) {
+          shop.total += calculatedItem.total_ship_discount * cur
         } else {
-          shop.total += c.total * cur
+          shop.total += calculatedItem.total * cur
         }
 
         shop.paypal = true
-        shop.pa = c.pa
-        if (c.st) {
-          shop.st = c.st
+        shop.pa = calculatedItem.pa
+        if (calculatedItem.st) {
+          shop.st = calculatedItem.st
           shop.stripe = true
         }
       })
@@ -584,7 +599,7 @@ class Cart {
       state: p.customer.state
     })
 
-    console.log('going in here')
+    // console.log('going in here')
 
     shop.tax_rate = await Cart.getTaxRate(p.customer)
     shipping.letter = 0
@@ -709,7 +724,7 @@ class Cart {
     }
 
     shop.promo_code = p.promo_code
-    console.log(shop)
+    // console.log(shop)
     return shop
   }
 
@@ -1104,7 +1119,6 @@ class Cart {
     res.insert = p.quantity * (p.project.barcode ? p.project.barcode.split(',').length : 1)
     res.weight = p.quantity * (p.project.weight || Vod.calculateWeight(p.project))
     res.category = p.project.category
-    res.shipping_discount = p.project.shipping_discount
 
     if (p.item_id) {
       for (const i of p.project.items) {
@@ -1133,6 +1147,10 @@ class Cart {
     res.discount = p.project.discount * p.quantity
     res.discount_artist = p.project.discount_artist
     res.price_discount = Utils.round(res.price - res.discount)
+    res.shipping_discount = p.project.shipping_discount
+    res.price_ship_discount = res.shipping_discount
+      ? Utils.round(res.price_discount + res.shipping_discount)
+      : null
     res.project_id = p.project.id
     res.item_id = p.item_id
     res.marketplace_item_id = p.project.marketplace_id
@@ -1198,6 +1216,9 @@ class Cart {
     res.total = Utils.round(p.quantity * res.price + p.tips - res.discount)
     if (res.price_distrib) {
       res.total_distrib = Utils.round(p.quantity * res.price_distrib + p.tips)
+    }
+    if (res.shipping_discount) {
+      res.total_ship_discount = Utils.round(p.quantity * res.price_ship_discount + p.tips)
     }
 
     return res
