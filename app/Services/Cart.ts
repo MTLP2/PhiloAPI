@@ -639,16 +639,17 @@ class Cart {
     shop.shipping_type = p.shipping_type
     shop.transporter = shipping.transporter
 
-    if (!p.shipping_type && shipping.pickup > 0 && shippingDiscount > 0) {
+    console.log('p.shipping type', p.shipping_type)
+    if (!p.shipping_type && (shipping.pickup > 0 || shippingDiscount > 0)) {
       console.log('!p.shipping_type && shipping.pickup > 0')
       shop.shipping = shipping.pickup
       shop.original_shipping = shipping.original_pickup
       shop.shipping_type = 'pickup'
-    } else if (p.shipping_type === 'standard' && shipping.standard > 0) {
+    } else if (p.shipping_type === 'standard' && (shipping.standard > 0 || shippingDiscount > 0)) {
       console.log('p.shipping_type === "standard" && shipping.standard > 0')
       shop.shipping = shipping.standard
       shop.original_shipping = shipping.original_standard
-    } else if (p.shipping_type === 'tracking' && shipping.tracking > 0) {
+    } else if (p.shipping_type === 'tracking' && (shipping.tracking > 0 || shippingDiscount > 0)) {
       console.log('p.shipping_type === "tracking" && shipping.tracking > 0')
       shop.shipping = shipping.tracking
       shop.original_shipping = shipping.original_tracking
@@ -656,26 +657,26 @@ class Cart {
       console.log('p.shipping_type === "letter" && shipping.letter > 0')
       shop.shipping = shipping.letter
       shop.original_shipping = shipping.letter
-    } else if (p.shipping_type === 'pickup' && shipping.pickup > 0) {
+    } else if (p.shipping_type === 'pickup' && (shipping.pickup > 0 || shippingDiscount > 0)) {
       console.log('p.shipping_type === "pickup" && shipping.pickup > 0')
       shop.shipping = shipping.pickup
       shop.original_shipping = shipping.original_pickup
-    } else if (shipping.letter > 0) {
+    } else if (shipping.letter > 0 && shippingDiscount > 0) {
       console.log('shipping.letter > 0')
       shop.shipping = shipping.letter
       shop.shipping_type = 'letter'
       shop.original_shipping = shipping.letter
-    } else if (shipping.standard > 0 || shippingDiscount > 0) {
-      console.log('shipping.standard > 0 || shippingDiscount > 0')
+    } else if (shipping.standard > 0 && shippingDiscount > 0) {
+      console.log('shipping.standard > 0')
       shop.shipping = shipping.standard
       shop.original_shipping = shipping.original_standard
       shop.shipping_type = 'standard'
-    } else if (shipping.tracking > 0) {
+    } else if (shipping.tracking > 0 && shippingDiscount > 0) {
       console.log('shipping.tracking > 0')
       shop.shipping = shipping.tracking
       shop.original_shipping = shipping.original_tracking
       shop.shipping_type = 'tracking'
-    } else if (shipping.pickup > 0) {
+    } else if (shipping.pickup > 0 && shippingDiscount > 0) {
       console.log('shipping.pickup > 0')
       shop.shipping = shipping.pickup
       shop.original_shipping = shipping.original_pickup
