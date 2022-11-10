@@ -322,10 +322,6 @@ class Cart {
         shop.currency = params.currency
 
         cart.shops[s] = await Cart.calculateShop(shop)
-        console.log(
-          '🚀 ~ file: Cart.ts ~ line 325 ~ Cart ~ Object.keys ~ cart.shops[s]',
-          cart.shops[s]
-        )
 
         if (cart.shops[s].shipping_type === 'pickup') {
           cart.hasPickup = true
@@ -581,7 +577,6 @@ class Cart {
     }
 
     // Calculate shipping displayed to customer by doing shipping - total of shipping discounts of shop
-    // ! CHECK FOR DISTRIB PRICE
     const shippingDiscount: number = p.items.reduce((acc, cur) => {
       return acc + cur.project.shipping_discount * cur.quantity
     }, 0)
@@ -1322,7 +1317,6 @@ class Cart {
       await Promise.all(
         Object.keys(calculate.shops).map(async (s) => {
           const ss = calculate.shops[s]
-          console.log('checking s', ss)
           const currencyRate = await Utils.getCurrency(ss.currency)
 
           const shop = await DB('order_shop').save({
