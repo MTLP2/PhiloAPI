@@ -582,8 +582,8 @@ class Cart {
 
     // Calculate shipping displayed to customer by doing shipping - total of shipping discounts of shop
     // ! CHECK FOR DISTRIB PRICE
-    const totalShippingDiscount: number = p.items.reduce((acc, cur) => {
-      return acc + cur.project.shipping_discount
+    const shippingDiscount: number = p.items.reduce((acc, cur) => {
+      return acc + cur.project.shipping_discount * cur.quantity
     }, 0)
 
     const shipping: any = await Cart.calculateShipping({
@@ -610,7 +610,7 @@ class Cart {
       0.1
     )
     shipping.standard = Utils.round(
-      shipping.standard - totalShippingDiscount + shipping.standard * shop.tax_rate,
+      shipping.standard - shippingDiscount + shipping.standard * shop.tax_rate,
       2,
       0.1
     )
@@ -622,7 +622,7 @@ class Cart {
       0.1
     )
     shipping.tracking = Utils.round(
-      shipping.tracking - totalShippingDiscount + shipping.tracking * shop.tax_rate,
+      shipping.tracking - shippingDiscount + shipping.tracking * shop.tax_rate,
       2,
       0.1
     )
@@ -634,7 +634,7 @@ class Cart {
       0.1
     )
     shipping.pickup = Utils.round(
-      shipping.pickup - totalShippingDiscount + shipping.pickup * shop.tax_rate,
+      shipping.pickup - shippingDiscount + shipping.pickup * shop.tax_rate,
       2,
       0.1
     )
