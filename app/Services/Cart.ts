@@ -533,7 +533,7 @@ class Cart {
           shop.discount += calculatedItem.discount
         }
         if (calculatedItem.shipping_discount) {
-          shop.total_ship_discount += calculatedItem.shipping_discount
+          shop.total_ship_discount += calculatedItem.shipping_discount * calculatedItem.quantity
         }
         shop.items.push(calculatedItem)
 
