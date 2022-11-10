@@ -1141,6 +1141,7 @@ class Cart {
       }
     } else {
       res.price = p.project.prices[params.currency]
+      res.price_ship_discount = p.project.prices_ship_discount?.[params.currency] ?? null
       res.picture = p.project.picture
       res.picture_project = p.project.picture_project
     }
