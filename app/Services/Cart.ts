@@ -661,22 +661,22 @@ class Cart {
       console.log('p.shipping_type === "pickup" && shipping.pickup > 0')
       shop.shipping = shipping.pickup
       shop.original_shipping = shipping.original_pickup
-    } else if (shipping.letter > 0 && shippingDiscount > 0) {
+    } else if (shipping.letter > 0 || shippingDiscount > 0) {
       console.log('shipping.letter > 0')
       shop.shipping = shipping.letter
       shop.shipping_type = 'letter'
       shop.original_shipping = shipping.letter
-    } else if (shipping.standard > 0 && shippingDiscount > 0) {
+    } else if (shipping.standard > 0 || shippingDiscount > 0) {
       console.log('shipping.standard > 0')
       shop.shipping = shipping.standard
       shop.original_shipping = shipping.original_standard
       shop.shipping_type = 'standard'
-    } else if (shipping.tracking > 0 && shippingDiscount > 0) {
+    } else if (shipping.tracking > 0 || shippingDiscount > 0) {
       console.log('shipping.tracking > 0')
       shop.shipping = shipping.tracking
       shop.original_shipping = shipping.original_tracking
       shop.shipping_type = 'tracking'
-    } else if (shipping.pickup > 0 && shippingDiscount > 0) {
+    } else if (shipping.pickup > 0 || shippingDiscount > 0) {
       console.log('shipping.pickup > 0')
       shop.shipping = shipping.pickup
       shop.original_shipping = shipping.original_pickup
@@ -1849,7 +1849,8 @@ class Cart {
                   'artist_name',
                   'count',
                   'styles',
-                  'diggers'
+                  'diggers',
+                  'shipping_discount'
                 )
                 .from('project')
                 .leftJoin('vod', 'vod.project_id', 'project.id')
@@ -1948,6 +1949,8 @@ class Cart {
         'order_item.quantity',
         'order_item.project_id',
         'order_item.price',
+        'order_item.shipping_discount',
+        'order_item.total_ship_discount',
         'order_shop.id as order_shop_id',
         'order_shop.shop_id',
         'project.picture',
