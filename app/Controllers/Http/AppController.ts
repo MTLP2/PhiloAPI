@@ -8,6 +8,7 @@ import Blog from 'App/Services/Blog'
 import Category from 'App/Services/Category'
 import Banner from 'App/Services/Banner'
 import Quote from 'App/Services/Quote'
+import Customer from 'App/Services/Customer'
 import Dig from 'App/Services/Dig'
 import cio from 'App/Services/CIO'
 import User from 'App/Services/User'
@@ -115,6 +116,20 @@ class AppController {
 
   payPayment({ params }) {
     return Payment.pay(params)
+  }
+
+  searchAddress({ params }) {
+    return Customer.searchAddress({
+      search: params.search,
+      lang: params.lang,
+      country: params.country,
+      lat: params.lat,
+      lng: params.lng
+    })
+  }
+
+  detailAddress({ params }) {
+    return Customer.detailAddress(params.id)
   }
 
   async sitemap({ response }) {
