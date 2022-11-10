@@ -93,6 +93,7 @@ class Order {
         'os.pickup_not_found',
         'os.refund',
         'os.shipping',
+        'os.shipping_display',
         'os.shipping_type',
         'os.step',
         'os.sub_total',
