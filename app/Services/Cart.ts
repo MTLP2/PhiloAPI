@@ -1360,8 +1360,6 @@ class Cart {
                 item.currency_project
               )
 
-              console.log('🚀 ~ file: Cart.ts ~ line 1362 ~ Cart ~ ss.items.map ~ item', item)
-
               const i = await DB('order_item').save({
                 order_id: order.id,
                 order_shop_id: shop.id,
@@ -1380,6 +1378,7 @@ class Cart {
                 size: item.size,
                 quantity: item.quantity,
                 total: item.total,
+                total_ship_discount: item.total_ship_discount,
                 created_at: Utils.date(),
                 updated_at: Utils.date()
               })
