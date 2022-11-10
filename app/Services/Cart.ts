@@ -522,10 +522,7 @@ class Cart {
         item.currency = p.currency
         item.shipping_discount = p.shipping_discount
         const calculatedItem = await Cart.calculateItem(item)
-        console.log(
-          '🚀 ~ file: Cart.ts ~ line 528 ~ Cart ~ p.items.map ~ calculatedItem',
-          calculatedItem
-        )
+
         if (calculatedItem.error) {
           shop.error = calculatedItem.error
         }
@@ -642,7 +639,7 @@ class Cart {
     shop.shipping_type = p.shipping_type
     shop.transporter = shipping.transporter
 
-    if ((!p.shipping_type && shipping.pickup > 0) || shippingDiscount > 0) {
+    if (!p.shipping_type && shipping.pickup > 0 && shippingDiscount > 0) {
       console.log('!p.shipping_type && shipping.pickup > 0')
       shop.shipping = shipping.pickup
       shop.original_shipping = shipping.original_pickup
@@ -690,7 +687,7 @@ class Cart {
       shopping_type: shop.shipping_type
     })
 
-    if (!shop.shipping && !shop.error) {
+    if (!shop.shipping && !shop.error && !shop.total_ship_discount) {
       shop.error = 'no_shipping'
     }
 
