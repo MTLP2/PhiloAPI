@@ -175,11 +175,13 @@ class Project {
         currencies,
         currency: project.currency
       })
-      project.prices_ship_discount = Utils.getPrices({
-        price: project.price + project.shipping_discount,
-        currencies,
-        currency: project.currency
-      })
+      project.prices_ship_discount = project.shipping_discount
+        ? Utils.getPrices({
+            price: project.price + project.shipping_discount,
+            currencies,
+            currency: project.currency
+          })
+        : null
       if (project.items) {
         for (const i in project.items) {
           const price = project.items[i].related_price || project.items[i].price
@@ -189,11 +191,13 @@ class Project {
             currencies,
             currency: currency
           })
-          project.items[i].prices_ship_discount = Utils.getPrices({
-            price: price + price.shipping_discount,
-            currencies,
-            currency: currency
-          })
+          project.items[i].prices_ship_discount = project.shipping_discount
+            ? Utils.getPrices({
+                price: price + project.shipping_discount,
+                currencies,
+                currency: currency
+              })
+            : null
           project.items[i].sizes = project.items[i].sizes
             ? Object.keys(JSON.parse(project.items[i].sizes)).filter((k) => {
                 const sizes = JSON.parse(project.items[i].sizes)
