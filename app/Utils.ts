@@ -1103,10 +1103,10 @@ class Utils {
     const curr = Utils.getCurrencies(currency, currencies)
 
     return {
-      EUR: currency === 'EUR' ? price : Utils.round(price * curr.EUR, 2, 0.5),
-      USD: currency === 'USD' ? price : Utils.round(price * curr.USD, 2, 0.5),
-      GBP: currency === 'GBP' ? price : Utils.round(price * curr.GBP, 2, 0.5),
-      AUD: currency === 'AUD' ? price : Utils.round(price * curr.AUD, 2, 0.5)
+      EUR: currency === 'EUR' ? price : Utils.round(price * curr.EUR, 2, 1),
+      USD: currency === 'USD' ? price : Utils.round(price * curr.USD, 2, 1),
+      GBP: currency === 'GBP' ? price : Utils.round(price * curr.GBP, 2, 1),
+      AUD: currency === 'AUD' ? price : Utils.round(price * curr.AUD, 2, 1)
     }
   }
 

@@ -69,8 +69,7 @@ class Project {
       project.prices_distribution = Utils.getPrices({
         price: project.price_distribution,
         currencies,
-        currency: project.currency,
-        shippingDiscount: project.shipping_discount
+        currency: project.currency
       })
     }
 
@@ -86,9 +85,7 @@ class Project {
 
         if (discount) {
           project.promo = sale.value
-          const discount = Utils.round(
-            (project.price + project.shipping_discount) * (sale.value / 100)
-          )
+          const discount = Utils.round(project.price * (sale.value / 100))
           project.prices_discount = Utils.getPrices({
             price: Utils.round(project.price + project.shipping_discount - discount),
             currencies,
@@ -228,6 +225,9 @@ class Project {
             currencies,
             currency: project.currency
           })
+          if (project.shipping_discount) {
+            project.prices_ship_discount = project.prices_discount
+          }
           project.discount = discount
           project.discount_artist = sale.artist_pay
 
