@@ -575,11 +575,7 @@ class Cart {
 
     // Calculate shipping displayed to customer by doing shipping - total of shipping discounts of shop
     // Except for pro user (then discount to 0)
-    let userIsPro = false
-    if (p.user_id) {
-      const user = await DB('user').select('is_pro').where('id', p.user_id).first()
-      userIsPro = !!user.is_pro
-    }
+    const userIsPro = await Utils.isProUser(p.user_id)
     const shippingDiscount: number = userIsPro
       ? 0
       : p.items.reduce((acc, cur) => {
@@ -645,54 +641,39 @@ class Cart {
     shop.shipping_type = p.shipping_type
     shop.transporter = shipping.transporter
 
-    console.log('p.shipping type', p.shipping_type)
     if (!p.shipping_type && (shipping.pickup > 0 || shippingDiscount > 0)) {
-      console.log('!p.shipping_type && shipping.pickup > 0')
       shop.shipping = shipping.pickup
       shop.original_shipping = shipping.original_pickup
       shop.shipping_type = 'pickup'
     } else if (p.shipping_type === 'standard' && (shipping.standard > 0 || shippingDiscount > 0)) {
-      console.log('p.shipping_type === "standard" && shipping.standard > 0')
       shop.shipping = shipping.standard
       shop.original_shipping = shipping.original_standard
     } else if (p.shipping_type === 'tracking' && (shipping.tracking > 0 || shippingDiscount > 0)) {
-      console.log('p.shipping_type === "tracking" && shipping.tracking > 0')
       shop.shipping = shipping.tracking
       shop.original_shipping = shipping.original_tracking
     } else if (p.shipping_type === 'letter' && shipping.letter > 0) {
-      console.log('p.shipping_type === "letter" && shipping.letter > 0')
       shop.shipping = shipping.letter
       shop.original_shipping = shipping.letter
     } else if (p.shipping_type === 'pickup' && (shipping.pickup > 0 || shippingDiscount > 0)) {
-      console.log('p.shipping_type === "pickup" && shipping.pickup > 0')
       shop.shipping = shipping.pickup
       shop.original_shipping = shipping.original_pickup
     } else if (shipping.letter > 0 || shippingDiscount > 0) {
-      console.log('shipping.letter > 0')
       shop.shipping = shipping.letter
       shop.shipping_type = 'letter'
       shop.original_shipping = shipping.letter
     } else if (shipping.standard > 0 || shippingDiscount > 0) {
-      console.log('shipping.standard > 0')
       shop.shipping = shipping.standard
       shop.original_shipping = shipping.original_standard
       shop.shipping_type = 'standard'
     } else if (shipping.tracking > 0 || shippingDiscount > 0) {
-      console.log('shipping.tracking > 0')
       shop.shipping = shipping.tracking
       shop.original_shipping = shipping.original_tracking
       shop.shipping_type = 'tracking'
     } else if (shipping.pickup > 0 || shippingDiscount > 0) {
-      console.log('shipping.pickup > 0')
       shop.shipping = shipping.pickup
       shop.original_shipping = shipping.original_pickup
       shop.shipping_type = 'pickup'
     }
-
-    console.log('shipping type', {
-      shipping: shop.shipping,
-      shopping_type: shop.shipping_type
-    })
 
     if (!shop.shipping && !shop.error && !shop.total_ship_discount) {
       shop.error = 'no_shipping'
@@ -1114,7 +1095,6 @@ class Cart {
   }
 
   static calculateItem = async (params) => {
-    console.log('🚀 ~ file: Cart.ts ~ line 1111 ~ Cart ~ calculateItem= ~ params', params)
     const p = params
     const res: any = {}
     p.quantity = parseInt(params.quantity, 10)
@@ -1161,8 +1141,9 @@ class Cart {
     res.price_discount = Utils.round(res.price - res.discount)
     res.shipping_discount = p.project.shipping_discount
     res.price_ship_discount = res.shipping_discount
-      ? Utils.round(res.price_discount + res.shipping_discount)
+      ? Utils.round(res.price + res.shipping_discount)
       : null
+
     res.project_id = p.project.id
     res.item_id = p.item_id
     res.marketplace_item_id = p.project.marketplace_id
@@ -1232,7 +1213,9 @@ class Cart {
       res.total_distrib = Utils.round(p.quantity * res.price_distrib + p.tips)
     }
     if (res.shipping_discount && !userIsPro) {
-      res.total_ship_discount = Utils.round(p.quantity * res.price_ship_discount + p.tips)
+      res.total_ship_discount = Utils.round(
+        p.quantity * res.price_ship_discount + p.tips - res.discount
+      )
     }
 
     return res
@@ -1385,7 +1368,7 @@ class Cart {
                 price: item.price,
                 discount: item.discount,
                 discount_artist: item.discount_artist,
-                shipping_discount: item.shipping_discount,
+                shipping_discount: user.is_pro ? 0 : item.shipping_discount ?? 0,
                 tips: item.tips,
                 size: item.size,
                 quantity: item.quantity,

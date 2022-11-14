@@ -67,7 +67,7 @@ class Project {
       project.price_distribution = null
     } else if (project.price_distribution) {
       project.prices_distribution = Utils.getPrices({
-        price: project.price_distribution,
+        price: project.price_distribution + project.shipping_discount,
         currencies,
         currency: project.currency
       })

@@ -1103,10 +1103,10 @@ class Utils {
     const curr = Utils.getCurrencies(currency, currencies)
 
     return {
-      EUR: currency === 'EUR' ? price : Utils.round(price * curr.EUR, 2, 1),
-      USD: currency === 'USD' ? price : Utils.round(price * curr.USD, 2, 1),
-      GBP: currency === 'GBP' ? price : Utils.round(price * curr.GBP, 2, 1),
-      AUD: currency === 'AUD' ? price : Utils.round(price * curr.AUD, 2, 1)
+      EUR: currency === 'EUR' ? price : Math.ceil(price * curr.EUR),
+      USD: currency === 'USD' ? price : Math.ceil(price * curr.USD),
+      GBP: currency === 'GBP' ? price : Math.ceil(price * curr.GBP),
+      AUD: currency === 'AUD' ? price : Math.ceil(price * curr.AUD)
     }
   }
 
@@ -1206,6 +1206,15 @@ class Utils {
       // return response.status(400).send({ error: error.messages })
     }
     **/
+  }
+
+  static isProUser = async (userId: number) => {
+    let userIsPro = false
+    if (userId) {
+      const user = await DB('user').select('is_pro').where('id', userId).first()
+      userIsPro = !!user.is_pro
+    }
+    return userIsPro
   }
 
   static getTeam = [
