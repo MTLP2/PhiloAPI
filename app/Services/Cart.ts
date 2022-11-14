@@ -488,6 +488,7 @@ class Cart {
     shop.total = 0
     shop.discount = 0
     shop.total_ship_discount = 0
+    shop.total_ship_discount_sale_diff = 0
 
     shop.paypal = false
     shop.stripe = false
@@ -531,6 +532,9 @@ class Cart {
         }
         if (calculatedItem.shipping_discount) {
           shop.total_ship_discount += calculatedItem.shipping_discount * calculatedItem.quantity
+        }
+        if (calculatedItem.ship_discount_sale_diff) {
+          shop.total_ship_discount_sale_diff += calculatedItem.ship_discount_sale_diff
         }
         shop.items.push(calculatedItem)
 
@@ -580,7 +584,7 @@ class Cart {
       ? 0
       : p.items.reduce((acc, cur) => {
           return acc + cur.project.shipping_discount * cur.quantity
-        }, 0)
+        }, 0) - shop.total_ship_discount_sale_diff
 
     const shipping: any = await Cart.calculateShipping({
       quantity: shop.quantity,
@@ -1159,6 +1163,7 @@ class Cart {
     res.transporters = JSON.parse(p.project.transporters)
     res.pa = p.project.pa
     res.st = p.project.st
+    res.ship_discount_sale_diff = 0
 
     if (
       p.project.only_country &&
@@ -1216,6 +1221,7 @@ class Cart {
       res.total_ship_discount = Utils.round(
         p.quantity * res.price_ship_discount + p.tips - res.discount
       )
+      res.ship_discount_sale_diff = (res.shipping_discount * res.quantity * p.project.promo) / 100
     }
 
     return res
