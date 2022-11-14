@@ -574,9 +574,17 @@ class Cart {
     }
 
     // Calculate shipping displayed to customer by doing shipping - total of shipping discounts of shop
-    const shippingDiscount: number = p.items.reduce((acc, cur) => {
-      return acc + cur.project.shipping_discount * cur.quantity
-    }, 0)
+    // Except for pro user (then discount to 0)
+    let userIsPro = false
+    if (p.user_id) {
+      const user = await DB('user').select('is_pro').where('id', p.user_id).first()
+      userIsPro = !!user.is_pro
+    }
+    const shippingDiscount: number = userIsPro
+      ? 0
+      : p.items.reduce((acc, cur) => {
+          return acc + cur.project.shipping_discount * cur.quantity
+        }, 0)
 
     const shipping: any = await Cart.calculateShipping({
       quantity: shop.quantity,
@@ -590,8 +598,6 @@ class Cart {
       country_id: p.country_id,
       state: p.customer.state
     })
-
-    // console.log('going in here')
 
     shop.tax_rate = await Cart.getTaxRate(p.customer)
     shipping.letter = 0
@@ -1108,6 +1114,7 @@ class Cart {
   }
 
   static calculateItem = async (params) => {
+    console.log('🚀 ~ file: Cart.ts ~ line 1111 ~ Cart ~ calculateItem= ~ params', params)
     const p = params
     const res: any = {}
     p.quantity = parseInt(params.quantity, 10)
@@ -1201,10 +1208,12 @@ class Cart {
     res.estimated_shipping = p.project.estimated_shipping
     res.partner_distribution = p.project.partner_distribution
 
+    let userIsPro = false
     if (params.user_id) {
       const user = await DB('user').select('is_pro').where('id', params.user_id).first()
+      userIsPro = !!user.is_pro
 
-      if (user.is_pro && p.project.partner_distribution && p.project.prices_distribution) {
+      if (userIsPro && p.project.partner_distribution && p.project.prices_distribution) {
         res.price = p.project.prices_distribution[params.currency]
         if (params.country_id === 'FR') {
           res.price_distrib = p.project.prices_distribution[params.currency] * 1.2
@@ -1222,7 +1231,7 @@ class Cart {
     if (res.price_distrib) {
       res.total_distrib = Utils.round(p.quantity * res.price_distrib + p.tips)
     }
-    if (res.shipping_discount) {
+    if (res.shipping_discount && !userIsPro) {
       res.total_ship_discount = Utils.round(p.quantity * res.price_ship_discount + p.tips)
     }
 
