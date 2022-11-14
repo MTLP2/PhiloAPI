@@ -104,7 +104,7 @@ enum InvoiceStatus {
   '404' = '404'
 }
 
-export enum Transporters {
+enum Transporters {
   daudin = 'daudin',
   diggers = 'diggers',
   whiplash = 'whiplash',
@@ -112,4 +112,11 @@ export enum Transporters {
   sna = 'sna',
   soundmerch = 'soundmerch',
   shipehype = 'shipehype'
+}
+
+const enum Currencies {
+  EUR = 'EUR',
+  USD = 'USD',
+  GBP = 'GBP',
+  AUD = 'AUD'
 }
