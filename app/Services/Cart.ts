@@ -454,6 +454,9 @@ class Cart {
             shop.promo_error = 'promo_code_finished'
           }
         }
+        if (code.only_once && code.used > 0) {
+          shop.promo_error = 'promo_code_used'
+        }
         if (code.unique) {
           const already = await DB('order')
             .where('promo_code', code.id)
@@ -2033,6 +2036,10 @@ class Cart {
 
     order.customer_id = customerId
     await Invoice.insertOrder(order)
+
+    await DB('promo_code')
+      .where('code', order.promo_code)
+      .update({ used: DB.raw('used + 1') })
 
     const items = []
     const t = (t) => I18n.locale('en').formatMessage(t)

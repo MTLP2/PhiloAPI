@@ -34,6 +34,7 @@ class PromoCode {
     code.first_month = params.first_month
     code.min_price = params.min_price || null
     code.unique = params.unique
+    code.only_once = params.only_once
     code.on_total = params.on_total
     code.on_price = params.on_price
     code.artist_pay = params.artist_pay
