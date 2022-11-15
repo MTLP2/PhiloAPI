@@ -601,42 +601,66 @@ class Cart {
 
     shop.tax_rate = await Cart.getTaxRate(p.customer)
     shipping.letter = 0
+
     // Standard
-    shipping.original_standard = Utils.round(
-      shipping.standard + shipping.standard * shop.tax_rate,
-      2,
-      0.1
-    )
-    shipping.standard = Math.max(
-      Utils.round(shipping.standard - shippingDiscount + shipping.standard * shop.tax_rate, 2, 0.1),
-      0
-    )
+    shipping.original_standard = Utils.getShipDiscounts({
+      ship: shipping.standard,
+      taxRate: shop.tax_rate
+    })
+    shipping.standard = Utils.getShipDiscounts({
+      ship: shipping.standard,
+      shippingDiscount,
+      taxRate: shop.tax_rate
+    })
 
     // Tracking
-    shipping.original_tracking = Utils.round(
-      shipping.tracking + shipping.tracking * shop.tax_rate,
-      2,
-      0.1
-    )
-    shipping.tracking = Math.max(
-      Utils.round(shipping.tracking - shippingDiscount + shipping.tracking * shop.tax_rate, 2, 0.1),
-      0
-    )
+    // shipping.original_tracking = shipping.tracking
+    //   ? Utils.round(shipping.tracking + shipping.tracking * shop.tax_rate, 2, 0.1)
+    //   : null
+    // shipping.tracking = shipping.tracking
+    //   ? Math.max(
+    //       Utils.round(
+    //         shipping.tracking - shippingDiscount + shipping.tracking * shop.tax_rate,
+    //         2,
+    //         0.1
+    //       ),
+    //       0
+    //     )
+    //   : null
+    shipping.original_tracking = Utils.getShipDiscounts({
+      ship: shipping.tracking,
+      taxRate: shop.tax_rate
+    })
+    shipping.tracking = Utils.getShipDiscounts({
+      ship: shipping.tracking,
+      shippingDiscount,
+      taxRate: shop.tax_rate
+    })
 
     // Pickup
-    shipping.original_pickup = Utils.round(
-      shipping.pickup + shipping.pickup * shop.tax_rate,
-      2,
-      0.1
-    )
-    shipping.pickup = Math.max(
-      Utils.round(shipping.pickup - shippingDiscount + shipping.pickup * shop.tax_rate, 2, 0.1),
-      0
-    )
+    // shipping.original_pickup = shipping.pickup
+    //   ? Utils.round(shipping.pickup + shipping.pickup * shop.tax_rate, 2, 0.1)
+    //   : null
+    // shipping.pickup = shipping.pickup
+    //   ? Math.max(
+    //       Utils.round(shipping.pickup - shippingDiscount + shipping.pickup * shop.tax_rate, 2, 0.1),
+    //       0
+    //     )
+    //   : null
 
-    if (shipping.letter > shipping.standard) {
-      shipping.letter = 0
-    }
+    shipping.original_pickup = Utils.getShipDiscounts({
+      ship: shipping.pickup,
+      taxRate: shop.tax_rate
+    })
+    shipping.pickup = Utils.getShipDiscounts({
+      ship: shipping.pickup,
+      shippingDiscount,
+      taxRate: shop.tax_rate
+    })
+
+    // if (shipping.letter > shipping.standard) {
+    //   shipping.letter = 0
+    // }
 
     shop.shipping_letter = shipping.letter
     shop.shipping_standard = shipping.standard
@@ -645,35 +669,56 @@ class Cart {
     shop.shipping_type = p.shipping_type
     shop.transporter = shipping.transporter
 
-    if (!p.shipping_type && (shipping.pickup > 0 || shippingDiscount > 0)) {
+    if (
+      !p.shipping_type &&
+      shipping.pickup !== null &&
+      (shipping.pickup > 0 || shippingDiscount > 0)
+    ) {
       shop.shipping = shipping.pickup
       shop.original_shipping = shipping.original_pickup
       shop.shipping_type = 'pickup'
-    } else if (p.shipping_type === 'standard' && (shipping.standard > 0 || shippingDiscount > 0)) {
+    } else if (
+      p.shipping_type === 'standard' &&
+      shipping.standard !== null &&
+      (shipping.standard > 0 || shippingDiscount > 0)
+    ) {
       shop.shipping = shipping.standard
       shop.original_shipping = shipping.original_standard
-    } else if (p.shipping_type === 'tracking' && (shipping.tracking > 0 || shippingDiscount > 0)) {
+    } else if (
+      p.shipping_type === 'tracking' &&
+      shipping.tracking !== null &&
+      (shipping.tracking > 0 || shippingDiscount > 0)
+    ) {
       shop.shipping = shipping.tracking
       shop.original_shipping = shipping.original_tracking
-    } else if (p.shipping_type === 'letter' && shipping.letter > 0) {
-      shop.shipping = shipping.letter
-      shop.original_shipping = shipping.letter
-    } else if (p.shipping_type === 'pickup' && (shipping.pickup > 0 || shippingDiscount > 0)) {
+    }
+    // else if (p.shipping_type === 'letter' && shipping.letter > 0) {
+    //   shop.shipping = shipping.letter
+    //   shop.original_shipping = shipping.letter
+    // }
+    else if (
+      p.shipping_type === 'pickup' &&
+      shipping.pickup !== null &&
+      (shipping.pickup > 0 || shippingDiscount > 0)
+    ) {
       shop.shipping = shipping.pickup
       shop.original_shipping = shipping.original_pickup
-    } else if (shipping.letter > 0 || shippingDiscount > 0) {
-      shop.shipping = shipping.letter
-      shop.shipping_type = 'letter'
-      shop.original_shipping = shipping.letter
-    } else if (shipping.standard > 0 || shippingDiscount > 0) {
+    }
+    // else if (shipping.letter > 0 || shippingDiscount > 0) {
+    //   console.log('6')
+    //   shop.shipping = shipping.letter
+    //   shop.shipping_type = 'letter'
+    //   shop.original_shipping = shipping.letter
+    // }
+    else if (shipping.standard !== null && (shipping.standard > 0 || shippingDiscount > 0)) {
       shop.shipping = shipping.standard
       shop.original_shipping = shipping.original_standard
       shop.shipping_type = 'standard'
-    } else if (shipping.tracking > 0 || shippingDiscount > 0) {
+    } else if (shipping.tracking !== null && (shipping.tracking > 0 || shippingDiscount > 0)) {
       shop.shipping = shipping.tracking
       shop.original_shipping = shipping.original_tracking
       shop.shipping_type = 'tracking'
-    } else if (shipping.pickup > 0 || shippingDiscount > 0) {
+    } else if (shipping.pickup !== null && (shipping.pickup > 0 || shippingDiscount > 0)) {
       shop.shipping = shipping.pickup
       shop.original_shipping = shipping.original_pickup
       shop.shipping_type = 'pickup'
