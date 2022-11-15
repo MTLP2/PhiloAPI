@@ -292,6 +292,23 @@ class AuthController {
     }
   }
 
+  async checkEmail({ params }) {
+    const payload = await validator.validate({
+      schema: schema.create({
+        email: schema.string()
+      }),
+      data: params
+    })
+
+    const exists = await DB('user').where('email', payload.email).first()
+
+    if (exists) {
+      return { exists: true }
+    } else {
+      return { exists: false }
+    }
+  }
+
   async confirmEmail({ params }) {
     await validator.validate({
       schema: schema.create({
