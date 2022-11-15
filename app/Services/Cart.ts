@@ -1603,7 +1603,7 @@ class Cart {
             payment_method: 'paypal'
           },
           redirect_urls: {
-            return_url: Utils.link('cart-pay', params.lang),
+            return_url: Utils.link('cart', params.lang),
             cancel_url: Utils.link('cart', params.lang)
           },
           transactions: [
