@@ -15,7 +15,6 @@ import JSZip from 'jszip'
 class Project {
   static setInfos = (p, currencies?, sales?, styles?) => {
     const project = p
-    console.log('🚀 ~ file: Project.ts ~ line 18 ~ Project ~ project', project)
     const oneDay = 24 * 60 * 60 * 1000
     const firstDate = new Date()
     const startProject = new Date(project.start)

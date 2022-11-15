@@ -52,6 +52,7 @@ class AppController {
     }
     const banners: any = Banner.getHome({ lang: params.lang })
     const categories = Category.getHome()
+
     const articles = params.all ? Blog.all({ lang: params.lang, limit: 3 }) : null
 
     return Promise.all([banners, categories, articles]).then((res) => {
@@ -65,6 +66,8 @@ class AppController {
           type: 'diggers'
         })
       }
+
+      console.log('categories', categories)
 
       return {
         banners: banners,
