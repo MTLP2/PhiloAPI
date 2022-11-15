@@ -67,8 +67,6 @@ class AppController {
         })
       }
 
-      console.log('categories', categories)
-
       return {
         banners: banners,
         categories: params.all ? categories : [],
