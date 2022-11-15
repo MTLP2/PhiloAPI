@@ -353,6 +353,7 @@ class Cart {
         cart.tax_rate = cart.shops[s].tax_rate
         cart.sub_total = Utils.round(cart.sub_total + cart.shops[s].sub_total * cur)
         cart.total = Utils.round(cart.total + cart.shops[s].total * cur)
+        cart.pickup = params.pickup
 
         cart.discount = Utils.round(cart.discount + cart.shops[s].discount)
 
@@ -1336,7 +1337,7 @@ class Cart {
             currency_rate: currencyRate,
             sub_total: ss.sub_total,
             discount: ss.discount,
-            promo_code: ss.promo_code.id,
+            promo_code: ss.promo_code?.id,
             tax_rate: ss.tax_rate,
             tax: ss.tax,
             total: ss.total,
