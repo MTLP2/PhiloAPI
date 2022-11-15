@@ -71,10 +71,6 @@ class AdminController {
   }
 
   async saveProject({ params, user }) {
-    console.log(
-      '🚀 ~ file: AdminController.ts ~ line 74 ~ AdminController ~ saveProject ~ params',
-      params
-    )
     params.user = user
     const project = await DB('project').find(params.id)
     if (params.banner_picture) {
