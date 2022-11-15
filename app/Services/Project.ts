@@ -110,7 +110,7 @@ class Project {
     project.currency_project = project.currency
     if (currencies) {
       project.prices = Utils.getPrices({
-        price: project.price + project.shipping_discount,
+        price: project.price + (project.shipping_discount || 0),
         currencies,
         currency: project.currency
       })
