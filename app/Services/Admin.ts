@@ -905,6 +905,8 @@ class Admin {
     vod.send_tracks = params.send_tracks || null
     vod.disabled_cover = params.disabled_cover ? params.disabled_cover : 0
     vod.is_shop = params.is_shop ? params.is_shop : 0
+    vod.description_en = params.description_en
+    vod.description_fr = params.description_fr
 
     if (params.signed_id !== undefined) {
       vod.signed_id = params.signed_id || null
@@ -992,8 +994,6 @@ class Admin {
       vod.statement_comment = params.statement_comment || null
     }
     if (params.com) {
-      vod.description_en = params.description_en
-      vod.description_fr = params.description_fr
       vod.newsletter_fr = params.newsletter_fr
       vod.newsletter_en = params.newsletter_en
       vod.facebook_fr = params.facebook_fr
