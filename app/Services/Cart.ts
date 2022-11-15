@@ -470,6 +470,8 @@ class Cart {
       }
     }
 
+    console.log('promo code', p.promo_code)
+
     const user = await DB('user').select('name', 'slug').where('id', p.id).first()
 
     shop.id = user.id
@@ -523,6 +525,10 @@ class Cart {
         item.currency = p.currency
         item.shipping_discount = p.shipping_discount
         const calculatedItem = await Cart.calculateItem(item)
+        console.log(
+          '🚀 ~ file: Cart.ts ~ line 528 ~ Cart ~ p.items.map ~ calculatedItem',
+          calculatedItem
+        )
 
         if (calculatedItem.error) {
           shop.error = calculatedItem.error
@@ -730,6 +736,8 @@ class Cart {
 
     const total = shop.total
     shop.total = Utils.round(shop.total + shop.shipping)
+    // ! MAYBE HERE
+    console.log('shop', shop)
     shop.sub_total = Utils.round(shop.total / (1 + shop.tax_rate))
     shop.tax = Utils.round(shop.total - shop.sub_total)
 
@@ -747,10 +755,14 @@ class Cart {
             item.shipping = shop.shipping
             shop.discount = Utils.round(shop.discount + Cart.getDiscountProject(item, p.promo_code))
             shop.total = Utils.round(shop.total - Cart.getDiscountProject(item, p.promo_code))
+            shop.total_ship_discount = shop.total_ship_discount
+              ? Utils.round(shop.total_ship_discount - Cart.getDiscountProject(item, p.promo_code))
+              : null
             shop.items[i].discount = Cart.getDiscountProject(item, p.promo_code)
             shop.items[i].discount_artist = p.promo_code.artist_pay
-            shop.items[i].total_old = shop.items[i].total
+            shop.items[i].total_old = shop.items[i].total_ship_discount || shop.items[i].total
             shop.items[i].total -= Cart.getDiscountProject(item, p.promo_code)
+            shop.items[i].total_ship_discount -= Cart.getDiscountProject(item, p.promo_code)
           }
         })
       } else {
@@ -1145,6 +1157,7 @@ class Cart {
 
   static calculateItem = async (params) => {
     const p = params
+    console.log('p project discount', p.project?.discount)
     const res: any = {}
     p.quantity = parseInt(params.quantity, 10)
     p.quantity = p.quantity < 1 || isNaN(p.quantity) ? 1 : p.quantity
@@ -1191,6 +1204,9 @@ class Cart {
     res.shipping_discount = p.project.shipping_discount
     res.price_ship_discount = res.shipping_discount
       ? Utils.round(res.price + res.shipping_discount)
+      : null
+    res.price_discount_ship_discount = res.shipping_discount
+      ? Utils.round(res.price + res.shipping_discount - res.discount)
       : null
 
     res.project_id = p.project.id
