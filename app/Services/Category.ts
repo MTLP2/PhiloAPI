@@ -233,8 +233,6 @@ class Category {
 
     await item.save()
 
-    let found = false
-
     if (params.projects) {
       for (const project of params.projects) {
         if (project.is_delete) {
@@ -243,9 +241,6 @@ class Category {
             .where('project_id', project.project_id)
             .delete()
         } else {
-          if (project.project_id === params.new_project_id) {
-            found = true
-          }
           await DB('category_project')
             .where('category_id', item.id)
             .where('project_id', project.project_id)
@@ -256,15 +251,22 @@ class Category {
         }
       }
     }
+    if (params.new_project_id.length) {
+      await Promise.all(
+        params.new_project_id.map((id: number) => {
+          if (isNaN(id) || params.projects?.find((project: any) => project.project_id === id)) {
+            return
+          }
 
-    if (!found && params.new_project_id) {
-      await DB('category_project').insert({
-        project_id: params.new_project_id,
-        category_id: item.id,
-        position: params.new_position,
-        created_at: Utils.date(),
-        updated_at: Utils.date()
-      })
+          DB('category_project').insert({
+            project_id: id,
+            category_id: item.id,
+            position: params.new_position,
+            created_at: Utils.date(),
+            updated_at: Utils.date()
+          })
+        })
+      )
     }
 
     // If staff picks we set `home` field to true on projects
