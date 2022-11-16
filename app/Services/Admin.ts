@@ -4868,6 +4868,11 @@ class Admin {
     })
     return true
   }
+
+  static deleteDelayNewsletter = async ({ dnlid }: { dnlid: number }) => {
+    await DB('project_nl').where('id', dnlid).delete()
+    return true
+  }
 }
 
 export default Admin
