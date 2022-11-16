@@ -1,6 +1,5 @@
 import Excel from 'exceljs'
 import moment from 'moment'
-import google from 'googleapis'
 import fs from 'fs'
 
 import DB from 'App/DB'
