@@ -31,6 +31,9 @@ Route.get('/sitemap.xml', 'AppController.sitemap')
 Route.get('/socket.io/', () => '')
 Route.post('/socket.io/', () => '')
 Route.get('/favicon.ico', () => '')
+Route.get('/search-address', 'AppController.searchAddress')
+Route.get('/detail-address', 'AppController.detailAddress')
+
 Route.get('/robots.txt', ({ response }) => {
   response.header('Content-type', 'text/plain')
   return 'User-agent: *\nDisallow: /'

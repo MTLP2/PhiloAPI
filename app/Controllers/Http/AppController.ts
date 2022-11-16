@@ -8,6 +8,7 @@ import Blog from 'App/Services/Blog'
 import Category from 'App/Services/Category'
 import Banner from 'App/Services/Banner'
 import Quote from 'App/Services/Quote'
+import Customer from 'App/Services/Customer'
 import Dig from 'App/Services/Dig'
 import cio from 'App/Services/CIO'
 import User from 'App/Services/User'
@@ -51,6 +52,7 @@ class AppController {
     }
     const banners: any = Banner.getHome({ lang: params.lang })
     const categories = Category.getHome()
+
     const articles = params.all ? Blog.all({ lang: params.lang, limit: 3 }) : null
 
     return Promise.all([banners, categories, articles]).then((res) => {
@@ -115,6 +117,20 @@ class AppController {
 
   payPayment({ params }) {
     return Payment.pay(params)
+  }
+
+  searchAddress({ params }) {
+    return Customer.searchAddress({
+      search: params.search,
+      lang: params.lang,
+      country: params.country,
+      lat: params.lat,
+      lng: params.lng
+    })
+  }
+
+  detailAddress({ params }) {
+    return Customer.detailAddress(params.id)
   }
 
   async sitemap({ response }) {

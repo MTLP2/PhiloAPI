@@ -67,7 +67,7 @@ class Project {
       project.price_distribution = null
     } else if (project.price_distribution) {
       project.prices_distribution = Utils.getPrices({
-        price: project.price_distribution,
+        price: project.price_distribution + project.shipping_discount,
         currencies,
         currency: project.currency
       })
@@ -85,12 +85,23 @@ class Project {
 
         if (discount) {
           project.promo = sale.value
-          const discount = Utils.round(project.price * (sale.value / 100))
+          const discount = Utils.round(
+            (project.price + project.shipping_discount) * (sale.value / 100)
+          )
           project.prices_discount = Utils.getPrices({
-            price: Utils.round(project.price - discount),
+            price: Utils.round(project.price + project.shipping_discount - discount),
             currencies,
             currency: project.currency
           })
+          if (project.shipping_discount) {
+            project.prices_ship_discount = project.shipping_discount
+              ? Utils.getPrices({
+                  price: project.price + project.shipping_discount,
+                  currencies,
+                  currency: project.currency
+                })
+              : null
+          }
           break
         }
       }
@@ -99,7 +110,7 @@ class Project {
     project.currency_project = project.currency
     if (currencies) {
       project.prices = Utils.getPrices({
-        price: project.price,
+        price: project.price + (project.shipping_discount || 0),
         currencies,
         currency: project.currency
       })
@@ -157,6 +168,7 @@ class Project {
     if (!project.partner_distribution) {
       project.price_distribution = null
     } else if (project.price_distribution) {
+      // ! TO CONFIRM
       project.prices_distribution = Utils.getPrices({
         price: project.price_distribution,
         currencies,
@@ -171,6 +183,13 @@ class Project {
         currencies,
         currency: project.currency
       })
+      project.prices_ship_discount = project.shipping_discount
+        ? Utils.getPrices({
+            price: project.price + project.shipping_discount,
+            currencies,
+            currency: project.currency
+          })
+        : null
       if (project.items) {
         for (const i in project.items) {
           const price = project.items[i].related_price || project.items[i].price
@@ -180,6 +199,13 @@ class Project {
             currencies,
             currency: currency
           })
+          project.items[i].prices_ship_discount = project.shipping_discount
+            ? Utils.getPrices({
+                price: price + project.shipping_discount,
+                currencies,
+                currency: currency
+              })
+            : null
           project.items[i].sizes = project.items[i].sizes
             ? Object.keys(JSON.parse(project.items[i].sizes)).filter((k) => {
                 const sizes = JSON.parse(project.items[i].sizes)
@@ -202,12 +228,23 @@ class Project {
 
         if (discount) {
           project.promo = sale.value
-          const discount = Utils.round(project.price * (sale.value / 100))
+          const discount = Utils.round(
+            (project.price + project.shipping_discount) * (sale.value / 100)
+          )
           project.prices_discount = Utils.getPrices({
-            price: Utils.round(project.price - discount),
+            price: Utils.round(project.price + project.shipping_discount - discount),
             currencies,
             currency: project.currency
           })
+          if (project.shipping_discount) {
+            project.prices_ship_discount = project.shipping_discount
+              ? Utils.getPrices({
+                  price: project.price + project.shipping_discount,
+                  currencies,
+                  currency: project.currency
+                })
+              : null
+          }
           project.discount = discount
           project.discount_artist = sale.artist_pay
 
@@ -273,7 +310,8 @@ class Project {
       'v.color_vinyl',
       'v.show_stock',
       'item.stock as item_stock',
-      'item.price as item_price'
+      'item.price as item_price',
+      'v.shipping_discount'
     ]
     if (params.type === 'banner') {
       selects.push('v.description_fr', 'v.description_en')
@@ -733,7 +771,8 @@ class Project {
         'only_country',
         'exclude_country',
         'v.step',
-        'v.is_label_bside'
+        'v.is_label_bside',
+        'v.shipping_discount'
       )
       .from('project as p')
       .leftJoin('vod as v', 'p.id', 'v.project_id')
@@ -832,6 +871,7 @@ class Project {
       p.item_id = item.id
       p.picture_project = `${item.picture}.${item.picture_trans ? 'png' : 'jpg'}`
       p.prices = item.prices
+      p.prices_ship_discount = item.prices_ship_discount
       p.copies_left = item.stock
       p.step = item.stock <= 0 ? 'successful' : 'in_progress'
       p.sold_out = item.stock <= 0
@@ -890,6 +930,8 @@ class Project {
     if (projectImages.length) {
       p.project_images = projectImages
     }
+
+    // console.log('checking p', p)
 
     return p
   }
@@ -1212,7 +1254,8 @@ class Project {
       'v.count_distrib',
       'v.count_bundle',
       'v.goal',
-      'v.end'
+      'v.end',
+      'v.shipping_discount'
     ]
 
     const currencies = await Utils.getCurrenciesDb()

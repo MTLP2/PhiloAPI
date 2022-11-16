@@ -58,7 +58,7 @@ class Cart {
   }
 
   static calculate = async (params) => {
-    const cart = {
+    const cart: any = {
       id: params.id,
       shops: {},
       currency: null,
@@ -142,7 +142,7 @@ class Cart {
     }
 
     if (params.shops) {
-      const items = []
+      const items: any = []
       if (params.country_id) {
         if (params.shops.s_1_shop) {
           params.shops.s_1_shop.items = params.shops.s_1_shop.items.map((i) => {
@@ -211,7 +211,7 @@ class Cart {
 
           const weight = item.quantity * (project.weight || Vod.calculateWeight(project))
 
-          const shipping = await Cart.calculateShipping({
+          const shipping: any = await Cart.calculateShipping({
             quantity: item.quantity,
             insert: item.quantity,
             currency: project.currency,
@@ -377,7 +377,7 @@ class Cart {
       boxes: []
     }
     Object.keys(cart.shops).map((key) => {
-      const shop = {
+      const shop: any = {
         id: cart.shops[key].id,
         shipping_type: cart.shops[key].shipping_type,
         type: cart.shops[key].type,
@@ -410,7 +410,7 @@ class Cart {
   }
 
   static calculateShop = async (p) => {
-    let shop = {}
+    let shop: any = {}
     const sales = await DB('promo_code')
       .where('is_sales', 1)
       .where('is_enabled', 1)
@@ -454,6 +454,9 @@ class Cart {
             shop.promo_error = 'promo_code_finished'
           }
         }
+        if (code.only_once && code.used > 0) {
+          shop.promo_error = 'promo_code_used'
+        }
         if (code.unique) {
           const already = await DB('order')
             .where('promo_code', code.id)
@@ -487,6 +490,8 @@ class Cart {
     shop.sub_total = 0
     shop.total = 0
     shop.discount = 0
+    shop.total_ship_discount = 0
+    shop.total_ship_discount_sale_diff = 0
 
     shop.paypal = false
     shop.stripe = false
@@ -499,6 +504,7 @@ class Cart {
         item.country_id = p.country_id
         item.customer = p.customer
         item.currency = p.currency
+        item.shipping_discount = p.shipping_discount
         const c = await Cart.calculateItem(item)
 
         if (!shop.currency) {
@@ -518,38 +524,49 @@ class Cart {
         item.country_id = p.country_id
         item.customer = p.customer
         item.currency = p.currency
-        const c = await Cart.calculateItem(item)
-        if (c.error) {
-          shop.error = c.error
+        item.shipping_discount = p.shipping_discount
+        const calculatedItem = await Cart.calculateItem(item)
+
+        if (calculatedItem.error) {
+          shop.error = calculatedItem.error
         }
-        if (c.discount) {
-          shop.discount += c.discount
+        if (calculatedItem.discount) {
+          shop.discount += calculatedItem.discount
         }
-        shop.items.push(c)
+        if (calculatedItem.shipping_discount) {
+          shop.total_ship_discount += calculatedItem.shipping_discount * calculatedItem.quantity
+        }
+        if (calculatedItem.ship_discount_sale_diff) {
+          shop.total_ship_discount_sale_diff += calculatedItem.ship_discount_sale_diff
+        }
+        shop.items.push(calculatedItem)
 
         if (shop.type !== 'shop') {
-          shop.transporter = c.transporter
-          shop.transporters = c.transporters
+          shop.transporter = calculatedItem.transporter
+          shop.transporters = calculatedItem.transporters
         }
-        shop.quantity += c.quantity_coef
-        shop.weight += c.weight
-        shop.insert += c.insert
-        shop.category = c.category
+        shop.quantity += calculatedItem.quantity_coef
+        shop.weight += calculatedItem.weight
+        shop.insert += calculatedItem.insert
+        shop.category = calculatedItem.category
 
         let cur = 1
-        if (c.currency !== shop.currency) {
-          cur = await Utils.getCurrencyComp(c.currency, shop.currency)
+        if (calculatedItem.currency !== shop.currency) {
+          cur = await Utils.getCurrencyComp(calculatedItem.currency, shop.currency)
         }
-        if (c.total_distrib) {
-          shop.total += c.total_distrib * cur
+
+        if (calculatedItem.total_distrib) {
+          shop.total += calculatedItem.total_distrib * cur
+        } else if (calculatedItem.total_ship_discount) {
+          shop.total += calculatedItem.total_ship_discount * cur
         } else {
-          shop.total += c.total * cur
+          shop.total += calculatedItem.total * cur
         }
 
         shop.paypal = true
-        shop.pa = c.pa
-        if (c.st) {
-          shop.st = c.st
+        shop.pa = calculatedItem.pa
+        if (calculatedItem.st) {
+          shop.st = calculatedItem.st
           shop.stripe = true
         }
       })
@@ -563,7 +580,17 @@ class Cart {
       shop.error = 'shipping_limit_weight'
     }
 
-    const shipping = await Cart.calculateShipping({
+    // Calculate shipping displayed to customer by doing shipping - total of shipping  of shop
+    // Except for pro user (then discount to 0)
+    const userIsPro = await Utils.isProUser(p.user_id)
+
+    const shippingDiscount: number = userIsPro
+      ? 0
+      : p.items.reduce((acc, cur) => {
+          return acc + cur.project.shipping_discount * cur.quantity
+        }, 0) - shop.total_ship_discount_sale_diff
+
+    const shipping: any = await Cart.calculateShipping({
       quantity: shop.quantity,
       weight: shop.weight,
       insert: shop.insert,
@@ -578,13 +605,66 @@ class Cart {
 
     shop.tax_rate = await Cart.getTaxRate(p.customer)
     shipping.letter = 0
-    shipping.standard = Utils.round(shipping.standard + shipping.standard * shop.tax_rate, 2, 0.1)
-    shipping.tracking = Utils.round(shipping.tracking + shipping.tracking * shop.tax_rate, 2, 0.1)
-    shipping.pickup = Utils.round(shipping.pickup + shipping.pickup * shop.tax_rate, 2, 0.1)
 
-    if (shipping.letter > shipping.standard) {
-      shipping.letter = 0
-    }
+    // Standard
+    shipping.original_standard = Utils.getShipDiscounts({
+      ship: shipping.standard,
+      taxRate: shop.tax_rate
+    })
+    shipping.standard = Utils.getShipDiscounts({
+      ship: shipping.standard,
+      shippingDiscount,
+      taxRate: shop.tax_rate
+    })
+
+    // Tracking
+    // shipping.original_tracking = shipping.tracking
+    //   ? Utils.round(shipping.tracking + shipping.tracking * shop.tax_rate, 2, 0.1)
+    //   : null
+    // shipping.tracking = shipping.tracking
+    //   ? Math.max(
+    //       Utils.round(
+    //         shipping.tracking - shippingDiscount + shipping.tracking * shop.tax_rate,
+    //         2,
+    //         0.1
+    //       ),
+    //       0
+    //     )
+    //   : null
+    shipping.original_tracking = Utils.getShipDiscounts({
+      ship: shipping.tracking,
+      taxRate: shop.tax_rate
+    })
+    shipping.tracking = Utils.getShipDiscounts({
+      ship: shipping.tracking,
+      shippingDiscount,
+      taxRate: shop.tax_rate
+    })
+
+    // Pickup
+    // shipping.original_pickup = shipping.pickup
+    //   ? Utils.round(shipping.pickup + shipping.pickup * shop.tax_rate, 2, 0.1)
+    //   : null
+    // shipping.pickup = shipping.pickup
+    //   ? Math.max(
+    //       Utils.round(shipping.pickup - shippingDiscount + shipping.pickup * shop.tax_rate, 2, 0.1),
+    //       0
+    //     )
+    //   : null
+
+    shipping.original_pickup = Utils.getShipDiscounts({
+      ship: shipping.pickup,
+      taxRate: shop.tax_rate
+    })
+    shipping.pickup = Utils.getShipDiscounts({
+      ship: shipping.pickup,
+      shippingDiscount,
+      taxRate: shop.tax_rate
+    })
+
+    // if (shipping.letter > shipping.standard) {
+    //   shipping.letter = 0
+    // }
 
     shop.shipping_letter = shipping.letter
     shop.shipping_standard = shipping.standard
@@ -593,32 +673,62 @@ class Cart {
     shop.shipping_type = p.shipping_type
     shop.transporter = shipping.transporter
 
-    if (!p.shipping_type && shipping.pickup > 0) {
+    if (
+      !p.shipping_type &&
+      shipping.pickup !== null &&
+      (shipping.pickup > 0 || shippingDiscount > 0)
+    ) {
       shop.shipping = shipping.pickup
+      shop.original_shipping = shipping.original_pickup
       shop.shipping_type = 'pickup'
-    } else if (p.shipping_type === 'standard' && shipping.standard > 0) {
+    } else if (
+      p.shipping_type === 'standard' &&
+      shipping.standard !== null &&
+      (shipping.standard > 0 || shippingDiscount > 0)
+    ) {
       shop.shipping = shipping.standard
-    } else if (p.shipping_type === 'tracking' && shipping.tracking > 0) {
+      shop.original_shipping = shipping.original_standard
+    } else if (
+      p.shipping_type === 'tracking' &&
+      shipping.tracking !== null &&
+      (shipping.tracking > 0 || shippingDiscount > 0)
+    ) {
       shop.shipping = shipping.tracking
-    } else if (p.shipping_type === 'letter' && shipping.letter > 0) {
-      shop.shipping = shipping.letter
-    } else if (p.shipping_type === 'pickup' && shipping.pickup > 0) {
+      shop.original_shipping = shipping.original_tracking
+    }
+    // else if (p.shipping_type === 'letter' && shipping.letter > 0) {
+    //   shop.shipping = shipping.letter
+    //   shop.original_shipping = shipping.letter
+    // }
+    else if (
+      p.shipping_type === 'pickup' &&
+      shipping.pickup !== null &&
+      (shipping.pickup > 0 || shippingDiscount > 0)
+    ) {
       shop.shipping = shipping.pickup
-    } else if (shipping.letter > 0) {
-      shop.shipping = shipping.letter
-      shop.shipping_type = 'letter'
-    } else if (shipping.standard > 0) {
+      shop.original_shipping = shipping.original_pickup
+    }
+    // else if (shipping.letter > 0 || shippingDiscount > 0) {
+    //   console.log('6')
+    //   shop.shipping = shipping.letter
+    //   shop.shipping_type = 'letter'
+    //   shop.original_shipping = shipping.letter
+    // }
+    else if (shipping.standard !== null && (shipping.standard > 0 || shippingDiscount > 0)) {
       shop.shipping = shipping.standard
+      shop.original_shipping = shipping.original_standard
       shop.shipping_type = 'standard'
-    } else if (shipping.tracking > 0) {
+    } else if (shipping.tracking !== null && (shipping.tracking > 0 || shippingDiscount > 0)) {
       shop.shipping = shipping.tracking
+      shop.original_shipping = shipping.original_tracking
       shop.shipping_type = 'tracking'
-    } else if (shipping.pickup > 0) {
+    } else if (shipping.pickup !== null && (shipping.pickup > 0 || shippingDiscount > 0)) {
       shop.shipping = shipping.pickup
+      shop.original_shipping = shipping.original_pickup
       shop.shipping_type = 'pickup'
     }
 
-    if (!shop.shipping && !shop.error) {
+    if (!shop.shipping && !shop.error && !shop.total_ship_discount) {
       shop.error = 'no_shipping'
     }
 
@@ -636,15 +746,67 @@ class Cart {
       if (p.promo_code.projects && p.promo_code.projects.length > 0) {
         const projects = p.promo_code.projects.replace(/ /g, '').split(',')
 
+        // TOTAL RECURSIVE
         shop.items.map((item, i) => {
           if (projects.indexOf(item.project_id.toString()) > -1) {
             item.shipping = shop.shipping
-            shop.discount = Utils.round(shop.discount + Cart.getDiscountProject(item, p.promo_code))
-            shop.total = Utils.round(shop.total - Cart.getDiscountProject(item, p.promo_code))
-            shop.items[i].discount = Cart.getDiscountProject(item, p.promo_code)
+            shop.discount = Utils.round(
+              shop.discount + Cart.getDiscountProject(shop.items[i], p.promo_code)
+            )
+
+            // Shipping diff based on discount vs no discount (otherwise the client pay less)
+            shop.discount_ship_diff = item.total_ship_discount
+              ? Utils.round(
+                  Cart.getDiscountProject(
+                    {
+                      total: item.total,
+                      total_ship_discount: item.total_ship_discount,
+                      shipping: item.shipping
+                    },
+                    p.promo_code
+                  ) -
+                    Cart.getDiscountProject(
+                      {
+                        total: item.total,
+                        shipping: item.shipping
+                      },
+                      p.promo_code
+                    )
+                )
+              : 0
+            if (shop.discount_ship_diff) {
+              shop.shipping = Utils.round(shop.shipping + shop.discount_ship_diff)
+              shop.shipping_pickup = shop.shipping_pickup
+                ? Utils.round(shop.shipping_pickup + shop.discount_ship_diff)
+                : null
+              shop.shipping_standard = shop.shipping_standard
+                ? Utils.round(shop.shipping_standard + shop.discount_ship_diff)
+                : null
+              shop.shipping_tracking = shop.shipping_tracking
+                ? Utils.round(shop.shipping_tracking + shop.discount_ship_diff)
+                : null
+            }
+
+            shop.total = Utils.round(
+              shop.total -
+                Cart.getDiscountProject(shop.items[i], p.promo_code) +
+                shop.discount_ship_diff
+            )
+            shop.total_ship_discount = shop.total_ship_discount
+              ? Utils.round(
+                  shop.total_ship_discount - Cart.getDiscountProject(shop.items[i], p.promo_code)
+                )
+              : null
+
+            shop.items[i].discount = Cart.getDiscountProject(shop.items[i], p.promo_code)
             shop.items[i].discount_artist = p.promo_code.artist_pay
             shop.items[i].total_old = shop.items[i].total
-            shop.items[i].total -= Cart.getDiscountProject(item, p.promo_code)
+            shop.items[i].total_ship_discount_old = shop.items[i].total_ship_discount || null
+            shop.items[i].total -= Cart.getDiscountProject(shop.items[i], p.promo_code)
+            shop.items[i].total_ship_discount -= Cart.getDiscountProject(
+              shop.items[i],
+              p.promo_code
+            )
           }
         })
       } else {
@@ -658,7 +820,6 @@ class Cart {
     }
 
     shop.promo_code = p.promo_code
-
     return shop
   }
 
@@ -666,7 +827,7 @@ class Cart {
     if (promo.on_total) {
       return Utils.round((item.total + item.shipping) * (promo.value / 100))
     } else {
-      return Utils.round(item.total * (promo.value / 100))
+      return Utils.round((item.total_ship_discount || item.total) * (promo.value / 100))
     }
   }
 
@@ -904,7 +1065,7 @@ class Cart {
     return costs
   }
 
-  static calculateShipping = async (params) => {
+  static calculateShipping = async (params: any) => {
     // add packaging
     params.weight += 340
     const cc = await DB('currency').all()
@@ -913,14 +1074,14 @@ class Cart {
       currencies[c.id] = 1 / c.value
     }
 
-    let transporters = {}
+    let transporters: any = {}
     if (params.is_shop) {
       transporters.all = true
     } else {
       transporters = params.transporters
     }
 
-    const shippings = []
+    const shippings: any[] = []
     if (transporters.all || transporters.daudin) {
       const daudin = await Cart.calculateShippingByTransporter({
         ...params,
@@ -1017,8 +1178,7 @@ class Cart {
       return { error: 'no_shipping' }
     }
 
-    const res = {}
-
+    const res: any = {}
     res.standard = Utils.round(shipping.standard / currencies[params.currency], 2)
     res.tracking = Utils.round(shipping.tracking / currencies[params.currency], 2)
     res.pickup = shipping.pickup
@@ -1029,12 +1189,18 @@ class Cart {
       : null
     res.transporter = shipping.transporter
 
-    return res
+    return res as {
+      standard: number
+      tracking: number
+      pickup: number
+      letter: number
+      transporter: string
+    }
   }
 
   static calculateItem = async (params) => {
     const p = params
-    const res = {}
+    const res: any = {}
     p.quantity = parseInt(params.quantity, 10)
     p.quantity = p.quantity < 1 || isNaN(p.quantity) ? 1 : p.quantity
     p.tips = params.tips < 0 ? 0 : parseFloat(params.tips || 0)
@@ -1070,12 +1236,21 @@ class Cart {
       }
     } else {
       res.price = p.project.prices[params.currency]
+      res.price_ship_discount = p.project.prices_ship_discount?.[params.currency] ?? null
       res.picture = p.project.picture
       res.picture_project = p.project.picture_project
     }
     res.discount = p.project.discount * p.quantity
     res.discount_artist = p.project.discount_artist
     res.price_discount = Utils.round(res.price - res.discount)
+    res.shipping_discount = p.project.shipping_discount
+    res.price_ship_discount = res.shipping_discount
+      ? Utils.round(res.price + res.shipping_discount)
+      : null
+    res.price_discount_ship_discount = res.shipping_discount
+      ? Utils.round(res.price + res.shipping_discount - res.discount)
+      : null
+
     res.project_id = p.project.id
     res.item_id = p.item_id
     res.marketplace_item_id = p.project.marketplace_id
@@ -1091,6 +1266,7 @@ class Cart {
     res.transporters = JSON.parse(p.project.transporters)
     res.pa = p.project.pa
     res.st = p.project.st
+    res.ship_discount_sale_diff = 0
 
     if (
       p.project.only_country &&
@@ -1121,10 +1297,12 @@ class Cart {
     res.estimated_shipping = p.project.estimated_shipping
     res.partner_distribution = p.project.partner_distribution
 
+    let userIsPro = false
     if (params.user_id) {
       const user = await DB('user').select('is_pro').where('id', params.user_id).first()
+      userIsPro = !!user.is_pro
 
-      if (user.is_pro && p.project.partner_distribution && p.project.prices_distribution) {
+      if (userIsPro && p.project.partner_distribution && p.project.prices_distribution) {
         res.price = p.project.prices_distribution[params.currency]
         if (params.country_id === 'FR') {
           res.price_distrib = p.project.prices_distribution[params.currency] * 1.2
@@ -1141,6 +1319,12 @@ class Cart {
     res.total = Utils.round(p.quantity * res.price + p.tips - res.discount)
     if (res.price_distrib) {
       res.total_distrib = Utils.round(p.quantity * res.price_distrib + p.tips)
+    }
+    if (res.shipping_discount && !userIsPro) {
+      res.total_ship_discount = Utils.round(
+        p.quantity * res.price_ship_discount + p.tips - res.discount
+      )
+      res.ship_discount_sale_diff = (res.shipping_discount * res.quantity * p.project.promo) / 100
     }
 
     return res
@@ -1259,7 +1443,8 @@ class Cart {
             tax_rate: ss.tax_rate,
             tax: ss.tax,
             total: ss.total,
-            shipping: ss.shipping,
+            shipping: ss.original_shipping,
+            shipping_display: ss.shipping,
             shipping_type: ss.shipping_type ? ss.shipping_type : 'standard',
             transporter: ss.transporter,
             address_pickup: JSON.stringify(calculate.pickup),
@@ -1292,10 +1477,12 @@ class Cart {
                 price: item.price,
                 discount: item.discount,
                 discount_artist: item.discount_artist,
+                shipping_discount: user.is_pro ? 0 : item.shipping_discount ?? 0,
                 tips: item.tips,
                 size: item.size,
                 quantity: item.quantity,
                 total: item.total,
+                total_ship_discount: item.total_ship_discount,
                 created_at: Utils.date(),
                 updated_at: Utils.date()
               })
@@ -1763,7 +1950,8 @@ class Cart {
                   'artist_name',
                   'count',
                   'styles',
-                  'diggers'
+                  'diggers',
+                  'shipping_discount'
                 )
                 .from('project')
                 .leftJoin('vod', 'vod.project_id', 'project.id')
@@ -1862,6 +2050,8 @@ class Cart {
         'order_item.quantity',
         'order_item.project_id',
         'order_item.price',
+        'order_item.shipping_discount',
+        'order_item.total_ship_discount',
         'order_shop.id as order_shop_id',
         'order_shop.shop_id',
         'project.picture',
@@ -1901,6 +2091,10 @@ class Cart {
 
     order.customer_id = customerId
     await Invoice.insertOrder(order)
+
+    await DB('promo_code')
+      .where('code', order.promo_code)
+      .update({ used: DB.raw('used + 1') })
 
     const items = []
     const t = (t) => I18n.locale('en').formatMessage(t)

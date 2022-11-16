@@ -384,13 +384,15 @@ class Payment {
   static getCards = async (params) => {
     const user = await DB('user').select('id', 'email', 'stripe_customer').find(params.user.user_id)
 
+    if (process.env.NODE_ENV !== 'production') {
+      user.stripe_customer = 'cus_KJiRI5dzm4Ll1C'
+    }
+
     if (user.stripe_customer) {
       const customer = await Payment.getCustomer(params.user.user_id)
       customer.payment_methods = (
         await stripe.paymentMethods.list({
-          customer:
-            process.env.NODE_ENV !== 'production' ? 'cus_KJiRI5dzm4Ll1C' : user.stripe_customer,
-          // customer: user.stripe_customer,
+          customer: user.stripe_customer,
           type: 'card'
         })
       ).data
