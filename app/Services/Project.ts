@@ -93,13 +93,12 @@ class Project {
             currencies,
             currency: project.currency
           })
-          if (project.shipping_discount) {
+          if (project.shipping_discount && project.prices) {
             project.prices_ship_discount = project.shipping_discount
-              ? Utils.getPrices({
-                  price: project.price + project.shipping_discount,
-                  currencies,
-                  currency: project.currency
-                })
+              ? Object.keys(project.prices).reduce((acc, key) => {
+                  acc[key] = project.prices[key] + project.shipping_discount
+                  return acc
+                }, {})
               : null
           }
           break
@@ -110,10 +109,16 @@ class Project {
     project.currency_project = project.currency
     if (currencies) {
       project.prices = Utils.getPrices({
-        price: project.price + (project.shipping_discount || 0),
+        price: project.price,
         currencies,
         currency: project.currency
       })
+      project.prices_ship_discount = project.shipping_discount
+        ? Object.keys(project.prices).reduce((acc, key) => {
+            acc[key] = project.prices[key] + project.shipping_discount
+            return acc
+          }, {})
+        : null
     }
 
     return project
@@ -183,13 +188,14 @@ class Project {
         currencies,
         currency: project.currency
       })
+
       project.prices_ship_discount = project.shipping_discount
-        ? Utils.getPrices({
-            price: project.price + project.shipping_discount,
-            currencies,
-            currency: project.currency
-          })
+        ? Object.keys(project.prices).reduce((acc, key) => {
+            acc[key] = project.prices[key] + project.shipping_discount
+            return acc
+          }, {})
         : null
+
       if (project.items) {
         for (const i in project.items) {
           const price = project.items[i].related_price || project.items[i].price
@@ -200,11 +206,10 @@ class Project {
             currency: currency
           })
           project.items[i].prices_ship_discount = project.shipping_discount
-            ? Utils.getPrices({
-                price: price + project.shipping_discount,
-                currencies,
-                currency: currency
-              })
+            ? Object.keys(project.prices).reduce((acc, key) => {
+                acc[key] = project.prices[key] + project.shipping_discount
+                return acc
+              }, {})
             : null
           project.items[i].sizes = project.items[i].sizes
             ? Object.keys(JSON.parse(project.items[i].sizes)).filter((k) => {

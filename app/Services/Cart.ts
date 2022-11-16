@@ -1216,6 +1216,7 @@ class Cart {
       for (const i of p.project.items) {
         if (i.id === p.item_id) {
           res.price = i.prices[params.currency]
+          res.price_ship_discount = i.prices_ship_discount?.[params.currency] ?? null
           res.item = i.name
           res.picture = i.picture
           p.project.copies_left = i.stock
@@ -1241,11 +1242,9 @@ class Cart {
     res.discount_artist = p.project.discount_artist
     res.price_discount = Utils.round(res.price - res.discount)
     res.shipping_discount = p.project.shipping_discount
-    res.price_ship_discount = res.shipping_discount
-      ? Utils.round(res.price + res.shipping_discount)
-      : null
+    res.price_ship_discount = res.price_ship_discount ?? null
     res.price_discount_ship_discount = res.shipping_discount
-      ? Utils.round(res.price + res.shipping_discount - res.discount)
+      ? Utils.round(res.price_ship_discount - res.discount)
       : null
 
     res.project_id = p.project.id
