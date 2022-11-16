@@ -1481,7 +1481,7 @@ class Cart {
                 size: item.size,
                 quantity: item.quantity,
                 total: item.total,
-                total_ship_discount: item.total_ship_discount,
+                total_ship_discount: item.total_ship_discount || 0,
                 created_at: Utils.date(),
                 updated_at: Utils.date()
               })
