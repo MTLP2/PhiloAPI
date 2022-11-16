@@ -580,9 +580,10 @@ class Cart {
       shop.error = 'shipping_limit_weight'
     }
 
-    // Calculate shipping displayed to customer by doing shipping - total of shipping discounts of shop
+    // Calculate shipping displayed to customer by doing shipping - total of shipping  of shop
     // Except for pro user (then discount to 0)
     const userIsPro = await Utils.isProUser(p.user_id)
+
     const shippingDiscount: number = userIsPro
       ? 0
       : p.items.reduce((acc, cur) => {
@@ -745,15 +746,67 @@ class Cart {
       if (p.promo_code.projects && p.promo_code.projects.length > 0) {
         const projects = p.promo_code.projects.replace(/ /g, '').split(',')
 
+        // TOTAL RECURSIVE
         shop.items.map((item, i) => {
           if (projects.indexOf(item.project_id.toString()) > -1) {
             item.shipping = shop.shipping
-            shop.discount = Utils.round(shop.discount + Cart.getDiscountProject(item, p.promo_code))
-            shop.total = Utils.round(shop.total - Cart.getDiscountProject(item, p.promo_code))
-            shop.items[i].discount = Cart.getDiscountProject(item, p.promo_code)
+            shop.discount = Utils.round(
+              shop.discount + Cart.getDiscountProject(shop.items[i], p.promo_code)
+            )
+
+            // Shipping diff based on discount vs no discount (otherwise the client pay less)
+            shop.discount_ship_diff = item.total_ship_discount
+              ? Utils.round(
+                  Cart.getDiscountProject(
+                    {
+                      total: item.total,
+                      total_ship_discount: item.total_ship_discount,
+                      shipping: item.shipping
+                    },
+                    p.promo_code
+                  ) -
+                    Cart.getDiscountProject(
+                      {
+                        total: item.total,
+                        shipping: item.shipping
+                      },
+                      p.promo_code
+                    )
+                )
+              : 0
+            if (shop.discount_ship_diff) {
+              shop.shipping = Utils.round(shop.shipping + shop.discount_ship_diff)
+              shop.shipping_pickup = shop.shipping_pickup
+                ? Utils.round(shop.shipping_pickup + shop.discount_ship_diff)
+                : null
+              shop.shipping_standard = shop.shipping_standard
+                ? Utils.round(shop.shipping_standard + shop.discount_ship_diff)
+                : null
+              shop.shipping_tracking = shop.shipping_tracking
+                ? Utils.round(shop.shipping_tracking + shop.discount_ship_diff)
+                : null
+            }
+
+            shop.total = Utils.round(
+              shop.total -
+                Cart.getDiscountProject(shop.items[i], p.promo_code) +
+                shop.discount_ship_diff
+            )
+            shop.total_ship_discount = shop.total_ship_discount
+              ? Utils.round(
+                  shop.total_ship_discount - Cart.getDiscountProject(shop.items[i], p.promo_code)
+                )
+              : null
+
+            shop.items[i].discount = Cart.getDiscountProject(shop.items[i], p.promo_code)
             shop.items[i].discount_artist = p.promo_code.artist_pay
             shop.items[i].total_old = shop.items[i].total
-            shop.items[i].total -= Cart.getDiscountProject(item, p.promo_code)
+            shop.items[i].total_ship_discount_old = shop.items[i].total_ship_discount || null
+            shop.items[i].total -= Cart.getDiscountProject(shop.items[i], p.promo_code)
+            shop.items[i].total_ship_discount -= Cart.getDiscountProject(
+              shop.items[i],
+              p.promo_code
+            )
           }
         })
       } else {
@@ -767,7 +820,6 @@ class Cart {
     }
 
     shop.promo_code = p.promo_code
-    // console.log(shop)
     return shop
   }
 
@@ -775,7 +827,7 @@ class Cart {
     if (promo.on_total) {
       return Utils.round((item.total + item.shipping) * (promo.value / 100))
     } else {
-      return Utils.round(item.total * (promo.value / 100))
+      return Utils.round((item.total_ship_discount || item.total) * (promo.value / 100))
     }
   }
 
@@ -1194,6 +1246,9 @@ class Cart {
     res.shipping_discount = p.project.shipping_discount
     res.price_ship_discount = res.shipping_discount
       ? Utils.round(res.price + res.shipping_discount)
+      : null
+    res.price_discount_ship_discount = res.shipping_discount
+      ? Utils.round(res.price + res.shipping_discount - res.discount)
       : null
 
     res.project_id = p.project.id
