@@ -144,6 +144,7 @@ Route.post('/auth/reset-password', 'AuthController.resetPassword')
 Route.post('/auth/unsubscribe-newsletter', 'AuthController.unsubscribeNewsletter')
 
 Route.post('/cart/calculate', 'CartController.calculate').middleware(['auth:optional'])
+Route.post('/cart/pay', 'CartController.pay').middleware(['auth:optional'])
 Route.post('/cart/related', 'CartController.related').middleware(['auth:optional'])
 Route.post('/vod/:id/calculate', 'ProjectsController.calculateVod').middleware(['auth:optional'])
 
@@ -161,7 +162,6 @@ Route.group(() => {
   Route.get('/cart', 'CartController.getCart')
   Route.post('/cart', 'CartController.saveCart')
   Route.delete('/cart', 'CartController.clearCart')
-  Route.post('/cart/pay', 'CartController.pay')
   Route.post('/cart/confirm', 'CartController.confirm')
   Route.post('/cart/execute', 'CartController.execute')
   Route.post('/cart/feedback', 'CartController.saveFeedback')
