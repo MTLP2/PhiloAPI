@@ -470,8 +470,6 @@ class Cart {
       }
     }
 
-    console.log('promo code', p.promo_code)
-
     const user = await DB('user').select('name', 'slug').where('id', p.id).first()
 
     shop.id = user.id
@@ -525,10 +523,6 @@ class Cart {
         item.currency = p.currency
         item.shipping_discount = p.shipping_discount
         const calculatedItem = await Cart.calculateItem(item)
-        console.log(
-          '🚀 ~ file: Cart.ts ~ line 528 ~ Cart ~ p.items.map ~ calculatedItem',
-          calculatedItem
-        )
 
         if (calculatedItem.error) {
           shop.error = calculatedItem.error
@@ -604,6 +598,8 @@ class Cart {
       country_id: p.country_id,
       state: p.customer.state
     })
+
+    console.log('shipping', shipping)
 
     shop.tax_rate = await Cart.getTaxRate(p.customer)
     shipping.letter = 0
@@ -736,8 +732,6 @@ class Cart {
 
     const total = shop.total
     shop.total = Utils.round(shop.total + shop.shipping)
-    // ! MAYBE HERE
-    console.log('shop', shop)
     shop.sub_total = Utils.round(shop.total / (1 + shop.tax_rate))
     shop.tax = Utils.round(shop.total - shop.sub_total)
 
@@ -750,19 +744,31 @@ class Cart {
       if (p.promo_code.projects && p.promo_code.projects.length > 0) {
         const projects = p.promo_code.projects.replace(/ /g, '').split(',')
 
+        // TOTAL RECURSIVE
         shop.items.map((item, i) => {
           if (projects.indexOf(item.project_id.toString()) > -1) {
             item.shipping = shop.shipping
-            shop.discount = Utils.round(shop.discount + Cart.getDiscountProject(item, p.promo_code))
-            shop.total = Utils.round(shop.total - Cart.getDiscountProject(item, p.promo_code))
+            shop.discount = Utils.round(
+              shop.discount + Cart.getDiscountProject(shop.items[i], p.promo_code)
+            )
+            // To CHANGE
+            shop.total = Utils.round(
+              shop.total - Cart.getDiscountProject(shop.items[i], p.promo_code)
+            )
             shop.total_ship_discount = shop.total_ship_discount
-              ? Utils.round(shop.total_ship_discount - Cart.getDiscountProject(item, p.promo_code))
+              ? Utils.round(
+                  shop.total_ship_discount - Cart.getDiscountProject(shop.items[i], p.promo_code)
+                )
               : null
-            shop.items[i].discount = Cart.getDiscountProject(item, p.promo_code)
+            shop.items[i].discount = Cart.getDiscountProject(shop.items[i], p.promo_code)
             shop.items[i].discount_artist = p.promo_code.artist_pay
-            shop.items[i].total_old = shop.items[i].total_ship_discount || shop.items[i].total
-            shop.items[i].total -= Cart.getDiscountProject(item, p.promo_code)
-            shop.items[i].total_ship_discount -= Cart.getDiscountProject(item, p.promo_code)
+            shop.items[i].total_old = shop.items[i].total
+            shop.items[i].total_ship_discount_old = shop.items[i].total_ship_discount || null
+            shop.items[i].total -= Cart.getDiscountProject(shop.items[i], p.promo_code)
+            shop.items[i].total_ship_discount -= Cart.getDiscountProject(
+              shop.items[i],
+              p.promo_code
+            )
           }
         })
       } else {
@@ -784,7 +790,7 @@ class Cart {
     if (promo.on_total) {
       return Utils.round((item.total + item.shipping) * (promo.value / 100))
     } else {
-      return Utils.round(item.total * (promo.value / 100))
+      return Utils.round((item.total_ship_discount || item.total) * (promo.value / 100))
     }
   }
 
@@ -1157,7 +1163,6 @@ class Cart {
 
   static calculateItem = async (params) => {
     const p = params
-    console.log('p project discount', p.project?.discount)
     const res: any = {}
     p.quantity = parseInt(params.quantity, 10)
     p.quantity = p.quantity < 1 || isNaN(p.quantity) ? 1 : p.quantity
