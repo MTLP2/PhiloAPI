@@ -455,6 +455,9 @@ class Cart {
             shop.promo_error = 'promo_code_finished'
           }
         }
+        if (code.only_once && code.used > 0) {
+          shop.promo_error = 'promo_code_used'
+        }
         if (code.unique) {
           const already = await DB('order')
             .where('promo_code', code.id)
@@ -578,9 +581,10 @@ class Cart {
       shop.error = 'shipping_limit_weight'
     }
 
-    // Calculate shipping displayed to customer by doing shipping - total of shipping discounts of shop
+    // Calculate shipping displayed to customer by doing shipping - total of shipping  of shop
     // Except for pro user (then discount to 0)
     const userIsPro = await Utils.isProUser(p.user_id)
+
     const shippingDiscount: number = userIsPro
       ? 0
       : p.items.reduce((acc, cur) => {
@@ -602,42 +606,66 @@ class Cart {
 
     shop.tax_rate = await Cart.getTaxRate(p.customer)
     shipping.letter = 0
+
     // Standard
-    shipping.original_standard = Utils.round(
-      shipping.standard + shipping.standard * shop.tax_rate,
-      2,
-      0.1
-    )
-    shipping.standard = Math.max(
-      Utils.round(shipping.standard - shippingDiscount + shipping.standard * shop.tax_rate, 2, 0.1),
-      0
-    )
+    shipping.original_standard = Utils.getShipDiscounts({
+      ship: shipping.standard,
+      taxRate: shop.tax_rate
+    })
+    shipping.standard = Utils.getShipDiscounts({
+      ship: shipping.standard,
+      shippingDiscount,
+      taxRate: shop.tax_rate
+    })
 
     // Tracking
-    shipping.original_tracking = Utils.round(
-      shipping.tracking + shipping.tracking * shop.tax_rate,
-      2,
-      0.1
-    )
-    shipping.tracking = Math.max(
-      Utils.round(shipping.tracking - shippingDiscount + shipping.tracking * shop.tax_rate, 2, 0.1),
-      0
-    )
+    // shipping.original_tracking = shipping.tracking
+    //   ? Utils.round(shipping.tracking + shipping.tracking * shop.tax_rate, 2, 0.1)
+    //   : null
+    // shipping.tracking = shipping.tracking
+    //   ? Math.max(
+    //       Utils.round(
+    //         shipping.tracking - shippingDiscount + shipping.tracking * shop.tax_rate,
+    //         2,
+    //         0.1
+    //       ),
+    //       0
+    //     )
+    //   : null
+    shipping.original_tracking = Utils.getShipDiscounts({
+      ship: shipping.tracking,
+      taxRate: shop.tax_rate
+    })
+    shipping.tracking = Utils.getShipDiscounts({
+      ship: shipping.tracking,
+      shippingDiscount,
+      taxRate: shop.tax_rate
+    })
 
     // Pickup
-    shipping.original_pickup = Utils.round(
-      shipping.pickup + shipping.pickup * shop.tax_rate,
-      2,
-      0.1
-    )
-    shipping.pickup = Math.max(
-      Utils.round(shipping.pickup - shippingDiscount + shipping.pickup * shop.tax_rate, 2, 0.1),
-      0
-    )
+    // shipping.original_pickup = shipping.pickup
+    //   ? Utils.round(shipping.pickup + shipping.pickup * shop.tax_rate, 2, 0.1)
+    //   : null
+    // shipping.pickup = shipping.pickup
+    //   ? Math.max(
+    //       Utils.round(shipping.pickup - shippingDiscount + shipping.pickup * shop.tax_rate, 2, 0.1),
+    //       0
+    //     )
+    //   : null
 
-    if (shipping.letter > shipping.standard) {
-      shipping.letter = 0
-    }
+    shipping.original_pickup = Utils.getShipDiscounts({
+      ship: shipping.pickup,
+      taxRate: shop.tax_rate
+    })
+    shipping.pickup = Utils.getShipDiscounts({
+      ship: shipping.pickup,
+      shippingDiscount,
+      taxRate: shop.tax_rate
+    })
+
+    // if (shipping.letter > shipping.standard) {
+    //   shipping.letter = 0
+    // }
 
     shop.shipping_letter = shipping.letter
     shop.shipping_standard = shipping.standard
@@ -646,35 +674,56 @@ class Cart {
     shop.shipping_type = p.shipping_type
     shop.transporter = shipping.transporter
 
-    if (!p.shipping_type && (shipping.pickup > 0 || shippingDiscount > 0)) {
+    if (
+      !p.shipping_type &&
+      shipping.pickup !== null &&
+      (shipping.pickup > 0 || shippingDiscount > 0)
+    ) {
       shop.shipping = shipping.pickup
       shop.original_shipping = shipping.original_pickup
       shop.shipping_type = 'pickup'
-    } else if (p.shipping_type === 'standard' && (shipping.standard > 0 || shippingDiscount > 0)) {
+    } else if (
+      p.shipping_type === 'standard' &&
+      shipping.standard !== null &&
+      (shipping.standard > 0 || shippingDiscount > 0)
+    ) {
       shop.shipping = shipping.standard
       shop.original_shipping = shipping.original_standard
-    } else if (p.shipping_type === 'tracking' && (shipping.tracking > 0 || shippingDiscount > 0)) {
+    } else if (
+      p.shipping_type === 'tracking' &&
+      shipping.tracking !== null &&
+      (shipping.tracking > 0 || shippingDiscount > 0)
+    ) {
       shop.shipping = shipping.tracking
       shop.original_shipping = shipping.original_tracking
-    } else if (p.shipping_type === 'letter' && shipping.letter > 0) {
-      shop.shipping = shipping.letter
-      shop.original_shipping = shipping.letter
-    } else if (p.shipping_type === 'pickup' && (shipping.pickup > 0 || shippingDiscount > 0)) {
+    }
+    // else if (p.shipping_type === 'letter' && shipping.letter > 0) {
+    //   shop.shipping = shipping.letter
+    //   shop.original_shipping = shipping.letter
+    // }
+    else if (
+      p.shipping_type === 'pickup' &&
+      shipping.pickup !== null &&
+      (shipping.pickup > 0 || shippingDiscount > 0)
+    ) {
       shop.shipping = shipping.pickup
       shop.original_shipping = shipping.original_pickup
-    } else if (shipping.letter > 0 || shippingDiscount > 0) {
-      shop.shipping = shipping.letter
-      shop.shipping_type = 'letter'
-      shop.original_shipping = shipping.letter
-    } else if (shipping.standard > 0 || shippingDiscount > 0) {
+    }
+    // else if (shipping.letter > 0 || shippingDiscount > 0) {
+    //   console.log('6')
+    //   shop.shipping = shipping.letter
+    //   shop.shipping_type = 'letter'
+    //   shop.original_shipping = shipping.letter
+    // }
+    else if (shipping.standard !== null && (shipping.standard > 0 || shippingDiscount > 0)) {
       shop.shipping = shipping.standard
       shop.original_shipping = shipping.original_standard
       shop.shipping_type = 'standard'
-    } else if (shipping.tracking > 0 || shippingDiscount > 0) {
+    } else if (shipping.tracking !== null && (shipping.tracking > 0 || shippingDiscount > 0)) {
       shop.shipping = shipping.tracking
       shop.original_shipping = shipping.original_tracking
       shop.shipping_type = 'tracking'
-    } else if (shipping.pickup > 0 || shippingDiscount > 0) {
+    } else if (shipping.pickup !== null && (shipping.pickup > 0 || shippingDiscount > 0)) {
       shop.shipping = shipping.pickup
       shop.original_shipping = shipping.original_pickup
       shop.shipping_type = 'pickup'
@@ -698,15 +747,67 @@ class Cart {
       if (p.promo_code.projects && p.promo_code.projects.length > 0) {
         const projects = p.promo_code.projects.replace(/ /g, '').split(',')
 
+        // TOTAL RECURSIVE
         shop.items.map((item, i) => {
           if (projects.indexOf(item.project_id.toString()) > -1) {
             item.shipping = shop.shipping
-            shop.discount = Utils.round(shop.discount + Cart.getDiscountProject(item, p.promo_code))
-            shop.total = Utils.round(shop.total - Cart.getDiscountProject(item, p.promo_code))
-            shop.items[i].discount = Cart.getDiscountProject(item, p.promo_code)
+            shop.discount = Utils.round(
+              shop.discount + Cart.getDiscountProject(shop.items[i], p.promo_code)
+            )
+
+            // Shipping diff based on discount vs no discount (otherwise the client pay less)
+            shop.discount_ship_diff = item.total_ship_discount
+              ? Utils.round(
+                  Cart.getDiscountProject(
+                    {
+                      total: item.total,
+                      total_ship_discount: item.total_ship_discount,
+                      shipping: item.shipping
+                    },
+                    p.promo_code
+                  ) -
+                    Cart.getDiscountProject(
+                      {
+                        total: item.total,
+                        shipping: item.shipping
+                      },
+                      p.promo_code
+                    )
+                )
+              : 0
+            if (shop.discount_ship_diff) {
+              shop.shipping = Utils.round(shop.shipping + shop.discount_ship_diff)
+              shop.shipping_pickup = shop.shipping_pickup
+                ? Utils.round(shop.shipping_pickup + shop.discount_ship_diff)
+                : null
+              shop.shipping_standard = shop.shipping_standard
+                ? Utils.round(shop.shipping_standard + shop.discount_ship_diff)
+                : null
+              shop.shipping_tracking = shop.shipping_tracking
+                ? Utils.round(shop.shipping_tracking + shop.discount_ship_diff)
+                : null
+            }
+
+            shop.total = Utils.round(
+              shop.total -
+                Cart.getDiscountProject(shop.items[i], p.promo_code) +
+                shop.discount_ship_diff
+            )
+            shop.total_ship_discount = shop.total_ship_discount
+              ? Utils.round(
+                  shop.total_ship_discount - Cart.getDiscountProject(shop.items[i], p.promo_code)
+                )
+              : null
+
+            shop.items[i].discount = Cart.getDiscountProject(shop.items[i], p.promo_code)
             shop.items[i].discount_artist = p.promo_code.artist_pay
             shop.items[i].total_old = shop.items[i].total
-            shop.items[i].total -= Cart.getDiscountProject(item, p.promo_code)
+            shop.items[i].total_ship_discount_old = shop.items[i].total_ship_discount || null
+            shop.items[i].total -= Cart.getDiscountProject(shop.items[i], p.promo_code)
+            shop.items[i].total_ship_discount -= Cart.getDiscountProject(
+              shop.items[i],
+              p.promo_code
+            )
           }
         })
       } else {
@@ -720,7 +821,6 @@ class Cart {
     }
 
     shop.promo_code = p.promo_code
-    // console.log(shop)
     return shop
   }
 
@@ -728,7 +828,7 @@ class Cart {
     if (promo.on_total) {
       return Utils.round((item.total + item.shipping) * (promo.value / 100))
     } else {
-      return Utils.round(item.total * (promo.value / 100))
+      return Utils.round((item.total_ship_discount || item.total) * (promo.value / 100))
     }
   }
 
@@ -1120,6 +1220,7 @@ class Cart {
       for (const i of p.project.items) {
         if (i.id === p.item_id) {
           res.price = i.prices[params.currency]
+          res.price_ship_discount = i.prices_ship_discount?.[params.currency] ?? null
           res.item = i.name
           res.picture = i.picture
           p.project.copies_left = i.stock
@@ -1145,8 +1246,9 @@ class Cart {
     res.discount_artist = p.project.discount_artist
     res.price_discount = Utils.round(res.price - res.discount)
     res.shipping_discount = p.project.shipping_discount
-    res.price_ship_discount = res.shipping_discount
-      ? Utils.round(res.price + res.shipping_discount)
+    res.price_ship_discount = res.price_ship_discount ?? null
+    res.price_discount_ship_discount = res.shipping_discount
+      ? Utils.round(res.price_ship_discount - res.discount)
       : null
 
     res.project_id = p.project.id
@@ -1380,7 +1482,7 @@ class Cart {
                 size: item.size,
                 quantity: item.quantity,
                 total: item.total,
-                total_ship_discount: item.total_ship_discount,
+                total_ship_discount: item.total_ship_discount || 0,
                 created_at: Utils.date(),
                 updated_at: Utils.date()
               })
@@ -1989,6 +2091,10 @@ class Cart {
 
     order.customer_id = customerId
     await Invoice.insertOrder(order)
+
+    await DB('promo_code')
+      .where('code', order.promo_code)
+      .update({ used: DB.raw('used + 1') })
 
     const items = []
     const t = (t) => I18n.locale('en').formatMessage(t)
