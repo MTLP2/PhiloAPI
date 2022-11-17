@@ -2127,7 +2127,7 @@ class Cart {
       })
     }
 
-    // Gamification handle
+    // Gamification
 
     // Orders
     try {

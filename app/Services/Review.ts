@@ -137,10 +137,10 @@ class Review {
       .limit(1)
       .update('review_sent', 1)
 
+    // Gamification
     try {
-      // Add pass
       const res = await Pass.addHistory({ type: 'first_review', userId: params.user_id })
-      console.log('🚀 ~ file: Review.ts ~ line 143 ~ Review ~ save= ~ res', res)
+      console.log('res in gamification, review', res)
     } catch (err) {
       console.log('err in gamification', err)
     }
