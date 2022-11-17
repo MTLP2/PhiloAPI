@@ -300,7 +300,7 @@ class AuthController {
       data: params
     })
 
-    const exists = await DB('user').where('email', payload.email).first()
+    const exists = await DB('user').where('is_guest', false).where('email', payload.email).first()
 
     if (exists) {
       return { exists: true }
