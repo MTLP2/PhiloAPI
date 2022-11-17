@@ -55,7 +55,6 @@ class Review {
   }
 
   static all = async (params: any) => {
-    console.log('🚀 ~ file: Review.ts ~ line 58 ~ Review ~ all= ~ params', params)
     const selects = [
       'r.*',
       'u.id as user_id',
