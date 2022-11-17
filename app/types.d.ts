@@ -94,6 +94,16 @@ type QuestDb = {
 
 type QuestModel = QuestDb & Model
 
+// ENUMS
+
+enum InvoiceStatus {
+  invoiced = 'invoiced',
+  paid = 'paid',
+  refunded = 'refunded',
+  prepaid = 'prepaid',
+  '404' = '404'
+}
+
 enum Transporters {
   daudin = 'daudin',
   diggers = 'diggers',
@@ -102,4 +112,11 @@ enum Transporters {
   sna = 'sna',
   soundmerch = 'soundmerch',
   shipehype = 'shipehype'
+}
+
+const enum Currencies {
+  EUR = 'EUR',
+  USD = 'USD',
+  GBP = 'GBP',
+  AUD = 'AUD'
 }

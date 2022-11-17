@@ -1,6 +1,5 @@
 import Excel from 'exceljs'
 import moment from 'moment'
-import google from 'googleapis'
 import fs from 'fs'
 
 import DB from 'App/DB'
@@ -905,9 +904,14 @@ class Admin {
     vod.send_tracks = params.send_tracks || null
     vod.disabled_cover = params.disabled_cover ? params.disabled_cover : 0
     vod.is_shop = params.is_shop ? params.is_shop : 0
+    vod.description_en = params.description_en
+    vod.description_fr = params.description_fr
 
     if (params.signed_id !== undefined) {
       vod.signed_id = params.signed_id || null
+    }
+    if (params.weight !== vod.weight) {
+      vod.weight_custom = true
     }
     vod.weight = params.weight || null
     vod.is_notif = params.is_notif || null
@@ -917,6 +921,7 @@ class Admin {
     vod.scheduled_end = params.scheduled_end
     vod.is_licence = params.is_licence
     vod.shipping_delay_reason = params.shipping_delay_reason
+    vod.shipping_discount = params.shipping_discount || 0
 
     vod.historic = vod.historic ? JSON.parse(vod.historic) : []
     if (params.edit_stock) {
@@ -988,8 +993,6 @@ class Admin {
       vod.statement_comment = params.statement_comment || null
     }
     if (params.com) {
-      vod.description_en = params.description_en
-      vod.description_fr = params.description_fr
       vod.newsletter_fr = params.newsletter_fr
       vod.newsletter_en = params.newsletter_en
       vod.facebook_fr = params.facebook_fr
@@ -1923,6 +1926,7 @@ class Admin {
   }
 
   static saveOrderShop = async (params) => {
+    console.log(params)
     const shop = await DB('order_shop').find(params.id)
 
     const customer = await Customer.save(params.customer)
@@ -4708,6 +4712,159 @@ class Admin {
   static getPassCulture = async () => {
     const passCulture = DB('pass_culture')
     return Utils.getRows({ query: passCulture })
+  }
+
+  static redoCheckAddress = async (params: {
+    projectId: number
+    transporter_choice: Transporters[]
+    user: any
+  }) => {
+    enum Transporters {
+      all = 'all',
+      daudin = 'daudin',
+      diggers = 'diggers',
+      whiplash = 'whiplash',
+      whiplash_uk = 'whiplash_uk',
+      sna = 'sna',
+      soundmerch = 'soundmerch',
+      shipehype = 'shipehype'
+    }
+
+    // Check if current VOD has "check_address" status. Else, throw error
+    const vod = await DB('vod')
+      .select(
+        'vod.id',
+        'vod.status',
+        'p.name as project_name',
+        'p.id as project_id',
+        'vod.historic'
+      )
+      .join('project as p', 'p.id', 'vod.project_id')
+      .where('vod.project_id', params.projectId)
+      .first()
+
+    if (vod.status !== 'check_address')
+      throw new Error('This project must be in check_address to use this function')
+
+    const orders = await DB('order_shop as os')
+      .select('os.*', 'os.id as order_shop_id')
+      .join('order_item as oi', 'oi.order_shop_id', 'os.id')
+      .where('oi.project_id', vod.project_id)
+      .where('oi.vod_id', vod.id)
+      .where('os.is_paid', 1)
+      .whereIn(
+        'os.transporter',
+        params.transporter_choice.includes(Transporters.all)
+          ? Object.values(Transporters)
+          : params.transporter_choice
+      )
+      .whereNull('date_export')
+      .all()
+
+    for (const order of orders) {
+      let pickupNotFound = false
+      const data = {
+        user_id: order.user_id,
+        type: 'my_order_check_address',
+        project_id: vod.project_id,
+        project_name: vod.project_name,
+        vod_id: vod.id,
+        order_shop_id: order.id,
+        order_id: order.order_id,
+        alert: 0
+      }
+
+      if (order.shipping_type === 'pickup') {
+        const pickup = JSON.parse(order.address_pickup)
+        if (!pickup || !pickup.number) {
+          continue
+        }
+        const available = await MondialRelay.checkPickupAvailable(pickup.number)
+        if (!available) {
+          data.type = 'my_order_pickup_must_change'
+          pickupNotFound = true
+        }
+      }
+      const exist = await Notification.exist(data)
+      if (!exist) {
+        await Notification.new(data)
+      }
+
+      // Update step of order
+      await DB('order_shop').where('id', order.id).where('is_paid', 1).update({
+        step: 'check_address',
+        pickup_not_found: pickupNotFound
+      })
+    }
+
+    // Update history of vod
+    const newHistory = JSON.parse(vod.historic)
+    newHistory.push({
+      type: 'status',
+      user_id: params.user.id,
+      old: vod.status,
+      new: `check_address ${
+        params.transporter_choice
+          ? params.transporter_choice.includes(Transporters.all)
+            ? ' (all)'
+            : ` (${params.transporter_choice.join(', ')})`
+          : ''
+      }`,
+      notif: 1,
+      date: Utils.date()
+    })
+
+    await DB('vod')
+      .where('id', vod.id)
+      .update({ historic: JSON.stringify(newHistory) })
+
+    return true
+  }
+
+  static getDelayNewsletters = async ({ id }: { id: number }) => {
+    const delayNewsletters = DB('project_nl').where('project_id', id)
+    return Utils.getRows({ query: delayNewsletters })
+  }
+
+  static putDelayNewsletter = async (params: {
+    id: number | null
+    sent: boolean
+    text_fr: string
+    text_en: string
+    cio_id?: number | null
+    project_id: number
+  }) => {
+    console.log(params)
+
+    // Create if id is null
+    if (!params.id) return Admin.createDelayNewsletter(params)
+
+    // Else update
+    const delayNewsletter = await DB('project_nl').find(params.id)
+    if (!delayNewsletter) throw new Error('Delay newsletter not found')
+
+    await DB('project_nl')
+      .where('id', params.id)
+      .update({
+        sent: params.sent ? Utils.date() : null,
+        text_fr: params.text_fr,
+        text_en: params.text_en,
+        cio_id: params.cio_id || null,
+        updated_at: Utils.date()
+      })
+
+    return true
+  }
+
+  static createDelayNewsletter = async (params) => {
+    await DB('project_nl').insert({
+      sent: params.sent ? Utils.date() : null,
+      text_fr: params.text_fr,
+      text_en: params.text_en,
+      cio_id: params.cio_id || null,
+      project_id: params.project_id
+    })
+    return true
   }
 }
 

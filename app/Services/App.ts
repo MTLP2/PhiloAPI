@@ -1852,6 +1852,55 @@ class App {
       [...manuals, ...boxes, ...orders]
     )
   }
+
+  static invoicesToPayments = async () => {
+    const allInvoices = await DB('invoice').hasMany('payment', 'payments', 'invoice_id').all()
+
+    // Divide allInvoices to get 2000
+    const chunks = Math.ceil(allInvoices.length / 2000)
+    for (let index = 0; index < chunks; index++) {
+      console.log('Chunk number ', index, ' of ', chunks)
+
+      const invoices = allInvoices.slice(index * 1000, (index + 1) * 1000)
+      if (!invoices.length) continue
+
+      const orders = await DB('order')
+        .select('payment_type', 'payment_id', 'id')
+        .whereIn(
+          'id',
+          invoices.map((i) => i.order_id)
+        )
+        .all()
+
+      const invoicesWithOrders = invoices.map((i) => {
+        const order = orders.find((o) => o.id === i.order_id)
+        return {
+          ...i,
+          payment_type: order?.payment_type || null,
+          payment_id: order?.payment_id || null
+        }
+      })
+
+      let count = 0
+      for (const invoice of invoicesWithOrders) {
+        count++
+        console.log(invoice.id)
+        console.log(((count / invoicesWithOrders.length) * 100).toFixed(1) + '%')
+
+        if (!invoice.payments.length) {
+          try {
+            await Invoice.save({ ...invoice, invoice_to_payment: true })
+          } catch (error) {
+            console.error(error)
+          }
+        }
+      }
+
+      console.log('chunk done')
+    }
+
+    return 'ok'
+  }
 }
 
 export default App

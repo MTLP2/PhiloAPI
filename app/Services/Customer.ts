@@ -1,4 +1,6 @@
 import DB from 'App/DB'
+import Utils from 'App/Utils'
+import Env from '@ioc:Adonis/Core/Env'
 
 class Customer {
   static save = (params) => {
@@ -43,6 +45,70 @@ class Customer {
       .join('customer', 'customer.id', 'order_shop.customer_id')
       .where('order_shop.id', orderShopId)
       .first()
+  }
+
+  static searchAddress = async (payload: {
+    search: string
+    lang: string
+    country?: string
+    lat?: number
+    lng?: number
+  }) => {
+    let url = `https://maps.googleapis.com/maps/api/place/autocomplete/json`
+    url += `?input=${payload.search}`
+    url += `&location=${payload.lat},${payload.lng}`
+    url += `&radius=10000`
+    url += `&language=${payload.lang}`
+    url += `&key=${Env.get('GOOGLE_API_MAPS')}`
+
+    const res = await Utils.request(url, {
+      json: true
+    })
+
+    return res
+  }
+
+  static detailAddress = async (id: string) => {
+    let url = `https://maps.googleapis.com/maps/api/place/details/json`
+    url += `?place_id=${id}`
+    url += `&fields=address_component,adr_address,geometry`
+    url += `&key=${Env.get('GOOGLE_API_MAPS')}`
+
+    const res: any = await Utils.request(url, { json: true })
+
+    console.log(res.result)
+    const address = {
+      address: '',
+      zip_code: '',
+      city: '',
+      country_id: '',
+      state: '',
+      lat: res.result.geometry.location.lat,
+      lng: res.result.geometry.location.lng
+    }
+
+    for (const comp of res.result.address_components) {
+      if (comp.types.includes('street_number')) {
+        address.address += comp.long_name
+      }
+      if (comp.types.includes('route')) {
+        address.address += ` ${comp.long_name}`
+      }
+      if (comp.types.includes('locality')) {
+        address.city = `${comp.long_name}`
+      }
+      if (comp.types.includes('postal_code')) {
+        address.zip_code = `${comp.long_name}`
+      }
+      if (comp.types.includes('administrative_area_level_1')) {
+        address.state = `${comp.long_name}`
+      }
+      if (comp.types.includes('country')) {
+        address.country_id = `${comp.short_name}`
+      }
+    }
+
+    return address
   }
 }
 

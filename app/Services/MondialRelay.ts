@@ -159,7 +159,7 @@ class MondialRelay {
       } else {
         if (status === 'not_found') {
           await Notification.sendEmail({
-            to: 'victor@diggersfactory.com',
+            to: 'victor@diggersfactory.com,romain@diggersfactory.com',
             subject: `MondialRelay not found : ${dispatch.tracking_number}`,
             html: `<ul>
               <li>Order Id : https://www.diggersfactory.com/sheraf/order/${dispatch.order_id}</li>

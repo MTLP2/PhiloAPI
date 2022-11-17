@@ -31,6 +31,9 @@ Route.get('/sitemap.xml', 'AppController.sitemap')
 Route.get('/socket.io/', () => '')
 Route.post('/socket.io/', () => '')
 Route.get('/favicon.ico', () => '')
+Route.get('/search-address', 'AppController.searchAddress')
+Route.get('/detail-address', 'AppController.detailAddress')
+
 Route.get('/robots.txt', ({ response }) => {
   response.header('Content-type', 'text/plain')
   return 'User-agent: *\nDisallow: /'
@@ -311,6 +314,9 @@ Route.group(() => {
   Route.get('/projects/:id/dispatchs', 'AdminController.getDispatchs')
   Route.get('/projects/facebook', 'AdminController.exportFacebookProjects')
   Route.delete('/projects/:id/remove-image', 'AdminController.removeImage')
+  Route.post('/projects/:id/redo-check-address', 'AdminController.redoCheckAddress')
+  Route.get('/projects/:pid/delay-nl', 'AdminController.getDelayNewsletters')
+  Route.put('/projects/:pid/delay-nl', 'AdminController.putDelayNewsletter')
   Route.post('/statements', 'AdminController.uploadStatement')
   Route.get('/statements/stats', 'AdminController.getStatementStats')
   Route.post('/stocks', 'AdminController.uploadStocks')
@@ -445,6 +451,7 @@ Route.group(() => {
   Route.get('/invoices/csv', 'AdminController.invoicesCsv')
   Route.get('/invoices/export', 'AdminController.exportInvoices')
   Route.get('/invoices/:id', 'AdminController.getInvoice')
+  Route.put('/invoices/:id/payment-invoices/', 'AdminController.putPaymentInvoice')
   Route.delete('/invoices/:id', 'AdminController.removeInvoice')
   Route.post('/invoices/:id/duplicate', 'AdminController.duplicateInvoice')
   Route.get('/invoices/:id/download', 'AdminController.downloadInvoice')

@@ -222,6 +222,7 @@ class Sign {
         sponsor: params.sponsor ? params.sponsor : null,
         country_id: params.country_id ? params.country_id : null,
         facebook_id: params.facebook_id ? params.facebook_id : null,
+        google_id: params.google_id ? params.google_id : null,
         soundcloud_id: params.soundcloud_id || null,
         soundcloud_token: params.soundcloud_token || null,
         referrer: params.referrer ? params.referrer : null,

@@ -150,7 +150,7 @@ class Utils {
     return result
   }
 
-  static round = (num, decimal = 2, step?) => {
+  static round = (num: number, decimal = 2, step?: number) => {
     const d = Math.pow(10, decimal)
     const v = Math.round(num * d) / d
     if (!step) {
@@ -533,7 +533,7 @@ class Utils {
       let currencies
       if (!date || date === Utils.date({ time: false })) {
         const currenciesDb = await Utils.getCurrenciesDb()
-        currencies = await Utils.getCurrencies('EUR', currenciesDb)
+        currencies = await Utils.getCurrencies(Currencies.EUR, currenciesDb)
       } else {
         currencies = await Utils.getCurrenciesApi(date)
       }
@@ -551,7 +551,10 @@ class Utils {
     return Utils.round(1 / (c1.value / c2.value), 4)
   }
 
-  static getCurrencies = (base = 'EUR', currencies) => {
+  static getCurrencies = (
+    base: Currencies = Currencies.EUR,
+    currencies: { id: string; value: Currencies; updated_at: string }[]
+  ) => {
     /**
     if (!currencies) {
       currencies = await DB('currency').all()
@@ -581,7 +584,12 @@ class Utils {
       }
     }
 
-    return res
+    return res as {
+      EUR: number
+      USD: number
+      GBP: number
+      AUD: number
+    }
   }
 
   static getCurrenciesDb = async () => {
@@ -1081,7 +1089,17 @@ class Utils {
     }
   }
 
-  static getPrices = ({ price, currency, currencies }) => {
+  static getPrices = ({
+    price,
+    currency,
+    currencies
+  }: // shippingDiscount,
+  {
+    price: number
+    currency: Currencies
+    currencies: { id: string; value: Currencies; updated_at: string }[]
+    // shippingDiscount: number
+  }) => {
     const curr = Utils.getCurrencies(currency, currencies)
 
     return {
@@ -1188,6 +1206,30 @@ class Utils {
       // return response.status(400).send({ error: error.messages })
     }
     **/
+  }
+
+  static getShipDiscounts = ({
+    ship,
+    taxRate,
+    shippingDiscount
+  }: {
+    ship: number | null
+    taxRate: number
+    shippingDiscount?: number
+  }) => {
+    // Original
+    if (!shippingDiscount) return ship ? Utils.round(ship + ship * taxRate, 2, 0.1) : null
+    // With discount
+    return ship ? Math.max(Utils.round(ship - shippingDiscount + ship * taxRate, 2, 0.1), 0) : null
+  }
+
+  static isProUser = async (userId: number) => {
+    let userIsPro = false
+    if (userId) {
+      const user = await DB('user').select('is_pro').where('id', userId).first()
+      userIsPro = !!user.is_pro
+    }
+    return userIsPro
   }
 
   static getTeam = [
