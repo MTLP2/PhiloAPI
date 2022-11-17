@@ -227,6 +227,7 @@ class Sign {
         soundcloud_token: params.soundcloud_token || null,
         referrer: params.referrer ? params.referrer : null,
         origin: params.origin ? params.origin : null,
+        is_guest: params.is_guest || false,
         newsletter: params.newsletter,
         confirmation_code: params.confirmCode,
         created_at: Utils.date(),
