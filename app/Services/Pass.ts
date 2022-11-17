@@ -418,14 +418,14 @@ export default class Pass {
   }
 
   static async addGenreHistory({ userId, genreList }: { userId: number; genreList: string[] }) {
-    const genres = await DB('genre')
-      .select('type')
-      .join('pass_quest as pq', 'quest_id', 'pq.id')
-      .whereIn('name', genreList)
-      .all()
+    // lowercase genre type and convert spaces to underscores to match quest type
+    const questListFromGenres = genreList.map((genre) => {
+      return genre.toLowerCase().replace(/ /g, '_')
+    })
 
-    if (!genres.length) throw new Error('No quest found for these genres: ' + genreList)
-    return Pass.addHistory({ type: genres.map((genre) => genre.type), userId })
+    if (!questListFromGenres.length)
+      throw new Error('No quest found for these genres: ' + genreList)
+    return Pass.addHistory({ type: questListFromGenres, userId })
   }
 
   static findQuest = async ({ type, userId }: { type: string | Array<string>; userId: number }) => {

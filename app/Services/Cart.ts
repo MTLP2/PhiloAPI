@@ -2128,22 +2128,25 @@ class Cart {
     }
 
     // Gamification handle
-    try {
-      // First purchase
-      if (user.orders.length === 1) {
-        const res = await Pass.addHistory({
-          userId: user.id,
-          type: 'first_order'
-        })
-        console.log('res of gamification', res)
-      }
 
-      // Genre quests
+    // Orders
+    try {
+      const res = await Pass.addHistory({
+        userId: user.id,
+        type: ['first_order', 'order_5', 'order_10', 'order_15', 'order_20']
+      })
+      console.log('res of gamification orders', res)
+    } catch (e) {
+      console.log('error gamification', e)
+    }
+
+    // Genre quests
+    try {
       const resGenres = await Pass.addGenreHistory({
         userId: user.id,
         genreList: orderGenres.flatMap((g) => g)
       })
-      console.log(resGenres)
+      console.log('res of gamification genres', resGenres)
     } catch (err) {
       console.log('err in gamification', err)
     }
