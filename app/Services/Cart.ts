@@ -2131,7 +2131,6 @@ class Cart {
     try {
       // First purchase
       if (user.orders.length === 1) {
-        console.log('here')
         const res = await Pass.addHistory({
           userId: user.id,
           type: 'first_order'

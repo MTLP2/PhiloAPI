@@ -374,6 +374,11 @@ export default class Pass {
           .where('user_id', userId)
           .where('quest_id', quest.id)
           .all()
+
+        // If quest is infinite, check if refId is present. If not, quest might be spammable
+        if (quest.is_infinite && !refId) throw new Error('Quest is infinite and no refId provided')
+
+        // Checking if refIf exists. If it is, means that quest has been done (equivalent to count_repeatable = 1)
         if (
           (quest.user_repeated >= quest.count_repeatable && !quest.is_infinite) ||
           (refId && history.find((h) => h.ref_id === +refId))

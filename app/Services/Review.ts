@@ -1,6 +1,7 @@
 import DB from 'App/DB'
 import Utils from 'App/Utils'
 import Notification from 'App/Services/Notification'
+import Pass from './Pass'
 
 class Review {
   static checkNotif = async () => {
@@ -135,6 +136,14 @@ class Review {
       .orderBy('id', 'desc')
       .limit(1)
       .update('review_sent', 1)
+
+    try {
+      // Add pass
+      const res = await Pass.addHistory({ type: 'first_review', userId: params.user_id })
+      console.log('🚀 ~ file: Review.ts ~ line 143 ~ Review ~ save= ~ res', res)
+    } catch (err) {
+      console.log('err in gamification', err)
+    }
 
     return { success: true }
   }
