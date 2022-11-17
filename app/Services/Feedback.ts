@@ -3,7 +3,6 @@ import Utils from 'App/Utils'
 
 class Feedback {
   static all(params) {
-    console.log('🚀 ~ file: Feedback.ts ~ line 6 ~ Feedback ~ all ~ params', params)
     params.query = DB('feedback')
       .select(
         'feedback.*',
