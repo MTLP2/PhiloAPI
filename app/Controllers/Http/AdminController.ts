@@ -147,6 +147,8 @@ class AdminController {
     project.show_reviews = params.show_reviews
     project.nb_vinyl = params.nb_vinyl
     project.color = params.color
+    project.name = params.name ?? project.name
+    project.artist_name = params.artist_name ?? project.artist_name
 
     await project.save()
     await Admin.saveVod(params)
