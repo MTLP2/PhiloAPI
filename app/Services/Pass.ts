@@ -487,7 +487,18 @@ export default class Pass {
     description_fr: string
     description_en: string
     count_repeatable: number
+    is_upgrade: number
   }) => {
+    // Check if quest of is_upgrade has less count_repetition than submitted quest
+    if (params.is_upgrade) {
+      const prevQuest = await DB('pass_quest').where('id', params.is_upgrade).first()
+      if (!prevQuest) return { error: 'Previous quest not found' }
+      if (prevQuest.count_repeatable >= params.count_repeatable)
+        return {
+          error: `You must enter more repetitions (${prevQuest.count_repeatable}) than upgraded quest.`
+        }
+    }
+
     // Create new quest if no id is provided
     if (!params.id) return Pass.saveQuest(params)
 
