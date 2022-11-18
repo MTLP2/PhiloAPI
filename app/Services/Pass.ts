@@ -472,6 +472,7 @@ export default class Pass {
     params.query = DB('pass_quest')
       .select('pass_quest.*', 'pass_badge.name_en as badge_name_en', 'pass_badge.id as badge_id')
       .leftJoin('pass_badge', 'pass_quest.badge_id', 'pass_badge.id')
+      .belongsTo('pass_quest', '*', 'prev_quest', 'is_upgrade')
     return Utils.getRows(params)
   }
 
