@@ -15,7 +15,6 @@ class Feedback {
       )
       .join('user', 'user.id', 'feedback.user_id')
       .join('order', 'order.id', 'order_id')
-      .orderBy('feedback.id', 'desc')
 
     if (params.start) {
       params.query.where('feedback.created_at', '>=', params.start)
@@ -23,6 +22,9 @@ class Feedback {
     if (params.end) {
       params.query.where('feedback.created_at', '<=', `${params.end} 23:59`)
     }
+
+    params.order = params.order === 'false' ? 'desc' : params.order
+    params.query.orderBy(params.sort || 'feedback.created_at', params.order || 'asc')
 
     return Utils.getRows(params)
   }
