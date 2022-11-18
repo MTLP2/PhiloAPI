@@ -40,6 +40,8 @@ type UserQuestProgress = {
   badge_id?: number
   user_repeated: number
   badge?: BadgeModel
+  is_upgrade: TinyIntBool
+  prev_upgrade_done: TinyIntBool
   created_at: string
   updated_at: string
 }
@@ -221,7 +223,7 @@ export default class Pass {
   }
 
   static async getUserQuestProgress(params: { userId: number }): Promise<UserQuestProgress[]> {
-    return DB('pass_quest as pq')
+    const rawUserQuests: UserQuestProgress[] = await DB('pass_quest as pq')
       .select(
         'pq.*',
         DB.raw(
@@ -234,12 +236,23 @@ export default class Pass {
        WHEN pq.is_infinite = 1 AND (SELECT COUNT(ph.id) FROM pass_history as ph WHERE ph.user_id = ${params.userId} AND ph.quest_id = pq.id) = 0
          THEN false
        ELSE true
-     END completed_by_user`)
+     END completed_by_user`),
+        DB.raw(`
+     CASE
+       WHEN pq.is_upgrade IS NULL THEN null
+       WHEN (SELECT COUNT(ph.id) FROM pass_history as ph WHERE ph.user_id = ${params.userId} AND ph.quest_id = pq.is_upgrade) < (SELECT count_repeatable FROM pass_quest WHERE id = pq.is_upgrade)
+         THEN false
+       WHEN pq.is_infinite = 1 AND (SELECT COUNT(ph.id) FROM pass_history as ph WHERE ph.user_id = ${params.userId} AND ph.quest_id = (SELECT count_repeatable FROM pass_quest WHERE id = pq.is_upgrade)) = 0
+         THEN false
+       ELSE true
+     END prev_upgrade_done`)
       )
       .belongsTo('pass_badge', '*', 'badge', 'badge_id')
       .where('pq.is_active', 1)
       .orderBy('completed_by_user', 'desc')
       .all()
+
+    return rawUserQuests.filter((quest) => !quest.is_upgrade || quest.prev_upgrade_done)
   }
 
   static async getUserBadgeProgress(params: { userId: number }) {
