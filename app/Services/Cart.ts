@@ -119,6 +119,10 @@ class Cart {
           cart.error = box.error
         }
 
+        if (params.boxes[i].shipping_type === 'pickup') {
+          cart.hasPickup = true
+        }
+
         cart.shipping = Utils.round(cart.shipping + box.shipping)
         cart.tax = Utils.round(cart.tax + box.tax)
         cart.sub_total = Utils.round(cart.sub_total + box.sub_total)
