@@ -123,9 +123,8 @@ class Cart {
           cart.hasPickup = true
         }
 
-        cart.shipping = Utils.round(cart.shipping + box.shipping)
         cart.tax = Utils.round(cart.tax + box.tax)
-        cart.sub_total = Utils.round(cart.sub_total + box.sub_total)
+        cart.sub_total = Utils.round(cart.sub_total + box.total)
         cart.total = Utils.round(cart.total + box.total)
         if (box.discount) {
           cart.discount = Utils.round(cart.discount + box.discount)
