@@ -1876,7 +1876,7 @@ class Cart {
     })
 
     const user = await DB()
-      .select('id', 'name', 'email', 'sponsor')
+      .select('id', 'name', 'email', 'is_guest', 'sponsor')
       .from('user')
       .where('id', order.user_id)
       .first()
@@ -1889,6 +1889,12 @@ class Cart {
       .where('os.order_id', orderId)
       .all()
 
+    if (user.is_guest) {
+      await Notification.add({
+        type: 'sign_up_confirm',
+        user_id: order.user_id
+      })
+    }
     const n = {
       type: 'my_order_confirmed',
       user_id: order.user_id,
