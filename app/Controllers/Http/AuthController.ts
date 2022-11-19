@@ -309,15 +309,15 @@ class AuthController {
     }
   }
 
-  async confirmEmail({ params }) {
+  async confirm({ params }) {
     await validator.validate({
       schema: schema.create({
-        code: schema.string()
+        key: schema.string()
       }),
       data: params
     })
 
-    return Sign.confirmEmail(params)
+    return Sign.confirm(params)
   }
 
   async forgotPassword({ params }) {
