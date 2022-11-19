@@ -334,6 +334,9 @@ class App {
       data.user = await DB('user').find(n.user_id)
       data.lang = data.user.lang
     }
+    if (notif.type === 'sign_up_confirm') {
+      data.key = 'lo'
+    }
     const url = data.lang === 'fr' ? `${config.app.url}/fr` : config.app.url
     data.type = n.type
     data.user_id = n.user_id
