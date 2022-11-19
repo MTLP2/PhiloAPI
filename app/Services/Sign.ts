@@ -277,7 +277,7 @@ class Sign {
       link: `${config.app.url}/confirmation/${user.confirmCode}`
     })
 
-  static confirmEmail = async (params) => {
+  static confirm = async (params) => {
     const user = await DB('user').where('confirmation_code', params.code).first()
 
     if (!user) {
@@ -286,32 +286,26 @@ class Sign {
       return { error: 'already_confirm' }
     }
 
-    user.confirmed = 1
+    user.confirmed = true
+    user.is_guest = false
     await user.save()
+  }
 
-    await Dig.confirm({
-      user_id: user.id,
-      type: 'subscribe',
-      friend_id: user.sponsor,
-      confirm: 1
-    })
-    await Dig.confirm({
-      user_id: user.sponsor,
-      type: 'invite_friend',
-      friend_id: user.id,
-      confirm: 1
-    })
-
-    return true
+  static generatePasswordCode = async (email) => {
+    const user = await DB('user').where('email', email).first()
+    user.token_password = Math.random().toString(36).substring(7)
+    user.token_date = new Date()
+    user.token_date.setDate(user.token_date.getDate() + 1)
+    await user.save()
   }
 
   static forgotPassword = async (params) => {
     /**
-  const checkRecaptcha = await Sign.checkReCaptcha(params.ip, params.captcha)
-  if (!checkRecaptcha) {
-    return { error: 'captcha' }
-  }
-  **/
+    const checkRecaptcha = await Sign.checkReCaptcha(params.ip, params.captcha)
+    if (!checkRecaptcha) {
+      return { error: 'captcha' }
+    }
+    **/
     const user = await DB('user').where('email', params.email).first()
 
     if (!user) {
