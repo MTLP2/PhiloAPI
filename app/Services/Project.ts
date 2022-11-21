@@ -528,12 +528,11 @@ class Project {
     if (params.search) {
       params.search = params.search.replace('\\', '')
       params.search = params.search.replace("'", "\\'")
+      params.search = params.search.replace('-', ' ')
       projects.where(function () {
-        this.where('p.name', 'like', `%${params.search}%`)
-          .orWhere('artist_name', 'like', `%${params.search}%`)
-          .orWhere(DB().raw('CONCAT(artist_name, " ", p.name)'), 'like', `%${params.search}%`)
-          .orWhere('label_name', 'like', `%${params.search}%`)
-          .orWhere(DB().raw('REPLACE(v.type, "_", " ")'), 'like', `%${params.search}%`)
+        this.whereRaw(
+          `REPLACE(CONCAT(artist_name, ' ', p.name), '-', ' ') like '%${params.search}%'`
+        ).orWhere('label_name', 'like', `%${params.search}%`)
       })
     }
 

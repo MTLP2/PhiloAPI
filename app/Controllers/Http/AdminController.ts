@@ -147,6 +147,8 @@ class AdminController {
     project.show_reviews = params.show_reviews
     project.nb_vinyl = params.nb_vinyl
     project.color = params.color
+    project.name = params.name ?? project.name
+    project.artist_name = params.artist_name ?? project.artist_name
 
     await project.save()
     await Admin.saveVod(params)
@@ -1046,6 +1048,20 @@ class AdminController {
         data: params
       })
       return Admin.putDelayNewsletter(payload)
+    } catch (err) {
+      return { error: err.message, validation: err.messages }
+    }
+  }
+
+  async deleteDelayNewsletter({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          dnlid: schema.number()
+        }),
+        data: params
+      })
+      return Admin.deleteDelayNewsletter(payload)
     } catch (err) {
       return { error: err.message, validation: err.messages }
     }

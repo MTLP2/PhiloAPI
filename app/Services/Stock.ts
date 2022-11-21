@@ -65,7 +65,7 @@ class Stock {
 
     await stock.save()
 
-    if (!params.is_distrib) {
+    if (!+params.is_distrib) {
       const stocks = await DB('stock')
         .select(DB.raw('SUM(quantity) as quantity'))
         .where('project_id', params.project_id)

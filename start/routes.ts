@@ -318,6 +318,7 @@ Route.group(() => {
   Route.post('/projects/:id/redo-check-address', 'AdminController.redoCheckAddress')
   Route.get('/projects/:pid/delay-nl', 'AdminController.getDelayNewsletters')
   Route.put('/projects/:pid/delay-nl', 'AdminController.putDelayNewsletter')
+  Route.delete('/projects/:pid/delay-nl/:dnlid', 'AdminController.deleteDelayNewsletter')
   Route.post('/statements', 'AdminController.uploadStatement')
   Route.get('/statements/stats', 'AdminController.getStatementStats')
   Route.post('/stocks', 'AdminController.uploadStocks')

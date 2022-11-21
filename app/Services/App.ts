@@ -112,6 +112,7 @@ class App {
       } else if (hour === 7) {
         await App.check5DaysLeftProjects()
         await App.checkFinishedProjects()
+        await App.alertStock()
         await Vod.checkDateShipping()
       } else if (hour === 8) {
         await Box.checkReminder()
@@ -1405,10 +1406,20 @@ class App {
 
   static alertStock = async () => {
     let projects = await DB('project')
+      .select(
+        'project.name',
+        'project.id',
+        'project.artist_name',
+        'goal',
+        'count',
+        'is_shop',
+        'project_id',
+        'alert_stock'
+      )
       .join('vod', 'vod.project_id', 'project.id')
+      .hasMany('stock')
       .where('alert_stock', '>', 0)
       .all()
-
     let html = `
     <style>
       td {
@@ -1440,6 +1451,14 @@ class App {
     </thead>
     <tbody>`
     for (const project of projects) {
+      for (const stock of project.stock) {
+        project[`stock_${stock.type}`] = stock.quantity
+      }
+      project.stock_daudin = project.stock_daudin || 0
+      project.stock_whiplash = project.stock_whiplash || 0
+      project.stock_whiplash_uk = project.stock_whiplash_uk || 0
+      project.stock_diggers = project.stock_diggers || 0
+      console.log(project)
       if (project.is_shop) {
         project.stock_daudin = project.stock_daudin < 0 ? 0 : project.stock_daudin
         project.stock_whiplash = project.stock_whiplash < 0 ? 0 : project.stock_whiplash
@@ -1473,7 +1492,7 @@ class App {
     html += '</tbody></table>'
 
     await Notification.sendEmail({
-      to: 'alexis@diggersfactory.com,cyril@diggersfactory.com,ismail@diggersfactory.com,guillaume@diggersfactory.com,victor@diggersfactory.com,olivia@diggersfactory.com',
+      to: 'alexis@diggersfactory.com,cyril@diggersfactory.com,ismail@diggersfactory.com,guillaume@diggersfactory.com,victor@diggersfactory.com,jean-baptiste@diggersfactory.com',
       subject: 'Etat des stocks',
       html: juice(html)
     })
