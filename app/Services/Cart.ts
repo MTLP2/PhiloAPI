@@ -1902,7 +1902,6 @@ class Cart {
     }
 
     let customerId = null
-    let orderGenres: string[] = []
     await Promise.all(
       shops.map(async (shop) => {
         customerId = shop.customer_invoice_id || shop.customer_id
@@ -1972,7 +1971,6 @@ class Cart {
               project.genres = project.styles.map((s) => genres[styles[s.id || s].genre_id])
               project.genres = [...new Set(project.genres)]
               project.styles = project.styles.map((s) => styles[s.id || s].name)
-              orderGenres.push(project.genres)
 
               cio.track(user.id, {
                 name: 'purchase',
@@ -2047,6 +2045,35 @@ class Cart {
                 transporter: shop.transporter
               })
               await Project.forceLike(project.id, user.id)
+
+              // Gamification
+              const passTypeList = ['first_order', 'order_5', 'order_10', 'order_15', 'order_20']
+              if (project.type_project === 'test_pressing') {
+                passTypeList.push('test_pressing')
+              }
+
+              // Quantity related quests
+              try {
+                const resOrders = await Pass.addHistory({
+                  userId: user.id,
+                  type: passTypeList,
+                  times: item.quantity
+                })
+                console.log('res of gamification orders', resOrders)
+              } catch (e) {
+                console.log('error gamification', e)
+              }
+
+              // Genres quest
+              try {
+                const resGenres = await Pass.addGenreHistory({
+                  userId: user.id,
+                  genreList: project.genres
+                })
+                console.log('res of gamification genres', resGenres)
+              } catch (err) {
+                console.log('err in gamification', err)
+              }
             })
           )
         }
@@ -2125,30 +2152,6 @@ class Cart {
         name: `${order.artist} - ${order.project}`,
         category: 'vinyl'
       })
-    }
-
-    // Gamification
-
-    // Orders
-    try {
-      const res = await Pass.addHistory({
-        userId: user.id,
-        type: ['first_order', 'order_5', 'order_10', 'order_15', 'order_20']
-      })
-      console.log('res of gamification orders', res)
-    } catch (e) {
-      console.log('error gamification', e)
-    }
-
-    // Genre quests
-    try {
-      const resGenres = await Pass.addGenreHistory({
-        userId: user.id,
-        genreList: orderGenres.flatMap((g) => g)
-      })
-      console.log('res of gamification genres', resGenres)
-    } catch (err) {
-      console.log('err in gamification', err)
     }
 
     return {

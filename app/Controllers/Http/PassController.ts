@@ -23,7 +23,7 @@ class PassController {
           description_fr: schema.string(),
           description_en: schema.string(),
           count_repeatable: schema.number(),
-          is_upgrade: schema.number()
+          is_upgrade: schema.number.nullableAndOptional()
         }),
         data: params
       })

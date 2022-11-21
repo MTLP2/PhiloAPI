@@ -250,6 +250,7 @@ export default class Pass {
       .belongsTo('pass_badge', '*', 'badge', 'badge_id')
       .where('pq.is_active', 1)
       .orderBy('completed_by_user', 'desc')
+      .orderBy('user_repeated', 'desc')
       .all()
 
     return rawUserQuests.filter((quest) => !quest.is_upgrade || quest.prev_upgrade_done)
@@ -347,13 +348,15 @@ export default class Pass {
   static async addHistory({
     type,
     userId,
-    refId
+    refId,
+    times = 1
   }: {
     type: string | Array<string>
     userId: number
     refId?: number
+    times?: number
   }) {
-    console.log('addHistory', type, userId, refId)
+    console.log('addHistory', type, userId, refId, times)
     const quests = await Pass.findQuest({ type, userId })
     console.log('🚀 ~ file: Pass.ts ~ line 321 ~ Pass ~ quests', quests)
 
@@ -379,48 +382,51 @@ export default class Pass {
     }
 
     for (const quest of quests) {
-      try {
-        if (!quest.is_active) throw new Error('Quest is not active')
+      for (let i = 0; i < times; i = i + 1) {
+        try {
+          if (!quest.is_active) throw new Error('Quest is not active')
 
-        // Checking if user has already completed more or = the max amount of time a quest can be repeataed, and that this quest is not infinite, or if quest with same refId has been done. Returns error if so
-        const history: History[] = await DB('pass_history')
-          .where('user_id', userId)
-          .where('quest_id', quest.id)
-          .all()
+          // Checking if user has already completed more or = the max amount of time a quest can be repeataed, and that this quest is not infinite, or if quest with same refId has been done. Returns error if so
+          const history: History[] = await DB('pass_history')
+            .where('user_id', userId)
+            .where('quest_id', quest.id)
+            .all()
 
-        // If quest is infinite, check if refId is present. If not, quest might be spammable
-        if (quest.is_infinite && !refId) throw new Error('Quest is infinite and no refId provided')
+          // If quest is infinite, check if refId is present. If not, quest might be spammable
+          if (quest.is_infinite && !refId)
+            throw new Error('Quest is infinite and no refId provided')
 
-        // Checking if refIf exists. If it is, means that quest has been done (equivalent to count_repeatable = 1)
-        if (
-          (quest.user_repeated >= quest.count_repeatable && !quest.is_infinite) ||
-          (refId && history.find((h) => h.ref_id === +refId))
-        )
-          throw new Error('User has already completed this quest')
+          // Checking if refIf exists. If it is, means that quest has been done (equivalent to count_repeatable = 1)
+          if (
+            (quest.user_repeated >= quest.count_repeatable && !quest.is_infinite) ||
+            (refId && history.find((h) => h.ref_id === +refId))
+          )
+            throw new Error('User has already completed this quest')
 
-        // Insert history
-        await DB('pass_history').insert({
-          user_id: userId,
-          quest_id: quest.id,
-          ref_id: refId,
-          created_at: new Date()
-        })
+          // Insert history
+          await DB('pass_history').insert({
+            user_id: userId,
+            quest_id: quest.id,
+            ref_id: refId,
+            created_at: new Date()
+          })
 
-        // Push success to response
-        res.data.push({
-          id: quest.id,
-          success: {
+          // Push success to response
+          res.data.push({
             id: quest.id,
-            title_fr: quest.title_fr,
-            title_en: quest.title_en,
-            points: quest.points
-          }
-        })
-        res.pass_success++
-      } catch (err) {
-        // Push error to response
-        res.data.push({ id: quest.id, error: err.message })
-        res.pass_error++
+            success: {
+              id: quest.id,
+              title_fr: quest.title_fr,
+              title_en: quest.title_en,
+              points: quest.points
+            }
+          })
+          res.pass_success++
+        } catch (err) {
+          // Push error to response
+          res.data.push({ id: quest.id, error: err.message })
+          res.pass_error++
+        }
       }
     }
 
