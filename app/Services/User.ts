@@ -14,6 +14,7 @@ import cio from 'App/Services/CIO'
 import config from 'Config/index'
 import Review from './Review'
 import Storage from 'App/Services/Storage'
+import Pass from './Pass'
 
 class User {
   static me = (id) => {
@@ -222,6 +223,20 @@ class User {
         userId,
         Buffer.from(params.image.replace(/^data:image\/(png|jpg|jpeg);base64,/, ''), 'base64')
       )
+    }
+
+    // Gamification
+    console.log('styles', params.styles)
+    try {
+      if (params.styles.length) {
+        const res = await Pass.addHistory({
+          userId: userId,
+          type: 'user_styles'
+        })
+        console.log('res in gamification, user styles', res)
+      }
+    } catch (err) {
+      console.log('err in gamification, user styles', err)
     }
 
     return DB('user')

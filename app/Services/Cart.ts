@@ -1902,6 +1902,7 @@ class Cart {
     }
 
     let customerId = null
+    let orderGenres: string[] = []
     await Promise.all(
       shops.map(async (shop) => {
         customerId = shop.customer_invoice_id || shop.customer_id
@@ -1971,6 +1972,7 @@ class Cart {
               project.genres = project.styles.map((s) => genres[styles[s.id || s].genre_id])
               project.genres = [...new Set(project.genres)]
               project.styles = project.styles.map((s) => styles[s.id || s].name)
+              orderGenres.push(...project.genres)
 
               cio.track(user.id, {
                 name: 'purchase',

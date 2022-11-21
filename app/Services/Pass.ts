@@ -205,6 +205,16 @@ export default class Pass {
   }
 
   static async updateUserTotals(params: { userId: number }) {
+    // Gamification, retroactive
+    const user = await DB('user as u').find(params.userId)
+    if (user.styles && user.styles !== '[]') {
+      await Pass.addHistory({
+        userId: user.id,
+        type: 'user_styles',
+        updateTotal: false
+      })
+    }
+
     // Check Level
     const { current_points: currentPoints } = await Pass.calculateScore(params)
 
@@ -349,12 +359,14 @@ export default class Pass {
     type,
     userId,
     refId,
-    times = 1
+    times = 1,
+    updateTotal = true
   }: {
     type: string | Array<string>
     userId: number
     refId?: number
     times?: number
+    updateTotal?: boolean
   }) {
     console.log('addHistory', type, userId, refId, times)
     const quests = await Pass.findQuest({ type, userId })
@@ -431,7 +443,9 @@ export default class Pass {
     }
 
     // Check level & badges
-    Pass.updateUserTotals({ userId })
+    if (updateTotal) {
+      Pass.updateUserTotals({ userId })
+    }
 
     return res
   }
