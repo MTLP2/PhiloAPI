@@ -1823,12 +1823,6 @@ class Cart {
     })
 
   static validPayment = async (orderId, transactionId, status = 'confirmed') => {
-    console.log(
-      '🚀 ~ file: Cart.ts ~ line 1626 ~ Cart ~ validPayment= ~ orderId, transactionId, status',
-      orderId,
-      transactionId,
-      status
-    )
     const order = await DB()
       .select(
         'order.id',

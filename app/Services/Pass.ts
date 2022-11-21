@@ -206,11 +206,22 @@ export default class Pass {
 
   static async updateUserTotals(params: { userId: number }) {
     // Gamification, retroactive
-    const user = await DB('user as u').find(params.userId)
+    const user = await DB('user as u').select('styles', 'newsletter', 'id').find(params.userId)
+
+    // User styles
     if (user.styles && user.styles !== '[]') {
       await Pass.addHistory({
         userId: user.id,
         type: 'user_styles',
+        updateTotal: false
+      })
+    }
+
+    // Newsletter
+    if (user.newsletter) {
+      await Pass.addHistory({
+        userId: user.id,
+        type: 'user_newsletter',
         updateTotal: false
       })
     }
@@ -493,6 +504,7 @@ export default class Pass {
       .select('pass_quest.*', 'pass_badge.name_en as badge_name_en', 'pass_badge.id as badge_id')
       .leftJoin('pass_badge', 'pass_quest.badge_id', 'pass_badge.id')
       .belongsTo('pass_quest', '*', 'prev_quest', 'is_upgrade')
+      .hasMany('pass_history', 'history', 'quest_id', '*')
     return Utils.getRows(params)
   }
 

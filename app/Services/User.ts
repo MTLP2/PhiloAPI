@@ -226,7 +226,6 @@ class User {
     }
 
     // Gamification
-    console.log('styles', params.styles)
     try {
       if (params.styles.length) {
         const res = await Pass.addHistory({
@@ -237,6 +236,18 @@ class User {
       }
     } catch (err) {
       console.log('err in gamification, user styles', err)
+    }
+
+    try {
+      if (params.newsletter) {
+        const res = await Pass.addHistory({
+          userId: userId,
+          type: 'user_newsletter'
+        })
+        console.log('res in gamification, user newsletter', res)
+      }
+    } catch (err) {
+      console.log('err in gamification, user newsletter', err)
     }
 
     return DB('user')
