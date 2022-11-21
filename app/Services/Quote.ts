@@ -283,8 +283,11 @@ class Quote {
         .where('code', 'like', params.sponsor)
         .where('is_active', true)
         .first()
-      if (sponsor) {
+      if (sponsor.fee) {
         fee = sponsor.fee / 100
+      } else if (sponsor.discount_prod) {
+        quote.discount = Utils.round(quote.total_tax * (sponsor.discount_prod / 100), 0)
+        quote.total_tax = quote.total_tax - quote.discount
       }
     } else if (params.id) {
       const vod = await DB('vod').where('project_id', params.id).first()

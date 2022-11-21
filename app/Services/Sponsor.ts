@@ -2,7 +2,7 @@ import DB from 'App/DB'
 import Utils from 'App/Utils'
 
 class Sponsor {
-  static all = async (id) => {
+  static all = async () => {
     const sponsors = await DB('sponsor')
       .select(
         'sponsor.*',
@@ -13,12 +13,13 @@ class Sponsor {
       ) as sponsored
       `)
       )
+      .orderBy('created_at', 'desc')
       .all()
     return sponsors
   }
 
   static save = async (params) => {
-    let sponsor = DB('sponsor')
+    let sponsor: any = DB('sponsor')
 
     if (params.id !== '') {
       sponsor = await DB('sponsor').find(params.id)
@@ -28,7 +29,8 @@ class Sponsor {
 
     sponsor.code = params.code
     sponsor.user_id = params.user_id
-    sponsor.fee = params.fee
+    sponsor.fee = params.fee || null
+    sponsor.discount_prod = params.discount_prod || null
     sponsor.is_active = params.is_active
     sponsor.updated_at = Utils.date()
     await sponsor.save()
