@@ -246,6 +246,20 @@ class Sign {
       `
         })
       }
+      if (user.is_guest) {
+        user.token_password = Math.random().toString(36).substring(7)
+        user.token_date = new Date()
+        user.token_date.setDate(user.token_date.getDate() + 1)
+        await user.save()
+
+        await Notification.email({
+          to: user.email,
+          type: 'sign_up_confirm',
+          user,
+          lang: user.lang,
+          link: `${config.app.url}/confirmation/${user.token_password}`
+        })
+      }
 
       cio.identify(user.id, {
         id: user.id,
@@ -268,35 +282,25 @@ class Sign {
       newsletter: newsletter === 1 ? 1 : 0
     })
 
-  static sendConfirmEmail = (user) =>
-    Notification.email({
-      to: user.email,
-      type: 'sign_up',
-      user,
-      lang: user.lang,
-      link: `${config.app.url}/confirmation/${user.confirmCode}`
-    })
-
   static confirm = async (params) => {
-    const user = await DB('user').where('confirmation_code', params.code).first()
+    const user = await DB('user').where('token_password', params.key).first()
 
     if (!user) {
       return { error: 'not_found' }
-    } else if (user.confirmed === 1) {
-      return { error: 'already_confirm' }
+    } else {
+      user.is_guest = false
+      user.confirmed = true
     }
 
-    user.confirmed = true
-    user.is_guest = false
-    await user.save()
-  }
+    if (params.password) {
+      user.password = UserService.convertPassword(params.password)
+      user.token_date = null
+      user.token_password = null
+    }
 
-  static generatePasswordCode = async (email) => {
-    const user = await DB('user').where('email', email).first()
-    user.token_password = Math.random().toString(36).substring(7)
-    user.token_date = new Date()
-    user.token_date.setDate(user.token_date.getDate() + 1)
     await user.save()
+
+    return { success: true }
   }
 
   static forgotPassword = async (params) => {
