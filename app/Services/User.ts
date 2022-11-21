@@ -238,18 +238,6 @@ class User {
       console.log('err in gamification, user styles', err)
     }
 
-    try {
-      if (params.newsletter) {
-        const res = await Pass.addHistory({
-          userId: userId,
-          type: 'user_newsletter'
-        })
-        console.log('res in gamification, user newsletter', res)
-      }
-    } catch (err) {
-      console.log('err in gamification, user newsletter', err)
-    }
-
     return DB('user')
       .where('id', userId)
       .save({
@@ -403,7 +391,7 @@ class User {
     return customer
   }
 
-  static updateNotifications = (userId, params) => {
+  static updateNotifications = async (userId, params) => {
     DB('user').where('id', userId).update({
       unsubscribed: !params.newsletter
     })
@@ -411,6 +399,18 @@ class User {
     cio.identify(userId, {
       unsubscribed: !params.newsletter
     })
+
+    try {
+      if (params.newsletter) {
+        const res = await Pass.addHistory({
+          userId: userId,
+          type: 'user_newsletter'
+        })
+        console.log('res in gamification, user newsletter', res)
+      }
+    } catch (err) {
+      console.log('err in gamification, user newsletter', err)
+    }
 
     return DB('notifications')
       .where('user_id', userId)
