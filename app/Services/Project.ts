@@ -602,6 +602,8 @@ class Project {
     const sales = await PromoCode.getSales({ vod: true })
     const currencies = await Utils.getCurrenciesDb()
 
+    projects.orderBy('id', 'desc')
+
     return projects.all().then((res) => {
       return res.map((project) => Project.setInfos(project, currencies, sales, styles))
     })
