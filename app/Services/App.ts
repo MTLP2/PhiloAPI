@@ -1442,6 +1442,7 @@ class App {
         <th>Alert</th>
         <th>Stock Daudin</th>
         <th>Stock Whiplash</th>
+        <th>Stock Whiplash Uk</th>
         <th>Stock Total</th>
         <th>Diff</th>
       </tr>
@@ -1482,6 +1483,7 @@ class App {
       html += `<td>${project.alert_stock}</td>`
       html += `<td>${project.stock_daudin}</td>`
       html += `<td>${project.stock_whiplash}</td>`
+      html += `<td>${project.stock_whiplash_uk}</td>`
       html += `<td>${project.copies_left}</td>`
       html += `<td>${project.diff}</td>`
       html += '</tr>'
