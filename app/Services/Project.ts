@@ -435,7 +435,9 @@ class Project {
       params.genres = []
 
       const categories: any = []
-      for (const filter of filters) {
+      for (const filter of filters) 
+        filter.value = filter.value.toString().replaceAll(/'/gi, '').replaceAll(/"/gi, '')
+
         if (filter.type === 'type') {
           projects.where('v.type', filter.value)
         } else if (filter.type === 'genre') {
@@ -463,25 +465,31 @@ class Project {
       projects.where(function () {
         if (params.genres) {
           params.genres.split(',').map((genre) => {
+            if (isNaN(genre)) {
+              return
+            }
             this.orWhereExists(
               DB.raw(`
             SELECT style.id
             FROM project_style, style
             WHERE p.id = project_id
               AND style.id = project_style.style_id
-              AND genre_id = ${genre}
+              AND genre_id = ${parseInt(genre)}
           `)
             )
           })
         }
         if (params.styles) {
           params.styles.split(',').map((style) => {
+            if (isNaN(style)) {
+              return
+            }
             this.orWhereExists(
               DB.raw(`
             SELECT id
             FROM project_style
             WHERE p.id = project_id
-              AND project_style.style_id = ${style}
+              AND project_style.style_id = ${parseInt(style)}
           `)
             )
           })
