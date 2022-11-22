@@ -206,7 +206,10 @@ export default class Pass {
 
   static async updateUserTotals(params: { userId: number }) {
     // Gamification, retroactive
-    const user = await DB('user as u').select('styles', 'newsletter', 'id').find(params.userId)
+    const user = await DB('user as u')
+      .select('styles', 'n.newsletter', 'id')
+      .join('notifications as n', 'n.user_id', 'u.id')
+      .find(params.userId)
 
     // User styles
     if (user.styles && user.styles !== '[]') {
