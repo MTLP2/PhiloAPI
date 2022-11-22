@@ -539,6 +539,9 @@ class Project {
       })
     }
 
+    if (!params.sort) {
+      params.sort = 'popularity'
+    }
     if (params.order) {
       projects.orderBy(params.order, params.sort)
     } else if (params.sort) {
@@ -939,8 +942,6 @@ class Project {
     if (projectImages.length) {
       p.project_images = projectImages
     }
-
-    // console.log('checking p', p)
 
     return p
   }
