@@ -435,9 +435,8 @@ class Project {
       params.genres = []
 
       const categories: any = []
-      for (const filter of filters) 
+      for (const filter of filters) {
         filter.value = filter.value.toString().replaceAll(/'/gi, '').replaceAll(/"/gi, '')
-
         if (filter.type === 'type') {
           projects.where('v.type', filter.value)
         } else if (filter.type === 'genre') {
