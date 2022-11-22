@@ -317,16 +317,24 @@ export default class Pass {
     return userBadgeProgress
   }
 
-  static async getHistory(params: { userId: number }) {
+  static async getHistory(params?: { userId: number }) {
     let query = DB('pass_history as ph')
-      .select('ph.*', 'pq.type', 'pq.points', 'u.name as user_name', 'u.id as user_id')
+      .select(
+        'ph.*',
+        'pq.type',
+        'pq.points',
+        'u.name as user_name',
+        'u.id as user_id',
+        'pq.title_fr',
+        'pq.title_en'
+      )
       .join('pass_quest as pq', 'pq.id', 'ph.quest_id')
       .join('user as u', 'u.id', 'ph.user_id')
 
     // if userId is provided, only return history for that user
-    if (params.userId) query = query.where('ph.user_id', params.userId)
+    if (params?.userId) query = query.where('ph.user_id', params.userId)
 
-    return Utils.getRows<History>({ query })
+    return Utils.getRows<History>({ query, sort: 'ph.created_at', order: 'asc' })
   }
 
   static async saveHistory(params: Pick<History, 'id' | 'user_id' | 'quest_id' | 'ref_id'>) {
@@ -384,7 +392,6 @@ export default class Pass {
   }) {
     console.log('addHistory', type, userId, refId, times)
     const quests = await Pass.findQuest({ type, userId })
-    console.log('🚀 ~ file: Pass.ts ~ line 321 ~ Pass ~ quests', quests)
 
     // If no quests is returned at all
     if (!Array.isArray(quests)) throw new Error(quests.error || 'No quest found')

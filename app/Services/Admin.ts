@@ -27,6 +27,7 @@ import Deepl from 'App/Services/Deepl'
 import Artwork from 'App/Services/Artwork'
 import cio from 'App/Services/CIO'
 import Env from '@ioc:Adonis/Core/Env'
+import Pass from './Pass'
 
 class Admin {
   static getProjects = async (params: {
@@ -2380,6 +2381,8 @@ class Admin {
     if (reviews.length) {
       user.reviews = reviews
     }
+
+    user.passHistory = await Pass.getHistory({ userId: id })
 
     user.styles = user.styles ? JSON.parse(user.styles) : []
     user.digs = await Dig.byUser(id)
