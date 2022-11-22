@@ -194,6 +194,7 @@ class Payment {
     invoice.total = payment.total
     invoice.currency = payment.currency
     invoice.currency_rate = payment.currency_rate
+    invoice.charge_id = payment.charge_id
     invoice.lines = [
       {
         name: payment.name,
@@ -316,7 +317,6 @@ class Payment {
   }
 
   static delete = async (params) => {
-    console.log('🚀 ~ file: Payment.ts ~ line 316 ~ Payment ~ staticdelete ~ params', params)
     const payment = await DB('payment').where('id', params.id).first()
 
     payment.is_delete = true
