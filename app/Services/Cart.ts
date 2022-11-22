@@ -1241,7 +1241,7 @@ class Cart {
       res.picture = p.project.picture
       res.picture_project = p.project.picture_project
     }
-    res.discount = p.project.discount * p.quantity
+    res.discount = (p.project.discount?.[params.currency] || 0) * p.quantity
     res.discount_artist = p.project.discount_artist
     res.price_discount = Utils.round(res.price - res.discount)
     res.shipping_discount = p.project.shipping_discount

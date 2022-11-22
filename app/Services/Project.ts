@@ -250,7 +250,10 @@ class Project {
                 })
               : null
           }
-          project.discount = discount
+          project.discount = Object.keys(project.prices).reduce((acc, key) => {
+            acc[key] = project.prices[key] - project.prices_discount[key]
+            return acc
+          }, {})
           project.discount_artist = sale.artist_pay
 
           break
