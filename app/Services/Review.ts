@@ -142,7 +142,7 @@ class Review {
       const res = await Pass.addHistory({ type: 'first_review', userId: params.user_id })
       console.log('res in gamification, review', res)
     } catch (err) {
-      console.log('err in gamification', err)
+      await Pass.errorNotification('first_review', params.user_id, err)
     }
 
     return { success: true }
@@ -153,7 +153,17 @@ class Review {
     return { count: await query.count() }
   }
 
-  static find = async ({ reviewId, projectId, userId, onlyVisible = true }) => {
+  static find = async ({
+    reviewId,
+    projectId,
+    userId,
+    onlyVisible = true
+  }: {
+    reviewId?: number
+    projectId?: number
+    userId: number
+    onlyVisible?: boolean
+  }) => {
     const query = DB('review as r')
       .select(
         'r.*',

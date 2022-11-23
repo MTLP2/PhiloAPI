@@ -235,7 +235,7 @@ class User {
         console.log('res in gamification, user styles', res)
       }
     } catch (err) {
-      console.log('err in gamification, user styles', err)
+      await Pass.errorNotification('user styles', userId, err)
     }
 
     return DB('user')
@@ -409,7 +409,7 @@ class User {
         console.log('res in gamification, user newsletter', res)
       }
     } catch (err) {
-      console.log('err in gamification, user newsletter', err)
+      await Pass.errorNotification('newsletter', userId, err)
     }
 
     return DB('notifications')

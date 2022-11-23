@@ -2383,6 +2383,7 @@ class Admin {
     }
 
     user.passHistory = await Pass.getHistory({ userId: id })
+    // user.pass = await Pass.getUserPass({ userId: id })
 
     user.styles = user.styles ? JSON.parse(user.styles) : []
     user.digs = await Dig.byUser(id)

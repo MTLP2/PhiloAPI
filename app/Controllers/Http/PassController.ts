@@ -2,6 +2,11 @@ import Pass from 'App/Services/Pass'
 import { validator, schema } from '@ioc:Adonis/Core/Validator'
 
 class PassController {
+  // META
+  async updateEveryone() {
+    return Pass.checkEveryoneTotals()
+  }
+
   // QUESTS
   async getQuests(params) {
     return Pass.findAllQuests(params)

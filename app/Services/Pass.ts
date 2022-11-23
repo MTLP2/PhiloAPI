@@ -1,5 +1,6 @@
 import DB from 'App/DB'
 import Utils from 'App/Utils'
+import Notification from './Notification'
 
 type TinyIntBool = 0 | 1
 
@@ -334,7 +335,7 @@ export default class Pass {
     // if userId is provided, only return history for that user
     if (params?.userId) query = query.where('ph.user_id', params.userId)
 
-    return Utils.getRows<History>({ query, sort: 'ph.created_at', order: 'asc' })
+    return Utils.getRows<History>({ query, sort: 'ph.created_at', order: 'desc' })
   }
 
   static async saveHistory(params: Pick<History, 'id' | 'user_id' | 'quest_id' | 'ref_id'>) {
@@ -396,8 +397,6 @@ export default class Pass {
     // If no quests is returned at all
     if (!Array.isArray(quests)) throw new Error(quests.error || 'No quest found')
     if (!quests.length) throw new Error('No quest found')
-
-    console.log('quest(s) found', quests.length)
 
     // Build res for each history to display toast
     const res: {
@@ -473,9 +472,11 @@ export default class Pass {
 
   static async addGenreHistory({ userId, genreList }: { userId: number; genreList: string[] }) {
     // lowercase genre type and convert spaces to underscores to match quest type
-    const questListFromGenres = genreList.map((genre) => {
-      return genre.toLowerCase().replace(/ /g, '_')
-    })
+    const questListFromGenres: string[] = []
+    for (const genre of genreList) {
+      const normalizedGenre = genre.toLowerCase().replace(/ /g, '_')
+      questListFromGenres.push(normalizedGenre, `${normalizedGenre}_5`, `${normalizedGenre}_10`)
+    }
 
     if (!questListFromGenres.length)
       throw new Error('No quest found for these genres: ' + genreList)
@@ -772,11 +773,30 @@ export default class Pass {
     return { success: true }
   }
 
-  // --- TESTING
+  // --- META
   static checkEveryoneTotals = async () => {
     const passes: PassData[] = await DB('pass').select('id', 'user_id').all()
     await Promise.all(passes.map((pass) => Pass.updateUserTotals({ userId: pass.user_id })))
 
     return { message: 'All users updated' }
+  }
+
+  // --- TESTING
+  static errorNotification = async (quest: string, userId: number, err: any) => {
+    await Notification.sendEmail({
+      to: 'robin@diggersfactory.com',
+      subject: `Err in gamification [${quest}]`,
+      html: `
+        <p>
+          User: ${userId}
+        </p>
+        <p>Error: <p>
+        <p>
+          ${err.message}
+        </p>
+        <p>
+        Date: ${new Date().toLocaleString()}
+        </p>`
+    })
   }
 }

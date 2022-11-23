@@ -1966,7 +1966,7 @@ class Cart {
               project.genres = project.styles.map((s) => genres[styles[s.id || s].genre_id])
               project.genres = [...new Set(project.genres)]
               project.styles = project.styles.map((s) => styles[s.id || s].name)
-              orderGenres.push(...project.genres)
+              orderGenres.push(project.genres)
 
               cio.track(user.id, {
                 name: 'purchase',
@@ -2056,8 +2056,8 @@ class Cart {
                   times: item.quantity
                 })
                 console.log('res of gamification orders', resOrders)
-              } catch (e) {
-                console.log('error gamification', e)
+              } catch (err) {
+                await Pass.errorNotification('orders', user.id, err)
               }
 
               // Genres quest
@@ -2068,7 +2068,7 @@ class Cart {
                 })
                 console.log('res of gamification genres', resGenres)
               } catch (err) {
-                console.log('err in gamification', err)
+                await Pass.errorNotification('genres', user.id, err)
               }
             })
           )
@@ -2148,6 +2148,30 @@ class Cart {
         name: `${order.artist} - ${order.project}`,
         category: 'vinyl'
       })
+    }
+
+    // Gamification
+    // check if each subarray has a value that is in another subarray. If so, add 1 to doubled
+    let countRepeatedGenres = 0
+    for (let i = 0; i < orderGenres.length; i++) {
+      for (let j = 0; j < orderGenres[i].length; j++) {
+        for (let k = 0; k < orderGenres.length; k++) {
+          if (i !== k && orderGenres[k].includes(orderGenres[i][j])) {
+            countRepeatedGenres++
+          }
+        }
+      }
+    }
+    if (!countRepeatedGenres) {
+      try {
+        const res = await Pass.addHistory({
+          userId: user.id,
+          type: ['two_genres_order']
+        })
+        console.log('res of gamification two_genres_order', res)
+      } catch (err) {
+        await Pass.errorNotification('two genres order', user.id, err)
+      }
     }
 
     return {
