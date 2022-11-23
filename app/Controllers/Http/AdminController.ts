@@ -1069,10 +1069,6 @@ class AdminController {
   }
 
   async getShippingWeightByPartner({ params }) {
-    console.log(
-      '🚀 ~ file: AdminController.ts ~ line 1072 ~ AdminController ~ getShippingWeightByPartner ~ params',
-      params
-    )
     const payload = await validator.validate({
       schema: schema.create({
         partner: schema.enum(['daudin', 'shipehype', 'whiplash_uk'] as const)
@@ -1080,6 +1076,56 @@ class AdminController {
       data: params
     })
     return ShippingWeight.allByPartner({ partner: payload.partner, params })
+  }
+
+  async updateShippingWeight({ params }) {
+    const payload = await validator.validate({
+      schema: schema.create({
+        'id': schema.number(),
+        'country_id': schema.string(),
+        'state': schema.string.nullableAndOptional(),
+        'partner': schema.enum(['daudin', 'shipehype', 'whiplash_uk'] as const),
+        'transporter': schema.string.nullable(),
+        'currency': schema.enum(['EUR', 'GBP', 'USD', 'AUD'] as const),
+        'packing': schema.number.nullableAndOptional(),
+        'picking': schema.number.nullableAndOptional(),
+        'oil': schema.number.nullableAndOptional(),
+        '500g': schema.number.nullableAndOptional(),
+        '750g': schema.number.nullableAndOptional(),
+        '1kg': schema.number.nullableAndOptional(),
+        '2kg': schema.number.nullableAndOptional(),
+        '3kg': schema.number.nullableAndOptional(),
+        '4kg': schema.number.nullableAndOptional(),
+        '5kg': schema.number.nullableAndOptional(),
+        '6kg': schema.number.nullableAndOptional(),
+        '7kg': schema.number.nullableAndOptional(),
+        '8kg': schema.number.nullableAndOptional(),
+        '9kg': schema.number.nullableAndOptional(),
+        '10kg': schema.number.nullableAndOptional(),
+        '11kg': schema.number.nullableAndOptional(),
+        '12kg': schema.number.nullableAndOptional(),
+        '13kg': schema.number.nullableAndOptional(),
+        '14kg': schema.number.nullableAndOptional(),
+        '15kg': schema.number.nullableAndOptional(),
+        '16kg': schema.number.nullableAndOptional(),
+        '17kg': schema.number.nullableAndOptional(),
+        '18kg': schema.number.nullableAndOptional(),
+        '19kg': schema.number.nullableAndOptional(),
+        '20kg': schema.number.nullableAndOptional(),
+        '21kg': schema.number.nullableAndOptional(),
+        '22kg': schema.number.nullableAndOptional(),
+        '23kg': schema.number.nullableAndOptional(),
+        '24kg': schema.number.nullableAndOptional(),
+        '25kg': schema.number.nullableAndOptional(),
+        '26kg': schema.number.nullableAndOptional(),
+        '27kg': schema.number.nullableAndOptional(),
+        '28kg': schema.number.nullableAndOptional(),
+        '29kg': schema.number.nullableAndOptional(),
+        '30kg': schema.number.nullableAndOptional()
+      }),
+      data: params
+    })
+    return ShippingWeight.update(payload)
   }
 }
 
