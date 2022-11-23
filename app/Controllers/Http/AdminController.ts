@@ -29,6 +29,7 @@ import Review from 'App/Services/Review'
 import ApiError from 'App/ApiError'
 import ProjectService from 'App/Services/Project'
 import Dispatch from 'App/Services/Dispatch'
+import ShippingWeight from 'App/Services/ShippingWeight'
 
 class AdminController {
   getStats({ params }) {
@@ -1065,6 +1066,16 @@ class AdminController {
     } catch (err) {
       return { error: err.message, validation: err.messages }
     }
+  }
+
+  async getShippingWeightByPartner({ params }) {
+    const payload = await validator.validate({
+      schema: schema.create({
+        partner: schema.enum(['daudin', 'shipehype', 'whiplash_uk'] as const)
+      }),
+      data: params
+    })
+    return ShippingWeight.allByPartner(payload)
   }
 }
 

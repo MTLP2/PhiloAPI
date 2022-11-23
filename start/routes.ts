@@ -490,6 +490,10 @@ Route.group(() => {
   Route.post('/deepl-translate', 'AdminController.deeplTranslate')
 
   Route.group(() => {
+    Route.get('/:partner', 'AdminController.getShippingWeightByPartner')
+  }).prefix('shipping-weight')
+
+  Route.group(() => {
     Route.get('/', 'AdminController.getPassCulture')
     Route.put('/save', 'AdminController.savePassCulture')
     Route.delete('/delete/:id', 'AdminController.deletePassCulture')
