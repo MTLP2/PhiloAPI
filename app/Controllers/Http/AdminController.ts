@@ -1069,13 +1069,17 @@ class AdminController {
   }
 
   async getShippingWeightByPartner({ params }) {
+    console.log(
+      '🚀 ~ file: AdminController.ts ~ line 1072 ~ AdminController ~ getShippingWeightByPartner ~ params',
+      params
+    )
     const payload = await validator.validate({
       schema: schema.create({
         partner: schema.enum(['daudin', 'shipehype', 'whiplash_uk'] as const)
       }),
       data: params
     })
-    return ShippingWeight.allByPartner(payload)
+    return ShippingWeight.allByPartner({ partner: payload.partner, params })
   }
 }
 
