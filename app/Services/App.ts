@@ -162,6 +162,7 @@ class App {
       }
 
       await App.checkNotifications()
+      await Invoice.setNumbers()
       await Project.deleteDownload()
       await MondialRelay.checkSent()
       await MondialRelay.checkDelivered()

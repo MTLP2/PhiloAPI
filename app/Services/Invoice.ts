@@ -160,8 +160,6 @@ class Invoice {
 
     await invoice.save()
 
-    await Invoice.setNumbers()
-
     if (params.id) {
       await Payment.save({
         id: params.payment_id,
@@ -224,7 +222,6 @@ class Invoice {
     invoice.updated_at = Utils.date()
 
     await invoice.save()
-    await Invoice.setNumbers()
 
     try {
       await Payment.save({
@@ -277,7 +274,6 @@ class Invoice {
     invoice.updated_at = Utils.date()
 
     await invoice.save()
-    await Invoice.setNumbers()
 
     try {
       await Payment.save({
@@ -567,8 +563,6 @@ class Invoice {
     console.log(invoice.year)
     console.log(invoice.date)
     const insert = await DB('invoice').insert(JSON.parse(JSON.stringify(invoice)))
-
-    await Invoice.setNumbers()
 
     return { id: insert[0] }
   }
