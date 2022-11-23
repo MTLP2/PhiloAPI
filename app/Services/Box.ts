@@ -1561,7 +1561,7 @@ class Box {
           await Invoice.insertOrder({
             ...order,
             customer_id: box.customer_id,
-            order_box_id: box.id
+            order_box_id: orderBox.id
           })
         } else {
           errors.push({ id: box.id, type: JSON.stringify(pay) })
