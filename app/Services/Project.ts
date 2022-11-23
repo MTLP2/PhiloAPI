@@ -436,7 +436,8 @@ class Project {
 
       const categories: any = []
       for (const filter of filters) {
-        filter.value = filter.value.replace(/[^a-zA-Z0-9 ]/g, '')
+        filter.value = filter.value.toString().replace(/[^a-zA-Z0-9 ]/g, '')
+
         if (filter.type === 'type') {
           projects.where('v.type', filter.value)
         } else if (filter.type === 'genre') {
