@@ -436,7 +436,7 @@ class Project {
 
       const categories: any = []
       for (const filter of filters) {
-        filter.value = filter.value.toString().replaceAll(/'/gi, '').replaceAll(/"/gi, '')
+        filter.value = filter.value.replace(/[^a-zA-Z0-9 ]/g, '')
         if (filter.type === 'type') {
           projects.where('v.type', filter.value)
         } else if (filter.type === 'genre') {
@@ -496,39 +496,6 @@ class Project {
       })
     }
 
-    if (params.formats) {
-      const formats = params.formats.split(',')
-      projects.where(function () {
-        formats.map((format) => {
-          if (format === '12') {
-            this.orWhereNotIn(
-              'p.id',
-              DB('marketplace_item')
-                .select('project_id')
-                .where('format', 'LIKE', '%7%')
-                .orWhere('format', 'LIKE', '%7%')
-                .query()
-            )
-          } else {
-            this.orWhereIn(
-              'p.id',
-              DB('marketplace_item')
-                .select('project_id')
-                .where('format', 'LIKE', `%${format}%`)
-                .query()
-            )
-          }
-        })
-      })
-    }
-    if (params.conditions) {
-      const conditions = params.conditions.split(',')
-      projects.whereIn(
-        'p.id',
-        DB('marketplace_item').select('project_id').whereIn('media_condition', conditions).query()
-      )
-    }
-
     if (params.ids) {
       projects.whereIn('p.id', params.ids)
     }
@@ -536,9 +503,7 @@ class Project {
       projects.join('like', 'p.id', 'like.project_id').where('like.user_id', params.liked)
     }
     if (params.search) {
-      params.search = params.search.replace('\\', '')
-      params.search = params.search.replace("'", "\\'")
-      params.search = params.search.replace('-', ' ')
+      params.search = params.search.replace('-', ' ').replace(/[^a-zA-Z0-9 ]/g, '')
       projects.where(function () {
         this.whereRaw(
           `REPLACE(CONCAT(artist_name, ' ', p.name), '-', ' ') like '%${params.search}%'`
