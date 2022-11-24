@@ -14,7 +14,30 @@ class ShippingWeight {
     const order = params.order === 'false' ? 'desc' : params.order
     query = query.orderBy(params.sort || 'id', params.order || 'asc')
 
-    return Utils.getRows({ query, order, filters: params.filters })
+    const res = await Utils.getRows<ShippingWeightDB>({ query, order, filters: params.filters })
+
+    res.data = await Promise.all(
+      res.data.map(async (row) => {
+        const lastOrders = await DB('order_shop')
+          .select(
+            'order_shop.shipping',
+            'order_shop.shipping_weight',
+            'order_shop.id',
+            'state',
+            'customer.country_id'
+          )
+          .join('customer', 'customer.id', 'order_shop.customer_id')
+          .where('transporter', partner)
+          .where('country_id', row.country_id)
+          .where('state', row.state)
+          .orderBy('id', 'desc')
+          .limit(20)
+          .all()
+        return { ...row, lastOrders }
+      })
+    )
+
+    return res
   }
 
   static async update(params: ShippingWeightDB) {
