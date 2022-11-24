@@ -1187,6 +1187,7 @@ static extractProjectOrders = async (params) => {
       unsubscribed: user.unsubscribed,
       unsubscribed_code: User.encodeUnsubscribeNewseletter(user.id),
       newsletter: user.newsletter,
+      is_guest: user.is_guest,
       last_visit: user.last ? moment(user.last).unix() : null,
       created_at: user.created_at ? moment(user.created_at).unix() : null
     }

@@ -300,6 +300,10 @@ class Sign {
 
     await user.save()
 
+    cio.identify(user.id, {
+      is_guest: false
+    })
+
     return { success: true }
   }
 
