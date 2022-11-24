@@ -369,6 +369,8 @@ class Cart {
         }
 
         cart.count += cart.shops[s].items.length
+
+        console.log(cart)
       })
     )
   }
@@ -593,6 +595,11 @@ class Cart {
       : p.items.reduce((acc, cur) => {
           return acc + cur.project.shipping_discount * cur.quantity
         }, 0) - shop.total_ship_discount_sale_diff
+
+    console.log(
+      '🚀 ~ file: Cart.ts ~ line 592 ~ Cart ~ calculateShop= ~ shippingDiscount',
+      shippingDiscount
+    )
 
     const shipping: any = await Cart.calculateShipping({
       quantity: shop.quantity,
@@ -1245,6 +1252,7 @@ class Cart {
       res.picture = p.project.picture
       res.picture_project = p.project.picture_project
     }
+    console.log('p proje disco', p.project.discount, p.project)
     res.discount = (p.project.discount?.[params.currency] || 0) * p.quantity
     res.discount_artist = p.project.discount_artist
     res.price_discount = Utils.round(res.price - res.discount)
@@ -1325,7 +1333,7 @@ class Cart {
     }
     if (res.shipping_discount && !userIsPro) {
       res.total_ship_discount = Utils.round(
-        p.quantity * res.price_ship_discount + p.tips - res.discount
+        p.quantity * (res.discount ? res.price : res.price_ship_discount) + p.tips - res.discount
       )
       res.ship_discount_sale_diff = (res.shipping_discount * res.quantity * p.project.promo) / 100
     }
