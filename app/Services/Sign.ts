@@ -10,6 +10,7 @@ import Env from '@ioc:Adonis/Core/Env'
 import Utils from 'App/Utils'
 import ApiError from 'App/ApiError'
 import cio from 'App/Services/CIO'
+import Pass from './Pass'
 
 class Sign {
   static getToken = (params) => {
@@ -232,6 +233,12 @@ class Sign {
         created_at: Utils.date(),
         updated_at: Utils.date()
       })
+
+      try {
+        await Pass.createPass({ userId: user.id })
+      } catch (error) {
+        await Pass.errorNotification('createPass', user.id, error)
+      }
 
       if (params.type === 'distributor' || params.type === 'record_shop') {
         await Notification.sendEmail({

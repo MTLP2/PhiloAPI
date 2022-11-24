@@ -206,30 +206,6 @@ export default class Pass {
   }
 
   static async updateUserTotals(params: { userId: number }) {
-    // Gamification, retroactive
-    const user = await DB('user as u')
-      .select('styles', 'n.newsletter', 'id')
-      .join('notifications as n', 'n.user_id', 'u.id')
-      .find(params.userId)
-
-    // User styles
-    if (user.styles && user.styles !== '[]') {
-      await Pass.addHistory({
-        userId: user.id,
-        type: 'user_styles',
-        updateTotal: false
-      })
-    }
-
-    // Newsletter
-    if (user.newsletter) {
-      await Pass.addHistory({
-        userId: user.id,
-        type: 'user_newsletter',
-        updateTotal: false
-      })
-    }
-
     // Check Level
     const { current_points: currentPoints } = await Pass.calculateScore(params)
 
@@ -775,10 +751,70 @@ export default class Pass {
 
   // --- META
   static checkEveryoneTotals = async () => {
+    await Pass.createPasses()
+
     const passes: PassData[] = await DB('pass').select('id', 'user_id').all()
+
     await Promise.all(passes.map((pass) => Pass.updateUserTotals({ userId: pass.user_id })))
+    // for (const pass of passes) {
+    //   await Pass.updateUserTotals({ userId: pass.user_id })
+    // }
 
     return { message: 'All users updated' }
+  }
+
+  static createPasses = async () => {
+    const users = await DB('user as u')
+      .select('styles', 'n.newsletter', 'id')
+      .leftJoin('notifications as n', 'n.user_id', 'u.id')
+      .all()
+
+    for (const user of users) {
+      const exists = await DB('pass').where('user_id', user.id).first()
+
+      if (!exists) {
+        await DB('pass').insert({
+          user_id: user.id,
+          level_id: 16,
+          total_points: 0
+        })
+
+        // Gamification, retroactive
+
+        // User styles
+        if (user.styles && user.styles !== '[]') {
+          await Pass.addHistory({
+            userId: user.id,
+            type: 'user_styles',
+            updateTotal: false
+          })
+        }
+
+        // Newsletter
+        if (user.newsletter) {
+          await Pass.addHistory({
+            userId: user.id,
+            type: 'user_newsletter',
+            updateTotal: false
+          })
+        }
+      }
+    }
+  }
+
+  static createPass = async ({ userId }) => {
+    const exists = await DB('pass').where('user_id', userId).first()
+    if (exists) return
+
+    await DB('pass').insert({
+      user_id: userId,
+      level_id: 16,
+      total_points: 0
+    })
+
+    return { success: true }
+
+    // Gamification, retroactive
   }
 
   // --- TESTING
