@@ -368,82 +368,83 @@ export default class Pass {
     updateTotal?: boolean
   }) {
     console.log('addHistory', type, userId, refId, times)
-    const quests = await Pass.findQuest({ type, userId })
+    return false
+    // const quests = await Pass.findQuest({ type, userId })
 
-    // If no quests is returned at all
-    if (!Array.isArray(quests)) throw new Error(quests.error || 'No quest found')
-    if (!quests.length) throw new Error('No quest found')
+    // // If no quests is returned at all
+    // if (!Array.isArray(quests)) throw new Error(quests.error || 'No quest found')
+    // if (!quests.length) throw new Error('No quest found')
 
-    // Build res for each history to display toast
-    const res: {
-      pass_success: number
-      pass_error: number
-      data: {
-        id: number
-        success?: Pick<QuestModel, 'id' | 'title_en' | 'title_fr' | 'points'>
-        error?: string
-      }[]
-    } = {
-      pass_success: 0,
-      pass_error: 0,
-      data: []
-    }
+    // // Build res for each history to display toast
+    // const res: {
+    //   pass_success: number
+    //   pass_error: number
+    //   data: {
+    //     id: number
+    //     success?: Pick<QuestModel, 'id' | 'title_en' | 'title_fr' | 'points'>
+    //     error?: string
+    //   }[]
+    // } = {
+    //   pass_success: 0,
+    //   pass_error: 0,
+    //   data: []
+    // }
 
-    for (const quest of quests) {
-      for (let i = 0; i < times; i = i + 1) {
-        try {
-          if (!quest.is_active) throw new Error('Quest is not active')
+    // for (const quest of quests) {
+    //   for (let i = 0; i < times; i = i + 1) {
+    //     try {
+    //       if (!quest.is_active) throw new Error('Quest is not active')
 
-          // Checking if user has already completed more or = the max amount of time a quest can be repeataed, and that this quest is not infinite, or if quest with same refId has been done. Returns error if so
-          const history: History[] = await DB('pass_history')
-            .where('user_id', userId)
-            .where('quest_id', quest.id)
-            .all()
+    //       // Checking if user has already completed more or = the max amount of time a quest can be repeataed, and that this quest is not infinite, or if quest with same refId has been done. Returns error if so
+    //       const history: History[] = await DB('pass_history')
+    //         .where('user_id', userId)
+    //         .where('quest_id', quest.id)
+    //         .all()
 
-          // If quest is infinite, check if refId is present. If not, quest might be spammable
-          if (quest.is_infinite && !refId)
-            throw new Error('Quest is infinite and no refId provided')
+    //       // If quest is infinite, check if refId is present. If not, quest might be spammable
+    //       if (quest.is_infinite && !refId)
+    //         throw new Error('Quest is infinite and no refId provided')
 
-          // Checking if refIf exists. If it is, means that quest has been done (equivalent to count_repeatable = 1)
-          if (
-            (quest.user_repeated >= quest.count_repeatable && !quest.is_infinite) ||
-            (refId && history.find((h) => h.ref_id === +refId))
-          )
-            throw new Error('User has already completed this quest')
+    //       // Checking if refIf exists. If it is, means that quest has been done (equivalent to count_repeatable = 1)
+    //       if (
+    //         (quest.user_repeated >= quest.count_repeatable && !quest.is_infinite) ||
+    //         (refId && history.find((h) => h.ref_id === +refId))
+    //       )
+    //         throw new Error('User has already completed this quest')
 
-          // Insert history
-          await DB('pass_history').insert({
-            user_id: userId,
-            quest_id: quest.id,
-            ref_id: refId,
-            created_at: new Date()
-          })
+    //       // Insert history
+    //       await DB('pass_history').insert({
+    //         user_id: userId,
+    //         quest_id: quest.id,
+    //         ref_id: refId,
+    //         created_at: new Date()
+    //       })
 
-          // Push success to response
-          res.data.push({
-            id: quest.id,
-            success: {
-              id: quest.id,
-              title_fr: quest.title_fr,
-              title_en: quest.title_en,
-              points: quest.points
-            }
-          })
-          res.pass_success++
-        } catch (err) {
-          // Push error to response
-          res.data.push({ id: quest.id, error: err.message })
-          res.pass_error++
-        }
-      }
-    }
+    //       // Push success to response
+    //       res.data.push({
+    //         id: quest.id,
+    //         success: {
+    //           id: quest.id,
+    //           title_fr: quest.title_fr,
+    //           title_en: quest.title_en,
+    //           points: quest.points
+    //         }
+    //       })
+    //       res.pass_success++
+    //     } catch (err) {
+    //       // Push error to response
+    //       res.data.push({ id: quest.id, error: err.message })
+    //       res.pass_error++
+    //     }
+    //   }
+    // }
 
-    // Check level & badges
-    if (updateTotal) {
-      Pass.updateUserTotals({ userId })
-    }
+    // // Check level & badges
+    // if (updateTotal) {
+    //   Pass.updateUserTotals({ userId })
+    // }
 
-    return res
+    // return res
   }
 
   static async addGenreHistory({ userId, genreList }: { userId: number; genreList: string[] }) {
