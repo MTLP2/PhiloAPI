@@ -1492,7 +1492,7 @@ class App {
     html += '</tbody></table>'
 
     await Notification.sendEmail({
-      to: 'alexis@diggersfactory.com,cyril@diggersfactory.com,ismail@diggersfactory.com,guillaume@diggersfactory.com,victor@diggersfactory.com,jean-baptiste@diggersfactory.com',
+      to: 'alexis@diggersfactory.com,cyril@diggersfactory.com,ismail@diggersfactory.com,guillaume@diggersfactory.com,victor@diggersfactory.com,olivia@diggersfactory.com,jean-baptiste@diggersfactory.com',
       subject: 'Etat des stocks',
       html: juice(html)
     })
