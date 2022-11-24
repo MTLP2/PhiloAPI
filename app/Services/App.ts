@@ -62,6 +62,9 @@ class App {
       ) {
         await Order.exportOrdersExportedWithoutTracking(moment().format('E') === '1' ? 3 : 2)
       }
+      if (moment().format('E') === '1') {
+        await App.alertStock()
+      }
 
       if (+moment().format('D') === 28) {
         await Statement.setStorageCosts()
@@ -112,7 +115,6 @@ class App {
       } else if (hour === 7) {
         await App.check5DaysLeftProjects()
         await App.checkFinishedProjects()
-        await App.alertStock()
         await Vod.checkDateShipping()
       } else if (hour === 8) {
         await Box.checkReminder()
