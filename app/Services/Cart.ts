@@ -18,6 +18,7 @@ import Order from 'App/Services/Order'
 import cio from 'App/Services/CIO'
 import I18n from '@ioc:Adonis/Addons/I18n'
 import moment from 'moment'
+import Pass from './Pass'
 const stripe = require('stripe')(config.stripe.client_secret)
 
 const paypal = require('paypal-rest-sdk')
@@ -1917,6 +1918,7 @@ class Cart {
     }
 
     let customerId = null
+    let orderGenres: string[] = []
     await Promise.all(
       shops.map(async (shop) => {
         customerId = shop.customer_invoice_id || shop.customer_id
@@ -1986,6 +1988,7 @@ class Cart {
               project.genres = project.styles.map((s) => genres[styles[s.id || s].genre_id])
               project.genres = [...new Set(project.genres)]
               project.styles = project.styles.map((s) => styles[s.id || s].name)
+              orderGenres.push(project.genres)
 
               cio.track(user.id, {
                 name: 'purchase',
@@ -2060,6 +2063,35 @@ class Cart {
                 transporter: shop.transporter
               })
               await Project.forceLike(project.id, user.id)
+
+              // Gamification
+              const passTypeList = ['first_order', 'order_5', 'order_10', 'order_15', 'order_20']
+              if (project.type_project === 'test_pressing') {
+                passTypeList.push('test_pressing')
+              }
+
+              // Quantity related quests
+              try {
+                const resOrders = await Pass.addHistory({
+                  userId: user.id,
+                  type: passTypeList,
+                  times: item.quantity
+                })
+                console.log('res of gamification orders', resOrders)
+              } catch (err) {
+                await Pass.errorNotification('orders', user.id, err)
+              }
+
+              // Genres quest
+              try {
+                const resGenres = await Pass.addGenreHistory({
+                  userId: user.id,
+                  genreList: project.genres
+                })
+                console.log('res of gamification genres', resGenres)
+              } catch (err) {
+                await Pass.errorNotification('genres', user.id, err)
+              }
             })
           )
         }
@@ -2138,6 +2170,30 @@ class Cart {
         name: `${order.artist} - ${order.project}`,
         category: 'vinyl'
       })
+    }
+
+    // Gamification
+    // check if each subarray has a value that is in another subarray. If so, add 1 to doubled
+    let countRepeatedGenres = 0
+    for (let i = 0; i < orderGenres.length; i++) {
+      for (let j = 0; j < orderGenres[i].length; j++) {
+        for (let k = 0; k < orderGenres.length; k++) {
+          if (i !== k && orderGenres[k].includes(orderGenres[i][j])) {
+            countRepeatedGenres++
+          }
+        }
+      }
+    }
+    if (!countRepeatedGenres) {
+      try {
+        const res = await Pass.addHistory({
+          userId: user.id,
+          type: ['two_genres_order']
+        })
+        console.log('res of gamification two_genres_order', res)
+      } catch (err) {
+        await Pass.errorNotification('two genres order', user.id, err)
+      }
     }
 
     return {

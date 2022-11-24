@@ -983,11 +983,13 @@ class Project {
       })
 
     // Adding pass history
-    const passRes = await Pass.addHistory({
-      userId,
-      type: 'user_like',
-      refId: projectId
-    })
+    try {
+      const passRes = await Pass.addHistory({
+        userId,
+        type: 'user_like',
+        refId: projectId
+      })
+    } catch (err) {}
 
     return { result: 1, passRes }
   }

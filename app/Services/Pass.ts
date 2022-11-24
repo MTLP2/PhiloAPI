@@ -1,5 +1,6 @@
 import DB from 'App/DB'
 import Utils from 'App/Utils'
+import Notification from './Notification'
 
 type TinyIntBool = 0 | 1
 
@@ -24,18 +25,6 @@ type Level = {
   ratio?: number
 }
 
-type Badge = {
-  id: number
-  description_fr: string
-  description_en: string
-  title_en: string
-  title_fr: string
-  is_active: TinyIntBool
-  image: string
-  created_at: string
-  updated_at: string
-}
-
 type UserQuestProgress = {
   id: number
   is_active: TinyIntBool
@@ -52,6 +41,8 @@ type UserQuestProgress = {
   badge_id?: number
   user_repeated: number
   badge?: BadgeModel
+  is_upgrade: TinyIntBool
+  prev_upgrade_done: TinyIntBool
   created_at: string
   updated_at: string
 }
@@ -117,20 +108,6 @@ interface Gift {
 interface UserGift extends Gift {
   claimable: boolean
   claimed_date: string
-}
-
-type Quest = {
-  id: number
-  points: number
-  type: string
-  is_active: TinyIntBool
-  is_infinite: TinyIntBool
-  title_fr: string
-  title_en: string
-  description_fr: string
-  description_en: string
-  user_repeated: number
-  count_repeatable: number
 }
 
 export default class Pass {
@@ -247,7 +224,7 @@ export default class Pass {
   }
 
   static async getUserQuestProgress(params: { userId: number }): Promise<UserQuestProgress[]> {
-    return DB('pass_quest as pq')
+    const rawUserQuests: UserQuestProgress[] = await DB('pass_quest as pq')
       .select(
         'pq.*',
         DB.raw(
@@ -260,12 +237,24 @@ export default class Pass {
        WHEN pq.is_infinite = 1 AND (SELECT COUNT(ph.id) FROM pass_history as ph WHERE ph.user_id = ${params.userId} AND ph.quest_id = pq.id) = 0
          THEN false
        ELSE true
-     END completed_by_user`)
+     END completed_by_user`),
+        DB.raw(`
+     CASE
+       WHEN pq.is_upgrade IS NULL THEN null
+       WHEN (SELECT COUNT(ph.id) FROM pass_history as ph WHERE ph.user_id = ${params.userId} AND ph.quest_id = pq.is_upgrade) < (SELECT count_repeatable FROM pass_quest WHERE id = pq.is_upgrade)
+         THEN false
+       WHEN pq.is_infinite = 1 AND (SELECT COUNT(ph.id) FROM pass_history as ph WHERE ph.user_id = ${params.userId} AND ph.quest_id = (SELECT count_repeatable FROM pass_quest WHERE id = pq.is_upgrade)) = 0
+         THEN false
+       ELSE true
+     END prev_upgrade_done`)
       )
       .belongsTo('pass_badge', '*', 'badge', 'badge_id')
       .where('pq.is_active', 1)
       .orderBy('completed_by_user', 'desc')
+      .orderBy('user_repeated', 'desc')
       .all()
+
+    return rawUserQuests.filter((quest) => !quest.is_upgrade || quest.prev_upgrade_done)
   }
 
   static async getUserBadgeProgress(params: { userId: number }) {
@@ -305,16 +294,24 @@ export default class Pass {
     return userBadgeProgress
   }
 
-  static async getHistory(params: { userId: number }) {
+  static async getHistory(params?: { userId: number }) {
     let query = DB('pass_history as ph')
-      .select('ph.*', 'pq.type', 'pq.points', 'u.name as user_name', 'u.id as user_id')
+      .select(
+        'ph.*',
+        'pq.type',
+        'pq.points',
+        'u.name as user_name',
+        'u.id as user_id',
+        'pq.title_fr',
+        'pq.title_en'
+      )
       .join('pass_quest as pq', 'pq.id', 'ph.quest_id')
       .join('user as u', 'u.id', 'ph.user_id')
 
     // if userId is provided, only return history for that user
-    if (params.userId) query = query.where('ph.user_id', params.userId)
+    if (params?.userId) query = query.where('ph.user_id', params.userId)
 
-    return Utils.getRows<History>({ query })
+    return Utils.getRows<History>({ query, sort: 'ph.created_at', order: 'desc' })
   }
 
   static async saveHistory(params: Pick<History, 'id' | 'user_id' | 'quest_id' | 'ref_id'>) {
@@ -360,73 +357,107 @@ export default class Pass {
   static async addHistory({
     type,
     userId,
-    refId
+    refId,
+    times = 1,
+    updateTotal = true
   }: {
     type: string | Array<string>
     userId: number
-    refId: number
+    refId?: number
+    times?: number
+    updateTotal?: boolean
   }) {
-    const quests = await Pass.findQuest({ type, userId })
+    console.log('addHistory', type, userId, refId, times)
+    return false
+    // const quests = await Pass.findQuest({ type, userId })
 
-    // If no quests is returned at all
-    if (!Array.isArray(quests)) throw new Error(quests.error || 'No quest found')
+    // // If no quests is returned at all
+    // if (!Array.isArray(quests)) throw new Error(quests.error || 'No quest found')
+    // if (!quests.length) throw new Error('No quest found')
 
-    const res: {
-      pass_success: number
-      pass_error: number
-      data: {
-        id: number
-        success?: Pick<Quest, 'id' | 'title_en' | 'title_fr' | 'points'>
-        error?: string
-      }[]
-    } = {
-      pass_success: 0,
-      pass_error: 0,
-      data: []
+    // // Build res for each history to display toast
+    // const res: {
+    //   pass_success: number
+    //   pass_error: number
+    //   data: {
+    //     id: number
+    //     success?: Pick<QuestModel, 'id' | 'title_en' | 'title_fr' | 'points'>
+    //     error?: string
+    //   }[]
+    // } = {
+    //   pass_success: 0,
+    //   pass_error: 0,
+    //   data: []
+    // }
+
+    // for (const quest of quests) {
+    //   for (let i = 0; i < times; i = i + 1) {
+    //     try {
+    //       if (!quest.is_active) throw new Error('Quest is not active')
+
+    //       // Checking if user has already completed more or = the max amount of time a quest can be repeataed, and that this quest is not infinite, or if quest with same refId has been done. Returns error if so
+    //       const history: History[] = await DB('pass_history')
+    //         .where('user_id', userId)
+    //         .where('quest_id', quest.id)
+    //         .all()
+
+    //       // If quest is infinite, check if refId is present. If not, quest might be spammable
+    //       if (quest.is_infinite && !refId)
+    //         throw new Error('Quest is infinite and no refId provided')
+
+    //       // Checking if refIf exists. If it is, means that quest has been done (equivalent to count_repeatable = 1)
+    //       if (
+    //         (quest.user_repeated >= quest.count_repeatable && !quest.is_infinite) ||
+    //         (refId && history.find((h) => h.ref_id === +refId))
+    //       )
+    //         throw new Error('User has already completed this quest')
+
+    //       // Insert history
+    //       await DB('pass_history').insert({
+    //         user_id: userId,
+    //         quest_id: quest.id,
+    //         ref_id: refId,
+    //         created_at: new Date()
+    //       })
+
+    //       // Push success to response
+    //       res.data.push({
+    //         id: quest.id,
+    //         success: {
+    //           id: quest.id,
+    //           title_fr: quest.title_fr,
+    //           title_en: quest.title_en,
+    //           points: quest.points
+    //         }
+    //       })
+    //       res.pass_success++
+    //     } catch (err) {
+    //       // Push error to response
+    //       res.data.push({ id: quest.id, error: err.message })
+    //       res.pass_error++
+    //     }
+    //   }
+    // }
+
+    // // Check level & badges
+    // if (updateTotal) {
+    //   Pass.updateUserTotals({ userId })
+    // }
+
+    // return res
+  }
+
+  static async addGenreHistory({ userId, genreList }: { userId: number; genreList: string[] }) {
+    // lowercase genre type and convert spaces to underscores to match quest type
+    const questListFromGenres: string[] = []
+    for (const genre of genreList) {
+      const normalizedGenre = genre.toLowerCase().replace(/ /g, '_')
+      questListFromGenres.push(normalizedGenre, `${normalizedGenre}_5`, `${normalizedGenre}_10`)
     }
 
-    for (const quest of quests) {
-      try {
-        if (!quest.is_active) throw new Error('Quest is not active')
-
-        // Checking if user has already completed more or = the max amount of time a quest can be repeataed, and that this quest is not infinite, or if quest with same refId has been done. Returns error if so
-        const history: History[] = await DB('pass_history')
-          .where('user_id', userId)
-          .where('quest_id', quest.id)
-          .all()
-        if (
-          (quest.user_repeated >= quest.count_repeatable && !quest.is_infinite) ||
-          history.find((h) => h.ref_id === +refId)
-        )
-          throw new Error('User has already completed this quest')
-
-        await DB('pass_history').insert({
-          user_id: userId,
-          quest_id: quest.id,
-          ref_id: refId,
-          created_at: new Date()
-        })
-
-        res.data.push({
-          id: quest.id,
-          success: {
-            id: quest.id,
-            title_fr: quest.title_fr,
-            title_en: quest.title_en,
-            points: quest.points
-          }
-        })
-        res.pass_success++
-      } catch (err) {
-        res.data.push({ id: quest.id, error: err.message })
-        res.pass_error++
-      }
-    }
-
-    // Check level & badges
-    Pass.updateUserTotals({ userId })
-
-    return res
+    if (!questListFromGenres.length)
+      throw new Error('No quest found for these genres: ' + genreList)
+    return Pass.addHistory({ type: questListFromGenres, userId })
   }
 
   static findQuest = async ({ type, userId }: { type: string | Array<string>; userId: number }) => {
@@ -441,7 +472,7 @@ export default class Pass {
     if (singleType) query.where('type', type)
     else query.whereIn('type', type)
 
-    const quest: Quest[] = await query.all()
+    const quest: QuestModel[] = await query.all()
     if (!quest) return { error: 'Quest(s) not found' }
 
     return quest
@@ -460,6 +491,8 @@ export default class Pass {
     params.query = DB('pass_quest')
       .select('pass_quest.*', 'pass_badge.name_en as badge_name_en', 'pass_badge.id as badge_id')
       .leftJoin('pass_badge', 'pass_quest.badge_id', 'pass_badge.id')
+      .belongsTo('pass_quest', '*', 'prev_quest', 'is_upgrade')
+      .hasMany('pass_history', 'history', 'quest_id', '*')
     return Utils.getRows(params)
   }
 
@@ -474,7 +507,18 @@ export default class Pass {
     description_fr: string
     description_en: string
     count_repeatable: number
+    is_upgrade: number
   }) => {
+    // Check if quest of is_upgrade has less count_repetition than submitted quest
+    if (params.is_upgrade) {
+      const prevQuest = await DB('pass_quest').where('id', params.is_upgrade).first()
+      if (!prevQuest) return { error: 'Previous quest not found' }
+      if (prevQuest.count_repeatable >= params.count_repeatable)
+        return {
+          error: `You must enter more repetitions (${prevQuest.count_repeatable}) than upgraded quest.`
+        }
+    }
+
     // Create new quest if no id is provided
     if (!params.id) return Pass.saveQuest(params)
 
@@ -706,11 +750,90 @@ export default class Pass {
     return { success: true }
   }
 
-  // --- TESTING
+  // --- META
   static checkEveryoneTotals = async () => {
+    await Pass.createPasses()
+
     const passes: PassData[] = await DB('pass').select('id', 'user_id').all()
+
     await Promise.all(passes.map((pass) => Pass.updateUserTotals({ userId: pass.user_id })))
+    // for (const pass of passes) {
+    //   await Pass.updateUserTotals({ userId: pass.user_id })
+    // }
 
     return { message: 'All users updated' }
+  }
+
+  static createPasses = async () => {
+    const users = await DB('user as u')
+      .select('styles', 'n.newsletter', 'id')
+      .leftJoin('notifications as n', 'n.user_id', 'u.id')
+      .all()
+
+    for (const user of users) {
+      const exists = await DB('pass').where('user_id', user.id).first()
+
+      if (!exists) {
+        await DB('pass').insert({
+          user_id: user.id,
+          level_id: 16,
+          total_points: 0
+        })
+
+        // Gamification, retroactive
+
+        // User styles
+        if (user.styles && user.styles !== '[]') {
+          await Pass.addHistory({
+            userId: user.id,
+            type: 'user_styles',
+            updateTotal: false
+          })
+        }
+
+        // Newsletter
+        if (user.newsletter) {
+          await Pass.addHistory({
+            userId: user.id,
+            type: 'user_newsletter',
+            updateTotal: false
+          })
+        }
+      }
+    }
+  }
+
+  static createPass = async ({ userId }) => {
+    const exists = await DB('pass').where('user_id', userId).first()
+    if (exists) return
+
+    await DB('pass').insert({
+      user_id: userId,
+      level_id: 16,
+      total_points: 0
+    })
+
+    return { success: true }
+
+    // Gamification, retroactive
+  }
+
+  // --- TESTING
+  static errorNotification = async (quest: string, userId: number, err: any) => {
+    await Notification.sendEmail({
+      to: 'robin@diggersfactory.com',
+      subject: `Err in gamification [${quest}]`,
+      html: `
+        <p>
+          User: ${userId}
+        </p>
+        <p>Error: <p>
+        <p>
+          ${err.message}
+        </p>
+        <p>
+        Date: ${new Date().toLocaleString()}
+        </p>`
+    })
   }
 }

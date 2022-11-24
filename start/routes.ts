@@ -515,6 +515,7 @@ Route.group(() => {
     Route.get('/gifts', 'PassController.getGifts')
     Route.put('/gift', 'PassController.putGift')
     Route.delete('/gift/:id', 'PassController.deleteGift')
+    Route.get('/update-everyone', 'PassController.updateEveryone')
   }).prefix('pass')
 })
   .prefix('admin')
