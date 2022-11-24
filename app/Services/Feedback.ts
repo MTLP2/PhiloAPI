@@ -9,6 +9,7 @@ class Feedback {
         'user.name as user_name',
         'user.picture as user_picture',
         'user.country_id',
+        'user.is_guest',
         'order.user_agent',
         'order.total',
         'order.currency'
