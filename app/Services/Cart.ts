@@ -1860,11 +1860,8 @@ class Cart {
     const user = await DB()
       .select('id', 'name', 'email', 'sponsor')
       .from('user')
-      .hasMany('order', 'orders', 'user_id', 'id')
       .where('id', order.user_id)
       .first()
-
-    console.log(user)
 
     const boxes = []
     const allItems = []
