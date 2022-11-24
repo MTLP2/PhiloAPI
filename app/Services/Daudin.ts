@@ -1242,7 +1242,7 @@ class Daudin {
       }
 
       // Picking
-      dispatch.cost = dispatch.trans + dispatch.quantity * 0.38
+      dispatch.cost = dispatch.cost + dispatch.quantity * 0.38
 
       dispatchs.push(dispatch)
     })
