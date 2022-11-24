@@ -119,9 +119,12 @@ class Cart {
           cart.error = box.error
         }
 
-        cart.shipping = Utils.round(cart.shipping + box.shipping)
+        if (params.boxes[i].shipping_type === 'pickup') {
+          cart.hasPickup = true
+        }
+
         cart.tax = Utils.round(cart.tax + box.tax)
-        cart.sub_total = Utils.round(cart.sub_total + box.sub_total)
+        cart.sub_total = Utils.round(cart.sub_total + box.total)
         cart.total = Utils.round(cart.total + box.total)
         if (box.discount) {
           cart.discount = Utils.round(cart.discount + box.discount)
@@ -353,7 +356,7 @@ class Cart {
         cart.tax_rate = cart.shops[s].tax_rate
         cart.sub_total = Utils.round(cart.sub_total + cart.shops[s].sub_total * cur)
         cart.total = Utils.round(cart.total + cart.shops[s].total * cur)
-
+        cart.pickup = params.pickup
         cart.discount = Utils.round(cart.discount + cart.shops[s].discount)
 
         cart.paypal = cart.shops[s].paypal
@@ -1384,25 +1387,37 @@ class Cart {
 
     const currencyRate = await Utils.getCurrency(params.currency)
 
-    const order = await DB('order').save({
-      user_id: params.user_id,
-      cart_id: params.cart_id,
-      payment_type: calculate.payment_type,
-      currency: calculate.currency,
-      currency_rate: currencyRate,
-      status: 'creating',
-      sub_total: calculate.sub_total,
-      shipping: calculate.shipping,
-      tax: calculate.tax,
-      tax_rate: calculate.tax_rate,
-      promo_code: calculate.promo_code,
-      discount: calculate.discount,
-      total: calculate.total,
-      origin: params.origin,
-      user_agent: JSON.stringify(params.user_agent),
-      created_at: Utils.date(),
-      updated_at: Utils.date()
-    })
+    let order
+    try {
+      order = await DB('order').save({
+        user_id: params.user_id,
+        cart_id: params.cart_id,
+        paying: true,
+        payment_type: calculate.payment_type,
+        currency: calculate.currency,
+        currency_rate: currencyRate,
+        status: 'creating',
+        sub_total: calculate.sub_total,
+        shipping: calculate.shipping,
+        tax: calculate.tax,
+        tax_rate: calculate.tax_rate,
+        promo_code: calculate.promo_code,
+        discount: calculate.discount,
+        total: calculate.total,
+        origin: params.origin,
+        user_agent: JSON.stringify(params.user_agent),
+        created_at: Utils.date(),
+        updated_at: Utils.date()
+      })
+    } catch (err) {
+      if (err.toString().includes('Duplicate') > 0) {
+        return {
+          code: 'duplicate'
+        }
+      } else {
+        throw err
+      }
+    }
 
     order.shops = []
 
@@ -1438,7 +1453,7 @@ class Cart {
             currency_rate: currencyRate,
             sub_total: ss.sub_total,
             discount: ss.discount,
-            promo_code: ss.promo_code.id,
+            promo_code: ss.promo_code?.id,
             tax_rate: ss.tax_rate,
             tax: ss.tax,
             total: ss.total,
@@ -1501,7 +1516,7 @@ class Cart {
   static pay = async (params) => {
     params.order = await Cart.createOrder(params)
 
-    if (params.order.code === 'payment_ok') {
+    if (params.order.code === 'payment_ok' || params.order.code === 'duplicate') {
       return params.order
     }
     if (params.calculate.total === 0) {
@@ -1566,6 +1581,7 @@ class Cart {
           } catch (err) {
             await DB('order').where('id', params.order.id).update({
               status: 'failed',
+              paying: null,
               payment_id: err.requestId,
               error: err.code
             })
@@ -1592,6 +1608,7 @@ class Cart {
                 .where('id', params.order.id)
                 .update({
                   status: 'failed',
+                  paying: null,
                   payment_id: err.payment_intent ? err.payment_intent.id : null,
                   error: err.code
                 })
@@ -1704,7 +1721,7 @@ class Cart {
             payment_method: 'paypal'
           },
           redirect_urls: {
-            return_url: Utils.link('cart-pay', params.lang),
+            return_url: Utils.link('cart', params.lang),
             cancel_url: Utils.link('cart', params.lang)
           },
           transactions: [
@@ -1771,6 +1788,7 @@ class Cart {
                 .where('id', order.id)
                 .update({
                   status: 'failed',
+                  paying: null,
                   error: error.response.name
                 })
                 .then(() => {
@@ -1787,6 +1805,7 @@ class Cart {
               .where('id', order.id)
               .update({
                 status: 'failed',
+                paying: null,
                 error: payment.state
               })
               .then(() => {
@@ -1857,7 +1876,7 @@ class Cart {
     })
 
     const user = await DB()
-      .select('id', 'name', 'email', 'sponsor')
+      .select('id', 'name', 'email', 'is_guest', 'sponsor')
       .from('user')
       .where('id', order.user_id)
       .first()
@@ -1870,6 +1889,12 @@ class Cart {
       .where('os.order_id', orderId)
       .all()
 
+    if (user.is_guest) {
+      await Notification.add({
+        type: 'sign_up_confirm',
+        user_id: order.user_id
+      })
+    }
     const n = {
       type: 'my_order_confirmed',
       user_id: order.user_id,
