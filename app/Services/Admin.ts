@@ -2323,6 +2323,7 @@ class Admin {
         'facebook_id',
         'soundcloud_id',
         'user.created_at',
+        'user.is_guest',
         'unsubscribed',
         'newsletter',
         'customer.firstname',
