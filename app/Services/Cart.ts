@@ -312,6 +312,7 @@ class Cart {
     if (params.user_id && params.save) {
       await Cart.saveCart(params.user_id, cart)
     }
+
     return cart
   }
 
@@ -1249,7 +1250,7 @@ class Cart {
     const discountPerItem = p.project.discount?.[params.currency] || 0
     res.discount = discountPerItem * p.quantity
     res.discount_artist = p.project.discount_artist
-    res.price_discount = Utils.round(res.price - discountPerItem)
+    res.price_discount = discountPerItem ? Utils.round(res.price - discountPerItem) : null
     res.shipping_discount = p.project.shipping_discount
     res.price_ship_discount = res.price_ship_discount ?? null
     res.price_discount_ship_discount = res.shipping_discount
