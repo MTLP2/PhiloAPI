@@ -1245,7 +1245,7 @@ class Cart {
       res.picture = p.project.picture
       res.picture_project = p.project.picture_project
     }
-    console.log('p proje disco', p.project.discount, p.project)
+
     res.discount = (p.project.discount?.[params.currency] || 0) * p.quantity
     res.discount_artist = p.project.discount_artist
     res.price_discount = Utils.round(res.price - res.discount)
