@@ -1245,6 +1245,7 @@ class Cart {
       res.picture = p.project.picture
       res.picture_project = p.project.picture_project
     }
+
     res.discount = (p.project.discount?.[params.currency] || 0) * p.quantity
     res.discount_artist = p.project.discount_artist
     res.price_discount = Utils.round(res.price - res.discount)
@@ -1325,7 +1326,7 @@ class Cart {
     }
     if (res.shipping_discount && !userIsPro) {
       res.total_ship_discount = Utils.round(
-        p.quantity * res.price_ship_discount + p.tips - res.discount
+        p.quantity * (res.discount ? res.price_ship_discount : res.price) + p.tips - res.discount
       )
       res.ship_discount_sale_diff = (res.shipping_discount * res.quantity * p.project.promo) / 100
     }

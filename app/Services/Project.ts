@@ -60,6 +60,13 @@ class Project {
         project.price - project.price * (project.discount / 100),
         2
       )
+      project.prices_ship_discount = project.shipping_discount
+        ? Utils.getPrices({
+            price: project.price + project.shipping_discount,
+            currencies,
+            currency: project.currency
+          })
+        : null
     }
     project.price_discounts = {}
 
@@ -251,7 +258,9 @@ class Project {
               : null
           }
           project.discount = Object.keys(project.prices).reduce((acc, key) => {
-            acc[key] = project.prices[key] - project.prices_discount[key]
+            acc[key] =
+              (project.prices_ship_discount?.[key] || project.prices[key]) -
+              project.prices_discount[key]
             return acc
           }, {})
           project.discount_artist = sale.artist_pay
