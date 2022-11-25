@@ -60,6 +60,13 @@ class Project {
         project.price - project.price * (project.discount / 100),
         2
       )
+      project.prices_ship_discount = project.shipping_discount
+        ? Utils.getPrices({
+            price: project.price + project.shipping_discount,
+            currencies,
+            currency: project.currency
+          })
+        : null
     }
     project.price_discounts = {}
 
