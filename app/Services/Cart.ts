@@ -313,6 +313,8 @@ class Cart {
       await Cart.saveCart(params.user_id, cart)
     }
 
+    // console.log('cart', cart)
+
     return cart
   }
 
@@ -1328,7 +1330,9 @@ class Cart {
     }
     if (res.shipping_discount && !userIsPro) {
       res.total_ship_discount = Utils.round(
-        p.quantity * (res.discount ? res.price_ship_discount : res.price) + p.tips - res.discount
+        p.quantity * (res.shipping_discount ? res.price_ship_discount : res.price) +
+          p.tips -
+          res.discount
       )
       res.ship_discount_sale_diff = (res.shipping_discount * res.quantity * p.project.promo) / 100
     }
