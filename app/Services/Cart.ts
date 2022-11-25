@@ -369,8 +369,6 @@ class Cart {
         }
 
         cart.count += cart.shops[s].items.length
-
-        console.log(cart)
       })
     )
   }
@@ -595,11 +593,6 @@ class Cart {
       : p.items.reduce((acc, cur) => {
           return acc + cur.project.shipping_discount * cur.quantity
         }, 0) - shop.total_ship_discount_sale_diff
-
-    console.log(
-      '🚀 ~ file: Cart.ts ~ line 592 ~ Cart ~ calculateShop= ~ shippingDiscount',
-      shippingDiscount
-    )
 
     const shipping: any = await Cart.calculateShipping({
       quantity: shop.quantity,
