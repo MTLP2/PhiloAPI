@@ -1246,13 +1246,14 @@ class Cart {
       res.picture_project = p.project.picture_project
     }
 
-    res.discount = (p.project.discount?.[params.currency] || 0) * p.quantity
+    const discountPerItem = p.project.discount?.[params.currency] || 0
+    res.discount = discountPerItem * p.quantity
     res.discount_artist = p.project.discount_artist
-    res.price_discount = Utils.round(res.price - (p.project.discount?.[params.currency] || 0))
+    res.price_discount = Utils.round(res.price - discountPerItem)
     res.shipping_discount = p.project.shipping_discount
     res.price_ship_discount = res.price_ship_discount ?? null
     res.price_discount_ship_discount = res.shipping_discount
-      ? Utils.round(res.price_ship_discount - res.discount)
+      ? Utils.round(res.price_ship_discount - discountPerItem)
       : null
 
     res.project_id = p.project.id
