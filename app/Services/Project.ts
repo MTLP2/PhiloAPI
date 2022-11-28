@@ -212,9 +212,9 @@ class Project {
             currencies,
             currency: currency
           })
-          project.items[i].prices_ship_discount = project.shipping_discount
-            ? Object.keys(project.prices).reduce((acc, key) => {
-                acc[key] = project.prices[key] + project.shipping_discount
+          project.items[i].prices_ship_discount = project.items[i].related_shipping_discount
+            ? Object.keys(project.items[i].prices).reduce((acc, key) => {
+                acc[key] = project.items[i].prices[key] + project.items[i].related_shipping_discount
                 return acc
               }, {})
             : null
@@ -799,6 +799,7 @@ class Project {
         'vod.sizes',
         'vod.step',
         'vod.stock as related_stock_shop',
+        'vod.shipping_discount as related_shipping_discount',
         DB.raw(
           'vod.goal - vod.count - vod.count_other - vod.count_distrib - vod.count_bundle as related_stock'
         )
