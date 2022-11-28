@@ -467,8 +467,12 @@ class AdminController {
     return Feedback.exportAll(params)
   }
 
-  getNewsletters({ params }) {
-    return Admin.getNewsletters(params)
+  getMonthlyFeedbackStats() {
+    return Feedback.getMonthlyStats()
+  }
+
+  getNewsletters() {
+    return Admin.getNewsletters()
   }
 
   async getNewsletterTemplate({ params }) {

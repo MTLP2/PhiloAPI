@@ -61,6 +61,18 @@ class Feedback {
       feedbacks
     )
   }
+
+  static async getMonthlyStats() {
+    return DB('feedback')
+      .select(
+        DB.raw('DATE_FORMAT(feedback.created_at, "%Y-%m") as date'),
+        DB.raw('COUNT(*) as total'),
+        DB.raw('AVG(rating) as average')
+      )
+      .groupBy('date')
+      .orderBy('date', 'desc')
+      .all()
+  }
 }
 
 export default Feedback
