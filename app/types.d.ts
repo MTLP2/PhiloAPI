@@ -90,6 +90,7 @@ type QuestDb = {
   description_en: string
   user_repeated: number
   count_repeatable: number
+  prev_quest?: QuestDb | null
 }
 
 type QuestModel = QuestDb & Model

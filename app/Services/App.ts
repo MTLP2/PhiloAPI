@@ -51,16 +51,16 @@ class App {
       if (+moment().format('D') === 1) {
         await Box.checkPayments()
       }
-      if (moment().format('E') !== '6' && moment().format('E') !== '7') {
-        await Daudin.export()
-      }
-
+      
       if (
         moment().format('E') === '1' ||
         moment().format('E') === '3' ||
         moment().format('E') === '5'
       ) {
         await Order.exportOrdersExportedWithoutTracking(moment().format('E') === '1' ? 3 : 2)
+      }
+      if (moment().format('E') === '1') {
+        await App.alertStock()
       }
 
       if (+moment().format('D') === 28) {
@@ -161,6 +161,7 @@ class App {
       }
 
       await App.checkNotifications()
+      await Invoice.setNumbers()
       await Project.deleteDownload()
       await MondialRelay.checkSent()
       await MondialRelay.checkDelivered()
@@ -1402,10 +1403,20 @@ class App {
 
   static alertStock = async () => {
     let projects = await DB('project')
+      .select(
+        'project.name',
+        'project.id',
+        'project.artist_name',
+        'goal',
+        'count',
+        'is_shop',
+        'project_id',
+        'alert_stock'
+      )
       .join('vod', 'vod.project_id', 'project.id')
+      .hasMany('stock')
       .where('alert_stock', '>', 0)
       .all()
-
     let html = `
     <style>
       td {
@@ -1431,12 +1442,21 @@ class App {
         <th>Alert</th>
         <th>Stock Daudin</th>
         <th>Stock Whiplash</th>
+        <th>Stock Whiplash Uk</th>
         <th>Stock Total</th>
         <th>Diff</th>
       </tr>
     </thead>
     <tbody>`
     for (const project of projects) {
+      for (const stock of project.stock) {
+        project[`stock_${stock.type}`] = stock.quantity
+      }
+      project.stock_daudin = project.stock_daudin || 0
+      project.stock_whiplash = project.stock_whiplash || 0
+      project.stock_whiplash_uk = project.stock_whiplash_uk || 0
+      project.stock_diggers = project.stock_diggers || 0
+      console.log(project)
       if (project.is_shop) {
         project.stock_daudin = project.stock_daudin < 0 ? 0 : project.stock_daudin
         project.stock_whiplash = project.stock_whiplash < 0 ? 0 : project.stock_whiplash
@@ -1463,6 +1483,7 @@ class App {
       html += `<td>${project.alert_stock}</td>`
       html += `<td>${project.stock_daudin}</td>`
       html += `<td>${project.stock_whiplash}</td>`
+      html += `<td>${project.stock_whiplash_uk}</td>`
       html += `<td>${project.copies_left}</td>`
       html += `<td>${project.diff}</td>`
       html += '</tr>'
@@ -1470,7 +1491,7 @@ class App {
     html += '</tbody></table>'
 
     await Notification.sendEmail({
-      to: 'alexis@diggersfactory.com,cyril@diggersfactory.com,ismail@diggersfactory.com,guillaume@diggersfactory.com,victor@diggersfactory.com,olivia@diggersfactory.com',
+      to: 'alexis@diggersfactory.com,cyril@diggersfactory.com,ismail@diggersfactory.com,guillaume@diggersfactory.com,victor@diggersfactory.com,olivia@diggersfactory.com,jean-baptiste@diggersfactory.com',
       subject: 'Etat des stocks',
       html: juice(html)
     })

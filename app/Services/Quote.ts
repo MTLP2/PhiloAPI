@@ -284,7 +284,12 @@ class Quote {
         .where('is_active', true)
         .first()
       if (sponsor) {
-        fee = sponsor.fee / 100
+        if (sponsor.fee) {
+          fee = sponsor.fee / 100
+        } else if (sponsor.discount_prod) {
+          quote.discount = Utils.round(quote.total_tax * (sponsor.discount_prod / 100), 0)
+          quote.total_tax = quote.total_tax - quote.discount
+        }
       }
     } else if (params.id) {
       const vod = await DB('vod').where('project_id', params.id).first()
@@ -593,13 +598,13 @@ class Quote {
 
     // insert
     if (params.insert && params.insert !== 'none') {
-      quote.insert = getCost(252, 'insert')
+      quote.insert = getCost(252, 'insert', ` x ${params.quantity}`) / params.nb_vinyl
       if (params.insert === 'two_sides_printed') {
-        quote.insert += getCost(368, 'insert')
+        quote.insert += getCost(368, 'insert', ` x ${params.quantity}`) / params.nb_vinyl
       } else if (params.insert === 'one_side_printed') {
-        quote.insert += getCost(366, 'insert')
+        quote.insert += getCost(366, 'insert', ` x ${params.quantity}`) / params.nb_vinyl
       } else if (params.insert === 'booklet_printed') {
-        quote.insert += getCost(366, 'insert')
+        quote.insert += getCost(366, 'insert', ` x ${params.quantity}`) / params.nb_vinyl
       }
     }
 

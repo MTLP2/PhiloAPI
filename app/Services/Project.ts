@@ -60,6 +60,13 @@ class Project {
         project.price - project.price * (project.discount / 100),
         2
       )
+      project.prices_ship_discount = project.shipping_discount
+        ? Utils.getPrices({
+            price: project.price + project.shipping_discount,
+            currencies,
+            currency: project.currency
+          })
+        : null
     }
     project.price_discounts = {}
 
@@ -93,13 +100,12 @@ class Project {
             currencies,
             currency: project.currency
           })
-          if (project.shipping_discount) {
+          if (project.shipping_discount && project.prices) {
             project.prices_ship_discount = project.shipping_discount
-              ? Utils.getPrices({
-                  price: project.price + project.shipping_discount,
-                  currencies,
-                  currency: project.currency
-                })
+              ? Object.keys(project.prices).reduce((acc, key) => {
+                  acc[key] = project.prices[key] + project.shipping_discount
+                  return acc
+                }, {})
               : null
           }
           break
@@ -110,10 +116,16 @@ class Project {
     project.currency_project = project.currency
     if (currencies) {
       project.prices = Utils.getPrices({
-        price: project.price + project.shipping_discount,
+        price: project.price,
         currencies,
         currency: project.currency
       })
+      project.prices_ship_discount = project.shipping_discount
+        ? Object.keys(project.prices).reduce((acc, key) => {
+            acc[key] = project.prices[key] + project.shipping_discount
+            return acc
+          }, {})
+        : null
     }
 
     return project
@@ -183,13 +195,14 @@ class Project {
         currencies,
         currency: project.currency
       })
+
       project.prices_ship_discount = project.shipping_discount
-        ? Utils.getPrices({
-            price: project.price + project.shipping_discount,
-            currencies,
-            currency: project.currency
-          })
+        ? Object.keys(project.prices).reduce((acc, key) => {
+            acc[key] = project.prices[key] + project.shipping_discount
+            return acc
+          }, {})
         : null
+
       if (project.items) {
         for (const i in project.items) {
           const price = project.items[i].related_price || project.items[i].price
@@ -199,12 +212,11 @@ class Project {
             currencies,
             currency: currency
           })
-          project.items[i].prices_ship_discount = project.shipping_discount
-            ? Utils.getPrices({
-                price: price + project.shipping_discount,
-                currencies,
-                currency: currency
-              })
+          project.items[i].prices_ship_discount = project.items[i].related_shipping_discount
+            ? Object.keys(project.items[i].prices).reduce((acc, key) => {
+                acc[key] = project.items[i].prices[key] + project.items[i].related_shipping_discount
+                return acc
+              }, {})
             : null
           project.items[i].sizes = project.items[i].sizes
             ? Object.keys(JSON.parse(project.items[i].sizes)).filter((k) => {
@@ -245,7 +257,12 @@ class Project {
                 })
               : null
           }
-          project.discount = discount
+          project.discount = Object.keys(project.prices).reduce((acc, key) => {
+            acc[key] =
+              (project.prices_ship_discount?.[key] || project.prices[key]) -
+              project.prices_discount[key]
+            return acc
+          }, {})
           project.discount_artist = sale.artist_pay
 
           break
@@ -428,6 +445,8 @@ class Project {
 
       const categories: any = []
       for (const filter of filters) {
+        filter.value = filter.value.toString().replace(/[^a-zA-Z0-9 ]/g, '')
+
         if (filter.type === 'type') {
           projects.where('v.type', filter.value)
         } else if (filter.type === 'genre') {
@@ -455,63 +474,34 @@ class Project {
       projects.where(function () {
         if (params.genres) {
           params.genres.split(',').map((genre) => {
-            this.orWhereExists(
-              DB.raw(`
-            SELECT style.id
-            FROM project_style, style
-            WHERE p.id = project_id
-              AND style.id = project_style.style_id
-              AND genre_id = ${genre}
-          `)
-            )
+            if (genre && !isNaN(genre)) {
+              this.orWhereExists(
+                DB.raw(`
+              SELECT style.id
+              FROM project_style, style
+              WHERE p.id = project_id
+                AND style.id = project_style.style_id
+                AND genre_id = ${parseInt(genre)}
+            `)
+              )
+            }
           })
         }
         if (params.styles) {
           params.styles.split(',').map((style) => {
-            this.orWhereExists(
-              DB.raw(`
-            SELECT id
-            FROM project_style
-            WHERE p.id = project_id
-              AND project_style.style_id = ${style}
-          `)
-            )
+            if (style && !isNaN(style)) {
+              this.orWhereExists(
+                DB.raw(`
+              SELECT id
+              FROM project_style
+              WHERE p.id = project_id
+                AND project_style.style_id = ${parseInt(style)}
+            `)
+              )
+            }
           })
         }
       })
-    }
-
-    if (params.formats) {
-      const formats = params.formats.split(',')
-      projects.where(function () {
-        formats.map((format) => {
-          if (format === '12') {
-            this.orWhereNotIn(
-              'p.id',
-              DB('marketplace_item')
-                .select('project_id')
-                .where('format', 'LIKE', '%7%')
-                .orWhere('format', 'LIKE', '%7%')
-                .query()
-            )
-          } else {
-            this.orWhereIn(
-              'p.id',
-              DB('marketplace_item')
-                .select('project_id')
-                .where('format', 'LIKE', `%${format}%`)
-                .query()
-            )
-          }
-        })
-      })
-    }
-    if (params.conditions) {
-      const conditions = params.conditions.split(',')
-      projects.whereIn(
-        'p.id',
-        DB('marketplace_item').select('project_id').whereIn('media_condition', conditions).query()
-      )
     }
 
     if (params.ids) {
@@ -521,17 +511,17 @@ class Project {
       projects.join('like', 'p.id', 'like.project_id').where('like.user_id', params.liked)
     }
     if (params.search) {
-      params.search = params.search.replace('\\', '')
-      params.search = params.search.replace("'", "\\'")
+      params.search = params.search.replace('-', ' ').replace(/[^a-zA-Z0-9 ]/g, '')
       projects.where(function () {
-        this.where('p.name', 'like', `%${params.search}%`)
-          .orWhere('artist_name', 'like', `%${params.search}%`)
-          .orWhere(DB().raw('CONCAT(artist_name, " ", p.name)'), 'like', `%${params.search}%`)
-          .orWhere('label_name', 'like', `%${params.search}%`)
-          .orWhere(DB().raw('REPLACE(v.type, "_", " ")'), 'like', `%${params.search}%`)
+        this.whereRaw(
+          `REPLACE(CONCAT(artist_name, ' ', p.name), '-', ' ') like '%${params.search}%'`
+        ).orWhere('label_name', 'like', `%${params.search}%`)
       })
     }
 
+    if (!params.sort) {
+      params.sort = 'popularity'
+    }
     if (params.order) {
       projects.orderBy(params.order, params.sort)
     } else if (params.sort) {
@@ -594,6 +584,8 @@ class Project {
     const styles = await Project.listStyles()
     const sales = await PromoCode.getSales({ vod: true })
     const currencies = await Utils.getCurrenciesDb()
+
+    projects.orderBy('id', 'desc')
 
     return projects.all().then((res) => {
       return res.map((project) => Project.setInfos(project, currencies, sales, styles))
@@ -807,6 +799,7 @@ class Project {
         'vod.sizes',
         'vod.step',
         'vod.stock as related_stock_shop',
+        'vod.shipping_discount as related_shipping_discount',
         DB.raw(
           'vod.goal - vod.count - vod.count_other - vod.count_distrib - vod.count_bundle as related_stock'
         )
@@ -931,8 +924,6 @@ class Project {
       p.project_images = projectImages
     }
 
-    // console.log('checking p', p)
-
     return p
   }
 
@@ -1002,11 +993,13 @@ class Project {
       })
 
     // Adding pass history
-    const passRes = await Pass.addHistory({
-      userId,
-      type: 'user_like',
-      refId: projectId
-    })
+    try {
+      const passRes = await Pass.addHistory({
+        userId,
+        type: 'user_like',
+        refId: projectId
+      })
+    } catch (err) {}
 
     return { result: 1, passRes }
   }

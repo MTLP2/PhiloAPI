@@ -1,6 +1,5 @@
 import Excel from 'exceljs'
 import moment from 'moment'
-import google from 'googleapis'
 import fs from 'fs'
 
 import DB from 'App/DB'
@@ -28,6 +27,7 @@ import Deepl from 'App/Services/Deepl'
 import Artwork from 'App/Services/Artwork'
 import cio from 'App/Services/CIO'
 import Env from '@ioc:Adonis/Core/Env'
+import Pass from './Pass'
 
 class Admin {
   static getProjects = async (params: {
@@ -99,7 +99,7 @@ class Admin {
       projects.where('vod.created_at', '<=', `${params.end} 23:59`)
     }
 
-    return Utils.getRows({ ...params, query: projects })
+    return Utils.getRows<any>({ ...params, query: projects })
   }
 
   static getWishlists = async (params) => {
@@ -2324,6 +2324,7 @@ class Admin {
         'facebook_id',
         'soundcloud_id',
         'user.created_at',
+        'user.is_guest',
         'unsubscribed',
         'newsletter',
         'customer.firstname',
@@ -2381,6 +2382,9 @@ class Admin {
     if (reviews.length) {
       user.reviews = reviews
     }
+
+    user.passHistory = await Pass.getHistory({ userId: id })
+    // user.pass = await Pass.getUserPass({ userId: id })
 
     user.styles = user.styles ? JSON.parse(user.styles) : []
     user.digs = await Dig.byUser(id)
@@ -4021,23 +4025,24 @@ class Admin {
   static exportRawProjects = async (params) => {
     const projects = await Admin.getProjects({ start: params.start, end: params.end, size: 0 })
 
-    return Utils.arrayToCsv(
+    return Utils.arrayToXlsx(
       [
-        { index: 'id', name: 'ID' },
-        { index: 'type', name: 'Type' },
-        { index: 'step', name: 'Step' },
-        { index: 'count', name: 'Count' },
-        { index: 'created_at', name: 'Date' },
-        { index: 'start', name: 'Start' },
-        { index: 'name', name: 'Project' },
-        { index: 'artist_name', name: 'Artist Name' },
-        { index: 'status', name: 'Status' },
-        { index: 'date_shipping', name: 'Date Shipping' },
-        { index: 'country_id', name: 'Country ID' },
-        { index: 'origin', name: 'Origin' },
-        { index: 'comment', name: 'Resp' }
+        [
+          { header: 'ID', key: 'id', width: 10 },
+          { header: 'Step', key: 'step', width: 15 },
+          { key: 'count', header: 'Count', width: 10 },
+          { key: 'created_at', header: 'Date', width: 15 },
+          { key: 'start', header: 'Start', width: 15 },
+          { key: 'name', header: 'Project', width: 30 },
+          { key: 'artist_name', header: 'Artist name', width: 30 },
+          { key: 'status', header: 'Status', width: 15 },
+          { key: 'date_shipping', header: 'Date Shipping', width: 15 },
+          { key: 'country_id', header: 'Country ID', width: 15 },
+          { key: 'origin', header: 'Origin', width: 15 },
+          { key: 'comment', header: 'Resp', width: 15 }
+        ]
       ],
-      projects.data
+      [{ data: projects.data }]
     )
   }
 
@@ -4865,6 +4870,11 @@ class Admin {
       cio_id: params.cio_id || null,
       project_id: params.project_id
     })
+    return true
+  }
+
+  static deleteDelayNewsletter = async ({ dnlid }: { dnlid: number }) => {
+    await DB('project_nl').where('id', dnlid).delete()
     return true
   }
 }

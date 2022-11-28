@@ -1208,6 +1208,21 @@ class Utils {
     **/
   }
 
+  static getShipDiscounts = ({
+    ship,
+    taxRate,
+    shippingDiscount
+  }: {
+    ship: number | null
+    taxRate: number
+    shippingDiscount?: number
+  }) => {
+    // Original
+    if (!shippingDiscount) return ship ? Utils.round(ship + ship * taxRate, 2, 0.1) : null
+    // With discount
+    return ship ? Math.max(Utils.round(ship - shippingDiscount + ship * taxRate, 2, 0.1), 0) : null
+  }
+
   static isProUser = async (userId: number) => {
     let userIsPro = false
     if (userId) {
@@ -1215,6 +1230,40 @@ class Utils {
       userIsPro = !!user.is_pro
     }
     return userIsPro
+  }
+
+  static isEuropean = (countryId?: string) => {
+    const europeanCountryIdList = [
+      'AT',
+      'BE',
+      'BG',
+      'CY',
+      'CZ',
+      'DE',
+      'DK',
+      'EE',
+      'ES',
+      'FI',
+      'FR',
+      'GB',
+      'GR',
+      'HR',
+      'HU',
+      'IE',
+      'IT',
+      'LT',
+      'LU',
+      'LV',
+      'MT',
+      'NL',
+      'PL',
+      'PT',
+      'RO',
+      'SE',
+      'SI',
+      'SK'
+    ]
+    return countryId ? europeanCountryIdList.includes(countryId) : false
   }
 
   static getTeam = [

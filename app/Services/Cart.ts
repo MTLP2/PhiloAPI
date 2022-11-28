@@ -18,6 +18,7 @@ import Order from 'App/Services/Order'
 import cio from 'App/Services/CIO'
 import I18n from '@ioc:Adonis/Addons/I18n'
 import moment from 'moment'
+import Pass from './Pass'
 const stripe = require('stripe')(config.stripe.client_secret)
 
 const paypal = require('paypal-rest-sdk')
@@ -119,9 +120,12 @@ class Cart {
           cart.error = box.error
         }
 
-        cart.shipping = Utils.round(cart.shipping + box.shipping)
+        if (params.boxes[i].shipping_type === 'pickup') {
+          cart.hasPickup = true
+        }
+
         cart.tax = Utils.round(cart.tax + box.tax)
-        cart.sub_total = Utils.round(cart.sub_total + box.sub_total)
+        cart.sub_total = Utils.round(cart.sub_total + box.total)
         cart.total = Utils.round(cart.total + box.total)
         if (box.discount) {
           cart.discount = Utils.round(cart.discount + box.discount)
@@ -308,6 +312,9 @@ class Cart {
     if (params.user_id && params.save) {
       await Cart.saveCart(params.user_id, cart)
     }
+
+    // console.log('cart', cart)
+
     return cart
   }
 
@@ -353,7 +360,7 @@ class Cart {
         cart.tax_rate = cart.shops[s].tax_rate
         cart.sub_total = Utils.round(cart.sub_total + cart.shops[s].sub_total * cur)
         cart.total = Utils.round(cart.total + cart.shops[s].total * cur)
-
+        cart.pickup = params.pickup
         cart.discount = Utils.round(cart.discount + cart.shops[s].discount)
 
         cart.paypal = cart.shops[s].paypal
@@ -453,6 +460,9 @@ class Cart {
           if (today < start || today > end) {
             shop.promo_error = 'promo_code_finished'
           }
+        }
+        if (code.only_once && code.used > 0) {
+          shop.promo_error = 'promo_code_used'
         }
         if (code.unique) {
           const already = await DB('order')
@@ -577,9 +587,10 @@ class Cart {
       shop.error = 'shipping_limit_weight'
     }
 
-    // Calculate shipping displayed to customer by doing shipping - total of shipping discounts of shop
+    // Calculate shipping displayed to customer by doing shipping - total of shipping  of shop
     // Except for pro user (then discount to 0)
     const userIsPro = await Utils.isProUser(p.user_id)
+
     const shippingDiscount: number = userIsPro
       ? 0
       : p.items.reduce((acc, cur) => {
@@ -601,42 +612,66 @@ class Cart {
 
     shop.tax_rate = await Cart.getTaxRate(p.customer)
     shipping.letter = 0
+
     // Standard
-    shipping.original_standard = Utils.round(
-      shipping.standard + shipping.standard * shop.tax_rate,
-      2,
-      0.1
-    )
-    shipping.standard = Math.max(
-      Utils.round(shipping.standard - shippingDiscount + shipping.standard * shop.tax_rate, 2, 0.1),
-      0
-    )
+    shipping.original_standard = Utils.getShipDiscounts({
+      ship: shipping.standard,
+      taxRate: shop.tax_rate
+    })
+    shipping.standard = Utils.getShipDiscounts({
+      ship: shipping.standard,
+      shippingDiscount,
+      taxRate: shop.tax_rate
+    })
 
     // Tracking
-    shipping.original_tracking = Utils.round(
-      shipping.tracking + shipping.tracking * shop.tax_rate,
-      2,
-      0.1
-    )
-    shipping.tracking = Math.max(
-      Utils.round(shipping.tracking - shippingDiscount + shipping.tracking * shop.tax_rate, 2, 0.1),
-      0
-    )
+    // shipping.original_tracking = shipping.tracking
+    //   ? Utils.round(shipping.tracking + shipping.tracking * shop.tax_rate, 2, 0.1)
+    //   : null
+    // shipping.tracking = shipping.tracking
+    //   ? Math.max(
+    //       Utils.round(
+    //         shipping.tracking - shippingDiscount + shipping.tracking * shop.tax_rate,
+    //         2,
+    //         0.1
+    //       ),
+    //       0
+    //     )
+    //   : null
+    shipping.original_tracking = Utils.getShipDiscounts({
+      ship: shipping.tracking,
+      taxRate: shop.tax_rate
+    })
+    shipping.tracking = Utils.getShipDiscounts({
+      ship: shipping.tracking,
+      shippingDiscount,
+      taxRate: shop.tax_rate
+    })
 
     // Pickup
-    shipping.original_pickup = Utils.round(
-      shipping.pickup + shipping.pickup * shop.tax_rate,
-      2,
-      0.1
-    )
-    shipping.pickup = Math.max(
-      Utils.round(shipping.pickup - shippingDiscount + shipping.pickup * shop.tax_rate, 2, 0.1),
-      0
-    )
+    // shipping.original_pickup = shipping.pickup
+    //   ? Utils.round(shipping.pickup + shipping.pickup * shop.tax_rate, 2, 0.1)
+    //   : null
+    // shipping.pickup = shipping.pickup
+    //   ? Math.max(
+    //       Utils.round(shipping.pickup - shippingDiscount + shipping.pickup * shop.tax_rate, 2, 0.1),
+    //       0
+    //     )
+    //   : null
 
-    if (shipping.letter > shipping.standard) {
-      shipping.letter = 0
-    }
+    shipping.original_pickup = Utils.getShipDiscounts({
+      ship: shipping.pickup,
+      taxRate: shop.tax_rate
+    })
+    shipping.pickup = Utils.getShipDiscounts({
+      ship: shipping.pickup,
+      shippingDiscount,
+      taxRate: shop.tax_rate
+    })
+
+    // if (shipping.letter > shipping.standard) {
+    //   shipping.letter = 0
+    // }
 
     shop.shipping_letter = shipping.letter
     shop.shipping_standard = shipping.standard
@@ -645,35 +680,56 @@ class Cart {
     shop.shipping_type = p.shipping_type
     shop.transporter = shipping.transporter
 
-    if (!p.shipping_type && (shipping.pickup > 0 || shippingDiscount > 0)) {
+    if (
+      !p.shipping_type &&
+      shipping.pickup !== null &&
+      (shipping.pickup > 0 || shippingDiscount > 0)
+    ) {
       shop.shipping = shipping.pickup
       shop.original_shipping = shipping.original_pickup
       shop.shipping_type = 'pickup'
-    } else if (p.shipping_type === 'standard' && (shipping.standard > 0 || shippingDiscount > 0)) {
+    } else if (
+      p.shipping_type === 'standard' &&
+      shipping.standard !== null &&
+      (shipping.standard > 0 || shippingDiscount > 0)
+    ) {
       shop.shipping = shipping.standard
       shop.original_shipping = shipping.original_standard
-    } else if (p.shipping_type === 'tracking' && (shipping.tracking > 0 || shippingDiscount > 0)) {
+    } else if (
+      p.shipping_type === 'tracking' &&
+      shipping.tracking !== null &&
+      (shipping.tracking > 0 || shippingDiscount > 0)
+    ) {
       shop.shipping = shipping.tracking
       shop.original_shipping = shipping.original_tracking
-    } else if (p.shipping_type === 'letter' && shipping.letter > 0) {
-      shop.shipping = shipping.letter
-      shop.original_shipping = shipping.letter
-    } else if (p.shipping_type === 'pickup' && (shipping.pickup > 0 || shippingDiscount > 0)) {
+    }
+    // else if (p.shipping_type === 'letter' && shipping.letter > 0) {
+    //   shop.shipping = shipping.letter
+    //   shop.original_shipping = shipping.letter
+    // }
+    else if (
+      p.shipping_type === 'pickup' &&
+      shipping.pickup !== null &&
+      (shipping.pickup > 0 || shippingDiscount > 0)
+    ) {
       shop.shipping = shipping.pickup
       shop.original_shipping = shipping.original_pickup
-    } else if (shipping.letter > 0 || shippingDiscount > 0) {
-      shop.shipping = shipping.letter
-      shop.shipping_type = 'letter'
-      shop.original_shipping = shipping.letter
-    } else if (shipping.standard > 0 || shippingDiscount > 0) {
+    }
+    // else if (shipping.letter > 0 || shippingDiscount > 0) {
+    //   console.log('6')
+    //   shop.shipping = shipping.letter
+    //   shop.shipping_type = 'letter'
+    //   shop.original_shipping = shipping.letter
+    // }
+    else if (shipping.standard !== null && (shipping.standard > 0 || shippingDiscount > 0)) {
       shop.shipping = shipping.standard
       shop.original_shipping = shipping.original_standard
       shop.shipping_type = 'standard'
-    } else if (shipping.tracking > 0 || shippingDiscount > 0) {
+    } else if (shipping.tracking !== null && (shipping.tracking > 0 || shippingDiscount > 0)) {
       shop.shipping = shipping.tracking
       shop.original_shipping = shipping.original_tracking
       shop.shipping_type = 'tracking'
-    } else if (shipping.pickup > 0 || shippingDiscount > 0) {
+    } else if (shipping.pickup !== null && (shipping.pickup > 0 || shippingDiscount > 0)) {
       shop.shipping = shipping.pickup
       shop.original_shipping = shipping.original_pickup
       shop.shipping_type = 'pickup'
@@ -697,15 +753,67 @@ class Cart {
       if (p.promo_code.projects && p.promo_code.projects.length > 0) {
         const projects = p.promo_code.projects.replace(/ /g, '').split(',')
 
+        // TOTAL RECURSIVE
         shop.items.map((item, i) => {
           if (projects.indexOf(item.project_id.toString()) > -1) {
             item.shipping = shop.shipping
-            shop.discount = Utils.round(shop.discount + Cart.getDiscountProject(item, p.promo_code))
-            shop.total = Utils.round(shop.total - Cart.getDiscountProject(item, p.promo_code))
-            shop.items[i].discount = Cart.getDiscountProject(item, p.promo_code)
+            shop.discount = Utils.round(
+              shop.discount + Cart.getDiscountProject(shop.items[i], p.promo_code)
+            )
+
+            // Shipping diff based on discount vs no discount (otherwise the client pay less)
+            shop.discount_ship_diff = item.total_ship_discount
+              ? Utils.round(
+                  Cart.getDiscountProject(
+                    {
+                      total: item.total,
+                      total_ship_discount: item.total_ship_discount,
+                      shipping: item.shipping
+                    },
+                    p.promo_code
+                  ) -
+                    Cart.getDiscountProject(
+                      {
+                        total: item.total,
+                        shipping: item.shipping
+                      },
+                      p.promo_code
+                    )
+                )
+              : 0
+            if (shop.discount_ship_diff) {
+              shop.shipping = Utils.round(shop.shipping + shop.discount_ship_diff)
+              shop.shipping_pickup = shop.shipping_pickup
+                ? Utils.round(shop.shipping_pickup + shop.discount_ship_diff)
+                : null
+              shop.shipping_standard = shop.shipping_standard
+                ? Utils.round(shop.shipping_standard + shop.discount_ship_diff)
+                : null
+              shop.shipping_tracking = shop.shipping_tracking
+                ? Utils.round(shop.shipping_tracking + shop.discount_ship_diff)
+                : null
+            }
+
+            shop.total = Utils.round(
+              shop.total -
+                Cart.getDiscountProject(shop.items[i], p.promo_code) +
+                shop.discount_ship_diff
+            )
+            shop.total_ship_discount = shop.total_ship_discount
+              ? Utils.round(
+                  shop.total_ship_discount - Cart.getDiscountProject(shop.items[i], p.promo_code)
+                )
+              : null
+
+            shop.items[i].discount = Cart.getDiscountProject(shop.items[i], p.promo_code)
             shop.items[i].discount_artist = p.promo_code.artist_pay
             shop.items[i].total_old = shop.items[i].total
-            shop.items[i].total -= Cart.getDiscountProject(item, p.promo_code)
+            shop.items[i].total_ship_discount_old = shop.items[i].total_ship_discount || null
+            shop.items[i].total -= Cart.getDiscountProject(shop.items[i], p.promo_code)
+            shop.items[i].total_ship_discount -= Cart.getDiscountProject(
+              shop.items[i],
+              p.promo_code
+            )
           }
         })
       } else {
@@ -719,7 +827,6 @@ class Cart {
     }
 
     shop.promo_code = p.promo_code
-    // console.log(shop)
     return shop
   }
 
@@ -727,7 +834,7 @@ class Cart {
     if (promo.on_total) {
       return Utils.round((item.total + item.shipping) * (promo.value / 100))
     } else {
-      return Utils.round(item.total * (promo.value / 100))
+      return Utils.round((item.total_ship_discount || item.total) * (promo.value / 100))
     }
   }
 
@@ -1119,6 +1226,7 @@ class Cart {
       for (const i of p.project.items) {
         if (i.id === p.item_id) {
           res.price = i.prices[params.currency]
+          res.price_ship_discount = i.prices_ship_discount?.[params.currency] ?? null
           res.item = i.name
           res.picture = i.picture
           p.project.copies_left = i.stock
@@ -1140,12 +1248,15 @@ class Cart {
       res.picture = p.project.picture
       res.picture_project = p.project.picture_project
     }
-    res.discount = p.project.discount * p.quantity
+
+    const discountPerItem = p.project.discount?.[params.currency] || 0
+    res.discount = discountPerItem * p.quantity
     res.discount_artist = p.project.discount_artist
-    res.price_discount = Utils.round(res.price - res.discount)
+    res.price_discount = discountPerItem ? Utils.round(res.price - discountPerItem) : null
     res.shipping_discount = p.project.shipping_discount
-    res.price_ship_discount = res.shipping_discount
-      ? Utils.round(res.price + res.shipping_discount)
+    res.price_ship_discount = res.price_ship_discount ?? null
+    res.price_discount_ship_discount = res.shipping_discount
+      ? Utils.round(res.price_ship_discount - discountPerItem)
       : null
 
     res.project_id = p.project.id
@@ -1201,7 +1312,11 @@ class Cart {
 
       if (userIsPro && p.project.partner_distribution && p.project.prices_distribution) {
         res.price = p.project.prices_distribution[params.currency]
-        if (params.country_id === 'FR') {
+
+        if (
+          params.country_id === 'FR' ||
+          (!params.customer?.tax_intra && Utils.isEuropean(params.customer?.country_id))
+        ) {
           res.price_distrib = p.project.prices_distribution[params.currency] * 1.2
         }
       }
@@ -1219,7 +1334,9 @@ class Cart {
     }
     if (res.shipping_discount && !userIsPro) {
       res.total_ship_discount = Utils.round(
-        p.quantity * res.price_ship_discount + p.tips - res.discount
+        p.quantity * (res.shipping_discount ? res.price_ship_discount : res.price) +
+          p.tips -
+          res.discount
       )
       res.ship_discount_sale_diff = (res.shipping_discount * res.quantity * p.project.promo) / 100
     }
@@ -1282,25 +1399,37 @@ class Cart {
 
     const currencyRate = await Utils.getCurrency(params.currency)
 
-    const order = await DB('order').save({
-      user_id: params.user_id,
-      cart_id: params.cart_id,
-      payment_type: calculate.payment_type,
-      currency: calculate.currency,
-      currency_rate: currencyRate,
-      status: 'creating',
-      sub_total: calculate.sub_total,
-      shipping: calculate.shipping,
-      tax: calculate.tax,
-      tax_rate: calculate.tax_rate,
-      promo_code: calculate.promo_code,
-      discount: calculate.discount,
-      total: calculate.total,
-      origin: params.origin,
-      user_agent: JSON.stringify(params.user_agent),
-      created_at: Utils.date(),
-      updated_at: Utils.date()
-    })
+    let order
+    try {
+      order = await DB('order').save({
+        user_id: params.user_id,
+        cart_id: params.cart_id,
+        paying: true,
+        payment_type: calculate.payment_type,
+        currency: calculate.currency,
+        currency_rate: currencyRate,
+        status: 'creating',
+        sub_total: calculate.sub_total,
+        shipping: calculate.shipping,
+        tax: calculate.tax,
+        tax_rate: calculate.tax_rate,
+        promo_code: calculate.promo_code,
+        discount: calculate.discount,
+        total: calculate.total,
+        origin: params.origin,
+        user_agent: JSON.stringify(params.user_agent),
+        created_at: Utils.date(),
+        updated_at: Utils.date()
+      })
+    } catch (err) {
+      if (err.toString().includes('Duplicate') > 0) {
+        return {
+          error: 'duplicate'
+        }
+      } else {
+        throw err
+      }
+    }
 
     order.shops = []
 
@@ -1336,7 +1465,7 @@ class Cart {
             currency_rate: currencyRate,
             sub_total: ss.sub_total,
             discount: ss.discount,
-            promo_code: ss.promo_code.id,
+            promo_code: ss.promo_code?.id,
             tax_rate: ss.tax_rate,
             tax: ss.tax,
             total: ss.total,
@@ -1379,7 +1508,7 @@ class Cart {
                 size: item.size,
                 quantity: item.quantity,
                 total: item.total,
-                total_ship_discount: item.total_ship_discount,
+                total_ship_discount: item.total_ship_discount || 0,
                 created_at: Utils.date(),
                 updated_at: Utils.date()
               })
@@ -1398,8 +1527,7 @@ class Cart {
 
   static pay = async (params) => {
     params.order = await Cart.createOrder(params)
-
-    if (params.order.code === 'payment_ok') {
+    if (params.order.code === 'payment_ok' || params.order.error === 'duplicate') {
       return params.order
     }
     if (params.calculate.total === 0) {
@@ -1441,11 +1569,6 @@ class Cart {
           intent.setup_future_usage = 'off_session'
           params.card_save = true
         }
-        /**
-      if (params.order.shops.length > 0 && params.order.shops[0].payment_account && params.order.shops[0].payment_account !== '1') {
-        intent.on_behalf_of = params.order.shops[0].payment_account
-      }
-      **/
 
         if (params.card.customer) {
           intent.customer = params.card.customer
@@ -1464,6 +1587,7 @@ class Cart {
           } catch (err) {
             await DB('order').where('id', params.order.id).update({
               status: 'failed',
+              paying: null,
               payment_id: err.requestId,
               error: err.code
             })
@@ -1490,6 +1614,7 @@ class Cart {
                 .where('id', params.order.id)
                 .update({
                   status: 'failed',
+                  paying: null,
                   payment_id: err.payment_intent ? err.payment_intent.id : null,
                   error: err.code
                 })
@@ -1507,6 +1632,7 @@ class Cart {
             if (charge.status === 'requires_action') {
               await DB('order').where('id', params.order.id).update({
                 payment_id: charge.id,
+                paying: null,
                 status: 'requires_action'
               })
               resolve({
@@ -1529,12 +1655,20 @@ class Cart {
     })
 
   static confirmStripePayment = async (params) => {
-    const confirm = await stripe.paymentIntents.confirm(params.payment_intent_id)
-
-    params.order = await DB('order').find(params.order_id)
-
-    if (confirm.status === 'succeeded') {
-      return Cart.validStripePayment(params, confirm)
+    let confirm
+    try {
+      confirm = await stripe.paymentIntents.confirm(params.payment_intent_id)
+      if (confirm.status === 'succeeded') {
+        params.order = await DB('order').find(params.order_id)
+        return Cart.validStripePayment(params, confirm)
+      }
+    } catch (err) {
+      await DB('order').where('id', params.order_id).update({
+        status: 'failed',
+        paying: null,
+        error: err.code
+      })
+      throw err
     }
   }
 
@@ -1602,7 +1736,7 @@ class Cart {
             payment_method: 'paypal'
           },
           redirect_urls: {
-            return_url: Utils.link('cart-pay', params.lang),
+            return_url: Utils.link('cart', params.lang),
             cancel_url: Utils.link('cart', params.lang)
           },
           transactions: [
@@ -1669,6 +1803,7 @@ class Cart {
                 .where('id', order.id)
                 .update({
                   status: 'failed',
+                  paying: null,
                   error: error.response.name
                 })
                 .then(() => {
@@ -1685,6 +1820,7 @@ class Cart {
               .where('id', order.id)
               .update({
                 status: 'failed',
+                paying: null,
                 error: payment.state
               })
               .then(() => {
@@ -1755,7 +1891,7 @@ class Cart {
     })
 
     const user = await DB()
-      .select('id', 'name', 'email', 'sponsor')
+      .select('id', 'name', 'email', 'is_guest', 'sponsor')
       .from('user')
       .where('id', order.user_id)
       .first()
@@ -1768,6 +1904,12 @@ class Cart {
       .where('os.order_id', orderId)
       .all()
 
+    if (user.is_guest) {
+      await Notification.add({
+        type: 'sign_up_confirm',
+        user_id: order.user_id
+      })
+    }
     const n = {
       type: 'my_order_confirmed',
       user_id: order.user_id,
@@ -1790,6 +1932,7 @@ class Cart {
     }
 
     let customerId = null
+    let orderGenres: string[] = []
     await Promise.all(
       shops.map(async (shop) => {
         customerId = shop.customer_invoice_id || shop.customer_id
@@ -1859,6 +2002,7 @@ class Cart {
               project.genres = project.styles.map((s) => genres[styles[s.id || s].genre_id])
               project.genres = [...new Set(project.genres)]
               project.styles = project.styles.map((s) => styles[s.id || s].name)
+              orderGenres.push(project.genres)
 
               cio.track(user.id, {
                 name: 'purchase',
@@ -1933,6 +2077,35 @@ class Cart {
                 transporter: shop.transporter
               })
               await Project.forceLike(project.id, user.id)
+
+              // Gamification
+              const passTypeList = ['first_order', 'order_5', 'order_10', 'order_15', 'order_20']
+              if (project.type_project === 'test_pressing') {
+                passTypeList.push('test_pressing')
+              }
+
+              // Quantity related quests
+              try {
+                const resOrders = await Pass.addHistory({
+                  userId: user.id,
+                  type: passTypeList,
+                  times: item.quantity
+                })
+                console.log('res of gamification orders', resOrders)
+              } catch (err) {
+                await Pass.errorNotification('orders', user.id, err)
+              }
+
+              // Genres quest
+              try {
+                const resGenres = await Pass.addGenreHistory({
+                  userId: user.id,
+                  genreList: project.genres
+                })
+                console.log('res of gamification genres', resGenres)
+              } catch (err) {
+                await Pass.errorNotification('genres', user.id, err)
+              }
             })
           )
         }
@@ -1989,6 +2162,10 @@ class Cart {
     order.customer_id = customerId
     await Invoice.insertOrder(order)
 
+    await DB('promo_code')
+      .where('code', order.promo_code)
+      .update({ used: DB.raw('used + 1') })
+
     const items = []
     const t = (t) => I18n.locale('en').formatMessage(t)
 
@@ -2007,6 +2184,30 @@ class Cart {
         name: `${order.artist} - ${order.project}`,
         category: 'vinyl'
       })
+    }
+
+    // Gamification
+    // check if each subarray has a value that is in another subarray. If so, add 1 to doubled
+    let countRepeatedGenres = 0
+    for (let i = 0; i < orderGenres.length; i++) {
+      for (let j = 0; j < orderGenres[i].length; j++) {
+        for (let k = 0; k < orderGenres.length; k++) {
+          if (i !== k && orderGenres[k].includes(orderGenres[i][j])) {
+            countRepeatedGenres++
+          }
+        }
+      }
+    }
+    if (!countRepeatedGenres) {
+      try {
+        const res = await Pass.addHistory({
+          userId: user.id,
+          type: ['two_genres_order']
+        })
+        console.log('res of gamification two_genres_order', res)
+      } catch (err) {
+        await Pass.errorNotification('two genres order', user.id, err)
+      }
     }
 
     return {

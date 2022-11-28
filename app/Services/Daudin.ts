@@ -490,13 +490,6 @@ class Daudin {
         box.address2 = split.length > 1 ? split[1] : pickup.number
       }
 
-      if (box.partner === 'passculture') {
-        box.customer_name = 'Diggers Factory - pass Culture'
-        box.address = '4bis rue du dahomey'
-        box.city = 'Paris'
-        box.zip_code = '75011'
-        box.country = 'FR'
-      }
       barcodes.map((code) => {
         lines.push({
           ...box,
@@ -1249,7 +1242,7 @@ class Daudin {
       }
 
       // Picking
-      dispatch.cost = dispatch.trans + dispatch.quantity * 0.38
+      dispatch.cost = dispatch.cost + dispatch.quantity * 0.38
 
       dispatchs.push(dispatch)
     })

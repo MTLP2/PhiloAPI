@@ -67,7 +67,8 @@ class Category {
         'v.show_stock',
         'item.stock as item_stock',
         'item.price as item_price',
-        'p.id'
+        'p.id',
+        'v.shipping_discount'
       )
       .join('category', 'category.id', 'category_id')
       .join('project as p', 'p.id', 'category_project.project_id')

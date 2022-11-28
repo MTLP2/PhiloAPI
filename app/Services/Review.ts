@@ -1,6 +1,7 @@
 import DB from 'App/DB'
 import Utils from 'App/Utils'
 import Notification from 'App/Services/Notification'
+import Pass from './Pass'
 
 class Review {
   static checkNotif = async () => {
@@ -55,7 +56,6 @@ class Review {
   }
 
   static all = async (params: any) => {
-    console.log('🚀 ~ file: Review.ts ~ line 58 ~ Review ~ all= ~ params', params)
     const selects = [
       'r.*',
       'u.id as user_id',
@@ -136,6 +136,14 @@ class Review {
       .limit(1)
       .update('review_sent', 1)
 
+    // Gamification
+    try {
+      const res = await Pass.addHistory({ type: 'first_review', userId: params.user_id })
+      console.log('res in gamification, review', res)
+    } catch (err) {
+      await Pass.errorNotification('first_review', params.user_id, err)
+    }
+
     return { success: true }
   }
 
@@ -144,7 +152,17 @@ class Review {
     return { count: await query.count() }
   }
 
-  static find = async ({ reviewId, projectId, userId, onlyVisible = true }) => {
+  static find = async ({
+    reviewId,
+    projectId,
+    userId,
+    onlyVisible = true
+  }: {
+    reviewId?: number
+    projectId?: number
+    userId: number
+    onlyVisible?: boolean
+  }) => {
     const query = DB('review as r')
       .select(
         'r.*',

@@ -16,6 +16,8 @@ class Customer {
       country_id: params.country_id ? params.country_id.toUpperCase() : null,
       phone: params.phone,
       state: params.state ? params.state : null,
+      lat: params.lat ? params.lat : null,
+      lng: params.lng ? params.lng : null,
       email_paypal: params.email_paypal ? params.email_paypal : null,
       birthday: params.birthday ? new Date(params.birthday) : null,
       ssn_last_4: params.ssn_last_4 ? params.ssn_last_4 : null,
@@ -76,7 +78,6 @@ class Customer {
 
     const res: any = await Utils.request(url, { json: true })
 
-    console.log(res.result)
     const address = {
       address: '',
       zip_code: '',

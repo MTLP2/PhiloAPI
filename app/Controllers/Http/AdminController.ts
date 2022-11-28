@@ -1052,6 +1052,20 @@ class AdminController {
       return { error: err.message, validation: err.messages }
     }
   }
+
+  async deleteDelayNewsletter({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          dnlid: schema.number()
+        }),
+        data: params
+      })
+      return Admin.deleteDelayNewsletter(payload)
+    } catch (err) {
+      return { error: err.message, validation: err.messages }
+    }
+  }
 }
 
 export default AdminController

@@ -292,15 +292,32 @@ class AuthController {
     }
   }
 
-  async confirmEmail({ params }) {
-    await validator.validate({
+  async checkEmail({ params }) {
+    const payload = await validator.validate({
       schema: schema.create({
-        code: schema.string()
+        email: schema.string()
       }),
       data: params
     })
 
-    return Sign.confirmEmail(params)
+    const exists = await DB('user').where('is_guest', false).where('email', payload.email).first()
+
+    if (exists) {
+      return { exists: true }
+    } else {
+      return { exists: false }
+    }
+  }
+
+  async confirm({ params }) {
+    await validator.validate({
+      schema: schema.create({
+        key: schema.string()
+      }),
+      data: params
+    })
+
+    return Sign.confirm(params)
   }
 
   async forgotPassword({ params }) {

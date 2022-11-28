@@ -194,6 +194,7 @@ class Payment {
     invoice.total = payment.total
     invoice.currency = payment.currency
     invoice.currency_rate = payment.currency_rate
+    invoice.charge_id = payment.charge_id
     invoice.lines = [
       {
         name: payment.name,
@@ -316,7 +317,6 @@ class Payment {
   }
 
   static delete = async (params) => {
-    console.log('🚀 ~ file: Payment.ts ~ line 316 ~ Payment ~ staticdelete ~ params', params)
     const payment = await DB('payment').where('id', params.id).first()
 
     payment.is_delete = true
@@ -384,13 +384,15 @@ class Payment {
   static getCards = async (params) => {
     const user = await DB('user').select('id', 'email', 'stripe_customer').find(params.user.user_id)
 
+    if (process.env.NODE_ENV !== 'production') {
+      user.stripe_customer = 'cus_KJiRI5dzm4Ll1C'
+    }
+
     if (user.stripe_customer) {
       const customer = await Payment.getCustomer(params.user.user_id)
       customer.payment_methods = (
         await stripe.paymentMethods.list({
-          customer:
-            process.env.NODE_ENV !== 'production' ? 'cus_KJiRI5dzm4Ll1C' : user.stripe_customer,
-          // customer: user.stripe_customer,
+          customer: user.stripe_customer,
           type: 'card'
         })
       ).data

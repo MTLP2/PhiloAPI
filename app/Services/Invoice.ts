@@ -118,7 +118,7 @@ class Invoice {
     if (params.customer) {
       const customer = await Customer.save(params.customer)
       invoice.customer_id = customer.id
-    } else if (params.customer_id) {
+    } else {
       invoice.customer_id = params.customer_id
     }
 
@@ -160,34 +160,35 @@ class Invoice {
 
     await invoice.save()
 
-    await Invoice.setNumbers()
-
-    await Payment.save({
-      type: params.type,
-      customer_id: invoice.customer_id,
-      invoice_id: invoice.id,
-      name: invoice.name,
-      tax: invoice.tax,
-      tax_rate: invoice.tax_rate,
-      total: invoice.total,
-      currency: invoice.currency,
-      currency_rate: invoice.currency_rate,
-      status:
-        params.status === PaymentStatus.paid || params.status === PaymentStatus.refunded
-          ? PaymentStatus.paid
-          : PaymentStatus.unpaid,
-      payment_days: invoice.payment_days,
-      date_payment: invoice.date_payment,
-      sub_total: invoice.sub_total,
-      order_shop_id: params.order_shop_id,
-      order_manual_id: params.order_manual_id,
-      box_dispatch_id: params.box_dispatch_id,
-      invoice_to_payment: params.invoice_to_payment,
-      payment_type: params.payment_type,
-      payment_id: params.payment_id,
-      created_at: params.created_at || Utils.date(),
-      updated_at: params.updated_at || null
-    })
+    if (params.id) {
+      await Payment.save({
+        id: params.payment_id,
+        type: params.type,
+        customer_id: invoice.customer_id,
+        invoice_id: invoice.id,
+        name: invoice.name,
+        tax: invoice.tax,
+        tax_rate: invoice.tax_rate,
+        total: invoice.total,
+        currency: invoice.currency,
+        currency_rate: invoice.currency_rate,
+        status:
+          params.status === PaymentStatus.paid || params.status === PaymentStatus.refunded
+            ? PaymentStatus.paid
+            : PaymentStatus.unpaid,
+        payment_days: invoice.payment_days,
+        date_payment: invoice.date_payment,
+        sub_total: invoice.sub_total,
+        order_shop_id: params.order_shop_id,
+        order_manual_id: params.order_manual_id,
+        box_dispatch_id: params.box_dispatch_id,
+        invoice_to_payment: params.invoice_to_payment,
+        payment_type: params.payment_type,
+        payment_id: params.charge_id,
+        created_at: params.created_at || Utils.date(),
+        updated_at: params.updated_at || null
+      })
+    }
 
     return invoice
   }
@@ -221,7 +222,6 @@ class Invoice {
     invoice.updated_at = Utils.date()
 
     await invoice.save()
-    await Invoice.setNumbers()
 
     try {
       await Payment.save({
@@ -274,7 +274,6 @@ class Invoice {
     invoice.updated_at = Utils.date()
 
     await invoice.save()
-    await Invoice.setNumbers()
 
     try {
       await Payment.save({
@@ -564,8 +563,6 @@ class Invoice {
     console.log(invoice.year)
     console.log(invoice.date)
     const insert = await DB('invoice').insert(JSON.parse(JSON.stringify(invoice)))
-
-    await Invoice.setNumbers()
 
     return { id: insert[0] }
   }
