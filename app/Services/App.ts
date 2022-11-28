@@ -51,10 +51,7 @@ class App {
       if (+moment().format('D') === 1) {
         await Box.checkPayments()
       }
-      if (moment().format('E') !== '6' && moment().format('E') !== '7') {
-        await Daudin.export()
-      }
-
+      
       if (
         moment().format('E') === '1' ||
         moment().format('E') === '3' ||
