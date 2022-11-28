@@ -1424,7 +1424,7 @@ class Cart {
     } catch (err) {
       if (err.toString().includes('Duplicate') > 0) {
         return {
-          code: 'duplicate'
+          error: 'duplicate'
         }
       } else {
         throw err
@@ -1527,8 +1527,7 @@ class Cart {
 
   static pay = async (params) => {
     params.order = await Cart.createOrder(params)
-
-    if (params.order.code === 'payment_ok' || params.order.code === 'duplicate') {
+    if (params.order.code === 'payment_ok' || params.order.error === 'duplicate') {
       return params.order
     }
     if (params.calculate.total === 0) {
@@ -1570,11 +1569,6 @@ class Cart {
           intent.setup_future_usage = 'off_session'
           params.card_save = true
         }
-        /**
-      if (params.order.shops.length > 0 && params.order.shops[0].payment_account && params.order.shops[0].payment_account !== '1') {
-        intent.on_behalf_of = params.order.shops[0].payment_account
-      }
-      **/
 
         if (params.card.customer) {
           intent.customer = params.card.customer
