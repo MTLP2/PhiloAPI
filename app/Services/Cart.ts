@@ -1312,7 +1312,11 @@ class Cart {
 
       if (userIsPro && p.project.partner_distribution && p.project.prices_distribution) {
         res.price = p.project.prices_distribution[params.currency]
-        if (params.country_id === 'FR') {
+
+        if (
+          params.country_id === 'FR' ||
+          (!params.customer?.tax_intra && Utils.isEuropean(params.customer?.country_id))
+        ) {
           res.price_distrib = p.project.prices_distribution[params.currency] * 1.2
         }
       }
