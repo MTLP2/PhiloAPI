@@ -1632,6 +1632,7 @@ class Cart {
             if (charge.status === 'requires_action') {
               await DB('order').where('id', params.order.id).update({
                 payment_id: charge.id,
+                paying: null,
                 status: 'requires_action'
               })
               resolve({
@@ -1654,12 +1655,20 @@ class Cart {
     })
 
   static confirmStripePayment = async (params) => {
-    const confirm = await stripe.paymentIntents.confirm(params.payment_intent_id)
-
-    params.order = await DB('order').find(params.order_id)
-
-    if (confirm.status === 'succeeded') {
-      return Cart.validStripePayment(params, confirm)
+    let confirm
+    try {
+      confirm = await stripe.paymentIntents.confirm(params.payment_intent_id)
+      if (confirm.status === 'succeeded') {
+        params.order = await DB('order').find(params.order_id)
+        return Cart.validStripePayment(params, confirm)
+      }
+    } catch (err) {
+      await DB('order').where('id', params.order_id).update({
+        status: 'failed',
+        paying: null,
+        error: err.code
+      })
+      throw err
     }
   }
 
