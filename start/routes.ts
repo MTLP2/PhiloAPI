@@ -146,6 +146,7 @@ Route.post('/auth/unsubscribe-newsletter', 'AuthController.unsubscribeNewsletter
 Route.post('/cart/calculate', 'CartController.calculate').middleware(['auth:optional'])
 Route.post('/cart/pay', 'CartController.pay').middleware(['auth:optional'])
 Route.post('/cart/execute', 'CartController.execute').middleware(['auth:optional'])
+Route.post('/cart/confirm', 'CartController.confirm').middleware(['auth:optional'])
 Route.post('/cart/related', 'CartController.related').middleware(['auth:optional'])
 Route.post('/cart/feedback', 'CartController.saveFeedback').middleware(['auth:optional'])
 Route.post('/vod/:id/calculate', 'ProjectsController.calculateVod').middleware(['auth:optional'])
@@ -164,7 +165,6 @@ Route.group(() => {
   Route.get('/cart', 'CartController.getCart')
   Route.post('/cart', 'CartController.saveCart')
   Route.delete('/cart', 'CartController.clearCart')
-  Route.post('/cart/confirm', 'CartController.confirm')
   Route.post('/boxes/code', 'CartController.confirmBoxCode')
 
   Route.post('/projects/:id/like', 'ProjectsController.like')
