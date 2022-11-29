@@ -27,11 +27,11 @@ class Feedback {
     params.order = params.order === 'false' ? 'desc' : params.order
     params.query.orderBy(params.sort || 'feedback.created_at', params.order || 'asc')
 
-    return Utils.getRows(params)
+    return Utils.getRows<FeedbackModel>(params)
   }
 
   static async save(params) {
-    const feedback = DB('feedback')
+    const feedback: any = DB('feedback')
     feedback.user_id = params.user_id
     feedback.order_id = params.order_id
     feedback.rating = params.rating
