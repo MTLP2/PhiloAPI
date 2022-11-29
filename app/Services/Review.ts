@@ -235,7 +235,8 @@ class Review {
       lang: params.lang,
       title_trad: params.title_trad,
       message_trad: params.message_trad,
-      complaint_status: params.complaint_status
+      complaint_status: params.complaint_status,
+      google_review: params.google_review
     })
 
     return { newTab: params.is_visible }
