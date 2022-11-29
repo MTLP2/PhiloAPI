@@ -989,6 +989,7 @@ static extractProjectOrders = async (params) => {
         'birthday',
         'unsubscribed',
         'newsletter',
+        'is_guest',
         'lang',
         'styles',
         'type',
