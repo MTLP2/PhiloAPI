@@ -1404,7 +1404,7 @@ class Cart {
       order = await DB('order').save({
         user_id: params.user_id,
         cart_id: params.cart_id,
-        paying: true,
+        paying: params.payment_type === 'stripe' ? true : null,
         payment_type: calculate.payment_type,
         currency: calculate.currency,
         currency_rate: currencyRate,
