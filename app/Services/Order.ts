@@ -8,6 +8,7 @@ import Stock from 'App/Services/Stock'
 import Notification from 'App/Services/Notification'
 import Invoice from 'App/Services/Invoice'
 import Whiplash from 'App/Services/Whiplash'
+import Elogik from 'App/Services/Elogik'
 import Sna from 'App/Services/Sna'
 import ApiError from 'App/ApiError'
 const paypal = require('paypal-rest-sdk')
@@ -894,6 +895,39 @@ static toJuno = async (params) => {
           })
         }
       ])
+    } else if (['daudin'].includes(params.transporter)) {
+      if (!item.logistician_id) {
+        const dispatch: any = await Elogik.sync([
+          {
+            ...customer,
+            id: 'M' + item.id,
+            user_id: item.user_id || 'M' + item.id,
+            sub_total: '40',
+            currency: 'EUR',
+            shipping_type: params.shipping_type,
+            address_pickup: params.address_pickup,
+            created_at: item.created_at,
+            email: item.email,
+            items: params.barcodes.map((b) => {
+              return {
+                barcode: b.barcode,
+                quantity: b.quantity
+              }
+            })
+          }
+        ])
+        console.log(dispatch)
+        /**
+        if (item.order_shop_id) {
+          await DB('order_shop').where('id', item.order_shop_id).update({
+            logistician_id: dispatch.id,
+            tracking_number: null,
+            tracking_transporter: null,
+            updated_at: Utils.date()
+          })
+        }
+        **/
+      }
     }
     if (['whiplash', 'whiplash_uk'].includes(params.transporter) && !item.logistician_id) {
       const pp: any = {
@@ -1003,9 +1037,8 @@ static toJuno = async (params) => {
       .all()
 
     if (shop.transporter === 'daudin') {
-      await DB('order_shop').where('id', shop.id).update({
-        sending: true
-      })
+      const res = await Elogik.syncOrders([shop.id])
+      console.log(res)
     } else if (['whiplash', 'whiplash_uk'].includes(shop.transporter)) {
       const res = await Whiplash.validOrder(shop, items)
       if (!res) {
