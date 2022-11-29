@@ -605,6 +605,7 @@ class StatementService {
       .replace(/\*/gi, '')
       .replace(/\?/gi, '')
       .replace(/:/gi, '')
+      .replace(/'/gi, '')
       .replace(/\//gi, '')
       .replace(/\\/gi, '')
       .replace(/\[/gi, '-')
