@@ -723,6 +723,7 @@ class Stats {
         checking: { ...columns },
         creating: { ...columns },
         in_progress: { ...columns },
+        coming_soon: { ...columns },
         private: { ...columns },
         promo: { ...columns },
         created: { ...columns },
@@ -731,6 +732,7 @@ class Stats {
       }
 
       for (const v of data.projects) {
+        console.log(v.step)
         projects[v.step][v.date] += v.value
       }
       for (const v of data.projects_saved) {
