@@ -1417,6 +1417,7 @@ class Cart {
         discount: calculate.discount,
         total: calculate.total,
         origin: params.origin,
+        is_gift: params.gift,
         user_agent: JSON.stringify(params.user_agent),
         created_at: Utils.date(),
         updated_at: Utils.date()
