@@ -732,7 +732,6 @@ class Stats {
       }
 
       for (const v of data.projects) {
-        console.log(v.step)
         projects[v.step][v.date] += v.value
       }
       for (const v of data.projects_saved) {
