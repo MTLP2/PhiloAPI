@@ -3,6 +3,7 @@ import DB from 'App/DB'
 import Utils from 'App/Utils'
 import Notification from 'App/Services/Notification'
 import MondialRelay from 'App/Services/MondialRelay'
+import Invoice from 'App/Services/Invoice'
 import Env from '@ioc:Adonis/Core/Env'
 
 class Elogik {
@@ -204,13 +205,14 @@ class Elogik {
       return false
     }
 
-    const res = await Elogik.syncOrders(orders.map((order) => order.id))
+    const res: any[] = []
+    res.push(...(<any>await Elogik.syncOrders(orders.map((order) => order.id))))
 
     const manuals = await DB('order_manual')
       .select(
         'customer.*',
         'user_id',
-        'email',
+        'order_manual.email',
         'barcodes',
         'shipping_type',
         'address_pickup',
@@ -243,14 +245,6 @@ class Elogik {
           }
         })
       })
-    }
-
-    console.log(dispatchs)
-    try {
-      const res2 = await Elogik.sync(dispatchs)
-      console.log(res2)
-    } catch (err) {
-      console.log(err)
     }
 
     const boxes = await DB('box_dispatch')
@@ -291,13 +285,8 @@ class Elogik {
       })
     }
 
-    console.log(dispatchs)
-    try {
-      const res2 = await Elogik.sync(dispatchs)
-      console.log(res2)
-    } catch (err) {
-      console.log(err)
-    }
+    res.push(...(<any>await Elogik.sync(dispatchs)))
+
     return res
   }
 
@@ -327,6 +316,8 @@ class Elogik {
         'oi.quantity',
         'oi.price',
         'oi.size',
+        'project.name',
+        'project.artist_name',
         'vod.barcode',
         'vod.weight',
         'vod.sizes',
@@ -353,12 +344,14 @@ class Elogik {
     const dispatchs: any[] = []
     for (const order of orders) {
       const pickup = order.address_pickup ? JSON.parse(order.address_pickup) : null
+      const address = order.address.match(/.{1,30}(\s|$)/g)
 
       const adr = {
         societe: order.name,
         nom: order.lastname,
         prenom: order.firstname,
-        adresse: order.address,
+        adresse: address[0],
+        adresse2: address[1],
         codePostal: order.zip_code,
         ville: order.city,
         codePays: order.country_id,
@@ -384,13 +377,64 @@ class Elogik {
       }
       console.log(payload)
 
-      const res = await Elogik.api('commandes/creer', {
+      let res = await Elogik.api('commandes/creer', {
         method: 'POST',
         body: payload
       })
 
       if (res.code) {
-        throw new Error(res.message)
+        dispatchs.push({
+          id: order.id,
+          order_id: order.order_id,
+          status: 'error',
+          status_detail: res.message,
+          blocked: true,
+          success: false
+        })
+        continue
+      }
+
+      if (!Utils.isEuropean(order.country_id) || order.country_id === 'GB') {
+        const invoice = {
+          customer: {
+            ...order
+          },
+          type: 'invoice',
+          currency: order.currency,
+          order: {
+            shipping: order.shipping
+          },
+          number: order.id,
+          code: order.id,
+          date: Utils.date(),
+          tax: order.tax,
+          tax_rate: order.tax_rate * 100,
+          sub_total: order.sub_total,
+          total: order.total,
+          lines: JSON.stringify(
+            order.items.map((item: any) => {
+              console.log(item)
+              return {
+                name: `${item.artist_name} - ${item.name}`,
+                quantity: item.quantity,
+                price: item.price
+              }
+            })
+          )
+        }
+        const file: any = await Invoice.download({
+          params: {
+            invoice: invoice,
+            lang: 'en',
+            daudin: true
+          }
+        })
+        await Elogik.api(`commandes/${res.referenceEKAN}/facture`, {
+          method: 'POST',
+          body: {
+            base64: file.data.toString('base64')
+          }
+        })
       }
 
       const dispatch = {
