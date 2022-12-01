@@ -198,6 +198,7 @@ class Elogik {
       .whereNull('logistician_id')
       .where('is_paid', true)
       .where('is_paused', false)
+      .limit(1)
       .all()
 
     console.log('shop => ', orders.length)
@@ -208,6 +209,7 @@ class Elogik {
     const res: any[] = []
     res.push(...(<any>await Elogik.syncOrders(orders.map((order) => order.id))))
 
+    /**
     const manuals = await DB('order_manual')
       .select(
         'customer.*',
@@ -287,6 +289,7 @@ class Elogik {
 
     res.push(...(<any>await Elogik.sync(dispatchs)))
 
+    **/
     return res
   }
 
@@ -336,6 +339,7 @@ class Elogik {
       orders[idx].items = orders[idx].items ? [...orders[idx].items, item] : [item]
     }
 
+    console.log(items)
     const res = await Elogik.sync(orders)
     return res
   }
