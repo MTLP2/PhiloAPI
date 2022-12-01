@@ -22,12 +22,13 @@
       background-size: contain;
       background-repeat: no-repeat;
       position: relative;
+      background: red;
     }
     .type {
       color: #FFF;
       font-weight: bold;
       position: absolute;
-      top: 23%;
+      top: 74.5%;
       font-size: 18px;
       left: 0;
       right: 0;
@@ -36,17 +37,24 @@
       position: absolute;
       font-weight: bold;
       font-size: 21px;
-      top: 74.5%;
+      top: 80%;
       left: 0;
       right: 0;
+    }
+    img {
+      width: 600px;
+      position: absolute;
+      top: 30%;
+      left: 0%;
     }
   </style>
 </head>
 
 <body>
-  <div class="card" style="background-image: url(https://storage.diggersfactory.com/assets/images/box/cards/{{ type }}_{{ lang }}2.jpg)">
-    <div class="type">{{ t('box.' + periodicity) }} -  {{ t('box.' + type) }}</div>
-    <div class="code">{{ code }}</div>
+  <div class="card" style="background-image: url(https://storage.diggersfactory.com/assets/images/box/cards/discover_fr{{ lang }}2.jpg)">
+    <img src="{{ picture }}" />
+    <div class="type">{{ artist }}</div>
+    <div class="code">{{ name }}</div>
   </div>
 </body>
 </html>
