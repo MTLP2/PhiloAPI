@@ -465,6 +465,7 @@ class App {
 
       data.attachments = []
       for (const i in items) {
+        const item = items[i]
         items[i].date_shipping = moment(items[i].end).locale(data.lang).format('MMMM YYYY')
         if (!items[i].date_shipping) {
           items[i].date_shipping = moment(items[i].end)
@@ -474,9 +475,9 @@ class App {
         }
         if (order.is_gift) {
           const html = await View.render('gift', {
-            ...items[i],
-            lang: data.user.lang,
-            t: (v) => I18n.locale(data.user.lang).formatMessage(v)
+            artist: item.artist_name,
+            name: item.name,
+            picture: `${Env.get('STORAGE_URL')}/projects/${item.picture}/vinyl.png`
           })
           data.attachments.push({
             filename: 'DiggersFactory.pdf',
