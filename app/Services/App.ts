@@ -26,6 +26,7 @@ import Cart from './Cart'
 import I18n from '@ioc:Adonis/Addons/I18n'
 import Env from '@ioc:Adonis/Core/Env'
 import Whiplash from './Whiplash'
+import View from '@ioc:Adonis/Core/View'
 import fs from 'fs'
 
 class App {
@@ -51,9 +52,6 @@ class App {
       if (+moment().format('D') === 1) {
         await Box.checkPayments()
       }
-      if (moment().format('E') !== '6' && moment().format('E') !== '7') {
-        await Daudin.export()
-      }
 
       if (
         moment().format('E') === '1' ||
@@ -61,6 +59,9 @@ class App {
         moment().format('E') === '5'
       ) {
         await Order.exportOrdersExportedWithoutTracking(moment().format('E') === '1' ? 3 : 2)
+      }
+      if (moment().format('E') === '1') {
+        await App.alertStock()
       }
 
       if (+moment().format('D') === 28) {
@@ -112,7 +113,6 @@ class App {
       } else if (hour === 7) {
         await App.check5DaysLeftProjects()
         await App.checkFinishedProjects()
-        await App.alertStock()
         await Vod.checkDateShipping()
       } else if (hour === 8) {
         await Box.checkReminder()
@@ -434,6 +434,7 @@ class App {
     if (n.order_id) {
       data.order_id = n.order_id
       const order = await DB('order').where('id', n.order_id).first()
+
       const items = await DB('order_item as oi')
         .select(
           'vod.message_order',
@@ -462,6 +463,7 @@ class App {
         .where('refused', 0)
         .all()
 
+      data.attachments = []
       for (const i in items) {
         items[i].date_shipping = moment(items[i].end).locale(data.lang).format('MMMM YYYY')
         if (!items[i].date_shipping) {
@@ -469,6 +471,17 @@ class App {
             .locale(data.lang)
             .add(80, 'days')
             .format('MMMM YYYY')
+        }
+        if (order.is_gift) {
+          const html = await View.render('gift', {
+            ...items[i],
+            lang: data.user.lang,
+            t: (v) => I18n.locale(data.user.lang).formatMessage(v)
+          })
+          data.attachments.push({
+            filename: 'DiggersFactory.pdf',
+            content: await Utils.toPdf(html)
+          })
         }
       }
 
@@ -529,7 +542,6 @@ class App {
 
       if (data.boxGift) {
         const card = await Box.giftCard(data.boxGift)
-
         data.attachments = [
           {
             filename: data.lang === 'fr' ? 'LaBoxVinyle.pdf' : 'TheVinylBox.pdf',
@@ -1492,7 +1504,7 @@ class App {
     html += '</tbody></table>'
 
     await Notification.sendEmail({
-      to: 'alexis@diggersfactory.com,cyril@diggersfactory.com,ismail@diggersfactory.com,guillaume@diggersfactory.com,victor@diggersfactory.com,jean-baptiste@diggersfactory.com',
+      to: 'alexis@diggersfactory.com,cyril@diggersfactory.com,ismail@diggersfactory.com,guillaume@diggersfactory.com,victor@diggersfactory.com,olivia@diggersfactory.com,jean-baptiste@diggersfactory.com',
       subject: 'Etat des stocks',
       html: juice(html)
     })

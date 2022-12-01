@@ -10,6 +10,7 @@ import Env from '@ioc:Adonis/Core/Env'
 import Utils from 'App/Utils'
 import ApiError from 'App/ApiError'
 import cio from 'App/Services/CIO'
+import Pass from './Pass'
 
 class Sign {
   static getToken = (params) => {
@@ -227,11 +228,18 @@ class Sign {
         soundcloud_token: params.soundcloud_token || null,
         referrer: params.referrer ? params.referrer : null,
         origin: params.origin ? params.origin : null,
+        is_guest: params.is_guest || false,
         newsletter: params.newsletter,
         confirmation_code: params.confirmCode,
         created_at: Utils.date(),
         updated_at: Utils.date()
       })
+
+      try {
+        await Pass.createPass({ userId: user.id })
+      } catch (error) {
+        await Pass.errorNotification('createPass', user.id, error)
+      }
 
       if (params.type === 'distributor' || params.type === 'record_shop') {
         await Notification.sendEmail({
@@ -243,6 +251,20 @@ class Sign {
         Email : ${params.email}<br />
         Id: ${user.id}
       `
+        })
+      }
+      if (user.is_guest) {
+        user.token_password = Math.random().toString(36).substring(7)
+        user.token_date = new Date()
+        user.token_date.setDate(user.token_date.getDate() + 1)
+        await user.save()
+
+        await Notification.email({
+          to: user.email,
+          type: 'sign_up_confirm',
+          user,
+          lang: user.lang,
+          link: `${config.app.url}/confirmation/${user.token_password}`
         })
       }
 
@@ -267,50 +289,38 @@ class Sign {
       newsletter: newsletter === 1 ? 1 : 0
     })
 
-  static sendConfirmEmail = (user) =>
-    Notification.email({
-      to: user.email,
-      type: 'sign_up',
-      user,
-      lang: user.lang,
-      link: `${config.app.url}/confirmation/${user.confirmCode}`
-    })
-
-  static confirmEmail = async (params) => {
-    const user = await DB('user').where('confirmation_code', params.code).first()
+  static confirm = async (params) => {
+    const user = await DB('user').where('token_password', params.key).first()
 
     if (!user) {
       return { error: 'not_found' }
-    } else if (user.confirmed === 1) {
-      return { error: 'already_confirm' }
+    } else {
+      user.is_guest = false
+      user.confirmed = true
     }
 
-    user.confirmed = 1
+    if (params.password) {
+      user.password = UserService.convertPassword(params.password)
+      user.token_date = null
+      user.token_password = null
+    }
+
     await user.save()
 
-    await Dig.confirm({
-      user_id: user.id,
-      type: 'subscribe',
-      friend_id: user.sponsor,
-      confirm: 1
-    })
-    await Dig.confirm({
-      user_id: user.sponsor,
-      type: 'invite_friend',
-      friend_id: user.id,
-      confirm: 1
+    cio.identify(user.id, {
+      is_guest: false
     })
 
-    return true
+    return { success: true }
   }
 
   static forgotPassword = async (params) => {
     /**
-  const checkRecaptcha = await Sign.checkReCaptcha(params.ip, params.captcha)
-  if (!checkRecaptcha) {
-    return { error: 'captcha' }
-  }
-  **/
+    const checkRecaptcha = await Sign.checkReCaptcha(params.ip, params.captcha)
+    if (!checkRecaptcha) {
+      return { error: 'captcha' }
+    }
+    **/
     const user = await DB('user').where('email', params.email).first()
 
     if (!user) {

@@ -22,11 +22,11 @@ import Review from 'App/Services/Review'
 import Vod from 'App/Services/Vod'
 import Stock from 'App/Services/Stock'
 import Sna from 'App/Services/Sna'
-import Elogik from 'App/Services/Elogik'
 import Deepl from 'App/Services/Deepl'
 import Artwork from 'App/Services/Artwork'
 import cio from 'App/Services/CIO'
 import Env from '@ioc:Adonis/Core/Env'
+import Pass from './Pass'
 
 class Admin {
   static getProjects = async (params: {
@@ -1355,125 +1355,6 @@ class Admin {
     return qty
   }
 
-  static syncProjectElogik = async (params) => {
-    const vod = await DB('vod').where('project_id', params.id).first()
-    if (!vod) {
-      return false
-    }
-
-    const orders = await DB()
-      .select('customer.*', 'os.*', 'user.email')
-      .from('order_shop as os')
-      .join('customer', 'customer.id', 'os.customer_id')
-      .join('user', 'user.id', 'os.user_id')
-      .whereIn('os.id', (query) => {
-        query.select('order_shop_id').from('order_item').where('project_id', params.id)
-      })
-      .where('os.transporter', 'daudin')
-      .where('os.type', 'vod')
-      .whereNull('date_export')
-      .where('is_paid', true)
-      .where('is_paused', false)
-      .orderBy('os.created_at')
-      .all()
-
-    const items = await DB()
-      .select(
-        'order_shop_id',
-        'oi.project_id',
-        'oi.quantity',
-        'oi.price',
-        'oi.size',
-        'vod.barcode',
-        'vod.weight',
-        'vod.sizes',
-        'project.nb_vinyl',
-        'vod.sleeve',
-        'vod.vinyl_weight'
-      )
-      .from('order_item as oi')
-      .whereIn(
-        'order_shop_id',
-        orders.map((o) => o.id)
-      )
-      .join('vod', 'vod.project_id', 'oi.project_id')
-      .join('project', 'project.id', 'oi.project_id')
-      .all()
-
-    for (const item of items) {
-      const idx = orders.findIndex((o) => o.id === item.order_shop_id)
-      orders[idx].items = orders[idx].items ? [...orders[idx].items, item] : [item]
-    }
-
-    const dispatchs: any = []
-
-    let qty = 0
-    for (const order of orders) {
-      if (qty >= params.quantity) {
-        break
-      }
-      if (order.shipping_type === 'pickup') {
-        const pickup = JSON.parse(order.address_pickup)
-        const available = await MondialRelay.checkPickupAvailable(pickup.number)
-
-        if (!available) {
-          const around = await MondialRelay.findPickupAround(pickup)
-
-          if (around) {
-            order.address_pickup = JSON.stringify(around)
-            await DB('order_shop')
-              .where('id', order.id)
-              .update({
-                address_pickup: JSON.stringify(around)
-              })
-
-            await Notification.add({
-              type: 'my_order_pickup_changed',
-              order_id: order.order_id,
-              order_shop_id: order.id,
-              user_id: order.user_id
-            })
-          } else {
-            continue
-          }
-        }
-      }
-
-      dispatchs.push(order)
-
-      for (const item of order.items) {
-        if (item.project_id === +params.id) {
-          qty = qty + item.quantity
-        }
-      }
-    }
-
-    if (dispatchs.length === 0) {
-      return { success: false }
-    }
-
-    const res = await Elogik.sync(dispatchs)
-
-    if (qty > 0) {
-      await DB('project_export').insert({
-        transporter: 'daudin',
-        project_id: vod.project_id,
-        quantity: qty,
-        date: Utils.date()
-      })
-
-      await Stock.save({
-        project_id: vod.project_id,
-        type: 'daudin',
-        quantity: -params.quantity,
-        diff: true,
-        comment: 'sync'
-      })
-    }
-
-    return res
-  }
-
   static syncProjectDaudin = async (params) => {
     const orders = await DB()
       .from('order_item as oi')
@@ -2323,6 +2204,7 @@ class Admin {
         'facebook_id',
         'soundcloud_id',
         'user.created_at',
+        'user.is_guest',
         'unsubscribed',
         'newsletter',
         'customer.firstname',
@@ -2380,6 +2262,9 @@ class Admin {
     if (reviews.length) {
       user.reviews = reviews
     }
+
+    user.passHistory = await Pass.getHistory({ userId: id })
+    // user.pass = await Pass.getUserPass({ userId: id })
 
     user.styles = user.styles ? JSON.parse(user.styles) : []
     user.digs = await Dig.byUser(id)

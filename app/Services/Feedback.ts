@@ -9,6 +9,7 @@ class Feedback {
         'user.name as user_name',
         'user.picture as user_picture',
         'user.country_id',
+        'user.is_guest',
         'order.user_agent',
         'order.total',
         'order.currency'
@@ -26,11 +27,11 @@ class Feedback {
     params.order = params.order === 'false' ? 'desc' : params.order
     params.query.orderBy(params.sort || 'feedback.created_at', params.order || 'asc')
 
-    return Utils.getRows(params)
+    return Utils.getRows<FeedbackModel>(params)
   }
 
   static async save(params) {
-    const feedback = DB('feedback')
+    const feedback: any = DB('feedback')
     feedback.user_id = params.user_id
     feedback.order_id = params.order_id
     feedback.rating = params.rating
@@ -59,6 +60,18 @@ class Feedback {
       ],
       feedbacks
     )
+  }
+
+  static async getMonthlyStats() {
+    return DB('feedback')
+      .select(
+        DB.raw('DATE_FORMAT(feedback.created_at, "%Y-%m") as date'),
+        DB.raw('COUNT(*) as total'),
+        DB.raw('AVG(rating) as average')
+      )
+      .groupBy('date')
+      .orderBy('date', 'desc')
+      .all()
   }
 }
 

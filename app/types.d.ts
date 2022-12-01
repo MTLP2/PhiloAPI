@@ -33,6 +33,18 @@ type ChatDb = {
 
 type ChatModel = ChatDb & Model
 
+type FeedbackDB = {
+  id: number
+  user_id: number
+  order_id: number
+  rating: number
+  comment: string
+  created_at: string
+  updated_at: string
+}
+
+type FeedbackModel = FeedbackDB & Model
+
 type GiftDb = {
   id: number
   name_fr: string
@@ -136,6 +148,7 @@ type QuestDb = {
   description_en: string
   user_repeated: number
   count_repeatable: number
+  prev_quest?: QuestDb | null
 }
 
 type QuestModel = QuestDb & Model

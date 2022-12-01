@@ -605,6 +605,7 @@ class StatementService {
       .replace(/\*/gi, '')
       .replace(/\?/gi, '')
       .replace(/:/gi, '')
+      .replace(/'/gi, '')
       .replace(/\//gi, '')
       .replace(/\\/gi, '')
       .replace(/\[/gi, '-')
@@ -862,7 +863,7 @@ class StatementService {
     for (const project of projects) {
       const data = await this.setWorksheet(workbook, {
         id: project.id,
-        start: params.start || '2021-01-01',
+        start: params.start || '2001-01-01',
         end: params.end || moment().format('YYYY-MM-DD'),
         number: i
       })

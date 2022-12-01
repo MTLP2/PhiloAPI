@@ -14,6 +14,7 @@ import cio from 'App/Services/CIO'
 import config from 'Config/index'
 import Review from './Review'
 import Storage from 'App/Services/Storage'
+import Pass from './Pass'
 
 class User {
   static me = (id) => {
@@ -224,6 +225,19 @@ class User {
       )
     }
 
+    // Gamification
+    try {
+      if (params.styles.length) {
+        const res = await Pass.addHistory({
+          userId: userId,
+          type: 'user_styles'
+        })
+        console.log('res in gamification, user styles', res)
+      }
+    } catch (err) {
+      await Pass.errorNotification('user styles', userId, err)
+    }
+
     return DB('user')
       .where('id', userId)
       .save({
@@ -377,7 +391,7 @@ class User {
     return customer
   }
 
-  static updateNotifications = (userId, params) => {
+  static updateNotifications = async (userId, params) => {
     DB('user').where('id', userId).update({
       unsubscribed: !params.newsletter
     })
@@ -385,6 +399,18 @@ class User {
     cio.identify(userId, {
       unsubscribed: !params.newsletter
     })
+
+    try {
+      if (params.newsletter) {
+        const res = await Pass.addHistory({
+          userId: userId,
+          type: 'user_newsletter'
+        })
+        console.log('res in gamification, user newsletter', res)
+      }
+    } catch (err) {
+      await Pass.errorNotification('newsletter', userId, err)
+    }
 
     return DB('notifications')
       .where('user_id', userId)
@@ -963,6 +989,7 @@ static extractProjectOrders = async (params) => {
         'birthday',
         'unsubscribed',
         'newsletter',
+        'is_guest',
         'lang',
         'styles',
         'type',
@@ -1187,6 +1214,7 @@ static extractProjectOrders = async (params) => {
       unsubscribed: user.unsubscribed,
       unsubscribed_code: User.encodeUnsubscribeNewseletter(user.id),
       newsletter: user.newsletter,
+      is_guest: user.is_guest,
       last_visit: user.last ? moment(user.last).unix() : null,
       created_at: user.created_at ? moment(user.created_at).unix() : null
     }

@@ -95,7 +95,7 @@ class Box {
         'invoice.type as invoice_type'
       )
       .join('order', 'order.id', 'order_box.order_id')
-      .leftJoin('invoice', 'invoice.order_box_id', 'order_box.id')
+      .leftJoin('invoice', 'invoice.order_id', 'order_box.order_id')
       .where('box_id', box.id)
       .orderBy('id', 'desc')
       .all()
@@ -1561,7 +1561,7 @@ class Box {
           await Invoice.insertOrder({
             ...order,
             customer_id: box.customer_id,
-            order_box_id: box.id
+            order_box_id: orderBox.id
           })
         } else {
           errors.push({ id: box.id, type: JSON.stringify(pay) })

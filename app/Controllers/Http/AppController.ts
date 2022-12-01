@@ -12,6 +12,7 @@ import Customer from 'App/Services/Customer'
 import Dig from 'App/Services/Dig'
 import cio from 'App/Services/CIO'
 import User from 'App/Services/User'
+import MondialRelay from 'App/Services/MondialRelay'
 import Utils from 'App/Utils'
 import Payment from 'App/Services/Payment'
 import DB from 'App/DB'
@@ -129,8 +130,15 @@ class AppController {
     })
   }
 
-  detailAddress({ params }) {
-    return Customer.detailAddress(params.id)
+  async detailAddress({ params }) {
+    const address: any = await Customer.detailAddress(params.id)
+    if (params.pickup && address.country_id === 'FR') {
+      address.pickup = await MondialRelay.findPickupAround({
+        lat: address.lat.toString(),
+        lng: address.lng.toString()
+      })
+    }
+    return address
   }
 
   async sitemap({ response }) {

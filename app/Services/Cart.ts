@@ -18,6 +18,7 @@ import Order from 'App/Services/Order'
 import cio from 'App/Services/CIO'
 import I18n from '@ioc:Adonis/Addons/I18n'
 import moment from 'moment'
+import Pass from './Pass'
 const stripe = require('stripe')(config.stripe.client_secret)
 
 const paypal = require('paypal-rest-sdk')
@@ -119,9 +120,12 @@ class Cart {
           cart.error = box.error
         }
 
-        cart.shipping = Utils.round(cart.shipping + box.shipping)
+        if (params.boxes[i].shipping_type === 'pickup') {
+          cart.hasPickup = true
+        }
+
         cart.tax = Utils.round(cart.tax + box.tax)
-        cart.sub_total = Utils.round(cart.sub_total + box.sub_total)
+        cart.sub_total = Utils.round(cart.sub_total + box.total)
         cart.total = Utils.round(cart.total + box.total)
         if (box.discount) {
           cart.discount = Utils.round(cart.discount + box.discount)
@@ -308,6 +312,9 @@ class Cart {
     if (params.user_id && params.save) {
       await Cart.saveCart(params.user_id, cart)
     }
+
+    // console.log('cart', cart)
+
     return cart
   }
 
@@ -353,7 +360,7 @@ class Cart {
         cart.tax_rate = cart.shops[s].tax_rate
         cart.sub_total = Utils.round(cart.sub_total + cart.shops[s].sub_total * cur)
         cart.total = Utils.round(cart.total + cart.shops[s].total * cur)
-
+        cart.pickup = params.pickup
         cart.discount = Utils.round(cart.discount + cart.shops[s].discount)
 
         cart.paypal = cart.shops[s].paypal
@@ -1241,13 +1248,15 @@ class Cart {
       res.picture = p.project.picture
       res.picture_project = p.project.picture_project
     }
-    res.discount = (p.project.discount?.[params.currency] || 0) * p.quantity
+
+    const discountPerItem = p.project.discount?.[params.currency] || 0
+    res.discount = discountPerItem * p.quantity
     res.discount_artist = p.project.discount_artist
-    res.price_discount = Utils.round(res.price - res.discount)
+    res.price_discount = discountPerItem ? Utils.round(res.price - discountPerItem) : null
     res.shipping_discount = p.project.shipping_discount
     res.price_ship_discount = res.price_ship_discount ?? null
     res.price_discount_ship_discount = res.shipping_discount
-      ? Utils.round(res.price_ship_discount - res.discount)
+      ? Utils.round(res.price_ship_discount - discountPerItem)
       : null
 
     res.project_id = p.project.id
@@ -1303,7 +1312,11 @@ class Cart {
 
       if (userIsPro && p.project.partner_distribution && p.project.prices_distribution) {
         res.price = p.project.prices_distribution[params.currency]
-        if (params.country_id === 'FR') {
+
+        if (
+          params.country_id === 'FR' ||
+          (!params.customer?.tax_intra && Utils.isEuropean(params.customer?.country_id))
+        ) {
           res.price_distrib = p.project.prices_distribution[params.currency] * 1.2
         }
       }
@@ -1321,7 +1334,9 @@ class Cart {
     }
     if (res.shipping_discount && !userIsPro) {
       res.total_ship_discount = Utils.round(
-        p.quantity * res.price_ship_discount + p.tips - res.discount
+        p.quantity * (res.shipping_discount ? res.price_ship_discount : res.price) +
+          p.tips -
+          res.discount
       )
       res.ship_discount_sale_diff = (res.shipping_discount * res.quantity * p.project.promo) / 100
     }
@@ -1384,25 +1399,38 @@ class Cart {
 
     const currencyRate = await Utils.getCurrency(params.currency)
 
-    const order = await DB('order').save({
-      user_id: params.user_id,
-      cart_id: params.cart_id,
-      payment_type: calculate.payment_type,
-      currency: calculate.currency,
-      currency_rate: currencyRate,
-      status: 'creating',
-      sub_total: calculate.sub_total,
-      shipping: calculate.shipping,
-      tax: calculate.tax,
-      tax_rate: calculate.tax_rate,
-      promo_code: calculate.promo_code,
-      discount: calculate.discount,
-      total: calculate.total,
-      origin: params.origin,
-      user_agent: JSON.stringify(params.user_agent),
-      created_at: Utils.date(),
-      updated_at: Utils.date()
-    })
+    let order
+    try {
+      order = await DB('order').save({
+        user_id: params.user_id,
+        cart_id: params.cart_id,
+        paying: params.payment_type === 'stripe' ? true : null,
+        payment_type: calculate.payment_type,
+        currency: calculate.currency,
+        currency_rate: currencyRate,
+        status: 'creating',
+        sub_total: calculate.sub_total,
+        shipping: calculate.shipping,
+        tax: calculate.tax,
+        tax_rate: calculate.tax_rate,
+        promo_code: calculate.promo_code,
+        discount: calculate.discount,
+        total: calculate.total,
+        origin: params.origin,
+        is_gift: params.gift,
+        user_agent: JSON.stringify(params.user_agent),
+        created_at: Utils.date(),
+        updated_at: Utils.date()
+      })
+    } catch (err) {
+      if (err.toString().includes('Duplicate') > 0) {
+        return {
+          error: 'duplicate'
+        }
+      } else {
+        throw err
+      }
+    }
 
     order.shops = []
 
@@ -1438,7 +1466,7 @@ class Cart {
             currency_rate: currencyRate,
             sub_total: ss.sub_total,
             discount: ss.discount,
-            promo_code: ss.promo_code.id,
+            promo_code: ss.promo_code?.id,
             tax_rate: ss.tax_rate,
             tax: ss.tax,
             total: ss.total,
@@ -1500,8 +1528,7 @@ class Cart {
 
   static pay = async (params) => {
     params.order = await Cart.createOrder(params)
-
-    if (params.order.code === 'payment_ok') {
+    if (params.order.code === 'payment_ok' || params.order.error === 'duplicate') {
       return params.order
     }
     if (params.calculate.total === 0) {
@@ -1543,11 +1570,6 @@ class Cart {
           intent.setup_future_usage = 'off_session'
           params.card_save = true
         }
-        /**
-      if (params.order.shops.length > 0 && params.order.shops[0].payment_account && params.order.shops[0].payment_account !== '1') {
-        intent.on_behalf_of = params.order.shops[0].payment_account
-      }
-      **/
 
         if (params.card.customer) {
           intent.customer = params.card.customer
@@ -1566,6 +1588,7 @@ class Cart {
           } catch (err) {
             await DB('order').where('id', params.order.id).update({
               status: 'failed',
+              paying: null,
               payment_id: err.requestId,
               error: err.code
             })
@@ -1592,6 +1615,7 @@ class Cart {
                 .where('id', params.order.id)
                 .update({
                   status: 'failed',
+                  paying: null,
                   payment_id: err.payment_intent ? err.payment_intent.id : null,
                   error: err.code
                 })
@@ -1609,6 +1633,7 @@ class Cart {
             if (charge.status === 'requires_action') {
               await DB('order').where('id', params.order.id).update({
                 payment_id: charge.id,
+                paying: null,
                 status: 'requires_action'
               })
               resolve({
@@ -1631,12 +1656,20 @@ class Cart {
     })
 
   static confirmStripePayment = async (params) => {
-    const confirm = await stripe.paymentIntents.confirm(params.payment_intent_id)
-
-    params.order = await DB('order').find(params.order_id)
-
-    if (confirm.status === 'succeeded') {
-      return Cart.validStripePayment(params, confirm)
+    let confirm
+    try {
+      confirm = await stripe.paymentIntents.confirm(params.payment_intent_id)
+      if (confirm.status === 'succeeded') {
+        params.order = await DB('order').find(params.order_id)
+        return Cart.validStripePayment(params, confirm)
+      }
+    } catch (err) {
+      await DB('order').where('id', params.order_id).update({
+        status: 'failed',
+        paying: null,
+        error: err.code
+      })
+      throw err
     }
   }
 
@@ -1704,7 +1737,7 @@ class Cart {
             payment_method: 'paypal'
           },
           redirect_urls: {
-            return_url: Utils.link('cart-pay', params.lang),
+            return_url: Utils.link('cart', params.lang),
             cancel_url: Utils.link('cart', params.lang)
           },
           transactions: [
@@ -1771,6 +1804,7 @@ class Cart {
                 .where('id', order.id)
                 .update({
                   status: 'failed',
+                  paying: null,
                   error: error.response.name
                 })
                 .then(() => {
@@ -1787,6 +1821,7 @@ class Cart {
               .where('id', order.id)
               .update({
                 status: 'failed',
+                paying: null,
                 error: payment.state
               })
               .then(() => {
@@ -1857,7 +1892,7 @@ class Cart {
     })
 
     const user = await DB()
-      .select('id', 'name', 'email', 'sponsor')
+      .select('id', 'name', 'email', 'is_guest', 'sponsor')
       .from('user')
       .where('id', order.user_id)
       .first()
@@ -1870,6 +1905,12 @@ class Cart {
       .where('os.order_id', orderId)
       .all()
 
+    if (user.is_guest) {
+      await Notification.add({
+        type: 'sign_up_confirm',
+        user_id: order.user_id
+      })
+    }
     const n = {
       type: 'my_order_confirmed',
       user_id: order.user_id,
@@ -1892,6 +1933,7 @@ class Cart {
     }
 
     let customerId = null
+    let orderGenres: string[] = []
     await Promise.all(
       shops.map(async (shop) => {
         customerId = shop.customer_invoice_id || shop.customer_id
@@ -1961,6 +2003,7 @@ class Cart {
               project.genres = project.styles.map((s) => genres[styles[s.id || s].genre_id])
               project.genres = [...new Set(project.genres)]
               project.styles = project.styles.map((s) => styles[s.id || s].name)
+              orderGenres.push(project.genres)
 
               cio.track(user.id, {
                 name: 'purchase',
@@ -2035,6 +2078,35 @@ class Cart {
                 transporter: shop.transporter
               })
               await Project.forceLike(project.id, user.id)
+
+              // Gamification
+              const passTypeList = ['first_order', 'order_5', 'order_10', 'order_15', 'order_20']
+              if (project.type_project === 'test_pressing') {
+                passTypeList.push('test_pressing')
+              }
+
+              // Quantity related quests
+              try {
+                const resOrders = await Pass.addHistory({
+                  userId: user.id,
+                  type: passTypeList,
+                  times: item.quantity
+                })
+                console.log('res of gamification orders', resOrders)
+              } catch (err) {
+                await Pass.errorNotification('orders', user.id, err)
+              }
+
+              // Genres quest
+              try {
+                const resGenres = await Pass.addGenreHistory({
+                  userId: user.id,
+                  genreList: project.genres
+                })
+                console.log('res of gamification genres', resGenres)
+              } catch (err) {
+                await Pass.errorNotification('genres', user.id, err)
+              }
             })
           )
         }
@@ -2113,6 +2185,30 @@ class Cart {
         name: `${order.artist} - ${order.project}`,
         category: 'vinyl'
       })
+    }
+
+    // Gamification
+    // check if each subarray has a value that is in another subarray. If so, add 1 to doubled
+    let countRepeatedGenres = 0
+    for (let i = 0; i < orderGenres.length; i++) {
+      for (let j = 0; j < orderGenres[i].length; j++) {
+        for (let k = 0; k < orderGenres.length; k++) {
+          if (i !== k && orderGenres[k].includes(orderGenres[i][j])) {
+            countRepeatedGenres++
+          }
+        }
+      }
+    }
+    if (!countRepeatedGenres) {
+      try {
+        const res = await Pass.addHistory({
+          userId: user.id,
+          type: ['two_genres_order']
+        })
+        console.log('res of gamification two_genres_order', res)
+      } catch (err) {
+        await Pass.errorNotification('two genres order', user.id, err)
+      }
     }
 
     return {

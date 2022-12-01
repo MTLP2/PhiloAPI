@@ -22,6 +22,7 @@ import Storage from 'App/Services/Storage'
 import Category from 'App/Services/Category'
 import Banner from 'App/Services/Banner'
 import Daudin from 'App/Services/Daudin'
+import Elogik from 'App/Services/Elogik'
 import Artwork from 'App/Services/Artwork'
 import Stats from 'App/Services/Stats'
 import MailJet from 'App/Services/MailJet'
@@ -292,7 +293,7 @@ class AdminController {
     if (params.type === 'daudin') {
       return Admin.syncProjectDaudin(params)
     } else if (params.type === 'elogik') {
-      return Admin.syncProjectElogik(params)
+      return Elogik.syncProject(params)
     } else if (params.type === 'sna') {
       return Admin.syncProjectSna(params)
     } else if (params.type === 'whiplash') {
@@ -468,8 +469,12 @@ class AdminController {
     return Feedback.exportAll(params)
   }
 
-  getNewsletters({ params }) {
-    return Admin.getNewsletters(params)
+  getMonthlyFeedbackStats() {
+    return Feedback.getMonthlyStats()
+  }
+
+  getNewsletters() {
+    return Admin.getNewsletters()
   }
 
   async getNewsletterTemplate({ params }) {

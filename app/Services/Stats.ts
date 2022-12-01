@@ -723,6 +723,7 @@ class Stats {
         checking: { ...columns },
         creating: { ...columns },
         in_progress: { ...columns },
+        coming_soon: { ...columns },
         private: { ...columns },
         promo: { ...columns },
         created: { ...columns },

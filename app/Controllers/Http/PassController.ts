@@ -2,6 +2,11 @@ import Pass from 'App/Services/Pass'
 import { validator, schema } from '@ioc:Adonis/Core/Validator'
 
 class PassController {
+  // META
+  async updateEveryone() {
+    return Pass.checkEveryoneTotals()
+  }
+
   // QUESTS
   async getQuests(params) {
     return Pass.findAllQuests(params)
@@ -22,7 +27,8 @@ class PassController {
           title_en: schema.string(),
           description_fr: schema.string(),
           description_en: schema.string(),
-          count_repeatable: schema.number()
+          count_repeatable: schema.number(),
+          is_upgrade: schema.number.nullableAndOptional()
         }),
         data: params
       })

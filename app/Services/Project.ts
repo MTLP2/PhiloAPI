@@ -60,6 +60,13 @@ class Project {
         project.price - project.price * (project.discount / 100),
         2
       )
+      project.prices_ship_discount = project.shipping_discount
+        ? Utils.getPrices({
+            price: project.price + project.shipping_discount,
+            currencies,
+            currency: project.currency
+          })
+        : null
     }
     project.price_discounts = {}
 
@@ -205,9 +212,9 @@ class Project {
             currencies,
             currency: currency
           })
-          project.items[i].prices_ship_discount = project.shipping_discount
-            ? Object.keys(project.prices).reduce((acc, key) => {
-                acc[key] = project.prices[key] + project.shipping_discount
+          project.items[i].prices_ship_discount = project.items[i].related_shipping_discount
+            ? Object.keys(project.items[i].prices).reduce((acc, key) => {
+                acc[key] = project.items[i].prices[key] + project.items[i].related_shipping_discount
                 return acc
               }, {})
             : null
@@ -251,7 +258,9 @@ class Project {
               : null
           }
           project.discount = Object.keys(project.prices).reduce((acc, key) => {
-            acc[key] = project.prices[key] - project.prices_discount[key]
+            acc[key] =
+              (project.prices_ship_discount?.[key] || project.prices[key]) -
+              project.prices_discount[key]
             return acc
           }, {})
           project.discount_artist = sale.artist_pay
@@ -465,33 +474,31 @@ class Project {
       projects.where(function () {
         if (params.genres) {
           params.genres.split(',').map((genre) => {
-            if (isNaN(genre)) {
-              return
+            if (genre && !isNaN(genre)) {
+              this.orWhereExists(
+                DB.raw(`
+              SELECT style.id
+              FROM project_style, style
+              WHERE p.id = project_id
+                AND style.id = project_style.style_id
+                AND genre_id = ${parseInt(genre)}
+            `)
+              )
             }
-            this.orWhereExists(
-              DB.raw(`
-            SELECT style.id
-            FROM project_style, style
-            WHERE p.id = project_id
-              AND style.id = project_style.style_id
-              AND genre_id = ${parseInt(genre)}
-          `)
-            )
           })
         }
         if (params.styles) {
           params.styles.split(',').map((style) => {
-            if (isNaN(style)) {
-              return
+            if (style && !isNaN(style)) {
+              this.orWhereExists(
+                DB.raw(`
+              SELECT id
+              FROM project_style
+              WHERE p.id = project_id
+                AND project_style.style_id = ${parseInt(style)}
+            `)
+              )
             }
-            this.orWhereExists(
-              DB.raw(`
-            SELECT id
-            FROM project_style
-            WHERE p.id = project_id
-              AND project_style.style_id = ${parseInt(style)}
-          `)
-            )
           })
         }
       })
@@ -792,6 +799,7 @@ class Project {
         'vod.sizes',
         'vod.step',
         'vod.stock as related_stock_shop',
+        'vod.shipping_discount as related_shipping_discount',
         DB.raw(
           'vod.goal - vod.count - vod.count_other - vod.count_distrib - vod.count_bundle as related_stock'
         )
@@ -985,11 +993,13 @@ class Project {
       })
 
     // Adding pass history
-    const passRes = await Pass.addHistory({
-      userId,
-      type: 'user_like',
-      refId: projectId
-    })
+    try {
+      const passRes = await Pass.addHistory({
+        userId,
+        type: 'user_like',
+        refId: projectId
+      })
+    } catch (err) {}
 
     return { result: 1, passRes }
   }

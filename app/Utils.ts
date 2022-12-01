@@ -1232,6 +1232,40 @@ class Utils {
     return userIsPro
   }
 
+  static isEuropean = (countryId?: string) => {
+    const europeanCountryIdList = [
+      'AT',
+      'BE',
+      'BG',
+      'CY',
+      'CZ',
+      'DE',
+      'DK',
+      'EE',
+      'ES',
+      'FI',
+      'FR',
+      'GB',
+      'GR',
+      'HR',
+      'HU',
+      'IE',
+      'IT',
+      'LT',
+      'LU',
+      'LV',
+      'MT',
+      'NL',
+      'PL',
+      'PT',
+      'RO',
+      'SE',
+      'SI',
+      'SK'
+    ]
+    return countryId ? europeanCountryIdList.includes(countryId) : false
+  }
+
   static getTeam = [
     {
       id: 0,

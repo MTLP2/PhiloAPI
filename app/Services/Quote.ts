@@ -250,7 +250,8 @@ class Quote {
     for (const c of Object.keys(quote)) {
       quote[c] = Math.round(quote[c] * (1 + feeProd / 100))
       if (data.factory === 'vdp') {
-        quote[c] = Math.round(quote[c] * 1.19)
+        quote[c] = Math.round(quote[c] * 1.14)
+        quote[c] = Math.round(quote[c] * 0.97)
       }
     }
 
@@ -283,11 +284,13 @@ class Quote {
         .where('code', 'like', params.sponsor)
         .where('is_active', true)
         .first()
-      if (sponsor.fee) {
-        fee = sponsor.fee / 100
-      } else if (sponsor.discount_prod) {
-        quote.discount = Utils.round(quote.total_tax * (sponsor.discount_prod / 100), 0)
-        quote.total_tax = quote.total_tax - quote.discount
+      if (sponsor) {
+        if (sponsor.fee) {
+          fee = sponsor.fee / 100
+        } else if (sponsor.discount_prod) {
+          quote.discount = Utils.round(quote.total_tax * (sponsor.discount_prod / 100), 0)
+          quote.total_tax = quote.total_tax - quote.discount
+        }
       }
     } else if (params.id) {
       const vod = await DB('vod').where('project_id', params.id).first()
