@@ -2060,7 +2060,7 @@ class Production {
   }
 
   static async storeCosts(params) {
-    let item = DB('production_cost')
+    let item: any = DB('production_cost')
     if (params.id) {
       item = await DB('production_cost').find(params.id)
     } else {
@@ -2068,6 +2068,8 @@ class Production {
     }
 
     item.project_id = params.project_id
+    item.type = params.type
+    item.currency = params.currency
     item.production_id = params.production_id || null
     item.name = params.name
     item.invoice_number = params.invoice_number
@@ -2080,7 +2082,7 @@ class Production {
     item.cost_real_ttc = params.cost_real_ttc
     item.cost_invoiced = params.cost_invoiced
     item.margin = params.margin
-    item.in_final_price = params.in_final_price
+    item.comment = params.comment
     item.updated_at = Utils.date()
 
     if (params.invoice) {
@@ -2093,7 +2095,32 @@ class Production {
     }
 
     await item.save()
-    // await Production.calculateFinalPrice(item.production_id)
+
+    const resp = await DB('production')
+      .where('production.id', item.production_id)
+      .join('user', 'user.id', 'production.resp_id')
+      .first()
+
+    if (resp) {
+      const project = await DB('project').where('id', item.project_id).first()
+      await Notification.sendEmail({
+        to: resp.email,
+        subject: `${project.artist_name} ${project.name} - ${item.type} - ${
+          params.id ? 'Cost changed' : 'New cost'
+        }`,
+        html: `
+        <ul>
+          <li><strong>Project:</strong> ${project.artist_name} ${project.name}</li>
+          <li><strong>Type:</strong> ${item.type}</li>
+          <li><strong>Name:</strong> ${item.name}</li>
+          <li><strong>Cost real:</strong> ${item.cost_real} ${item.currency}</li>
+          <li><strong>Cost invoiced:</strong> ${item.cost_invoiced} ${item.currency}</li>
+          <li><strong>Comment:</strong> ${item.comment}</li>
+          <li><a href="https://www.diggersfactory.com/fr/sheraf/project/${item.project_id}/costs">Link</a></li>
+        </ul>
+        `
+      })
+    }
     return true
   }
 
