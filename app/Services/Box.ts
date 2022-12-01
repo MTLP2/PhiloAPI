@@ -1969,7 +1969,7 @@ class Box {
   static async getPrices() {
     const data = await DB('box_price').all()
 
-    const sales = await PromoCode.getSales({ box: true })
+    const sales = (await PromoCode.getSales({ box: true }))[0]
 
     const res: any = {
       prices: {
@@ -1989,6 +1989,7 @@ class Box {
       res.prices[d.type][d.periodicity].GBP = d.GBP
       res.prices[d.type][d.periodicity].AUD = d.AUD
     }
+
     if (sales) {
       res.promo = sales.value
 
