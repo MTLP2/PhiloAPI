@@ -1900,7 +1900,7 @@ class Stats {
       .all()
 
     const costsPromise = await DB('production_cost')
-      .select('date', 'type', 'is_licence', 'margin')
+      .select('date', 'production_cost.type', 'is_licence', 'margin')
       .join('vod', 'vod.project_id', 'production_cost.project_id')
       .whereBetween('date', [params.start, params.end])
       .whereNotNull('margin')
