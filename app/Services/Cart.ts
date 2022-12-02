@@ -943,7 +943,7 @@ class Cart {
           partner: transporter.transporter,
           currency: transporter.currency,
           standard: Utils.round(transporter[weight] + cost),
-          tracking: Utils.round(transporter[weight] + cost + 5)
+          tracking: Utils.round(transporter[weight] + cost + 2)
         }
       }
     }
@@ -991,7 +991,7 @@ class Cart {
           partner: transporter.transporter,
           currency: transporter.currency,
           standard: Utils.round(transporter[weight] + cost),
-          tracking: Utils.round(transporter[weight] + cost + 5)
+          tracking: Utils.round(transporter[weight] + cost + 2)
         }
       }
     }
@@ -1031,7 +1031,7 @@ class Cart {
       partner: '',
       currency: transporter.currency,
       standard: cost,
-      tracking: Utils.round(cost + 5)
+      tracking: Utils.round(cost + 2)
     }
 
     /**
@@ -1067,7 +1067,7 @@ class Cart {
       partner: '',
       currency: transporter.currency,
       standard: cost,
-      tracking: Utils.round(cost + 3)
+      tracking: Utils.round(cost + 2)
     }
     return costs
   }
