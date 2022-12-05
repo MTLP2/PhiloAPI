@@ -387,7 +387,7 @@ class Elogik {
             barcode = sizes[item.size].split(',')[1]
           }
           if (process.env.NODE_ENV !== 'production') {
-            // barcode = '3760370262046'
+            barcode = '3760370262046'
           }
           payload.listeArticles.push({
             refEcommercant: barcode.toString().trim(),
@@ -509,8 +509,10 @@ class Elogik {
       .where('transporter', 'daudin')
       .whereNotNull('logistician_id')
       .whereNull('tracking_number')
+      .orderBy('date_export', 'asc')
       .all()
 
+    console.log('orders => ', orders.length)
     const packages = await Elogik.listeColis(
       orders.map((o: any) => {
         return {
@@ -519,21 +521,103 @@ class Elogik {
       })
     )
 
+    let i = 0
     for (const pack of packages.colis) {
-      const order = orders.find((o) => o.logistician_id === pack.commande.referenceEKAN)
-
-      await DB('order_shop').where('id', order.id).update({
-        step: 'sent',
-        tracking_number: pack.numeroTracking,
-        tracking_link: pack.urlTracking
-      })
-      await Notification.add({
-        type: 'my_order_sent',
-        user_id: order.user_id,
-        order_id: order.order_id,
-        order_shop_id: order.id
-      })
+      if (pack.numeroTracking) {
+        const order = orders.find((o) => o.logistician_id === pack.commande.referenceEKAN)
+        await DB('order_shop').where('id', order.id).update({
+          step: 'sent',
+          tracking_number: pack.numeroTracking,
+          tracking_link: pack.urlTracking
+        })
+        await Notification.add({
+          type: 'my_order_sent',
+          user_id: order.user_id,
+          order_id: order.order_id,
+          order_shop_id: order.id
+        })
+        i++
+      }
     }
+    console.log('orders sent => ', i)
+
+    const manuals = await DB('order_manual')
+      .where('transporter', 'daudin')
+      .whereNotNull('logistician_id')
+      .whereNull('tracking_number')
+      .orderBy('date_export', 'asc')
+      .all()
+
+    console.log('manuals => ', manuals.length)
+
+    const packagesManuals = await Elogik.listeColis(
+      manuals.map((o: any) => {
+        return {
+          referenceEKAN: o.logistician_id
+        }
+      })
+    )
+
+    let j = 0
+    if (packagesManuals.colis) {
+      for (const pack of packagesManuals.colis) {
+        if (pack.numeroTracking) {
+          const order = manuals.find((o) => o.logistician_id === pack.commande.referenceEKAN)
+          await DB('order_manual').where('id', order.id).update({
+            step: 'sent',
+            tracking_number: pack.numeroTracking,
+            tracking_link: pack.urlTracking
+          })
+          await Notification.add({
+            type: 'my_order_sent',
+            user_id: order.user_id,
+            order_manual_id: order.id
+          })
+          j++
+        }
+      }
+    }
+    console.log('manuals sent => ', j)
+
+    const boxes = await DB('box_dispatch')
+      .whereNotNull('logistician_id')
+      .whereNull('tracking_number')
+      .orderBy('date_export', 'asc')
+      .all()
+
+    console.log('boxes => ', boxes.length)
+
+    const packagesBoxes = await Elogik.listeColis(
+      boxes.map((o: any) => {
+        return {
+          referenceEKAN: o.logistician_id
+        }
+      })
+    )
+
+    console.log(packagesBoxes)
+
+    let k = 0
+    if (packagesBoxes.colis) {
+      for (const pack of packagesBoxes.colis) {
+        if (pack.numeroTracking) {
+          const order = boxes.find((o) => o.logistician_id === pack.commande.referenceEKAN)
+          await DB('box_dispatch').where('id', order.id).update({
+            step: 'sent',
+            tracking_number: pack.numeroTracking,
+            tracking_link: pack.urlTracking
+          })
+          await Notification.add({
+            type: 'my_box_sent',
+            user_id: order.user_id,
+            box_id: order.box_id,
+            box_dispatch_id: order.id
+          })
+          k++
+        }
+      }
+    }
+    console.log('boxes sent => ', k)
   }
 }
 
