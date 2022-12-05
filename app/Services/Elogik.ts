@@ -191,6 +191,9 @@ class Elogik {
   }
 
   static syncDaudin = async () => {
+    const res: any[] = []
+    const dispatchs: any[] = []
+
     const orders = await DB('order_shop')
       .where('sending', true)
       .where('transporter', 'daudin')
@@ -198,21 +201,20 @@ class Elogik {
       .whereNull('logistician_id')
       .where('is_paid', true)
       .where('is_paused', false)
-      .limit(1)
       .all()
 
     console.log('shop => ', orders.length)
+
     if (!orders) {
       return false
     }
 
-    const res: any[] = []
     res.push(...(<any>await Elogik.syncOrders(orders.map((order) => order.id))))
 
-    /**
     const manuals = await DB('order_manual')
       .select(
         'customer.*',
+        'order_manual.id',
         'user_id',
         'order_manual.email',
         'barcodes',
@@ -229,21 +231,21 @@ class Elogik {
       .all()
 
     console.log('manuals => ', manuals.length)
-    const dispatchs: any[] = []
     for (const manual of manuals) {
       if (!manual.firstname) {
         continue
       }
+      const barcodes = JSON.parse(manual.barcodes)
       dispatchs.push({
         ...manual,
         id: 'M' + manual.id,
         user_id: manual.user_id || 'M' + manual.id,
         sub_total: '40',
         currency: 'EUR',
-        items: manual.barcodes.split(',').map((b: any) => {
+        items: barcodes.map((b: any) => {
           return {
-            barcode: b,
-            quantity: 1
+            barcode: b.barcode,
+            quantity: b.quantity
           }
         })
       })
@@ -268,10 +270,12 @@ class Elogik {
       .whereNull('date_export')
       .where('box_dispatch.step', 'confirmed')
       .whereNull('box_dispatch.date_export')
+      .orderBy('box_dispatch.id', 'desc')
       .all()
 
     console.log('boxes => ', boxes.length)
     for (const box of boxes) {
+      console.log(box)
       if (!box.firstname) {
         continue
       }
@@ -289,7 +293,6 @@ class Elogik {
 
     res.push(...(<any>await Elogik.sync(dispatchs)))
 
-    **/
     return res
   }
 
@@ -339,7 +342,6 @@ class Elogik {
       orders[idx].items = orders[idx].items ? [...orders[idx].items, item] : [item]
     }
 
-    console.log(items)
     const res = await Elogik.sync(orders)
     return res
   }
@@ -362,6 +364,7 @@ class Elogik {
         telephoneMobile: order.phone?.substring(0, 19),
         email: order.email
       }
+
       const payload = {
         reference: order.id,
         referenceClient: order.user_id || null,
@@ -372,13 +375,27 @@ class Elogik {
         numeroDepot: pickup?.number,
         montantHT: order.sub_total,
         deviseMontantHT: order.currency,
-        listeArticles: order.items.map((item: any) => {
-          return {
-            refEcommercant: process.env.NODE_ENV !== 'production' ? 3760370262046 : item.barcode,
-            quantite: item.quantity
-          }
-        })
+        listeArticles: <any>[]
       }
+      for (const item of order.items) {
+        const sizes = item.sizes ? JSON.parse(item.sizes) : null
+        const barcodes = item.barcode.split(',')
+        for (let barcode of barcodes) {
+          if (barcode === 'SIZE') {
+            barcode = sizes[item.size].split(',')[0]
+          } else if (barcode === 'SIZE2') {
+            barcode = sizes[item.size].split(',')[1]
+          }
+          if (process.env.NODE_ENV !== 'production') {
+            // barcode = '3760370262046'
+          }
+          payload.listeArticles.push({
+            refEcommercant: barcode.toString().trim(),
+            quantite: item.quantity
+          })
+        }
+      }
+
       console.log(payload)
 
       let res = await Elogik.api('commandes/creer', {
