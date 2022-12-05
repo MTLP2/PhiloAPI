@@ -835,8 +835,8 @@ static toJuno = async (params) => {
 
         if (['whiplash', 'whiplash_uk'].includes(params.transporter)) {
           const exists = await Whiplash.findItem(b.barcode)
-          if (!exists) {
-            return { error: 'Not in whiplash' }
+          if (exists.error) {
+            return { error: exists.error }
           }
         }
       }

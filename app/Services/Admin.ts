@@ -885,8 +885,8 @@ class Admin {
 
     if (params.is_shop && params.transporter === 'whiplash') {
       const item = await Whiplash.findItem(params.barcode)
-      if (!item) {
-        throw new ApiError(406, 'no_whiplash')
+      if (item.error) {
+        throw new ApiError(406, item.error)
       }
     }
 
