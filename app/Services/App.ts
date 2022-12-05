@@ -480,7 +480,7 @@ class App {
             picture: `${Env.get('STORAGE_URL')}/projects/${item.picture}/vinyl.png`
           })
           data.attachments.push({
-            filename: 'DiggersFactory.pdf',
+            filename: `${item.artist_name} - ${item.name}.pdf`,
             content: await Utils.toPdf(html)
           })
         }
