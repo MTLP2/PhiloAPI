@@ -1144,7 +1144,9 @@ class Utils {
 
   static getTransporterLink = (shop) => {
     shop.tracking_number = shop.tracking_number ? shop.tracking_number.replace(/\s/g, '') : ''
-    if (shop.tracking_transporter === 'IMX') {
+    if (shop.tracking_link) {
+      return shop.tracking_link
+    } else if (shop.tracking_transporter === 'IMX') {
       return `https://suivi.imxpostal.fr/colis/suivi/${shop.tracking_number}/html/`
     } else if (shop.tracking_transporter === 'COL' || shop.tracking_transporter === 'LTS') {
       return `https://www.laposte.fr/outils/suivre-vos-envois?code=${shop.tracking_number}`
