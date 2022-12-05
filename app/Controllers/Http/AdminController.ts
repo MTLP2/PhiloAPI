@@ -1083,7 +1083,7 @@ class AdminController {
     return ShippingWeight.allByPartner({ partner: payload.partner, params })
   }
 
-  async updateShippingWeight({ params }) {
+  async updateShippingWeight({ params, user }) {
     const payload = await validator.validate({
       schema: schema.create({
         'id': schema.number(),
@@ -1130,7 +1130,21 @@ class AdminController {
       }),
       data: params
     })
-    return ShippingWeight.update(payload)
+    return ShippingWeight.update(payload, user.id)
+  }
+
+  async getShippingWeightHistory({ params }) {
+    params.shippingId = params.id
+    const payload = await validator.validate({
+      schema: schema.create({
+        shippingId: schema.number(),
+        filters: schema.string.nullableAndOptional(),
+        order: schema.string.nullableAndOptional(),
+        sort: schema.string.nullableAndOptional()
+      }),
+      data: params
+    })
+    return ShippingWeight.getShippingWeightHistory(payload)
   }
 }
 

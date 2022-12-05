@@ -7,7 +7,7 @@ class ShippingWeight {
     params
   }: {
     partner: 'daudin' | 'whiplash_uk' | 'shipehype'
-    params?: any
+    params: ShippingWeightDB & { order?: string; sort?: string; filters: string; userId: number }
   }) {
     let query = DB('shipping_weight').where('partner', partner)
 
@@ -40,7 +40,7 @@ class ShippingWeight {
     return res
   }
 
-  static async update(params: ShippingWeightDB) {
+  static async update(params: ShippingWeightDB, userId: number) {
     const shipWeight: ShippingWeightModel = await DB('shipping_weight').find(params.id)
 
     if (!shipWeight) {
@@ -49,7 +49,64 @@ class ShippingWeight {
 
     await DB('shipping_weight').where('id', shipWeight.id).update(params)
 
+    await this.saveEditsToHistory(shipWeight, params, userId)
+
     return { success: true }
+  }
+
+  static async saveEditsToHistory(
+    oldWeights: ShippingWeightDB,
+    newWeights: ShippingWeightDB,
+    userId
+  ) {
+    // Get only diff values between oldWeights and newWeights
+    const diff = Object.keys(oldWeights).reduce((acc, key) => {
+      if (
+        oldWeights[key] !== newWeights[key] &&
+        key in newWeights &&
+        !['constructor', 'toString'].includes(key)
+      ) {
+        acc[key] = {
+          new: newWeights[key],
+          old: oldWeights[key]
+        }
+      }
+      return acc
+    }, {})
+
+    // Save diff values to history
+    await DB('shipping_weight_history').insert({
+      changes: JSON.stringify(diff),
+      shipping_weight_id: oldWeights.id,
+      user_id: userId
+    })
+  }
+
+  static async getShippingWeightHistory(params: { shippingId: number }) {
+    const history = await DB('shipping_weight_history as swh')
+      .select(
+        'swh.*',
+        'user.name as user_name',
+        'user.id as user_id',
+        'sw.partner as sw_partner',
+        'sw.country_id as sw_country_id',
+        'sw.currency'
+      )
+      .join('user', 'user.id', 'swh.user_id')
+      .join('shipping_weight as sw', 'sw.id', 'swh.shipping_weight_id')
+      .where('shipping_weight_id', params.shippingId)
+      .orderBy('swh.created_at', 'desc')
+      .all()
+
+    for (const h of history) {
+      const changes = JSON.parse(h.changes)
+      h.changes = {}
+      for (const key in changes) {
+        h.changes[key] = changes[key]
+      }
+    }
+
+    return history
   }
 }
 
