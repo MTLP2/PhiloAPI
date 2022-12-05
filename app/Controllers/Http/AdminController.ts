@@ -1137,10 +1137,7 @@ class AdminController {
     params.shippingId = params.id
     const payload = await validator.validate({
       schema: schema.create({
-        shippingId: schema.number(),
-        filters: schema.string.nullableAndOptional(),
-        order: schema.string.nullableAndOptional(),
-        sort: schema.string.nullableAndOptional()
+        shippingId: schema.number()
       }),
       data: params
     })
