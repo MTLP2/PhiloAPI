@@ -897,7 +897,6 @@ static toJuno = async (params) => {
       ])
     } else if (['daudin'].includes(params.transporter)) {
       if (!item.logistician_id) {
-        /**
         const dispatch: any = await Elogik.sync([
           {
             ...customer,
@@ -918,8 +917,6 @@ static toJuno = async (params) => {
           }
         ])
         console.log(dispatch)
-        **/
-        /**
         if (item.order_shop_id) {
           await DB('order_shop').where('id', item.order_shop_id).update({
             logistician_id: dispatch.id,
@@ -928,7 +925,6 @@ static toJuno = async (params) => {
             updated_at: Utils.date()
           })
         }
-        **/
       }
     }
     if (['whiplash', 'whiplash_uk'].includes(params.transporter) && !item.logistician_id) {
@@ -1042,8 +1038,7 @@ static toJuno = async (params) => {
       await DB('order_shop').where('id', shop.id).update({
         sending: true
       })
-      // const res = await Elogik.syncOrders([shop.id])
-      // console.log(res)
+      await Elogik.syncOrders([shop.id])
     } else if (['whiplash', 'whiplash_uk'].includes(shop.transporter)) {
       const res = await Whiplash.validOrder(shop, items)
       if (!res) {
