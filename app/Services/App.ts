@@ -400,7 +400,7 @@ class App {
     }
     if (n.prod_id) {
       const prod = await DB('production')
-        .select('user.name as resp', 'user.email as resp_email', 'quantity_dispatch')
+        .select('user.name as resp', 'user.email as resp_email', 'quantity_dispatch', 'is_billing')
         .where('production.id', n.prod_id)
         .join('user', 'user.id', 'production.resp_id')
         .first()
@@ -408,13 +408,18 @@ class App {
       data.resp = `<a href="mailto:${prod.resp_email}">${prod.resp}</a>`
 
       if (notif.type === 'production_preprod_todo') {
-        const toDoActions = await DB('production_action as pa')
+        const toDoActionsQuery = DB('production_action as pa')
           .where('pa.production_id', n.prod_id)
           .where('pa.for', 'artist')
           .where('pa.status', 'to_do')
           .where('pa.category', 'preprod')
           .where('pa.type', '!=', 'order_form')
-          .all()
+
+        if (!prod.is_billing) {
+          toDoActionsQuery.where('pa.type', '!=', 'billing')
+        }
+
+        const toDoActions = await toDoActionsQuery.all()
 
         if (toDoActions.length) {
           data.to_do_preprod = '<ul>'
