@@ -1532,6 +1532,7 @@ class Project {
         'customer.country_id',
         'currency_rate_project',
         'discount_artist',
+        'oi.discount',
         'os.created_at'
       )
       .join('order_shop as os', 'os.id', 'oi.order_shop_id')
