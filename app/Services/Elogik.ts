@@ -656,16 +656,20 @@ class Elogik {
       const qty = ref.stocks[0].stockDispo
 
       if (!stock && qty > 0) {
+        const emails = [
+          'ismail@diggersfactory.com',
+          'jean-baptiste@diggersfactory.com',
+          'romain@diggersfactory.com'
+        ]
+        if (project.com) {
+          emails.push(project.com)
+        }
+        if (project.prod) {
+          emails.push(project.prod)
+        }
         console.log(`==> new stock : ${ref.refEcommercant} = ${qty}`)
         await Notification.sendEmail({
-          to: [
-            'alexis@diggersfactory.com',
-            'victor@diggersfactory.com',
-            'ismail@diggersfactory.com',
-            'romain@diggersfactory.com',
-            project.com,
-            project.prod
-          ].join(','),
+          to: emails.join(','),
           subject: `Daudin - new stock : ${project.artist_name} - ${project.name}`,
           html: `<ul>
           <li><strong>Project:</strong> https://www.diggersfactory.com/sheraf/project/${project.id}/stocks</li>
