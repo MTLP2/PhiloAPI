@@ -1,9 +1,7 @@
 import juice from 'juice'
-import Excel from 'exceljs'
 import { marked } from 'marked'
 import moment from 'moment'
-import { postcodeValidator, postcodeValidatorExistsForCountry } from 'postcode-validator'
-import sitemap from 'sitemap'
+import { SitemapStream, streamToPromise } from 'sitemap'
 import DB from 'App/DB'
 import config from 'Config/index'
 import Project from './Project'
@@ -13,7 +11,6 @@ import User from './User'
 import Order from './Order'
 import Customer from './Customer'
 import Utils from 'App/Utils'
-import Daudin from 'App/Services/Daudin'
 import Statement from 'App/Services/Statement'
 import Production from 'App/Services/Production'
 import Elogik from 'App/Services/Elogik'
@@ -24,7 +21,6 @@ import Invoice from 'App/Services/Invoice'
 import Blog from 'App/Services/Blog'
 import Vod from 'App/Services/Vod'
 import Cio from 'App/Services/CIO'
-import Cart from './Cart'
 import I18n from '@ioc:Adonis/Addons/I18n'
 import Env from '@ioc:Adonis/Core/Env'
 import Whiplash from './Whiplash'
@@ -1004,336 +1000,12 @@ class App {
     )
   }
 
-  static checkReminder1Marketplace = async () => {
-    const query = `
-      SELECT os.*, p.name AS name
-      FROM order_shop AS os,
-        order_item oi,
-        project AS p
-      WHERE
-        oi.project_id = p.id
-        AND os.id = oi.order_shop_id
-        AND os.type = 'marketplace'
-        AND os.step = 'pending'
-        AND os.created_at <= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-        AND NOT EXISTS (SELECT id FROM notification WHERE type = 'marketplace_reminder1_seller' AND order_shop_id = os.id)
-    `
-    const orders = await DB().execute(query)
-
-    await Promise.all(
-      orders.map(async (p) => {
-        const data = {}
-        data.type = 'marketplace_reminder1_seller'
-        data.user_id = p.shop_id
-        data.order_id = p.order_id
-        data.order_shop_id = p.id
-        data.project_id = p.project_id
-        data.project_name = p.name
-        const exist = await Notification.exist(data)
-        if (!exist) {
-          await Notification.new(data)
-        }
-        return true
-      })
-    )
-  }
-
-  static checkReminder2Marketplace = async () => {
-    const query = `
-      SELECT os.*, p.name AS name
-      FROM order_shop AS os,
-        order_item oi,
-        project AS p
-      WHERE
-        oi.project_id = p.id
-        AND os.id = oi.order_shop_id
-        AND os.type = 'marketplace'
-        AND os.step = 'pending'
-        AND os.created_at <= DATE_SUB(NOW(), INTERVAL 48 HOUR)
-        AND NOT EXISTS (SELECT id FROM notification WHERE type = 'marketplace_reminder2_seller' AND order_shop_id = os.id)
-    `
-    const orders = await DB().execute(query)
-    await Promise.all(
-      orders.map(async (p) => {
-        const data = {}
-        data.type = 'marketplace_reminder2_seller'
-        data.user_id = p.shop_id
-        data.order_id = p.order_id
-        data.order_shop_id = p.id
-        data.project_id = p.project_id
-        data.project_name = p.name
-        const exist = await Notification.exist(data)
-        if (!exist) {
-          await Notification.new(data)
-        }
-        return true
-      })
-    )
-  }
-
-  static checkReminderNoResponseMarketplace = async () => {
-    const query = `
-      SELECT os.*, p.name AS name,
-        o.payment_type, o.transaction_id, o.payment_id
-      FROM order_shop AS os,
-        order_item oi,
-        \`order\` o,
-        project AS p
-      WHERE
-        oi.project_id = p.id
-        AND os.id = oi.order_shop_id
-        AND o.id = os.order_id
-        AND os.type = 'marketplace'
-        AND os.step = 'pending'
-        AND os.created_at <= DATE_SUB(NOW(), INTERVAL 72 HOUR)
-        AND NOT EXISTS (SELECT order_shop_id FROM notification WHERE type = 'marketplace_refund_noresponse_buyer' AND order_shop_id = os.id)
-    `
-    const orders = await DB().execute(query)
-    await Promise.all(
-      orders.map(async (p) => {
-        Order.refund(p)
-
-        await DB('order_shop').where('id', p.id).update({
-          step: 'refund',
-          is_paid: 0,
-          updated_at: Utils.date()
-        })
-
-        const data = {}
-        data.type = 'marketplace_refund_noresponse_buyer'
-        data.user_id = p.user_id
-        data.order_id = p.id
-        data.project_id = p.project_id
-        data.project_name = p.name
-        let exist = await Notification.exist(data)
-        if (!exist) {
-          await Notification.new(data)
-        }
-
-        data.type = 'marketplace_refund_noresponse_seller'
-        data.user_id = p.shop_id
-        data.order_id = p.id
-        data.project_id = p.project_id
-        data.project_name = p.name
-        exist = await Notification.exist(data)
-        if (!exist) {
-          await Notification.new(data)
-        }
-
-        return true
-      })
-    )
-  }
-
-  static checkReminderLabels = async () => {
-    const query = `
-      SELECT l.*, u.email
-      FROM label_list l, user u
-      WHERE
-        l.updated_by = u.id AND
-        contact_reminder < NOW() AND
-        email_reminder = 0
-    `
-    const labels = await DB().execute(query)
-    await Promise.all(
-      labels.map(async (l) => {
-        await Notification.sendEmail({
-          to: l.email,
-          subject: `Reminder Label : ${l.name} - ${l.artists}`,
-          html: `
-          id: ${l.id}<br />
-          name: ${l.name}<br />
-          artists: ${l.artists}<br />
-          contact_reminder: ${l.contact_reminder}
-        `
-        })
-
-        await DB('label_list').where('id', l.id).update({
-          email_reminder: 1
-        })
-      })
-    )
-  }
-
-  static updateLabelsNewsletter = async () => {
-    const emails = await DB('newsletter_email').where('newsletter_id', 39).where('send', 2).all()
-
-    emails.map(async (e) => {
-      await DB('label_list').where('email_1', e.email).where('status', 'import').update({
-        status: 'auto_reminder',
-        last_contact: '2017-07-06',
-        updated_at: '2017-07-06'
-      })
-    })
-
-    return true
-  }
-
   static getStyles = () => {
     return DB('style').select('*').orderBy('name').all()
   }
 
   static getGenres = () => {
     return DB('genre').select('*').orderBy('name').all()
-  }
-
-  static convertOrderBandcamp = async () => {
-    const file = fs.readFileSync('bandcamp.tsv', 'utf8')
-    const lines = file.split('\r\n')
-
-    const orders = await DB('order_item')
-      .join('order_shop', 'order_shop.id', 'order_item.order_shop_id')
-      .join('order', 'order_shop.order_id', 'order.id')
-      .where('project_id', 226636)
-      .where('order_shop.is_paid', 1)
-      // .where('order.status', 'bandcamp')
-      .where(function () {
-        this.where('order.user_id', 21146).orWhere('order.status', 'bandcamp')
-      })
-      .all()
-
-    orders.map((order) => {
-      DB('order_shop').where('id', order.order_shop_id).update({
-        is_paid: 0,
-        step: 'bandcamp'
-      })
-    })
-
-    const data = []
-    for (let i = 1; i < lines.length; i++) {
-      // for (let i = 1; i < 2; i++) {
-      const values = lines[i].split(' ')
-      const names = values[5].split(' ')
-
-      const customer = {
-        firstname: names[0],
-        lastname: names[1],
-        address: values[6],
-        city: values[8],
-        state: values[9],
-        zip_code: values[10],
-        country: values[11],
-        country_id: values[12],
-        phone: values[3],
-        email: values[2]
-      }
-
-      const order = await Cart.createOrder({
-        user_id: 1,
-        customer: customer,
-        shops: {
-          s_21146: {
-            id: 22502,
-            type: 'vod',
-            shipping_type: 'standard'
-          }
-        },
-        shop_21146: [
-          {
-            project_id: 226636,
-            quantity: 1,
-            tips: 0
-          }
-        ]
-      })
-      await DB('order').where('id', order.id).update({
-        status: 'bandcamp'
-      })
-      await DB('order_shop').where('order_id', order.id).update({
-        is_paid: 1
-      })
-
-      data.push(order)
-    }
-
-    return data
-  }
-
-  static convertKissKiss = async (params) => {
-    const csv = fs.readFileSync('between-sleeps.tsv', 'utf8')
-    const countries = await DB('country').where('lang', 'en').all()
-    const lines = csv.split('\n')
-
-    const orders = []
-
-    const ue = {}
-    for (let i = 0; i < countries.length; i++) {
-      const country = countries[i]
-      ue[country.id] = country.ue
-    }
-
-    for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split('\t')
-      const order = {
-        id: i,
-        cat_number: '',
-        item_barcode: '3760300310427',
-        firstname: values[0],
-        lastname: '',
-        address: values[4],
-        email: values[2],
-        phone: values[3],
-        city: values[6],
-        state: '',
-        zip_code: values[5],
-        country: values[7],
-        country_id: values[7] === 'France' ? 'FR' : 'NL',
-        ue: 1,
-        quantity: values[8]
-      }
-      order.address = order.address.replace(/;/g, '')
-      order.address = order.address.replace(/"/g, '')
-      order.address = order.address.replace(/\//g, '')
-
-      /**
-      order.invoice = {
-        customer: {
-          firstname: order.firstname,
-          lastname: '',
-          zip_code: order.zip_code,
-          city: order.city,
-          phone: order.phone,
-          address: order.address,
-          country_id: order.country_id
-        },
-        from: {
-          name: 'Evan Bartholomew',
-          address: '2102 Broadway, Downstairs',
-          zip_code: '92102',
-          city: 'San Diego',
-          country: 'United State',
-          bank: false
-          // phone: '15037994378',
-          // number: 'FR 33 813648714'
-        },
-        type: 'invoice',
-        date: '2019-07-28',
-        year: '2019',
-        number: i + 1,
-        sub_total: 0,
-        tax: 0,
-        tax_rate: false,
-        order: {
-          shipping: 0
-        },
-        total: 0,
-        currency: null,
-        lines: JSON.stringify([{
-          name: 'Between Sleeps - Fantasia',
-          price: parseFloat(values[18]) / parseFloat(values[16]),
-          quantity: values[16]
-        }])
-      }
-      **/
-      if (order.quantity > 0) {
-        orders.push(order)
-      }
-    }
-
-    // return orders
-    // return orders
-
-    return Daudin.csv(orders)
   }
 
   static exportComptabilityOrders = async () => {
@@ -1524,306 +1196,6 @@ class App {
     return { success: true }
   }
 
-  static checkZipCode = async () => {
-    const errors = []
-    /**
-    const boxes = await DB('box')
-      .select('box.id', 'box.step', 'customer.country_id', 'customer.zip_code', 'user.email')
-      .join('customer', 'customer.id', 'box.customer_id')
-      .join('user', 'user.id', 'box.user_id')
-      .where('')
-      .all()
-
-    for (const box of boxes) {
-      if (postcodeValidatorExistsForCountry(box.country_id) &&
-      !postcodeValidator(box.zip_code.trim(), box.country_id)) {
-        errors.push(box)
-      }
-    }
-    **/
-
-    const orders = await DB('order_shop')
-      .select(
-        'order_shop.id',
-        'order_shop.step',
-        'customer.country_id',
-        'customer.zip_code',
-        'user.email'
-      )
-      .join('customer', 'customer.id', 'order_shop.customer_id')
-      .join('user', 'user.id', 'order_shop.user_id')
-      .where('is_paid', 1)
-      .whereNull('date_export')
-      .all()
-
-    for (const order of orders) {
-      if (
-        postcodeValidatorExistsForCountry(order.country_id) &&
-        !postcodeValidator(order.zip_code.trim(), order.country_id)
-      ) {
-        errors.push(order)
-      }
-    }
-
-    return Utils.arrayToCsv(
-      [
-        { index: 'id', name: 'order_shop_id' },
-        { index: 'step', name: 'step' },
-        { index: 'country_id', name: 'country_id' },
-        { index: 'zip_code', name: 'zip_code' },
-        { index: 'email', name: 'email' }
-      ],
-      errors
-    )
-  }
-
-  static addDiggersShipping = async () => {
-    const file = fs.readFileSync('factory/colissimo.tsv', 'utf8')
-
-    const lines = file.replace(/"/g, '').split('\r\n')
-
-    await DB('shipping_weight').where('partner', 'diggers').delete()
-
-    const countries = []
-    for (const i in lines) {
-      if (+i === 0) {
-        continue
-      }
-      let values = lines[i].split('	')
-      const cc = values[0].split(',')
-      values = values.map((v) => v.replace(',', '.')).map((v) => Utils.round(v / 1.2))
-
-      const country = {
-        '500g': values[1] || null,
-        '1kg': values[2] || null,
-        '2kg': values[3] || null,
-        '3kg': values[4] || null,
-        '4kg': values[4] || null,
-        '5kg': values[4] || null,
-        '6kg': values[5] || null,
-        '7kg': values[5] || null,
-        '8kg': values[5] || null,
-        '9kg': values[5] || null,
-        '10kg': values[5] || null,
-        '11kg': values[6] || null,
-        '12kg': values[6] || null,
-        '13kg': values[6] || null,
-        '14kg': values[6] || null,
-        '15kg': values[6] || null,
-        '16kg': values[7] || null,
-        '17kg': values[7] || null,
-        '18kg': values[7] || null,
-        '19kg': values[7] || null,
-        '20kg': values[7] || null,
-        '21kg': values[7] || null,
-        '22kg': values[7] || null,
-        '23kg': values[7] || null,
-        '24kg': values[7] || null,
-        '25kg': values[7] || null,
-        '26kg': values[7] || null,
-        '27kg': values[7] || null,
-        '28kg': values[7] || null,
-        '29kg': values[7] || null,
-        '30kg': values[7] || null
-      }
-      for (const c of cc) {
-        country.id = c
-        if (c) {
-          countries.push({ ...country })
-          await DB('shipping_weight').insert({
-            'country_id': country.id.trim(),
-            'partner': 'diggers',
-            'transporter': 'COL',
-            'packing': 0,
-            'picking': 0,
-            'currency': 'EUR',
-            '500g': country['500g'],
-            '1kg': country['1kg'],
-            '2kg': country['2kg'],
-            '3kg': country['3kg'],
-            '4kg': country['4kg'],
-            '5kg': country['5kg'],
-            '6kg': country['6kg'],
-            '7kg': country['6kg'],
-            '8kg': country['8kg'],
-            '9kg': country['9kg'],
-            '10kg': country['10kg'],
-            '11kg': country['11kg'],
-            '12kg': country['12kg'],
-            '13kg': country['13kg'],
-            '14kg': country['14kg'],
-            '15kg': country['15kg'],
-            '16kg': country['16kg'],
-            '17kg': country['17kg'],
-            '18kg': country['18kg'],
-            '19kg': country['19kg'],
-            '20kg': country['20kg'],
-            '21kg': country['21kg'],
-            '22kg': country['22kg'],
-            '23kg': country['23kg'],
-            '24kg': country['24kg'],
-            '25kg': country['25kg'],
-            '26kg': country['26kg'],
-            '27kg': country['27kg'],
-            '28kg': country['28kg'],
-            '29kg': country['29kg'],
-            '30kg': country['30kg'],
-            'created_at': Utils.date(),
-            'updated_at': Utils.date()
-          })
-        }
-      }
-    }
-
-    return countries
-  }
-
-  static convertChoose2 = async () => {
-    const codes = await DB('box_code').where('partner', 'choose').all()
-
-    for (const code of codes) {
-      code.code = code.code.split('_')[0].slice(0, -1)
-      const c = `${code.code}${code.periodicity}${code.type}${code.shipping_type}`
-
-      await DB('box_code').where('id', code.id).update({
-        code: c
-      })
-    }
-  }
-
-  static converChoose = async () => {
-    const file = fs.readFileSync('choose.csv', 'utf8')
-
-    const lines = file.split('\n')
-
-    const orders = {}
-    for (const i in lines) {
-      const line = lines[i]
-      if (+i === 0 || +i === lines.length - 1) {
-        continue
-      }
-      const values = line.split(';')
-      const id = values[0]
-
-      if (!orders[id]) {
-        orders[id] = {
-          id: id,
-          firstname: values[3],
-          lastname: values[4],
-          address: values[5],
-          zipcode: values[8],
-          city: values[9],
-          country_id: values[10],
-          phone: values[11],
-          email: values[12],
-          items: []
-        }
-      }
-
-      orders[id].items.push({
-        barcode: values[16],
-        quantity: values[14]
-      })
-    }
-
-    let toSent = 0
-    for (const order of Object.values(orders)) {
-      const exists = await DB('order_manual').where('comment', order.id).first()
-
-      if (!exists) {
-        console.log(order)
-        toSent++
-      } else {
-        console.log(order.id)
-        continue
-      }
-
-      const c = await DB('customer').insert({
-        type: 'individual',
-        firstname: order.firstname,
-        lastname: order.lastname,
-        zip_code: order.zipcode,
-        address: order.address,
-        city: order.city,
-        country_id: order.country_id,
-        phone: order.phone,
-        created_at: Utils.date(),
-        updated_at: Utils.date()
-      })
-      await DB('order_manual').insert({
-        customer_id: c[0],
-        quantity: order.items[0].quantity,
-        // barcode: order.items.map(i => i.barcode).join(','),
-        barcodes: JSON.stringify(order.items),
-        comment: order.id,
-        created_at: Utils.date(),
-        updated_at: Utils.date()
-      })
-    }
-    console.log(toSent)
-    return orders
-  }
-
-  static ordersScaryPockets = async (transporter) => {
-    const workbook = new Excel.Workbook()
-
-    const file = fs.readFileSync('./factory/scary.xlsx')
-    await workbook.xlsx.load(file)
-    const worksheet = workbook.getWorksheet(1)
-
-    const orders = []
-    let daudin = 0
-    let whi = 0
-    worksheet.eachRow((row, rowNumber) => {
-      if (rowNumber === 1 || rowNumber === 400) {
-        return
-      }
-
-      const order = {
-        customer: {
-          type: 'individual',
-          firstname: row.getCell('A').toString(),
-          lastname: '',
-          address: row.getCell('B').toString(),
-          city: row.getCell('C').toString(),
-          state: row.getCell('D').toString(),
-          zip_code: row.getCell('E').toString(),
-          country_id: row.getCell('F').toString()
-        },
-        transporter: row.getCell('H').toString().toLowerCase(),
-        barcodes: [{ barcode: '3760300315637', quantity: 1 }],
-        shipping_type: 'standard',
-        comment: rowNumber,
-        type: 'auto'
-      }
-
-      orders.push(order)
-
-      if (order.transporter === 'daudin') {
-        daudin++
-      } else {
-        whi++
-      }
-    })
-
-    for (const order of orders) {
-      if (order.transporter === transporter) {
-        const exists = await DB('order_manual')
-          .where('type', 'auto')
-          .where('comment', order.comment)
-          .first()
-
-        if (!exists) {
-          await Order.saveManual(order)
-          console.log(order.comment)
-        }
-      }
-    }
-
-    console.log(daudin, whi)
-    return whi
-  }
-
   static renameIcons = () => {
     const path = '../streamline'
     const files = fs.readdirSync(path)
@@ -1899,138 +1271,76 @@ class App {
     )
   }
 
-  static invoicesToPayments = async () => {
-    const allInvoices = await DB('invoice').hasMany('payment', 'payments', 'invoice_id').all()
-
-    // Divide allInvoices to get 2000
-    const chunks = Math.ceil(allInvoices.length / 2000)
-    for (let index = 0; index < chunks; index++) {
-      console.log('Chunk number ', index, ' of ', chunks)
-
-      const invoices = allInvoices.slice(index * 1000, (index + 1) * 1000)
-      if (!invoices.length) continue
-
-      const orders = await DB('order')
-        .select('payment_type', 'payment_id', 'id')
-        .whereIn(
-          'id',
-          invoices.map((i) => i.order_id)
-        )
-        .all()
-
-      const invoicesWithOrders = invoices.map((i) => {
-        const order = orders.find((o) => o.id === i.order_id)
-        return {
-          ...i,
-          payment_type: order?.payment_type || null,
-          payment_id: order?.payment_id || null
-        }
-      })
-
-      let count = 0
-      for (const invoice of invoicesWithOrders) {
-        count++
-        console.log(invoice.id)
-        console.log(((count / invoicesWithOrders.length) * 100).toFixed(1) + '%')
-
-        if (!invoice.payments.length) {
-          try {
-            await Invoice.save({ ...invoice, invoice_to_payment: true })
-          } catch (error) {
-            console.error(error)
-          }
-        }
-      }
-
-      console.log('chunk done')
-    }
-
-    return 'ok'
-  }
-
   static generateSitemap = async () => {
-    const sm = sitemap.createSitemap({
-      hostname: 'https://www.diggersfactory.com',
-      cacheTime: 600000, // 600 sec cache period
-      urls: [
-        {
-          url: '/',
-          changefreq: 'daily',
-          priority: 1,
-          links: [
-            { lang: 'en', url: '/' },
-            { lang: 'fr', url: '/fr' }
-          ]
-        },
-        {
-          url: '/vinyl-shop',
-          changefreq: 'daily',
-          priority: 0.9,
-          links: [
-            { lang: 'en', url: '/vinyl-shop' },
-            { lang: 'fr', url: '/fr/vinyl-shop' }
-          ]
-        },
-        {
-          url: '/vinyl-box',
-          changefreq: 'monthly',
-          priority: 0.9,
-          links: [
-            { lang: 'en', url: '/vinyl-box' },
-            { lang: 'fr', url: '/fr/box-de-vinyle' }
-          ]
-        },
-        {
-          url: '/vinyl-pressing',
-          changefreq: 'monthly',
-          priority: 0.9,
-          links: [
-            { lang: 'en', url: '/vinyl-pressing' },
-            { lang: 'fr', url: '/fr/pressage-de-vinyle' }
-          ]
-        },
-        {
-          url: '/blog',
-          changefreq: 'daily',
-          priority: 0.5,
-          links: [
-            { lang: 'en', url: '/blog' },
-            { lang: 'fr', url: '/fr/blog' }
-          ]
-        },
-        {
-          url: '/direct-pressing',
-          changefreq: 'monthly',
-          priority: 0.6,
-          links: [
-            { lang: 'en', url: '/direct-pressing' },
-            { lang: 'fr', url: '/fr/pressage-en-direct' }
-          ]
-        },
-        {
-          url: '/about',
-          changefreq: 'monthly',
-          priority: 0.3,
-          links: [
-            { lang: 'en', url: '/about' },
-            { lang: 'fr', url: '/fr/qui-sommes-nous' }
-          ]
-        },
-        {
-          url: '/contact',
-          changefreq: 'monthly',
-          priority: 0.3,
-          links: [
-            { lang: 'en', url: '/contact' },
-            { lang: 'fr', url: '/fr/contact' }
-          ]
-        }
+    const sitemap = new SitemapStream({ hostname: 'https://www.diggersfactory.com' })
+
+    sitemap.write({
+      url: '/',
+      changefreq: 'daily',
+      priority: 1,
+      links: [
+        { lang: 'en', url: '/' },
+        { lang: 'fr', url: '/fr' }
+      ]
+    })
+    sitemap.write({
+      url: '/vinyl-shop',
+      changefreq: 'daily',
+      priority: 0.9,
+      links: [
+        { lang: 'en', url: '/vinyl-shop' },
+        { lang: 'fr', url: '/fr/vinyl-shop' }
+      ]
+    })
+    sitemap.write({
+      url: '/vinyl-box',
+      changefreq: 'monthly',
+      priority: 0.9,
+      links: [
+        { lang: 'en', url: '/vinyl-box' },
+        { lang: 'fr', url: '/fr/box-de-vinyle' }
+      ]
+    })
+    sitemap.write({
+      url: '/vinyl-pressing',
+      changefreq: 'monthly',
+      priority: 0.9,
+      links: [
+        { lang: 'en', url: '/vinyl-pressing' },
+        { lang: 'fr', url: '/fr/pressage-de-vinyle' }
+      ]
+    })
+    sitemap.write({
+      url: '/direct-pressing',
+      changefreq: 'monthly',
+      priority: 0.6,
+      links: [
+        { lang: 'en', url: '/direct-pressing' },
+        { lang: 'fr', url: '/fr/pressage-en-direct' }
+      ]
+    })
+    sitemap.write({
+      url: '/about',
+      changefreq: 'monthly',
+      priority: 0.3,
+      links: [
+        { lang: 'en', url: '/about' },
+        { lang: 'fr', url: '/fr/qui-sommes-nous' }
+      ]
+    })
+    sitemap.write({
+      url: '/contact',
+      changefreq: 'monthly',
+      priority: 0.3,
+      links: [
+        { lang: 'en', url: '/contact' },
+        { lang: 'fr', url: '/fr/contact' }
       ]
     })
 
     const projects = await Project.findAll({ type: 'all', limit: 99999999 })
-    projects.map((project) => {
-      sm.add({
+    for (const project of projects) {
+      sitemap.write({
         url: `/vinyl/${project.id}/${project.slug}`,
         lang: 'en',
         changefreq: 'weekly',
@@ -2041,12 +1351,11 @@ class App {
           { lang: 'fr', url: `/fr/vinyl/${project.id}/${project.slug}` }
         ]
       })
-      return true
-    })
+    }
 
     const articles = await Blog.all()
-    articles.map((article) => {
-      sm.add({
+    for (const article of articles) {
+      sitemap.write({
         url:
           article.lang === 'en'
             ? `/blog/${article.id}/${article.slug}`
@@ -2055,10 +1364,12 @@ class App {
         priority: 0.5,
         lastmod: article.updated_at
       })
-      return true
-    })
+    }
 
-    Storage.upload(`sitemap.xml`, sm.toString())
+    sitemap.end()
+
+    const buffer = await streamToPromise(sitemap)
+    Storage.upload(`sitemap.xml`, buffer)
 
     return { success: true }
   }
