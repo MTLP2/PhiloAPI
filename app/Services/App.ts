@@ -16,6 +16,7 @@ import Utils from 'App/Utils'
 import Daudin from 'App/Services/Daudin'
 import Statement from 'App/Services/Statement'
 import Production from 'App/Services/Production'
+import Elogik from 'App/Services/Elogik'
 import Storage from 'App/Services/Storage'
 import MondialRelay from 'App/Services/MondialRelay'
 import Review from 'App/Services/Review'
@@ -110,6 +111,7 @@ class App {
       } else if (hour === 4) {
         await Whiplash.setTrackingLinks()
       } else if (hour === 5) {
+        await Elogik.syncStocks()
         await Cio.syncNewsletterNoAccount()
       } else if (hour === 7) {
         await App.check5DaysLeftProjects()
@@ -123,6 +125,8 @@ class App {
         await Review.checkNotif()
       } else if (hour === 12) {
         await Invoice.reminder()
+      } else if (hour === 17) {
+        await Elogik.syncStocks()
       }
 
       await Storage.cleanTmp('storage')
