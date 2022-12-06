@@ -122,7 +122,7 @@ class App {
         await Review.checkNotif()
       } else if (hour === 12) {
         await Invoice.reminder()
-      } else if (hour === 17) {
+      } else if (hour === 13) {
         await Elogik.syncStocks()
       }
 
