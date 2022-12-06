@@ -108,6 +108,7 @@ class App {
 
       if (hour === 3) {
         await App.currencies()
+        await App.generateSitemap()
       } else if (hour === 4) {
         await Whiplash.setTrackingLinks()
       } else if (hour === 5) {
