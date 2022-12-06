@@ -1347,6 +1347,14 @@ class Cart {
   static createOrder = async (params) => {
     const calculate = await Cart.calculate(params)
 
+    // Check if cart is empty
+    if (
+      calculate.count === 0 ||
+      (Object.keys(calculate.shops).length === 0 && Object.keys(calculate.boxes).length === 0)
+    ) {
+      throw new ApiError(405, 'cart_empy')
+    }
+
     let exists = false
 
     if (params.cart_id) {
