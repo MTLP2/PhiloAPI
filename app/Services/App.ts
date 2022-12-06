@@ -159,10 +159,6 @@ class App {
     }
 
     try {
-      if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'staging') {
-        await App.checkReminderLabels()
-      }
-
       await App.checkNotifications()
       await Invoice.setNumbers()
       await Project.deleteDownload()
