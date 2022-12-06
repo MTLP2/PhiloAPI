@@ -110,7 +110,7 @@ class Elogik {
     } else if (order.shipping_type === 'pickup') {
       return { id: 23, name: 'MONDIAL RELAIS' }
     } else if (order.country_id === 'FR') {
-      return { id: 21, name: 'GLS' }
+      return { id: 61, name: 'GLS' }
     } else {
       return { id: 41, name: 'IMX' }
     }
