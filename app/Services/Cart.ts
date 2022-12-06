@@ -1352,7 +1352,7 @@ class Cart {
       calculate.count === 0 ||
       (Object.keys(calculate.shops).length === 0 && Object.keys(calculate.boxes).length === 0)
     ) {
-      throw new ApiError(405, 'cart_empy')
+      throw new ApiError(405, 'cart_empty')
     }
 
     let exists = false
