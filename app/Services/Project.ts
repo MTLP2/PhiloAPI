@@ -1491,7 +1491,13 @@ class Project {
     })
   }
 
-  static getDashboard = async (params) => {
+  static getDashboard = async (params: {
+    user_id?: number
+    project_id?: number
+    period?: string
+    start?: string
+    end?: string
+  }) => {
     let projects = DB('project')
       .select(
         'project.name',
