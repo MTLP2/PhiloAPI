@@ -27,7 +27,6 @@ Route.get('/cron', 'AppController.cron')
 Route.get('/hourly', 'AppController.hourly')
 Route.get('/daily', 'AppController.daily')
 
-Route.get('/sitemap.xml', 'AppController.sitemap')
 Route.get('/socket.io/', () => '')
 Route.post('/socket.io/', () => '')
 Route.get('/favicon.ico', () => '')

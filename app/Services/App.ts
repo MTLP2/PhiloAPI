@@ -3,7 +3,7 @@ import Excel from 'exceljs'
 import { marked } from 'marked'
 import moment from 'moment'
 import { postcodeValidator, postcodeValidatorExistsForCountry } from 'postcode-validator'
-
+import sitemap from 'sitemap'
 import DB from 'App/DB'
 import config from 'Config/index'
 import Project from './Project'
@@ -20,6 +20,7 @@ import Storage from 'App/Services/Storage'
 import MondialRelay from 'App/Services/MondialRelay'
 import Review from 'App/Services/Review'
 import Invoice from 'App/Services/Invoice'
+import Blog from 'App/Services/Blog'
 import Vod from 'App/Services/Vod'
 import Cio from 'App/Services/CIO'
 import Cart from './Cart'
@@ -1940,6 +1941,121 @@ class App {
     }
 
     return 'ok'
+  }
+
+  static generateSitemap = async () => {
+    const sm = sitemap.createSitemap({
+      hostname: 'https://www.diggersfactory.com',
+      cacheTime: 600000, // 600 sec cache period
+      urls: [
+        {
+          url: '/',
+          changefreq: 'daily',
+          priority: 1,
+          links: [
+            { lang: 'en', url: '/' },
+            { lang: 'fr', url: '/fr' }
+          ]
+        },
+        {
+          url: '/vinyl-shop',
+          changefreq: 'daily',
+          priority: 0.9,
+          links: [
+            { lang: 'en', url: '/vinyl-shop' },
+            { lang: 'fr', url: '/fr/vinyl-shop' }
+          ]
+        },
+        {
+          url: '/vinyl-box',
+          changefreq: 'monthly',
+          priority: 0.9,
+          links: [
+            { lang: 'en', url: '/vinyl-box' },
+            { lang: 'fr', url: '/fr/box-de-vinyle' }
+          ]
+        },
+        {
+          url: '/vinyl-pressing',
+          changefreq: 'monthly',
+          priority: 0.9,
+          links: [
+            { lang: 'en', url: '/vinyl-pressing' },
+            { lang: 'fr', url: '/fr/pressage-de-vinyle' }
+          ]
+        },
+        {
+          url: '/blog',
+          changefreq: 'daily',
+          priority: 0.5,
+          links: [
+            { lang: 'en', url: '/blog' },
+            { lang: 'fr', url: '/fr/blog' }
+          ]
+        },
+        {
+          url: '/direct-pressing',
+          changefreq: 'monthly',
+          priority: 0.6,
+          links: [
+            { lang: 'en', url: '/direct-pressing' },
+            { lang: 'fr', url: '/fr/pressage-en-direct' }
+          ]
+        },
+        {
+          url: '/about',
+          changefreq: 'monthly',
+          priority: 0.3,
+          links: [
+            { lang: 'en', url: '/about' },
+            { lang: 'fr', url: '/fr/qui-sommes-nous' }
+          ]
+        },
+        {
+          url: '/contact',
+          changefreq: 'monthly',
+          priority: 0.3,
+          links: [
+            { lang: 'en', url: '/contact' },
+            { lang: 'fr', url: '/fr/contact' }
+          ]
+        }
+      ]
+    })
+
+    const projects = await Project.findAll({ type: 'all', limit: 99999999 })
+    projects.map((project) => {
+      sm.add({
+        url: `/vinyl/${project.id}/${project.slug}`,
+        lang: 'en',
+        changefreq: 'weekly',
+        priority: 0.7,
+        lastmod: project.updated_at,
+        links: [
+          { lang: 'en', url: `/vinyl/${project.id}/${project.slug}` },
+          { lang: 'fr', url: `/fr/vinyl/${project.id}/${project.slug}` }
+        ]
+      })
+      return true
+    })
+
+    const articles = await Blog.all()
+    articles.map((article) => {
+      sm.add({
+        url:
+          article.lang === 'en'
+            ? `/blog/${article.id}/${article.slug}`
+            : `/fr/blog/${article.id}/${article.slug}`,
+        changefreq: 'weekly',
+        priority: 0.5,
+        lastmod: article.updated_at
+      })
+      return true
+    })
+
+    Storage.upload(`sitemap.xml`, sm.toString())
+
+    return { success: true }
   }
 }
 
