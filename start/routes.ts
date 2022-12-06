@@ -493,6 +493,7 @@ Route.group(() => {
   Route.group(() => {
     Route.get('/:partner', 'AdminController.getShippingWeightByPartner')
     Route.post('/:id', 'AdminController.updateShippingWeight')
+    Route.get('/history/:id', 'AdminController.getShippingWeightHistory')
   }).prefix('shipping-weight')
 
   Route.group(() => {
