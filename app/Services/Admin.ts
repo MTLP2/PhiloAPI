@@ -3656,6 +3656,7 @@ class Admin {
         { name: 'Country', index: 'country_id' },
         { name: 'Type', index: 'type' },
         { name: 'Pro', index: 'is_pro' },
+        { name: 'Guest', index: 'is_guest' },
         { name: 'Unsubscribed', index: 'unsubscribed' },
         { name: 'Orders', index: 'orders' },
         { name: 'Projects', index: 'projects' },
