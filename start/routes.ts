@@ -489,6 +489,11 @@ Route.group(() => {
   Route.get('/elogik/stock', 'ElogikController.getStock')
   Route.get('/elogik/orders', 'ElogikController.getOrders')
   Route.post('/deepl-translate', 'AdminController.deeplTranslate')
+  Route.get('/payments-artist', 'AdminController.getPaymentsArtist')
+  Route.get('/payments-artist/:id', 'AdminController.getPaymentArtist')
+  Route.post('/payments-artist', 'AdminController.savePaymentArtist')
+  Route.get('/payments-artist/:id/download', 'AdminController.downloadPaymentArtist')
+  Route.delete('/payments-artist/:id', 'AdminController.deletePaymentArtist')
 
   Route.group(() => {
     Route.get('/:partner', 'AdminController.getShippingWeightByPartner')

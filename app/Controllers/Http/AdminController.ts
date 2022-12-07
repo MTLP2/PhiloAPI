@@ -16,6 +16,7 @@ import Invoice from 'App/Services/Invoice'
 import Whiplash from 'App/Services/Whiplash'
 import Song from 'App/Services/Song'
 import Utils from 'App/Utils'
+import PaymentArtist from 'App/Services/PaymentArtist'
 import Statement from 'App/Services/Statement'
 import Feedback from 'App/Services/Feedback'
 import Storage from 'App/Services/Storage'
@@ -818,8 +819,24 @@ class AdminController {
     return Payment.refund(params)
   }
 
-  exportFacebookProjects({ params }) {
-    return Admin.exportFacebookProjects(params)
+  getPaymentsArtist({ params }) {
+    return PaymentArtist.all(params)
+  }
+
+  getPaymentArtist({ params }) {
+    return PaymentArtist.find(params.id)
+  }
+
+  savePaymentArtist({ params }) {
+    return PaymentArtist.save(params)
+  }
+
+  downloadPaymentArtist({ params }) {
+    return PaymentArtist.download(params)
+  }
+
+  deletePaymentArtist({ params }) {
+    return PaymentArtist.delete(params)
   }
 
   checkProjectRest({ params }) {

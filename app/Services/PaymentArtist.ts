@@ -1,0 +1,202 @@
+import DB from 'App/DB'
+import Utils from 'App/Utils'
+import Storage from 'App/Services/Storage'
+
+class PaymentArtist {
+  static async all(params: {
+    type?: string
+    in_progress?: boolean
+    sort?: any
+    start?: string
+    end?: string
+    query?: any
+    size?: number
+  }) {
+    const query = DB('payment_artist')
+      .select('payment_artist.*', 'user.name as user')
+      .where('payment_artist.is_delete', false)
+      .join('user', 'user.id', 'user_id')
+
+    if (!params.sort) {
+      query.orderBy('payment_artist.id', 'desc')
+    }
+
+    const rows = await Utils.getRows<any>({ ...params, query: query })
+
+    const projects = await DB('payment_artist_project')
+      .select('payment_id', 'project.id', 'project.name', 'project.artist_name', 'project.picture')
+      .join('project', 'project.id', 'payment_artist_project.project_id')
+      .whereIn(
+        'payment_id',
+        rows.data.map((r) => r.id)
+      )
+      .all()
+
+    for (const [i, item] of <any>Object.entries(rows.data)) {
+      rows.data[i].projects = projects.filter((p: any) => p.payment_id === item.id)
+    }
+
+    return rows
+  }
+
+  static async find(params: { id: number }) {
+    const item = await DB('payment_artist').find(params.id)
+    return item
+  }
+
+  static async save(params: {
+    id: number
+    user_id: number
+    date: string
+    total: number
+    currency: string
+    is_paid: boolean
+    from_artist: boolean
+    comment: string
+    invoice: string
+  }) {
+    let item: any = DB('payment_artist')
+
+    if (params.id) {
+      item = await DB('payment_artist').find(params.id)
+    } else {
+      item.created_at = Utils.date()
+    }
+    item.user_id = params.user_id
+    item.date = params.date
+    item.total = params.total
+    item.currency = params.currency
+    item.is_paid = params.is_paid
+    item.from_artist = params.from_artist
+    item.comment = params.comment
+    item.updated_at = Utils.date()
+
+    if (params.invoice) {
+      if (item.invoice) {
+        Storage.delete(`invoices/${item.invoice}`, true)
+      }
+      const file = Utils.uuid()
+      const fileName = `invoices/${file}`
+      Storage.upload(fileName, Buffer.from(params.invoice, 'base64'), true)
+      item.invoice = file
+    }
+
+    await item.save()
+
+    return item
+  }
+
+  static async download(params: { id: number }) {
+    const item = await DB('payment_artist').find(params.id)
+
+    const file = Storage.get(`invoices/${item.invoice}`, true)
+
+    return file
+  }
+
+  static async delete(params: { id: number }) {
+    const item = await DB('payment_artist').find(params.id)
+    item.is_delete = true
+    await item.save()
+
+    return { success: true }
+  }
+
+  static generate = async () => {
+    await DB().execute('TRUNCATE TABLE payment_artist')
+    await DB().execute('TRUNCATE TABLE payment_artist_project')
+
+    const statements = await DB('statement')
+      .select(
+        'statement.project_id',
+        'user_id',
+        'statement.date',
+        'currency',
+        'payment_diggers',
+        'payment_artist'
+      )
+      .join('vod', 'vod.project_id', 'statement.project_id')
+      .where('payment_diggers', '!=', 0)
+      .orWhere('payment_artist', '!=', 0)
+      .orderBy('date', 'asc')
+      .all()
+
+    const payments = {}
+
+    for (const stat of statements) {
+      if (!payments[stat.user_id]) {
+        payments[stat.user_id] = {}
+      }
+      if (!payments[stat.user_id][stat.date]) {
+        payments[stat.user_id][stat.date] = {
+          total_artist: 0,
+          list_artist: [],
+          total_diggers: 0,
+          list_diggers: [],
+          currency: stat.currency
+        }
+      }
+
+      if (stat.payment_artist > 0) {
+        payments[stat.user_id][stat.date].total_artist += stat.payment_artist
+        payments[stat.user_id][stat.date].list_artist.push({
+          project_id: stat.project_id,
+          total: stat.payment_artist,
+          currency: stat.currency
+        })
+      }
+      if (stat.payment_diggers > 0) {
+        payments[stat.user_id][stat.date].total_diggers += stat.payment_diggers
+        payments[stat.user_id][stat.date].list_diggers.push({
+          project_id: stat.project_id,
+          total: stat.payment_diggers,
+          currency: stat.currency
+        })
+      }
+    }
+
+    for (const [userId, dates] of <any>Object.entries(payments)) {
+      for (const [date, payments] of <any>Object.entries(dates)) {
+        if (payments.total_artist > 0) {
+          const payment: any = DB('payment_artist')
+          payment.user_id = userId
+          payment.date = date + '-01'
+          payment.total = payments.total_artist
+          payment.currency = payments.currency
+          payment.is_paid = true
+          payment.from_artist = false
+          await payment.save()
+
+          for (const pay of payments.list_artist) {
+            const payy: any = DB('payment_artist_project')
+            payy.payment_id = payment.id
+            payy.project_id = pay.project_id
+            payy.total = pay.total
+            await payy.save()
+          }
+        }
+        if (payments.total_diggers > 0) {
+          const payment: any = DB('payment_artist')
+          payment.user_id = userId
+          payment.date = date + '-01'
+          payment.total = payments.total_diggers
+          payment.currency = payments.currency
+          payment.is_paid = true
+          payment.from_artist = true
+          await payment.save()
+
+          for (const pay of payments.list_diggers) {
+            const payy: any = DB('payment_artist_project')
+            payy.payment_id = payment.id
+            payy.project_id = pay.project_id
+            payy.total = pay.total
+            await payy.save()
+          }
+        }
+      }
+    }
+    return payments
+  }
+}
+
+export default PaymentArtist
