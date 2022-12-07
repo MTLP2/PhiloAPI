@@ -2068,11 +2068,17 @@ class Production {
     }
 
     if (
+      item.date !== params.date ||
       item.in_statement !== params.in_statement ||
       (params.in_statement && item.cost_invoiced !== params.cost_invoiced)
     ) {
       const project = await DB('vod').where('project_id', params.project_id).first()
       const currencyRate = await Utils.getCurrencyComp(params.currency, project.currency)
+
+      let oldStatement: any = await DB('statement')
+        .where('project_id', params.project_id)
+        .where('date', moment(item.date).format('YYYY-MM'))
+        .first()
 
       let statement: any = await DB('statement')
         .where('project_id', params.project_id)
@@ -2085,7 +2091,8 @@ class Production {
         statement.date = params.date
       }
       if (item.in_statement) {
-        statement[params.type] -= item.in_statement
+        oldStatement[params.type] -= item.in_statement
+        await oldStatement.save()
       }
       const value = Utils.round(params.cost_invoiced * currencyRate, 2)
       if (params.in_statement) {
