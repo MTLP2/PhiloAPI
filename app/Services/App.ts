@@ -691,14 +691,22 @@ class App {
     if (n.type === 'statement') {
       data.end = moment(n.date).subtract(1, 'months').endOf('month').format('YYYY-MM-DD')
       data.from_address = 'invoicing@diggersfactory.com'
+      const statement = <Buffer>await Statement.userDownload({
+        id: n.user_id,
+        end: data.end,
+        auto: true
+      })
+      if (process.env.NODE_ENV === 'production') {
+        Storage.upload(
+          `statements/${n.user_id}_${moment().format('YYYY-MM-DD')}.xlsx`,
+          statement,
+          true
+        )
+      }
       data.attachments = [
         {
           filename: 'Statement.xlsx',
-          content: await Statement.userDownload({
-            id: n.user_id,
-            end: data.end,
-            auto: true
-          })
+          content: statement
         }
       ]
     }
