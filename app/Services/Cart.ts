@@ -1482,7 +1482,7 @@ class Cart {
             shipping_display: ss.shipping,
             shipping_type: ss.shipping_type ? ss.shipping_type : 'standard',
             transporter: ss.transporter,
-            address_pickup: JSON.stringify(calculate.pickup),
+            address_pickup: ss.shipping_type === 'pickup' ? JSON.stringify(calculate.pickup) : null,
             customer_id: customer.id,
             customer_invoice_id: customerInvoiceId,
             step: 'creating',
