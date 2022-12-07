@@ -833,7 +833,7 @@ class StatementService {
     return data
   }
 
-  static async userDownload(params: { id: number; auto: boolean; start: string; end: string }) {
+  static async userDownload(params: { id: number; auto: boolean; start?: string; end: string }) {
     let projects: any = DB()
       .select('project.id', 'artist_name', 'name')
       .table('project')
