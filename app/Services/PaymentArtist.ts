@@ -6,6 +6,9 @@ class PaymentArtist {
   static async all(params: {
     type?: string
     in_progress?: boolean
+    filters?: any
+    user_id?: number
+    project_id?: number
     sort?: any
     start?: string
     end?: string
@@ -18,13 +21,49 @@ class PaymentArtist {
       .join('user', 'user.id', 'user_id')
 
     if (!params.sort) {
-      query.orderBy('payment_artist.id', 'desc')
+      query.orderBy('payment_artist.date', 'desc')
+    }
+
+    if (params.user_id) {
+      query.where('user_id', params.user_id)
+    }
+    if (params.project_id) {
+      query.whereExists((query) => {
+        query
+          .from('payment_artist_project')
+          .whereRaw('payment_artist_project.payment_id = payment_artist.id')
+          .where('payment_artist_project.project_id', params.project_id)
+      })
+    }
+    const filters = JSON.parse(params.filters)
+    for (const i in filters) {
+      if (filters[i].name === 'projects') {
+        const value = filters[i].value
+        query.whereExists((query) => {
+          query
+            .from('payment_artist_project')
+            .join('project', 'project.id', 'payment_artist_project.project_id')
+            .whereRaw('payment_artist_project.payment_id = payment_artist.id')
+            .whereRaw(`CONCAT(project.artist_name, ' - ', project.name) like '%${value}%'`)
+        })
+        filters.splice(i, 1)
+        params.filters = JSON.stringify(filters)
+      }
     }
 
     const rows = await Utils.getRows<any>({ ...params, query: query })
 
     const projects = await DB('payment_artist_project')
-      .select('payment_id', 'project.id', 'project.name', 'project.artist_name', 'project.picture')
+      .select(
+        'payment_artist_project.id',
+        'payment_artist_project.total',
+        'payment_artist_project.payment_id',
+        'payment_artist_project.project_id',
+        'project.name',
+        'project.artist_name',
+        'project.picture',
+        'payment_artist_project.total'
+      )
       .join('project', 'project.id', 'payment_artist_project.project_id')
       .whereIn(
         'payment_id',
@@ -52,6 +91,7 @@ class PaymentArtist {
     currency: string
     is_paid: boolean
     from_artist: boolean
+    projects: any
     comment: string
     invoice: string
   }) {
@@ -82,6 +122,24 @@ class PaymentArtist {
     }
 
     await item.save()
+
+    for (const project of params.projects) {
+      if (project.is_delete) {
+        await DB('payment_artist_project').where('id', project.id).delete()
+      } else {
+        let p: any = DB('payment_artist_project')
+        if (project.id) {
+          p = await DB('payment_artist_project').find(project.id)
+        } else {
+          p.payment_id = item.id
+          p.created_at = Utils.date()
+        }
+        p.project_id = project.project_id
+        p.total = project.total
+        p.updated_at = Utils.date()
+        await p.save()
+      }
+    }
 
     return item
   }
@@ -157,14 +215,14 @@ class PaymentArtist {
 
     for (const [userId, dates] of <any>Object.entries(payments)) {
       for (const [date, payments] of <any>Object.entries(dates)) {
-        if (payments.total_artist > 0) {
+        if (Utils.round(payments.total_artist) > 0) {
           const payment: any = DB('payment_artist')
           payment.user_id = userId
           payment.date = date + '-01'
           payment.total = payments.total_artist
           payment.currency = payments.currency
           payment.is_paid = true
-          payment.from_artist = false
+          payment.receiver = 'artist'
           await payment.save()
 
           for (const pay of payments.list_artist) {
@@ -175,14 +233,14 @@ class PaymentArtist {
             await payy.save()
           }
         }
-        if (payments.total_diggers > 0) {
+        if (Utils.round(payments.total_diggers) > 0) {
           const payment: any = DB('payment_artist')
           payment.user_id = userId
           payment.date = date + '-01'
           payment.total = payments.total_diggers
           payment.currency = payments.currency
           payment.is_paid = true
-          payment.from_artist = true
+          payment.receiver = 'diggers'
           await payment.save()
 
           for (const pay of payments.list_diggers) {
