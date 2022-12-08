@@ -123,11 +123,14 @@ class App {
       } else if (hour === 12) {
         await Invoice.reminder()
       } else if (hour === 13) {
+        await Elogik.setTrackingLinks()
         await Elogik.syncStocks()
+      } else if (hour === 18) {
+        await Elogik.setTrackingLinks()
       }
 
       await Storage.cleanTmp('storage')
-      await Whiplash.syncStocks()
+      // await Whiplash.syncStocks()
       await Vod.checkCampaignStart(hour)
 
       cron.status = 'complete'
