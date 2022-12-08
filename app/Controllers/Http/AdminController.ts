@@ -859,6 +859,10 @@ class AdminController {
     return Statement.userDownload(params)
   }
 
+  getUserBalance({ params }) {
+    return Statement.userBalance(params)
+  }
+
   saveCustomer({ params }) {
     return Customer.save(params)
   }

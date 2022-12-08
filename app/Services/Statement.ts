@@ -896,6 +896,35 @@ class StatementService {
     return workbook.xlsx.writeBuffer()
   }
 
+  static async userBalance(paylaod: { user_id: number; start?: string; end: string }) {
+    let projects: any = await DB()
+      .select('project.id', 'project.picture', 'artist_name', 'name', 'currency')
+      .table('project')
+      .join('vod', 'vod.project_id', 'project.id')
+      .where('vod.user_id', paylaod.user_id)
+      .where('is_delete', '!=', '1')
+      .all()
+
+    const res: any[] = []
+    for (const project of projects) {
+      const data: any = await this.getStatement({
+        id: project.id,
+        start: paylaod.start,
+        end: paylaod.end
+      })
+
+      if (data) {
+        res.push({
+          ...project,
+          total: Utils.round(data.final_revenue.total, 2)
+        })
+      }
+    }
+    res.sort((a, b) => b.total - a.total)
+
+    return res
+  }
+
   static async getBalances(params: { start: string; end: string; type: string }) {
     let projectsPromise = DB()
       .from('project')
