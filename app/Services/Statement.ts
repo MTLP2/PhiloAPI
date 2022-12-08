@@ -1336,6 +1336,22 @@ class StatementService {
       .orderBy('date')
       .all()
 
+    const payments = await DB('payment_artist_project')
+      .select(
+        'payment_artist.receiver',
+        'payment_artist.currency',
+        'payment_artist_project.total',
+        DB.raw("DATE_FORMAT(payment_artist.date, '%Y-%m') as date")
+      )
+      .join('payment_artist', 'payment_artist.id', 'payment_artist_project.payment_id')
+      .where('project_id', params.id)
+      .whereBetween(DB.raw("DATE_FORMAT(payment_artist.date, '%Y-%m-%d')"), [
+        params.start,
+        `${params.end} 23:59`
+      ])
+      .orderBy('date')
+      .all()
+
     const items = await DB()
       .select('item.*')
       .from('item')
@@ -1597,8 +1613,10 @@ class StatementService {
       if (project.storage_costs) {
         data.storage[stat.date] += stat.storage
       }
+      /**
       data.payment_diggers[stat.date] += stat.payment_diggers
       data.payment_artist[stat.date] -= stat.payment_artist
+      **/
 
       const custom = stat.custom ? JSON.parse(stat.custom) : []
       for (const c of custom) {
@@ -1649,6 +1667,15 @@ class StatementService {
           data.distrib_total.total += -dist.storage || 0
         }
       }
+    }
+
+    for (const payment of payments) {
+      if (payment.receiver === 'artist') {
+        data.payment_artist[payment.date] -= payment.total
+      } else if (payment.receiver === 'diggers') {
+        data.payment_diggers[payment.date] += payment.total
+      }
+      console.log(data.payment_artist)
     }
 
     for (const k of Object.keys(data)) {

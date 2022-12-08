@@ -135,6 +135,7 @@ class PaymentArtist {
           p.created_at = Utils.date()
         }
         p.project_id = project.project_id
+        p.currency_rate = 1
         p.total = project.total
         p.updated_at = Utils.date()
         await p.save()
@@ -229,6 +230,7 @@ class PaymentArtist {
             const payy: any = DB('payment_artist_project')
             payy.payment_id = payment.id
             payy.project_id = pay.project_id
+            payy.currency_rate = 1
             payy.total = pay.total
             await payy.save()
           }
@@ -247,6 +249,7 @@ class PaymentArtist {
             const payy: any = DB('payment_artist_project')
             payy.payment_id = payment.id
             payy.project_id = pay.project_id
+            payy.currency_rate = 1
             payy.total = pay.total
             await payy.save()
           }
