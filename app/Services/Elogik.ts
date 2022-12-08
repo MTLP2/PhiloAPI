@@ -581,6 +581,8 @@ class Elogik {
     console.log('manuals sent => ', j)
 
     const boxes = await DB('box_dispatch')
+      .select('box_dispatch.*', 'box.user_id')
+      .join('box', 'box.id', 'box_dispatch.box_id')
       .whereNotNull('logistician_id')
       .whereNull('tracking_number')
       .orderBy('date_export', 'asc')
@@ -595,8 +597,6 @@ class Elogik {
         }
       })
     )
-
-    console.log(packagesBoxes)
 
     let k = 0
     if (packagesBoxes.colis) {
