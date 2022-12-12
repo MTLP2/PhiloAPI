@@ -90,7 +90,7 @@ class PaymentArtist {
     total: number
     currency: string
     is_paid: boolean
-    from_artist: boolean
+    receiver: string
     projects: any
     comment: string
     invoice: string
@@ -107,7 +107,7 @@ class PaymentArtist {
     item.total = params.total
     item.currency = params.currency
     item.is_paid = params.is_paid
-    item.from_artist = params.from_artist
+    item.receiver = params.receiver
     item.comment = params.comment
     item.updated_at = Utils.date()
 
