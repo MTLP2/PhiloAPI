@@ -2219,7 +2219,7 @@ class Stats {
         d.quantity.total.dates[date] -= quantity
       }
 
-      if (qty.is_paid) {
+      if (!qty.is_paid) {
         continue
       }
 
