@@ -6,6 +6,7 @@ import ApiError from 'App/ApiError'
 import Customer from './Customer'
 import Order from './Order'
 import Artwork from './Artwork'
+import Project from './Project'
 import Box from './Box'
 import DB from 'App/DB'
 import Utils from 'App/Utils'
@@ -14,6 +15,8 @@ import cio from 'App/Services/CIO'
 import config from 'Config/index'
 import Review from './Review'
 import Storage from 'App/Services/Storage'
+import View from '@ioc:Adonis/Core/View'
+import Env from '@ioc:Adonis/Core/Env'
 import Pass from './Pass'
 
 class User {
@@ -610,18 +613,34 @@ class User {
   static downloadCard = async (params) => {
     const user = await DB('user').where('id', params.user_id).first()
 
-    const code = await DB('box_code')
-      .where('order_box_id', params.id)
-      .where('user_id', params.user_id)
-      .first()
+    if (params.box_id) {
+      console.log(params.box_id, params.user_id)
+      const code = await DB('box_code')
+        .where('order_box_id', params.box_id)
+        .where('user_id', params.user_id)
+        .first()
 
-    if (code) {
-      return Box.giftCard({
-        lang: user.lang,
-        ...code
+      console.log(code)
+      if (code) {
+        return Box.giftCard({
+          lang: user.lang,
+          ...code
+        })
+      } else {
+        return null
+      }
+    } else if (params.project_id) {
+      const project = await DB('project')
+        .select('id', 'artist_name', 'name', 'picture')
+        .where('id', params.project_id)
+        .first()
+
+      const html = await View.render('gift', {
+        artist: project.artist_name,
+        name: project.name,
+        picture: `${Env.get('STORAGE_URL')}/projects/${project.picture}/vinyl.png`
       })
-    } else {
-      return null
+      return Utils.toPdf(html)
     }
   }
 
