@@ -262,10 +262,12 @@ class Elogik {
         'box.shipping_type',
         'box.address_pickup',
         'box.price as sub_total',
+        'user.email',
         'barcodes'
       )
       .join('box', 'box.id', 'box_dispatch.box_id')
       .join('customer', 'box.customer_id', 'customer.id')
+      .join('user', 'box.user_id', 'user.id')
       .where('is_daudin', true)
       .whereNull('logistician_id')
       .whereNull('date_export')
