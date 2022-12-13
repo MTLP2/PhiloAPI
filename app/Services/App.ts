@@ -699,7 +699,7 @@ class App {
         end: data.end,
         auto: true
       })
-      if (process.env.NODE_ENV !== 'production') {
+      if (process.env.NODE_ENV === 'production') {
         Storage.upload(
           `statements/${n.user_id}_${moment().format('YYYY-MM-DD')}.xlsx`,
           statement,
