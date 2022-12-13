@@ -2273,6 +2273,12 @@ class Admin {
     }
     user.orders = await Admin.getOrders({ user_id: id })
     user.boxes = await Box.all({ filters: null, user_id: id })
+
+    user.statements = await DB('statement_history')
+      .where('user_id', user.id)
+      .orderBy('date', 'desc')
+      .all()
+
     return user
   }
 

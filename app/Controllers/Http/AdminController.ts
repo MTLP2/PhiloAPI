@@ -256,6 +256,10 @@ class AdminController {
     return Statement.download(params)
   }
 
+  downloadHistoryStatement({ params }) {
+    return Statement.downloadHistory(params)
+  }
+
   saveProjectImage({ params }) {
     return Admin.saveProjectImage(params)
   }

@@ -320,6 +320,7 @@ Route.group(() => {
   Route.delete('/projects/:pid/delay-nl/:dnlid', 'AdminController.deleteDelayNewsletter')
   Route.post('/statements', 'AdminController.uploadStatement')
   Route.get('/statements/stats', 'AdminController.getStatementStats')
+  Route.get('/statements/:id/download', 'AdminController.downloadHistoryStatement')
   Route.post('/stocks', 'AdminController.uploadStocks')
   Route.post('/items', 'AdminController.saveProjectItem')
   Route.delete('/items/:id', 'AdminController.removeProjectItem')

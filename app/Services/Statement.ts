@@ -551,6 +551,15 @@ class StatementService {
     return workbook.xlsx.writeBuffer()
   }
 
+  static async downloadHistory(params: { id: number }) {
+    const stat = await DB('statement_history').where('id', params.id).first()
+    const file = await Storage.get(`statements/${stat.user_id}_${stat.date}.xlsx`, true)
+
+    console.log(`statements/${stat.user_id}_${stat.date}.xlsx`)
+
+    return file
+  }
+
   static async setWorksheet(
     workbook: any,
     params: { id: number; number: number; start: string; end: string }
@@ -1614,10 +1623,8 @@ class StatementService {
       if (project.storage_costs) {
         data.storage[stat.date] += stat.storage
       }
-      /**
       data.payment_diggers[stat.date] += stat.payment_diggers
       data.payment_artist[stat.date] -= stat.payment_artist
-      **/
 
       const custom = stat.custom ? JSON.parse(stat.custom) : []
       for (const c of custom) {
@@ -1670,14 +1677,15 @@ class StatementService {
       }
     }
 
+    /**
     for (const payment of payments) {
       if (payment.receiver === 'artist') {
         data.payment_artist[payment.date] -= payment.total
       } else if (payment.receiver === 'diggers') {
         data.payment_diggers[payment.date] += payment.total
       }
-      console.log(data.payment_artist)
     }
+    **/
 
     for (const k of Object.keys(data)) {
       for (const d of Object.keys(data[k])) {
