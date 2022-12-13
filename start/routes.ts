@@ -236,7 +236,7 @@ Route.group(() => {
   Route.post('/boxes/invoice', 'UserController.boxInvoice')
   Route.post('/boxes/payment', 'UserController.changeBoxPayment')
   Route.post('/boxes/address', 'UserController.changeBoxAddress')
-  Route.get('/boxes/:id/card', 'UserController.getBoxCard')
+  Route.get('/card', 'UserController.getCard')
   Route.delete('/boxes/:id', 'UserController.cancelBox')
   Route.get('/boxes/:bid/reviews', 'UserController.getBoxReviews')
   Route.get('/boxes/:bid/reviews/:uid', 'UserController.checkUserHasReviewedBox')
