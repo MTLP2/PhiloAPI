@@ -2027,14 +2027,14 @@ class Admin {
         })
       }
 
-      const { total: totalOrderShop } = await DB('order_shop')
-        .select('total')
-        .where('id', params.order_shop_id)
-        .first()
+      const orderShop = await DB('order_shop').find(params.order_shop_id)
+      await orderShop.save({
+        refund: (orderShop.refund ?? 0) + params.amount
+      })
 
       // If amount is greater than total order shop, update the DB and make a notification call.
-      if (params.order_shop_id && params.amount >= totalOrderShop) {
-        await DB('order_shop').where('id', params.order_shop_id).update({
+      if (params.order_shop_id && orderShop.refund >= orderShop.total) {
+        await orderShop.save({
           is_paid: 0,
           ask_cancel: 0,
           step: 'canceled'
@@ -2070,7 +2070,7 @@ class Admin {
 
     // Don't update the DB if we only want to add a refund history without payment. A credit note forces refund amount to increment.
     if (!params.only_history || params.credit_note || params.credit_note === undefined) {
-      order.save()
+      await order.save()
     }
 
     order.total = params.amount
