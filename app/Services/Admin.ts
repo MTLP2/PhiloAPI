@@ -1104,7 +1104,7 @@ class Admin {
 
     if (
       (vod.status !== params.status && status[params.status]) ||
-      (vod.date_shipping !== params.date_shipping && params.notif)
+      (vod.date_shipping !== params.date_shipping && params.notif && status[params.status])
     ) {
       const ordersQuery = DB()
         .select('os.*', 'os.id as order_shop_id')
