@@ -2067,45 +2067,6 @@ class Production {
       item.created_at = Utils.date()
     }
 
-    if (
-      item.date !== params.date ||
-      item.in_statement !== params.in_statement ||
-      (params.in_statement && item.cost_invoiced !== params.cost_invoiced)
-    ) {
-      const project = await DB('vod').where('project_id', params.project_id).first()
-      const currencyRate = await Utils.getCurrencyComp(params.currency, project.currency)
-
-      let oldStatement: any = await DB('statement')
-        .where('project_id', params.project_id)
-        .where('date', moment(item.date).format('YYYY-MM'))
-        .first()
-
-      let statement: any = await DB('statement')
-        .where('project_id', params.project_id)
-        .where('date', moment(params.date).format('YYYY-MM'))
-        .first()
-
-      if (!statement) {
-        statement = DB('statement')
-        statement.project_id = item.project_id
-        statement.date = params.date
-      }
-      if (item.in_statement) {
-        oldStatement[params.type] -= item.in_statement
-        await oldStatement.save()
-      }
-      const value = Utils.round(params.cost_invoiced * currencyRate, 2)
-      if (params.in_statement) {
-        statement[params.type] += value
-        item.in_statement = value
-      } else {
-        item.in_statement = null
-      }
-
-      console.log(statement)
-      await statement.save()
-    }
-
     item.project_id = params.project_id
     item.type = params.type
     item.currency = params.currency
@@ -2120,9 +2081,20 @@ class Production {
     item.cost_real = params.cost_real
     item.cost_real_ttc = params.cost_real_ttc
     item.cost_invoiced = params.cost_invoiced
+    item.is_statement = params.is_statement
     item.margin = params.margin
     item.comment = params.comment
     item.updated_at = Utils.date()
+
+    if (params.is_statement) {
+      const project = await DB('vod').where('project_id', params.project_id).first()
+      const currencyRate = await Utils.getCurrencyComp(params.currency, project.currency)
+
+      const value = Utils.round(params.cost_invoiced * currencyRate, 2)
+      item.in_statement = value
+    } else {
+      item.in_statement = null
+    }
 
     if (params.invoice) {
       if (item.invoice) {
