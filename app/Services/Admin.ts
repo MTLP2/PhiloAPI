@@ -2001,7 +2001,10 @@ class Admin {
   }
 
   static refundOrder = async (params) => {
-    params.amount = parseFloat(params.amount.replace(',', '.'))
+    params.amount =
+      typeof params.amount === 'string'
+        ? parseFloat(params.amount.replace(',', '.'))
+        : params.amount
     if (isNaN(params.amount)) return { error: 'Amount is not a number' }
 
     const order = await DB('order').find(params.id)
