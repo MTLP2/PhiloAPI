@@ -119,12 +119,15 @@ class App {
         await Production.checkNotif()
         await Production.checkProductionToBeCompleted()
       } else if (hour === 9) {
+        await Elogik.checkBlockedOrders()
         await Review.checkNotif()
       } else if (hour === 12) {
         await Invoice.reminder()
       } else if (hour === 13) {
         await Elogik.setTrackingLinks()
         await Elogik.syncStocks()
+      } else if (hour === 14) {
+        await Elogik.checkBlockedOrders()
       } else if (hour === 18) {
         await Elogik.setTrackingLinks()
       }

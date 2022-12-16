@@ -698,6 +698,73 @@ class Elogik {
 
     return news
   }
+
+  static checkBlockedOrders = async () => {
+    const list: any[] = []
+    const length = 5000
+
+    const bloquee = await Elogik.api('commandes/liste', {
+      method: 'POST',
+      body: {
+        bloquee: true,
+        length: length
+      }
+    })
+    list.push(...bloquee.commandes)
+
+    const attente = await Elogik.api('commandes/liste', {
+      method: 'POST',
+      body: {
+        etatsCommande: ['ATTENTE_STOCK'],
+        length: length
+      }
+    })
+    list.push(...attente.commandes)
+
+    const orders = await DB('order_shop')
+      .select(
+        'order_shop.id',
+        'order_shop.order_id',
+        'order_item.project_id',
+        'logistician_id',
+        'project.name',
+        'project.artist_name',
+        'date_export'
+      )
+      .join('order_item', 'order_item.order_shop_id', 'order_shop.id')
+      .join('project', 'project.id', 'order_item.project_id')
+      .whereIn(
+        'logistician_id',
+        list.map((i) => i.referenceEKAN)
+      )
+      .orderBy('date_export', 'DESC')
+      .all()
+
+    let html = `<ul>`
+    for (const item of orders) {
+      const elogik = list.find((i) => i.referenceEKAN === item.logistician_id)
+      html += `<li>
+      <strong><a href="https://www.diggersfactory.com/sheraf/order/${item.order_id}">${
+        item.id
+      }</a>:</strong> | <a href="https://oms.ekan-blois.fr/commande/${item.logistician_id.substr(
+        item.logistician_id.length - 6
+      )}/details">${item.logistician_id}</a> | ${elogik.etat} | ${item.date_export} <br />
+      ${item.artist_name} - ${item.name}<br />
+      ${elogik.listeMotifBlocageLogistique.map((motif) => motif.commentaire)}
+      <br />
+    </li>`
+    }
+
+    html += `<ul>`
+
+    await Notification.sendEmail({
+      to: 'victor@diggersfactory.com,romain@diggersfactory.com,barbara@diggersfactory.com,sampion@diggersfactory.com',
+      subject: `Elogik : Commandes bloquées`,
+      html: html
+    })
+
+    return html
+  }
 }
 
 export default Elogik
