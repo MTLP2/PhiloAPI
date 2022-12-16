@@ -244,6 +244,7 @@ class PaymentArtist {
           const payment: any = DB('payment_artist')
           payment.user_id = userId
           payment.type = 'payment'
+          payment.is_auto = true
           payment.date = date + '-01'
           payment.total = payments.total_artist
           payment.currency = payments.currency
@@ -264,6 +265,7 @@ class PaymentArtist {
           const payment: any = DB('payment_artist')
           payment.user_id = userId
           payment.type = 'payment'
+          payment.is_auto = true
           payment.date = date + '-01'
           payment.total = payments.total_diggers
           payment.currency = payments.currency
@@ -285,6 +287,7 @@ class PaymentArtist {
           const payment: any = DB('payment_artist')
           payment.user_id = userId
           payment.type = 'balance'
+          payment.is_auto = true
           payment.date = date + '-01'
           payment.total = payments.total_equi_diggers
           payment.currency = payments.currency
@@ -305,6 +308,7 @@ class PaymentArtist {
           const payment: any = DB('payment_artist')
           payment.user_id = userId
           payment.type = 'balance'
+          payment.is_auto = true
           payment.date = date + '-01'
           payment.total = payments.total_equi_artist
           payment.currency = payments.currency
