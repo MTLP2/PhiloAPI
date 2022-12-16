@@ -87,6 +87,7 @@ class PaymentArtist {
     id: number
     user_id: number
     date: string
+    type: string
     total: number
     currency: string
     is_paid: boolean
@@ -104,6 +105,7 @@ class PaymentArtist {
     }
     item.user_id = params.user_id
     item.date = params.date
+    item.type = params.type
     item.total = params.total
     item.currency = params.currency
     item.is_paid = params.is_paid
@@ -123,25 +125,26 @@ class PaymentArtist {
 
     await item.save()
 
-    for (const project of params.projects) {
-      if (project.is_delete) {
-        await DB('payment_artist_project').where('id', project.id).delete()
-      } else {
-        let p: any = DB('payment_artist_project')
-        if (project.id) {
-          p = await DB('payment_artist_project').find(project.id)
+    if (params.projects) {
+      for (const project of params.projects) {
+        if (project.is_delete) {
+          await DB('payment_artist_project').where('id', project.id).delete()
         } else {
-          p.payment_id = item.id
-          p.created_at = Utils.date()
+          let p: any = DB('payment_artist_project')
+          if (project.id) {
+            p = await DB('payment_artist_project').find(project.id)
+          } else {
+            p.payment_id = item.id
+            p.created_at = Utils.date()
+          }
+          p.project_id = project.project_id
+          p.currency_rate = 1
+          p.total = project.total
+          p.updated_at = Utils.date()
+          await p.save()
         }
-        p.project_id = project.project_id
-        p.currency_rate = 1
-        p.total = project.total
-        p.updated_at = Utils.date()
-        await p.save()
       }
     }
-
     return item
   }
 
@@ -175,8 +178,9 @@ class PaymentArtist {
         'payment_artist'
       )
       .join('vod', 'vod.project_id', 'statement.project_id')
-      .where('payment_diggers', '!=', 0)
-      .orWhere('payment_artist', '!=', 0)
+      .where((query) => {
+        query.where('payment_diggers', '!=', 0).orWhere('payment_artist', '!=', 0)
+      })
       .orderBy('date', 'asc')
       .all()
 
@@ -192,10 +196,30 @@ class PaymentArtist {
           list_artist: [],
           total_diggers: 0,
           list_diggers: [],
+          total_equi_diggers: 0,
+          list_equi_diggers: [],
+          total_equi_artist: 0,
+          list_equi_artist: [],
           currency: stat.currency
         }
       }
 
+      if (stat.payment_artist < 0) {
+        payments[stat.user_id][stat.date].total_equi_diggers += Math.abs(stat.payment_artist)
+        payments[stat.user_id][stat.date].list_equi_diggers.push({
+          project_id: stat.project_id,
+          total: Math.abs(stat.payment_artist),
+          currency: stat.currency
+        })
+      }
+      if (stat.payment_diggers < 0) {
+        payments[stat.user_id][stat.date].total_equi_artist += Math.abs(stat.payment_diggers)
+        payments[stat.user_id][stat.date].list_equi_artist.push({
+          project_id: stat.project_id,
+          total: Math.abs(stat.payment_diggers),
+          currency: stat.currency
+        })
+      }
       if (stat.payment_artist > 0) {
         payments[stat.user_id][stat.date].total_artist += stat.payment_artist
         payments[stat.user_id][stat.date].list_artist.push({
@@ -219,6 +243,7 @@ class PaymentArtist {
         if (Utils.round(payments.total_artist) > 0) {
           const payment: any = DB('payment_artist')
           payment.user_id = userId
+          payment.type = 'payment'
           payment.date = date + '-01'
           payment.total = payments.total_artist
           payment.currency = payments.currency
@@ -238,6 +263,7 @@ class PaymentArtist {
         if (Utils.round(payments.total_diggers) > 0) {
           const payment: any = DB('payment_artist')
           payment.user_id = userId
+          payment.type = 'payment'
           payment.date = date + '-01'
           payment.total = payments.total_diggers
           payment.currency = payments.currency
@@ -246,6 +272,47 @@ class PaymentArtist {
           await payment.save()
 
           for (const pay of payments.list_diggers) {
+            const payy: any = DB('payment_artist_project')
+            payy.payment_id = payment.id
+            payy.project_id = pay.project_id
+            payy.currency_rate = 1
+            payy.total = pay.total
+            await payy.save()
+          }
+        }
+
+        if (Utils.round(payments.total_equi_diggers) > 0) {
+          const payment: any = DB('payment_artist')
+          payment.user_id = userId
+          payment.type = 'balance'
+          payment.date = date + '-01'
+          payment.total = payments.total_equi_diggers
+          payment.currency = payments.currency
+          payment.is_paid = true
+          payment.receiver = 'diggers'
+          await payment.save()
+
+          for (const pay of payments.list_equi_diggers) {
+            const payy: any = DB('payment_artist_project')
+            payy.payment_id = payment.id
+            payy.project_id = pay.project_id
+            payy.currency_rate = 1
+            payy.total = pay.total
+            await payy.save()
+          }
+        }
+        if (Utils.round(payments.total_equi_artist) > 0) {
+          const payment: any = DB('payment_artist')
+          payment.user_id = userId
+          payment.type = 'balance'
+          payment.date = date + '-01'
+          payment.total = payments.total_equi_artist
+          payment.currency = payments.currency
+          payment.is_paid = true
+          payment.receiver = 'artist'
+          await payment.save()
+
+          for (const pay of payments.list_equi_artist) {
             const payy: any = DB('payment_artist_project')
             payy.payment_id = payment.id
             payy.project_id = pay.project_id
