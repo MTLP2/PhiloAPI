@@ -1335,7 +1335,7 @@ class StatementService {
       .where('project_id', params.id)
       .first()
 
-    const statements = await DB('statement')
+    const statementsPromise = DB('statement')
       .where('project_id', params.id)
       .whereBetween(DB.raw("DATE_FORMAT(concat(date, '-01'), '%Y-%m-%d')"), [
         params.start,
@@ -1345,7 +1345,15 @@ class StatementService {
       .orderBy('date')
       .all()
 
-    const payments = await DB('payment_artist_project')
+    const pCostsPromise = DB('production_cost')
+      .select('type', 'in_statement', DB.raw("DATE_FORMAT(date, '%Y-%m') as date"))
+      .where('project_id', params.id)
+      .where('is_statement', true)
+      .whereBetween(DB.raw("DATE_FORMAT(date, '%Y-%m-%d')"), [params.start, `${params.end} 23:59`])
+      .orderBy('date')
+      .all()
+
+    const paymentsPromise = DB('payment_artist_project')
       .select(
         'payment_artist.receiver',
         'payment_artist.currency',
@@ -1362,14 +1370,14 @@ class StatementService {
       .orderBy('date')
       .all()
 
-    const items = await DB()
+    const itemsPromises = DB()
       .select('item.*')
       .from('item')
       .where('project_id', params.id)
       .where('is_statement', 1)
       .all()
 
-    const orders = await DB()
+    const ordersPromises = DB()
       .select(
         'oi.total',
         'oi.price',
@@ -1396,6 +1404,14 @@ class StatementService {
       .orderBy('oi.created_at')
       .all()
 
+    const [statements, orders, payments, pcosts, items] = await Promise.all([
+      statementsPromise,
+      ordersPromises,
+      paymentsPromise,
+      pCostsPromise,
+      itemsPromises
+    ])
+
     let bb: any[] = []
     if (project.barcode) {
       bb = await DB()
@@ -1414,28 +1430,20 @@ class StatementService {
       }
     }
 
-    let startOrders: any = null
-    // let endOrders: any = null
-    let startStatements: any = null
-    // let endStatements: any = null
-
-    if (orders.length > 0) {
-      startOrders = moment(orders[0].date)
-      // endOrders = moment(orders[orders.length - 1].date)
-    }
-    if (statements.length > 0) {
-      startStatements = moment(statements[0].date)
-      // endStatements = moment(statements[statements.length - 1].date)
-    }
-
     let start
+    start = moment('2023-01-01')
     const end = moment(params.end)
-    if (!startOrders) {
-      start = startStatements
-    } else if (!startStatements) {
-      start = startOrders
-    } else {
-      start = startOrders < startStatements ? startOrders : startStatements
+    if (orders.length > 0) {
+      start = moment(orders[0].date)
+    }
+    if (statements.length > 0 && (!start || start > moment(statements[0].date))) {
+      start = moment(statements[0].date)
+    }
+    if (pcosts.length > 0 && (!start || start > moment(pcosts[0].date))) {
+      start = moment(pcosts[0].date)
+    }
+    if (payments.length > 0 && (!start || start > moment(payments[0].date))) {
+      start = moment(payments[0].date)
     }
 
     if (!start) {
@@ -1623,8 +1631,8 @@ class StatementService {
       if (project.storage_costs) {
         data.storage[stat.date] += stat.storage
       }
-      data.payment_diggers[stat.date] += stat.payment_diggers
-      data.payment_artist[stat.date] -= stat.payment_artist
+      // data.payment_diggers[stat.date] += stat.payment_diggers
+      // data.payment_artist[stat.date] -= stat.payment_artist
 
       const custom = stat.custom ? JSON.parse(stat.custom) : []
       for (const c of custom) {
@@ -1677,7 +1685,10 @@ class StatementService {
       }
     }
 
-    /**
+    for (const cost of pcosts) {
+      data[cost.type][cost.date] += cost.in_statement
+    }
+
     for (const payment of payments) {
       if (payment.receiver === 'artist') {
         data.payment_artist[payment.date] -= payment.total
@@ -1685,7 +1696,6 @@ class StatementService {
         data.payment_diggers[payment.date] += payment.total
       }
     }
-    **/
 
     for (const k of Object.keys(data)) {
       for (const d of Object.keys(data[k])) {
