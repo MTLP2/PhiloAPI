@@ -2661,7 +2661,7 @@ class Box {
       .all()
 
     let csv =
-      'id,type,periodicity,step,sponsor,creation,start,end,duration,dispatchs,to_sent,turnover,email,gift,physical,styles,country,destination,address\n'
+      'id,origin,type,periodicity,step,sponsor,creation,start,end,duration,dispatchs,to_sent,turnover,email,gift,physical,styles,country,destination,address\n'
 
     for (const box of boxes) {
       const orders = await DB('order_box').where('box_id', box.id).where('is_paid', 1).all()
@@ -2686,6 +2686,7 @@ class Box {
       box.sponsor = Utils.hashId(box)
 
       csv += `${box.id},`
+      csv += `${box.origin ?? ''},`
       csv += `${box.type},`
       csv += `${box.periodicity},`
       csv += `${box.step},`
@@ -2696,14 +2697,14 @@ class Box {
       csv += `${duration},`
       csv += `${box.dispatchs},`
       csv += `${box.dispatch_left},`
-      csv += `${turnover} ${box.currency},`
+      csv += turnover ? `${turnover.toFixed(2)} ${box.currency},` : ''
       csv += `${box.email || box.email2},`
       csv += `"${box.is_gift ? 'Yes' : 'No'}",`
       csv += `"${box.is_physical ? 'Yes' : 'No'}",`
       csv += `"${box.styles ? box.styles.split(',').map((s) => styles[s]) : ''}",`
-      csv += `"${box.customer && box.customer.country_id}",`
-      csv += `"${box.customer && box.customer.firstname} ${box.customer && box.customer.lastname}",`
-      csv += `"${box.customer && box.customer.address}"`
+      csv += `"${box.customer?.country_id ?? ''}",`
+      csv += `"${box.customer?.firstname ?? ''} ${box.customer?.lastname ?? ''}",`
+      csv += `"${box.customer?.address ?? ''}"`
       csv += '\n'
     }
 
