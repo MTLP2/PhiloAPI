@@ -119,7 +119,9 @@ class App {
         await Production.checkNotif()
         await Production.checkProductionToBeCompleted()
       } else if (hour === 9) {
-        await Review.checkNotif()
+        // ! DISABLED FOR XMAS, TOO MANY BAD TICKETS
+        // ! TO BE REACTIVATED IN JANUARY
+        // await Review.checkNotif()
       } else if (hour === 12) {
         await Invoice.reminder()
       } else if (hour === 13) {
