@@ -982,8 +982,6 @@ class Admin {
       vod.payback_distrib = params.payback_distrib || null
       vod.payback_box = params.payback_box || null
       vod.discount = params.discount || null
-      // vod.tax_rate = params.tax_rate
-      vod.price_unit = params.price_unit || null
       vod.unit_cost = params.unit_cost || null
     }
     if (params.edit_statement) {
