@@ -482,6 +482,30 @@ class Production {
 
     await item.save()
 
+    let quantity
+    if (item.quantity_pressed) {
+      quantity = item.quantity_pressed
+    } else if (item.quantity) {
+      quantity = item.quantity
+    }
+    let price
+    if (item.form_price) {
+      price = item.form_price
+    } else if (item.quote_price) {
+      price = item.quote_price
+    }
+    if (price && quantity) {
+      const currenciesDB = await Utils.getCurrenciesDb()
+      const currencies = await Utils.getCurrencies('EUR', currenciesDB)
+
+      price = price / currencies[item.currency]
+      const vod = await DB('vod').where('project_id', params.project_id).first()
+      if (!vod.unit_cost) {
+        vod.unit_cost = price / quantity
+        await vod.save()
+      }
+    }
+
     return { success: true }
   }
 
