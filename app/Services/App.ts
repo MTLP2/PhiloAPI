@@ -1,3 +1,4 @@
+import { price } from '@/helpers'
 import juice from 'juice'
 import { marked } from 'marked'
 import moment from 'moment'
@@ -25,6 +26,7 @@ import I18n from '@ioc:Adonis/Addons/I18n'
 import Env from '@ioc:Adonis/Core/Env'
 import Whiplash from './Whiplash'
 import View from '@ioc:Adonis/Core/View'
+import Excel from 'exceljs'
 import fs from 'fs'
 
 class App {
@@ -1384,6 +1386,87 @@ class App {
 
     const buffer = await streamToPromise(sitemap)
     Storage.upload(`sitemap.xml`, buffer)
+
+    return { success: true }
+  }
+
+  static async getStockPrice() {
+    const workbook = new Excel.Workbook()
+    await workbook.xlsx.readFile('./Stock.xlsx')
+
+    const refs: any[] = []
+    const daudin = workbook.getWorksheet('Daudin')
+    daudin.eachRow((row) => {
+      const data = {
+        barcode: row.getCell('B').toString(),
+        price: row.getCell('D').toString()
+      }
+
+      if (!isNaN(data.price)) {
+        refs.push(data)
+      }
+    })
+    const whiplash = workbook.getWorksheet('Whiplash US')
+    whiplash.eachRow((row) => {
+      const data = {
+        barcode: row.getCell('B').toString(),
+        price: row.getCell('D').toString()
+      }
+
+      if (data.price && !isNaN(data.price)) {
+        refs.push(data)
+      }
+    })
+
+    for (const ref of refs) {
+      const vod = await DB('vod').where('barcode', ref.barcode).first()
+      if (!vod) {
+        console.log('not_found', ref.barcode)
+        continue
+      }
+      if (!vod.unit_cost) {
+        vod.unit_cost = ref.price
+        await vod.save()
+      }
+    }
+
+    return refs
+  }
+
+  static async getUnitPrice() {
+    const prods = await DB('production')
+      .select('project_id', 'currency', 'quantity_pressed', 'quantity', 'quote_price', 'form_price')
+      .all()
+
+    const currenciesDB = await Utils.getCurrenciesDb()
+    const currencies = await Utils.getCurrencies('EUR', currenciesDB)
+
+    for (const p of prods) {
+      let quantity
+      if (p.quantity_pressed) {
+        quantity = p.quantity_pressed
+      } else if (p.quantity) {
+        quantity = p.quantity
+      }
+      let price
+      if (p.form_price) {
+        price = p.form_price
+      } else if (p.quote_price) {
+        price = p.quote_price
+      }
+
+      if (quantity && price) {
+        price = price / currencies[p.currency]
+
+        const res = await await DB('vod')
+          .where('project_id', p.project_id)
+          .whereNull('unit_cost')
+          .update({
+            unit_cost: Utils.round(price / quantity)
+          })
+        console.log(res)
+      }
+    }
 
     return { success: true }
   }
