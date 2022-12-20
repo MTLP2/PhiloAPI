@@ -499,20 +499,26 @@ class Stock {
     }
 
     const columns = [
-      { name: 'ID', index: 'id' },
-      { name: 'Barcode', index: 'barcode' },
-      { name: 'Artist', index: 'artist_name' },
-      { name: 'Title', index: 'name' }
+      { header: 'ID', key: 'id' },
+      { header: 'Barcode', key: 'barcode', width: 18 },
+      { header: 'Artist', key: 'artist_name', width: 25 },
+      { header: 'Title', key: 'name', width: 25 }
     ]
 
     for (const l of Object.keys(logisitians)) {
-      columns.push({ name: l, index: l })
+      columns.push({ header: l, key: l })
     }
 
-    columns.push({ name: 'Quantity', index: 'quantity' })
-    columns.push({ name: 'Unit cost', index: 'unit_cost' })
-    columns.push({ name: 'Price stock', index: 'price_stock' })
-    return Utils.arrayToCsv(columns, refs)
+    columns.push({ header: 'Quantity', key: 'quantity' })
+    columns.push({ header: 'Unit cost', key: 'unit_cost' })
+    columns.push({ header: 'Price stock', key: 'price_stock' })
+
+    return Utils.arrayToXlsx([
+      {
+        columns: columns,
+        data: refs
+      }
+    ])
   }
 
   static async parseStockExcel() {
