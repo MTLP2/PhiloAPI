@@ -758,7 +758,7 @@ class Elogik {
     html += `<ul>`
 
     await Notification.sendEmail({
-      to: 'victor@diggersfactory.com,romain@diggersfactory.com,barbara@diggersfactory.com,sampion@diggersfactory.com',
+      to: 'victor@diggersfactory.com,support@diggersfactory.com',
       subject: `Elogik : Commandes bloquées`,
       html: html
     })
