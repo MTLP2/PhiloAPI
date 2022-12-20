@@ -1622,18 +1622,6 @@ class StatementService {
     }
 
     for (const stat of statements) {
-      data.production[stat.date] += stat.production
-      data.sdrm[stat.date] += stat.sdrm
-      data.mastering[stat.date] += stat.mastering
-      data.marketing[stat.date] += stat.marketing
-      data.logistic[stat.date] += stat.logistic
-      data.distribution_cost[stat.date] += stat.distribution_cost
-      if (project.storage_costs) {
-        data.storage[stat.date] += stat.storage
-      }
-      // data.payment_diggers[stat.date] += stat.payment_diggers
-      // data.payment_artist[stat.date] -= stat.payment_artist
-
       const custom = stat.custom ? JSON.parse(stat.custom) : []
       for (const c of custom) {
         data[c.name][stat.date] += parseFloat(c.total)
@@ -1686,7 +1674,13 @@ class StatementService {
     }
 
     for (const cost of pcosts) {
-      data[cost.type][cost.date] += cost.in_statement
+      if (cost.type === 'storage') {
+        if (project.storage_costs) {
+          data[cost.type][cost.date] += cost.in_statement
+        }
+      } else {
+        data[cost.type][cost.date] += cost.in_statement
+      }
     }
 
     for (const payment of payments) {
@@ -1830,6 +1824,43 @@ class StatementService {
     }
 
     return workbook.xlsx.writeBuffer()
+  }
+
+  static createCostsFromStatements = async () => {
+    await DB('production_cost').where('is_auto', true).delete()
+
+    const statements = await DB('statement')
+      .select('statement.*', 'vod.currency')
+      .join('vod', 'vod.project_id', 'statement.project_id')
+      .orderBy('date', 'asc')
+      .all()
+
+    for1: for (const stat of statements) {
+      const types = [
+        'production',
+        'marketing',
+        'sdrm',
+        'mastering',
+        'logistic',
+        'storage',
+        'distribution_cost'
+      ]
+      for (let type of types) {
+        if (stat[type]) {
+          await DB('production_cost').insert({
+            project_id: stat.project_id,
+            date: stat.date + '-01',
+            is_auto: true,
+            currency: stat.currency,
+            type: type === 'distribution_cost' ? 'distribution' : type,
+            is_statement: true,
+            in_statement: stat[type]
+          })
+        }
+      }
+    }
+
+    return { success: true }
   }
 }
 

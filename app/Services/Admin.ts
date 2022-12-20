@@ -185,7 +185,11 @@ class Admin {
 
     const codesQuery = DB('download').where('project_id', id).all()
 
-    const costsQuery = DB('production_cost').where('project_id', id).belongsTo('production').all()
+    const costsQuery = DB('production_cost')
+      .where('project_id', id)
+      .orderBy('date', 'desc')
+      .belongsTo('production')
+      .all()
 
     const projectImagesQuery = Project.getProjectImages({ projectId: id })
     const stocksQuery = DB('stock').where('project_id', id).all()

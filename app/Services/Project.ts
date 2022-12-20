@@ -1894,24 +1894,6 @@ class Project {
 
     for (const stat of statements) {
       const date = moment(stat.date).format(format)
-
-      s.setDate('production', 'costs', date, stat.production)
-      s.addList('production', 'costs', date, stat.production, stat.project_id)
-      s.setDate('sdrm', 'costs', date, stat.sdrm)
-      s.addList('sdrm', 'costs', date, stat.sdrm, stat.project_id)
-      s.setDate('marketing', 'costs', date, stat.marketing)
-      s.addList('marketing', 'costs', date, stat.marketing, stat.project_id)
-      s.setDate('mastering', 'costs', date, stat.mastering)
-      s.addList('mastering', 'costs', date, stat.mastering, stat.project_id)
-      s.setDate('logistic', 'costs', date, stat.logistic)
-      s.addList('logistic', 'costs', date, stat.logistic, stat.project_id)
-      s.setDate('distribution', 'costs', date, stat.distribution_cost)
-      s.addList('distribution', 'costs', date, stat.distribution_cost, stat.project_id)
-
-      if (projects[stat.project_id].storage_costs) {
-        s.setDate('storage', 'costs', date, stat.storage)
-      }
-
       const custom = stat.custom
         ? JSON.parse(stat.custom).reduce(function (prev, cur) {
             return prev + +cur.total
@@ -1947,8 +1929,16 @@ class Project {
 
     for (const cost of costs) {
       const date = moment(cost.date).format(format)
-      s.setDate(cost.type, 'costs', date, cost.in_statement)
-      s.addList(cost.type, 'costs', date, cost.in_statement, cost.project_id)
+
+      if (cost.type === 'storage') {
+        if (projects[cost.project_id].storage_costs) {
+          s.setDate(cost.type, 'costs', date, cost.in_statement)
+          s.addList(cost.type, 'costs', date, cost.in_statement, cost.project_id)
+        }
+      } else {
+        s.setDate(cost.type, 'costs', date, cost.in_statement)
+        s.addList(cost.type, 'costs', date, cost.in_statement, cost.project_id)
+      }
     }
 
     for (const payment of payments) {
