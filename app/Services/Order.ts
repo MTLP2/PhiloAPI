@@ -1187,9 +1187,10 @@ static toJuno = async (params) => {
       }
     })
 
-    const file = await Utils.arrayToXlsx(
-      [
-        [
+    const file = await Utils.arrayToXlsx([
+      {
+        worksheetName: 'Orders',
+        columns: [
           { header: 'OShop Id', key: 'id', width: 15 },
           { header: 'Transporter', key: 'transporter', width: 30 },
           // { header: 'Total', key: 'total', width: 15 },
@@ -1200,15 +1201,10 @@ static toJuno = async (params) => {
           { header: 'Date Export', key: 'date_export', width: 30 },
           { header: 'Barcodes', key: 'barcodes', width: 30 }
           // { header: 'Created At', key: 'created_at', width: 30 }
-        ]
-      ],
-      [
-        {
-          worksheetName: 'Orders',
-          data: rows
-        }
-      ]
-    )
+        ],
+        data: rows
+      }
+    ])
 
     await Notification.email({
       to: 'support@diggersfactory.com',

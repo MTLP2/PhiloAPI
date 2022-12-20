@@ -3916,9 +3916,9 @@ class Admin {
   static exportRawProjects = async (params) => {
     const projects = await Admin.getProjects({ start: params.start, end: params.end, size: 0 })
 
-    return Utils.arrayToXlsx(
-      [
-        [
+    return Utils.arrayToXlsx([
+      {
+        columns: [
           { header: 'ID', key: 'id', width: 10 },
           { header: 'Step', key: 'step', width: 15 },
           { key: 'count', header: 'Count', width: 10 },
@@ -3931,10 +3931,10 @@ class Admin {
           { key: 'country_id', header: 'Country ID', width: 15 },
           { key: 'origin', header: 'Origin', width: 15 },
           { key: 'comment', header: 'Resp', width: 15 }
-        ]
-      ],
-      [{ data: projects.data }]
-    )
+        ],
+        data: projects.data
+      }
+    ])
   }
 
   static exportCatalog = async (params) => {
