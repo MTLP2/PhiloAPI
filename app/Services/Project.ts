@@ -1553,6 +1553,27 @@ class Project {
       .orderBy('date')
       .all()
 
+    const costsPromise = DB('production_cost')
+      .select('type', 'in_statement', 'project_id', 'date')
+      .whereIn('project_id', ids)
+      .where('is_statement', true)
+      .orderBy('date')
+      .all()
+
+    const paymentsPromise = DB('payment_artist_project')
+      .select(
+        'payment_artist.receiver',
+        'payment_artist.currency',
+        'payment_artist_project.total',
+        'payment_artist_project.project_id',
+        'payment_artist.date'
+      )
+      .join('payment_artist', 'payment_artist.id', 'payment_artist_project.payment_id')
+      .whereIn('project_id', ids)
+      .where('is_delete', false)
+      .orderBy('date')
+      .all()
+
     const boxesPromise = DB('box_dispatch')
       .select('barcodes', 'customer.country_id', 'box_dispatch.created_at')
       .from('box_dispatch')
@@ -1571,9 +1592,11 @@ class Project {
       .whereIn('project_id', ids)
       .all()
 
-    const [orders, statements, boxes, stocks] = await Promise.all([
+    const [orders, statements, costs, payments, boxes, stocks] = await Promise.all([
       ordersPromise,
       statementsPromise,
+      costsPromise,
+      paymentsPromise,
       boxesPromise,
       stocksPromises
     ])
@@ -1896,12 +1919,6 @@ class Project {
         : null
       s.setDate('other', 'costs', date, custom)
 
-      s.addList('diggers', 'payments', stat.date, stat.payment_diggers, stat.project_id)
-      s.addList('artist', 'payments', stat.date, stat.payment_artist, stat.project_id)
-
-      s.setDate('diggers', 'payments', date, stat.payment_diggers)
-      s.setDate('artist', 'payments', date, stat.payment_artist)
-
       const feeDistribDate = JSON.parse(projects[stat.project_id].fee_distrib_date)
       const feeDistrib = 1 - Utils.getFee(feeDistribDate, stat.date) / 100
 
@@ -1925,6 +1942,23 @@ class Project {
         s.setDate('distrib', 'quantity', date, dist.quantity)
 
         s.setCountry('distrib', 'quantity', dist.country_id, dist.quantity)
+      }
+    }
+
+    for (const cost of costs) {
+      const date = moment(cost.date).format(format)
+      s.setDate(cost.type, 'costs', date, cost.in_statement)
+      s.addList(cost.type, 'costs', date, cost.in_statement, cost.project_id)
+    }
+
+    for (const payment of payments) {
+      const date = moment(payment.date).format(format)
+      if (payment.receiver === 'artist') {
+        s.addList('artist', 'payments', date, payment.total, payment.project_id)
+        s.setDate('artist', 'payments', date, payment.total)
+      } else if (payment.receiver === 'diggers') {
+        s.addList('diggers', 'payments', date, payment.total, payment.project_id)
+        s.setDate('diggers', 'payments', date, payment.total)
       }
     }
 
