@@ -469,6 +469,8 @@ class Stock {
     const refs = await DB('project')
       .select('project.id', 'project.name', 'project.artist_name', 'vod.barcode', 'vod.unit_cost')
       .join('vod', 'vod.project_id', 'project.id')
+      .where('vod.type', '!=', 'deposit_sales')
+      .where('vod.barcode', 'not like', '%,%')
       .hasMany('stock')
       .whereExists(
         DB('stock')
