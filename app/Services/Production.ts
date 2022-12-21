@@ -2091,6 +2091,17 @@ class Production {
       item.created_at = Utils.date()
     }
 
+    if (!params.is_statement) {
+      item.in_statement = null
+    } else if (params.in_statement && item.in_statement !== params.in_statement) {
+      item.in_statement = params.in_statement
+    } else if (item.cost_invoiced !== params.cost_invoiced) {
+      const project = await DB('vod').where('project_id', params.project_id).first()
+      const currencyRate = await Utils.getCurrencyComp(params.currency, project.currency)
+      const value = Utils.round(params.cost_invoiced * currencyRate, 2)
+      item.in_statement = value
+    }
+
     item.project_id = params.project_id
     item.type = params.type
     item.currency = params.currency
@@ -2109,16 +2120,6 @@ class Production {
     item.margin = params.margin
     item.comment = params.comment
     item.updated_at = Utils.date()
-
-    if (params.is_statement) {
-      const project = await DB('vod').where('project_id', params.project_id).first()
-      const currencyRate = await Utils.getCurrencyComp(params.currency, project.currency)
-
-      const value = Utils.round(params.cost_invoiced * currencyRate, 2)
-      item.in_statement = value
-    } else {
-      item.in_statement = null
-    }
 
     if (params.invoice) {
       if (item.invoice) {
