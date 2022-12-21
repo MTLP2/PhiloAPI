@@ -6,6 +6,7 @@ import MondialRelay from 'App/Services/MondialRelay'
 import Customer from 'App/Services/Customer'
 import User from 'App/Services/User'
 import File from 'App/Services/File'
+import Log from 'App/Services/Log'
 import Excel from 'exceljs'
 import Storage from 'App/Services/Storage'
 import View from '@ioc:Adonis/Core/View'
@@ -2131,6 +2132,12 @@ class Production {
     }
 
     await item.save()
+
+    Log.save({
+      type: 'production_cost',
+      user_id: params.user_id,
+      data: item
+    })
 
     const resp = await DB('production')
       .where('production.id', item.production_id)

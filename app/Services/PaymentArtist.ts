@@ -1,5 +1,6 @@
 import DB from 'App/DB'
 import Utils from 'App/Utils'
+import Log from 'App/Services/Log'
 import Storage from 'App/Services/Storage'
 
 class PaymentArtist {
@@ -124,6 +125,12 @@ class PaymentArtist {
     }
 
     await item.save()
+
+    Log.save({
+      type: 'payment_artist',
+      user_id: params.user_id,
+      data: item
+    })
 
     if (params.projects) {
       for (const project of params.projects) {
