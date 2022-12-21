@@ -1556,7 +1556,7 @@ class StatementService {
     data.mastering = { name: 'Mastering', type: 'expense' }
     data.marketing = { name: 'Marketing', type: 'expense' }
     data.logistic = { name: 'Logistic', type: 'expense' }
-    data.distribution_cost = { name: 'Distribution cost', type: 'expense' }
+    data.distribution = { name: 'Distribution cost', type: 'expense' }
     if (project.storage_costs) {
       data.storage = { name: 'Storage', type: 'expense' }
     }
