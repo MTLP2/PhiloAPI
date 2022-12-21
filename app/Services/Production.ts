@@ -2096,10 +2096,14 @@ class Production {
       item.in_statement = null
     } else if (params.in_statement && item.in_statement !== params.in_statement) {
       item.in_statement = params.in_statement
-    } else if (item.cost_invoiced !== params.cost_invoiced) {
+    } else if (
+      item.is_statement !== params.is_statement ||
+      item.cost_invoiced !== params.cost_invoiced
+    ) {
       const project = await DB('vod').where('project_id', params.project_id).first()
       const currencyRate = await Utils.getCurrencyComp(params.currency, project.currency)
       const value = Utils.round(params.cost_invoiced * currencyRate, 2)
+
       item.in_statement = value
     }
 
