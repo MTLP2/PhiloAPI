@@ -3006,6 +3006,7 @@ class Admin {
     where vod.project_id = order_item.project_id
       and order_shop.id = order_item.order_shop_id
       and order_shop.date_export between '${params.start}' and '${params.end} 23:59'
+      and vod.type != 'direct_pressing'
   `
     if (!admin.includes(params.user_id)) {
       query += `AND vod.com_id = '${params.user_id}' `
@@ -3020,6 +3021,7 @@ class Admin {
       and order_shop.id = order_item.order_shop_id
       and (order_shop.step != 'creating' and order_shop.step != 'failed')
       and order_item.created_at between '${params.start}' and '${params.end} 23:59'
+      and vod.type != 'direct_pressing'
   `
     if (!admin.includes(params.user_id)) {
       query += `AND vod.com_id = '${params.user_id}' `
@@ -3075,6 +3077,7 @@ class Admin {
     where statement.project_id = vod.project_id
       AND statement.id = statement_distributor.statement_id
       AND STR_TO_DATE(CONCAT(statement.date, '-01'), '%Y-%m-%d') between '${params.start}' and '${params.end} 23:59'
+      AND vod.type != 'direct_pressing'
   `
     if (!admin.includes(params.user_id)) {
       query += `AND com_id = '${params.user_id}' `
