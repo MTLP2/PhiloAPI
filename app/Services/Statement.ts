@@ -1039,11 +1039,13 @@ class StatementService {
         projects[prod.project_id].quantity_pressed = prod.quantity_pressed
       }
       for (const cost of costs) {
-        const name = cost.name.split(' ')
-        if (!isNaN(name[1])) {
-          projects[cost.project_id].quantity_pressed2 = name[1]
-        } else if (!isNaN(name[2])) {
-          projects[cost.project_id].quantity_pressed2 = name[2]
+        if (cost.name) {
+          const name = cost.name.split(' ')
+          if (!isNaN(name[1])) {
+            projects[cost.project_id].quantity_pressed2 = name[1]
+          } else if (!isNaN(name[2])) {
+            projects[cost.project_id].quantity_pressed2 = name[2]
+          }
         }
         projects[cost.project_id].direct_costs += cost.cost_real
         projects[cost.project_id].costs_invoiced += cost.cost_invoiced
