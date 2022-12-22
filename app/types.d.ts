@@ -33,6 +33,31 @@ type ChatDb = {
 
 type ChatModel = ChatDb & Model
 
+type DigitalDB = {
+  id: number
+  email: string
+  project_name?: string
+  artist_name?: string
+  step:
+    | 'pending'
+    | 'contacted'
+    | 'resent'
+    | 'in_negociation'
+    | 'refused'
+    | 'in_process'
+    | 'uploaded'
+  done_date?: string
+  distribution?: 'ci' | 'pias'
+  project_type?: 'album' | 'single' | 'ep' | 'compilation'
+  barcode?: string
+  checklist?: string
+  comment?: string
+  created_at: string
+  updated_at?: string
+}
+
+type DigitalModel = DigitalDB & Model
+
 type FeedbackDB = {
   id: number
   user_id: number

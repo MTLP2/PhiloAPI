@@ -98,6 +98,8 @@ Route.group(() => {
 
   Route.get('/shops/:id', 'ShopController.find')
 
+  Route.post('/digital', 'DigitalController.create')
+
   Route.post('projects/check-code', 'ProjectsController.checkCode')
   Route.post('/projects/download', 'ProjectsController.download')
   Route.get('/projects', 'ProjectsController.getProjects')
@@ -509,6 +511,12 @@ Route.group(() => {
     Route.delete('/delete/:id', 'AdminController.deletePassCulture')
     Route.get('/export', 'AdminController.exportPassCulture')
   }).prefix('pass-culture')
+
+  Route.group(() => {
+    Route.get('/', 'DigitalController.getAll')
+    Route.get('/:id', 'DigitalController.getDigitalSingle')
+    Route.put('/:id', 'DigitalController.update')
+  }).prefix('digital')
 
   // Pass routes
   Route.group(() => {
