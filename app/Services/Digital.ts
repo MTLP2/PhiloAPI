@@ -43,7 +43,9 @@ class Digital {
     if (!digitalSingle) throw new ApiError(404, 'Digital not found')
 
     await digitalSingle.save({
-      ...params
+      ...params,
+      updated_at: new Date(),
+      done_date: params.step === 'uploaded' ? new Date() : null
     })
 
     return { success: true }
