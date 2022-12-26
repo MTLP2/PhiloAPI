@@ -328,7 +328,8 @@ class Project {
       'v.show_stock',
       'item.stock as item_stock',
       'item.price as item_price',
-      'v.shipping_discount'
+      'v.shipping_discount',
+      'v.save_shipping'
     ]
     if (params.type === 'banner') {
       selects.push('v.description_fr', 'v.description_en')
@@ -764,7 +765,8 @@ class Project {
         'exclude_country',
         'v.step',
         'v.is_label_bside',
-        'v.shipping_discount'
+        'v.shipping_discount',
+        'v.save_shipping'
       )
       .from('project as p')
       .leftJoin('vod as v', 'p.id', 'v.project_id')
@@ -1248,7 +1250,8 @@ class Project {
       'v.count_bundle',
       'v.goal',
       'v.end',
-      'v.shipping_discount'
+      'v.shipping_discount',
+      'v.save_shipping'
     ]
 
     const currencies = await Utils.getCurrenciesDb()
