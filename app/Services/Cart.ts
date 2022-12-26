@@ -359,7 +359,9 @@ class Cart {
         cart.total = Utils.round(cart.total + cart.shops[s].total * cur)
         cart.pickup = params.pickup
         cart.discount = Utils.round(cart.discount + cart.shops[s].discount)
-
+        if (cart.shops[s].save_shipping) {
+          cart.save_shipping = true
+        }
         cart.paypal = cart.shops[s].paypal
         cart.stripe = cart.shops[s].stripe
 
@@ -516,6 +518,9 @@ class Cart {
       if (c.currency === 'EUR') {
         shop.currency = 'EUR'
       }
+      if (c.save_shipping) {
+        shop.save_shipping = true
+      }
     }
 
     for (const item of p.items) {
@@ -604,8 +609,6 @@ class Cart {
     })
 
     shop.tax_rate = await Cart.getTaxRate(p.customer)
-    shipping.letter = 0
-
     // Standard
     shipping.original_standard = Utils.getShipDiscounts({
       ship: shipping.standard,
@@ -666,10 +669,11 @@ class Cart {
     //   shipping.letter = 0
     // }
 
-    shop.shipping_letter = shipping.letter
-    shop.shipping_standard = shipping.standard
-    shop.shipping_tracking = shipping.tracking
-    shop.shipping_pickup = shipping.pickup
+    // shop.shipping_letter = shipping.letter
+    const min = 1
+    shop.shipping_standard = shipping.standard <= min ? 0 : shipping.standard
+    shop.shipping_tracking = shipping.tracking <= min ? 0 : shipping.tracking
+    shop.shipping_pickup = shipping.pickup <= min ? 0 : shipping.pickup
     shop.shipping_type = p.shipping_type
     shop.transporter = shipping.transporter
 
@@ -1214,6 +1218,7 @@ class Cart {
     res.insert = p.quantity * (p.project.barcode ? p.project.barcode.split(',').length : 1)
     res.weight = p.quantity * (p.project.weight || Vod.calculateWeight(p.project))
     res.category = p.project.category
+    res.save_shipping = p.project.save_shipping
 
     if (p.item_id) {
       for (const i of p.project.items) {
