@@ -669,13 +669,26 @@ class Cart {
     //   shipping.letter = 0
     // }
 
-    // shop.shipping_letter = shipping.letter
+    // If shipping is lower than 1 we offer the shipping costs
     const min = 1
     shop.shipping_standard = shipping.standard <= min ? 0 : shipping.standard
     shop.shipping_tracking = shipping.tracking <= min ? 0 : shipping.tracking
-    shop.shipping_pickup = shipping.pickup <= min ? 0 : shipping.pickup
+    shop.shipping_pickup = shipping.pickup !== null && shipping.pickup <= min ? 0 : shipping.pickup
     shop.shipping_type = p.shipping_type
     shop.transporter = shipping.transporter
+
+    if (shop.save_shipping) {
+      let shipping = shop.shipping_pickup !== null ? shop.shipping_pickup : shop.shipping_standard
+      console.log(shipping)
+      let vinyl = 0
+
+      while (shipping > 1) {
+        vinyl++
+        shipping = shipping - 3 + 1
+      }
+
+      shop.free_shipping = vinyl
+    }
 
     if (
       !p.shipping_type &&
