@@ -1684,7 +1684,12 @@ class Cart {
         paying: null,
         error: err.code
       })
-      throw err
+      await DB('order_box').where('order_id', params.order_id).update({
+        step: 'failed'
+      })
+      return {
+        error: err.code
+      }
     }
   }
 
