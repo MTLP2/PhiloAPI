@@ -1433,8 +1433,7 @@ class StatementService {
     }
 
     let start
-    start = moment('2023-01-01')
-    const end = moment(params.end)
+    let end = moment(params.end)
     if (orders.length > 0) {
       start = moment(orders[0].date)
     }
@@ -1447,7 +1446,6 @@ class StatementService {
     if (payments.length > 0 && (!start || start > moment(payments[0].date))) {
       start = moment(payments[0].date)
     }
-
     if (!start) {
       return false
     }
@@ -1594,24 +1592,18 @@ class StatementService {
       const tax = 1 + order.tax_rate
       const discount = order.discount_artist ? order.discount : 0
       const total = order.price * order.quantity - discount
+      const totalForArtist =
+        params.payback !== false && project.payback_site
+          ? project.payback_site * order.quantity
+          : ((total * order.currency_rate_project) / tax) * fee
 
       if (order.item_id) {
         data[`${order.item_id}_quantity`][order.date] += order.quantity
-        if (params.payback !== false && project.payback_site) {
-          data[`${order.item_id}_total`][order.date] += order.quantity * project.payback_site
-        } else {
-          const total = order.price * order.currency_rate_project * order.quantity
-          data[`${order.item_id}_total`][order.date] +=
-            ((total * order.currency_rate_project) / tax) * fee
-        }
+        data[`${order.item_id}_total`][order.date] += totalForArtist
       } else {
         data.site_quantity[order.date] += order.quantity
         data.site_quantity.total += order.quantity
-        if (params.payback !== false && project.payback_site) {
-          data.site_total[order.date] += project.payback_site * order.quantity
-        } else {
-          data.site_total[order.date] += ((total * order.currency_rate_project) / tax) * fee
-        }
+        data.site_total[order.date] += totalForArtist
       }
 
       data.site_tip[order.date] += ((order.tips * order.currency_rate_project) / tax) * fee
@@ -1701,14 +1693,6 @@ class StatementService {
         if (data[k][d] && !isNaN(data[k][d])) {
           if (data[k].type === 'income' && data[k].currency !== false) {
             data[k].total += data[k][d]
-
-            /**
-            if (d === '2020-12') {
-              console.log(k)
-              console.log(data[k])
-              console.log(data[k][d])
-            }
-            **/
             data.total_income[d] += data[k][d]
             data.total_income.total += data[k][d]
             data.net_total[d] += data[k][d]
