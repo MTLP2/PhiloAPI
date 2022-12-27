@@ -307,7 +307,8 @@ class Cart {
 
     cart.customer = params.customer
     cart.customer.country_id = countryId
-
+    cart.before_gift = 100 - (cart.total - cart.shipping)
+    cart.has_gift = cart.total - cart.shipping >= 100
     if (params.user_id && params.save) {
       await Cart.saveCart(params.user_id, cart)
     }
