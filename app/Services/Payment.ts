@@ -407,17 +407,23 @@ class Payment {
   static saveCards = async (params) => {
     const customer = await Payment.getCustomer(params.user.user_id)
 
-    if (params.default_source) {
-      await stripe.customers.update(customer.id, {
-        invoice_settings: {
-          default_payment_method: params.default_source
-        },
-        default_source: params.default_source
-      })
-    } else if (params.add_card) {
-      await stripe.paymentMethods.attach(params.add_card, { customer: customer.id })
-    } else if (params.delete_card) {
-      await stripe.paymentMethods.detach(params.delete_card)
+    try {
+      if (params.default_source) {
+        await stripe.customers.update(customer.id, {
+          invoice_settings: {
+            default_payment_method: params.default_source
+          },
+          default_source: params.default_source
+        })
+      } else if (params.add_card) {
+        await stripe.paymentMethods.attach(params.add_card, { customer: customer.id })
+      } else if (params.delete_card) {
+        await stripe.paymentMethods.detach(params.delete_card)
+      }
+    } catch (err) {
+      return {
+        error: err.raw ? err.raw.code : 'card_declined'
+      }
     }
 
     return Payment.getCards(params)
