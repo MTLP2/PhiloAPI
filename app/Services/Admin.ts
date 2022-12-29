@@ -1562,6 +1562,7 @@ class Admin {
         'user.picture as user_picture',
         'user.newsletter as user_newsletter',
         'order.user_agent',
+        'order.user_contacted',
         'c.country_id',
         'c.name',
         'c.firstname',
@@ -1803,6 +1804,7 @@ class Admin {
   static saveOrder = async (params) => {
     const order = await DB('order').find(params.id)
     order.comment = params.comment
+    order.user_contacted = params.user_contacted
     order.updated_at = Utils.date()
 
     await order.save()
