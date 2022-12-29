@@ -138,6 +138,9 @@ class MondialRelay {
 
     for (const dispatch of dispatchs) {
       const address = JSON.parse(dispatch.address_pickup)
+      if (!address) {
+        continue
+      }
       const status = await MondialRelay.getStatus(dispatch.tracking_number, address.zip_code)
 
       if (status === 'available') {
