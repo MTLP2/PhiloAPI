@@ -88,6 +88,7 @@ class Cart {
     cart.tax = 0
     cart.discount = 0
     cart.total = 0
+    cart.totalGift = 0
     cart.count = 0
     cart.noStripe = false
     cart.noPaypal = false
@@ -307,9 +308,13 @@ class Cart {
 
     cart.customer = params.customer
     cart.customer.country_id = countryId
-    cart.before_gift = 100 - (cart.total - cart.shipping)
-    cart.has_gift = cart.total - cart.shipping >= 100
-    cart.gifts = await Cart.getGifts('daudin')
+    cart.before_gift = Utils.round(100 - cart.totalGift)
+    cart.has_gift = cart.before_gift <= 0
+    cart.gifts = []
+    if (cart.first_ship) {
+      cart.gifts = await Cart.getGifts(cart.first_ship.transporter)
+    }
+
     if (cart.has_gift) {
       cart.gift = cart.gifts.find((g: any) => g.id === +params.gift)
     }
@@ -334,7 +339,10 @@ class Cart {
         'vod.picture_project'
       )
       .join('vod', 'project.id', 'vod.project_id')
+      .join('stock', 'stock.project_id', 'vod.project_id')
       .whereIn('project.id', ids)
+      .where('stock.type', transporter)
+      .where('quantity', '>', 10)
       .all()
 
     return gifts
@@ -395,6 +403,23 @@ class Cart {
           cart.stripe = true
         }
 
+        const dateShipping =
+          shop.type === 'shop'
+            ? moment().format('YYYY-MM-DD')
+            : moment(shop.items[0].project.estimated_shipping).format('YYYY-MM-DD')
+
+        console.log(cart.shops[s].transporter)
+        if (['daudin', 'whiplash', 'whiplash_uk'].includes(cart.shops[s].transporter)) {
+          console.log('=>', cart.shops[s].transporter)
+          if (!cart.first_ship || cart.first_ship.date > dateShipping) {
+            cart.first_ship = {
+              shop_id: shop.id,
+              transporter: cart.shops[s].transporter,
+              date: dateShipping
+            }
+          }
+          cart.totalGift += cart.shops[s].total - cart.shops[s].shipping
+        }
         cart.count += cart.shops[s].items.length
       })
     )
@@ -1494,14 +1519,11 @@ class Cart {
       }
     }
 
-    let shopId = null
+    let shopIdGift = null
     if (calculate.shops) {
       for (const s in calculate.shops) {
         const ss = calculate.shops[s]
 
-        if (!shopId) {
-          shopId = ss.id.split('_')[0]
-        }
         const shop = await DB('order_shop').save({
           order_id: order.id,
           user_id: params.user_id,
@@ -1527,6 +1549,10 @@ class Cart {
           created_at: Utils.date(),
           updated_at: Utils.date()
         })
+
+        if (ss.id === calculate.first_ship.shop_id) {
+          shopIdGift = shop.id
+        }
 
         shop.items = []
 
@@ -1569,7 +1595,7 @@ class Cart {
     if (calculate.gift) {
       await DB('order_item').save({
         order_id: order.id,
-        order_shop_id: shopId,
+        order_shop_id: shopIdGift,
         project_id: calculate.gift.id,
         vod_id: calculate.gift.vod_id,
         currency: calculate.currency,
@@ -1580,7 +1606,7 @@ class Cart {
         discount_artist: 0,
         shipping_discount: 0,
         tips: 0,
-        size: 0,
+        size: null,
         quantity: 1,
         total: 0,
         total_ship_discount: 0,
