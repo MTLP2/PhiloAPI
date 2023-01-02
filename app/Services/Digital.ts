@@ -16,7 +16,7 @@ class Digital {
     email: string
     project_name?: string
     artist_name?: string
-    step:
+    step?:
       | 'refused'
       | 'pending'
       | 'contacted'
