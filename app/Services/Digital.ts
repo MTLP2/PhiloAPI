@@ -54,9 +54,10 @@ class Digital {
   static async export(params: { start: string; end: string }) {
     try {
       const { data } = await Utils.getRows<DigitalModel[]>({
-        query: DB('digital'),
-        size: 0,
-        ...params
+        query: DB('digital')
+          .where('created_at', '>=', params.start)
+          .where('created_at', '<=', params.end),
+        size: 0
       })
 
       return Utils.arrayToXlsx([
