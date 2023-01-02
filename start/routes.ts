@@ -515,6 +515,7 @@ Route.group(() => {
   // Digital routes
   Route.group(() => {
     Route.get('/', 'DigitalController.getAll')
+    Route.post('/', 'DigitalController.createAdmin')
     Route.get('/export', 'DigitalController.export')
     Route.get(':id', 'DigitalController.getDigitalSingle')
     Route.put(':id', 'DigitalController.update')

@@ -12,11 +12,32 @@ class Digital {
     return res
   }
 
-  static async create(params: { email: string; project_name?: string; artist_name?: string }) {
+  static async create(params: {
+    email: string
+    project_name?: string
+    artist_name?: string
+    step:
+      | 'refused'
+      | 'pending'
+      | 'contacted'
+      | 'resent'
+      | 'in_negociation'
+      | 'in_process'
+      | 'uploaded'
+    distribution?: 'ci' | 'pias'
+    project_type?: 'album' | 'single' | 'ep' | 'compilation'
+    barcode?: string
+    comment?: string
+  }) {
     await DB('digital').insert({
       email: params.email,
       project_name: params.project_name,
-      artist_name: params.artist_name
+      artist_name: params.artist_name,
+      step: params.step,
+      distribution: params.distribution,
+      project_type: params.project_type,
+      barcode: params.barcode,
+      comment: params.comment
     })
     return { success: true }
   }

@@ -45,6 +45,39 @@ class DigitalController {
     }
   }
 
+  async createAdmin({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          email: schema.string({ trim: true }, [rules.email()]),
+          project_name: schema.string.optional({ trim: true }),
+          artist_name: schema.string.optional({ trim: true }),
+          step: schema.enum([
+            'pending',
+            'contacted',
+            'resent',
+            'in_negociation',
+            'refused',
+            'in_process',
+            'uploaded'
+          ] as const),
+          distribution: schema.enum.optional(['ci', 'pias'] as const),
+          project_type: schema.enum.optional(['album', 'single', 'ep', 'compilation'] as const),
+          barcode: schema.string.optional({ trim: true }),
+          comment: schema.string.optional({ trim: true })
+        }),
+        data: params
+      })
+
+      return await Digital.create(payload)
+    } catch (error) {
+      throw new ApiError(
+        error.messages ? 400 : 500,
+        JSON.stringify(error.messages) || error.message
+      )
+    }
+  }
+
   async update({ params }) {
     try {
       const payload = await validator.validate({
