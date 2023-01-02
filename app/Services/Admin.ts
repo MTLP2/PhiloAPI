@@ -3937,6 +3937,8 @@ class Admin {
           { key: 'name', header: 'Project', width: 30 },
           { key: 'artist_name', header: 'Artist name', width: 30 },
           { key: 'status', header: 'Status', width: 15 },
+          { key: 'type', header: 'Type', width: 15 },
+          { key: 'category', header: 'Category', width: 15 },
           { key: 'date_shipping', header: 'Date Shipping', width: 15 },
           { key: 'country_id', header: 'Country ID', width: 15 },
           { key: 'origin', header: 'Origin', width: 15 },
