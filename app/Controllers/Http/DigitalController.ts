@@ -18,7 +18,10 @@ class DigitalController {
 
       return await Digital.find(payload)
     } catch (error) {
-      throw new ApiError(error.messages ? 400 : 500, error.messages || error.message)
+      throw new ApiError(
+        error.messages ? 400 : 500,
+        JSON.stringify(error.messages) || error.message
+      )
     }
   }
 
@@ -35,7 +38,10 @@ class DigitalController {
 
       return await Digital.create(payload)
     } catch (error) {
-      throw new ApiError(error.messages ? 400 : 500, error.messages || error.message)
+      throw new ApiError(
+        error.messages ? 400 : 500,
+        JSON.stringify(error.messages) || error.message
+      )
     }
   }
 
@@ -66,7 +72,29 @@ class DigitalController {
 
       return await Digital.update(payload)
     } catch (error) {
-      throw new ApiError(error.messages ? 400 : 500, error.messages || error.message)
+      throw new ApiError(
+        error.messages ? 400 : 500,
+        JSON.stringify(error.messages) || error.message
+      )
+    }
+  }
+
+  async export({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          start: schema.string(),
+          end: schema.string()
+        }),
+        data: params
+      })
+
+      return await Digital.export(payload)
+    } catch (error) {
+      throw new ApiError(
+        error.messages ? 400 : 500,
+        JSON.stringify(error.messages) || error.message
+      )
     }
   }
 }

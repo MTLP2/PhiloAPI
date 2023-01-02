@@ -512,10 +512,12 @@ Route.group(() => {
     Route.get('/export', 'AdminController.exportPassCulture')
   }).prefix('pass-culture')
 
+  // Digital routes
   Route.group(() => {
     Route.get('/', 'DigitalController.getAll')
-    Route.get('/:id', 'DigitalController.getDigitalSingle')
-    Route.put('/:id', 'DigitalController.update')
+    Route.get('/export', 'DigitalController.export')
+    Route.get(':id', 'DigitalController.getDigitalSingle')
+    Route.put(':id', 'DigitalController.update')
   }).prefix('digital')
 
   // Pass routes
