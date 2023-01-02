@@ -7,6 +7,7 @@ class Feedback {
       .select(
         'feedback.*',
         'user.name as user_name',
+        'user.email',
         'user.picture as user_picture',
         'user.country_id',
         'user.is_guest',
@@ -22,6 +23,9 @@ class Feedback {
     }
     if (params.end) {
       params.query.where('feedback.created_at', '<=', `${params.end} 23:59`)
+    }
+    if (params.user_id) {
+      params.query.where('feedback.user_id', params.user_id)
     }
 
     params.order = params.order === 'false' ? 'desc' : params.order
