@@ -1264,6 +1264,7 @@ class StatementService {
       .select(
         'project.id',
         'project.category',
+        'vod.type',
         'vod.currency',
         'vod.stock_price',
         DB.raw('SUM(stock.quantity) as stock')
@@ -1274,6 +1275,7 @@ class StatementService {
       .where('stock.type', '!=', 'diggers')
       .having('stock', '>', 0)
       .groupBy('project.id')
+      .groupBy('vod.type')
       .groupBy('vod.currency')
       .groupBy('vod.stock_price')
       .all()
@@ -1301,7 +1303,7 @@ class StatementService {
 
       let stockPrice = JSON.parse(p.stock_price)
       if (!stockPrice) {
-        stockPrice = [{ start: null, end: null, value: 0.1 }]
+        stockPrice = [{ start: null, end: null, value: p.type === 'deposit_sales' ? 0.05 : 0.1 }]
       }
       const price = Utils.getFee(stockPrice, moment().format('YYYY-MM-DD'))
 
