@@ -309,11 +309,35 @@ class Cart {
     cart.customer.country_id = countryId
     cart.before_gift = 100 - (cart.total - cart.shipping)
     cart.has_gift = cart.total - cart.shipping >= 100
+    cart.gifts = await Cart.getGifts('daudin')
+    if (cart.has_gift) {
+      cart.gift = cart.gifts.find((g: any) => g.id === +params.gift)
+    }
     if (params.user_id && params.save) {
       await Cart.saveCart(params.user_id, cart)
     }
 
     return cart
+  }
+
+  static getGifts = async (transporter) => {
+    const ids = [256502, 245535, 275215]
+
+    const gifts = DB('project')
+      .select(
+        'project.id',
+        'vod.id as vod_id',
+        'project.name',
+        'name',
+        'artist_name',
+        'picture',
+        'vod.picture_project'
+      )
+      .join('vod', 'project.id', 'vod.project_id')
+      .whereIn('project.id', ids)
+      .all()
+
+    return gifts
   }
 
   static calculateCart = async (cart, params) => {
@@ -1437,7 +1461,7 @@ class Cart {
         discount: calculate.discount,
         total: calculate.total,
         origin: params.origin,
-        is_gift: params.gift,
+        is_gift: params.is_gift,
         user_agent: JSON.stringify(params.user_agent),
         created_at: Utils.date(),
         updated_at: Utils.date()
@@ -1470,11 +1494,14 @@ class Cart {
       }
     }
 
+    let shopId = null
     if (calculate.shops) {
       for (const s in calculate.shops) {
         const ss = calculate.shops[s]
-        const currencyRate = await Utils.getCurrency(ss.currency)
 
+        if (!shopId) {
+          shopId = ss.id.split('_')[0]
+        }
         const shop = await DB('order_shop').save({
           order_id: order.id,
           user_id: params.user_id,
@@ -1537,6 +1564,29 @@ class Cart {
 
         order.shops.push(shop)
       }
+    }
+
+    if (calculate.gift) {
+      await DB('order_item').save({
+        order_id: order.id,
+        order_shop_id: shopId,
+        project_id: calculate.gift.id,
+        vod_id: calculate.gift.vod_id,
+        currency: calculate.currency,
+        currency_rate: currencyRate,
+        currency_rate_project: 1,
+        price: 0,
+        discount: 0,
+        discount_artist: 0,
+        shipping_discount: 0,
+        tips: 0,
+        size: 0,
+        quantity: 1,
+        total: 0,
+        total_ship_discount: 0,
+        created_at: Utils.date(),
+        updated_at: Utils.date()
+      })
     }
 
     return order
@@ -2146,6 +2196,7 @@ class Cart {
         'project.picture',
         'project.name as project',
         'project.artist_name as artist',
+        'project.category',
         'vod.type as type_project',
         'picture_project',
         'project.slug as slug',
@@ -2200,8 +2251,7 @@ class Cart {
     for (const order of orders) {
       items.push({
         ...order,
-        name: `${order.artist} - ${order.project}`,
-        category: 'vinyl'
+        name: `${order.artist} - ${order.project}`
       })
     }
 
