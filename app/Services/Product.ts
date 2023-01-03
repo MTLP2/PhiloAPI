@@ -34,6 +34,76 @@ class Product {
 
     return item
   }
+
+  static generate = async () => {
+    await DB().execute('TRUNCATE TABLE product')
+
+    const refs = await DB('vod')
+      .select(
+        'project.id',
+        'project.name',
+        'project.artist_name',
+        'project.cat_number',
+        'category',
+        'sizes',
+        'vod.barcode'
+      )
+      .join('project', 'vod.project_id', 'project.id')
+      .hasMany('stock', 'stock', 'project_id')
+      // .hasMany('production', 'productions', 'production.project_id')
+      .limit(10)
+      .whereNotNull('barcode')
+      // .whereNull('barcode')
+      // .orWhere('barcode', '!=', '%,%')
+      .all()
+
+    for (const ref of refs) {
+      try {
+        const barcodes = ref.barcode ? ref.barcode.split(',') : ''
+        if (ref.barcode === 'SIZE') {
+          const id = await DB('product').insert({
+            name: `${ref.artist_name} - ${ref.name}`,
+            type: 'merch'
+          })
+
+          const sizes = JSON.parse(ref.sizes)
+
+          for (const [size, barcode] of Object.entries(sizes)) {
+            console.log(size, barcode)
+            await DB('product').insert({
+              name: `${ref.artist_name} - ${ref.name}`,
+              parent_id: id,
+              type: 'merch',
+              barcode: barcode || null,
+              size: size
+            })
+          }
+        } else if (barcodes.length < 2) {
+          const id = await DB('product').insert({
+            name: `${ref.artist_name} - ${ref.name}`,
+            type: ref.category,
+            barcode: ref.barcode,
+            catnumber: ref.cat_number,
+            size: null,
+            color: null
+          })
+
+          for (const stock of ref.stock) {
+            await DB('stock').insert({
+              ...stock,
+              id: null,
+              project_id: null,
+              product_id: id
+            })
+          }
+        }
+      } catch (e) {
+        console.log(e)
+      }
+    }
+
+    return refs.length
+  }
 }
 
 export default Product
