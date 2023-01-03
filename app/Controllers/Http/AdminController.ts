@@ -16,12 +16,14 @@ import Invoice from 'App/Services/Invoice'
 import Whiplash from 'App/Services/Whiplash'
 import Song from 'App/Services/Song'
 import Utils from 'App/Utils'
+import PaymentArtist from 'App/Services/PaymentArtist'
 import Statement from 'App/Services/Statement'
 import Feedback from 'App/Services/Feedback'
 import Storage from 'App/Services/Storage'
 import Category from 'App/Services/Category'
 import Banner from 'App/Services/Banner'
 import Daudin from 'App/Services/Daudin'
+import Elogik from 'App/Services/Elogik'
 import Artwork from 'App/Services/Artwork'
 import Stats from 'App/Services/Stats'
 import MailJet from 'App/Services/MailJet'
@@ -30,6 +32,7 @@ import Product from 'App/Services/Product'
 import ApiError from 'App/ApiError'
 import ProjectService from 'App/Services/Project'
 import Dispatch from 'App/Services/Dispatch'
+import ShippingWeight from 'App/Services/ShippingWeight'
 
 class AdminController {
   getStats({ params }) {
@@ -254,6 +257,10 @@ class AdminController {
     return Statement.download(params)
   }
 
+  downloadHistoryStatement({ params }) {
+    return Statement.downloadHistory(params)
+  }
+
   saveProjectImage({ params }) {
     return Admin.saveProjectImage(params)
   }
@@ -292,7 +299,7 @@ class AdminController {
     if (params.type === 'daudin') {
       return Admin.syncProjectDaudin(params)
     } else if (params.type === 'elogik') {
-      return Admin.syncProjectElogik(params)
+      return Elogik.syncProject(params)
     } else if (params.type === 'sna') {
       return Admin.syncProjectSna(params)
     } else if (params.type === 'whiplash') {
@@ -480,8 +487,12 @@ class AdminController {
     return Feedback.exportAll(params)
   }
 
-  getNewsletters({ params }) {
-    return Admin.getNewsletters(params)
+  getMonthlyFeedbackStats() {
+    return Feedback.getMonthlyStats()
+  }
+
+  getNewsletters() {
+    return Admin.getNewsletters()
   }
 
   async getNewsletterTemplate({ params }) {
@@ -825,8 +836,24 @@ class AdminController {
     return Payment.refund(params)
   }
 
-  exportFacebookProjects({ params }) {
-    return Admin.exportFacebookProjects(params)
+  getPaymentsArtist({ params }) {
+    return PaymentArtist.all(params)
+  }
+
+  getPaymentArtist({ params }) {
+    return PaymentArtist.find(params.id)
+  }
+
+  savePaymentArtist({ params }) {
+    return PaymentArtist.save(params)
+  }
+
+  downloadPaymentArtist({ params }) {
+    return PaymentArtist.download(params)
+  }
+
+  deletePaymentArtist({ params }) {
+    return PaymentArtist.delete(params)
   }
 
   checkProjectRest({ params }) {
@@ -847,6 +874,10 @@ class AdminController {
 
   getUserStatements({ params }) {
     return Statement.userDownload(params)
+  }
+
+  getUserBalance({ params }) {
+    return Statement.userBalance(params)
   }
 
   saveCustomer({ params }) {
@@ -1078,6 +1109,77 @@ class AdminController {
     } catch (err) {
       return { error: err.message, validation: err.messages }
     }
+  }
+
+  async getShippingWeightByPartner({ params }) {
+    const payload = await validator.validate({
+      schema: schema.create({
+        partner: schema.enum(['daudin', 'shipehype', 'whiplash_uk'] as const)
+      }),
+      data: params
+    })
+    return ShippingWeight.allByPartner({ partner: payload.partner, params })
+  }
+
+  async updateShippingWeight({ params, user }) {
+    const payload = await validator.validate({
+      schema: schema.create({
+        'id': schema.number(),
+        'country_id': schema.string(),
+        'state': schema.string.nullableAndOptional(),
+        'partner': schema.enum(['daudin', 'shipehype', 'whiplash_uk'] as const),
+        'transporter': schema.string.nullable(),
+        'currency': schema.enum(['EUR', 'GBP', 'USD', 'AUD'] as const),
+        'packing': schema.number.nullableAndOptional(),
+        'picking': schema.number.nullableAndOptional(),
+        'oil': schema.number.nullableAndOptional(),
+        '500g': schema.number.nullableAndOptional(),
+        '750g': schema.number.nullableAndOptional(),
+        '1kg': schema.number.nullableAndOptional(),
+        '2kg': schema.number.nullableAndOptional(),
+        '3kg': schema.number.nullableAndOptional(),
+        '4kg': schema.number.nullableAndOptional(),
+        '5kg': schema.number.nullableAndOptional(),
+        '6kg': schema.number.nullableAndOptional(),
+        '7kg': schema.number.nullableAndOptional(),
+        '8kg': schema.number.nullableAndOptional(),
+        '9kg': schema.number.nullableAndOptional(),
+        '10kg': schema.number.nullableAndOptional(),
+        '11kg': schema.number.nullableAndOptional(),
+        '12kg': schema.number.nullableAndOptional(),
+        '13kg': schema.number.nullableAndOptional(),
+        '14kg': schema.number.nullableAndOptional(),
+        '15kg': schema.number.nullableAndOptional(),
+        '16kg': schema.number.nullableAndOptional(),
+        '17kg': schema.number.nullableAndOptional(),
+        '18kg': schema.number.nullableAndOptional(),
+        '19kg': schema.number.nullableAndOptional(),
+        '20kg': schema.number.nullableAndOptional(),
+        '21kg': schema.number.nullableAndOptional(),
+        '22kg': schema.number.nullableAndOptional(),
+        '23kg': schema.number.nullableAndOptional(),
+        '24kg': schema.number.nullableAndOptional(),
+        '25kg': schema.number.nullableAndOptional(),
+        '26kg': schema.number.nullableAndOptional(),
+        '27kg': schema.number.nullableAndOptional(),
+        '28kg': schema.number.nullableAndOptional(),
+        '29kg': schema.number.nullableAndOptional(),
+        '30kg': schema.number.nullableAndOptional()
+      }),
+      data: params
+    })
+    return ShippingWeight.update(payload, user.id)
+  }
+
+  async getShippingWeightHistory({ params }) {
+    params.shippingId = params.id
+    const payload = await validator.validate({
+      schema: schema.create({
+        shippingId: schema.number()
+      }),
+      data: params
+    })
+    return ShippingWeight.getShippingWeightHistory(payload)
   }
 }
 

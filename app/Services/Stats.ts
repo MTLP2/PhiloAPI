@@ -723,6 +723,7 @@ class Stats {
         checking: { ...columns },
         creating: { ...columns },
         in_progress: { ...columns },
+        coming_soon: { ...columns },
         private: { ...columns },
         promo: { ...columns },
         created: { ...columns },
@@ -1899,7 +1900,7 @@ class Stats {
       .all()
 
     const costsPromise = await DB('production_cost')
-      .select('date', 'type', 'is_licence', 'margin')
+      .select('date', 'production_cost.type', 'is_licence', 'margin')
       .join('vod', 'vod.project_id', 'production_cost.project_id')
       .whereBetween('date', [params.start, params.end])
       .whereNotNull('margin')
@@ -2218,7 +2219,7 @@ class Stats {
         d.quantity.total.dates[date] -= quantity
       }
 
-      if (qty.is_paid) {
+      if (!qty.is_paid) {
         continue
       }
 

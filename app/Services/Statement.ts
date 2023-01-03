@@ -551,6 +551,15 @@ class StatementService {
     return workbook.xlsx.writeBuffer()
   }
 
+  static async downloadHistory(params: { id: number }) {
+    const stat = await DB('statement_history').where('id', params.id).first()
+    const file = await Storage.get(`statements/${stat.user_id}_${stat.date}.xlsx`, true)
+
+    console.log(`statements/${stat.user_id}_${stat.date}.xlsx`)
+
+    return file
+  }
+
   static async setWorksheet(
     workbook: any,
     params: { id: number; number: number; start: string; end: string }
@@ -605,6 +614,7 @@ class StatementService {
       .replace(/\*/gi, '')
       .replace(/\?/gi, '')
       .replace(/:/gi, '')
+      .replace(/'/gi, '')
       .replace(/\//gi, '')
       .replace(/\\/gi, '')
       .replace(/\[/gi, '-')
@@ -832,7 +842,7 @@ class StatementService {
     return data
   }
 
-  static async userDownload(params: { id: number; auto: boolean; start: string; end: string }) {
+  static async userDownload(params: { id: number; auto: boolean; start?: string; end: string }) {
     let projects: any = DB()
       .select('project.id', 'artist_name', 'name')
       .table('project')
@@ -862,7 +872,7 @@ class StatementService {
     for (const project of projects) {
       const data = await this.setWorksheet(workbook, {
         id: project.id,
-        start: params.start || '2021-01-01',
+        start: params.start || '2001-01-01',
         end: params.end || moment().format('YYYY-MM-DD'),
         number: i
       })
@@ -893,6 +903,35 @@ class StatementService {
     }
 
     return workbook.xlsx.writeBuffer()
+  }
+
+  static async userBalance(paylaod: { user_id: number; start?: string; end: string }) {
+    let projects: any = await DB()
+      .select('project.id', 'project.picture', 'artist_name', 'name', 'currency')
+      .table('project')
+      .join('vod', 'vod.project_id', 'project.id')
+      .where('vod.user_id', paylaod.user_id)
+      .where('is_delete', '!=', '1')
+      .all()
+
+    const res: any[] = []
+    for (const project of projects) {
+      const data: any = await this.getStatement({
+        id: project.id,
+        start: paylaod.start,
+        end: paylaod.end
+      })
+
+      if (data) {
+        res.push({
+          ...project,
+          total: Utils.round(data.final_revenue.total, 2)
+        })
+      }
+    }
+    res.sort((a, b) => b.total - a.total)
+
+    return res
   }
 
   static async getBalances(params: { start: string; end: string; type: string }) {
@@ -1000,11 +1039,13 @@ class StatementService {
         projects[prod.project_id].quantity_pressed = prod.quantity_pressed
       }
       for (const cost of costs) {
-        const name = cost.name.split(' ')
-        if (!isNaN(name[1])) {
-          projects[cost.project_id].quantity_pressed2 = name[1]
-        } else if (!isNaN(name[2])) {
-          projects[cost.project_id].quantity_pressed2 = name[2]
+        if (cost.name) {
+          const name = cost.name.split(' ')
+          if (!isNaN(name[1])) {
+            projects[cost.project_id].quantity_pressed2 = name[1]
+          } else if (!isNaN(name[2])) {
+            projects[cost.project_id].quantity_pressed2 = name[2]
+          }
         }
         projects[cost.project_id].direct_costs += cost.cost_real
         projects[cost.project_id].costs_invoiced += cost.cost_invoiced
@@ -1223,6 +1264,7 @@ class StatementService {
       .select(
         'project.id',
         'project.category',
+        'vod.type',
         'vod.currency',
         'vod.stock_price',
         DB.raw('SUM(stock.quantity) as stock')
@@ -1233,6 +1275,7 @@ class StatementService {
       .where('stock.type', '!=', 'diggers')
       .having('stock', '>', 0)
       .groupBy('project.id')
+      .groupBy('vod.type')
       .groupBy('vod.currency')
       .groupBy('vod.stock_price')
       .all()
@@ -1260,7 +1303,7 @@ class StatementService {
 
       let stockPrice = JSON.parse(p.stock_price)
       if (!stockPrice) {
-        stockPrice = [{ start: null, end: null, value: 0.1 }]
+        stockPrice = [{ start: null, end: null, value: p.type === 'deposit_sales' ? 0.05 : 0.1 }]
       }
       const price = Utils.getFee(stockPrice, moment().format('YYYY-MM-DD'))
 
@@ -1296,7 +1339,7 @@ class StatementService {
       .where('project_id', params.id)
       .first()
 
-    const statements = await DB('statement')
+    const statementsPromise = DB('statement')
       .where('project_id', params.id)
       .whereBetween(DB.raw("DATE_FORMAT(concat(date, '-01'), '%Y-%m-%d')"), [
         params.start,
@@ -1306,14 +1349,39 @@ class StatementService {
       .orderBy('date')
       .all()
 
-    const items = await DB()
+    const pCostsPromise = DB('production_cost')
+      .select('type', 'in_statement', DB.raw("DATE_FORMAT(date, '%Y-%m') as date"))
+      .where('project_id', params.id)
+      .where('is_statement', true)
+      .whereBetween(DB.raw("DATE_FORMAT(date, '%Y-%m-%d')"), [params.start, `${params.end} 23:59`])
+      .orderBy('date')
+      .all()
+
+    const paymentsPromise = DB('payment_artist_project')
+      .select(
+        'payment_artist.receiver',
+        'payment_artist.currency',
+        'payment_artist_project.total',
+        DB.raw("DATE_FORMAT(payment_artist.date, '%Y-%m') as date")
+      )
+      .join('payment_artist', 'payment_artist.id', 'payment_artist_project.payment_id')
+      .where('project_id', params.id)
+      .where('is_delete', false)
+      .whereBetween(DB.raw("DATE_FORMAT(payment_artist.date, '%Y-%m-%d')"), [
+        params.start,
+        `${params.end} 23:59`
+      ])
+      .orderBy('date')
+      .all()
+
+    const itemsPromises = DB()
       .select('item.*')
       .from('item')
       .where('project_id', params.id)
       .where('is_statement', 1)
       .all()
 
-    const orders = await DB()
+    const ordersPromises = DB()
       .select(
         'oi.total',
         'oi.price',
@@ -1340,6 +1408,14 @@ class StatementService {
       .orderBy('oi.created_at')
       .all()
 
+    const [statements, orders, payments, pcosts, items] = await Promise.all([
+      statementsPromise,
+      ordersPromises,
+      paymentsPromise,
+      pCostsPromise,
+      itemsPromises
+    ])
+
     let bb: any[] = []
     if (project.barcode) {
       bb = await DB()
@@ -1358,30 +1434,20 @@ class StatementService {
       }
     }
 
-    let startOrders: any = null
-    // let endOrders: any = null
-    let startStatements: any = null
-    // let endStatements: any = null
-
-    if (orders.length > 0) {
-      startOrders = moment(orders[0].date)
-      // endOrders = moment(orders[orders.length - 1].date)
-    }
-    if (statements.length > 0) {
-      startStatements = moment(statements[0].date)
-      // endStatements = moment(statements[statements.length - 1].date)
-    }
-
     let start
-    const end = moment(params.end)
-    if (!startOrders) {
-      start = startStatements
-    } else if (!startStatements) {
-      start = startOrders
-    } else {
-      start = startOrders < startStatements ? startOrders : startStatements
+    let end = moment(params.end)
+    if (orders.length > 0) {
+      start = moment(orders[0].date)
     }
-
+    if (statements.length > 0 && (!start || start > moment(statements[0].date))) {
+      start = moment(statements[0].date)
+    }
+    if (pcosts.length > 0 && (!start || start > moment(pcosts[0].date))) {
+      start = moment(pcosts[0].date)
+    }
+    if (payments.length > 0 && (!start || start > moment(payments[0].date))) {
+      start = moment(payments[0].date)
+    }
     if (!start) {
       return false
     }
@@ -1492,7 +1558,7 @@ class StatementService {
     data.mastering = { name: 'Mastering', type: 'expense' }
     data.marketing = { name: 'Marketing', type: 'expense' }
     data.logistic = { name: 'Logistic', type: 'expense' }
-    data.distribution_cost = { name: 'Distribution cost', type: 'expense' }
+    data.distribution = { name: 'Distribution cost', type: 'expense' }
     if (project.storage_costs) {
       data.storage = { name: 'Storage', type: 'expense' }
     }
@@ -1528,24 +1594,18 @@ class StatementService {
       const tax = 1 + order.tax_rate
       const discount = order.discount_artist ? order.discount : 0
       const total = order.price * order.quantity - discount
+      const totalForArtist =
+        params.payback !== false && project.payback_site
+          ? project.payback_site * order.quantity
+          : ((total * order.currency_rate_project) / tax) * fee
 
       if (order.item_id) {
         data[`${order.item_id}_quantity`][order.date] += order.quantity
-        if (params.payback !== false && project.payback_site) {
-          data[`${order.item_id}_total`][order.date] += order.quantity * project.payback_site
-        } else {
-          const total = order.price * order.currency_rate_project * order.quantity
-          data[`${order.item_id}_total`][order.date] +=
-            ((total * order.currency_rate_project) / tax) * fee
-        }
+        data[`${order.item_id}_total`][order.date] += totalForArtist
       } else {
         data.site_quantity[order.date] += order.quantity
         data.site_quantity.total += order.quantity
-        if (params.payback !== false && project.payback_site) {
-          data.site_total[order.date] += project.payback_site * order.quantity
-        } else {
-          data.site_total[order.date] += ((total * order.currency_rate_project) / tax) * fee
-        }
+        data.site_total[order.date] += totalForArtist
       }
 
       data.site_tip[order.date] += ((order.tips * order.currency_rate_project) / tax) * fee
@@ -1558,18 +1618,6 @@ class StatementService {
     }
 
     for (const stat of statements) {
-      data.production[stat.date] += stat.production
-      data.sdrm[stat.date] += stat.sdrm
-      data.mastering[stat.date] += stat.mastering
-      data.marketing[stat.date] += stat.marketing
-      data.logistic[stat.date] += stat.logistic
-      data.distribution_cost[stat.date] += stat.distribution_cost
-      if (project.storage_costs) {
-        data.storage[stat.date] += stat.storage
-      }
-      data.payment_diggers[stat.date] += stat.payment_diggers
-      data.payment_artist[stat.date] -= stat.payment_artist
-
       const custom = stat.custom ? JSON.parse(stat.custom) : []
       for (const c of custom) {
         data[c.name][stat.date] += parseFloat(c.total)
@@ -1621,6 +1669,24 @@ class StatementService {
       }
     }
 
+    for (const cost of pcosts) {
+      if (cost.type === 'storage') {
+        if (project.storage_costs) {
+          data[cost.type][cost.date] += cost.in_statement
+        }
+      } else {
+        data[cost.type][cost.date] += cost.in_statement
+      }
+    }
+
+    for (const payment of payments) {
+      if (payment.receiver === 'artist') {
+        data.payment_artist[payment.date] -= payment.total
+      } else if (payment.receiver === 'diggers') {
+        data.payment_diggers[payment.date] += payment.total
+      }
+    }
+
     for (const k of Object.keys(data)) {
       for (const d of Object.keys(data[k])) {
         if (d === 'total') {
@@ -1629,14 +1695,6 @@ class StatementService {
         if (data[k][d] && !isNaN(data[k][d])) {
           if (data[k].type === 'income' && data[k].currency !== false) {
             data[k].total += data[k][d]
-
-            /**
-            if (d === '2020-12') {
-              console.log(k)
-              console.log(data[k])
-              console.log(data[k][d])
-            }
-            **/
             data.total_income[d] += data[k][d]
             data.total_income.total += data[k][d]
             data.net_total[d] += data[k][d]
@@ -1754,6 +1812,43 @@ class StatementService {
     }
 
     return workbook.xlsx.writeBuffer()
+  }
+
+  static createCostsFromStatements = async () => {
+    await DB('production_cost').where('is_auto', true).delete()
+
+    const statements = await DB('statement')
+      .select('statement.*', 'vod.currency')
+      .join('vod', 'vod.project_id', 'statement.project_id')
+      .orderBy('date', 'asc')
+      .all()
+
+    for1: for (const stat of statements) {
+      const types = [
+        'production',
+        'marketing',
+        'sdrm',
+        'mastering',
+        'logistic',
+        'storage',
+        'distribution_cost'
+      ]
+      for (let type of types) {
+        if (stat[type]) {
+          await DB('production_cost').insert({
+            project_id: stat.project_id,
+            date: stat.date + '-01',
+            is_auto: true,
+            currency: stat.currency,
+            type: type === 'distribution_cost' ? 'distribution' : type,
+            is_statement: true,
+            in_statement: stat[type]
+          })
+        }
+      }
+    }
+
+    return { success: true }
   }
 }
 

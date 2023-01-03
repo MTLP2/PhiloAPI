@@ -1,0 +1,55 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * {
+      -webkit-print-color-adjust: exact;
+    }
+    body,
+    html {
+      font-family:  "Helvetica Neue", Helvetica, Arial, sans-serif;
+      padding: 0;
+      text-align: center;
+      margin: 0;
+    }
+    .card {
+      width: 575px;
+      height: 1000px;
+      background-size: contain;
+      background-repeat: no-repeat;
+      position: relative;
+    }
+    .type {
+      font-weight: bold;
+      position: absolute;
+      top: 60%;
+      font-size: 23px;
+      left: 0;
+      right: 0;
+    }
+    .code {
+      position: absolute;
+      font-size: 21px;
+      top: 64%;
+      left: 0;
+      right: 0;
+    }
+    img {
+      width: 550px;
+      position: absolute;
+      top: 30%;
+      left: 0%;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="card" style="background-image: url(https://storage.diggersfactory.com/assets/images/gifts/gift.jpg);">
+    <img src="{{ picture }}" />
+    <div class="type">{{ artist }}</div>
+    <div class="code">{{ name }}</div>
+  </div>
+</body>
+</html>

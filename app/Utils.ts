@@ -1026,8 +1026,11 @@ class Utils {
   }
 
   static arrayToXlsx = <T extends any[]>(
-    columns: { header: string; key: string; width: number }[][],
-    sheets: { worksheetName?: string; data: T[] }[]
+    sheets: {
+      worksheetName?: string
+      columns: { header: string; key: string; width?: number }[]
+      data: T[]
+    }[]
   ) => {
     const workbook = new Excel.Workbook()
 
@@ -1035,7 +1038,7 @@ class Utils {
     // For each sheet
     for (const sheet of sheets) {
       const worksheet: any = workbook.addWorksheet(sheet.worksheetName || `Sheet ${i + 1}`)
-      worksheet.columns = columns[i]
+      worksheet.columns = sheet.columns
 
       for (const element of sheet.data) worksheet.addRow(element)
       for (const cell of Utils.getCells(
@@ -1144,7 +1147,9 @@ class Utils {
 
   static getTransporterLink = (shop) => {
     shop.tracking_number = shop.tracking_number ? shop.tracking_number.replace(/\s/g, '') : ''
-    if (shop.tracking_transporter === 'IMX') {
+    if (shop.tracking_link) {
+      return shop.tracking_link
+    } else if (shop.tracking_transporter === 'IMX') {
       return `https://suivi.imxpostal.fr/colis/suivi/${shop.tracking_number}/html/`
     } else if (shop.tracking_transporter === 'COL' || shop.tracking_transporter === 'LTS') {
       return `https://www.laposte.fr/outils/suivre-vos-envois?code=${shop.tracking_number}`

@@ -466,24 +466,12 @@ class Stock {
   }
 
   static async exportStocksPrices() {
-    const stockQuery = DB('stock')
-      .select(DB.raw('sum(stock.quantity)'))
-      .whereRaw('project_id = project.id')
-      .as('stock')
-      .query()
-
     const refs = await DB('project')
-      .select(
-        'project.id',
-        'project.name',
-        'project.artist_name',
-        'vod.barcode',
-        'vod.unit_cost',
-        stockQuery
-      )
+      .select('project.id', 'project.name', 'project.artist_name', 'vod.barcode', 'vod.unit_cost')
       .join('vod', 'vod.project_id', 'project.id')
-      .hasMany('production')
-      .hasMany('production_cost')
+      .where('vod.type', '!=', 'deposit_sales')
+      .where('vod.barcode', 'not like', '%,%')
+      .hasMany('stock')
       .whereExists(
         DB('stock')
           .select('stock.id')
@@ -491,48 +479,46 @@ class Stock {
           .where('quantity', '>', 0)
           .query()
       )
+      .orderBy('artist_name', 'project.name')
       .all()
+
+    const logisitians = {}
 
     for (const i in refs) {
       refs[i].quantity = 0
-      refs[i].costs = 0
-      for (const prod of refs[i].production) {
-        refs[i].quantity += prod.quantity_pressed || 0
+      for (const stock of refs[i].stock) {
+        if (stock.quantity > 0) {
+          logisitians[stock.type] = true
+          refs[i][stock.type] = stock.quantity
+          refs[i].quantity += stock.quantity
+        }
       }
-      for (const cost of refs[i].production_cost) {
-        refs[i].costs += cost.cost_real || 0
+      if (refs[i].unit_cost) {
+        refs[i].price_stock = Utils.round(refs[i].unit_cost * refs[i].quantity)
       }
-      refs[i].costs = Utils.round(refs[i].costs, 2)
-
-      if (!refs[i].unit_cost && refs[i].costs && refs[i].quantity) {
-        refs[i].unit_cost = Utils.round(refs[i].costs / refs[i].quantity, 2)
-      }
-
-      refs[i].price_stock = ''
-      if (refs[i].stock && refs[i].unit_cost) {
-        refs[i].price_stock = Utils.round(refs[i].stock * refs[i].unit_cost, 2)
-      }
-
-      refs[i].production = undefined
-      refs[i].production_cost = undefined
     }
 
-    return Utils.arrayToCsv(
-      [
-        { name: 'ID', index: 'id' },
-        { name: 'Barcode', index: 'barcode' },
-        { name: 'Artist', index: 'artist_name' },
-        { name: 'Title', index: 'name' },
-        { name: 'Stock', index: 'stock' },
-        { name: 'Quantity pressed', index: 'quantity' },
-        { name: 'Costs', index: 'costs' },
-        { name: 'Unit cost', index: 'unit_cost' },
-        { name: 'Price stock', index: 'price_stock' }
-      ],
-      refs
-    )
+    const columns = [
+      { header: 'ID', key: 'id' },
+      { header: 'Barcode', key: 'barcode', width: 18 },
+      { header: 'Artist', key: 'artist_name', width: 25 },
+      { header: 'Title', key: 'name', width: 25 }
+    ]
 
-    return refs
+    for (const l of Object.keys(logisitians)) {
+      columns.push({ header: l, key: l })
+    }
+
+    columns.push({ header: 'Quantity', key: 'quantity' })
+    columns.push({ header: 'Unit cost', key: 'unit_cost' })
+    columns.push({ header: 'Price stock', key: 'price_stock' })
+
+    return Utils.arrayToXlsx([
+      {
+        columns: columns,
+        data: refs
+      }
+    ])
   }
 
   static async parseStockExcel() {

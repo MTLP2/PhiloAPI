@@ -33,6 +33,43 @@ type ChatDb = {
 
 type ChatModel = ChatDb & Model
 
+type DigitalDB = {
+  id: number
+  email: string
+  project_name?: string
+  artist_name?: string
+  step:
+    | 'pending'
+    | 'contacted'
+    | 'resent'
+    | 'in_negociation'
+    | 'refused'
+    | 'in_process'
+    | 'uploaded'
+  done_date?: string
+  distribution?: 'ci' | 'pias'
+  project_type?: 'album' | 'single' | 'ep' | 'compilation'
+  barcode?: string
+  checklist?: string
+  comment?: string
+  created_at: string
+  updated_at?: string
+}
+
+type DigitalModel = DigitalDB & Model
+
+type FeedbackDB = {
+  id: number
+  user_id: number
+  order_id: number
+  rating: number
+  comment: string
+  created_at: string
+  updated_at: string
+}
+
+type FeedbackModel = FeedbackDB & Model
+
 type GiftDb = {
   id: number
   name_fr: string
@@ -59,6 +96,52 @@ type LevelDb = {
 }
 
 type LevelModel = LevelDb & Model
+
+type ShippingWeightDB = {
+  'id': number
+  'country_id': string
+  'state'?: string | null
+  'partner': 'whiplash_uk' | 'shipehype' | 'daudin'
+  'transporter': string | null
+  'currency': string
+  'packing'?: number | null
+  'picking'?: number | null
+  'oil'?: number | null
+  '500g'?: number | null
+  '750g'?: number | null
+  '1kg'?: number | null
+  '2kg'?: number | null
+  '3kg'?: number | null
+  '4kg'?: number | null
+  '5kg'?: number | null
+  '6kg'?: number | null
+  '7kg'?: number | null
+  '8kg'?: number | null
+  '9kg'?: number | null
+  '10kg'?: number | null
+  '11kg'?: number | null
+  '12kg'?: number | null
+  '13kg'?: number | null
+  '14kg'?: number | null
+  '15kg'?: number | null
+  '16kg'?: number | null
+  '17kg'?: number | null
+  '18kg'?: number | null
+  '19kg'?: number | null
+  '20kg'?: number | null
+  '21kg'?: number | null
+  '22kg'?: number | null
+  '23kg'?: number | null
+  '24kg'?: number | null
+  '25kg'?: number | null
+  '26kg'?: number | null
+  '27kg'?: number | null
+  '28kg'?: number | null
+  '29kg'?: number | null
+  '30kg'?: number | null
+}
+
+type ShippingWeightModel = ShippingWeightDB & Model
 
 type ShopDb = {
   id: number
@@ -120,4 +203,10 @@ const enum Currencies {
   USD = 'USD',
   GBP = 'GBP',
   AUD = 'AUD'
+}
+
+const enum ShippingPartners {
+  daudin = 'daudin',
+  whiplash_uk = 'whiplash_uk',
+  shipehype = 'shipehype'
 }

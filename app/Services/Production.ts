@@ -6,6 +6,7 @@ import MondialRelay from 'App/Services/MondialRelay'
 import Customer from 'App/Services/Customer'
 import User from 'App/Services/User'
 import File from 'App/Services/File'
+import Log from 'App/Services/Log'
 import Excel from 'exceljs'
 import Storage from 'App/Services/Storage'
 import View from '@ioc:Adonis/Core/View'
@@ -481,6 +482,30 @@ class Production {
     item.updated_at = Utils.date()
 
     await item.save()
+
+    let quantity
+    if (item.quantity_pressed) {
+      quantity = item.quantity_pressed
+    } else if (item.quantity) {
+      quantity = item.quantity
+    }
+    let price
+    if (item.form_price) {
+      price = item.form_price
+    } else if (item.quote_price) {
+      price = item.quote_price
+    }
+    if (price && quantity) {
+      const currenciesDB = await Utils.getCurrenciesDb()
+      const currencies = await Utils.getCurrencies('EUR', currenciesDB)
+
+      price = price / currencies[item.currency]
+      const vod = await DB('vod').where('project_id', params.project_id).first()
+      if (!vod.unit_cost) {
+        vod.unit_cost = price / quantity
+        await vod.save()
+      }
+    }
 
     return { success: true }
   }
@@ -2060,14 +2085,31 @@ class Production {
   }
 
   static async storeCosts(params) {
-    let item = DB('production_cost')
+    let item: any = DB('production_cost')
     if (params.id) {
       item = await DB('production_cost').find(params.id)
     } else {
       item.created_at = Utils.date()
     }
 
+    if (!params.is_statement) {
+      item.in_statement = null
+    } else if (params.in_statement && item.in_statement !== params.in_statement) {
+      item.in_statement = params.in_statement
+    } else if (
+      item.is_statement !== params.is_statement ||
+      item.cost_invoiced !== params.cost_invoiced
+    ) {
+      const project = await DB('vod').where('project_id', params.project_id).first()
+      const currencyRate = await Utils.getCurrencyComp(params.currency, project.currency)
+      const value = Utils.round(params.cost_invoiced * currencyRate, 2)
+
+      item.in_statement = value
+    }
+
     item.project_id = params.project_id
+    item.type = params.type
+    item.currency = params.currency
     item.production_id = params.production_id || null
     item.name = params.name
     item.invoice_number = params.invoice_number
@@ -2079,8 +2121,9 @@ class Production {
     item.cost_real = params.cost_real
     item.cost_real_ttc = params.cost_real_ttc
     item.cost_invoiced = params.cost_invoiced
+    item.is_statement = params.is_statement
     item.margin = params.margin
-    item.in_final_price = params.in_final_price
+    item.comment = params.comment
     item.updated_at = Utils.date()
 
     if (params.invoice) {
@@ -2093,7 +2136,38 @@ class Production {
     }
 
     await item.save()
-    // await Production.calculateFinalPrice(item.production_id)
+
+    Log.save({
+      type: 'production_cost',
+      user_id: params.user_id,
+      data: item
+    })
+
+    const resp = await DB('production')
+      .where('production.id', item.production_id)
+      .join('user', 'user.id', 'production.resp_id')
+      .first()
+
+    if (resp) {
+      const project = await DB('project').where('id', item.project_id).first()
+      await Notification.sendEmail({
+        to: resp.email,
+        subject: `${project.artist_name} ${project.name} - ${item.type} - ${
+          params.id ? 'Cost changed' : 'New cost'
+        }`,
+        html: `
+        <ul>
+          <li><strong>Project:</strong> ${project.artist_name} ${project.name}</li>
+          <li><strong>Type:</strong> ${item.type}</li>
+          <li><strong>Name:</strong> ${item.name}</li>
+          <li><strong>Cost real:</strong> ${item.cost_real} ${item.currency}</li>
+          <li><strong>Cost invoiced:</strong> ${item.cost_invoiced} ${item.currency}</li>
+          <li><strong>Comment:</strong> ${item.comment}</li>
+          <li><a href="https://www.diggersfactory.com/fr/sheraf/project/${item.project_id}/costs">Link</a></li>
+        </ul>
+        `
+      })
+    }
     return true
   }
 

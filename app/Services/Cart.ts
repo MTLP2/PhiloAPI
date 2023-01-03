@@ -77,7 +77,6 @@ class Cart {
     Object.keys(params).map((i) => {
       if (i.indexOf('shop_') !== -1) {
         const ii = i.split('.')[0].split('_')
-
         params.shops[`s_${ii[1]}_${ii.slice(2).join('_')}`].items = params[i]
         delete params[i]
       }
@@ -89,6 +88,7 @@ class Cart {
     cart.tax = 0
     cart.discount = 0
     cart.total = 0
+    cart.totalGift = 0
     cart.count = 0
     cart.noStripe = false
     cart.noPaypal = false
@@ -309,13 +309,45 @@ class Cart {
     cart.customer = params.customer
     cart.customer.country_id = countryId
 
+    cart.before_gift = Utils.round(100 - cart.totalGift)
+    cart.has_gift = cart.before_gift <= 0
+    cart.has_gift = false
+    cart.gifts = []
+    if (cart.first_ship) {
+      cart.gifts = await Cart.getGifts(cart.first_ship.transporter)
+    }
+    if (cart.has_gift) {
+      cart.gift = cart.gifts.find((g: any) => g.id === +params.gift)
+    }
+
     if (params.user_id && params.save) {
       await Cart.saveCart(params.user_id, cart)
     }
 
-    // console.log('cart', cart)
-
     return cart
+  }
+
+  static getGifts = async (transporter) => {
+    const ids = [256502, 245535, 275215]
+
+    const gifts = DB('project')
+      .select(
+        'project.id',
+        'vod.id as vod_id',
+        'project.name',
+        'name',
+        'artist_name',
+        'picture',
+        'vod.picture_project'
+      )
+      .join('vod', 'project.id', 'vod.project_id')
+      .join('stock', 'stock.project_id', 'vod.project_id')
+      .whereIn('project.id', ids)
+      .where('stock.type', transporter)
+      .where('quantity', '>', 10)
+      .all()
+
+    return gifts
   }
 
   static calculateCart = async (cart, params) => {
@@ -362,7 +394,9 @@ class Cart {
         cart.total = Utils.round(cart.total + cart.shops[s].total * cur)
         cart.pickup = params.pickup
         cart.discount = Utils.round(cart.discount + cart.shops[s].discount)
-
+        if (cart.shops[s].save_shipping) {
+          cart.save_shipping = true
+        }
         cart.paypal = cart.shops[s].paypal
         cart.stripe = cart.shops[s].stripe
 
@@ -371,6 +405,21 @@ class Cart {
           cart.stripe = true
         }
 
+        const dateShipping =
+          shop.type === 'shop'
+            ? moment().format('YYYY-MM-DD')
+            : moment(shop.items[0].project.estimated_shipping).format('YYYY-MM-DD')
+
+        if (['daudin', 'whiplash', 'whiplash_uk'].includes(cart.shops[s].transporter)) {
+          if (!cart.first_ship || cart.first_ship.date > dateShipping) {
+            cart.first_ship = {
+              shop_id: shop.id,
+              transporter: cart.shops[s].transporter,
+              date: dateShipping
+            }
+          }
+          cart.totalGift += cart.shops[s].total - cart.shops[s].shipping
+        }
         cart.count += cart.shops[s].items.length
       })
     )
@@ -503,81 +552,80 @@ class Cart {
     shop.paypal = false
     shop.stripe = false
 
-    await Promise.all(
-      p.items.map(async (item, i) => {
-        item.type = shop.type
-        item.shop_id = shop.id
-        item.user_id = p.user_id
-        item.country_id = p.country_id
-        item.customer = p.customer
-        item.currency = p.currency
-        item.shipping_discount = p.shipping_discount
-        const c = await Cart.calculateItem(item)
+    for (const item of p.items) {
+      item.type = shop.type
+      item.shop_id = shop.id
+      item.user_id = p.user_id
+      item.country_id = p.country_id
+      item.customer = p.customer
+      item.currency = p.currency
+      item.shipping_discount = p.shipping_discount
+      const c = await Cart.calculateItem(item)
 
-        if (!shop.currency) {
-          shop.currency = c.currency
-        }
-        if (c.currency === 'EUR') {
-          shop.currency = 'EUR'
-        }
-      })
-    )
+      if (!shop.currency) {
+        shop.currency = c.currency
+      }
+      if (c.currency === 'EUR') {
+        shop.currency = 'EUR'
+      }
+      if (c.save_shipping) {
+        shop.save_shipping = true
+      }
+    }
 
-    await Promise.all(
-      p.items.map(async (item, i) => {
-        item.type = shop.type
-        item.shop_id = shop.id
-        item.user_id = p.user_id
-        item.country_id = p.country_id
-        item.customer = p.customer
-        item.currency = p.currency
-        item.shipping_discount = p.shipping_discount
-        const calculatedItem = await Cart.calculateItem(item)
+    for (const item of p.items) {
+      item.type = shop.type
+      item.shop_id = shop.id
+      item.user_id = p.user_id
+      item.country_id = p.country_id
+      item.customer = p.customer
+      item.currency = p.currency
+      item.shipping_discount = p.shipping_discount
+      const calculatedItem = await Cart.calculateItem(item)
 
-        if (calculatedItem.error) {
-          shop.error = calculatedItem.error
-        }
-        if (calculatedItem.discount) {
-          shop.discount += calculatedItem.discount
-        }
-        if (calculatedItem.shipping_discount) {
-          shop.total_ship_discount += calculatedItem.shipping_discount * calculatedItem.quantity
-        }
-        if (calculatedItem.ship_discount_sale_diff) {
-          shop.total_ship_discount_sale_diff += calculatedItem.ship_discount_sale_diff
-        }
-        shop.items.push(calculatedItem)
+      if (calculatedItem.error) {
+        shop.error = calculatedItem.error
+      }
+      if (calculatedItem.discount) {
+        shop.discount += calculatedItem.discount
+      }
+      if (calculatedItem.shipping_discount) {
+        shop.total_ship_discount += calculatedItem.shipping_discount * calculatedItem.quantity
+      }
+      if (calculatedItem.ship_discount_sale_diff) {
+        shop.total_ship_discount_sale_diff += calculatedItem.ship_discount_sale_diff
+      }
+      shop.items.push(calculatedItem)
 
-        if (shop.type !== 'shop') {
-          shop.transporter = calculatedItem.transporter
-          shop.transporters = calculatedItem.transporters
-        }
-        shop.quantity += calculatedItem.quantity_coef
-        shop.weight += calculatedItem.weight
-        shop.insert += calculatedItem.insert
-        shop.category = calculatedItem.category
+      if (shop.type !== 'shop') {
+        shop.transporter = calculatedItem.transporter
+        shop.transporters = calculatedItem.transporters
+      }
+      shop.quantity += calculatedItem.quantity_coef
+      shop.weight += calculatedItem.weight
+      shop.insert += calculatedItem.insert
+      shop.category = calculatedItem.category
 
-        let cur = 1
-        if (calculatedItem.currency !== shop.currency) {
-          cur = await Utils.getCurrencyComp(calculatedItem.currency, shop.currency)
-        }
+      let cur = 1
+      if (calculatedItem.currency !== shop.currency) {
+        cur = await Utils.getCurrencyComp(calculatedItem.currency, shop.currency)
+      }
 
-        if (calculatedItem.total_distrib) {
-          shop.total += calculatedItem.total_distrib * cur
-        } else if (calculatedItem.total_ship_discount) {
-          shop.total += calculatedItem.total_ship_discount * cur
-        } else {
-          shop.total += calculatedItem.total * cur
-        }
+      if (calculatedItem.total_distrib) {
+        shop.total += calculatedItem.total_distrib * cur
+      } else if (calculatedItem.total_ship_discount) {
+        shop.total += calculatedItem.total_ship_discount * cur
+      } else {
+        shop.total += calculatedItem.total * cur
+      }
 
-        shop.paypal = true
-        shop.pa = calculatedItem.pa
-        if (calculatedItem.st) {
-          shop.st = calculatedItem.st
-          shop.stripe = true
-        }
-      })
-    )
+      shop.paypal = true
+      shop.pa = calculatedItem.pa
+      if (calculatedItem.st) {
+        shop.st = calculatedItem.st
+        shop.stripe = true
+      }
+    }
 
     if (shop.error) {
       return shop
@@ -611,8 +659,6 @@ class Cart {
     })
 
     shop.tax_rate = await Cart.getTaxRate(p.customer)
-    shipping.letter = 0
-
     // Standard
     shipping.original_standard = Utils.getShipDiscounts({
       ship: shipping.standard,
@@ -673,12 +719,25 @@ class Cart {
     //   shipping.letter = 0
     // }
 
-    shop.shipping_letter = shipping.letter
-    shop.shipping_standard = shipping.standard
-    shop.shipping_tracking = shipping.tracking
-    shop.shipping_pickup = shipping.pickup
+    // If shipping is lower than 1 we offer the shipping costs
+    const min = 1
+    shop.shipping_standard = shipping.standard <= min ? 0 : shipping.standard
+    shop.shipping_tracking = shipping.tracking <= min ? 0 : shipping.tracking
+    shop.shipping_pickup = shipping.pickup !== null && shipping.pickup <= min ? 0 : shipping.pickup
     shop.shipping_type = p.shipping_type
     shop.transporter = shipping.transporter
+
+    if (shop.save_shipping) {
+      let shipping = shop.shipping_pickup !== null ? shop.shipping_pickup : shop.shipping_standard
+      let vinyl = 0
+
+      while (shipping > 1) {
+        vinyl++
+        shipping = shipping - 3 + 1
+      }
+
+      shop.free_shipping = vinyl
+    }
 
     if (
       !p.shipping_type &&
@@ -943,7 +1002,7 @@ class Cart {
           partner: transporter.transporter,
           currency: transporter.currency,
           standard: Utils.round(transporter[weight] + cost),
-          tracking: Utils.round(transporter[weight] + cost + 5)
+          tracking: Utils.round(transporter[weight] + cost + 2.5)
         }
       }
     }
@@ -991,7 +1050,7 @@ class Cart {
           partner: transporter.transporter,
           currency: transporter.currency,
           standard: Utils.round(transporter[weight] + cost),
-          tracking: Utils.round(transporter[weight] + cost + 5)
+          tracking: Utils.round(transporter[weight] + cost + 2.5)
         }
       }
     }
@@ -1031,7 +1090,7 @@ class Cart {
       partner: '',
       currency: transporter.currency,
       standard: cost,
-      tracking: Utils.round(cost + 5)
+      tracking: Utils.round(cost + 2.5)
     }
 
     /**
@@ -1067,7 +1126,7 @@ class Cart {
       partner: '',
       currency: transporter.currency,
       standard: cost,
-      tracking: Utils.round(cost + 3)
+      tracking: Utils.round(cost + 2.5)
     }
     return costs
   }
@@ -1221,6 +1280,7 @@ class Cart {
     res.insert = p.quantity * (p.project.barcode ? p.project.barcode.split(',').length : 1)
     res.weight = p.quantity * (p.project.weight || Vod.calculateWeight(p.project))
     res.category = p.project.category
+    res.save_shipping = p.project.save_shipping
 
     if (p.item_id) {
       for (const i of p.project.items) {
@@ -1347,6 +1407,14 @@ class Cart {
   static createOrder = async (params) => {
     const calculate = await Cart.calculate(params)
 
+    // Check if cart is empty
+    if (
+      calculate.count === 0 ||
+      (Object.keys(calculate.shops).length === 0 && Object.keys(calculate.boxes).length === 0)
+    ) {
+      throw new ApiError(405, 'cart_empty')
+    }
+
     let exists = false
 
     if (params.cart_id) {
@@ -1404,7 +1472,7 @@ class Cart {
       order = await DB('order').save({
         user_id: params.user_id,
         cart_id: params.cart_id,
-        paying: true,
+        paying: params.payment_type === 'stripe' ? true : null,
         payment_type: calculate.payment_type,
         currency: calculate.currency,
         currency_rate: currencyRate,
@@ -1417,6 +1485,7 @@ class Cart {
         discount: calculate.discount,
         total: calculate.total,
         origin: params.origin,
+        is_gift: params.is_gift,
         user_agent: JSON.stringify(params.user_agent),
         created_at: Utils.date(),
         updated_at: Utils.date()
@@ -1449,77 +1518,100 @@ class Cart {
       }
     }
 
+    let shopIdGift = null
     if (calculate.shops) {
-      await Promise.all(
-        Object.keys(calculate.shops).map(async (s) => {
-          const ss = calculate.shops[s]
-          const currencyRate = await Utils.getCurrency(ss.currency)
+      for (const s in calculate.shops) {
+        const ss = calculate.shops[s]
 
-          const shop = await DB('order_shop').save({
+        const shop = await DB('order_shop').save({
+          order_id: order.id,
+          user_id: params.user_id,
+          shop_id: ss.id.split('_')[0],
+          type: ss.type,
+          payment_account: params.payment_type === 'stripe' ? ss.st : ss.pa,
+          currency: ss.currency,
+          currency_rate: currencyRate,
+          sub_total: ss.sub_total,
+          discount: ss.discount,
+          promo_code: ss.promo_code?.id,
+          tax_rate: ss.tax_rate,
+          tax: ss.tax,
+          total: ss.total,
+          shipping: ss.original_shipping,
+          shipping_display: ss.shipping,
+          shipping_type: ss.shipping_type ? ss.shipping_type : 'standard',
+          transporter: ss.transporter,
+          address_pickup: ss.shipping_type === 'pickup' ? JSON.stringify(calculate.pickup) : null,
+          customer_id: customer.id,
+          customer_invoice_id: customerInvoiceId,
+          step: 'creating',
+          created_at: Utils.date(),
+          updated_at: Utils.date()
+        })
+
+        if (ss.id === calculate.first_ship.shop_id) {
+          shopIdGift = shop.id
+        }
+
+        shop.items = []
+
+        for (const item of ss.items) {
+          const currencyRateProject = await Utils.getCurrencyComp(
+            item.currency,
+            item.currency_project
+          )
+
+          const i = await DB('order_item').save({
             order_id: order.id,
-            user_id: params.user_id,
-            shop_id: ss.id.split('_')[0],
-            type: ss.type,
-            payment_account: params.payment_type === 'stripe' ? ss.st : ss.pa,
-            currency: ss.currency,
+            order_shop_id: shop.id,
+            project_id: item.project_id,
+            vod_id: item.vod_id,
+            item_id: item.item_id || null,
+            marketplace_item_id: item.marketplace_item_id,
+            currency: item.currency,
             currency_rate: currencyRate,
-            sub_total: ss.sub_total,
-            discount: ss.discount,
-            promo_code: ss.promo_code?.id,
-            tax_rate: ss.tax_rate,
-            tax: ss.tax,
-            total: ss.total,
-            shipping: ss.original_shipping,
-            shipping_display: ss.shipping,
-            shipping_type: ss.shipping_type ? ss.shipping_type : 'standard',
-            transporter: ss.transporter,
-            address_pickup: JSON.stringify(calculate.pickup),
-            customer_id: customer.id,
-            customer_invoice_id: customerInvoiceId,
-            step: 'creating',
+            currency_rate_project: currencyRateProject,
+            price: item.price,
+            discount: item.discount,
+            discount_artist: item.discount_artist,
+            shipping_discount: user.is_pro ? 0 : item.shipping_discount ?? 0,
+            tips: item.tips,
+            size: item.size,
+            quantity: item.quantity,
+            total: item.total,
+            total_ship_discount: item.total_ship_discount || 0,
             created_at: Utils.date(),
             updated_at: Utils.date()
           })
 
-          shop.items = []
+          shop.items.push(i)
+        }
 
-          await Promise.all(
-            ss.items.map(async (item) => {
-              const currencyRateProject = await Utils.getCurrencyComp(
-                item.currency,
-                item.currency_project
-              )
+        order.shops.push(shop)
+      }
+    }
 
-              const i = await DB('order_item').save({
-                order_id: order.id,
-                order_shop_id: shop.id,
-                project_id: item.project_id,
-                vod_id: item.vod_id,
-                item_id: item.item_id || null,
-                marketplace_item_id: item.marketplace_item_id,
-                currency: item.currency,
-                currency_rate: currencyRate,
-                currency_rate_project: currencyRateProject,
-                price: item.price,
-                discount: item.discount,
-                discount_artist: item.discount_artist,
-                shipping_discount: user.is_pro ? 0 : item.shipping_discount ?? 0,
-                tips: item.tips,
-                size: item.size,
-                quantity: item.quantity,
-                total: item.total,
-                total_ship_discount: item.total_ship_discount || 0,
-                created_at: Utils.date(),
-                updated_at: Utils.date()
-              })
-
-              shop.items.push(i)
-            })
-          )
-
-          order.shops.push(shop)
-        })
-      )
+    if (calculate.gift) {
+      await DB('order_item').save({
+        order_id: order.id,
+        order_shop_id: shopIdGift,
+        project_id: calculate.gift.id,
+        vod_id: calculate.gift.vod_id,
+        currency: calculate.currency,
+        currency_rate: currencyRate,
+        currency_rate_project: 1,
+        price: 0,
+        discount: 0,
+        discount_artist: 0,
+        shipping_discount: 0,
+        tips: 0,
+        size: null,
+        quantity: 1,
+        total: 0,
+        total_ship_discount: 0,
+        created_at: Utils.date(),
+        updated_at: Utils.date()
+      })
     }
 
     return order
@@ -1668,7 +1760,12 @@ class Cart {
         paying: null,
         error: err.code
       })
-      throw err
+      await DB('order_box').where('order_id', params.order_id).update({
+        step: 'failed'
+      })
+      return {
+        error: err.code
+      }
     }
   }
 
@@ -1933,184 +2030,182 @@ class Cart {
 
     let customerId = null
     let orderGenres: string[] = []
-    await Promise.all(
-      shops.map(async (shop) => {
-        customerId = shop.customer_invoice_id || shop.customer_id
 
-        if (shop.type === 'vod' || shop.type === 'shop') {
-          await DB('order_shop').where('id', shop.id).update({
-            is_paid: 1,
-            step: 'confirmed'
-          })
+    for (const shop of shops) {
+      customerId = shop.customer_invoice_id || shop.customer_id
+
+      if (shop.type === 'vod' || shop.type === 'shop') {
+        await DB('order_shop').where('id', shop.id).update({
+          is_paid: 1,
+          step: 'confirmed'
+        })
+      }
+
+      if (shop.type === 'vod' || shop.type === 'shop') {
+        const items = await DB()
+          .select(
+            'order_item.*',
+            'project.picture',
+            'vod.picture_project',
+            'project.cat_number',
+            'vod.barcode',
+            'vod.type as type_project',
+            'vod.transporter',
+            'item.barcode as item_barcode'
+          )
+          .from('order_item')
+          .join('project', 'project.id', 'order_item.project_id')
+          .join('vod', 'project.id', 'vod.project_id')
+          .leftJoin('item', 'item.id', 'order_item.item_id')
+          .where('order_shop_id', shop.id)
+          .all()
+
+        if (shop.type === 'shop') {
+          Order.sync({ id: shop.id })
         }
 
-        if (shop.type === 'vod' || shop.type === 'shop') {
-          const items = await DB()
+        for (const item of items) {
+          allItems.push(item)
+
+          await User.event({
+            type: 'pay_project',
+            project_id: item.project_id,
+            user_id: order.user_id
+          })
+
+          const project = await DB()
             .select(
-              'order_item.*',
+              'project.id',
+              'category',
               'project.picture',
               'vod.picture_project',
-              'project.cat_number',
-              'vod.barcode',
+              'user_id',
+              'project.name',
+              'project.label_name',
               'vod.type as type_project',
-              'vod.transporter',
-              'item.barcode as item_barcode'
+              'artist_name',
+              'count',
+              'styles',
+              'diggers',
+              'shipping_discount'
             )
-            .from('order_item')
-            .join('project', 'project.id', 'order_item.project_id')
-            .join('vod', 'project.id', 'vod.project_id')
-            .leftJoin('item', 'item.id', 'order_item.item_id')
-            .where('order_shop_id', shop.id)
-            .all()
+            .from('project')
+            .leftJoin('vod', 'vod.project_id', 'project.id')
+            .where('project.id', item.project_id)
+            .first()
 
-          if (shop.type === 'shop') {
-            Order.sync({ id: shop.id })
+          project.styles = project.styles.split(',').filter((s) => s !== '')
+          project.genres = project.styles.map((s) => genres[styles[s.id || s].genre_id])
+          project.genres = [...new Set(project.genres)]
+          project.styles = project.styles.map((s) => styles[s.id || s].name)
+          orderGenres.push(project.genres)
+
+          cio.track(user.id, {
+            name: 'purchase',
+            data: {
+              id: item.id,
+              quantity: item.quantity,
+              artist: project.artist_name,
+              name: project.name,
+              project_id: project.id,
+              label: project.label_name,
+              transporter: shop.transporter,
+              styles: project.styles.slice(0, 30),
+              picture: `${Env.get('STORAGE_URL')}/projects/${
+                project.picture || project.id
+              }/vinyl.png`,
+              genres: project.genres,
+              device: order.device,
+              price: item.price
+            }
+          })
+
+          if (project.category === 'illustration') {
+            await Notification.sendEmail({
+              to: config.emails.illustration,
+              subject: `${shop.id} : Nouvelle commande illustration`,
+              html: `<p>OrderShopId : https://www.diggersfactory.com/sheraf/order/${shop.order_id}</p>`
+            })
           }
 
-          await Promise.all(
-            items.map(async (item) => {
-              allItems.push(item)
+          await Dig.new({
+            type: 'purchase',
+            user_id: user.id,
+            project_id: project.id,
+            vod_id: item.vod_id,
+            order_id: item.order_id,
+            quantity: item.quantity
+          })
 
-              await User.event({
-                type: 'pay_project',
-                project_id: item.project_id,
-                user_id: order.user_id
-              })
-
-              const project = await DB()
-                .select(
-                  'project.id',
-                  'category',
-                  'project.picture',
-                  'vod.picture_project',
-                  'user_id',
-                  'project.name',
-                  'project.label_name',
-                  'vod.type as type_project',
-                  'artist_name',
-                  'count',
-                  'styles',
-                  'diggers',
-                  'shipping_discount'
-                )
-                .from('project')
-                .leftJoin('vod', 'vod.project_id', 'project.id')
-                .where('project.id', item.project_id)
-                .first()
-
-              project.styles = project.styles.split(',').filter((s) => s !== '')
-              project.genres = project.styles.map((s) => genres[styles[s.id || s].genre_id])
-              project.genres = [...new Set(project.genres)]
-              project.styles = project.styles.map((s) => styles[s.id || s].name)
-              orderGenres.push(project.genres)
-
-              cio.track(user.id, {
-                name: 'purchase',
-                data: {
-                  id: item.id,
-                  quantity: item.quantity,
-                  artist: project.artist_name,
-                  name: project.name,
-                  project_id: project.id,
-                  label: project.label_name,
-                  transporter: shop.transporter,
-                  styles: project.styles.slice(0, 30),
-                  picture: `${Env.get('STORAGE_URL')}/projects/${
-                    project.picture || project.id
-                  }/vinyl.png`,
-                  genres: project.genres,
-                  device: order.device,
-                  price: item.price
-                }
-              })
-
-              if (project.category === 'illustration') {
-                await Notification.sendEmail({
-                  to: config.emails.illustration,
-                  subject: `${shop.id} : Nouvelle commande illustration`,
-                  html: `<p>OrderShopId : https://www.diggersfactory.com/sheraf/order/${shop.order_id}</p>`
-                })
-              }
-
-              await Dig.new({
-                type: 'purchase',
-                user_id: user.id,
-                project_id: project.id,
-                vod_id: item.vod_id,
-                order_id: item.order_id,
-                quantity: item.quantity
-              })
-
-              if (user.sponsor) {
-                await Dig.new({
-                  type: 'friend_purchase',
-                  user_id: user.sponsor,
-                  friend_id: user.id,
-                  vod_id: item.vod_id,
-                  order_id: item.order_id
-                })
-              }
-
-              await Notification.add({
-                type: 'my_project_new_order',
-                user_id: project.user_id,
-                person_id: user.id,
-                person_name: user.name,
-                project_id: project.id,
-                project_name: project.name,
-                order_id: order.id,
-                order_shop_id: shop.id,
-                vod_id: item.vod_id
-              })
-
-              if (item.item_id) {
-                const i = await DB('item').where('id', item.item_id).first()
-                i.stock = i.stock - item.quantity
-                i.updated_at = Utils.date()
-                await i.save()
-              }
-
-              await Stock.calcul({
-                id: project.id,
-                isShop: shop.type === 'shop',
-                quantity: item.quantity,
-                transporter: shop.transporter
-              })
-              await Project.forceLike(project.id, user.id)
-
-              // Gamification
-              const passTypeList = ['first_order', 'order_5', 'order_10', 'order_15', 'order_20']
-              if (project.type_project === 'test_pressing') {
-                passTypeList.push('test_pressing')
-              }
-
-              // Quantity related quests
-              try {
-                const resOrders = await Pass.addHistory({
-                  userId: user.id,
-                  type: passTypeList,
-                  times: item.quantity
-                })
-                console.log('res of gamification orders', resOrders)
-              } catch (err) {
-                await Pass.errorNotification('orders', user.id, err)
-              }
-
-              // Genres quest
-              try {
-                const resGenres = await Pass.addGenreHistory({
-                  userId: user.id,
-                  genreList: project.genres
-                })
-                console.log('res of gamification genres', resGenres)
-              } catch (err) {
-                await Pass.errorNotification('genres', user.id, err)
-              }
+          if (user.sponsor) {
+            await Dig.new({
+              type: 'friend_purchase',
+              user_id: user.sponsor,
+              friend_id: user.id,
+              vod_id: item.vod_id,
+              order_id: item.order_id
             })
-          )
+          }
+
+          await Notification.add({
+            type: 'my_project_new_order',
+            user_id: project.user_id,
+            person_id: user.id,
+            person_name: user.name,
+            project_id: project.id,
+            project_name: project.name,
+            order_id: order.id,
+            order_shop_id: shop.id,
+            vod_id: item.vod_id
+          })
+
+          if (item.item_id) {
+            const i = await DB('item').where('id', item.item_id).first()
+            i.stock = i.stock - item.quantity
+            i.updated_at = Utils.date()
+            await i.save()
+          }
+
+          console.log('stocK_calcul', project.id)
+          await Stock.calcul({
+            id: project.id,
+            isShop: shop.type === 'shop',
+            quantity: item.quantity,
+            transporter: shop.transporter
+          })
+          await Project.forceLike(project.id, user.id)
+
+          // Gamification
+          const passTypeList = ['first_order', 'order_5', 'order_10', 'order_15', 'order_20']
+          if (project.type_project === 'test_pressing') {
+            passTypeList.push('test_pressing')
+          }
+
+          // Quantity related quests
+          try {
+            const resOrders = await Pass.addHistory({
+              userId: user.id,
+              type: passTypeList,
+              times: item.quantity
+            })
+            console.log('res of gamification orders', resOrders)
+          } catch (err) {
+            await Pass.errorNotification('orders', user.id, err)
+          }
+
+          // Genres quest
+          try {
+            const resGenres = await Pass.addGenreHistory({
+              userId: user.id,
+              genreList: project.genres
+            })
+            console.log('res of gamification genres', resGenres)
+          } catch (err) {
+            await Pass.errorNotification('genres', user.id, err)
+          }
         }
-      })
-    )
+      }
+    }
 
     const orders = await DB()
       .select(
@@ -2127,6 +2222,7 @@ class Cart {
         'project.picture',
         'project.name as project',
         'project.artist_name as artist',
+        'project.category',
         'vod.type as type_project',
         'picture_project',
         'project.slug as slug',
@@ -2181,8 +2277,7 @@ class Cart {
     for (const order of orders) {
       items.push({
         ...order,
-        name: `${order.artist} - ${order.project}`,
-        category: 'vinyl'
+        name: `${order.artist} - ${order.project}`
       })
     }
 

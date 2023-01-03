@@ -138,6 +138,9 @@ class MondialRelay {
 
     for (const dispatch of dispatchs) {
       const address = JSON.parse(dispatch.address_pickup)
+      if (!address) {
+        continue
+      }
       const status = await MondialRelay.getStatus(dispatch.tracking_number, address.zip_code)
 
       if (status === 'available') {
@@ -291,8 +294,10 @@ class MondialRelay {
         return 'in_progress'
       } else if (res.includes('Colis en pr&#233;paration chez l&#39;exp&#233;diteur')) {
         return 'in_progress'
-      } else {
+      } else if (res.includes(`Il n'y a aucun résultat.`)) {
         return 'not_found'
+      } else {
+        return 'no_response'
       }
     })
   }

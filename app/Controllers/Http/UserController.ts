@@ -166,7 +166,7 @@ class UserController {
     return Box.stop(params)
   }
 
-  getBoxCard({ user, params }) {
+  getCard({ user, params }) {
     params.user_id = user.id
     return User.downloadCard(params)
   }

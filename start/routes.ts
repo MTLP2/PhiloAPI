@@ -27,7 +27,6 @@ Route.get('/cron', 'AppController.cron')
 Route.get('/hourly', 'AppController.hourly')
 Route.get('/daily', 'AppController.daily')
 
-Route.get('/sitemap.xml', 'AppController.sitemap')
 Route.get('/socket.io/', () => '')
 Route.post('/socket.io/', () => '')
 Route.get('/favicon.ico', () => '')
@@ -98,6 +97,8 @@ Route.group(() => {
   Route.get('/blog/:id', 'BlogController.find')
 
   Route.get('/shops/:id', 'ShopController.find')
+
+  Route.post('/digital', 'DigitalController.create')
 
   Route.post('projects/check-code', 'ProjectsController.checkCode')
   Route.post('/projects/download', 'ProjectsController.download')
@@ -237,7 +238,7 @@ Route.group(() => {
   Route.post('/boxes/invoice', 'UserController.boxInvoice')
   Route.post('/boxes/payment', 'UserController.changeBoxPayment')
   Route.post('/boxes/address', 'UserController.changeBoxAddress')
-  Route.get('/boxes/:id/card', 'UserController.getBoxCard')
+  Route.get('/card', 'UserController.getCard')
   Route.delete('/boxes/:id', 'UserController.cancelBox')
   Route.get('/boxes/:bid/reviews', 'UserController.getBoxReviews')
   Route.get('/boxes/:bid/reviews/:uid', 'UserController.checkUserHasReviewedBox')
@@ -321,6 +322,7 @@ Route.group(() => {
   Route.delete('/projects/:pid/delay-nl/:dnlid', 'AdminController.deleteDelayNewsletter')
   Route.post('/statements', 'AdminController.uploadStatement')
   Route.get('/statements/stats', 'AdminController.getStatementStats')
+  Route.get('/statements/:id/download', 'AdminController.downloadHistoryStatement')
   Route.post('/stocks', 'AdminController.uploadStocks')
   Route.post('/items', 'AdminController.saveProjectItem')
   Route.delete('/items/:id', 'AdminController.removeProjectItem')
@@ -353,6 +355,7 @@ Route.group(() => {
   Route.delete('/orders/:id', 'AdminController.cancelOrderShop')
   Route.get('/orders/:id/customer', 'AdminController.getCustomerByOrderShopId')
   Route.get('/feedbacks', 'AdminController.getFeedbacks')
+  Route.get('/feedbacks/stats', 'AdminController.getMonthlyFeedbackStats')
   Route.get('/feedbacks/export', 'AdminController.exportFeedbacks')
   Route.get('/reviews/projects', 'AdminController.getProjectsReviews')
   Route.get('/reviews/boxes', 'AdminController.getBoxesReviews')
@@ -388,6 +391,7 @@ Route.group(() => {
   Route.post('/users/:id', 'AdminController.saveUser')
   Route.post('/users/:id/digs', 'AdminController.addDig')
   Route.get('/users/:id/statements', 'AdminController.getUserStatements')
+  Route.get('/users/:id/balance', 'AdminController.getUserBalance')
   Route.get('/newsletters', 'AdminController.getNewsletters')
   Route.post('/newsletters/template', 'AdminController.getNewsletterTemplate')
   Route.get('/newsletters/:id', 'AdminController.getNewsletter')
@@ -492,6 +496,17 @@ Route.group(() => {
   Route.get('/elogik/stock', 'ElogikController.getStock')
   Route.get('/elogik/orders', 'ElogikController.getOrders')
   Route.post('/deepl-translate', 'AdminController.deeplTranslate')
+  Route.get('/payments-artist', 'AdminController.getPaymentsArtist')
+  Route.get('/payments-artist/:id', 'AdminController.getPaymentArtist')
+  Route.post('/payments-artist', 'AdminController.savePaymentArtist')
+  Route.get('/payments-artist/:id/download', 'AdminController.downloadPaymentArtist')
+  Route.delete('/payments-artist/:id', 'AdminController.deletePaymentArtist')
+
+  Route.group(() => {
+    Route.get('/:partner', 'AdminController.getShippingWeightByPartner')
+    Route.post('/:id', 'AdminController.updateShippingWeight')
+    Route.get('/history/:id', 'AdminController.getShippingWeightHistory')
+  }).prefix('shipping-weight')
 
   Route.group(() => {
     Route.get('/', 'AdminController.getPassCulture')
@@ -499,6 +514,15 @@ Route.group(() => {
     Route.delete('/delete/:id', 'AdminController.deletePassCulture')
     Route.get('/export', 'AdminController.exportPassCulture')
   }).prefix('pass-culture')
+
+  // Digital routes
+  Route.group(() => {
+    Route.get('/', 'DigitalController.getAll')
+    Route.post('/', 'DigitalController.createAdmin')
+    Route.get('/export', 'DigitalController.export')
+    Route.get(':id', 'DigitalController.getDigitalSingle')
+    Route.put(':id', 'DigitalController.update')
+  }).prefix('digital')
 
   // Pass routes
   Route.group(() => {

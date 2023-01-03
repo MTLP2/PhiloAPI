@@ -22,7 +22,6 @@ import Review from 'App/Services/Review'
 import Vod from 'App/Services/Vod'
 import Stock from 'App/Services/Stock'
 import Sna from 'App/Services/Sna'
-import Elogik from 'App/Services/Elogik'
 import Deepl from 'App/Services/Deepl'
 import Artwork from 'App/Services/Artwork'
 import cio from 'App/Services/CIO'
@@ -186,7 +185,11 @@ class Admin {
 
     const codesQuery = DB('download').where('project_id', id).all()
 
-    const costsQuery = DB('production_cost').where('project_id', id).belongsTo('production').all()
+    const costsQuery = DB('production_cost')
+      .where('project_id', id)
+      .orderBy('date', 'desc')
+      .belongsTo('production')
+      .all()
 
     const projectImagesQuery = Project.getProjectImages({ projectId: id })
     const stocksQuery = DB('stock').where('project_id', id).all()
@@ -886,8 +889,8 @@ class Admin {
 
     if (params.is_shop && params.transporter === 'whiplash') {
       const item = await Whiplash.findItem(params.barcode)
-      if (!item) {
-        throw new ApiError(406, 'no_whiplash')
+      if (item.error) {
+        throw new ApiError(406, item.error)
       }
     }
 
@@ -923,6 +926,7 @@ class Admin {
     vod.is_licence = params.is_licence
     vod.shipping_delay_reason = params.shipping_delay_reason
     vod.shipping_discount = params.shipping_discount || 0
+    vod.save_shipping = params.save_shipping || 0
 
     vod.historic = vod.historic ? JSON.parse(vod.historic) : []
     if (params.edit_stock) {
@@ -983,8 +987,6 @@ class Admin {
       vod.payback_distrib = params.payback_distrib || null
       vod.payback_box = params.payback_box || null
       vod.discount = params.discount || null
-      // vod.tax_rate = params.tax_rate
-      vod.price_unit = params.price_unit || null
       vod.unit_cost = params.unit_cost || null
     }
     if (params.edit_statement) {
@@ -1105,7 +1107,7 @@ class Admin {
 
     if (
       (vod.status !== params.status && status[params.status]) ||
-      (vod.date_shipping !== params.date_shipping && params.notif)
+      (vod.date_shipping !== params.date_shipping && params.notif && status[params.status])
     ) {
       const ordersQuery = DB()
         .select('os.*', 'os.id as order_shop_id')
@@ -1356,125 +1358,6 @@ class Admin {
     return qty
   }
 
-  static syncProjectElogik = async (params) => {
-    const vod = await DB('vod').where('project_id', params.id).first()
-    if (!vod) {
-      return false
-    }
-
-    const orders = await DB()
-      .select('customer.*', 'os.*', 'user.email')
-      .from('order_shop as os')
-      .join('customer', 'customer.id', 'os.customer_id')
-      .join('user', 'user.id', 'os.user_id')
-      .whereIn('os.id', (query) => {
-        query.select('order_shop_id').from('order_item').where('project_id', params.id)
-      })
-      .where('os.transporter', 'daudin')
-      .where('os.type', 'vod')
-      .whereNull('date_export')
-      .where('is_paid', true)
-      .where('is_paused', false)
-      .orderBy('os.created_at')
-      .all()
-
-    const items = await DB()
-      .select(
-        'order_shop_id',
-        'oi.project_id',
-        'oi.quantity',
-        'oi.price',
-        'oi.size',
-        'vod.barcode',
-        'vod.weight',
-        'vod.sizes',
-        'project.nb_vinyl',
-        'vod.sleeve',
-        'vod.vinyl_weight'
-      )
-      .from('order_item as oi')
-      .whereIn(
-        'order_shop_id',
-        orders.map((o) => o.id)
-      )
-      .join('vod', 'vod.project_id', 'oi.project_id')
-      .join('project', 'project.id', 'oi.project_id')
-      .all()
-
-    for (const item of items) {
-      const idx = orders.findIndex((o) => o.id === item.order_shop_id)
-      orders[idx].items = orders[idx].items ? [...orders[idx].items, item] : [item]
-    }
-
-    const dispatchs: any = []
-
-    let qty = 0
-    for (const order of orders) {
-      if (qty >= params.quantity) {
-        break
-      }
-      if (order.shipping_type === 'pickup') {
-        const pickup = JSON.parse(order.address_pickup)
-        const available = await MondialRelay.checkPickupAvailable(pickup.number)
-
-        if (!available) {
-          const around = await MondialRelay.findPickupAround(pickup)
-
-          if (around) {
-            order.address_pickup = JSON.stringify(around)
-            await DB('order_shop')
-              .where('id', order.id)
-              .update({
-                address_pickup: JSON.stringify(around)
-              })
-
-            await Notification.add({
-              type: 'my_order_pickup_changed',
-              order_id: order.order_id,
-              order_shop_id: order.id,
-              user_id: order.user_id
-            })
-          } else {
-            continue
-          }
-        }
-      }
-
-      dispatchs.push(order)
-
-      for (const item of order.items) {
-        if (item.project_id === +params.id) {
-          qty = qty + item.quantity
-        }
-      }
-    }
-
-    if (dispatchs.length === 0) {
-      return { success: false }
-    }
-
-    const res = await Elogik.sync(dispatchs)
-
-    if (qty > 0) {
-      await DB('project_export').insert({
-        transporter: 'daudin',
-        project_id: vod.project_id,
-        quantity: qty,
-        date: Utils.date()
-      })
-
-      await Stock.save({
-        project_id: vod.project_id,
-        type: 'daudin',
-        quantity: -params.quantity,
-        diff: true,
-        comment: 'sync'
-      })
-    }
-
-    return res
-  }
-
   static syncProjectDaudin = async (params) => {
     const orders = await DB()
       .from('order_item as oi')
@@ -1679,6 +1562,7 @@ class Admin {
         'user.picture as user_picture',
         'user.newsletter as user_newsletter',
         'order.user_agent',
+        'order.user_contacted',
         'c.country_id',
         'c.name',
         'c.firstname',
@@ -1920,6 +1804,7 @@ class Admin {
   static saveOrder = async (params) => {
     const order = await DB('order').find(params.id)
     order.comment = params.comment
+    order.user_contacted = params.user_contacted
     order.updated_at = Utils.date()
 
     await order.save()
@@ -2121,6 +2006,12 @@ class Admin {
   }
 
   static refundOrder = async (params) => {
+    params.amount =
+      typeof params.amount === 'string'
+        ? parseFloat(params.amount.replace(',', '.'))
+        : params.amount
+    if (isNaN(params.amount)) return { error: 'Amount is not a number' }
+
     const order = await DB('order').find(params.id)
     const customer = await DB('order_shop')
       .select('customer_id')
@@ -2147,14 +2038,14 @@ class Admin {
         })
       }
 
-      const { total: totalOrderShop } = await DB('order_shop')
-        .select('total')
-        .where('id', params.order_shop_id)
-        .first()
+      const orderShop = await DB('order_shop').find(params.order_shop_id)
+      await orderShop.save({
+        refund: (orderShop.refund ?? 0) + params.amount
+      })
 
       // If amount is greater than total order shop, update the DB and make a notification call.
-      if (params.order_shop_id && params.amount >= totalOrderShop) {
-        await DB('order_shop').where('id', params.order_shop_id).update({
+      if (params.order_shop_id && orderShop.refund >= orderShop.total) {
+        await orderShop.save({
           is_paid: 0,
           ask_cancel: 0,
           step: 'canceled'
@@ -2190,7 +2081,7 @@ class Admin {
 
     // Don't update the DB if we only want to add a refund history without payment. A credit note forces refund amount to increment.
     if (!params.only_history || params.credit_note || params.credit_note === undefined) {
-      order.save()
+      await order.save()
     }
 
     order.total = params.amount
@@ -2393,6 +2284,12 @@ class Admin {
     }
     user.orders = await Admin.getOrders({ user_id: id })
     user.boxes = await Box.all({ filters: null, user_id: id })
+
+    user.statements = await DB('statement_history')
+      .where('user_id', user.id)
+      .orderBy('date', 'desc')
+      .all()
+
     return user
   }
 
@@ -3112,6 +3009,7 @@ class Admin {
     where vod.project_id = order_item.project_id
       and order_shop.id = order_item.order_shop_id
       and order_shop.date_export between '${params.start}' and '${params.end} 23:59'
+      and vod.type != 'direct_pressing'
   `
     if (!admin.includes(params.user_id)) {
       query += `AND vod.com_id = '${params.user_id}' `
@@ -3126,6 +3024,7 @@ class Admin {
       and order_shop.id = order_item.order_shop_id
       and (order_shop.step != 'creating' and order_shop.step != 'failed')
       and order_item.created_at between '${params.start}' and '${params.end} 23:59'
+      and vod.type != 'direct_pressing'
   `
     if (!admin.includes(params.user_id)) {
       query += `AND vod.com_id = '${params.user_id}' `
@@ -3181,6 +3080,7 @@ class Admin {
     where statement.project_id = vod.project_id
       AND statement.id = statement_distributor.statement_id
       AND STR_TO_DATE(CONCAT(statement.date, '-01'), '%Y-%m-%d') between '${params.start}' and '${params.end} 23:59'
+      AND vod.type != 'direct_pressing'
   `
     if (!admin.includes(params.user_id)) {
       query += `AND com_id = '${params.user_id}' `
@@ -3776,6 +3676,7 @@ class Admin {
         { name: 'Country', index: 'country_id' },
         { name: 'Type', index: 'type' },
         { name: 'Pro', index: 'is_pro' },
+        { name: 'Guest', index: 'is_guest' },
         { name: 'Unsubscribed', index: 'unsubscribed' },
         { name: 'Orders', index: 'orders' },
         { name: 'Projects', index: 'projects' },
@@ -4025,9 +3926,9 @@ class Admin {
   static exportRawProjects = async (params) => {
     const projects = await Admin.getProjects({ start: params.start, end: params.end, size: 0 })
 
-    return Utils.arrayToXlsx(
-      [
-        [
+    return Utils.arrayToXlsx([
+      {
+        columns: [
           { header: 'ID', key: 'id', width: 10 },
           { header: 'Step', key: 'step', width: 15 },
           { key: 'count', header: 'Count', width: 10 },
@@ -4036,14 +3937,16 @@ class Admin {
           { key: 'name', header: 'Project', width: 30 },
           { key: 'artist_name', header: 'Artist name', width: 30 },
           { key: 'status', header: 'Status', width: 15 },
+          { key: 'type', header: 'Type', width: 15 },
+          { key: 'category', header: 'Category', width: 15 },
           { key: 'date_shipping', header: 'Date Shipping', width: 15 },
           { key: 'country_id', header: 'Country ID', width: 15 },
           { key: 'origin', header: 'Origin', width: 15 },
           { key: 'comment', header: 'Resp', width: 15 }
-        ]
-      ],
-      [{ data: projects.data }]
-    )
+        ],
+        data: projects.data
+      }
+    ])
   }
 
   static exportCatalog = async (params) => {

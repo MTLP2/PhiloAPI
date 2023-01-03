@@ -147,11 +147,19 @@ class Category {
 
     // Filters
     for (const filter in params.filters) {
-      if (params.filters[filter].length) {
-        rawItems.whereIn(
-          filter === 'styles' ? 'project_style.style_id' : `vod.${filter}`,
-          params.filters[filter]
-        )
+      if (filter === 'save_shipping') {
+        if (params.filters[filter] === '1') {
+          rawItems.where('save_shipping', '=', 1)
+        } else if (params.filters[filter] === '0') {
+          rawItems.where('save_shipping', '=', 0)
+        }
+      } else {
+        if (params.filters[filter].length) {
+          rawItems.whereIn(
+            filter === 'styles' ? 'project_style.style_id' : `vod.${filter}`,
+            params.filters[filter]
+          )
+        }
       }
     }
 

@@ -78,10 +78,10 @@ class Whiplash {
         }
 
         const item = await Whiplash.findItem(barcode)
-        if (!item || !item.id) {
+        if (item.error) {
           await Notification.sendEmail({
             to: 'victor@diggersfactory.com,alexis@diggersfactory.com',
-            subject: `Error barcode Whiplash : ${barcode}`,
+            subject: `Error Whiplash : ${item.error} - ${barcode}`,
             html: `<ul>
               <li><b>Barcode :</b> ${barcode}</li>
               <li><b>Order :</b> https://www.diggersfactory.com/sheraf/order/${shop.order_id}</p></li>
@@ -124,10 +124,10 @@ class Whiplash {
     }
     return Whiplash.api(`/items/sku/${sku}`).then((res: any[]) => {
       if (!res || res.length === 0) {
-        return null
+        return { error: 'not_found' }
         // If eligible for media mail is not activited we return null
       } else if (!res[0].media_mail) {
-        return null
+        return { error: 'media_mail' }
       } else {
         return res[0]
       }
@@ -208,8 +208,8 @@ class Whiplash {
 
     for (const barcode of Object.keys(barcodes)) {
       const item = await Whiplash.findItem(barcode)
-      if (!item) {
-        throw new ApiError(406, 'no_whiplash')
+      if (item.error) {
+        throw new ApiError(406, item.error)
       } else {
         barcodes[barcode] = item.id
       }

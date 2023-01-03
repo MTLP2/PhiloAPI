@@ -150,7 +150,8 @@ class ProductionController {
     return Production.downloadInvoiceCo(params)
   }
 
-  storeCosts({ params }) {
+  storeCosts({ params, user }) {
+    params.user_id = user.id
     return Production.storeCosts(params)
   }
 
