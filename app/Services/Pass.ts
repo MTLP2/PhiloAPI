@@ -367,7 +367,7 @@ export default class Pass {
     times?: number
     updateTotal?: boolean
   }) {
-    console.log('addHistory', type, userId, refId, times)
+    // console.log('addHistory', type, userId, refId, times)
     const quests = await Pass.findQuest({ type, userId })
 
     // If no quests is returned at all

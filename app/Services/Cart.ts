@@ -2188,7 +2188,7 @@ class Cart {
               type: passTypeList,
               times: item.quantity
             })
-            console.log('res of gamification orders', resOrders)
+            // console.log('res of gamification orders', resOrders)
           } catch (err) {
             await Pass.errorNotification('orders', user.id, err)
           }
@@ -2199,7 +2199,7 @@ class Cart {
               userId: user.id,
               genreList: project.genres
             })
-            console.log('res of gamification genres', resGenres)
+            // console.log('res of gamification genres', resGenres)
           } catch (err) {
             await Pass.errorNotification('genres', user.id, err)
           }
@@ -2299,7 +2299,7 @@ class Cart {
           userId: user.id,
           type: ['two_genres_order']
         })
-        console.log('res of gamification two_genres_order', res)
+        // console.log('res of gamification two_genres_order', res)
       } catch (err) {
         await Pass.errorNotification('two genres order', user.id, err)
       }

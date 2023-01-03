@@ -235,7 +235,7 @@ class User {
           userId: userId,
           type: 'user_styles'
         })
-        console.log('res in gamification, user styles', res)
+        // console.log('res in gamification, user styles', res)
       }
     } catch (err) {
       await Pass.errorNotification('user styles', userId, err)
@@ -409,7 +409,7 @@ class User {
           userId: userId,
           type: 'user_newsletter'
         })
-        console.log('res in gamification, user newsletter', res)
+        // console.log('res in gamification, user newsletter', res)
       }
     } catch (err) {
       await Pass.errorNotification('newsletter', userId, err)
