@@ -308,16 +308,18 @@ class Cart {
 
     cart.customer = params.customer
     cart.customer.country_id = countryId
+
     cart.before_gift = Utils.round(100 - cart.totalGift)
     cart.has_gift = cart.before_gift <= 0
+    cart.has_gift = false
     cart.gifts = []
     if (cart.first_ship) {
       cart.gifts = await Cart.getGifts(cart.first_ship.transporter)
     }
-
     if (cart.has_gift) {
       cart.gift = cart.gifts.find((g: any) => g.id === +params.gift)
     }
+
     if (params.user_id && params.save) {
       await Cart.saveCart(params.user_id, cart)
     }
