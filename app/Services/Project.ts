@@ -1538,6 +1538,7 @@ class Project {
         'tips',
         'os.tax_rate',
         'price',
+        'fee_change',
         'customer.country_id',
         'currency_rate_project',
         'discount_artist',
@@ -1844,7 +1845,7 @@ class Project {
       const fee = 1 - Utils.getFee(feeDate, order.created_at) / 100
 
       order.tax_rate = 1 + order.tax_rate
-      order.total = order.quantity * order.price
+      order.total = order.quantity * order.price - order.fee_change
 
       if (order.discount_artist) {
         order.total -= order.discount
@@ -2046,6 +2047,8 @@ class Project {
       if (o.discount_artist) {
         o.total -= o.discount
       }
+
+      o.total -= o.fee_change
 
       res.data[oo].tax = Utils.round(o.ue ? o.total - o.total / 1.2 : 0)
       res.data[oo].fee = Utils.round((1 - fee) * (o.total - res.data[oo].tax))
