@@ -408,9 +408,7 @@ class Cart {
             ? moment().format('YYYY-MM-DD')
             : moment(shop.items[0].project.estimated_shipping).format('YYYY-MM-DD')
 
-        console.log(cart.shops[s].transporter)
         if (['daudin', 'whiplash', 'whiplash_uk'].includes(cart.shops[s].transporter)) {
-          console.log('=>', cart.shops[s].transporter)
           if (!cart.first_ship || cart.first_ship.date > dateShipping) {
             cart.first_ship = {
               shop_id: shop.id,
@@ -729,7 +727,6 @@ class Cart {
 
     if (shop.save_shipping) {
       let shipping = shop.shipping_pickup !== null ? shop.shipping_pickup : shop.shipping_standard
-      console.log(shipping)
       let vinyl = 0
 
       while (shipping > 1) {
@@ -2167,6 +2164,7 @@ class Cart {
             await i.save()
           }
 
+          console.log('stocK_calcul', project.id)
           await Stock.calcul({
             id: project.id,
             isShop: shop.type === 'shop',
