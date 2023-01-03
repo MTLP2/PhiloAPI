@@ -1304,6 +1304,7 @@ class Cart {
       }
     } else {
       res.price = p.project.prices[params.currency]
+      res.price_project = p.project.price
       res.price_ship_discount = p.project.prices_ship_discount?.[params.currency] ?? null
       res.picture = p.project.picture
       res.picture_project = p.project.picture_project
@@ -1561,6 +1562,10 @@ class Cart {
             item.currency_project
           )
 
+          const totalCurrenry = item.price * currencyRateProject
+          const rest = totalCurrenry - item.price_project
+          const feeChange = item.quantity * (rest / currencyRateProject)
+
           const i = await DB('order_item').save({
             order_id: order.id,
             order_shop_id: shop.id,
@@ -1572,6 +1577,7 @@ class Cart {
             currency_rate: currencyRate,
             currency_rate_project: currencyRateProject,
             price: item.price,
+            fee_change: feeChange,
             discount: item.discount,
             discount_artist: item.discount_artist,
             shipping_discount: user.is_pro ? 0 : item.shipping_discount ?? 0,

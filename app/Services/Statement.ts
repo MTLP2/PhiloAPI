@@ -1385,6 +1385,7 @@ class StatementService {
       .select(
         'oi.total',
         'oi.price',
+        'oi.fee_change',
         'oi.tips',
         'oi.quantity',
         'oi.currency_rate_project',
@@ -1593,7 +1594,7 @@ class StatementService {
         1 - (params.fee !== undefined ? params.fee : Utils.getFee(feeDate, order.created_at) / 100)
       const tax = 1 + order.tax_rate
       const discount = order.discount_artist ? order.discount : 0
-      const total = order.price * order.quantity - discount
+      const total = order.price * order.quantity - discount - order.fee_change
       const totalForArtist =
         params.payback !== false && project.payback_site
           ? project.payback_site * order.quantity
