@@ -1094,22 +1094,29 @@ class Utils {
 
   static getPrices = ({
     price,
+    prices,
     currency,
     currencies
   }: // shippingDiscount,
   {
     price: number
+    prices?: { EUR: number; USD: number; GBP: number; AUD: number }
     currency: Currencies
     currencies: { id: string; value: Currencies; updated_at: string }[]
     // shippingDiscount: number
   }) => {
     const curr = Utils.getCurrencies(currency, currencies)
 
+    const EUR = Math.ceil(price * curr.EUR)
+    const USD = Math.ceil(price * curr.USD)
+    const GBP = Math.ceil(price * curr.GBP)
+    const AUD = Math.ceil(price * curr.AUD)
+
     return {
-      EUR: currency === 'EUR' ? price : Math.ceil(price * curr.EUR),
-      USD: currency === 'USD' ? price : Math.ceil(price * curr.USD),
-      GBP: currency === 'GBP' ? price : Math.ceil(price * curr.GBP),
-      AUD: currency === 'AUD' ? price : Math.ceil(price * curr.AUD)
+      EUR: currency === 'EUR' ? price : prices && prices.EUR > EUR ? prices.EUR : EUR,
+      USD: currency === 'USD' ? price : prices && prices.USD > USD ? prices.USD : USD,
+      GBP: currency === 'GBP' ? price : prices && prices.EUR > GBP ? prices.GBP : GBP,
+      AUD: currency === 'AUD' ? price : prices && prices.AUD > AUD ? prices.AUD : AUD
     }
   }
 
