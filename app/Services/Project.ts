@@ -117,6 +117,7 @@ class Project {
     if (currencies) {
       project.prices = Utils.getPrices({
         price: project.price,
+        prices: JSON.parse(project.prices),
         currencies,
         currency: project.currency
       })
@@ -192,6 +193,7 @@ class Project {
     if (currencies) {
       project.prices = Utils.getPrices({
         price: project.price,
+        prices: JSON.parse(project.prices),
         currencies,
         currency: project.currency
       })
@@ -209,6 +211,7 @@ class Project {
           const currency = project.items[i].related_currency || project.currency
           project.items[i].prices = Utils.getPrices({
             price: price,
+            prices: JSON.parse(project.items[i].prices),
             currencies,
             currency: currency
           })
@@ -306,6 +309,7 @@ class Project {
       'v.goal',
       'p.category',
       'v.price',
+      'v.prices',
       'v.price_distribution',
       'v.partner_distribution',
       'v.discount',
@@ -707,6 +711,7 @@ class Project {
         DB.raw('ceil((v.count / v.goal)*100) as progress'),
         'diggers',
         'price',
+        'prices',
         'discount',
         'date_shipping',
         'disabled_cover',
@@ -796,6 +801,7 @@ class Project {
         'vod.type',
         'vod.user_id as related_user',
         'vod.price as related_price',
+        'vod.prices',
         'vod.currency as related_currency',
         'vod.is_size',
         'vod.sizes',
@@ -1242,6 +1248,7 @@ class Project {
       'v.color_vinyl',
       'v.picture_project',
       'v.price',
+      'v.prices',
       'v.currency',
       'v.goal',
       'v.count',

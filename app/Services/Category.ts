@@ -43,6 +43,7 @@ class Category {
         'v.end',
         'v.goal',
         'v.price',
+        'v.prices',
         'v.price_distribution',
         'v.partner_distribution',
         'v.discount',

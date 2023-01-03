@@ -83,6 +83,16 @@ class Vod {
     vod.splatter1 = params.type_vinyl === 'splatter' ? params.splatter1 : null
     vod.splatter2 = params.type_vinyl === 'splatter' ? params.splatter2 : null
     vod.count_other = params.count_other ? params.count_other : 0
+    if (vod.price !== parseFloat(params.price)) {
+      const currencies = await Utils.getCurrenciesDb()
+      vod.prices = JSON.stringify(
+        Utils.getPrices({
+          price: params.price,
+          currencies: currencies,
+          currency: vod.currency
+        })
+      )
+    }
     vod.price = params.price ? params.price.toString().trim().replace(',', '.') : 0
     vod.vinyl_weight = params.weight
     vod.label = params.label
