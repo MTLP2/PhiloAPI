@@ -36,7 +36,8 @@ class Product {
   }
 
   static generate = async () => {
-    await DB().execute('TRUNCATE TABLE product')
+    await DB().execute('truncate table product')
+    await DB().execute('delete from stock where product_id is not null')
 
     const refs = await DB('vod')
       .select(
@@ -51,7 +52,6 @@ class Product {
       .join('project', 'vod.project_id', 'project.id')
       .hasMany('stock', 'stock', 'project_id')
       // .hasMany('production', 'productions', 'production.project_id')
-      .limit(10)
       .whereNotNull('barcode')
       // .whereNull('barcode')
       // .orWhere('barcode', '!=', '%,%')
