@@ -1371,6 +1371,9 @@ class Cart {
       const user = await DB('user').select('is_pro').where('id', params.user_id).first()
       userIsPro = !!user.is_pro
 
+      if (userIsPro && p.project.price_distribution) {
+        res.price_project = p.project.price_distribution
+      }
       if (userIsPro && p.project.partner_distribution && p.project.prices_distribution) {
         res.price = p.project.prices_distribution[params.currency]
 
@@ -1467,7 +1470,6 @@ class Cart {
     }
 
     const currencyRate = await Utils.getCurrency(params.currency)
-
     let order
     try {
       order = await DB('order').save({
