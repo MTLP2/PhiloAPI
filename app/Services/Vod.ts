@@ -83,7 +83,7 @@ class Vod {
     vod.splatter1 = params.type_vinyl === 'splatter' ? params.splatter1 : null
     vod.splatter2 = params.type_vinyl === 'splatter' ? params.splatter2 : null
     vod.count_other = params.count_other ? params.count_other : 0
-    if (vod.price !== parseFloat(params.price)) {
+    if (vod.price !== parseFloat(params.price) || !vod.prices) {
       const currencies = await Utils.getCurrenciesDb()
       vod.prices = JSON.stringify(
         Utils.getPrices({
