@@ -414,6 +414,9 @@ Route.group(() => {
   Route.post('/categories/:id/populate', 'AdminController.populateProjectsCategory')
   Route.delete('/categories/:id/deleteAll', 'AdminController.deleteAllProjectsCategory')
   Route.delete('/categories/:id', 'AdminController.deleteCategory')
+  Route.get('/products', 'AdminController.getProducts')
+  Route.get('/products/:id', 'AdminController.getProduct')
+  Route.post('/products', 'AdminController.updateProduct')
   Route.get('/surveys', 'AdminController.getSurveys')
   Route.get('/surveys/:id', 'AdminController.getSurvey')
   Route.post('/surveys/:id', 'AdminController.saveSurvey')
@@ -512,10 +515,13 @@ Route.group(() => {
     Route.get('/export', 'AdminController.exportPassCulture')
   }).prefix('pass-culture')
 
+  // Digital routes
   Route.group(() => {
     Route.get('/', 'DigitalController.getAll')
-    Route.get('/:id', 'DigitalController.getDigitalSingle')
-    Route.put('/:id', 'DigitalController.update')
+    Route.post('/', 'DigitalController.createAdmin')
+    Route.get('/export', 'DigitalController.export')
+    Route.get(':id', 'DigitalController.getDigitalSingle')
+    Route.put(':id', 'DigitalController.update')
   }).prefix('digital')
 
   // Pass routes

@@ -191,66 +191,9 @@ class Elogik {
     return res
   }
 
-  static syncDaudin = async () => {
+  static syncBoxes = async () => {
     const res: any[] = []
     const dispatchs: any[] = []
-
-    const orders = await DB('order_shop')
-      .where('sending', true)
-      .where('transporter', 'daudin')
-      .whereNull('date_export')
-      .whereNull('logistician_id')
-      .where('is_paid', true)
-      .where('is_paused', false)
-      .all()
-
-    console.log('shop => ', orders.length)
-
-    if (!orders) {
-      return false
-    }
-
-    res.push(...(<any>await Elogik.syncOrders(orders.map((order) => order.id))))
-
-    const manuals = await DB('order_manual')
-      .select(
-        'customer.*',
-        'order_manual.id',
-        'user_id',
-        'order_manual.email',
-        'barcodes',
-        'shipping_type',
-        'address_pickup',
-        'address_pickup',
-        'order_manual.created_at'
-      )
-      .join('customer', 'order_manual.customer_id', 'customer.id')
-      .where('transporter', 'daudin')
-      .whereNull('logistician_id')
-      .whereNull('date_export')
-      .whereNull('order_manual.date_export')
-      .all()
-
-    console.log('manuals => ', manuals.length)
-    for (const manual of manuals) {
-      if (!manual.firstname) {
-        continue
-      }
-      const barcodes = JSON.parse(manual.barcodes)
-      dispatchs.push({
-        ...manual,
-        id: 'M' + manual.id,
-        user_id: manual.user_id || 'M' + manual.id,
-        sub_total: '40',
-        currency: 'EUR',
-        items: barcodes.map((b: any) => {
-          return {
-            barcode: b.barcode,
-            quantity: b.quantity
-          }
-        })
-      })
-    }
 
     const boxes = await DB('box_dispatch')
       .select(

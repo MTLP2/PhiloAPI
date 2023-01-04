@@ -66,10 +66,24 @@ class PromoCode {
   }
 
   static calculate = async () => {
+    await DB('promo_code').update({
+      used: 0,
+      turnover: 0,
+      total_discount: 0,
+      updated_at: Utils.date()
+    })
     const orders = await DB('order')
       .select('total', 'tax', 'discount', 'currency_rate', 'promo_code')
-      .where('status', 'confirmed')
+      .whereNotIn('status', [
+        'capture',
+        'card_declined',
+        'creating',
+        'failed',
+        'requires_action',
+        'requires_source_action'
+      ])
       .whereNotNull('promo_code')
+      .where('promo_code', '!=', '')
       .all()
 
     const cal = {
@@ -79,14 +93,17 @@ class PromoCode {
     }
     const promos = {}
     for (const order of orders) {
-      order.promo_code = order.promo_code.toString().toUpperCase()
-      if (!promos[order.promo_code]) {
-        promos[order.promo_code] = { ...cal }
+      if (order.promo_code) {
+        console.log(order.promo_code)
+        order.promo_code = order.promo_code.toString().toUpperCase()
+        if (!promos[order.promo_code]) {
+          promos[order.promo_code] = { ...cal }
+        }
+        promos[order.promo_code].code = order.promo_code
+        promos[order.promo_code].discount += order.discount * order.currency_rate
+        promos[order.promo_code].turnover += (order.total - order.tax) * order.currency_rate
+        promos[order.promo_code].used++
       }
-      promos[order.promo_code].code = order.promo_code
-      promos[order.promo_code].discount += order.discount * order.currency_rate
-      promos[order.promo_code].turnover += (order.total - order.tax) * order.currency_rate
-      promos[order.promo_code].used++
     }
     for (const p of Object.keys(promos)) {
       const promo = promos[p]

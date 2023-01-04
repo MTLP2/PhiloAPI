@@ -88,6 +88,7 @@ class Cart {
     cart.tax = 0
     cart.discount = 0
     cart.total = 0
+    cart.totalGift = 0
     cart.count = 0
     cart.noStripe = false
     cart.noPaypal = false
@@ -307,12 +308,18 @@ class Cart {
 
     cart.customer = params.customer
     cart.customer.country_id = countryId
-    cart.before_gift = 100 - (cart.total - cart.shipping)
-    cart.has_gift = cart.total - cart.shipping >= 100
-    cart.gifts = await Cart.getGifts('daudin')
+
+    cart.before_gift = Utils.round(100 - cart.totalGift)
+    cart.has_gift = cart.before_gift <= 0
+    cart.has_gift = false
+    cart.gifts = []
+    if (cart.first_ship) {
+      cart.gifts = await Cart.getGifts(cart.first_ship.transporter)
+    }
     if (cart.has_gift) {
       cart.gift = cart.gifts.find((g: any) => g.id === +params.gift)
     }
+
     if (params.user_id && params.save) {
       await Cart.saveCart(params.user_id, cart)
     }
@@ -334,7 +341,10 @@ class Cart {
         'vod.picture_project'
       )
       .join('vod', 'project.id', 'vod.project_id')
+      .join('stock', 'stock.project_id', 'vod.project_id')
       .whereIn('project.id', ids)
+      .where('stock.type', transporter)
+      .where('quantity', '>', 10)
       .all()
 
     return gifts
@@ -395,6 +405,21 @@ class Cart {
           cart.stripe = true
         }
 
+        const dateShipping =
+          shop.type === 'shop'
+            ? moment().format('YYYY-MM-DD')
+            : moment(shop.items[0].project.estimated_shipping).format('YYYY-MM-DD')
+
+        if (['daudin', 'whiplash', 'whiplash_uk'].includes(cart.shops[s].transporter)) {
+          if (!cart.first_ship || cart.first_ship.date > dateShipping) {
+            cart.first_ship = {
+              shop_id: shop.id,
+              transporter: cart.shops[s].transporter,
+              date: dateShipping
+            }
+          }
+          cart.totalGift += cart.shops[s].total - cart.shops[s].shipping
+        }
         cart.count += cart.shops[s].items.length
       })
     )
@@ -704,7 +729,6 @@ class Cart {
 
     if (shop.save_shipping) {
       let shipping = shop.shipping_pickup !== null ? shop.shipping_pickup : shop.shipping_standard
-      console.log(shipping)
       let vinyl = 0
 
       while (shipping > 1) {
@@ -1280,6 +1304,7 @@ class Cart {
       }
     } else {
       res.price = p.project.prices[params.currency]
+      res.price_project = p.project.price
       res.price_ship_discount = p.project.prices_ship_discount?.[params.currency] ?? null
       res.picture = p.project.picture
       res.picture_project = p.project.picture_project
@@ -1346,6 +1371,9 @@ class Cart {
       const user = await DB('user').select('is_pro').where('id', params.user_id).first()
       userIsPro = !!user.is_pro
 
+      if (userIsPro && p.project.price_distribution) {
+        res.price_project = p.project.price_distribution
+      }
       if (userIsPro && p.project.partner_distribution && p.project.prices_distribution) {
         res.price = p.project.prices_distribution[params.currency]
 
@@ -1442,7 +1470,6 @@ class Cart {
     }
 
     const currencyRate = await Utils.getCurrency(params.currency)
-
     let order
     try {
       order = await DB('order').save({
@@ -1494,14 +1521,11 @@ class Cart {
       }
     }
 
-    let shopId = null
+    let shopIdGift = null
     if (calculate.shops) {
       for (const s in calculate.shops) {
         const ss = calculate.shops[s]
 
-        if (!shopId) {
-          shopId = ss.id.split('_')[0]
-        }
         const shop = await DB('order_shop').save({
           order_id: order.id,
           user_id: params.user_id,
@@ -1528,6 +1552,10 @@ class Cart {
           updated_at: Utils.date()
         })
 
+        if (ss.id === calculate.first_ship.shop_id) {
+          shopIdGift = shop.id
+        }
+
         shop.items = []
 
         for (const item of ss.items) {
@@ -1535,6 +1563,10 @@ class Cart {
             item.currency,
             item.currency_project
           )
+
+          const totalCurrenry = item.price * currencyRateProject
+          const rest = totalCurrenry - item.price_project
+          const feeChange = item.quantity * (rest / currencyRateProject)
 
           const i = await DB('order_item').save({
             order_id: order.id,
@@ -1547,6 +1579,7 @@ class Cart {
             currency_rate: currencyRate,
             currency_rate_project: currencyRateProject,
             price: item.price,
+            fee_change: feeChange,
             discount: item.discount,
             discount_artist: item.discount_artist,
             shipping_discount: user.is_pro ? 0 : item.shipping_discount ?? 0,
@@ -1569,7 +1602,7 @@ class Cart {
     if (calculate.gift) {
       await DB('order_item').save({
         order_id: order.id,
-        order_shop_id: shopId,
+        order_shop_id: shopIdGift,
         project_id: calculate.gift.id,
         vod_id: calculate.gift.vod_id,
         currency: calculate.currency,
@@ -1580,7 +1613,7 @@ class Cart {
         discount_artist: 0,
         shipping_discount: 0,
         tips: 0,
-        size: 0,
+        size: null,
         quantity: 1,
         total: 0,
         total_ship_discount: 0,
@@ -2141,6 +2174,7 @@ class Cart {
             await i.save()
           }
 
+          console.log('stocK_calcul', project.id)
           await Stock.calcul({
             id: project.id,
             isShop: shop.type === 'shop',

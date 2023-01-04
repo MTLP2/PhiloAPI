@@ -1753,6 +1753,7 @@ class Stats {
           cost: { total: 0, dates: { ...dates } }
         },
         shipping: { total: 0, dates: { ...dates } },
+        fee_change: { total: 0, dates: { ...dates } },
         distrib: {
           total: { total: 0, dates: { ...dates } },
           project: { total: 0, dates: { ...dates } },
@@ -2001,6 +2002,7 @@ class Stats {
         'order_item.total',
         'quantity',
         'fee_date',
+        'fee_change',
         'payback_site',
         'is_licence'
       )
@@ -2063,6 +2065,9 @@ class Stats {
     }
 
     const addMarge = (type, cat, date, value) => {
+      if (isNaN(value)) {
+        return
+      }
       if (cat) {
         d.margin[type][cat].dates[date] += value
         d.margin[type].total.dates[date] += value
@@ -2128,6 +2133,12 @@ class Stats {
               addMarge('project', null, date, marge)
               addTurnover(invoice.type, 'project', 'site', date, total)
             }
+            addMarge(
+              'fee_change',
+              null,
+              date,
+              (item.fee_change * invoice.currency_rate) / (1 + order.tax_rate)
+            )
           }
         }
       } else if (invoice.category === 'box') {

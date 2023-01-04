@@ -28,6 +28,7 @@ import Artwork from 'App/Services/Artwork'
 import Stats from 'App/Services/Stats'
 import MailJet from 'App/Services/MailJet'
 import Review from 'App/Services/Review'
+import Product from 'App/Services/Product'
 import ApiError from 'App/ApiError'
 import ProjectService from 'App/Services/Project'
 import Dispatch from 'App/Services/Dispatch'
@@ -426,6 +427,18 @@ class AdminController {
 
   countOrdersError({ params }) {
     return Admin.countOrdersErrors()
+  }
+
+  async getProducts({ params }) {
+    return Product.all(params)
+  }
+
+  async getProduct({ params }) {
+    return Product.find(params)
+  }
+
+  async saveProduct({ params }) {
+    return Product.save(params)
   }
 
   getUsers({ params }) {
