@@ -1107,10 +1107,10 @@ class Utils {
   }) => {
     const curr = Utils.getCurrencies(currency, currencies)
 
-    const EUR = Math.ceil(price * curr.EUR)
-    const USD = Math.ceil(price * curr.USD)
-    const GBP = Math.ceil(price * curr.GBP)
-    const AUD = Math.ceil(price * curr.AUD)
+    const EUR = Math.ceil(price * curr.EUR + 0.5)
+    const USD = Math.ceil(price * curr.USD + 0.5)
+    const GBP = Math.ceil(price * curr.GBP + 0.3)
+    const AUD = Math.ceil(price * curr.AUD + 0.5)
 
     return {
       EUR: currency === 'EUR' ? price : prices && prices.EUR > EUR ? prices.EUR : EUR,
