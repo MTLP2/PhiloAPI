@@ -110,7 +110,6 @@ class Production {
 
     const res: any = await Utils.getRows(params)
     res.stats = await Production.getStats()
-    console.log(res.stats)
     return res
   }
 
