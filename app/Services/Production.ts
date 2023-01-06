@@ -128,12 +128,18 @@ class Production {
       .all()
 
     const res = {}
+
+    const dates = {}
+    for (const fac of factories) {
+      dates[fac.date] = 0
+    }
+
     for (const fac of factories) {
       if (!fac.factory) {
         continue
       }
       if (!res[fac.factory]) {
-        res[fac.factory] = {}
+        res[fac.factory] = { ...dates }
       }
       res[fac.factory][fac.date] = fac.quantity
     }
