@@ -1304,6 +1304,7 @@ class Cart {
       }
     } else {
       res.price = p.project.prices[params.currency]
+      res.price_project = p.project.price
       res.price_ship_discount = p.project.prices_ship_discount?.[params.currency] ?? null
       res.picture = p.project.picture
       res.picture_project = p.project.picture_project
@@ -1370,6 +1371,9 @@ class Cart {
       const user = await DB('user').select('is_pro').where('id', params.user_id).first()
       userIsPro = !!user.is_pro
 
+      if (userIsPro && p.project.price_distribution) {
+        res.price_project = p.project.price_distribution
+      }
       if (userIsPro && p.project.partner_distribution && p.project.prices_distribution) {
         res.price = p.project.prices_distribution[params.currency]
 
@@ -1466,7 +1470,6 @@ class Cart {
     }
 
     const currencyRate = await Utils.getCurrency(params.currency)
-
     let order
     try {
       order = await DB('order').save({
@@ -1561,6 +1564,10 @@ class Cart {
             item.currency_project
           )
 
+          const totalCurrenry = item.price * currencyRateProject
+          const rest = totalCurrenry - item.price_project
+          const feeChange = item.quantity * (rest / currencyRateProject)
+
           const i = await DB('order_item').save({
             order_id: order.id,
             order_shop_id: shop.id,
@@ -1572,6 +1579,7 @@ class Cart {
             currency_rate: currencyRate,
             currency_rate_project: currencyRateProject,
             price: item.price,
+            fee_change: feeChange,
             discount: item.discount,
             discount_artist: item.discount_artist,
             shipping_discount: user.is_pro ? 0 : item.shipping_discount ?? 0,
@@ -2188,7 +2196,7 @@ class Cart {
               type: passTypeList,
               times: item.quantity
             })
-            console.log('res of gamification orders', resOrders)
+            // console.log('res of gamification orders', resOrders)
           } catch (err) {
             await Pass.errorNotification('orders', user.id, err)
           }
@@ -2199,7 +2207,7 @@ class Cart {
               userId: user.id,
               genreList: project.genres
             })
-            console.log('res of gamification genres', resGenres)
+            // console.log('res of gamification genres', resGenres)
           } catch (err) {
             await Pass.errorNotification('genres', user.id, err)
           }
@@ -2299,7 +2307,7 @@ class Cart {
           userId: user.id,
           type: ['two_genres_order']
         })
-        console.log('res of gamification two_genres_order', res)
+        // console.log('res of gamification two_genres_order', res)
       } catch (err) {
         await Pass.errorNotification('two genres order', user.id, err)
       }

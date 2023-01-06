@@ -111,6 +111,7 @@ class App {
         await Whiplash.setTrackingLinks()
       } else if (hour === 5) {
         await Elogik.syncStocks()
+        await Elogik.syncBoxes()
         await Cio.syncNewsletterNoAccount()
       } else if (hour === 7) {
         await App.check5DaysLeftProjects()

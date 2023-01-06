@@ -117,6 +117,7 @@ class Project {
     if (currencies) {
       project.prices = Utils.getPrices({
         price: project.price,
+        prices: JSON.parse(project.prices),
         currencies,
         currency: project.currency
       })
@@ -192,6 +193,7 @@ class Project {
     if (currencies) {
       project.prices = Utils.getPrices({
         price: project.price,
+        prices: JSON.parse(project.prices),
         currencies,
         currency: project.currency
       })
@@ -209,6 +211,7 @@ class Project {
           const currency = project.items[i].related_currency || project.currency
           project.items[i].prices = Utils.getPrices({
             price: price,
+            prices: JSON.parse(project.items[i].prices),
             currencies,
             currency: currency
           })
@@ -306,6 +309,7 @@ class Project {
       'v.goal',
       'p.category',
       'v.price',
+      'v.prices',
       'v.price_distribution',
       'v.partner_distribution',
       'v.discount',
@@ -707,6 +711,7 @@ class Project {
         DB.raw('ceil((v.count / v.goal)*100) as progress'),
         'diggers',
         'price',
+        'prices',
         'discount',
         'date_shipping',
         'disabled_cover',
@@ -796,6 +801,7 @@ class Project {
         'vod.type',
         'vod.user_id as related_user',
         'vod.price as related_price',
+        'vod.prices',
         'vod.currency as related_currency',
         'vod.is_size',
         'vod.sizes',
@@ -1242,6 +1248,7 @@ class Project {
       'v.color_vinyl',
       'v.picture_project',
       'v.price',
+      'v.prices',
       'v.currency',
       'v.goal',
       'v.count',
@@ -1538,6 +1545,7 @@ class Project {
         'tips',
         'os.tax_rate',
         'price',
+        'fee_change',
         'customer.country_id',
         'currency_rate_project',
         'discount_artist',
@@ -1844,7 +1852,7 @@ class Project {
       const fee = 1 - Utils.getFee(feeDate, order.created_at) / 100
 
       order.tax_rate = 1 + order.tax_rate
-      order.total = order.quantity * order.price
+      order.total = order.quantity * order.price - order.fee_change
 
       if (order.discount_artist) {
         order.total -= order.discount
@@ -2046,6 +2054,8 @@ class Project {
       if (o.discount_artist) {
         o.total -= o.discount
       }
+
+      o.total -= o.fee_change
 
       res.data[oo].tax = Utils.round(o.ue ? o.total - o.total / 1.2 : 0)
       res.data[oo].fee = Utils.round((1 - fee) * (o.total - res.data[oo].tax))
