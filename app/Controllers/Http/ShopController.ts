@@ -51,7 +51,8 @@ class ShopController {
         banner: schema.string.optional(),
         bg_image: schema.string.optional(),
         line_items: schema.number.optional(),
-        white_label: schema.boolean.optional()
+        white_label: schema.boolean.optional(),
+        youtube: schema.string.optional()
       }),
       data: params
     })

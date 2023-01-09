@@ -156,6 +156,7 @@ type ShopDb = {
   bg_image?: string | null
   line_items?: number
   white_label?: boolean | null
+  youtube?: string | null
   created_at?: string | null
   updated_at?: string | null
 }
