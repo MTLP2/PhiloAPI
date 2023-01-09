@@ -2603,17 +2603,42 @@ class Stats {
         'project.name',
         'is_licence',
         'currency',
+        'type',
         'step',
         'project.created_at'
       )
       .join('project', 'project.id', 'vod.project_id')
       .whereIn('step', ['successful', 'in_progress'])
+      .orWhere('type', 'direct_pressing')
+      .orderBy('project.artist_name')
+      .orderBy('project.name')
+      .all()
+
+    const invoices = await DB('invoice')
+      .select('sub_total', 'currency_rate', 'invoice.project_id')
+      .join('vod', 'invoice.project_id', 'vod.project_id')
+      .where('vod.type', 'direct_pressing')
+      .all()
+
+    const orders = await DB('order_shop')
+      .select(
+        'vod.project_id',
+        'order_item.order_shop_id',
+        'quantity',
+        'shipping',
+        'order_shop.currency',
+        'order_shop.currency_rate'
+      )
+      .join('order_item', 'order_item.order_shop_id', 'order_shop.id')
+      .join('vod', 'order_item.project_id', 'vod.project_id')
+      .where('date_export', 'between', [params.start || '2001-01-01', params.end || '2999-01-01'])
       .all()
 
     const workbook = new Excel.Workbook()
 
     const projectWorkbook: any = workbook.addWorksheet('Project')
     const licenceWorkbook: any = workbook.addWorksheet('Licence')
+    const directPressingWorkbook: any = workbook.addWorksheet('Direct Pressing')
 
     const columns = [
       { header: 'Id', key: 'project_id', width: 10 },
@@ -2624,13 +2649,61 @@ class Stats {
       { header: 'Qty Distrib', key: 'qty_distrib', width: 10 },
       { header: 'Distrib', key: 'distrib', width: 10 },
       { header: 'Qty Total', key: 'qty_total', width: 10 },
-      { header: 'Total', key: 'total', width: 10 }
+      { header: 'Total', key: 'total', width: 10 },
+      { header: 'Shipping', key: 'shippings', width: 10 }
     ]
 
     projectWorkbook.columns = columns
     licenceWorkbook.columns = columns
+    directPressingWorkbook.columns = [
+      { header: 'Id', key: 'project_id', width: 10 },
+      { header: 'Project', key: 'name', width: 30 },
+      { header: 'Date', key: 'created_at', width: 10 },
+      { header: 'Total', key: 'total', width: 10 }
+    ]
 
-    for (const project of projects) {
+    let shops = {}
+    for (const order of orders) {
+      if (!shops[order.order_shop_id]) {
+        shops[order.order_shop_id] = {
+          shipping: order.shipping * order.currency_rate,
+          quantity: 0
+        }
+      }
+      shops[order.order_shop_id].quantity += order.quantity
+    }
+    let shippings = {}
+    for (const order of orders) {
+      if (!shippings[order.project_id]) {
+        shippings[order.project_id] = 0
+      }
+      const shipping = shops[order.order_shop_id].shipping / shops[order.order_shop_id].quantity
+      shippings[order.project_id] += shipping * order.quantity
+    }
+
+    const pp = {}
+    for (const invoice of invoices) {
+      if (!pp[invoice.project_id]) {
+        pp[invoice.project_id] = 0
+      }
+      pp[invoice.project_id] += invoice.sub_total * invoice.currency_rate
+    }
+    for (const project of projects.filter((p) => p.type === 'direct_pressing')) {
+      if (!pp[project.project_id]) {
+        continue
+      }
+      const row = {
+        project_id: project.project_id,
+        name: `${project.artist_name} - ${project.name}`,
+        created_at: project.created_at,
+        total: Utils.round(pp[project.project_id], 0)
+      }
+      directPressingWorkbook.addRow(row)
+    }
+    for (const project of projects.filter((p) => p.type !== 'direct_pressing')) {
+      if (project.type === 'direct_pressing') {
+        continue
+      }
       const statement = await Statement.getStatement({
         id: project.project_id,
         fee: 0,
@@ -2660,7 +2733,10 @@ class Stats {
         qty_distrib: statement.distrib_quantity.total,
         distrib: distrib,
         qty_total: statement.site_quantity.total + statement.distrib_quantity.total,
-        total: distrib + site
+        total: distrib + site,
+        shippings: shippings[project.project_id]
+          ? Utils.round(shippings[project.project_id], 0)
+          : ''
       }
       if (project.is_licence) {
         licenceWorkbook.addRow(row)

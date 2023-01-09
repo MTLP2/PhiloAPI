@@ -108,7 +108,42 @@ class Production {
       params.order = 'desc'
     }
 
-    return Utils.getRows(params)
+    const res: any = await Utils.getRows(params)
+    res.stats = await Production.getStats()
+    return res
+  }
+
+  static async getStats() {
+    const factories = await DB('production')
+      .select(
+        'factory',
+        DB.raw(`date_format(date_factory, '%Y-%m') as date`),
+        DB.raw('sum(quantity) as quantity')
+      )
+      .whereNotNull('date_factory')
+      .whereNotNull('factory')
+      .groupBy('factory')
+      .groupBy('date')
+      .where('date_factory', '>', moment().subtract(6, 'months').format('YYYY-MM'))
+      .all()
+
+    const res = {}
+
+    const dates = {}
+    for (const fac of factories) {
+      dates[fac.date] = 0
+    }
+
+    for (const fac of factories) {
+      if (!fac.factory) {
+        continue
+      }
+      if (!res[fac.factory]) {
+        res[fac.factory] = { ...dates }
+      }
+      res[fac.factory][fac.date] = fac.quantity
+    }
+    return res
   }
 
   static listActions(): {
