@@ -483,6 +483,22 @@ class AdminController {
     return Feedback.all(params)
   }
 
+  async toggleFeedbackContactStatus({ params }) {
+    params.feedbackId = params.id
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          feedbackId: schema.number()
+        }),
+        data: params
+      })
+
+      return Feedback.toggleFeedbackContactStatus(payload)
+    } catch (err) {
+      return { error: err.message }
+    }
+  }
+
   exportFeedbacks({ params }) {
     return Feedback.exportAll(params)
   }

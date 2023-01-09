@@ -64,6 +64,7 @@ type FeedbackDB = {
   order_id: number
   rating: number
   comment: string
+  is_contacted: TinyIntBool
   created_at: string
   updated_at: string
 }
