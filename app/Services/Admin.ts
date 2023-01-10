@@ -3937,12 +3937,14 @@ class Admin {
           { key: 'name', header: 'Project', width: 30 },
           { key: 'artist_name', header: 'Artist name', width: 30 },
           { key: 'status', header: 'Status', width: 15 },
+          { key: 'resp_prod', header: 'Resp. prod', width: 15 },
+          { key: 'com', header: 'Resp. com', width: 15 },
           { key: 'type', header: 'Type', width: 15 },
           { key: 'category', header: 'Category', width: 15 },
           { key: 'date_shipping', header: 'Date Shipping', width: 15 },
           { key: 'country_id', header: 'Country ID', width: 15 },
           { key: 'origin', header: 'Origin', width: 15 },
-          { key: 'comment', header: 'Resp', width: 15 }
+          { key: 'comment', header: 'Resp (comment)', width: 15 }
         ],
         data: projects.data
       }
@@ -4452,7 +4454,7 @@ class Admin {
     const commercialList = params.resp_id.split(',')
     const categoryList = params.category.split(',')
 
-    const projectsRaw = await DB('project as p')
+    const projectsRawQuery = DB('project as p')
       .select(
         'p.id',
         'p.name',
@@ -4470,12 +4472,12 @@ class Admin {
       .join('vod as v', 'v.project_id', 'p.id')
       .leftJoin('user as u', 'u.id', 'v.com_id')
       .whereIn('v.com_id', commercialList)
-      .whereIn('p.category', categoryList)
       .where('p.is_delete', 0)
       .where('p.created_at', '>=', params.start)
       .where('p.created_at', '<=', `${params.end} 23:59`)
       .whereNotNull('v.user_id')
-      .all()
+    if (params.category) projectsRawQuery.whereIn('p.category', categoryList)
+    const projectsRaw = await projectsRawQuery.all()
 
     const projects = projectsRaw.map((project) => {
       if (project.historic && project.historic.length) {
