@@ -95,10 +95,7 @@ class Product {
       )
       .join('project', 'vod.project_id', 'project.id')
       .hasMany('stock', 'stock', 'project_id')
-      // .hasMany('production', 'productions', 'production.project_id')
       .whereNotNull('barcode')
-      // .whereNull('barcode')
-      // .orWhere('barcode', '!=', '%,%')
       .all()
 
     for (const ref of refs) {
@@ -113,7 +110,6 @@ class Product {
           const sizes = JSON.parse(ref.sizes)
 
           for (const [size, barcode] of Object.entries(sizes)) {
-            console.log(size, barcode)
             await DB('product').insert({
               name: `${ref.artist_name} - ${ref.name}`,
               parent_id: id,
@@ -147,6 +143,17 @@ class Product {
     }
 
     return refs.length
+  }
+
+  static calculatePreorders = async () => {
+    const orders = await DB('order_shop')
+      .where('type', 'vod')
+      .join('vod', 'vod.project_id', 'order_item.project_id')
+      .where('is_paid', true)
+      .whereNull('date_export')
+      .all()
+
+    return { success: true }
   }
 }
 
