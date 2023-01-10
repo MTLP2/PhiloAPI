@@ -4,7 +4,7 @@ import Utils from 'App/Utils'
 
 class Digital {
   static async getAll(): Promise<any> {
-    return await Utils.getRows({ query: DB('digital') })
+    return await Utils.getRows({ query: DB('digital').orderBy('created_at', 'desc') })
   }
 
   static async find(params: { id: number }) {
