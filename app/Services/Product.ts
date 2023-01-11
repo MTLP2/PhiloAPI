@@ -81,6 +81,7 @@ class Product {
 
   static generate = async () => {
     await DB().execute('truncate table product')
+    await DB().execute('truncate table project_product')
     await DB().execute('delete from stock where product_id is not null')
 
     const refs = await DB('vod')
@@ -102,9 +103,14 @@ class Product {
       try {
         const barcodes = ref.barcode ? ref.barcode.split(',') : ''
         if (ref.barcode === 'SIZE') {
-          const id = await DB('product').insert({
+          const [id] = await DB('product').insert({
             name: `${ref.artist_name} - ${ref.name}`,
             type: 'merch'
+          })
+
+          await DB('project_product').insert({
+            project_id: ref.id,
+            product_id: id
           })
 
           const sizes = JSON.parse(ref.sizes)
@@ -119,13 +125,18 @@ class Product {
             })
           }
         } else if (barcodes.length < 2) {
-          const id = await DB('product').insert({
+          const [id] = await DB('product').insert({
             name: `${ref.artist_name} - ${ref.name}`,
             type: ref.category,
             barcode: ref.barcode,
             catnumber: ref.cat_number,
             size: null,
             color: null
+          })
+
+          await DB('project_product').insert({
+            project_id: ref.id,
+            product_id: id
           })
 
           for (const stock of ref.stock) {
@@ -146,14 +157,35 @@ class Product {
   }
 
   static calculatePreorders = async () => {
+    await DB('stock').update({
+      quantity_preorder: 0
+    })
+
     const orders = await DB('order_shop')
-      .where('type', 'vod')
+      .select('order_shop.transporter', 'product_id', DB.raw('sum(quantity) as quantity'))
+      .where('order_shop.type', 'vod')
+      .join('order_item', 'order_shop.id', 'order_item.order_shop_id')
       .join('vod', 'vod.project_id', 'order_item.project_id')
+      .join('project_product', 'vod.project_id', 'project_product.project_id')
       .where('is_paid', true)
       .whereNull('date_export')
+      .groupBy('transporter')
+      .groupBy('product_id')
       .all()
 
-    return { success: true }
+    let qty = 0
+    for (const order of orders) {
+      qty += order.quantity
+
+      await DB('stock')
+        .where('product_id', order.product_id)
+        .where('type', order.transporter)
+        .update({
+          quantity_preorder: order.quantity
+        })
+    }
+
+    return { success: true, quantity: qty }
   }
 }
 
