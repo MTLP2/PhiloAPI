@@ -1552,9 +1552,11 @@ class Cart {
           updated_at: Utils.date()
         })
 
+        /**
         if (ss.id === calculate.first_ship.shop_id) {
           shopIdGift = shop.id
         }
+        **/
 
         shop.items = []
 
