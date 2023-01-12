@@ -421,6 +421,7 @@ class Project {
     }
 
     if (params.shop_id) {
+      selects.push('shop_project.featured')
       projects.join('shop_project', 'shop_project.project_id', 'p.id')
       projects.where('shop_project.shop_id', params.shop_id)
       if (!params.all_project) {
