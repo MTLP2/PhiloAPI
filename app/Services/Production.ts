@@ -536,7 +536,7 @@ class Production {
 
       price = price / currencies[item.currency]
       const vod = await DB('vod').where('project_id', params.project_id).first()
-      if (!vod.unit_cost) {
+      if (!vod.unit_cost && price) {
         vod.unit_cost = price / quantity
         await vod.save()
       }
