@@ -239,6 +239,17 @@ class Shop {
     }
     return { success: true }
   }
+
+  static async setFeatured(payload: { shop_id: number; project_id: number; featured: boolean }) {
+    await DB('shop_project')
+      .where('project_id', payload.project_id)
+      .where('shop_id', payload.shop_id)
+      .update({
+        featured: payload.featured
+      })
+
+    return { success: true }
+  }
 }
 
 export default Shop

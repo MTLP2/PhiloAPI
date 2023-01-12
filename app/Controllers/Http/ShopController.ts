@@ -25,7 +25,8 @@ class ShopController {
   async getShop({ params, user }) {
     const payload = await validator.validate({
       schema: schema.create({
-        id: schema.number()
+        id: schema.number(),
+        all_project: schema.boolean()
       }),
       data: params
     })
@@ -135,6 +136,21 @@ class ShopController {
       throw new ApiError(403)
     }
     return Shop.changeProjectPosition(payload)
+  }
+
+  async setFeatured({ request, user }) {
+    const payload = await validator.validate({
+      schema: schema.create({
+        shop_id: schema.number(),
+        project_id: schema.number(),
+        featured: schema.boolean()
+      }),
+      data: request.body()
+    })
+    if (!(await Shop.canEdit(payload.shop_id, user.id))) {
+      throw new ApiError(403)
+    }
+    return Shop.setFeatured(payload)
   }
 }
 
