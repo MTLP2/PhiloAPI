@@ -162,7 +162,8 @@ class AdminController {
 
   async setStock({ params, user }) {
     params.user_id = user.id
-    return Stock.setStocksProject(params)
+    params.project_id = params.id
+    return Stock.setStocks(params)
   }
 
   async getStocks({ params, user }) {
@@ -427,18 +428,6 @@ class AdminController {
 
   countOrdersError({ params }) {
     return Admin.countOrdersErrors()
-  }
-
-  async getProducts({ params }) {
-    return Product.all(params)
-  }
-
-  async getProduct({ params }) {
-    return Product.find(params)
-  }
-
-  async saveProduct({ params }) {
-    return Product.save(params)
   }
 
   getUsers({ params }) {
