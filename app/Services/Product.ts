@@ -66,7 +66,36 @@ class Product {
       .where('product.id', payload.id)
       .first()
 
+    item.projects = await DB('project')
+      .select('project.id', 'picture', 'artist_name', 'name')
+      .join('project_product', 'project_product.project_id', 'project.id')
+      .where('product_id', payload.id)
+      .all()
     item.children = await DB('product').where('parent_id', payload.id).all()
+    item.stocks = await DB('stock').where('product_id', payload.id).all()
+    item.stocks_historic = await DB('stock_historic')
+      .select('stock_historic.*', 'user.name')
+      .leftJoin('user', 'user.id', 'stock_historic.user_id')
+      .where('product_id', payload.id)
+      .orderBy('id', 'desc')
+      .all()
+
+    item.stocks.unshift({
+      type: 'distrib',
+      is_distrib: true,
+      quantity: item.stocks
+        .filter((s) => s.is_distrib)
+        .map((c) => c.quantity)
+        .reduce((a, c) => a + c, 0)
+    })
+    item.stocks.unshift({
+      type: 'site',
+      is_distrib: false,
+      quantity: item.stocks
+        .filter((s) => !s.is_distrib)
+        .map((c) => c.quantity)
+        .reduce((a, c) => a + c, 0)
+    })
 
     return item
   }
@@ -83,6 +112,7 @@ class Product {
     await DB().execute('truncate table product')
     await DB().execute('truncate table project_product')
     await DB().execute('delete from stock where product_id is not null')
+    await DB().execute('delete from stock_historic where product_id is not null')
 
     const refs = await DB('vod')
       .select(
@@ -96,6 +126,7 @@ class Product {
       )
       .join('project', 'vod.project_id', 'project.id')
       .hasMany('stock', 'stock', 'project_id')
+      .hasMany('stock_historic', 'stock_historic', 'project_id')
       .whereNotNull('barcode')
       .all()
 
@@ -147,9 +178,17 @@ class Product {
               product_id: id
             })
           }
+          for (const stock of ref.stock_historic) {
+            await DB('stock_historic').insert({
+              ...stock,
+              id: null,
+              project_id: null,
+              product_id: id
+            })
+          }
         }
       } catch (e) {
-        console.log(e)
+        // console.log(e)
       }
     }
 
