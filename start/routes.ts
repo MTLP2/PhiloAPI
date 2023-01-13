@@ -503,6 +503,7 @@ Route.group(() => {
   Route.post('/payments-artist', 'AdminController.savePaymentArtist')
   Route.get('/payments-artist/:id/download', 'AdminController.downloadPaymentArtist')
   Route.delete('/payments-artist/:id', 'AdminController.deletePaymentArtist')
+  Route.get('/logs', 'AdminController.getLogs')
 
   Route.group(() => {
     Route.get('/:partner', 'AdminController.getShippingWeightByPartner')

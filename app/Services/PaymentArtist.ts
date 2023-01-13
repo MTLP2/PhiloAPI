@@ -87,6 +87,7 @@ class PaymentArtist {
   static async save(params: {
     id: number
     user_id: number
+    auth_id: number
     date: string
     type: string
     total: number
@@ -129,7 +130,7 @@ class PaymentArtist {
     Log.save({
       id: item.id,
       type: 'payment_artist',
-      user_id: params.user_id,
+      user_id: params.auth_id,
       data: item
     })
 

@@ -33,6 +33,7 @@ import ApiError from 'App/ApiError'
 import ProjectService from 'App/Services/Project'
 import Dispatch from 'App/Services/Dispatch'
 import ShippingWeight from 'App/Services/ShippingWeight'
+import Log from 'App/Services/Log'
 
 class AdminController {
   getStats({ params }) {
@@ -861,7 +862,8 @@ class AdminController {
     return PaymentArtist.find(params.id)
   }
 
-  savePaymentArtist({ params }) {
+  savePaymentArtist({ params, user }) {
+    params.auth_id = user.id
     return PaymentArtist.save(params)
   }
 
@@ -1197,6 +1199,10 @@ class AdminController {
       data: params
     })
     return ShippingWeight.getShippingWeightHistory(payload)
+  }
+
+  getLogs({ params }) {
+    return Log.all(params)
   }
 }
 
