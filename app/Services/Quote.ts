@@ -237,7 +237,7 @@ class Quote {
       }
     }
 
-    let feeProd = 30
+    let feeProd = 20
     if (params.fee) {
       if (!params.is_admin) {
         return false
