@@ -232,7 +232,8 @@ class AdminController {
     return Statement.get(params)
   }
 
-  saveStatement({ params }) {
+  saveStatement({ params, user }) {
+    params.user_id = user.id
     return Statement.save(params)
   }
 

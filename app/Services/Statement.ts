@@ -3,6 +3,7 @@ import moment from 'moment'
 import Utils from 'App/Utils'
 import Notification from 'App/Services/Notification'
 import Storage from 'App/Services/Storage'
+import Log from 'App/Services/Log'
 import DB from 'App/DB'
 
 class StatementService {
@@ -54,6 +55,12 @@ class StatementService {
     item.comment = params.comment
     item.updated_at = Utils.date()
     await item.save()
+
+    Log.save({
+      type: 'statement',
+      user_id: params.user_id,
+      data: item
+    })
 
     await DB('statement_distributor').where('statement_id', item.id).delete()
 
