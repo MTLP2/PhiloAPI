@@ -442,7 +442,14 @@ class Quote {
         'inner_sleeve'
       )
     } else if (params.inner_sleeve === 'printed') {
-      quote.inner_sleeve = getCost(123, 'inner_sleeve')
+      quote.inner_sleeve = getCost(
+        {
+          '12"': 119,
+          '10"': 119,
+          '7"': 123
+        },
+        'inner_sleeve'
+      )
     } else {
       quote.inner_sleeve = getCost(
         {
@@ -512,27 +519,53 @@ class Quote {
         }
       } else {
         if (params.nb_vinyl === 1) {
-          quote.sleeve =
-            getCost(
-              {
-                '12"': 141,
-                '10"': 141,
-                '7"': 154
-              },
-              'sleeve',
-              ` x ${params.quantity}`
-            ) / params.nb_vinyl
+          if (params.quantity < 300) {
+            quote.sleeve =
+              getCost(
+                {
+                  '12"': 141,
+                  '10"': 141,
+                  '7"': 141
+                },
+                'sleeve',
+                ` x ${params.quantity}`
+              ) / params.nb_vinyl
+          } else {
+            quote.sleeve =
+              getCost(
+                {
+                  '12"': 146,
+                  '10"': 146,
+                  '7"': 141
+                },
+                'sleeve',
+                ` x ${params.quantity}`
+              ) / params.nb_vinyl
+          }
         } else {
-          quote.sleeve =
-            getCost(
-              {
-                '12"': 142,
-                '10"': 142,
-                '7"': 154
-              },
-              'sleeve',
-              ` x ${params.quantity}`
-            ) / params.nb_vinyl
+          if (params.quantity < 300) {
+            quote.sleeve =
+              getCost(
+                {
+                  '12"': 142,
+                  '10"': 142,
+                  '7"': 141
+                },
+                'sleeve',
+                ` x ${params.quantity}`
+              ) / params.nb_vinyl
+          } else {
+            quote.sleeve =
+              getCost(
+                {
+                  '12"': 148,
+                  '10"': 148,
+                  '7"': 141
+                },
+                'sleeve',
+                ` x ${params.quantity}`
+              ) / params.nb_vinyl
+          }
         }
       }
     }
@@ -575,9 +608,27 @@ class Quote {
     if (params.insert && params.insert !== 'none') {
       quote.insert = getCost(252, 'insert', ` x ${params.quantity}`) / params.nb_vinyl
       if (params.insert === 'two_sides_printed') {
-        quote.insert += getCost(378, 'insert', ` x ${params.quantity}`) / params.nb_vinyl
+        quote.insert +=
+          getCost(
+            {
+              '12"': 368,
+              '10"': 368,
+              '7"': 378
+            },
+            'insert',
+            ` x ${params.quantity}`
+          ) / params.nb_vinyl
       } else if (params.insert === 'one_side_printed') {
-        quote.insert += getCost(376, 'insert', ` x ${params.quantity}`) / params.nb_vinyl
+        quote.insert +=
+          getCost(
+            {
+              '12"': 366,
+              '10"': 366,
+              '7"': 376
+            },
+            'insert',
+            ` x ${params.quantity}`
+          ) / params.nb_vinyl
       } else if (params.insert === 'booklet_printed') {
         quote.insert += getCost(366, 'insert', ` x ${params.quantity}`) / params.nb_vinyl
       }
