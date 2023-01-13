@@ -57,6 +57,7 @@ class StatementService {
     await item.save()
 
     Log.save({
+      id: item.id,
       type: 'statement',
       user_id: params.user_id,
       data: item

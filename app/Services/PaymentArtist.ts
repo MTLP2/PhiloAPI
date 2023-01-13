@@ -127,6 +127,7 @@ class PaymentArtist {
     await item.save()
 
     Log.save({
+      id: item.id,
       type: 'payment_artist',
       user_id: params.user_id,
       data: item

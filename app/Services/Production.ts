@@ -2173,6 +2173,7 @@ class Production {
     await item.save()
 
     Log.save({
+      id: item.id,
       type: 'production_cost',
       user_id: params.user_id,
       data: item
