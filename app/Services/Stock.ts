@@ -30,7 +30,13 @@ class Stock {
       stock.type = params.type
     } else {
       stock = await DB('stock')
-        .where('project_id', params.project_id)
+        .where((query) => {
+          if (params.project_id) {
+            query.where('product_id', params.project_id)
+          } else if (params.product_id) {
+            query.where('product_id', params.product_id)
+          }
+        })
         .where('type', params.type)
         .first()
     }
@@ -38,7 +44,9 @@ class Stock {
     if (!stock) {
       stock = DB('stock')
       stock.project_id = params.project_id
+      stock.product_id = params.product_id
       stock.type = params.type
+      stock.comment = params.comment
       stock.is_distrib = params.is_distrib || false
       stock.quantity = 0
       stock.created_at = Utils.date()
@@ -51,6 +59,7 @@ class Stock {
     if (stock.quantity !== +params.quantity) {
       await DB('stock_historic').insert({
         project_id: params.project_id,
+        product_id: params.product_id,
         user_id: params.user_id,
         type: params.type,
         old: stock.quantity,
@@ -65,7 +74,7 @@ class Stock {
 
     await stock.save()
 
-    if (!+params.is_distrib) {
+    if (!+params.is_distrib && params.project_id) {
       const stocks = await DB('stock')
         .select(DB.raw('SUM(quantity) as quantity'))
         .where('project_id', params.project_id)
@@ -392,17 +401,21 @@ class Stock {
     }
   }
 
-  static async setStocksProject(params) {
+  static async setStocks(params) {
+    console.log(params)
     if (params.stocks) {
       for (const stock of params.stocks) {
         if (!stock.type) {
           await DB('stock').where('id', stock.id).delete()
         } else {
+          console.log('11')
           await Stock.save({
             id: stock.id,
-            project_id: params.id,
+            project_id: params.project_id,
+            product_id: params.product_id,
             type: stock.type,
             quantity: stock.quantity,
+            comment: 'sheraf',
             is_distrib: stock.is_distrib,
             user_id: params.user_id
           })
@@ -412,7 +425,8 @@ class Stock {
 
     if (params.type && params.quantity) {
       await Stock.save({
-        project_id: params.id,
+        project_id: params.project_id,
+        product_id: params.product_id,
         type: params.type,
         quantity: params.quantity,
         comment: 'sheraf',
