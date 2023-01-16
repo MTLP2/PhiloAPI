@@ -436,6 +436,8 @@ class App {
             )}</li>`
           }
           data.to_do_preprod += '</ul>'
+        } else {
+          data.to_do_preprod = null
         }
       }
 
