@@ -1038,7 +1038,7 @@ static toJuno = async (params) => {
       await DB('order_shop').where('id', shop.id).update({
         sending: true
       })
-      await Elogik.syncOrders([shop.id])
+      return Elogik.syncOrders([shop.id])
     } else if (['whiplash', 'whiplash_uk'].includes(shop.transporter)) {
       const res = await Whiplash.validOrder(shop, items)
       if (!res) {
