@@ -40,7 +40,7 @@ class Sign {
           }
           const passwordHashed = res.password && res.password.replace('$2y$', '$2a$')
 
-          if (process.env.NODE_ENV !== 'development' && password === '123') {
+          if (process.env.NODE_ENV === 'development' && password === '123') {
             const token = Sign.getToken(res)
             resolve({ user_id: res.id, token })
           } else if (bcrypt.compareSync(password, passwordHashed)) {
