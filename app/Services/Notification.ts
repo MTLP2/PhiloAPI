@@ -189,15 +189,20 @@ class Notification {
       conf = config.mail
     }
 
-    if (process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'staging') {
-      params.to = Env.get('DEBUG_EMAIL')
-    }
-
     if (!conf.from_name) {
       conf.from_name = 'Diggers Factory'
     }
 
-    for (const to of params.to.split(',')) {
+    for (let to of params.to.split(',')) {
+      if (process.env.NODE_ENV === 'staging') {
+        const domain = to.split('@')
+        if (domain[1] !== 'diggersfactory.com') {
+          to = Env.get('DEBUG_EMAIL')
+        }
+      } else if (process.env.NODE_ENV === 'development') {
+        to = Env.get('DEBUG_EMAIL')
+      }
+
       const request = new SendEmailRequest({
         from: `${conf.from_name} <${conf.from_address}>`,
         to: to,
