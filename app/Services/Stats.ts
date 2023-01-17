@@ -333,13 +333,14 @@ class Stats {
       const orders = {
         all: { ...columns },
         shop: { ...columns },
-        vod: { ...columns }
+        vod: { ...columns },
+        marketplace: { ...columns }
       }
 
       res.pp = {}
 
       for (const v of data.orders) {
-        if (!v.type) return
+        if (!v.type) continue
         orders.all[v.date] += v.value
         orders[v.type][v.date] += v.value
       }
@@ -556,7 +557,7 @@ class Stats {
       }
 
       for (const v of data.quantity) {
-        if (!v.type || !v.project) return
+        if (!v.type || !v.project) continue
         quantity.all[v.date] += v.value
         quantity[v.type][v.date] += v.value
         quantity[v.project][v.date] += v.value
@@ -620,6 +621,9 @@ class Stats {
       res.tops = {}
 
       for (const top of data.top) {
+        if (!res.pp[top.id]) {
+          continue
+        }
         res.pp[top.id].site.quantity += top.total
         if (!res.tops[top.id]) {
           res.tops[top.id] = { ...top }
@@ -708,9 +712,11 @@ class Stats {
       res.labels.sort((a, b) => (a.total.turnover > b.total.turnover ? -1 : 1))
 
       res.top = Object.values(res.top)
-      res.top = res.top[0]
-      res.top.sort((a, b) => (a.total > b.total ? -1 : 1))
-      res.top = res.top.slice(0, 20)
+      if (res.top.length > 0) {
+        res.top = res.top[0]
+        res.top.sort((a, b) => (a.total > b.total ? -1 : 1))
+        res.top = res.top.slice(0, 20)
+      }
 
       res.tops = Object.values(res.tops)
       res.tops.sort((a, b) => (a.total > b.total ? -1 : 1))
@@ -732,6 +738,9 @@ class Stats {
       }
 
       for (const v of data.projects) {
+        if (!projects[v.step]) {
+          projects[v.step] = { ...columns }
+        }
         projects[v.step][v.date] += v.value
       }
       for (const v of data.projects_saved) {
@@ -820,6 +829,7 @@ class Stats {
         return b.total - a.total
       })
       res.margin = margin
+
       return res
     })
   }
