@@ -121,6 +121,9 @@ class Product {
         'project.artist_name',
         'project.cat_number',
         'category',
+        'vod.type',
+        'vod.is_shop',
+        'stage1',
         'sizes',
         'vod.barcode'
       )
@@ -175,6 +178,8 @@ class Product {
               ...stock,
               id: null,
               project_id: null,
+              limit_preorder:
+                ref.is_distrib || ref.is_shop || ref.type !== 'limited_edition' ? 0 : ref.stage1,
               product_id: id
             })
           }
@@ -197,30 +202,39 @@ class Product {
 
   static calculatePreorders = async () => {
     await DB('stock').update({
-      quantity_preorder: 0
+      quantity_preorder: 0,
+      sales: 0
     })
 
     const orders = await DB('order_shop')
-      .select('order_shop.transporter', 'product_id', DB.raw('sum(quantity) as quantity'))
+      .select(
+        'order_shop.transporter',
+        'product_id',
+        DB.raw(`IF(ISNULL(date_export), false, true) as sent`),
+        DB.raw('sum(quantity) as quantity')
+      )
       .where('order_shop.type', 'vod')
       .join('order_item', 'order_shop.id', 'order_item.order_shop_id')
       .join('vod', 'vod.project_id', 'order_item.project_id')
       .join('project_product', 'vod.project_id', 'project_product.project_id')
       .where('is_paid', true)
-      .whereNull('date_export')
+      .whereNotNull('order_shop.transporter')
+      .groupBy('transporter')
+      .groupBy('sent')
       .groupBy('transporter')
       .groupBy('product_id')
+      .limit(10)
       .all()
 
     let qty = 0
     for (const order of orders) {
       qty += order.quantity
-
       await DB('stock')
         .where('product_id', order.product_id)
         .where('type', order.transporter)
         .update({
-          quantity_preorder: order.quantity
+          sales: DB.raw(`sales + ${order.quantity}`),
+          quantity_preorder: order.sent ? 0 : order.quantity
         })
     }
 

@@ -70,6 +70,8 @@ class Stock {
 
     stock.is_distrib = params.is_distrib
     stock.quantity = params.quantity
+    stock.quantity_reserved = params.quantity_reserved
+    stock.limit_preorder = params.limit_preorder
     stock.updated_at = Utils.date()
 
     await stock.save()
@@ -415,6 +417,8 @@ class Stock {
             product_id: params.product_id,
             type: stock.type,
             quantity: stock.quantity,
+            quantity_reserved: stock.quantity_reserved,
+            limit_preorder: stock.limit_preorder,
             comment: 'sheraf',
             is_distrib: stock.is_distrib,
             user_id: params.user_id
@@ -429,6 +433,8 @@ class Stock {
         product_id: params.product_id,
         type: params.type,
         quantity: params.quantity,
+        quantity_reserved: params.quantity_reserved,
+        limit_preorder: params.limit_preorder,
         comment: 'sheraf',
         is_distrib: params.is_distrib,
         user_id: params.user_id
