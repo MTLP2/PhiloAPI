@@ -98,7 +98,19 @@ class Admin {
       projects.where('vod.created_at', '<=', `${params.end} 23:59`)
     }
 
-    return Utils.getRows<any>({ ...params, query: projects })
+    const res = await Utils.getRows<any>({ ...params, query: projects })
+
+    const projectsWithStocks = await Promise.all(
+      res.data.map(async (project) => {
+        const stocks = await Stock.getProject(project.id)
+        return { ...project, stocks }
+      })
+    )
+
+    return {
+      count: res.count,
+      data: projectsWithStocks
+    }
   }
 
   static getWishlists = async (params) => {

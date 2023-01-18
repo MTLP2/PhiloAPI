@@ -4,7 +4,7 @@ import Excel from 'exceljs'
 import fs from 'fs'
 
 class Stock {
-  static async getProject(id) {
+  static async getProject(id: number) {
     const stocks = await DB('stock').select('type', 'quantity').where('project_id', id).all()
 
     const stock = {
