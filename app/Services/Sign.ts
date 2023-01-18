@@ -31,11 +31,8 @@ class Sign {
         .where('u.email', email)
         .where('is_delete', 0)
         .first()
-        .then((res) => {
-          if (!res) {
-            resolve(false)
-          }
-          if (process.env.NODE_ENV === 'development' && !res.password) {
+        .then(async (res) => {
+          if (!res || !res.password) {
             resolve(false)
           }
           const passwordHashed = res.password && res.password.replace('$2y$', '$2a$')
