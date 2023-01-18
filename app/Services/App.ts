@@ -61,6 +61,7 @@ class App {
       }
       if (moment().format('E') === '1') {
         await App.alertStock()
+        await App.alertProjectsToShop()
       }
       if (moment().format('E') < '6') {
         await App.alertToSync()
@@ -1197,6 +1198,92 @@ class App {
     await Notification.sendEmail({
       to: 'victor@diggersfactory.com,alexis@diggersfactory.com,bl@diggersfactory.com,business@diggersfactory.com',
       subject: 'Projects to sync',
+      html: juice(html)
+    })
+
+    return projects
+  }
+
+  static alertProjectsToShop = async () => {
+    const projects = await DB('vod')
+      .select(
+        'project.id',
+        'project.name',
+        'project.artist_name',
+        'vod.com_id',
+        'vod.resp_prod_id',
+        'stock.type',
+        'stock.quantity'
+      )
+      .join('stock', 'stock.project_id', 'vod.project_id')
+      .join('project', 'project.id', 'vod.project_id')
+      .where('vod.is_shop', false)
+      .where('stock.quantity', '>', '0')
+      .where('stock.is_distrib', false)
+      .whereNotExists((query) => {
+        query
+          .from('order_shop')
+          .join('order_item', 'order_item.order_shop_id', 'order_shop.id')
+          .where('is_paid', true)
+          .where('order_shop.type', 'vod')
+          .whereNull('order_shop.date_export')
+          .whereRaw('order_item.project_id = vod.project_id')
+      })
+      .orderBy('project.artist_name')
+      .orderBy('project.name')
+      .groupBy('project.id')
+      .groupBy('project.name')
+      .groupBy('project.artist_name')
+      .groupBy('com_id')
+      .groupBy('resp_prod_id')
+      .groupBy('stock.type')
+      .groupBy('stock.quantity')
+      .all()
+
+    let html = `
+    <style>
+      td {
+        padding: 2px 5px;
+        border-top: 1px solid #F0F0F0;
+      }
+      th {
+        padding: 2px 5px;
+        text-align: left;
+      }
+    </style>
+    <table>
+      <thead>
+      <tr>
+        <th>Id</th>
+        <th>Project</th>
+        <th>Biz</th>
+        <th>Prod</th>
+        <th>Logic</th>
+        <th>Stock</th>
+      </tr>
+    </thead>
+    <tbody>`
+
+    const team = Utils.getTeam
+    for (const project of projects) {
+      html += `<tr>`
+      html += `<td><a href="${Env.get('APP_URL')}/sheraf/project/${project.id}">${
+        project.id
+      }</a></td>`
+      html += `<td><a href="${Env.get('APP_URL')}/sheraf/project/${project.id}">${
+        project.artist_name
+      } ${project.name}</a></td>`
+      html += `<td>${team.find((u) => u.id === project.com_id)?.name || ''}</td>`
+      html += `<td>${team.find((u) => u.id === project.resp_prod_id)?.name || ''}</td>`
+      html += `<td>${project.type}</td>`
+      html += `<td>${project.quantity}</td>`
+      html += '</tr>'
+    }
+    html += '</tbody></table>'
+
+    await Notification.sendEmail({
+      to: 'victor@diggersfactory.com,alexis@diggersfactory.com,bl@diggersfactory.com,business@diggersfactory.com',
+      subject: 'Projects to shop',
       html: juice(html)
     })
 
