@@ -472,7 +472,7 @@ class Project {
       if (categories.length > 0) {
         projects.join('category_project', 'category_project.project_id', 'p.id')
         projects.whereIn('category_id', categories)
-        params.sort = 'add'
+        // params.sort = 'add'
       }
       params.genres = params.genres.join(',')
     }
@@ -552,6 +552,8 @@ class Project {
       } else if (params.sort === 'price_desc') {
         projects.whereNotNull('price')
         projects.orderBy('price', 'DESC')
+      } else if (params.sort === 'selection') {
+        projects.orderBy('category_project.position', 'ASC')
       } else {
         projects.orderBy('id', 'DESC')
       }
