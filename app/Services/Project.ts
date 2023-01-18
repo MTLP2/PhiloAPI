@@ -446,11 +446,10 @@ class Project {
     `)
       )
     }
-
+    const categories: any = []
     if (params.filters) {
       params.genres = []
 
-      const categories: any = []
       for (const filter of filters) {
         filter.value = filter.value.toString().replace(/[^a-zA-Z0-9 ]/g, '')
 
@@ -552,7 +551,7 @@ class Project {
       } else if (params.sort === 'price_desc') {
         projects.whereNotNull('price')
         projects.orderBy('price', 'DESC')
-      } else if (params.sort === 'selection') {
+      } else if (params.sort === 'selection' && categories.length > 0) {
         projects.orderBy('category_project.position', 'ASC')
       } else {
         projects.orderBy('id', 'DESC')
