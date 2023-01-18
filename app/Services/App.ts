@@ -127,7 +127,6 @@ class App {
         await Review.checkNotif()
         await Elogik.checkBlockedOrders()
       } else if (hour === 12) {
-        await App.alertToSync()
         await Invoice.reminder()
       } else if (hour === 13) {
         await Elogik.setTrackingLinks()
