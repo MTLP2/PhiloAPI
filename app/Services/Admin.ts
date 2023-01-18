@@ -1589,6 +1589,7 @@ class Admin {
         'project.artist_name',
         'project.name as project_name',
         'project.picture',
+        'vod.is_licence',
         'user.facebook_id',
         'user.soundcloud_id',
         'om.id as order_manual_id',
