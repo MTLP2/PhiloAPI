@@ -8,6 +8,11 @@ class Product {
         'product.*',
         'p2.name as parent',
         DB.query('stock')
+          .sum('sales')
+          .whereRaw('product_id = product.id')
+          .where('is_distrib', false)
+          .as('sales'),
+        DB.query('stock')
           .select('quantity')
           .whereRaw('product_id = product.id')
           .where('type', 'daudin')
@@ -71,6 +76,28 @@ class Product {
       .join('project_product', 'project_product.project_id', 'project.id')
       .where('product_id', payload.id)
       .all()
+
+    const projects = await DB('order_item')
+      .select('project_id', 'transporter', DB.raw('SUM(order_item.quantity) as quantity'))
+      .join('order_shop', 'order_shop.id', 'order_item.order_shop_id')
+      .where('order_shop.is_paid', true)
+      .whereIn(
+        'project_id',
+        item.projects.map((p) => p.id)
+      )
+      .groupBy('project_id')
+      .groupBy('order_shop.transporter')
+      .all()
+
+    for (const project of projects) {
+      const idx = item.projects.findIndex((p) => p.id === project.project_id)
+      item.projects[idx][project.transporter] = project.quantity
+      if (!item.projects[idx].total) {
+        item.projects[idx].total = 0
+      }
+      item.projects[idx].total += project.quantity
+    }
+
     item.children = await DB('product').where('parent_id', payload.id).all()
     item.stocks = await DB('stock').where('product_id', payload.id).all()
     item.stocks_historic = await DB('stock_historic')
@@ -223,7 +250,6 @@ class Product {
       .groupBy('sent')
       .groupBy('transporter')
       .groupBy('product_id')
-      .limit(10)
       .all()
 
     let qty = 0
@@ -239,6 +265,20 @@ class Product {
     }
 
     return { success: true, quantity: qty }
+  }
+
+  static saveSubProduct = async (payload) => {
+    await DB('product').where('id', payload.product_id).update({
+      parent_id: payload.id
+    })
+    return { success: true }
+  }
+
+  static removeSubProduct = async (payload) => {
+    await DB('product').where('id', payload.product_id).update({
+      parent_id: null
+    })
+    return { success: true }
   }
 }
 
