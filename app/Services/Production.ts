@@ -828,17 +828,20 @@ class Production {
   }
 
   static async getDispatchs(params) {
-    const item = await DB('production').where('id', params.id).first()
+    let items = DB('production_dispatch').belongsTo('customer').where('is_delete', false)
 
-    await Utils.checkProjectOwner({ project_id: item.project_id, user: params.user })
+    if (params.id === 'all') {
+      if (!(await Utils.isTeam(params.user.id))) {
+        throw new Error('401')
+      }
+    } else {
+      const item = await DB('production').where('id', params.id).first()
+      await Utils.checkProjectOwner({ project_id: item.project_id, user: params.user })
 
-    const items = await DB('production_dispatch')
-      .where('production_id', params.id)
-      .belongsTo('customer')
-      .where('is_delete', false)
-      .all()
+      items.where('production_id', params.id)
+    }
 
-    return items
+    return items.all()
   }
 
   static async saveDispatchUser(params) {
