@@ -3987,10 +3987,12 @@ class Admin {
         'count',
         'count_other',
         'count_distrib',
+        /**
         'stock_daudin',
         'stock_diggers',
         'stock_whiplash',
         'stock_whiplash_uk',
+        **/
         'date_shipping',
         'barcode',
         'picture',
@@ -4012,6 +4014,7 @@ class Admin {
       .where('step', 'in_progress')
       .where('category', 'vinyl')
       .whereNotNull('barcode')
+      .hasMany('stock')
 
     if (!params.lang) {
       params.lang = 'fr'
@@ -4030,6 +4033,9 @@ class Admin {
 
     for (const p in projects) {
       const pp = projects[p]
+      for (const stock of pp.stock) {
+        pp[`stock_${stock.type}`] = stock.quantity
+      }
       pp.com = pp.com ? JSON.parse(pp.com) : {}
 
       pp.stock = pp.is_shop
