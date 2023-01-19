@@ -98,7 +98,19 @@ class Admin {
       projects.where('vod.created_at', '<=', `${params.end} 23:59`)
     }
 
-    return Utils.getRows<any>({ ...params, query: projects })
+    const res = await Utils.getRows<any>({ ...params, query: projects })
+
+    const projectsWithStocks = await Promise.all(
+      res.data.map(async (project) => {
+        const stocks = await Stock.getProject(project.id)
+        return { ...project, stocks }
+      })
+    )
+
+    return {
+      count: res.count,
+      data: projectsWithStocks
+    }
   }
 
   static getWishlists = async (params) => {
@@ -1577,6 +1589,7 @@ class Admin {
         'project.artist_name',
         'project.name as project_name',
         'project.picture',
+        'vod.is_licence',
         'user.facebook_id',
         'user.soundcloud_id',
         'om.id as order_manual_id',
