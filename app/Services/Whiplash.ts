@@ -617,7 +617,6 @@ class Whiplash {
           Stock.save({
             project_id: project.project_id,
             type: 'whiplash',
-            user_id: 1,
             comment: 'api',
             quantity: us
           })
@@ -626,7 +625,6 @@ class Whiplash {
           Stock.save({
             project_id: project.project_id,
             type: 'whiplash_uk',
-            user_id: 1,
             comment: 'api',
             quantity: uk
           })

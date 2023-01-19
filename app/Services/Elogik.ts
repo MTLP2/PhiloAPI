@@ -633,7 +633,6 @@ class Elogik {
       Stock.save({
         project_id: project.id,
         type: 'daudin',
-        user_id: 1,
         comment: 'api',
         quantity: qty
       })
