@@ -19,6 +19,14 @@ class ProductController {
     params.user_id = user.id
     return Stock.setStocks(params)
   }
+
+  async saveSubProduct({ params }) {
+    return Product.saveSubProduct(params)
+  }
+
+  async removeSubProduct({ params }) {
+    return Product.removeSubProduct(params)
+  }
 }
 
 export default ProductController
