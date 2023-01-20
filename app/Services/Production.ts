@@ -828,7 +828,7 @@ class Production {
   }
 
   static async getDispatchs(params) {
-    let items = DB('production_dispatch').belongsTo('customer').where('is_delete', false)
+    const query = DB('production_dispatch').belongsTo('customer').where('is_delete', false)
 
     if (params.id === 'all') {
       if (!(await Utils.isTeam(params.user.id))) {
@@ -838,10 +838,15 @@ class Production {
       const item = await DB('production').where('id', params.id).first()
       await Utils.checkProjectOwner({ project_id: item.project_id, user: params.user })
 
-      items.where('production_id', params.id)
+      query.where('production_id', params.id)
     }
 
-    return items.all()
+    const res: any = await Utils.getRows({
+      ...params,
+      query: query
+    })
+
+    return res
   }
 
   static async saveDispatchUser(params) {
@@ -2130,6 +2135,13 @@ class Production {
       item.created_at = Utils.date()
     }
 
+    const log = new Log({
+      id: item.id,
+      type: 'production_cost',
+      user_id: params.user_id,
+      item: item
+    })
+
     if (!params.is_statement) {
       item.in_statement = null
     } else if (params.in_statement && item.in_statement !== params.in_statement) {
@@ -2174,13 +2186,7 @@ class Production {
     }
 
     await item.save()
-
-    Log.save({
-      id: item.id,
-      type: 'production_cost',
-      user_id: params.user_id,
-      data: item
-    })
+    log.save(item)
 
     const resp = await DB('production')
       .where('production.id', item.production_id)

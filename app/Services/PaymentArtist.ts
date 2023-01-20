@@ -105,6 +105,13 @@ class PaymentArtist {
     } else {
       item.created_at = Utils.date()
     }
+    const log = new Log({
+      id: item.id,
+      type: 'payment_artist',
+      user_id: params.auth_id,
+      item: item
+    })
+
     item.user_id = params.user_id
     item.date = params.date
     item.type = params.type
@@ -126,13 +133,7 @@ class PaymentArtist {
     }
 
     await item.save()
-
-    Log.save({
-      id: item.id,
-      type: 'payment_artist',
-      user_id: params.auth_id,
-      data: item
-    })
+    log.save(item)
 
     if (params.projects) {
       for (const project of params.projects) {
