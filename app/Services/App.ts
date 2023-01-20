@@ -1128,6 +1128,7 @@ class App {
         'project.artist_name',
         'vod.com_id',
         'vod.resp_prod_id',
+        'vod.status',
         'stock.type',
         'stock.quantity',
         DB.raw('sum(order_item.quantity) as to_sync')
@@ -1146,6 +1147,7 @@ class App {
       .groupBy('project.id')
       .groupBy('project.name')
       .groupBy('project.artist_name')
+      .groupBy('vod.status')
       .groupBy('com_id')
       .groupBy('resp_prod_id')
       .groupBy('stock.type')
@@ -1168,6 +1170,7 @@ class App {
       <tr>
         <th>Id</th>
         <th>Project</th>
+        <th>Status</th>
         <th>Biz</th>
         <th>Prod</th>
         <th>Logic</th>
@@ -1186,6 +1189,7 @@ class App {
       html += `<td><a href="${Env.get('APP_URL')}/sheraf/project/${project.id}">${
         project.artist_name
       } ${project.name}</a></td>`
+      html += `<td>${project.status || ''}</td>`
       html += `<td>${team.find((u) => u.id === project.com_id)?.name || ''}</td>`
       html += `<td>${team.find((u) => u.id === project.resp_prod_id)?.name || ''}</td>`
       html += `<td>${project.type}</td>`
