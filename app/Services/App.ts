@@ -139,7 +139,7 @@ class App {
       }
 
       await Storage.cleanTmp('storage')
-      // await Whiplash.syncStocks()
+      await Whiplash.syncStocks()
       await Vod.checkCampaignStart(hour)
 
       cron.status = 'complete'
