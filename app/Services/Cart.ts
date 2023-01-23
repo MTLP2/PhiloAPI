@@ -77,7 +77,11 @@ class Cart {
     Object.keys(params).map((i) => {
       if (i.indexOf('shop_') !== -1) {
         const ii = i.split('.')[0].split('_')
-        params.shops[`s_${ii[1]}_${ii.slice(2).join('_')}`].items = params[i]
+        const idx = `s_${ii[1]}_${ii.slice(2).join('_')}`
+        if (!params.shops[idx]) {
+          params.shops[idx] = {}
+        }
+        params.shops[idx].items = params[i]
         delete params[i]
       }
     })
