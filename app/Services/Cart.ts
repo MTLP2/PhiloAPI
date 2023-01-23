@@ -1318,6 +1318,7 @@ class Cart {
     }
 
     const discountPerItem = p.project.discount?.[params.currency] || 0
+    res.discount_code = p.project.discount_code
     res.discount = discountPerItem * p.quantity
     res.discount_artist = p.project.discount_artist
     res.price_discount = discountPerItem ? Utils.round(res.price - discountPerItem) : null
@@ -1591,6 +1592,7 @@ class Cart {
             fee_change: feeChange,
             discount: item.discount,
             discount_artist: item.discount_artist,
+            discount_code: item.discount_code,
             shipping_discount: user.is_pro ? 0 : item.shipping_discount ?? 0,
             tips: item.tips,
             size: item.size,

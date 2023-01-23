@@ -1568,6 +1568,7 @@ class Admin {
         'oi.quantity',
         'oi.price',
         'oi.size',
+        'oi.discount_code',
         'order.status',
         'order.payment_id',
         'user.name as user_name',

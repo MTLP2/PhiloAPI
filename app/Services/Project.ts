@@ -267,6 +267,7 @@ class Project {
             return acc
           }, {})
           project.discount_artist = sale.artist_pay
+          project.discount_code = sale.code
 
           break
         }
