@@ -2,7 +2,13 @@ import DB from 'App/DB'
 import Utils from 'App/Utils'
 
 class Product {
-  static async all(params: { filters?: any; sort?: string; order?: string; size?: number }) {
+  static async all(payload: {
+    filters?: string
+    sort?: string
+    order?: string
+    size?: number
+    project_id?: number
+  }) {
     const query = DB('product')
       .select(
         'product.*',
@@ -54,12 +60,16 @@ class Product {
       )
       .leftJoin('product as p2', 'p2.id', 'product.parent_id')
 
-    if (!params.sort) {
-      params.sort = 'product.id'
-      params.order = 'desc'
+    if (payload.project_id) {
+      query.join('project_product', 'project_product.product_id', 'product.id')
+      query.where('project_id', payload.project_id)
+    }
+    if (!payload.sort) {
+      payload.sort = 'product.id'
+      payload.order = 'desc'
     }
 
-    const items = await Utils.getRows<any>({ ...params, query: query })
+    const items = await Utils.getRows<any>({ ...payload, query: query })
 
     return items
   }
@@ -127,11 +137,9 @@ class Product {
     return item
   }
 
-  static async save(payload: any) {
+  static async save(payload: { id: number }) {
     const item = await DB('product').where('id', payload.id).first()
-
     item.children = await DB('product').where('parent_id', payload.id).all()
-
     return item
   }
 
@@ -267,17 +275,34 @@ class Product {
     return { success: true, quantity: qty }
   }
 
-  static saveSubProduct = async (payload) => {
+  static saveSubProduct = async (payload: { id: number; product_id: number }) => {
     await DB('product').where('id', payload.product_id).update({
       parent_id: payload.id
     })
     return { success: true }
   }
 
-  static removeSubProduct = async (payload) => {
+  static removeSubProduct = async (payload: { product_id: number }) => {
     await DB('product').where('id', payload.product_id).update({
       parent_id: null
     })
+    return { success: true }
+  }
+
+  static saveProject = async (payload: { project_id: number; product_id: number }) => {
+    await DB('project_product').insert({
+      project_id: payload.project_id,
+      product_id: payload.product_id
+    })
+    return { success: true }
+  }
+
+  static removeProject = async (payload: { project_id: number; product_id: number }) => {
+    await DB('project_product')
+      .where('product_id', payload.product_id)
+      .where('project_id', payload.project_id)
+      .delete()
+
     return { success: true }
   }
 }
