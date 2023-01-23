@@ -294,6 +294,7 @@ class Product {
       project_id: payload.project_id,
       product_id: payload.product_id
     })
+    await Product.setBarcodes({ project_id: payload.project_id })
     return { success: true }
   }
 
@@ -302,6 +303,31 @@ class Product {
       .where('product_id', payload.product_id)
       .where('project_id', payload.project_id)
       .delete()
+
+    await Product.setBarcodes({ project_id: payload.project_id })
+    return { success: true }
+  }
+
+  static setBarcodes = async (payload: { project_id: number }) => {
+    const products = await DB('project_product')
+      .select('barcode')
+      .join('product', 'product.id', 'project_product.product_id')
+      .where('project_product.project_id', payload.project_id)
+      .all()
+
+    let barcodes = ''
+    for (const product of products) {
+      if (product.barcode) {
+        if (barcodes) {
+          barcodes += ','
+        }
+        barcodes += product.barcode
+      }
+    }
+
+    await DB('vod').where('project_id', payload.project_id).update({
+      barcode: barcodes
+    })
 
     return { success: true }
   }
