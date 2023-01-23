@@ -206,6 +206,9 @@ class Cart {
       if (items.length > 0) {
         for (const i in items) {
           const item = items[i]
+          if (!item.project_id) {
+            continue
+          }
           const project = await DB('vod')
             .select('vod.*', 'project.nb_vinyl')
             .where('project_id', item.project_id)
