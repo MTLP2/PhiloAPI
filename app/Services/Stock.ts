@@ -32,7 +32,7 @@ class Stock {
       stock = await DB('stock')
         .where((query) => {
           if (params.project_id) {
-            query.where('product_id', params.project_id)
+            query.where('project_id', params.project_id)
           } else if (params.product_id) {
             query.where('product_id', params.product_id)
           }
