@@ -904,7 +904,7 @@ class Admin {
     vod.start = params.start || null
     vod.related_id = params.related_id || null
     vod.related_item_id = params.related_item_id || null
-    vod.barcode = params.barcode ? params.barcode.replace(/\s/g, '') : null
+    // vod.barcode = params.barcode ? params.barcode.replace(/\s/g, '') : null
     vod.send_tracks = params.send_tracks || null
     vod.disabled_cover = params.disabled_cover ? params.disabled_cover : 0
     vod.is_shop = params.is_shop ? params.is_shop : 0
