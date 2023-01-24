@@ -123,7 +123,7 @@ class Product {
       quantity: item.stocks
         .filter((s) => s.is_distrib)
         .map((c) => c.quantity)
-        .reduce((a, c) => a + c, 0)
+        .reduce((a, c) => (a + c < 0 ? 0 : c), 0)
     })
     item.stocks.unshift({
       type: 'site',
@@ -131,7 +131,7 @@ class Product {
       quantity: item.stocks
         .filter((s) => !s.is_distrib)
         .map((c) => c.quantity)
-        .reduce((a, c) => a + c, 0)
+        .reduce((a, c) => (a + c < 0 ? 0 : c), 0)
     })
 
     return item

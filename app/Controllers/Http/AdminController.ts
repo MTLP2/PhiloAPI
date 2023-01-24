@@ -184,8 +184,7 @@ class AdminController {
   }
 
   calculStock({ params }) {
-    // return Stock.changeQtyProject({ project_id: params.id, recursive: false })
-    return { success: false }
+    return Stock.setProjects([params.id])
   }
 
   getBusiness({ params, user }) {

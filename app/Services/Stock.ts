@@ -73,7 +73,7 @@ class Stock {
           projects[p.project_id][t] = 0
         } else if (
           projects[p.project_id][t] === undefined ||
-          products[p.product_id][t] < projects[p.project_id][t]
+          (products[p.product_id][t] < projects[p.project_id][t] && projects[p.project_id][t] > 0)
         ) {
           projects[p.project_id][t] = products[p.product_id][t]
         }
@@ -81,8 +81,10 @@ class Stock {
     }
 
     for (const p of Object.keys(projects)) {
+      console.log(projects[p])
       projects[p] = Object.values(projects[p]).reduce(
-        (prev: number, current: number) => prev + current
+        (prev: number, current: number) => prev + (current < 0 ? 0 : current),
+        0
       )
       await DB('vod').where('project_id', p).update({
         stock: projects[p]
@@ -122,6 +124,9 @@ class Stock {
 
     if (params.diff) {
       params.quantity = stock.quantity + params.diff
+      if (params.order_id) {
+        stock.sales -= params.diff
+      }
     }
 
     if (stock.quantity !== +params.quantity) {
@@ -276,13 +281,11 @@ class Stock {
   }
 
   static async setStocks(params) {
-    console.log(params)
     if (params.stocks) {
       for (const stock of params.stocks) {
         if (!stock.type) {
           await DB('stock').where('id', stock.id).delete()
         } else {
-          console.log('11')
           await Stock.save({
             id: stock.id,
             project_id: params.project_id,
@@ -311,6 +314,11 @@ class Stock {
         is_distrib: params.is_distrib,
         user_id: params.user_id
       })
+    }
+
+    if (params.product_id) {
+      const projects = await DB('project_product').where('product_id', params.product_id).all()
+      Stock.setProjects(projects.map((p) => p.project_id))
     }
 
     return { success: true }

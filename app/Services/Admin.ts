@@ -292,12 +292,15 @@ class Admin {
     project.stocks.unshift({
       type: 'distrib',
       is_distrib: false,
-      quantity: Object.values(stocksDistrib).reduce((a: number, b: number) => a + b, 0)
+      quantity: Object.values(stocksDistrib).reduce(
+        (a: number, b: number) => a + (b < 0 ? 0 : b),
+        0
+      )
     })
     project.stocks.unshift({
       type: 'site',
       is_distrib: false,
-      quantity: Object.values(stocksSite).reduce((a: number, b: number) => a + b, 0)
+      quantity: Object.values(stocksSite).reduce((a: number, b: number) => a + (b < 0 ? 0 : b), 0)
     })
     project.stocks.unshift({
       type: 'stock',
