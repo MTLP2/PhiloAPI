@@ -11,6 +11,7 @@ class ProductController {
           sort: schema.string.optional(),
           order: schema.string.optional(),
           size: schema.number.optional(),
+          page: schema.number.optional(),
           project_id: schema.number.optional()
         }),
         data: params
