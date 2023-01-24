@@ -4,23 +4,88 @@ import Excel from 'exceljs'
 import fs from 'fs'
 
 class Stock {
-  static async getProject(id) {
-    const stocks = await DB('stock').select('type', 'quantity').where('project_id', id).all()
+  static async byProject(id: number, isDistrib?: boolean) {
+    const stocks = await DB('project_product as pp')
+      .select('pp.product_id', 'type', 'quantity')
+      .leftJoin('stock', 'pp.product_id', 'stock.product_id')
+      .where('pp.project_id', id)
+      .where((query) => {
+        if (isDistrib !== undefined) {
+          query.where('is_distrib', isDistrib)
+        }
+      })
+      .all()
 
-    const stock = {
-      sna: 0,
-      whiplash: 0,
-      whiplash_uk: 0,
-      daudin: 0,
-      diggers: 0,
-      shipehype: 0
+    const trans = <string[]>[...new Set(stocks.filter((p) => p.type).map((p) => p.type))]
+    const products = <string[]>[...new Set(stocks.map((p) => p.product_id))]
+
+    const res = {}
+    for (const t of trans) {
+      for (const p of products) {
+        let qty = stocks.find((s) => s.product_id === p && s.type === t)?.quantity
+        if (qty === undefined) {
+          res[t] = 0
+        }
+        if (res[t] === undefined || qty < res[t]) {
+          res[t] = qty
+        }
+      }
+    }
+    return res
+  }
+
+  static async setProjects() {
+    const listProducts = await DB('product')
+      .select('product.id', 'stock.type', 'quantity')
+      .join('stock', 'product.id', 'stock.product_id')
+      .where('is_distrib', false)
+      .whereIn('product.id', [2116, 2086, 1106])
+      .all()
+
+    const products = {}
+    const trans = {}
+
+    for (const product of listProducts) {
+      if (!products[product.id]) {
+        products[product.id] = {}
+      }
+      trans[product.type] = true
+      products[product.id][product.type] = product.quantity
     }
 
-    for (const s of stocks) {
-      stock[s.type] = s.quantity
+    console.log(products)
+    const listProjects = await DB('project_product as pp')
+      .select('pp.project_id', 'pp.product_id')
+      .join('vod', 'vod.project_id', 'pp.project_id')
+      .whereIn('step', ['in_progress', 'successful'])
+      .where('vod.project_id', 243915)
+      .all()
+
+    const projects = {}
+    for (const p of listProjects) {
+      if (!projects[p.project_id]) {
+        projects[p.project_id] = {}
+      }
+      for (const t of Object.keys(trans)) {
+        if (!products[p.product_id][t]) {
+          projects[p.project_id][t] = 0
+        } else if (
+          projects[p.project_id][t] === undefined ||
+          products[p.product_id][t] < projects[p.project_id][t]
+        ) {
+          projects[p.project_id][t] = products[p.product_id][t]
+        }
+      }
     }
 
-    return stock
+    console.log(projects)
+    for (const p of Object.keys(projects)) {
+      projects[p] = Object.values(projects[p]).reduce(
+        (prev: number, current: number) => prev + current
+      )
+    }
+
+    return projects
   }
 
   static async save(params) {
@@ -70,8 +135,12 @@ class Stock {
 
     stock.is_distrib = params.is_distrib
     stock.quantity = params.quantity
-    stock.quantity_reserved = params.quantity_reserved
-    stock.limit_preorder = params.limit_preorder
+    if (params.quantity_reserved !== '') {
+      stock.quantity_reserved = params.quantity_reserved
+    }
+    if (params.limit_preorder !== '') {
+      stock.limit_preorder = params.limit_preorder
+    }
     stock.updated_at = Utils.date()
 
     await stock.save()
@@ -101,7 +170,7 @@ class Stock {
   }) {
     const p = await DB('vod').where('project_id', id).first()
 
-    const stock: any = await Stock.getProject(id)
+    const stock: any = await Stock.byProject(id)
 
     const count = await DB('order_item')
       .select(DB.raw('sum(quantity) as total'))

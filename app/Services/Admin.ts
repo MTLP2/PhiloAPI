@@ -192,14 +192,9 @@ class Admin {
       .all()
 
     const projectImagesQuery = Project.getProjectImages({ projectId: id })
-    const stocksQuery = DB('stock').where('project_id', id).all()
 
-    const stocksHistoricQuery = DB('stock_historic')
-      .select('stock_historic.*', 'user.name')
-      .leftJoin('user', 'user.id', 'stock_historic.user_id')
-      .where('project_id', id)
-      .orderBy('id', 'desc')
-      .all()
+    const stocksSiteQuery = Stock.byProject(id, false)
+    const stocksDistribQuery = Stock.byProject(id, true)
 
     const itemsQuery = DB('item')
       .select(
@@ -251,8 +246,8 @@ class Admin {
       project,
       codes,
       costs,
-      stocks,
-      stocksHistoric,
+      stocksSite,
+      stocksDistrib,
       items,
       orders,
       reviews,
@@ -263,8 +258,8 @@ class Admin {
       projectQuery,
       codesQuery,
       costsQuery,
-      stocksQuery,
-      stocksHistoricQuery,
+      stocksSiteQuery,
+      stocksDistribQuery,
       itemsQuery,
       ordersQuery,
       reviewsQuery,
@@ -281,30 +276,29 @@ class Admin {
     project.costs = costs
     project.items = items
     project.project_images = projectImages
-    project.stocks_historic = stocksHistoric
-
-    project.stocks = stocks
     project.exports = exps
 
-    stocks.unshift({
+    project.stocks = []
+    project.stocks.push(
+      ...Object.entries(stocksSite).map(([key, value]) => {
+        return { type: key, quantity: value }
+      })
+    )
+    project.stocks.push(
+      ...Object.entries(stocksDistrib).map(([key, value]) => {
+        return { type: key, quantity: value }
+      })
+    )
+    project.stocks.unshift({
       type: 'distrib',
-      is_distrib: true,
-      quantity: stocks
-        .filter((s) => s.is_distrib)
-        .map((c) => c.quantity)
-        .reduce((a, c) => a + c, 0)
+      is_distrib: false,
+      quantity: Object.values(stocksDistrib).reduce((a: number, b: number) => a + b, 0)
     })
-    stocks.unshift({
+    project.stocks.unshift({
       type: 'site',
       is_distrib: false,
-      quantity: stocks
-        .filter((s) => !s.is_distrib)
-        .map((c) => c.quantity)
-        .reduce((a, c) => a + c, 0)
+      quantity: Object.values(stocksSite).reduce((a: number, b: number) => a + b, 0)
     })
-    for (const stock of stocks) {
-      project[`stock_${stock.type}`] = stock.quantity
-    }
 
     project.stock_preorder =
       project.goal -
