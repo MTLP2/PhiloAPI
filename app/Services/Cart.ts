@@ -208,7 +208,7 @@ class Cart {
             .join('project', 'project.id', 'vod.project_id')
             .first()
 
-          const stocks = await Stock.getProject(item.project_id)
+          const stocks = await Stock.byProject(item.project_id)
           for (const [key, value] of Object.entries(stocks)) {
             project[`stock_${key}`] = value
           }

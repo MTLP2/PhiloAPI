@@ -823,7 +823,7 @@ static toJuno = async (params) => {
           projects[vod.barcode] = vod.project_id
           prices[vod.barcode] = vod.price
           weight += vod.weight
-          const stocks = await Stock.getProject(vod.project_id)
+          const stocks = await Stock.byProject(vod.project_id)
           for (const [key, value] of Object.entries(stocks)) {
             vod[`stock_${key}`] = value
           }
