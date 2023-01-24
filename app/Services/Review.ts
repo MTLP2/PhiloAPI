@@ -160,7 +160,7 @@ class Review {
   }: {
     reviewId?: number
     projectId?: number
-    userId: number
+    userId?: number
     onlyVisible?: boolean
   }) => {
     const query = DB('review as r')
