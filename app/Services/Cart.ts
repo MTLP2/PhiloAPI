@@ -2174,10 +2174,9 @@ class Cart {
             await i.save()
           }
 
-          console.log('stocK_calcul', project.id)
-          await Stock.calcul({
-            id: project.id,
-            isShop: shop.type === 'shop',
+          await Stock.changeQtyProject({
+            project_id: project.id,
+            order_id: order.id,
             quantity: item.quantity,
             transporter: shop.transporter
           })

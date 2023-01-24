@@ -299,6 +299,11 @@ class Admin {
       is_distrib: false,
       quantity: Object.values(stocksSite).reduce((a: number, b: number) => a + b, 0)
     })
+    project.stocks.unshift({
+      type: 'stock',
+      is_distrib: false,
+      quantity: project.stock
+    })
 
     project.stock_preorder =
       project.goal -

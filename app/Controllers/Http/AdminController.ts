@@ -168,7 +168,7 @@ class AdminController {
 
   async getStocks({ params, user }) {
     params.user_id = user.id
-    return Stock.getAll(params)
+    return Stock.getAll()
   }
 
   async exportStocksPrices() {
@@ -184,7 +184,8 @@ class AdminController {
   }
 
   calculStock({ params }) {
-    return Stock.calcul({ id: params.id, recursive: false })
+    // return Stock.changeQtyProject({ project_id: params.id, recursive: false })
+    return { success: false }
   }
 
   getBusiness({ params, user }) {

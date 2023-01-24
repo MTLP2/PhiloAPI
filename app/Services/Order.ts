@@ -694,10 +694,10 @@ static toJuno = async (params) => {
       if (type === 'cancel' && order.order_items.length) {
         for (const item of order.order_items) {
           try {
-            await Stock.calcul({
-              id: item.project_id,
-              isShop: order.type === 'shop',
-              quantity: item.quantity,
+            await Stock.changeQtyProject({
+              project_id: item.project_id,
+              order_id: order.order_id,
+              quantity: -item.quantity,
               transporter: order.transporter
             })
           } catch (err) {

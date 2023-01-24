@@ -34,12 +34,11 @@ class Stock {
     return res
   }
 
-  static async setProjects() {
+  static async setProjects(ids?: number[]) {
     const listProducts = await DB('product')
       .select('product.id', 'stock.type', 'quantity')
       .join('stock', 'product.id', 'stock.product_id')
       .where('is_distrib', false)
-      .whereIn('product.id', [2116, 2086, 1106])
       .all()
 
     const products = {}
@@ -53,12 +52,15 @@ class Stock {
       products[product.id][product.type] = product.quantity
     }
 
-    console.log(products)
     const listProjects = await DB('project_product as pp')
       .select('pp.project_id', 'pp.product_id')
       .join('vod', 'vod.project_id', 'pp.project_id')
       .whereIn('step', ['in_progress', 'successful'])
-      .where('vod.project_id', 243915)
+      .where((query) => {
+        if (ids) {
+          query.whereIn('vod.project_id', ids)
+        }
+      })
       .all()
 
     const projects = {}
@@ -78,11 +80,13 @@ class Stock {
       }
     }
 
-    console.log(projects)
     for (const p of Object.keys(projects)) {
       projects[p] = Object.values(projects[p]).reduce(
         (prev: number, current: number) => prev + current
       )
+      await DB('vod').where('project_id', p).update({
+        stock: projects[p]
+      })
     }
 
     return projects
@@ -111,14 +115,13 @@ class Stock {
       stock.project_id = params.project_id
       stock.product_id = params.product_id
       stock.type = params.type
-      stock.comment = params.comment
       stock.is_distrib = params.is_distrib || false
       stock.quantity = 0
       stock.created_at = Utils.date()
     }
 
     if (params.diff) {
-      params.quantity = stock.quantity + params.quantity
+      params.quantity = stock.quantity + params.diff
     }
 
     if (stock.quantity !== +params.quantity) {
@@ -129,7 +132,8 @@ class Stock {
         type: params.type,
         old: stock.quantity,
         new: params.quantity,
-        comment: params.comment
+        comment: params.comment,
+        order_id: params.order_id
       })
     }
 
@@ -155,232 +159,31 @@ class Stock {
     }
   }
 
-  static async calcul({
-    id,
-    isShop = false,
+  static async changeQtyProject({
+    project_id,
+    order_id,
     quantity,
-    transporter,
-    recursive = true
+    transporter
   }: {
-    id: number
-    isShop?: boolean
-    quantity?: number
-    transporter?: string
-    recursive?: boolean
+    project_id: number
+    order_id: number
+    quantity: number
+    transporter: string
   }) {
-    const p = await DB('vod').where('project_id', id).first()
-
-    const stock: any = await Stock.byProject(id)
-
-    const count = await DB('order_item')
-      .select(DB.raw('sum(quantity) as total'))
-      .join('order_shop', 'order_item.order_shop_id', 'order_shop.id')
-      .whereNull('item_id')
-      .where('is_paid', 1)
-      .where('project_id', id)
-      .first()
-
-    if (count.total) {
-      p.count = count.total
-      p.updated_at = Utils.date()
-    }
-
-    if (isShop && transporter && quantity) {
-      stock[transporter] = stock[transporter] - quantity
-      Stock.save({
-        project_id: id,
-        type: transporter,
-        quantity: stock[transporter]
-      })
-      const stocks = Object.keys(p)
-        .filter((s) => s.startsWith('stock'))
-        .map((s) => p[s])
-        .reduce((previousValue, currentValue) => previousValue + currentValue)
-
-      if (stocks < 1) {
-        p.step = 'successful'
-      }
-
-      DB('stock_historic').insert({
-        project_id: id,
-        type: transporter,
-        old: stock[transporter] + quantity,
-        new: stock[transporter],
-        comment: 'order',
-        created_at: Utils.date(),
-        updated_at: Utils.date()
-      })
-    }
-    await p.save()
-
-    if (p.barcode) {
-      if (recursive) {
-        const projects = await DB('vod')
-          .where('vod.project_id', '!=', id)
-          // .where('step', 'in_progress')
-          // .where('is_shop', true)
-          .where((query) => {
-            for (const barcode of p.barcode.split(',')) {
-              query.orWhere('vod.barcode', 'like', `%${barcode}%`)
-            }
-          })
-          .all()
-
-        if (isShop) {
-          for (const p of projects) {
-            await Stock.calcul({
-              id: p.project_id,
-              quantity: quantity,
-              isShop: isShop,
-              transporter: transporter,
-              recursive: false
-            })
-          }
-        } else {
-          await DB('vod')
-            .whereIn(
-              'project_id',
-              projects.map((p) => p.project_id)
-            )
-            .update({
-              count_bundle: DB.raw(`count_bundle + ${quantity}`)
-            })
-        }
-      } else {
-        const barcodes = {}
-        for (const barcode of p.barcode.split(',')) {
-          barcodes[barcode] = 0
-        }
-        p.count_bundle = 0
-        const items = await DB('order_item')
-          .select('vod.barcode', DB.raw('sum(quantity) as total'))
-          .join('order_shop', 'order_item.order_shop_id', 'order_shop.id')
-          .join('vod', 'vod.project_id', 'order_item.project_id')
-          .where('is_paid', true)
-          .where('is_shop', false)
-          .whereNull('item_id')
-          .where((query) => {
-            for (const barcode of p.barcode.split(',')) {
-              query.orWhere('vod.barcode', 'like', `%${barcode}%`)
-            }
-          })
-          .where('vod.project_id', '!=', id)
-          .groupBy('vod.barcode')
-          .all()
-
-        for (const item of items) {
-          if (item.total) {
-            for (const bb of item.barcode.split(',')) {
-              if (barcodes[bb] !== undefined) {
-                barcodes[bb] += item.total
-              }
-            }
-          }
-        }
-
-        let countBundle = 0
-        for (const barcode of Object.keys(barcodes)) {
-          if (countBundle < barcodes[barcode]) {
-            countBundle = barcodes[barcode]
-          }
-        }
-
-        p.count_bundle = countBundle
-        p.updated_at = Utils.date()
-        p.save()
-
-        if (recursive) {
-          for (const barcode of p.barcode.split(',')) {
-            const bundles = await DB('vod')
-              .where('barcode', 'like', `%${barcode}%`)
-              .where('project_id', '!=', id)
-              .where('step', 'in_progress')
-              .all()
-            for (const bundle of bundles) {
-              Stock.calcul({ id: bundle.project_id, recursive: false })
-            }
-          }
-        }
-      }
-    }
-
-    return { success: true }
-  }
-
-  static async convert() {
-    await DB().execute('TRUNCATE TABLE stock_historic')
-    const histo = await DB('vod_stock').all()
-
-    await DB('stock_historic').insert(histo)
-
-    await DB().execute('TRUNCATE TABLE stock')
-
-    const vod = await DB('vod')
-      .where('is_shop', true)
-      .orWhereNotNull('daudin_export')
-      .orWhereNotNull('whiplash_export')
-      .orWhere((query) => {
-        query
-          .where((query) => {
-            query
-              .where('stock_daudin', '!=', 0)
-              .orWhere('stock_whiplash', '!=', 0)
-              .orWhere('stock_whiplash_uk', '!=', 0)
-              .orWhere('stock_diggers', '!=', 0)
-          })
-          .whereNotExists((query) => {
-            query.from('stock').whereRaw('project_id = vod.project_id')
-          })
-      })
+    const pp = await DB('project_product')
+      .select('product_id')
+      .where('project_id', project_id)
       .all()
-
-    for (const v of vod) {
-      await DB('stock').insert({
-        project_id: v.project_id,
-        type: 'daudin',
-        stock: v.stock_daudin,
-        created_at: Utils.date(),
-        updated_at: Utils.date()
+    for (const product of pp) {
+      await Stock.save({
+        product_id: product.product_id,
+        order_id: order_id,
+        type: transporter,
+        diff: -quantity,
+        comment: 'order'
       })
-      await DB('stock').insert({
-        project_id: v.project_id,
-        type: 'whiplash',
-        stock: v.stock_whiplash,
-        created_at: Utils.date(),
-        updated_at: Utils.date()
-      })
-      await DB('stock').insert({
-        project_id: v.project_id,
-        type: 'whiplash_uk',
-        stock: v.stock_whiplash_uk,
-        created_at: Utils.date(),
-        updated_at: Utils.date()
-      })
-      await DB('stock').insert({
-        project_id: v.project_id,
-        type: 'diggers',
-        stock: v.stock_diggers,
-        created_at: Utils.date(),
-        updated_at: Utils.date()
-      })
-
-      const exports: any[] = []
-      if (v.daudin_export) {
-        exports.push({ type: 'daudin', date: v.daudin_export })
-      }
-      if (v.whiplash_export) {
-        exports.push({ type: 'daudin', date: v.daudin_export })
-      }
-      await DB('vod')
-        .where({
-          project_id: v.project_id
-        })
-        .update({
-          exports: JSON.stringify(exports),
-          stock: v.stock_daudin + v.stock_whiplash + v.stock_whiplash_uk + v.stock_diggers
-        })
     }
-
+    Stock.setProjects([project_id])
     return { success: true }
   }
 
@@ -511,37 +314,6 @@ class Stock {
     }
 
     return { success: true }
-  }
-
-  static async fixBundle() {
-    const vod = await DB('vod')
-      .select('project_id', 'count_bundle', 'barcode')
-      .where('count_bundle', '!=', 0)
-      // .where('project_id', 253021)
-      .all()
-
-    console.log('====>', vod.length)
-
-    for (const v of vod) {
-      const quantity = await DB('order_item as oi')
-        .select(DB.raw('SUM(oi.quantity) as total'))
-        .join('order_shop as os', 'os.id', 'oi.order_shop_id')
-        .join('vod', 'vod.project_id', 'oi.project_id')
-        .where('oi.project_id', '!=', v.project_id)
-        .where('vod.barcode', 'like', `%${v.barcode}%`)
-        .where('is_paid', true)
-        .first()
-
-      await DB('vod')
-        .where('project_id', v.project_id)
-        .update({
-          count_bundle: quantity.total || 0
-        })
-      console.log(v.project_id, quantity.total)
-    }
-
-    console.log(vod.length)
-    return vod.length
   }
 
   static async getAll() {
