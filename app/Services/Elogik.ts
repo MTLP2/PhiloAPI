@@ -111,7 +111,7 @@ class Elogik {
     } else if (order.shipping_type === 'pickup') {
       return { id: 23, name: 'MONDIAL RELAIS' }
     } else if (order.country_id === 'FR') {
-      return { id: 61, name: 'GLS' }
+      return { id: 39, name: 'DPD' }
     } else {
       return { id: 41, name: 'IMX' }
     }
@@ -573,24 +573,46 @@ class Elogik {
     const news: any[] = []
 
     const products = await DB('product')
-      .select('product.id', 'barcode')
+      .select('product.id', 'barcode', 'stock.quantity')
+      .leftJoin('stock', 'stock.product_id', 'product.id')
       .whereIn(
         'barcode',
         res.articles.map((r) => r.refEcommercant)
       )
+      .where('stock.type', 'daudin')
       .all()
 
+    return products
+
     for (const ref of res.articles) {
+      const qty = ref.stocks[0].stockDispo
       const product = products.find((p: any) => {
         return p.barcode === ref.refEcommercant
       })
 
       if (product) {
+        /**
+        if (product.quantity === null && qty > 0) {
+          console.log(`==> new stock : ${product.name} = ${qty}`)
+          await Notification.sendEmail({
+            to: ['bl@diggersfactory.com'].join(','),
+            subject: `Daudin - new stock : ${product.name}`,
+            html: `<ul>
+            <li><strong>Product:</strong> https://www.diggersfactory.com/sheraf/product/${product.id}</li>
+            <li><strong>Transporter:</strong> Daudin</li>
+            <li><strong>Barcode:</strong> ${product.barcode}</li>
+            <li><strong>Name:</strong> ${product.name}</li>
+            <li><strong>Quantity:</strong> ${qty}</li>
+          </ul>`
+          })
+          break
+        }
+        **/
         Stock.save({
           product_id: product.id,
           type: 'daudin',
           comment: 'api',
-          quantity: ref.stocks[0].stockDispo
+          quantity: qty
         })
       }
     }
