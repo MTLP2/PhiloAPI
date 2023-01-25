@@ -35,7 +35,14 @@ class ProductController {
   async saveProduct({ params }) {
     const payload = await validator.validate({
       schema: schema.create({
-        id: schema.number()
+        id: schema.number(),
+        type: schema.string.optional(),
+        barcode: schema.number.optional(),
+        catnumber: schema.string.optional(),
+        parent_id: schema.number.optional(),
+        size: schema.string.optional(),
+        color: schema.string.optional(),
+        weight: schema.number.optional()
       }),
       data: params
     })
