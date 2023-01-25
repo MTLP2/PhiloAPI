@@ -137,9 +137,28 @@ class Product {
     return item
   }
 
-  static async save(payload: { id: number }) {
+  static async save(payload: {
+    id: number
+    type?: string
+    barcode?: number
+    catnumber?: string
+    parent_id?: number
+    size?: string
+    color?: string
+    weight?: number
+  }) {
     const item = await DB('product').where('id', payload.id).first()
-    item.children = await DB('product').where('parent_id', payload.id).all()
+
+    item.type = payload.type
+    item.barcode = payload.barcode
+    item.catnumber = payload.catnumber
+    item.parent_id = payload.parent_id
+    item.size = payload.size
+    item.color = payload.color
+    item.weight = payload.weight
+
+    await item.save()
+
     return item
   }
 
