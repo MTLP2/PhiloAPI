@@ -303,7 +303,7 @@ class Admin {
       quantity: Object.values(stocksSite).reduce((a: number, b: number) => a + (b < 0 ? 0 : b), 0)
     })
     project.stocks.unshift({
-      type: 'stock',
+      type: 'project',
       is_distrib: false,
       quantity: project.stock
     })
