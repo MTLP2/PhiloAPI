@@ -94,67 +94,79 @@ class Stock {
     return projects
   }
 
-  static async save(params) {
+  static async save(payload: {
+    id?: number
+    type?: string
+    project_id?: number
+    product_id?: number
+    quantity: number
+    quantity_reserved?: number
+    limit_preorder?: number
+    diff?: boolean
+    order_id?: number
+    is_distrib?: boolean
+    user_id?: number
+    comment?: string
+  }) {
     let stock
-    if (params.id) {
-      stock = await DB('stock').where('id', params.id).first()
-      stock.type = params.type
+    if (payload.id) {
+      stock = await DB('stock').where('id', payload.id).first()
+      stock.type = payload.type
     } else {
       stock = await DB('stock')
         .where((query) => {
-          if (params.project_id) {
-            query.where('project_id', params.project_id)
-          } else if (params.product_id) {
-            query.where('product_id', params.product_id)
+          if (payload.project_id) {
+            query.where('project_id', payload.project_id)
+          } else if (payload.product_id) {
+            query.where('product_id', payload.product_id)
           }
         })
-        .where('type', params.type)
+        .where('type', payload.type)
         .first()
     }
 
     if (!stock) {
       stock = DB('stock')
-      stock.project_id = params.project_id
-      stock.product_id = params.product_id
-      stock.type = params.type
-      stock.is_distrib = params.is_distrib || false
+      stock.project_id = payload.project_id
+      stock.product_id = payload.product_id
+      stock.type = payload.type
+      stock.is_distrib = payload.is_distrib || false
       stock.quantity = 0
       stock.created_at = Utils.date()
     }
 
-    if (params.diff) {
-      params.quantity = stock.quantity + params.diff
-      if (params.order_id) {
-        stock.sales -= params.diff
+    if (payload.diff) {
+      payload.quantity = stock.quantity + payload.quantity
+      if (payload.order_id) {
+        stock.sales -= payload.quantity
       }
     }
 
-    if (stock.quantity !== +params.quantity) {
+    if (payload.quantity && stock.quantity !== +payload.quantity) {
       await DB('stock_historic').insert({
-        project_id: params.project_id,
-        product_id: params.product_id,
-        user_id: params.user_id,
-        type: params.type,
+        project_id: payload.project_id,
+        product_id: payload.product_id,
+        user_id: payload.user_id,
+        type: payload.type,
         old: stock.quantity,
-        new: params.quantity,
-        comment: params.comment,
-        order_id: params.order_id
+        new: payload.quantity,
+        comment: payload.comment,
+        order_id: payload.order_id
       })
     }
 
-    stock.is_distrib = params.is_distrib
-    stock.quantity = params.quantity
-    if (params.quantity_reserved !== '') {
-      stock.quantity_reserved = params.quantity_reserved
+    stock.is_distrib = payload.is_distrib
+    stock.quantity = payload.quantity
+    if (payload.quantity_reserved && +payload.quantity_reserved !== null) {
+      stock.quantity_reserved = payload.quantity_reserved
     }
-    if (params.limit_preorder !== '') {
-      stock.limit_preorder = params.limit_preorder
+    if (payload.limit_preorder && +payload.limit_preorder !== null) {
+      stock.limit_preorder = payload.limit_preorder
     }
     stock.updated_at = Utils.date()
-
     await stock.save()
-
-    if (!+params.is_distrib && params.project_id) {
+    /**
+    if (!params.is_distrib && params.project_id) {
       const stocks = await DB('stock')
         .select(DB.raw('SUM(quantity) as quantity'))
         .where('project_id', params.project_id)
@@ -162,14 +174,10 @@ class Stock {
         .first()
       await DB('vod').where('project_id', params.project_id).update('stock', stocks.quantity)
     }
+    **/
   }
 
-  static async changeQtyProject({
-    project_id,
-    order_id,
-    quantity,
-    transporter
-  }: {
+  static async changeQtyProject(payload: {
     project_id: number
     order_id: number
     quantity: number
@@ -177,18 +185,19 @@ class Stock {
   }) {
     const pp = await DB('project_product')
       .select('product_id')
-      .where('project_id', project_id)
+      .where('project_id', payload.project_id)
       .all()
     for (const product of pp) {
       await Stock.save({
         product_id: product.product_id,
-        order_id: order_id,
-        type: transporter,
-        diff: -quantity,
+        order_id: payload.order_id,
+        type: payload.transporter,
+        quantity: -payload.quantity,
+        diff: true,
         comment: 'order'
       })
     }
-    Stock.setProjects([project_id])
+    Stock.setProjects([payload.project_id])
     return { success: true }
   }
 

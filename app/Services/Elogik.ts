@@ -262,25 +262,11 @@ class Elogik {
     }
 
     const items = await DB()
-      .select(
-        'order_shop_id',
-        'oi.project_id',
-        'oi.quantity',
-        'oi.price',
-        'oi.size',
-        'project.name',
-        'project.artist_name',
-        'vod.barcode',
-        'vod.weight',
-        'vod.sizes',
-        'project.nb_vinyl',
-        'vod.sleeve',
-        'vod.vinyl_weight'
-      )
+      .select('order_shop_id', 'oi.quantity', 'product.barcode')
       .from('order_item as oi')
+      .join('project_product', 'project_product.project_id', 'oi.project_id')
+      .join('product', 'project_product.product_id', 'product.id')
       .whereIn('order_shop_id', ids)
-      .join('vod', 'vod.project_id', 'oi.project_id')
-      .join('project', 'project.id', 'oi.project_id')
       .all()
 
     for (const item of items) {
@@ -324,24 +310,14 @@ class Elogik {
         listeArticles: <any>[]
       }
       for (const item of order.items) {
-        const sizes = item.sizes ? JSON.parse(item.sizes) : null
-        const barcodes = item.barcode.split(',')
-        for (let barcode of barcodes) {
-          if (barcode === 'SIZE') {
-            barcode = sizes[item.size].split(',')[0]
-          } else if (barcode === 'SIZE2') {
-            barcode = sizes[item.size].split(',')[1]
-          }
-          if (process.env.NODE_ENV !== 'production') {
-            barcode = '3760370262046'
-          }
-          payload.listeArticles.push({
-            refEcommercant: barcode.toString().trim(),
-            quantite: item.quantity
-          })
+        if (process.env.NODE_ENV !== 'production') {
+          item.barcode = 3760370262046
         }
+        payload.listeArticles.push({
+          refEcommercant: item.barcode,
+          quantite: item.quantity
+        })
       }
-
       console.log(payload)
 
       let res = await Elogik.api('commandes/creer', {

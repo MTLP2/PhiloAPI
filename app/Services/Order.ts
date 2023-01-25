@@ -807,32 +807,25 @@ static toJuno = async (params) => {
     let item: any = DB('order_manual')
 
     const prices = {}
-    const projects = {}
+    const products = {}
     let weight = 0
     if (!params.id && !params.force) {
       for (const b of params.barcodes) {
-        const vod = await DB('vod')
-          .select('vod.*')
-          .join('project', 'project.id', 'vod.project_id')
+        const product = await DB('product')
+          .select('product.id', 'stock.id as stock_id', 'stock.quantity')
           .where('barcode', b.barcode)
-          .where('is_delete', false)
-          .orderBy(`stock_${params.transporter}`, 'desc')
+          .leftJoin('stock', 'stock.product_id', 'product.id')
+          .where('stock.type', params.transporter)
           .first()
 
-        if (vod) {
-          projects[vod.barcode] = vod.project_id
-          prices[vod.barcode] = vod.price
-          weight += vod.weight
-          const stocks = await Stock.byProject(vod.project_id)
-          for (const [key, value] of Object.entries(stocks)) {
-            vod[`stock_${key}`] = value
-          }
-
-          if (vod[`stock_${params.transporter}`] < b.quantity) {
-            return { error: 'No quantity' }
-          }
+        if (!product) {
+          return { error: 'No product' }
         }
+        products[b.barcode] = product.id
 
+        if (product.quantity < b.quantity) {
+          return { error: 'No quantity' }
+        }
         if (['whiplash', 'whiplash_uk'].includes(params.transporter)) {
           const exists = await Whiplash.findItem(b.barcode)
           if (exists.error) {
@@ -948,7 +941,7 @@ static toJuno = async (params) => {
         })
       }
 
-      const order = await Whiplash.saveOrder(pp)
+      const order: any = await Whiplash.saveOrder(pp)
       item.logistician_id = order.id
       item.date_export = Utils.date()
       await item.save()
@@ -963,16 +956,16 @@ static toJuno = async (params) => {
       }
     }
 
+    console.log(products)
     for (const b of params.barcodes) {
-      if (projects[b.barcode]) {
-        await Stock.save({
-          project_id: projects[b.barcode],
-          type: params.transporter,
-          quantity: -b.quantity,
-          diff: true,
-          comment: 'manual'
-        })
-      }
+      console.log(products[b.barcode])
+      await Stock.save({
+        product_id: products[b.barcode],
+        type: params.transporter,
+        quantity: -b.quantity,
+        diff: true,
+        comment: 'manual'
+      })
     }
 
     if (item.user_id) {
