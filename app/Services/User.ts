@@ -57,7 +57,9 @@ class User {
         'role',
         'currency',
         'cart',
-        'unsubscribed'
+        'unsubscribed',
+        'type',
+        'created_at'
       )
       .from('user as u')
       .where('u.id', id)
@@ -773,6 +775,7 @@ class User {
         'styles',
         'user_id',
         'v.created_at',
+        'v.updated_at',
         'type',
         'step',
         'count',
