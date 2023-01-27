@@ -67,33 +67,23 @@ class Whiplash {
       order_items: []
     }
 
-    for (const i in items) {
-      const barcodes = (items[i].item_barcode || items[i].barcode).split(',')
-      for (let barcode of barcodes) {
-        const sizes = items[i].sizes ? JSON.parse(items[i].sizes) : null
-        if (barcode === 'SIZE') {
-          barcode = sizes[items[i].size].split(',')[0]
-        } else if (barcode === 'SIZE2') {
-          barcode = sizes[items[i].size].split(',')[1]
-        }
-
-        const item = await Whiplash.findItem(barcode)
-        if (item.error) {
-          await Notification.sendEmail({
-            to: 'victor@diggersfactory.com,alexis@diggersfactory.com',
-            subject: `Error Whiplash : ${item.error} - ${barcode}`,
-            html: `<ul>
-              <li><b>Barcode :</b> ${barcode}</li>
-              <li><b>Order :</b> https://www.diggersfactory.com/sheraf/order/${shop.order_id}</p></li>
-            </ul>`
-          })
-          return false
-        }
-        params.order_items.push({
-          item_id: item.id,
-          quantity: items[i].quantity
+    for (const item of items) {
+      const whiplashItem = await Whiplash.findItem(item.barcode)
+      if (whiplashItem.error) {
+        await Notification.sendEmail({
+          to: 'victor@diggersfactory.com,alexis@diggersfactory.com',
+          subject: `Error Whiplash : ${item.error} - ${item.barcode}`,
+          html: `<ul>
+            <li><b>Barcode :</b> ${item.barcode}</li>
+            <li><b>Order :</b> https://www.diggersfactory.com/sheraf/order/${shop.order_id}</p></li>
+          </ul>`
         })
+        return false
       }
+      params.order_items.push({
+        item_id: whiplashItem.id,
+        quantity: item.quantity
+      })
     }
 
     const order: any = await Whiplash.saveOrder(params)
@@ -139,71 +129,39 @@ class Whiplash {
   }
 
   static syncProject = async (params) => {
-    const project = await DB('project')
-      .select('project.*', 'vod.barcode')
-      .where('project.id', params.project_id)
-      .join('vod', 'project_id', 'project.id')
-      .first()
-
-    const date = new Date()
-    await DB('vod')
-      .where('project_id', project.id)
-      .update({
-        whiplash_export: `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`
-      })
-
-    const barcodes = {}
-
-    const shops = await DB('order_item as oi')
-      .select(DB.raw('distinct(order_shop_id)'))
-      .where('project_id', params.project_id)
+    const orders = await DB('order_shop as os')
+      .select('customer.*', 'os.id', 'oi.order_shop_id', 'os.type', 'oi.quantity')
+      .join('order_item as oi', 'oi.order_shop_id', 'os.id')
+      .join('customer', 'customer.id', 'os.customer_id')
+      .where('oi.project_id', params.project_id)
+      .where('os.transporter', params.type)
+      .where('os.type', 'vod')
+      .whereNull('date_export')
+      .whereNull('logistician_id')
+      .where('is_paid', true)
+      .where('is_paused', false)
+      .orderBy('os.created_at')
       .all()
 
-    const query = `
-    SELECT OS.*, OI.price, OI.quantity, OI.tips, OI.size, OI.total, customer.*, user.name as username,
-      user.email as email, country.name as country, country.ue, O.payment_type, OS.id as order_shop_id, OS.id,
-      vod.barcode, vod.sizes, project.cat_number, item.catnumber as item_catnumber, item.barcode as item_barcode
-    FROM \`order\` O, order_item OI
-      LEFT OUTER JOIN project ON project.id = OI.project_id
-      LEFT OUTER JOIN item ON item.id = OI.item_id
-      LEFT OUTER JOIN vod ON project.id = vod.project_id
-    , order_shop OS
-      LEFT OUTER JOIN user ON user.id = OS.user_id
-      LEFT OUTER JOIN customer ON customer.id = OS.customer_id
-      LEFT OUTER JOIN country ON country.id = customer.country_id AND country.lang = 'en'
-    WHERE OI.order_id = O.id AND OS.Id IN (${shops.map((s) => s.order_shop_id).join(',')})
-      AND OS.logistician_id IS NULL
-      AND OS.transporter = '${params.type}'
-      AND OS.is_paid = 1
-      AND OS.is_paused = 0
-      AND OI.order_shop_id = OS.id
-  `
-    const res = await DB().execute(query)
-    const orders: any = {}
-    for (const order of res) {
-      if (!orders[order.id]) {
-        orders[order.id] = {
-          ...order,
-          items: []
-        }
-      }
-      orders[order.id].items.push(order)
-    }
+    const items = await DB()
+      .select('order_shop_id', 'oi.quantity', 'product.barcode')
+      .from('order_item as oi')
+      .join('project_product', 'project_product.project_id', 'oi.project_id')
+      .join('product', 'project_product.product_id', 'product.id')
+      .whereIn(
+        'order_shop_id',
+        orders.map((o) => o.id)
+      )
+      .all()
 
-    const ordersArray: any = Object.values(orders)
-    for (const order of ordersArray) {
-      for (const item of order.items) {
-        const sizes = item.sizes ? JSON.parse(item.sizes) : null
-        const bb = (item.item_barcode || item.barcode).split(',')
-        for (let barcode of bb) {
-          if (barcode === 'SIZE') {
-            barcode = sizes[item.size].split(',')[0]
-          } else if (barcode === 'SIZE2') {
-            barcode = sizes[item.size].split(',')[1]
-          }
-          barcodes[barcode] = true
-        }
+    const barcodes = {}
+    for (const item of items) {
+      const idx = orders.findIndex((o: any) => o.id === item.order_shop_id)
+      orders[idx].items = orders[idx].items ? [...orders[idx].items, item] : [item]
+      if (!item.barcode) {
+        throw new ApiError(406, 'no_barcode')
       }
+      barcodes[item.barcode] = true
     }
 
     for (const barcode of Object.keys(barcodes)) {
@@ -216,12 +174,17 @@ class Whiplash {
     }
 
     let count = 0
-    for (const order of ordersArray) {
+    for (const order of orders) {
       if (count + order.quantity > params.quantity) {
         break
       }
 
-      if (order.transporter === params.type && !order.logistician_id) {
+      const check = await DB('order_shop').where('id', order.id).first()
+      if (check.date_export || check.logistician_id) {
+        continue
+      }
+
+      if (!order.logistician_id) {
         count += order.quantity
         const data: any = {
           shipping_name: `${order.firstname} ${order.lastname}`,
@@ -237,25 +200,11 @@ class Whiplash {
           order_items: []
         }
         for (const item of order.items) {
-          const sizes = item.sizes ? JSON.parse(item.sizes) : null
-          const bb = (item.item_barcode || item.barcode).split(',')
-          for (let barcode of bb) {
-            if (barcode === 'SIZE') {
-              barcode = sizes[item.size].split(',')[0]
-            } else if (barcode === 'SIZE2') {
-              barcode = sizes[item.size].split(',')[1]
-            }
-            data.order_items.push({
-              item_id: barcodes[barcode],
-              quantity: item.quantity
-            })
-          }
+          data.order_items.push({
+            item_id: barcodes[item.barcode],
+            quantity: item.quantity
+          })
         }
-        const oo = await DB('order_shop').where('id', order.order_shop_id).first()
-        if (oo.logistician_id) {
-          continue
-        }
-
         const whiplash: any = await Whiplash.saveOrder(data)
         await DB('order_shop').where('id', order.order_shop_id).update({
           step: 'in_preparation',
