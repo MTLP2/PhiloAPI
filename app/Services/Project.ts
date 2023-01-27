@@ -788,13 +788,8 @@ class Project {
     const productsPromise = DB()
       .select('product.id', 'product.size')
       .from('product')
-      .leftJoin('project_product', 'project_product.product_id', 'product.id')
-      .where((query) => {
-        query.whereIn('parent_id', (query) =>
-          query.select('product_id').from('project_product').where('project_id', id)
-        )
-        query.orWhere('project_product.project_id', id)
-      })
+      .join('project_product', 'project_product.product_id', 'product.id')
+      .where('project_product.project_id', id)
       .all()
 
     const itemsPromise = DB('item')

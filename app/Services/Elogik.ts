@@ -265,6 +265,10 @@ class Elogik {
       .from('order_item as oi')
       .join('project_product', 'project_product.project_id', 'oi.project_id')
       .join('product', 'project_product.product_id', 'product.id')
+      .where((query) => {
+        query.whereRaw('product.size = oi.size')
+        query.orWhereNull('product.size')
+      })
       .whereIn('order_shop_id', ids)
       .all()
 

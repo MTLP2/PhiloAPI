@@ -281,7 +281,7 @@ class Dispatch {
       throw new Error('not_found')
     }
 
-    const stocks = await Stock.byProject(project.project_id)
+    const stocks = await Stock.byProject({ project_id: project.project_id })
     for (const [key, value] of Object.entries(stocks)) {
       project[`stock_${key}`] = value
     }

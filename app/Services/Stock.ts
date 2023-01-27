@@ -4,14 +4,23 @@ import Excel from 'exceljs'
 import fs from 'fs'
 
 class Stock {
-  static async byProject(id: number, isDistrib?: boolean) {
+  static async byProject(payload: {
+    project_id: number
+    is_distrib?: boolean
+    size?: string
+    color?: string
+  }) {
     const stocks = await DB('project_product as pp')
-      .select('pp.product_id', 'type', 'quantity')
+      .select('pp.product_id', 'stock.type', 'quantity')
+      .join('product', 'product.id', 'pp.product_id')
       .leftJoin('stock', 'pp.product_id', 'stock.product_id')
-      .where('pp.project_id', id)
+      .where('pp.project_id', payload.project_id)
       .where((query) => {
-        if (isDistrib !== undefined) {
-          query.where('is_distrib', isDistrib)
+        if (payload.is_distrib !== undefined) {
+          query.where('is_distrib', payload.is_distrib)
+        }
+        if (payload.size) {
+          query.where('size', payload.size)
         }
       })
       .all()
@@ -31,6 +40,7 @@ class Stock {
         }
       }
     }
+
     return res
   }
 
@@ -193,7 +203,7 @@ class Stock {
     if (payload.diff) {
       payload.quantity = stock.quantity + payload.quantity
       if (payload.order_id) {
-        stock.sales -= payload.quantity
+        stock.sales += payload.quantity
       }
     }
 
@@ -230,12 +240,19 @@ class Stock {
   static async changeQtyProject(payload: {
     project_id: number
     order_id: number
+    size: string
     quantity: number
     transporter: string
   }) {
     const pp = await DB('project_product')
       .select('product_id')
+      .join('product', 'product.id', 'project_product.product_id')
       .where('project_id', payload.project_id)
+      .where((query) => {
+        if (payload.size) {
+          query.where('size', payload.size)
+        }
+      })
       .all()
     for (const product of pp) {
       await Stock.save({
@@ -247,7 +264,6 @@ class Stock {
         comment: 'order'
       })
     }
-    // Stock.setProjects([payload.project_id])
     return { success: true }
   }
 

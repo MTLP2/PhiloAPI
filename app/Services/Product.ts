@@ -193,7 +193,9 @@ class Product {
         if (ref.barcode === 'SIZE') {
           const [id] = await DB('product').insert({
             name: `${ref.artist_name} - ${ref.name}`,
-            type: 'merch'
+            type: 'merch',
+            size: 'all',
+            color: 'all'
           })
 
           await DB('project_product').insert({
@@ -204,12 +206,16 @@ class Product {
           const sizes = JSON.parse(ref.sizes)
 
           for (const [size, barcode] of Object.entries(sizes)) {
-            await DB('product').insert({
+            const child = await DB('product').insert({
               name: `${ref.artist_name} - ${ref.name}`,
               parent_id: id,
               type: 'merch',
               barcode: barcode || null,
               size: size
+            })
+            await DB('project_product').insert({
+              project_id: ref.id,
+              product_id: child
             })
           }
         } else if (barcodes.length < 2) {
