@@ -193,8 +193,8 @@ class Admin {
 
     const projectImagesQuery = Project.getProjectImages({ projectId: id })
 
-    const stocksSiteQuery = Stock.byProject(id, false)
-    const stocksDistribQuery = Stock.byProject(id, true)
+    const stocksSiteQuery = Stock.byProject({ project_id: id, is_distrib: false })
+    const stocksDistribQuery = Stock.byProject({ project_id: id, is_distrib: true })
 
     const itemsQuery = DB('item')
       .select(
