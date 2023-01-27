@@ -170,13 +170,7 @@ class Project {
     delete project.count_other
 
     project.step = project.sold_out ? 'successful' : project.step
-
-    project.sizes = project.sizes
-      ? Object.keys(JSON.parse(project.sizes)).filter((k) => {
-          const sizes = JSON.parse(project.sizes)
-          return sizes[k]
-        })
-      : []
+    project.sizes = project.products.filter((p) => p.size).map((p) => p.size)
 
     if (!project.partner_distribution) {
       project.price_distribution = null
@@ -791,6 +785,18 @@ class Project {
 
     const songsPromise = Song.byProject({ project_id: id, user_id: params.user_id, disabled: true })
 
+    const productsPromise = DB()
+      .select('product.id', 'product.size')
+      .from('product')
+      .leftJoin('project_product', 'project_product.product_id', 'product.id')
+      .where((query) => {
+        query.whereIn('parent_id', (query) =>
+          query.select('product_id').from('project_product').where('project_id', id)
+        )
+        query.orWhere('project_product.project_id', id)
+      })
+      .all()
+
     const itemsPromise = DB('item')
       .select(
         'item.*',
@@ -823,9 +829,10 @@ class Project {
     const reviewPromise = Review.find({ projectId: id })
     const projectImagesPromise = Project.getProjectImages({ projectId: id })
 
-    const [project, songs, styles, sales, items, currencies, reviews, projectImages] =
+    const [project, products, songs, styles, sales, items, currencies, reviews, projectImages] =
       await Promise.all([
         projectPromise,
+        productsPromise,
         songsPromise,
         stylesPromise,
         salesPromise,
@@ -839,6 +846,7 @@ class Project {
       return { error: 404 }
     }
 
+    project.products = products
     project.items = items.map((item) => {
       let soldout = true
       if (item.step === 'in_progress') {
