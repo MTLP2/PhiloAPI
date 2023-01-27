@@ -1021,9 +1021,11 @@ static toJuno = async (params) => {
       .where('order_shop.id', params.id)
       .first()
 
+    let res: any = { success: true }
     const items = await DB('order_item')
-      .select('order_item.quantity', 'order_item.price', 'barcode', 'size', 'sizes')
-      .join('vod', 'vod.project_id', 'order_item.project_id')
+      .select('order_item.quantity', 'order_item.price', 'product.barcode')
+      .join('project_product', 'project_product.project_id', 'order_item.project_id')
+      .join('product', 'product.id', 'project_product.product_id')
       .where('order_shop_id', params.id)
       .all()
 
@@ -1031,7 +1033,7 @@ static toJuno = async (params) => {
       await DB('order_shop').where('id', shop.id).update({
         sending: true
       })
-      await Elogik.syncOrders([shop.id])
+      res = await Elogik.syncOrders([shop.id])
     } else if (['whiplash', 'whiplash_uk'].includes(shop.transporter)) {
       const res = await Whiplash.validOrder(shop, items)
       if (!res) {
@@ -1079,7 +1081,7 @@ static toJuno = async (params) => {
       })
     }
 
-    return { success: true }
+    return res
   }
 
   static exportStripePaypal = async (params) => {
