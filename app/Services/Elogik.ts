@@ -71,9 +71,8 @@ class Elogik {
       method: 'GET'
     })
 
-    const projects = await DB('project as p')
-      .select('p.id', 'p.artist_name', 'p.name', 'p.picture', 'vod.barcode')
-      .join('vod', 'vod.project_id', 'p.id')
+    const products = await DB('product as p')
+      .select('p.id', 'p.name', 'p.name', 'p.barcode')
       .whereIn(
         'barcode',
         res.articles.map((s: any) => s.EAN13)
@@ -85,7 +84,7 @@ class Elogik {
       return {
         title: article.titre,
         barcode: article.EAN13,
-        project: projects.find((p: any) => p.barcode === article.EAN13),
+        product: products.find((p: any) => p.barcode === article.EAN13),
         stock: article.stocks[0].stockDispo,
         blocked: article.stocks[0].stockBloque,
         returns: article.stocks[0].stockBloque
@@ -272,6 +271,9 @@ class Elogik {
     for (const item of items) {
       const idx = orders.findIndex((o: any) => o.id === item.order_shop_id)
       orders[idx].items = orders[idx].items ? [...orders[idx].items, item] : [item]
+      if (!item.barcode) {
+        throw new Error('no_barcode')
+      }
     }
 
     const res = await Elogik.sync(orders)
@@ -283,6 +285,18 @@ class Elogik {
     for (const order of orders) {
       const pickup = order.address_pickup ? JSON.parse(order.address_pickup) : null
       const address = order.address.match(/.{1,30}(\s|$)/g)
+
+      let check
+      if (order.id[0] === 'M') {
+        check = await DB('order_manual').where('id', order.id.substring(1)).first()
+      } else if (order.id[0] === 'B') {
+        check = await DB('box_dispatch').where('id', order.id.substring(1)).first()
+      } else {
+        check = await DB('order_shop').where('id', order.id).first()
+      }
+      if (check.logistician_id) {
+        continue
+      }
 
       const adr = {
         societe: order.name,
