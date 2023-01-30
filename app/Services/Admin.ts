@@ -99,18 +99,7 @@ class Admin {
     }
 
     const res = await Utils.getRows<any>({ ...params, query: projects })
-
-    const projectsWithStocks = await Promise.all(
-      res.data.map(async (project) => {
-        const stocks = await Stock.getProject(project.id)
-        return { ...project, stocks }
-      })
-    )
-
-    return {
-      count: res.count,
-      data: projectsWithStocks
-    }
+    return res
   }
 
   static getWishlists = async (params) => {
