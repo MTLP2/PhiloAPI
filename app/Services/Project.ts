@@ -33,18 +33,13 @@ class Project {
     project.nb_days = Math.ceil(Math.abs((startProject.getTime() - secondDate.getTime()) / oneDay))
     project.idx_day = project.nb_days - project.days_left
 
+    project.copies_left = project.stock
     if (project.is_shop) {
-      project.copies_left = project.stock
       project.sold_out = project.copies_left < 1
     } else {
-      project.copies_left = project.goal - project.count
       project.sold_out =
         ['limited_edition', 'test_pressing'].includes(project.type) && project.copies_left < 1
     }
-    delete project.count
-    delete project.count_distrib
-    delete project.count_bundle
-    delete project.count_other
 
     project.step = project.sold_out ? 'successful' : project.step
 
@@ -148,26 +143,18 @@ class Project {
       project.estimated_shipping = new Date(project.end)
       project.estimated_shipping.setDate(project.estimated_shipping.getDate() + 150)
     }
-    project.count =
-      project.count + project.count_other + project.count_distrib + project.count_bundle
 
-    project.next_goal = project.stage1
     project.styles = project.styles ? project.styles.split(',') : []
     project.styles = project.styles.map((s) => parseInt(s, 10))
     project.rating = project.rating ? project.rating : 0
 
+    project.copies_left = project.stock
     if (project.is_shop) {
-      project.copies_left = project.stock
       project.sold_out = project.copies_left < 1
     } else {
-      project.copies_left = project.goal - project.count
       project.sold_out =
         ['limited_edition', 'test_pressing'].includes(project.type) && project.copies_left < 1
     }
-    delete project.count
-    delete project.count_distrib
-    delete project.count_bundle
-    delete project.count_other
 
     project.step = project.sold_out ? 'successful' : project.step
     project.sizes = project.products.filter((p) => p.size).map((p) => p.size)
@@ -312,10 +299,6 @@ class Project {
       'v.splatter1',
       'v.splatter2',
       'p.likes',
-      'v.count',
-      'v.count_other',
-      'v.count_distrib',
-      'v.count_bundle',
       'v.stock',
       'v.step',
       'v.user_id',
@@ -752,14 +735,7 @@ class Project {
         where project_id = p.id AND user_id = ${params.user_id}
       ) as my_rate
       `),
-        'count',
-        'count_other',
-        'count_distrib',
-        'count_bundle',
         'stock',
-        'stage1',
-        'stage2',
-        'stage3',
         'only_country',
         'exclude_country',
         'v.step',
