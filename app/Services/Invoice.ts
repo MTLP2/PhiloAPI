@@ -671,6 +671,17 @@ class Invoice {
     )
   }
 
+  static async getPaymentReminders(params: { id: number }) {
+    const res = DB('payment_reminder as pr')
+      .select('pr.*', 'u.name')
+      .join('user as u', 'u.id', 'pr.user_id')
+      .join('payment as p', 'p.id', 'pr.payment_id')
+      .join('invoice as i', 'i.id', 'p.invoice_id')
+      .where('i.id', params.id)
+
+    return await Utils.getRows({ query: res })
+  }
+
   static async reminder() {
     // const first = await DB('invoice')
     //   .select('*')
