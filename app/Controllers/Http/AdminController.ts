@@ -184,7 +184,7 @@ class AdminController {
   }
 
   calculStock({ params }) {
-    return Stock.setProjects([params.id])
+    return Stock.setStockProject({ projectIds: [params.id] })
   }
 
   getBusiness({ params, user }) {
