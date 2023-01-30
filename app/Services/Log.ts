@@ -2,13 +2,11 @@ import DB from 'App/DB'
 import Utils from 'App/Utils'
 
 class Log {
-  id: number
   type: string
   user_id: number
   item: any
 
-  constructor(props: { id: number; type: string; user_id: number; item: any }) {
-    this.id = props.id
+  constructor(props: { type: string; user_id: number; item: any }) {
     this.type = props.type
     this.user_id = props.user_id
     this.item = { ...props.item }
@@ -30,7 +28,7 @@ class Log {
 
     await DB('log').insert({
       user_id: this.user_id,
-      item_id: this.id,
+      item_id: item.id,
       type: this.type,
       data: JSON.stringify(data)
     })

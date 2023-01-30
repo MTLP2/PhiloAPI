@@ -106,7 +106,6 @@ class PaymentArtist {
       item.created_at = Utils.date()
     }
     const log = new Log({
-      id: item.id,
       type: 'payment_artist',
       user_id: params.auth_id,
       item: item

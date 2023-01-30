@@ -2136,7 +2136,6 @@ class Production {
     }
 
     const log = new Log({
-      id: item.id,
       type: 'production_cost',
       user_id: params.user_id,
       item: item

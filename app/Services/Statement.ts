@@ -42,7 +42,6 @@ class StatementService {
     }
 
     const log = new Log({
-      id: item.id,
       type: 'statement',
       user_id: params.user_id,
       item: item
