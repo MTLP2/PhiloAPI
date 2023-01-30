@@ -48,12 +48,9 @@ class Product {
           .whereRaw('product_id = product.id')
           .where('is_distrib', false)
           .as('site'),
+        DB.query('stock').sum('preorder').whereRaw('product_id = product.id').as('preorder'),
         DB.query('stock')
-          .sum('quantity_preorder')
-          .whereRaw('product_id = product.id')
-          .as('preorder'),
-        DB.query('stock')
-          .sum('quantity_reserved')
+          .sum('reserved')
           .whereRaw('product_id = product.id')
           .where('is_distrib', false)
           .as('reserved')
@@ -174,6 +171,9 @@ class Product {
         'project.name',
         'project.artist_name',
         'project.cat_number',
+        'vod.is_shop',
+        'vod.count',
+        'vod.count_other',
         'category',
         'vod.type',
         'vod.is_shop',
@@ -184,7 +184,8 @@ class Product {
       .join('project', 'vod.project_id', 'project.id')
       .hasMany('stock', 'stock', 'project_id')
       .hasMany('stock_historic', 'stock_historic', 'project_id')
-      .whereNotNull('barcode')
+      .where('project_id', 276993)
+      // .whereNotNull('barcode')
       .all()
 
     for (const ref of refs) {
@@ -233,27 +234,29 @@ class Product {
             product_id: id
           })
 
-          for (const stock of ref.stock) {
+          if (!ref.is_shop) {
             await DB('stock').insert({
-              ...stock,
-              id: null,
-              project_id: null,
-              limit_preorder:
-                ref.is_distrib || ref.is_shop || ref.type !== 'limited_edition' ? 0 : ref.stage1,
-              product_id: id
+              type: 'preorder',
+              product_id: id,
+              reserved: ref.count_other,
+              preorder: ref.count,
+              sales: ref.count,
+              quantity:
+                ref.is_distrib || ref.is_shop || ref.type !== 'limited_edition' ? 0 : ref.stage1
             })
-          }
-          for (const stock of ref.stock_historic) {
-            await DB('stock_historic').insert({
-              ...stock,
-              id: null,
-              project_id: null,
-              product_id: id
-            })
+          } else {
+            for (const stock of ref.stock_historic) {
+              await DB('stock_historic').insert({
+                ...stock,
+                id: null,
+                project_id: null,
+                product_id: id
+              })
+            }
           }
         }
       } catch (e) {
-        // console.log(e)
+        console.log(e)
       }
     }
 
@@ -262,7 +265,7 @@ class Product {
 
   static calculatePreorders = async () => {
     await DB('stock').update({
-      quantity_preorder: 0,
+      // preorder: 0,
       sales: 0
     })
 
@@ -292,8 +295,8 @@ class Product {
         .where('product_id', order.product_id)
         .where('type', order.transporter)
         .update({
-          sales: DB.raw(`sales + ${order.quantity}`),
-          quantity_preorder: order.sent ? 0 : order.quantity
+          sales: DB.raw(`sales + ${order.quantity}`)
+          // preorder: order.sent ? 0 : order.quantity
         })
     }
 

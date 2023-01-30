@@ -44,10 +44,17 @@ class Stock {
     return res
   }
 
-  static async setStockProject(productIds?: number[]) {
+  static async setStockProject(payload: { productIds?: number[]; projectIds?: number[] }) {
     const listProjects = await DB('project_product')
-      .select('project_id', 'product_id')
-      .whereIn('product_id', productIds)
+      .select('is_shop', 'project_product.project_id', 'product_id')
+      .join('vod', 'vod.project_id', 'project_product.project_id')
+      .where((query) => {
+        if (payload.productIds) {
+          query.whereIn('product_id', payload.productIds)
+        } else if (payload.projectIds) {
+          query.whereIn('project_product.project_id', payload.projectIds)
+        }
+      })
       .all()
 
     if (listProjects.lenbth === 0) {
@@ -55,7 +62,7 @@ class Stock {
     }
 
     const listProducts = await DB('product')
-      .select('product.id', 'stock.type', 'quantity')
+      .select('product.id', 'stock.type', 'quantity', 'reserved', 'preorder')
       .join('stock', 'product.id', 'stock.product_id')
       .whereIn(
         'product_id',
@@ -72,7 +79,7 @@ class Stock {
         products[product.id] = {}
       }
       trans[product.type] = true
-      products[product.id][product.type] = product.quantity
+      products[product.id][product.type] = product.quantity - product.reserved - product.preorder
     }
 
     const projects = {}
@@ -172,8 +179,8 @@ class Stock {
     type?: string
     product_id: number
     quantity: number
-    quantity_reserved?: number
-    limit_preorder?: number
+    reserved?: number
+    preorder_limit?: number
     diff?: boolean
     order_id?: number
     is_distrib?: boolean
@@ -210,20 +217,22 @@ class Stock {
     let oldQuantity = stock.quantity
     stock.is_distrib = payload.is_distrib
     stock.quantity = payload.quantity
-    if (payload.quantity_reserved && +payload.quantity_reserved !== null) {
-      stock.quantity_reserved = payload.quantity_reserved
+    if (payload.reserved && +payload.reserved !== null) {
+      stock.reserved = payload.reserved
     }
-    if (payload.limit_preorder && +payload.limit_preorder !== null) {
-      stock.limit_preorder = payload.limit_preorder
+    if (payload.preorder_limit && +payload.preorder_limit !== null) {
+      stock.limit_preorder = payload.preorder_limit
     }
     stock.updated_at = Utils.date()
     await stock.save()
 
+    const product = await DB('product').where('id', stock.product_id).first()
+    if (product.parent_id) {
+      Stock.setParent(product.parent_id)
+    }
+    Stock.setStockProject({ productIds: [payload.product_id] })
+
     if (oldQuantity !== stock.quantity) {
-      const product = await DB('product').where('id', stock.product_id).first()
-      if (product.parent_id) {
-        Stock.setParent(product.parent_id)
-      }
       await DB('stock_historic').insert({
         product_id: payload.product_id,
         user_id: payload.user_id,
@@ -233,7 +242,6 @@ class Stock {
         comment: payload.comment,
         order_id: payload.order_id
       })
-      Stock.setStockProject([payload.product_id])
     }
   }
 
@@ -394,8 +402,8 @@ class Stock {
             product_id: params.product_id,
             type: stock.type,
             quantity: stock.quantity,
-            quantity_reserved: stock.quantity_reserved,
-            limit_preorder: stock.limit_preorder,
+            reserved: stock.reserved,
+            preorder_limit: stock.preorder_limit,
             comment: 'sheraf',
             is_distrib: stock.is_distrib,
             user_id: params.user_id
@@ -409,8 +417,8 @@ class Stock {
         product_id: params.product_id,
         type: params.type,
         quantity: params.quantity,
-        quantity_reserved: params.quantity_reserved,
-        limit_preorder: params.limit_preorder,
+        reserved: params.reserved,
+        preorder_limit: params.preorder_limit,
         comment: 'sheraf',
         is_distrib: params.is_distrib,
         user_id: params.user_id
