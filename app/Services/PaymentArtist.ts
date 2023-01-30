@@ -87,6 +87,7 @@ class PaymentArtist {
   static async save(params: {
     id: number
     user_id: number
+    auth_id: number
     date: string
     type: string
     total: number
@@ -104,6 +105,13 @@ class PaymentArtist {
     } else {
       item.created_at = Utils.date()
     }
+    const log = new Log({
+      id: item.id,
+      type: 'payment_artist',
+      user_id: params.auth_id,
+      item: item
+    })
+
     item.user_id = params.user_id
     item.date = params.date
     item.type = params.type
@@ -125,12 +133,7 @@ class PaymentArtist {
     }
 
     await item.save()
-
-    Log.save({
-      type: 'payment_artist',
-      user_id: params.user_id,
-      data: item
-    })
+    log.save(item)
 
     if (params.projects) {
       for (const project of params.projects) {

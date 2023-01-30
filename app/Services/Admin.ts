@@ -98,7 +98,19 @@ class Admin {
       projects.where('vod.created_at', '<=', `${params.end} 23:59`)
     }
 
-    return Utils.getRows<any>({ ...params, query: projects })
+    const res = await Utils.getRows<any>({ ...params, query: projects })
+
+    const projectsWithStocks = await Promise.all(
+      res.data.map(async (project) => {
+        const stocks = await Stock.getProject(project.id)
+        return { ...project, stocks }
+      })
+    )
+
+    return {
+      count: res.count,
+      data: projectsWithStocks
+    }
   }
 
   static getWishlists = async (params) => {
@@ -897,6 +909,7 @@ class Admin {
     }
 
     vod.type = params.type
+    vod.edition = params.edition
     vod.com_id = params.com_id || 0
     vod.comment_invoice = params.comment_invoice
     vod.stage1 = params.stage1
@@ -1557,6 +1570,7 @@ class Admin {
         'oi.quantity',
         'oi.price',
         'oi.size',
+        'oi.discount_code',
         'order.status',
         'order.payment_id',
         'user.name as user_name',
@@ -1578,6 +1592,7 @@ class Admin {
         'project.artist_name',
         'project.name as project_name',
         'project.picture',
+        'vod.is_licence',
         'user.facebook_id',
         'user.soundcloud_id',
         'om.id as order_manual_id',
@@ -3939,12 +3954,14 @@ class Admin {
           { key: 'name', header: 'Project', width: 30 },
           { key: 'artist_name', header: 'Artist name', width: 30 },
           { key: 'status', header: 'Status', width: 15 },
+          { key: 'resp_prod', header: 'Resp. prod', width: 15 },
+          { key: 'com', header: 'Resp. com', width: 15 },
           { key: 'type', header: 'Type', width: 15 },
           { key: 'category', header: 'Category', width: 15 },
           { key: 'date_shipping', header: 'Date Shipping', width: 15 },
           { key: 'country_id', header: 'Country ID', width: 15 },
           { key: 'origin', header: 'Origin', width: 15 },
-          { key: 'comment', header: 'Resp', width: 15 }
+          { key: 'comment', header: 'Resp (comment)', width: 15 }
         ],
         data: projects.data
       }
@@ -3973,10 +3990,12 @@ class Admin {
         'count',
         'count_other',
         'count_distrib',
+        /**
         'stock_daudin',
         'stock_diggers',
         'stock_whiplash',
         'stock_whiplash_uk',
+        **/
         'date_shipping',
         'barcode',
         'picture',
@@ -3998,6 +4017,7 @@ class Admin {
       .where('step', 'in_progress')
       .where('category', 'vinyl')
       .whereNotNull('barcode')
+      .hasMany('stock')
 
     if (!params.lang) {
       params.lang = 'fr'
@@ -4016,6 +4036,9 @@ class Admin {
 
     for (const p in projects) {
       const pp = projects[p]
+      for (const stock of pp.stock) {
+        pp[`stock_${stock.type}`] = stock.quantity
+      }
       pp.com = pp.com ? JSON.parse(pp.com) : {}
 
       pp.stock = pp.is_shop
@@ -4454,7 +4477,7 @@ class Admin {
     const commercialList = params.resp_id.split(',')
     const categoryList = params.category.split(',')
 
-    const projectsRaw = await DB('project as p')
+    const projectsRawQuery = DB('project as p')
       .select(
         'p.id',
         'p.name',
@@ -4472,12 +4495,12 @@ class Admin {
       .join('vod as v', 'v.project_id', 'p.id')
       .leftJoin('user as u', 'u.id', 'v.com_id')
       .whereIn('v.com_id', commercialList)
-      .whereIn('p.category', categoryList)
       .where('p.is_delete', 0)
       .where('p.created_at', '>=', params.start)
       .where('p.created_at', '<=', `${params.end} 23:59`)
       .whereNotNull('v.user_id')
-      .all()
+    if (params.category) projectsRawQuery.whereIn('p.category', categoryList)
+    const projectsRaw = await projectsRawQuery.all()
 
     const projects = projectsRaw.map((project) => {
       if (project.historic && project.historic.length) {

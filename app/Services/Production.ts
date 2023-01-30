@@ -128,12 +128,18 @@ class Production {
       .all()
 
     const res = {}
+
+    const dates = {}
+    for (const fac of factories) {
+      dates[fac.date] = 0
+    }
+
     for (const fac of factories) {
       if (!fac.factory) {
         continue
       }
       if (!res[fac.factory]) {
-        res[fac.factory] = {}
+        res[fac.factory] = { ...dates }
       }
       res[fac.factory][fac.date] = fac.quantity
     }
@@ -530,7 +536,7 @@ class Production {
 
       price = price / currencies[item.currency]
       const vod = await DB('vod').where('project_id', params.project_id).first()
-      if (!vod.unit_cost) {
+      if (!vod.unit_cost && price) {
         vod.unit_cost = price / quantity
         await vod.save()
       }
@@ -822,17 +828,25 @@ class Production {
   }
 
   static async getDispatchs(params) {
-    const item = await DB('production').where('id', params.id).first()
+    const query = DB('production_dispatch').belongsTo('customer').where('is_delete', false)
 
-    await Utils.checkProjectOwner({ project_id: item.project_id, user: params.user })
+    if (params.id === 'all') {
+      if (!(await Utils.isTeam(params.user.id))) {
+        throw new Error('401')
+      }
+    } else {
+      const item = await DB('production').where('id', params.id).first()
+      await Utils.checkProjectOwner({ project_id: item.project_id, user: params.user })
 
-    const items = await DB('production_dispatch')
-      .where('production_id', params.id)
-      .belongsTo('customer')
-      .where('is_delete', false)
-      .all()
+      query.where('production_id', params.id)
+    }
 
-    return items
+    const res: any = await Utils.getRows({
+      ...params,
+      query: query
+    })
+
+    return res
   }
 
   static async saveDispatchUser(params) {
@@ -2121,6 +2135,13 @@ class Production {
       item.created_at = Utils.date()
     }
 
+    const log = new Log({
+      id: item.id,
+      type: 'production_cost',
+      user_id: params.user_id,
+      item: item
+    })
+
     if (!params.is_statement) {
       item.in_statement = null
     } else if (params.in_statement && item.in_statement !== params.in_statement) {
@@ -2165,12 +2186,7 @@ class Production {
     }
 
     await item.save()
-
-    Log.save({
-      type: 'production_cost',
-      user_id: params.user_id,
-      data: item
-    })
+    log.save(item)
 
     const resp = await DB('production')
       .where('production.id', item.production_id)

@@ -248,6 +248,7 @@ class Project {
             return acc
           }, {})
           project.discount_artist = sale.artist_pay
+          project.discount_code = sale.code
 
           break
         }
@@ -278,6 +279,7 @@ class Project {
       'p.name',
       'p.slug',
       'p.artist_name',
+      'v.edition',
       'p.color',
       'p.picture',
       'v.picture_project',
@@ -398,6 +400,7 @@ class Project {
     }
 
     if (params.shop_id) {
+      selects.push('shop_project.featured')
       projects.join('shop_project', 'shop_project.project_id', 'p.id')
       projects.where('shop_project.shop_id', params.shop_id)
       if (!params.all_project) {
@@ -421,11 +424,10 @@ class Project {
     `)
       )
     }
-
+    const categories: any = []
     if (params.filters) {
       params.genres = []
 
-      const categories: any = []
       for (const filter of filters) {
         filter.value = filter.value.toString().replace(/[^a-zA-Z0-9 ]/g, '')
 
@@ -447,7 +449,7 @@ class Project {
       if (categories.length > 0) {
         projects.join('category_project', 'category_project.project_id', 'p.id')
         projects.whereIn('category_id', categories)
-        params.sort = 'add'
+        // params.sort = 'add'
       }
       params.genres = params.genres.join(',')
     }
@@ -527,6 +529,8 @@ class Project {
       } else if (params.sort === 'price_desc') {
         projects.whereNotNull('price')
         projects.orderBy('price', 'DESC')
+      } else if (params.sort === 'selection' && categories.length > 0) {
+        projects.orderBy('category_project.position', 'ASC')
       } else {
         projects.orderBy('id', 'DESC')
       }
@@ -617,6 +621,7 @@ class Project {
         'p.id',
         'p.name',
         'p.slug',
+        'v.edition',
         'u.id as user_id',
         'u.name as user_name',
         'u.slug as user_slug',

@@ -607,6 +607,8 @@ class Whiplash {
     shops = await shops.all()
 
     const dispatchs: any[] = []
+
+    let marge = 0
     for (const dispatch of lines) {
       if (dispatch.creator_id) {
         const shop = shops.find((s) => {
@@ -618,6 +620,14 @@ class Whiplash {
         }
 
         if (+dispatch.warehouse_id === 3 || +dispatch.warehouse_id === 4) {
+          const orderShop = await DB('order_shop').where('id', shop.id).first()
+          orderShop.shipping_trans = -dispatch['Carrier Fees'] * currencies[shop.currency]
+          orderShop.shipping_cost = -dispatch.total * currencies[shop.currency]
+          orderShop.shipping_quantity = +dispatch.merch_count
+          await orderShop.save()
+
+          marge += (orderShop.shipping - orderShop.shipping_cost) * orderShop.currency_rate
+          /**
           await DB('order_shop')
             .where('id', shop.id)
             .update({
@@ -625,6 +635,7 @@ class Whiplash {
               shipping_cost: -dispatch.total * currencies[shop.currency],
               shipping_quantity: +dispatch.merch_count
             })
+          **/
         } else if (+dispatch.warehouse_id !== 0) {
           throw new Error('bad_warehouse')
         }
@@ -633,6 +644,8 @@ class Whiplash {
         // console.log(shop.order_id, dispatch.creator_id, dispatch.warehouse_id, -dispatch.total, shop.shipping_cost)
       }
     }
+
+    console.log('marge => ', marge)
     return dispatchs.length
   }
 

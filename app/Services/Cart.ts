@@ -77,7 +77,11 @@ class Cart {
     Object.keys(params).map((i) => {
       if (i.indexOf('shop_') !== -1) {
         const ii = i.split('.')[0].split('_')
-        params.shops[`s_${ii[1]}_${ii.slice(2).join('_')}`].items = params[i]
+        const idx = `s_${ii[1]}_${ii.slice(2).join('_')}`
+        if (!params.shops[idx]) {
+          params.shops[idx] = {}
+        }
+        params.shops[idx].items = params[i]
         delete params[i]
       }
     })
@@ -202,6 +206,9 @@ class Cart {
       if (items.length > 0) {
         for (const i in items) {
           const item = items[i]
+          if (!item.project_id) {
+            continue
+          }
           const project = await DB('vod')
             .select('vod.*', 'project.nb_vinyl')
             .where('project_id', item.project_id)
@@ -1311,6 +1318,7 @@ class Cart {
     }
 
     const discountPerItem = p.project.discount?.[params.currency] || 0
+    res.discount_code = p.project.discount_code
     res.discount = discountPerItem * p.quantity
     res.discount_artist = p.project.discount_artist
     res.price_discount = discountPerItem ? Utils.round(res.price - discountPerItem) : null
@@ -1552,9 +1560,11 @@ class Cart {
           updated_at: Utils.date()
         })
 
+        /**
         if (ss.id === calculate.first_ship.shop_id) {
           shopIdGift = shop.id
         }
+        **/
 
         shop.items = []
 
@@ -1582,6 +1592,7 @@ class Cart {
             fee_change: feeChange,
             discount: item.discount,
             discount_artist: item.discount_artist,
+            discount_code: item.discount_code,
             shipping_discount: user.is_pro ? 0 : item.shipping_discount ?? 0,
             tips: item.tips,
             size: item.size,

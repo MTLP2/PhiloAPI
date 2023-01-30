@@ -614,27 +614,43 @@ class Elogik {
     return news
   }
 
+  static getOrders = async (params) => {
+    const list: any = []
+    let offset = 0
+    let size = 100
+    let next = true
+    while (next) {
+      const res = await Elogik.api('commandes/liste', {
+        method: 'POST',
+        body: {
+          ...params,
+          length: size,
+          offset: offset
+        }
+      })
+      offset = offset + size
+      if (res && res.commandes && res.commandes.length > 0) {
+        console.log(res.commandes.length)
+        list.push(...res.commandes)
+      } else {
+        next = false
+      }
+    }
+    return list
+  }
+
   static checkBlockedOrders = async () => {
     const list: any[] = []
-    const length = 5000
 
-    const bloquee = await Elogik.api('commandes/liste', {
-      method: 'POST',
-      body: {
-        bloquee: true,
-        length: length
-      }
+    const bloquee = await Elogik.getOrders({
+      bloquee: true
     })
-    list.push(...bloquee.commandes)
+    list.push(...bloquee)
 
-    const attente = await Elogik.api('commandes/liste', {
-      method: 'POST',
-      body: {
-        etatsCommande: ['ATTENTE_STOCK'],
-        length: length
-      }
+    const attente = await Elogik.getOrders({
+      etatsCommande: ['ATTENTE_STOCK']
     })
-    list.push(...attente.commandes)
+    list.push(...attente)
 
     const orders = await DB('order_shop')
       .select(
@@ -650,7 +666,7 @@ class Elogik {
       .join('project', 'project.id', 'order_item.project_id')
       .whereIn(
         'logistician_id',
-        list.map((i) => i.referenceEKAN)
+        list.slice(0, 100).map((i) => i.referenceEKAN)
       )
       .orderBy('date_export', 'DESC')
       .all()

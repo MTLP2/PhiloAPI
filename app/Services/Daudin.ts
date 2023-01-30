@@ -1248,6 +1248,7 @@ class Daudin {
     })
 
     let i = 0
+    let marge = 0
     for (const d in dispatchs) {
       const dispatch = dispatchs[d]
 
@@ -1262,6 +1263,7 @@ class Daudin {
         if (!order) {
           continue
         }
+
         order.shipping_cost = dispatch.cost
         await order.save()
       } else if (dispatch.id[0] === 'B') {
@@ -1292,11 +1294,13 @@ class Daudin {
         order.shipping_quantity = dispatch.quantity
         order.shipping_weight = dispatch.weight
         order.shipping_cost = (dispatch.cost + dispatch.cost * order.tax_rate) / order.currency_rate
+        marge += (order.shipping - order.shipping_cost) * order.currency_rate
         await order.save()
       }
       i++
     }
 
+    console.log('marge => ', marge)
     return i
   }
 }

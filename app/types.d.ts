@@ -64,6 +64,7 @@ type FeedbackDB = {
   order_id: number
   rating: number
   comment: string
+  is_contacted: TinyIntBool
   created_at: string
   updated_at: string
 }
@@ -155,6 +156,7 @@ type ShopDb = {
   bg_image?: string | null
   line_items?: number
   white_label?: boolean | null
+  youtube?: string | null
   created_at?: string | null
   updated_at?: string | null
 }

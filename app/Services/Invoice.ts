@@ -126,6 +126,10 @@ class Invoice {
       sort = true
     }
 
+    if ((invoice.type = params.type && params.type !== invoice.type)) {
+      invoice.number = null
+      invoice.code = null
+    }
     invoice.type = params.type
     invoice.category = params.category
     invoice.user_id = params.user_id || null

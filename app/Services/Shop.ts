@@ -67,6 +67,7 @@ class Shop {
     banner?: string
     bg_image?: string
     white_label?: boolean
+    youtube?: string
   }) {
     let item: ShopModel = <any>DB('shop')
 
@@ -92,6 +93,7 @@ class Shop {
     item.title_color = payload.title_color
     item.line_items = payload.line_items
     item.white_label = payload.white_label
+    item.youtube = payload.youtube
     item.updated_at = Utils.date()
 
     if (payload.logo) {
@@ -235,6 +237,17 @@ class Shop {
           position: +p + 1
         })
     }
+    return { success: true }
+  }
+
+  static async setFeatured(payload: { shop_id: number; project_id: number; featured: boolean }) {
+    await DB('shop_project')
+      .where('project_id', payload.project_id)
+      .where('shop_id', payload.shop_id)
+      .update({
+        featured: payload.featured
+      })
+
     return { success: true }
   }
 }

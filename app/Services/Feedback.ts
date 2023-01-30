@@ -34,6 +34,14 @@ class Feedback {
     return Utils.getRows<FeedbackModel>(params)
   }
 
+  static async toggleFeedbackContactStatus({ feedbackId }: { feedbackId: number }) {
+    const feedback: FeedbackModel = await DB('feedback').find(feedbackId)
+    feedback.is_contacted = feedback.is_contacted ? 0 : 1
+    await feedback.save()
+
+    return { success: true }
+  }
+
   static async save(params) {
     const feedback: any = DB('feedback')
     feedback.user_id = params.user_id

@@ -31,16 +31,13 @@ class Sign {
         .where('u.email', email)
         .where('is_delete', 0)
         .first()
-        .then((res) => {
-          if (!res) {
-            resolve(false)
-          }
-          if (process.env.NODE_ENV === 'production' && !res.password) {
+        .then(async (res) => {
+          if (!res || !res.password) {
             resolve(false)
           }
           const passwordHashed = res.password && res.password.replace('$2y$', '$2a$')
 
-          if (process.env.NODE_ENV !== 'production' && password === '123') {
+          if (process.env.NODE_ENV === 'development' && password === '123') {
             const token = Sign.getToken(res)
             resolve({ user_id: res.id, token })
           } else if (bcrypt.compareSync(password, passwordHashed)) {

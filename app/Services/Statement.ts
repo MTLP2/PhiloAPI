@@ -3,6 +3,7 @@ import moment from 'moment'
 import Utils from 'App/Utils'
 import Notification from 'App/Services/Notification'
 import Storage from 'App/Services/Storage'
+import Log from 'App/Services/Log'
 import DB from 'App/DB'
 
 class StatementService {
@@ -39,6 +40,14 @@ class StatementService {
       }
       item.created_at = Utils.date()
     }
+
+    const log = new Log({
+      id: item.id,
+      type: 'statement',
+      user_id: params.user_id,
+      item: item
+    })
+
     item.project_id = params.project_id
     item.date = params.year + '-' + params.month
     item.custom = params.custom ? JSON.stringify(params.custom) : null
@@ -53,7 +62,9 @@ class StatementService {
     item.storage = params.storage
     item.comment = params.comment
     item.updated_at = Utils.date()
+
     await item.save()
+    log.save(item)
 
     await DB('statement_distributor').where('statement_id', item.id).delete()
 

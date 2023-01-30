@@ -33,6 +33,7 @@ import ApiError from 'App/ApiError'
 import ProjectService from 'App/Services/Project'
 import Dispatch from 'App/Services/Dispatch'
 import ShippingWeight from 'App/Services/ShippingWeight'
+import Log from 'App/Services/Log'
 
 class AdminController {
   getStats({ params }) {
@@ -233,7 +234,8 @@ class AdminController {
     return Statement.get(params)
   }
 
-  saveStatement({ params }) {
+  saveStatement({ params, user }) {
+    params.user_id = user.id
     return Statement.save(params)
   }
 
@@ -470,6 +472,22 @@ class AdminController {
 
   getFeedbacks({ params }) {
     return Feedback.all(params)
+  }
+
+  async toggleFeedbackContactStatus({ params }) {
+    params.feedbackId = params.id
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          feedbackId: schema.number()
+        }),
+        data: params
+      })
+
+      return Feedback.toggleFeedbackContactStatus(payload)
+    } catch (err) {
+      return { error: err.message }
+    }
   }
 
   exportFeedbacks({ params }) {
@@ -833,7 +851,8 @@ class AdminController {
     return PaymentArtist.find(params.id)
   }
 
-  savePaymentArtist({ params }) {
+  savePaymentArtist({ params, user }) {
+    params.auth_id = user.id
     return PaymentArtist.save(params)
   }
 
@@ -1169,6 +1188,10 @@ class AdminController {
       data: params
     })
     return ShippingWeight.getShippingWeightHistory(payload)
+  }
+
+  getLogs({ params }) {
+    return Log.all(params)
   }
 }
 

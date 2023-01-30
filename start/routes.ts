@@ -206,6 +206,7 @@ Route.group(() => {
   Route.post('/shop/project', 'ShopController.addProject')
   Route.delete('/shop/project', 'ShopController.removeProject')
   Route.post('/shop/project/position', 'ShopController.changeProjectPosition')
+  Route.post('/shop/project/featured', 'ShopController.setFeatured')
   Route.delete('/shop/image', 'ShopController.removeShopImage')
 }).middleware('auth')
 
@@ -357,6 +358,7 @@ Route.group(() => {
   Route.delete('/orders/:id', 'AdminController.cancelOrderShop')
   Route.get('/orders/:id/customer', 'AdminController.getCustomerByOrderShopId')
   Route.get('/feedbacks', 'AdminController.getFeedbacks')
+  Route.post('/feedbacks/:id/contact', 'AdminController.toggleFeedbackContactStatus')
   Route.get('/feedbacks/stats', 'AdminController.getMonthlyFeedbackStats')
   Route.get('/feedbacks/export', 'AdminController.exportFeedbacks')
   Route.get('/reviews/projects', 'AdminController.getProjectsReviews')
@@ -507,6 +509,7 @@ Route.group(() => {
   Route.post('/payments-artist', 'AdminController.savePaymentArtist')
   Route.get('/payments-artist/:id/download', 'AdminController.downloadPaymentArtist')
   Route.delete('/payments-artist/:id', 'AdminController.deletePaymentArtist')
+  Route.get('/logs', 'AdminController.getLogs')
 
   Route.group(() => {
     Route.get('/:partner', 'AdminController.getShippingWeightByPartner')

@@ -963,8 +963,8 @@ class Utils {
       }
     }
     if (value === null) {
-      console.log(date, dates)
-      throw new ApiError(406, `fee missing: ${date}`)
+      console.log('fee missing =>', date, dates)
+      return null
     }
     return value
   }
