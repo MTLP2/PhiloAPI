@@ -342,30 +342,29 @@ class Stock {
       }
     })
 
-    const projects = await DB('vod')
-      .select('project.id', 'artist_name', 'picture', 'name', 'vod.barcode', 'cat_number')
-      .join('project', 'project.id', 'vod.project_id')
+    const products = await DB('product')
+      .select('product.id', 'name', 'product.type', 'product.barcode', 'catnumber')
       .whereIn(
         'barcode',
         stocks.map((s) => s.barcode)
       )
       .orWhereIn(
-        'cat_number',
+        'catnumber',
         stocks.map((s) => s.barcode)
       )
       .all()
 
     for (const [i, stock] of Object.entries(stocks)) {
-      stocks[i].project = projects.find(
-        (p) => +p.barcode === +stock.barcode || p.cat_number === stock.barcode
+      stocks[i].product = products.find(
+        (p) => +p.barcode === +stock.barcode || p.catnumber === stock.barcode
       )
     }
 
     if (params.type === 'save') {
       for (const stock of stocks) {
-        if (stock.project) {
+        if (stock.product) {
           await Stock.save({
-            project_id: stock.project.id,
+            product_id: stock.product.id,
             type: params.distributor,
             quantity: stock.quantity,
             comment: 'upload',
