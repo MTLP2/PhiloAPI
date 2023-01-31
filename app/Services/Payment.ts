@@ -7,6 +7,9 @@ import Order from 'App/Services/Order'
 import Paypal from 'App/Services/Paypal'
 import ApiError from 'App/ApiError'
 import fs from 'fs'
+import Notification from './Notification'
+import Env from '@ioc:Adonis/Core/Env'
+
 const stripe = require('stripe')(config.stripe.client_secret)
 
 export enum PaymentStatus {
@@ -763,6 +766,90 @@ class Payment {
     }
 
     return res
+  }
+
+  static notifDatePassed = async () => {
+    const notifications = await DB('payment')
+      .select(
+        'payment.*',
+        'invoice.resp_accounting',
+        'invoice.resp_commercial',
+        'ura.email as email_accounting',
+        'urc.email as email_commercial'
+      )
+      .join('invoice', 'invoice.id', 'payment.invoice_id')
+      .join('user as ura', 'ura.id', 'invoice.resp_accounting')
+      .join('user as urc', 'urc.id', 'invoice.resp_commercial')
+      .where('payment.date', '<', new Date())
+      .whereNull('payment.date_payment')
+      .whereNotNull('payment.date')
+      .whereNotNull('resp_commercial')
+      .whereNotNull('resp_accounting')
+      .where('payment.is_delete', 0)
+      .all()
+
+    // Group notifications by resp_accounting or resp_commercial.
+    const groupedNotifications = notifications.reduce((acc, notification) => {
+      if (!acc[notification.email_accounting]) {
+        acc[notification.email_accounting] = []
+      }
+      if (!acc[notification.email_commercial]) {
+        acc[notification.email_commercial] = []
+      }
+
+      // Check if the date is passed after date + payment_days.
+      const date = new Date(notification.date)
+      date.setDate(date.getDate() + notification.payment_days || 0)
+      if (date < new Date()) {
+        acc[notification.email_accounting].push(notification)
+        acc[notification.email_commercial].push(notification)
+      }
+
+      return acc
+    }, {})
+
+    for (const email in groupedNotifications) {
+      const elements = groupedNotifications[email]
+
+      let html = `
+    <table cellspacing="3" cellpadding="3" style="border:1px solid black;">
+      <thead>
+      <tr>
+        <th>Payment ID</th>
+        <th>Payment Code</th>
+        <th>Invoice ID</th>
+        <th>Total</th>
+        <th>Date</th>
+        <th>D.A.P.</th>
+        <th>Link</th>
+      </tr>
+    </thead>
+    <tbody>`
+      for (const line of elements) {
+        html += `<tr>`
+
+        html += `<td>${line.id}</td>`
+        html += `<td>${line.code}</td>`
+        html += `<td>${line.invoice_id}</td>`
+        html += `<td>${line.total} ${line.currency}</td>`
+        html += `<td>${new Date(line.date).toLocaleDateString()}</td>`
+        html += `<td>${line.payment_days || 0}</td>`
+        html += `<td><a href="${Env.get('APP_URL')}/sheraf/invoice/${
+          line.invoice_id
+        }">Go to payment</a></td>`
+
+        html += '</tr>'
+      }
+      html += '</tbody></table>'
+
+      await Notification.sendEmail({
+        to: email,
+        subject: `Export unpaid payments ${new Date().toLocaleDateString()}`,
+        html: html
+      })
+    }
+
+    return groupedNotifications
   }
 }
 

@@ -27,6 +27,7 @@ import Whiplash from './Whiplash'
 import View from '@ioc:Adonis/Core/View'
 import Excel from 'exceljs'
 import fs from 'fs'
+import Payment from './Payment'
 
 class App {
   static daily = async () => {
@@ -62,6 +63,7 @@ class App {
       if (moment().format('E') === '1') {
         await App.alertStock()
         await App.alertProjectsToShop()
+        await Payment.notifDatePassed()
       }
       if (moment().format('E') < '6') {
         await App.alertToSync()
