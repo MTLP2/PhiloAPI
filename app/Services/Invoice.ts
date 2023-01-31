@@ -682,6 +682,49 @@ class Invoice {
     return await Utils.getRows({ query: res })
   }
 
+  static async putPaymentReminder(params: {
+    id: number
+    prid: number
+    user_id: number
+    status: 'pending' | 'paid'
+    payment_id: number
+    comment: string
+  }) {
+    if (!params.prid) {
+      return await this.createPaymentReminder(params)
+    }
+    const paymentReminder = await DB('payment_reminder').find(params.prid)
+    if (!paymentReminder) {
+      return await this.createPaymentReminder(params)
+    }
+
+    return await paymentReminder.save({
+      user_id: params.user_id,
+      status: params.status,
+      payment_id: params.payment_id,
+      comment: params.comment,
+      updated_at: new Date()
+    })
+  }
+
+  static async createPaymentReminder(params: {
+    id: number
+    prid: number
+    user_id: number
+    status: 'pending' | 'paid'
+    payment_id: number
+    comment: string
+  }) {
+    const paymentReminder = await DB('payment_reminder').insert({
+      user_id: params.user_id,
+      status: params.status,
+      payment_id: params.payment_id,
+      comment: params.comment
+    })
+
+    return paymentReminder
+  }
+
   static async reminder() {
     // const first = await DB('invoice')
     //   .select('*')
