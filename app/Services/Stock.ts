@@ -15,12 +15,13 @@ class Stock {
       .join('product', 'product.id', 'pp.product_id')
       .leftJoin('stock', 'pp.product_id', 'stock.product_id')
       .where('pp.project_id', payload.project_id)
+      .where('stock.type', '!=', 'preorder')
       .where((query) => {
         if (payload.is_distrib !== undefined) {
           query.where('is_distrib', payload.is_distrib)
         }
         if (payload.size) {
-          query.where('size', payload.size)
+          query.whereNull('size').orWhere('size', payload.size)
         }
       })
       .all()
@@ -48,6 +49,7 @@ class Stock {
     const listProjects = await DB('project_product as p1')
       .select('is_shop', 'p1.project_id', 'product_id')
       .join('vod', 'vod.project_id', 'p1.project_id')
+      .join('product', 'product.id', 'p1.product_id')
       .whereIn('p1.project_id', (query) => {
         query.select('p2.project_id').from('project_product as p2')
         if (payload.productIds) {
@@ -56,6 +58,7 @@ class Stock {
           query.whereIn('p2.project_id', payload.projectIds)
         }
       })
+      .whereNull('product.parent_id')
       .all()
 
     if (listProjects.lenbth === 0) {
@@ -70,6 +73,7 @@ class Stock {
         listProjects.map((p) => p.product_id)
       )
       .where('is_distrib', false)
+      .whereNull('parent_id')
       .all()
 
     const products = {}
@@ -94,7 +98,7 @@ class Stock {
         } else if (!p.is_shop && t !== 'preorder') {
           continue
         }
-        if (!products[p.product_id][t]) {
+        if (!products[p.product_id] || !products[p.product_id][t]) {
           projects[p.project_id][t] = 0
         } else if (
           projects[p.project_id][t] === undefined ||
@@ -123,7 +127,7 @@ class Stock {
     type?: string
     product_id: number
     quantity: number
-    preorder: boolean
+    preorder?: boolean
     reserved?: number
     diff?: boolean
     order_id?: number
@@ -223,21 +227,12 @@ class Stock {
       .where('project_product.project_id', payload.project_id)
       .where((query) => {
         if (payload.size) {
-          query.where('size', payload.size)
+          query.where('size', payload.size).orWhere('size', 'all')
         }
       })
       .all()
 
     for (const product of pp) {
-      console.log({
-        product_id: product.product_id,
-        order_id: payload.order_id,
-        type: payload.transporter,
-        preorder: payload.preorder,
-        quantity: -payload.quantity,
-        diff: true,
-        comment: 'order'
-      })
       const stock = await Stock.save({
         product_id: product.product_id,
         order_id: payload.order_id,
@@ -388,7 +383,6 @@ class Stock {
             type: stock.type,
             quantity: stock.quantity,
             reserved: stock.reserved,
-            preorder_limit: stock.preorder_limit,
             comment: 'sheraf',
             is_distrib: stock.is_distrib,
             user_id: params.user_id
@@ -403,7 +397,6 @@ class Stock {
         type: params.type,
         quantity: params.quantity,
         reserved: params.reserved,
-        preorder_limit: params.preorder_limit,
         comment: 'sheraf',
         is_distrib: params.is_distrib,
         user_id: params.user_id
