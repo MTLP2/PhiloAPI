@@ -2189,6 +2189,7 @@ class Cart {
             project_id: project.id,
             order_id: order.id,
             size: item.size,
+            preorder: shop.type === 'vod',
             quantity: item.quantity,
             transporter: shop.transporter
           })
