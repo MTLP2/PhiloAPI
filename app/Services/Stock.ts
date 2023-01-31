@@ -257,7 +257,7 @@ class Stock {
 
   static async setParent(id: number) {
     const products = await DB('product')
-      .select('stock.type', 'quantity')
+      .select('stock.type', 'quantity', 'sales', 'preorder', 'reserved')
       .join('stock', 'stock.product_id', 'product.id')
       .where('parent_id', id)
       .all()
@@ -265,9 +265,16 @@ class Stock {
     const parent = {}
     for (const product of products) {
       if (!parent[product.type]) {
-        parent[product.type] = 0
+        parent[product.type] = {
+          quantity: 0,
+          sales: 0,
+          preorder: 0,
+          reserved: 0
+        }
       }
-      parent[product.type] += product.quantity
+      parent[product.type].quantity += product.quantity - product.reserved
+      parent[product.type].sales += product.sales
+      parent[product.type].preorder += product.preorder
     }
 
     for (const type of Object.keys(parent)) {
@@ -277,7 +284,9 @@ class Stock {
       }
       item.type = type
       item.product_id = id
-      item.quantity = parent[type]
+      item.quantity = parent[type].quantity
+      item.preorder = parent[type].preorder
+      item.sales = parent[type].sales
       item.updated_at = Utils.date()
       await item.save()
     }
