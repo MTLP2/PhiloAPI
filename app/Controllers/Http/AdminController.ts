@@ -761,6 +761,18 @@ class AdminController {
     return Invoice.find(params.id)
   }
 
+  getPaymentReminders({ params }) {
+    return Invoice.getPaymentReminders(params)
+  }
+
+  putPaymentReminder({ params }) {
+    return Invoice.putPaymentReminder(params)
+  }
+
+  deletePaymentReminder({ params }) {
+    return Invoice.deletePaymentReminder(params)
+  }
+
   removeInvoice({ params }) {
     return Invoice.remove(params.id)
   }
