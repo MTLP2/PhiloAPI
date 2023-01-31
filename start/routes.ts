@@ -464,6 +464,7 @@ Route.group(() => {
   Route.get('/invoices/:id', 'AdminController.getInvoice')
   Route.get('/invoices/:id/payment-reminders', 'AdminController.getPaymentReminders')
   Route.put('/invoices/:id/payment-reminders/:prid', 'AdminController.putPaymentReminder')
+  Route.delete('/invoices/:id/payment-reminders/:prid', 'AdminController.deletePaymentReminder')
   Route.put('/invoices/:id/payment-invoices/', 'AdminController.putPaymentInvoice')
   Route.delete('/invoices/:id', 'AdminController.removeInvoice')
   Route.post('/invoices/:id/duplicate', 'AdminController.duplicateInvoice')

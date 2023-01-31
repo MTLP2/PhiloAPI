@@ -725,6 +725,11 @@ class Invoice {
     return paymentReminder
   }
 
+  static async deletePaymentReminder(params: { id: number; prid: number }) {
+    await DB('payment_reminder').where('id', params.prid).delete()
+    return { success: true }
+  }
+
   static async reminder() {
     // const first = await DB('invoice')
     //   .select('*')

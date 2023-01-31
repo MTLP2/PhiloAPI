@@ -769,6 +769,10 @@ class AdminController {
     return Invoice.putPaymentReminder(params)
   }
 
+  deletePaymentReminder({ params }) {
+    return Invoice.deletePaymentReminder(params)
+  }
+
   removeInvoice({ params }) {
     return Invoice.remove(params.id)
   }
