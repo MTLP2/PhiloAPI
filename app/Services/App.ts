@@ -63,7 +63,7 @@ class App {
       if (moment().format('E') === '1') {
         await App.alertStock()
         await App.alertProjectsToShop()
-        await Payment.notifDatePassed()
+        await Payment.alertDatePassed()
       }
       if (moment().format('E') < '6') {
         await App.alertToSync()

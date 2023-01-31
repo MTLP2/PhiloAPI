@@ -768,7 +768,7 @@ class Payment {
     return res
   }
 
-  static notifDatePassed = async () => {
+  static alertDatePassed = async () => {
     const notifications = await DB('payment')
       .select(
         'payment.*',
