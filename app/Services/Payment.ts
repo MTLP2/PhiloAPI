@@ -126,9 +126,11 @@ class Payment {
     payment.updated_at = params.updated_at || payment.updated_at
     await payment.save()
 
+    // Update payment reminders statuts linked to this payment in case of status "paid"
     if (payment.status === 'paid') {
       await DB('payment_reminder').where('payment_id', payment.id).update({
-        status: 'paid'
+        status: 'paid',
+        updated_at: Utils.date()
       })
     }
 
