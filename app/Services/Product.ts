@@ -1,5 +1,6 @@
 import DB from 'App/DB'
 import Utils from 'App/Utils'
+import Stock from 'App/Services/Stock'
 
 class Product {
   static async all(payload: {
@@ -106,7 +107,10 @@ class Product {
     }
 
     item.children = await DB('product').where('parent_id', payload.id).all()
-    item.stocks = await DB('stock').where('product_id', payload.id).all()
+    item.stocks = await DB('stock')
+      .select('*', DB.raw('quantity - preorder - reserved as available'))
+      .where('product_id', payload.id)
+      .all()
     item.stocks_historic = await DB('stock_historic')
       .select('stock_historic.*', 'user.name')
       .leftJoin('user', 'user.id', 'stock_historic.user_id')
@@ -145,7 +149,6 @@ class Product {
     weight?: number
   }) {
     const item = await DB('product').where('id', payload.id).first()
-
     item.type = payload.type
     item.barcode = payload.barcode
     item.catnumber = payload.catnumber
@@ -156,6 +159,11 @@ class Product {
 
     await item.save()
 
+    const projects = await DB('project_product').where('product_id', item.id).all()
+    for (const project of projects) {
+      Product.setBarcodes({ project_id: project.project_id })
+    }
+
     return item
   }
 
@@ -163,7 +171,9 @@ class Product {
     await DB().execute('truncate table product')
     await DB().execute('truncate table project_product')
     await DB().execute('delete from stock where product_id is not null')
+    await DB().execute('delete from stock where product_id is null and project_id is null')
     await DB().execute('delete from stock_historic where product_id is not null')
+    await DB().execute('delete from stock_historic where product_id is null and project_id is null')
 
     const refs = await DB('vod')
       .select(
@@ -184,43 +194,50 @@ class Product {
       .join('project', 'vod.project_id', 'project.id')
       .hasMany('stock', 'stock', 'project_id')
       .hasMany('stock_historic', 'stock_historic', 'project_id')
-      .where('project_id', 276993)
+      // .where('project_id', 259311)
       // .whereNotNull('barcode')
       .all()
 
     for (const ref of refs) {
-      try {
-        const barcodes = ref.barcode ? ref.barcode.split(',') : ''
-        if (ref.barcode === 'SIZE') {
-          const [id] = await DB('product').insert({
+      const barcodes = ref.barcode ? ref.barcode.split(',') : ''
+      if (ref.barcode === 'SIZE') {
+        const id = await DB('product')
+          .insert({
             name: `${ref.artist_name} - ${ref.name}`,
             type: 'merch',
             size: 'all',
             color: 'all'
           })
+          .catch((e) => {})
 
-          await DB('project_product').insert({
-            project_id: ref.id,
-            product_id: id
-          })
+        await DB('project_product').insert({
+          project_id: ref.id,
+          product_id: id
+        })
 
-          const sizes = JSON.parse(ref.sizes)
+        const sizes = JSON.parse(ref.sizes)
 
+        if (sizes) {
           for (const [size, barcode] of Object.entries(sizes)) {
-            const child = await DB('product').insert({
-              name: `${ref.artist_name} - ${ref.name}`,
-              parent_id: id,
-              type: 'merch',
-              barcode: barcode || null,
-              size: size
-            })
+            const child = await DB('product')
+              .insert({
+                name: `${ref.artist_name} - ${ref.name}`,
+                parent_id: id,
+                type: 'merch',
+                barcode: barcode || null,
+                size: size
+              })
+              .catch((e) => {})
+
             await DB('project_product').insert({
               project_id: ref.id,
               product_id: child
             })
           }
-        } else if (barcodes.length < 2) {
-          const [id] = await DB('product').insert({
+        }
+      } else if (barcodes.length === 1) {
+        const id = await DB('product')
+          .insert({
             name: `${ref.artist_name} - ${ref.name}`,
             type: ref.category,
             barcode: ref.barcode,
@@ -228,35 +245,49 @@ class Product {
             size: null,
             color: null
           })
+          .catch((e) => {})
 
-          await DB('project_product').insert({
-            project_id: ref.id,
-            product_id: id
+        await DB('project_product').insert({
+          project_id: ref.id,
+          product_id: id
+        })
+
+        if (!ref.is_shop) {
+          await DB('stock').insert({
+            type: 'preorder',
+            product_id: id,
+            reserved: ref.count_other,
+            preorder: ref.count,
+            sales: ref.count,
+            quantity:
+              ref.is_distrib || ref.is_shop || ref.type !== 'limited_edition' ? 0 : ref.stage1
           })
-
-          if (!ref.is_shop) {
+        } else {
+          for (const stock of ref.stock) {
             await DB('stock').insert({
-              type: 'preorder',
-              product_id: id,
-              reserved: ref.count_other,
-              preorder: ref.count,
-              sales: ref.count,
-              quantity:
-                ref.is_distrib || ref.is_shop || ref.type !== 'limited_edition' ? 0 : ref.stage1
+              ...stock,
+              id: null,
+              project_id: null,
+              product_id: id
             })
-          } else {
-            for (const stock of ref.stock_historic) {
-              await DB('stock_historic').insert({
-                ...stock,
-                id: null,
-                project_id: null,
-                product_id: id
-              })
-            }
           }
         }
-      } catch (e) {
-        console.log(e)
+        for (const stock of ref.stock_historic) {
+          await DB('stock_historic').insert({
+            ...stock,
+            id: null,
+            project_id: null,
+            data: {
+              old: {
+                quantity: stock.old
+              },
+              new: {
+                quantity: stock.new
+              }
+            },
+            product_id: id
+          })
+        }
       }
     }
 
@@ -322,7 +353,19 @@ class Product {
       project_id: payload.project_id,
       product_id: payload.product_id
     })
+
+    const products = await DB('product').where('parent_id', payload.product_id).all()
+    for (const product of products) {
+      await DB('project_product').insert({
+        project_id: payload.project_id,
+        product_id: product.id
+      })
+    }
+
     await Product.setBarcodes({ project_id: payload.project_id })
+    await Stock.setStockProject({
+      productIds: [payload.project_id]
+    })
     return { success: true }
   }
 
@@ -332,25 +375,38 @@ class Product {
       .where('project_id', payload.project_id)
       .delete()
 
+    const products = await DB('product').where('parent_id', payload.product_id).all()
+    for (const product of products) {
+      await DB('project_product')
+        .where('project_id', payload.project_id)
+        .where('product_id', product.id)
+        .delete()
+    }
+
     await Product.setBarcodes({ project_id: payload.project_id })
+    await Stock.setStockProject({
+      productIds: [payload.project_id]
+    })
     return { success: true }
   }
 
   static setBarcodes = async (payload: { project_id: number }) => {
     const products = await DB('project_product')
-      .select('barcode')
+      .select('product.type', 'barcode')
       .join('product', 'product.id', 'project_product.product_id')
       .where('project_product.project_id', payload.project_id)
+      .whereNull('parent_id')
       .all()
 
     let barcodes = ''
     for (const product of products) {
-      if (product.barcode) {
-        if (barcodes) {
-          barcodes += ','
-        }
-        barcodes += product.barcode
+      if (!product.barcode) {
+        product.barcode = product.type.toUpperCase()
       }
+      if (barcodes) {
+        barcodes += ','
+      }
+      barcodes += product.barcode
     }
 
     await DB('vod').where('project_id', payload.project_id).update({
