@@ -157,7 +157,7 @@ class Project {
     }
 
     project.step = project.sold_out ? 'successful' : project.step
-    project.sizes = project.products.filter((p) => p.size).map((p) => p.size)
+    project.sizes = project.products.filter((p) => p.size && p.size !== 'all').map((p) => p.size)
 
     if (!project.partner_distribution) {
       project.price_distribution = null
