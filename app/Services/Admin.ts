@@ -4513,22 +4513,24 @@ class Admin {
       return project
     })
 
-    return Utils.arrayToCsv(
-      [
-        { index: 'id', name: 'ID' },
-        { index: 'created_at', name: 'Creation Date' },
-        { index: 'com_name', name: 'Commercial' },
-        { index: 'name', name: 'Name' },
-        { index: 'artist_name', name: 'Artist Name' },
-        { index: 'origin', name: 'Origin' },
-        { index: 'step', name: 'Step' },
-        { index: 'status', name: 'Status' },
-        { index: 'type', name: 'Type' },
-        { index: 'category', name: 'Category' },
-        { index: 'historic', name: 'Previous steps' }
-      ],
-      projects
-    )
+    return Utils.arrayToXlsx([
+      {
+        columns: [
+          { key: 'id', header: 'ID', width: 10 },
+          { key: 'created_at', header: 'Creation Date' },
+          { key: 'com_name', header: 'Commercial' },
+          { key: 'name', header: 'Name' },
+          { key: 'artist_name', header: 'Artist Name' },
+          { key: 'origin', header: 'Origin', width: 10 },
+          { key: 'step', header: 'Step' },
+          { key: 'status', header: 'Status' },
+          { key: 'type', header: 'Type' },
+          { key: 'category', header: 'Category' },
+          { key: 'historic', header: 'Previous steps' }
+        ],
+        data: projects
+      }
+    ])
   }
 
   static exportProjectsBox = async () => {
