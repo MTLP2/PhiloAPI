@@ -554,6 +554,21 @@ class AdminController {
     return Category.save(params)
   }
 
+  async duplicateCategory({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          id: schema.number()
+        }),
+        data: params
+      })
+
+      return Category.duplicate(payload)
+    } catch {
+      return new ApiError(500, 'Invalid category')
+    }
+  }
+
   populateProjectsCategory({ params }) {
     return Category.populateProjects(params)
   }

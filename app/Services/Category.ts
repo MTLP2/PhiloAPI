@@ -3,6 +3,7 @@ import Utils from 'App/Utils'
 import Project from 'App/Services/Project'
 import PromoCode from 'App/Services/PromoCode'
 import Storage from 'App/Services/Storage'
+import ApiError from 'App/ApiError'
 
 class Category {
   static async all(params) {
@@ -124,7 +125,6 @@ class Category {
     return list
   }
 
-  // @Robin
   // Controller to update the category with projects from multiple categories all at once
   static async populateProjects(params) {
     // Check if params are emtpy
@@ -292,7 +292,43 @@ class Category {
     return item
   }
 
-  // @Robin
+  static async duplicate(params: { id: number }) {
+    const categoryToDuplicate = await DB('category').find(params.id)
+
+    if (!categoryToDuplicate) {
+      throw new ApiError(404, 'Category not found')
+    }
+
+    // Insert new category
+    const [newId] = await DB('category').insert({
+      name_en: `${categoryToDuplicate.name_en} (copy)`,
+      name_fr: `${categoryToDuplicate.name_fr} (copy)`,
+      sub_title_en: categoryToDuplicate.sub_title_en,
+      sub_title_fr: categoryToDuplicate.sub_title_fr,
+      description_en: categoryToDuplicate.description_en,
+      description_fr: categoryToDuplicate.description_fr,
+      is_banner: 0,
+      is_visible: 0,
+      banner: null,
+      created_at: Utils.date(),
+      updated_at: Utils.date()
+    })
+
+    // Insert new category projects
+    const categoryProjects = await DB('category_project').where('category_id', params.id).all()
+    await DB('category_project').insert(
+      categoryProjects.map((categoryProject) => ({
+        project_id: categoryProject.project_id,
+        category_id: newId,
+        position: categoryProject.position,
+        created_at: Utils.date(),
+        updated_at: Utils.date()
+      }))
+    )
+
+    return { success: true, newId }
+  }
+
   // Unlink all projects from a category
   static async deleteAllProjects(params) {
     await DB('category_project').where('category_id', params.categoryId).delete()
