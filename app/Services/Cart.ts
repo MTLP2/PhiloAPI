@@ -2080,11 +2080,7 @@ class Cart {
           .all()
 
         if (shop.type === 'shop') {
-          try {
-            Order.sync({ id: shop.id })
-          } catch (e) {
-            console.log(e)
-          }
+          Order.sync({ id: shop.id })
         }
 
         for (const item of items) {
