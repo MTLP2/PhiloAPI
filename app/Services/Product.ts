@@ -80,7 +80,7 @@ class Product {
       .first()
 
     item.projects = await DB('project')
-      .select('project.id', 'picture', 'artist_name', 'name')
+      .select('project.id', 'product_id', 'picture', 'artist_name', 'name')
       .join('project_product', 'project_product.project_id', 'project.id')
       .where('product_id', payload.id)
       .all()
@@ -354,7 +354,20 @@ class Product {
     return { success: true }
   }
 
-  static saveProject = async (payload: { project_id: number; product_id: number }) => {
+  static saveProject = async (payload: {
+    project_id: number
+    product_id?: number
+    name?: string
+    type?: string
+  }) => {
+    if (!payload.product_id) {
+      const product = await Product.save({
+        type: payload.type,
+        name: payload.name
+      })
+      payload.product_id = product.id
+    }
+
     await DB('project_product').insert({
       project_id: payload.project_id,
       product_id: payload.product_id
@@ -370,7 +383,7 @@ class Product {
 
     await Product.setBarcodes({ project_id: payload.project_id })
     await Stock.setStockProject({
-      productIds: [payload.project_id]
+      projectIds: [payload.project_id]
     })
     return { success: true }
   }
@@ -391,7 +404,7 @@ class Product {
 
     await Product.setBarcodes({ project_id: payload.project_id })
     await Stock.setStockProject({
-      productIds: [payload.project_id]
+      projectIds: [payload.project_id]
     })
     return { success: true }
   }
