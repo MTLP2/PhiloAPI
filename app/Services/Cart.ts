@@ -2080,7 +2080,11 @@ class Cart {
           .all()
 
         if (shop.type === 'shop') {
-          Order.sync({ id: shop.id })
+          try {
+            Order.sync({ id: shop.id })
+          } catch (e) {
+            console.log(e)
+          }
         }
 
         for (const item of items) {
@@ -2430,8 +2434,7 @@ class Cart {
         'slug',
         'vod.user_id',
         'vod.barcode',
-        'vod.type',
-        DB.raw('vod.goal - vod.count - vod.count_other - vod.count_distrib as stock')
+        'vod.type'
       )
       .join('vod', 'vod.project_id', 'p.id')
       .whereIn(
