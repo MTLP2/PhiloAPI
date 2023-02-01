@@ -1051,13 +1051,28 @@ static toJuno = async (params) => {
         }
       }
     } else if (['whiplash', 'whiplash_uk'].includes(shop.transporter)) {
-      const res = await Whiplash.validOrder(shop, items)
+      try {
+        res = await Whiplash.validOrder(shop, items)
+      } catch (err) {
+        if (throwError) {
+          throw err
+        } else {
+          await Notification.sendEmail({
+            to: 'victor@diggersfactory.com',
+            subject: `Problem with Whiplash : ${shop.id}`,
+            html: `<ul>
+            <li>Order Id : https://www.diggersfactory.com/sheraf/order/${shop.order_id}</li>
+            <li>Shop Id : ${shop.id}</li>
+            <li>Error: ${err}</li>
+          </ul>`
+          })
+        }
+      }
       if (!res) {
         return { error: 'not_found' }
       }
     } else if (shop.transporter === 'sna') {
       const customer = await DB('customer').find(shop.customer_id)
-
       try {
         await Sna.sync([
           {
