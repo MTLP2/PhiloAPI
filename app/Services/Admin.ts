@@ -3979,12 +3979,6 @@ class Admin {
         'count',
         'count_other',
         'count_distrib',
-        /**
-        'stock_daudin',
-        'stock_diggers',
-        'stock_whiplash',
-        'stock_whiplash_uk',
-        **/
         'date_shipping',
         'barcode',
         'picture',
