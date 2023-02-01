@@ -74,6 +74,8 @@ class ShippingWeight {
       return acc
     }, {})
 
+    if (Object.keys(diff).length === 0) return { success: 'no changes' }
+
     // Save diff values to history
     await DB('shipping_weight_history').insert({
       changes: JSON.stringify(diff),
