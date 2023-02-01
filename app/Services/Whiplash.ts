@@ -500,27 +500,35 @@ class Whiplash {
     return csv
   }
 
-  static syncStocks = async () => {
+  static syncStocks = async (payload?: { projectIds?: number[] }) => {
     const projects: any = await DB('vod')
       .select(
         'vod.project_id',
         'whiplash_stock',
-        'barcode',
+        'pp.product_id',
+        'product.barcode',
         'stock_us.quantity as stock_whiplash',
         'stock_uk.quantity as stock_whiplash_uk'
       )
-      .whereNotNull('barcode')
+      .join('project_product as pp', 'pp.project_id', 'vod.project_id')
+      .join('product', 'product.id', 'pp.product_id')
+      .whereNotNull('product.barcode')
+      .where((query: any) => {
+        if (payload && payload.projectIds) {
+          query.whereIn('vod.project_id', payload.projectIds)
+        }
+      })
       .where((query: any) => {
         query
           .whereRaw('JSON_EXTRACT(transporters, "$.whiplash") = true')
           .orWhereRaw('JSON_EXTRACT(transporters, "$.whiplash_uk") = true')
       })
       .leftJoin('stock as stock_us', (query) => {
-        query.on('stock_us.project_id', 'vod.project_id')
+        query.on('stock_us.product_id', 'product.id')
         query.on('stock_us.type', DB.raw('?', ['whiplash']))
       })
       .leftJoin('stock as stock_uk', (query) => {
-        query.on('stock_uk.project_id', 'vod.project_id')
+        query.on('stock_uk.product_id', 'product.id')
         query.on('stock_uk.type', DB.raw('?', ['whiplash_uk']))
       })
       .orderBy('whiplash_stock')
@@ -528,14 +536,7 @@ class Whiplash {
       .all()
 
     for (const project of projects) {
-      console.log(project.project_id, project.barcode, project.whiplash_stock)
-
-      DB('vod').where('project_id', project.project_id).update({
-        whiplash_stock: Utils.date()
-      })
-
       const res: any = await Whiplash.api(`items/sku/${project.barcode}`)
-
       if (!res[0]) {
         continue
       }
@@ -551,20 +552,11 @@ class Whiplash {
         }
       }
 
-      console.log('=====>', project.project_id)
-      console.log(us, project.stock_whiplash)
-      console.log(uk, project.stock_whiplash_uk)
-
       if (us !== project.stock_whiplash || uk !== project.stock_whiplash_uk) {
-        console.log('XXXXXXX')
-        await DB('vod').where('project_id', project.project_id).update({
-          stock_whiplash: us,
-          stock_whiplash_uk: uk
-        })
-
         if (us !== project.stock_whiplash) {
+          console.log(project)
           Stock.save({
-            project_id: project.project_id,
+            product_id: project.product_id,
             type: 'whiplash',
             comment: 'api',
             quantity: us
@@ -572,7 +564,7 @@ class Whiplash {
         }
         if (uk !== project.stock_whiplash_uk) {
           Stock.save({
-            project_id: project.project_id,
+            product_id: project.product_id,
             type: 'whiplash_uk',
             comment: 'api',
             quantity: uk

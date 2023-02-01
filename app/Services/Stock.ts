@@ -1,5 +1,7 @@
 import DB from 'App/DB'
 import Utils from 'App/Utils'
+import Elogik from 'App/Services/Elogik'
+import Whiplash from 'App/Services/Whiplash'
 import Excel from 'exceljs'
 import fs from 'fs'
 
@@ -43,6 +45,30 @@ class Stock {
     }
 
     return res
+  }
+
+  static async syncApi(payload: { productIds?: number[]; projectIds?: number[] }) {
+    const products = await DB('product')
+      .select('product.barcode')
+      .join('project_product as pp', 'pp.product_id', 'product.id')
+      .where((query) => {
+        if (payload.productIds) {
+          query.whereIn('pp.product_id', payload.productIds)
+        } else if (payload.projectIds) {
+          query.whereIn('pp.project_id', payload.projectIds)
+        }
+      })
+      .whereNotNull('barcode')
+      .all()
+
+    for (const product of products) {
+      await Promise.all([
+        Whiplash.syncStocks({ projectIds: payload.projectIds }),
+        Elogik.syncStocks({ barcode: product.barcode })
+      ])
+    }
+
+    return { success: true }
   }
 
   static async setStockProject(payload: { productIds?: number[]; projectIds?: number[] }) {
@@ -120,6 +146,76 @@ class Stock {
     }
 
     return true
+  }
+
+  static async setOrders(payload?: { projectIds?: number[]; productIds?: number[] }) {
+    if (payload && !payload.productIds && payload.projectIds) {
+      const products = await DB('project_product').whereIn('project_id', payload.projectIds).all()
+      payload.productIds = products.map((p) => p.product_id)
+    }
+
+    const orders = await DB('order_shop')
+      .select('order_shop.type', 'vod.stage1', 'order_shop.transporter', 'product_id', 'quantity')
+      .join('order_item', 'order_item.order_shop_id', 'order_shop.id')
+      .join('project_product as pp', 'pp.project_id', 'order_item.project_id')
+      .join('vod', 'vod.project_id', 'order_item.project_id')
+      .where((query) => {
+        if (payload && payload.productIds) {
+          query.whereIn('pp.product_id', payload.productIds)
+        }
+      })
+      .where('is_paid', true)
+      .all()
+
+    const products = {}
+    for (const order of orders) {
+      if (!order.product_id) {
+        continue
+      }
+      if (!products[order.product_id]) {
+        products[order.product_id] = {
+          preorder_limit: order.stage1,
+          preorder: {
+            preorder: 0,
+            sales: 0
+          }
+        }
+      }
+      if (!products[order.product_id][order.transporter]) {
+        products[order.product_id][order.transporter] = {
+          preorder: 0,
+          sales: 0
+        }
+      }
+
+      if (order.type === 'vod') {
+        products[order.product_id]['preorder'].preorder += order.quantity
+        products[order.product_id]['preorder'].sales += order.quantity
+        products[order.product_id][order.transporter].preorder += order.quantity
+      }
+      products[order.product_id][order.transporter].sales += order.quantity
+    }
+
+    for (const productId of Object.keys(products)) {
+      for (const type of Object.keys(products[productId])) {
+        let stock = await DB('stock').where('product_id', productId).where('type', type).first()
+        if (!stock) {
+          stock = DB('stock')
+          stock.product_id = productId
+          stock.type = type
+        }
+        if (type === 'preorder') {
+          if (!stock.quantity) {
+            stock.quantity = products[productId].preorder_limit
+          }
+          stock.preorder = products[productId][type].preorder
+        }
+        stock.sales = products[productId][type].sales
+        await stock.save()
+      }
+    }
+
+    return { success: true }
   }
 
   static async save(payload: {

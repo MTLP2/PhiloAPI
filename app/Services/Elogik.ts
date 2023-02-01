@@ -560,9 +560,12 @@ class Elogik {
     console.log('boxes sent => ', k)
   }
 
-  static syncStocks = async () => {
+  static syncStocks = async (payload: { barcode?: string }) => {
     const res = await Elogik.api('articles/stock', {
-      method: 'GET'
+      method: 'POST',
+      body: {
+        reference: payload.barcode
+      }
     })
     const news: any[] = []
 
@@ -575,8 +578,6 @@ class Elogik {
       )
       .where('stock.type', 'daudin')
       .all()
-
-    return products
 
     for (const ref of res.articles) {
       const qty = ref.stocks[0].stockDispo
@@ -602,6 +603,12 @@ class Elogik {
           break
         }
         **/
+        console.log({
+          product_id: product.id,
+          type: 'daudin',
+          comment: 'api',
+          quantity: qty
+        })
         Stock.save({
           product_id: product.id,
           type: 'daudin',
@@ -610,7 +617,6 @@ class Elogik {
         })
       }
     }
-
     return news
   }
 
