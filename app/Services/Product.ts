@@ -139,8 +139,9 @@ class Product {
   }
 
   static async save(payload: {
-    id: number
+    id?: number
     type?: string
+    name?: string
     barcode?: number
     catnumber?: string
     parent_id?: number
@@ -148,14 +149,19 @@ class Product {
     color?: string
     weight?: number
   }) {
-    const item = await DB('product').where('id', payload.id).first()
+    let item: any = DB('product')
+    if (payload.id) {
+      item = await DB('product').where('id', payload.id).first()
+    }
     item.type = payload.type
+    item.name = payload.name
     item.barcode = payload.barcode
     item.catnumber = payload.catnumber
     item.parent_id = payload.parent_id
     item.size = payload.size
     item.color = payload.color
     item.weight = payload.weight
+    item.updated_at = Utils.date()
 
     await item.save()
 
