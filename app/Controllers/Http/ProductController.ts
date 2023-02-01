@@ -74,7 +74,7 @@ class ProductController {
   async removeSubProduct({ params }) {
     const payload = await validator.validate({
       schema: schema.create({
-        project_id: schema.number(),
+        id: schema.number(),
         product_id: schema.number()
       }),
       data: params
@@ -86,7 +86,9 @@ class ProductController {
     const payload = await validator.validate({
       schema: schema.create({
         project_id: schema.number(),
-        product_id: schema.number()
+        product_id: schema.number.optional(),
+        name: schema.string.optional(),
+        type: schema.string.optional()
       }),
       data: params
     })
