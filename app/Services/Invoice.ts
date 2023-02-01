@@ -159,7 +159,7 @@ class Invoice {
     invoice.lines = params.invoice_to_payment ? params.lines : JSON.stringify(params.lines)
     invoice.payment_id = params.payment_id
     invoice.comment = params.comment
-    invoice.resp_commercial = params.resp_commercial
+    invoice.resp_payment = params.resp_payment
     invoice.resp_accounting = params.resp_accounting
     invoice.updated_at = params.created_at || Utils.date()
     invoice.updated_at = params.updated_at || Utils.date()
