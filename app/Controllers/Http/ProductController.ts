@@ -32,21 +32,26 @@ class ProductController {
     return Product.find(payload)
   }
 
-  async saveProduct({ params }) {
-    const payload = await validator.validate({
-      schema: schema.create({
-        id: schema.number(),
-        type: schema.string.optional(),
-        barcode: schema.number.optional(),
-        catnumber: schema.string.optional(),
-        parent_id: schema.number.optional(),
-        size: schema.string.optional(),
-        color: schema.string.optional(),
-        weight: schema.number.optional()
-      }),
-      data: params
-    })
-    return Product.save(payload)
+  async saveProduct({ request }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          id: schema.number.optional(),
+          name: schema.string(),
+          type: schema.string.optional(),
+          barcode: schema.number.optional(),
+          catnumber: schema.string.optional(),
+          parent_id: schema.number.optional(),
+          size: schema.string.optional(),
+          color: schema.string.optional(),
+          weight: schema.number.optional()
+        }),
+        data: request.body()
+      })
+      return Product.save(payload)
+    } catch (err) {
+      return { error: err.message, validation: err.messages }
+    }
   }
 
   async saveStocks({ params, user }) {
