@@ -28,7 +28,6 @@ import Artwork from 'App/Services/Artwork'
 import Stats from 'App/Services/Stats'
 import MailJet from 'App/Services/MailJet'
 import Review from 'App/Services/Review'
-import Product from 'App/Services/Product'
 import ApiError from 'App/ApiError'
 import ProjectService from 'App/Services/Project'
 import Dispatch from 'App/Services/Dispatch'
@@ -184,7 +183,9 @@ class AdminController {
     })
   }
 
-  calculStock({ params }) {
+  async calculStock({ params }) {
+    return Stock.setOrders({ projectIds: [params.id] })
+    await Stock.syncApi({ projectIds: [params.id] })
     return Stock.setStockProject({ projectIds: [params.id] })
   }
 
