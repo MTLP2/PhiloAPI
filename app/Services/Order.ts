@@ -1033,7 +1033,23 @@ static toJuno = async (params) => {
       await DB('order_shop').where('id', shop.id).update({
         sending: true
       })
-      res = await Elogik.syncOrders([shop.id])
+      try {
+        res = await Elogik.syncOrders([shop.id])
+      } catch (err) {
+        if (throwError) {
+          throw err
+        } else {
+          await Notification.sendEmail({
+            to: 'victor@diggersfactory.com',
+            subject: `Problem with Elogik : ${shop.id}`,
+            html: `<ul>
+            <li>Order Id : https://www.diggersfactory.com/sheraf/order/${shop.order_id}</li>
+            <li>Shop Id : ${shop.id}</li>
+            <li>Error: ${err}</li>
+          </ul>`
+          })
+        }
+      }
     } else if (['whiplash', 'whiplash_uk'].includes(shop.transporter)) {
       const res = await Whiplash.validOrder(shop, items)
       if (!res) {
