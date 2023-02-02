@@ -61,12 +61,14 @@ class Stock {
       .whereNotNull('barcode')
       .all()
 
-    for (const product of products) {
-      await Promise.all([
-        Whiplash.syncStocks({ projectIds: payload.projectIds }),
-        Elogik.syncStocks({ barcode: product.barcode })
-      ])
-    }
+    await Promise.all(
+      products.map((product) =>
+        Promise.all([
+          Whiplash.syncStocks({ projectIds: payload.projectIds }),
+          Elogik.syncStocks({ barcode: product.barcode })
+        ])
+      )
+    )
 
     return { success: true }
   }
@@ -140,6 +142,7 @@ class Stock {
         (prev: number, current: number) => prev + (current < 0 ? 0 : current),
         0
       )
+      console.log('lol', projects[p])
       await DB('vod').where('project_id', p).update({
         stock: projects[p]
       })
@@ -155,14 +158,30 @@ class Stock {
     }
 
     const orders = await DB('order_shop')
-      .select('order_shop.type', 'vod.stage1', 'order_shop.transporter', 'product_id', 'quantity')
+      .select(
+        'order_shop.type',
+        'vod.stage1',
+        'order_shop.transporter',
+        'product_id',
+        'order_item.size',
+        'quantity'
+      )
       .join('order_item', 'order_item.order_shop_id', 'order_shop.id')
       .join('project_product as pp', 'pp.project_id', 'order_item.project_id')
+      .join('product', 'product.id', 'pp.product_id')
       .join('vod', 'vod.project_id', 'order_item.project_id')
       .where((query) => {
         if (payload && payload.productIds) {
           query.whereIn('pp.product_id', payload.productIds)
         }
+      })
+      .where((query) => {
+        query.whereNull('order_item.size')
+        query.orWhere((query) => {
+          query.whereRaw('product.size = order_item.size')
+          query.orWhere('product.size', 'all')
+          query.orWhereNull('product.size')
+        })
       })
       .where('is_paid', true)
       .all()
@@ -198,6 +217,9 @@ class Stock {
 
     for (const productId of Object.keys(products)) {
       for (const type of Object.keys(products[productId])) {
+        if (type === 'preorder_limit') {
+          continue
+        }
         let stock = await DB('stock').where('product_id', productId).where('type', type).first()
         if (!stock) {
           stock = DB('stock')
