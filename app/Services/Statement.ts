@@ -944,6 +944,17 @@ class StatementService {
     return res
   }
 
+  /**
+  static async getBalancesLicences() {
+    const projects = await DB()
+      .from('project')
+      .select('project.id', 'project.name', 'artist_name')
+      .join('vod', 'vod.project_id', 'project.id')
+      .where('is_licence', true)
+      .all()
+  }
+  **/
+
   static async getBalances(params: { start: string; end: string; type: string }) {
     let projectsPromise = DB()
       .from('project')

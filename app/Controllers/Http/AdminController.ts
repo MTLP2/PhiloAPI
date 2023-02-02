@@ -897,6 +897,13 @@ class AdminController {
 
   getBalances({ params }) {
     return Statement.getBalances(params)
+    /**
+    if (params.type === 'licence') {
+      return Statement.getBalancesLicence(params)
+    } else {
+      return Statement.getBalances(params)
+    }
+    **/
   }
 
   getBalance({ params }) {

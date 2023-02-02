@@ -545,6 +545,12 @@ class Admin {
       stats.benefit_artist_box += project.payback_box
     }
 
+    const costs = await DB('production_cost').where('project_id', params.id).all()
+
+    for (const cost of costs) {
+      stats.costs += cost.cost_real
+    }
+
     const statements = await DB('statement')
       .select('statement.*')
       .where('project_id', params.id)
@@ -552,13 +558,6 @@ class Admin {
       .all()
 
     for (const s of statements) {
-      stats.prod += s.production
-      stats.costs += s.production
-      stats.costs += s.sdrm
-      stats.costs += s.mastering
-      stats.costs += s.logistic
-      stats.costs += s.distribution_cost
-
       const feeDistribDate = JSON.parse(project.fee_distrib_date)
       const feeDistrib = 1 - Utils.getFee(feeDistribDate, s.date) / 100
 
