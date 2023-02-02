@@ -569,6 +569,9 @@ class Elogik {
     })
     const news: any[] = []
 
+    if (!res.articles) {
+      return false
+    }
     const products = await DB('product')
       .select('product.id', 'barcode', 'stock.quantity')
       .leftJoin('stock', 'stock.product_id', 'product.id')
@@ -603,12 +606,6 @@ class Elogik {
           break
         }
         **/
-        console.log({
-          product_id: product.id,
-          type: 'daudin',
-          comment: 'api',
-          quantity: qty
-        })
         Stock.save({
           product_id: product.id,
           type: 'daudin',
