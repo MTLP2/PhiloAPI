@@ -200,99 +200,99 @@ class Product {
       .join('project', 'vod.project_id', 'project.id')
       .hasMany('stock', 'stock', 'project_id')
       .hasMany('stock_historic', 'stock_historic', 'project_id')
-      // .where('project_id', 259311)
-      // .whereNotNull('barcode')
       .all()
 
     for (const ref of refs) {
       const barcodes = ref.barcode ? ref.barcode.split(',') : ''
-      if (ref.barcode === 'SIZE') {
-        const id = await DB('product')
-          .insert({
-            name: `${ref.artist_name} - ${ref.name}`,
-            type: 'merch',
-            size: 'all',
-            color: 'all'
-          })
-          .catch((e) => {})
-
-        await DB('project_product').insert({
-          project_id: ref.id,
-          product_id: id
-        })
-
-        const sizes = JSON.parse(ref.sizes)
-
-        if (sizes) {
-          for (const [size, barcode] of Object.entries(sizes)) {
-            const child = await DB('product')
-              .insert({
-                name: `${ref.artist_name} - ${ref.name}`,
-                parent_id: id,
-                type: 'merch',
-                barcode: barcode || null,
-                size: size
-              })
-              .catch((e) => {})
-
-            await DB('project_product').insert({
-              project_id: ref.id,
-              product_id: child
+      for (const barcode of barcodes) {
+        if (barcode === 'SIZE') {
+          const id = await DB('product')
+            .insert({
+              name: `${ref.artist_name} - ${ref.name}`,
+              type: 'merch',
+              size: 'all',
+              color: 'all'
             })
+            .catch((e) => {})
+
+          await DB('project_product').insert({
+            project_id: ref.id,
+            product_id: id
+          })
+
+          const sizes = JSON.parse(ref.sizes)
+
+          if (sizes) {
+            for (const [size, barcode] of Object.entries(sizes)) {
+              const child = await DB('product')
+                .insert({
+                  name: `${ref.artist_name} - ${ref.name}`,
+                  parent_id: id,
+                  type: 'merch',
+                  barcode: barcode || null,
+                  size: size
+                })
+                .catch((e) => {})
+
+              await DB('stock').insert({
+                type: 'preorder',
+                product_id: child
+              })
+
+              await DB('project_product').insert({
+                project_id: ref.id,
+                product_id: child
+              })
+            }
           }
-        }
-      } else if (barcodes.length === 1) {
-        const id = await DB('product')
-          .insert({
-            name: `${ref.artist_name} - ${ref.name}`,
-            type: ref.category,
-            barcode: ref.barcode,
-            catnumber: ref.cat_number,
-            size: null,
-            color: null
-          })
-          .catch((e) => {})
-
-        await DB('project_product').insert({
-          project_id: ref.id,
-          product_id: id
-        })
-
-        if (!ref.is_shop) {
-          await DB('stock').insert({
-            type: 'preorder',
-            product_id: id,
-            reserved: ref.count_other,
-            preorder: ref.count,
-            sales: ref.count,
-            quantity:
-              ref.is_distrib || ref.is_shop || ref.type !== 'limited_edition' ? 0 : ref.stage1
-          })
         } else {
-          for (const stock of ref.stock) {
+          const id = await DB('product')
+            .insert({
+              name: `${ref.artist_name} - ${ref.name}`,
+              type: ref.category,
+              barcode: barcode,
+              catnumber: ref.cat_number,
+              size: null,
+              color: null
+            })
+            .catch((e) => {})
+
+          await DB('project_product').insert({
+            project_id: ref.id,
+            product_id: id
+          })
+
+          if (!ref.is_shop) {
             await DB('stock').insert({
+              type: 'preorder',
+              product_id: id
+            })
+          } else {
+            for (const stock of ref.stock) {
+              await DB('stock').insert({
+                ...stock,
+                id: null,
+                project_id: null,
+                product_id: id
+              })
+            }
+          }
+          for (const stock of ref.stock_historic) {
+            await DB('stock_historic').insert({
               ...stock,
               id: null,
               project_id: null,
+              data: {
+                old: {
+                  quantity: stock.old
+                },
+                new: {
+                  quantity: stock.new
+                }
+              },
               product_id: id
             })
           }
-        }
-        for (const stock of ref.stock_historic) {
-          await DB('stock_historic').insert({
-            ...stock,
-            id: null,
-            project_id: null,
-            data: {
-              old: {
-                quantity: stock.old
-              },
-              new: {
-                quantity: stock.new
-              }
-            },
-            product_id: id
-          })
         }
       }
     }
