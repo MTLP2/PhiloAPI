@@ -71,9 +71,8 @@ class Elogik {
       method: 'GET'
     })
 
-    const projects = await DB('project as p')
-      .select('p.id', 'p.artist_name', 'p.name', 'p.picture', 'vod.barcode')
-      .join('vod', 'vod.project_id', 'p.id')
+    const products = await DB('product as p')
+      .select('p.id', 'p.name', 'p.name', 'p.barcode')
       .whereIn(
         'barcode',
         res.articles.map((s: any) => s.EAN13)
@@ -85,7 +84,7 @@ class Elogik {
       return {
         title: article.titre,
         barcode: article.EAN13,
-        project: projects.find((p: any) => p.barcode === article.EAN13),
+        product: products.find((p: any) => p.barcode === article.EAN13),
         stock: article.stocks[0].stockDispo,
         blocked: article.stocks[0].stockBloque,
         returns: article.stocks[0].stockBloque
@@ -262,30 +261,23 @@ class Elogik {
     }
 
     const items = await DB()
-      .select(
-        'order_shop_id',
-        'oi.project_id',
-        'oi.quantity',
-        'oi.price',
-        'oi.size',
-        'project.name',
-        'project.artist_name',
-        'vod.barcode',
-        'vod.weight',
-        'vod.sizes',
-        'project.nb_vinyl',
-        'vod.sleeve',
-        'vod.vinyl_weight'
-      )
+      .select('order_shop_id', 'oi.quantity', 'product.barcode')
       .from('order_item as oi')
+      .join('project_product', 'project_product.project_id', 'oi.project_id')
+      .join('product', 'project_product.product_id', 'product.id')
+      .where((query) => {
+        query.whereRaw('product.size = oi.size')
+        query.orWhereNull('product.size')
+      })
       .whereIn('order_shop_id', ids)
-      .join('vod', 'vod.project_id', 'oi.project_id')
-      .join('project', 'project.id', 'oi.project_id')
       .all()
 
     for (const item of items) {
       const idx = orders.findIndex((o: any) => o.id === item.order_shop_id)
       orders[idx].items = orders[idx].items ? [...orders[idx].items, item] : [item]
+      if (!item.barcode) {
+        throw new Error('no_barcode')
+      }
     }
 
     const res = await Elogik.sync(orders)
@@ -297,6 +289,18 @@ class Elogik {
     for (const order of orders) {
       const pickup = order.address_pickup ? JSON.parse(order.address_pickup) : null
       const address = order.address.match(/.{1,30}(\s|$)/g)
+
+      let check
+      if (order.id[0] === 'M') {
+        check = await DB('order_manual').where('id', order.id.substring(1)).first()
+      } else if (order.id[0] === 'B') {
+        check = await DB('box_dispatch').where('id', order.id.substring(1)).first()
+      } else {
+        check = await DB('order_shop').where('id', order.id).first()
+      }
+      if (check.logistician_id) {
+        continue
+      }
 
       const adr = {
         societe: order.name,
@@ -324,24 +328,14 @@ class Elogik {
         listeArticles: <any>[]
       }
       for (const item of order.items) {
-        const sizes = item.sizes ? JSON.parse(item.sizes) : null
-        const barcodes = item.barcode.split(',')
-        for (let barcode of barcodes) {
-          if (barcode === 'SIZE') {
-            barcode = sizes[item.size].split(',')[0]
-          } else if (barcode === 'SIZE2') {
-            barcode = sizes[item.size].split(',')[1]
-          }
-          if (process.env.NODE_ENV !== 'production') {
-            barcode = '3760370262046'
-          }
-          payload.listeArticles.push({
-            refEcommercant: barcode.toString().trim(),
-            quantite: item.quantity
-          })
+        if (process.env.NODE_ENV !== 'production') {
+          item.barcode = 3760370262046
         }
+        payload.listeArticles.push({
+          refEcommercant: item.barcode,
+          quantite: item.quantity
+        })
       }
-
       console.log(payload)
 
       let res = await Elogik.api('commandes/creer', {
@@ -566,79 +560,63 @@ class Elogik {
     console.log('boxes sent => ', k)
   }
 
-  static syncStocks = async () => {
+  static syncStocks = async (payload: { barcode?: string }) => {
     const res = await Elogik.api('articles/stock', {
-      method: 'GET'
+      method: 'POST',
+      body: {
+        reference: payload.barcode
+      }
     })
     const news: any[] = []
 
+    const products = await DB('product')
+      .select('product.id', 'barcode', 'stock.quantity')
+      .leftJoin('stock', 'stock.product_id', 'product.id')
+      .whereIn(
+        'barcode',
+        res.articles.map((r) => r.refEcommercant)
+      )
+      .where('stock.type', 'daudin')
+      .all()
+
     for (const ref of res.articles) {
-      const project = await DB('project')
-        .select(
-          'project.id',
-          'project.name',
-          'project.artist_name',
-          'vod.barcode',
-          'u1.email as prod',
-          'u2.email as com'
-        )
-        .join('vod', 'vod.project_id', 'project.id')
-        .where('vod.barcode', ref.refEcommercant)
-        .leftJoin('user as u1', 'u1.id', 'vod.resp_prod_id')
-        .leftJoin('user as u2', 'u2.id', 'vod.com_id')
-        .first()
-
-      if (!project) {
-        // console.log('xxx not_found => ', ref.refEcommercant)
-        continue
-      }
-
-      const stock = await DB('stock')
-        .where('type', 'daudin')
-        .where('project_id', project.id)
-        .first()
-
       const qty = ref.stocks[0].stockDispo
+      const product = products.find((p: any) => {
+        return p.barcode === ref.refEcommercant
+      })
 
-      if (!stock && qty > 0) {
-        const emails = [
-          'ismail@diggersfactory.com',
-          'jean-baptiste@diggersfactory.com',
-          'romain@diggersfactory.com'
-        ]
-        if (project.com) {
-          emails.push(project.com)
+      if (product) {
+        /**
+        if (product.quantity === null && qty > 0) {
+          console.log(`==> new stock : ${product.name} = ${qty}`)
+          await Notification.sendEmail({
+            to: ['bl@diggersfactory.com'].join(','),
+            subject: `Daudin - new stock : ${product.name}`,
+            html: `<ul>
+            <li><strong>Product:</strong> https://www.diggersfactory.com/sheraf/product/${product.id}</li>
+            <li><strong>Transporter:</strong> Daudin</li>
+            <li><strong>Barcode:</strong> ${product.barcode}</li>
+            <li><strong>Name:</strong> ${product.name}</li>
+            <li><strong>Quantity:</strong> ${qty}</li>
+          </ul>`
+          })
+          break
         }
-        if (project.prod) {
-          emails.push(project.prod)
-        }
-        console.log(`==> new stock : ${ref.refEcommercant} = ${qty}`)
-        await Notification.sendEmail({
-          to: emails.join(','),
-          subject: `Daudin - new stock : ${project.artist_name} - ${project.name}`,
-          html: `<ul>
-          <li><strong>Project:</strong> https://www.diggersfactory.com/sheraf/project/${project.id}/stocks</li>
-          <li><strong>Transporter:</strong> Daudin</li>
-          <li><strong>Barcode:</strong> ${project.barcode}</li>
-          <li><strong>Name:</strong> ${project.artist_name} - ${project.name}</li>
-          <li><strong>Quantity:</strong> ${qty}</li>
-        </ul>`
+        **/
+        console.log({
+          product_id: product.id,
+          type: 'daudin',
+          comment: 'api',
+          quantity: qty
         })
-        news.push({
-          ...project,
-          qty: qty
+        Stock.save({
+          product_id: product.id,
+          type: 'daudin',
+          comment: 'api',
+          quantity: qty
         })
       }
-
-      Stock.save({
-        project_id: project.id,
-        type: 'daudin',
-        user_id: 1,
-        comment: 'api',
-        quantity: qty
-      })
     }
-
     return news
   }
 

@@ -694,10 +694,10 @@ static toJuno = async (params) => {
       if (type === 'cancel' && order.order_items.length) {
         for (const item of order.order_items) {
           try {
-            await Stock.calcul({
-              id: item.project_id,
-              isShop: order.type === 'shop',
-              quantity: item.quantity,
+            await Stock.changeQtyProject({
+              project_id: item.project_id,
+              order_id: order.order_id,
+              quantity: -item.quantity,
               transporter: order.transporter
             })
           } catch (err) {
@@ -807,32 +807,25 @@ static toJuno = async (params) => {
     let item: any = DB('order_manual')
 
     const prices = {}
-    const projects = {}
+    const products = {}
     let weight = 0
     if (!params.id && !params.force) {
       for (const b of params.barcodes) {
-        const vod = await DB('vod')
-          .select('vod.*')
-          .join('project', 'project.id', 'vod.project_id')
+        const product = await DB('product')
+          .select('product.id', 'stock.id as stock_id', 'stock.quantity')
           .where('barcode', b.barcode)
-          .where('is_delete', false)
-          .orderBy(`stock_${params.transporter}`, 'desc')
+          .leftJoin('stock', 'stock.product_id', 'product.id')
+          .where('stock.type', params.transporter)
           .first()
 
-        if (vod) {
-          projects[vod.barcode] = vod.project_id
-          prices[vod.barcode] = vod.price
-          weight += vod.weight
-          const stocks = await Stock.getProject(vod.project_id)
-          for (const [key, value] of Object.entries(stocks)) {
-            vod[`stock_${key}`] = value
-          }
-
-          if (vod[`stock_${params.transporter}`] < b.quantity) {
-            return { error: 'No quantity' }
-          }
+        if (!product) {
+          return { error: 'No product' }
         }
+        products[b.barcode] = product.id
 
+        if (product.quantity < b.quantity) {
+          return { error: 'No quantity' }
+        }
         if (['whiplash', 'whiplash_uk'].includes(params.transporter)) {
           const exists = await Whiplash.findItem(b.barcode)
           if (exists.error) {
@@ -948,7 +941,7 @@ static toJuno = async (params) => {
         })
       }
 
-      const order = await Whiplash.saveOrder(pp)
+      const order: any = await Whiplash.saveOrder(pp)
       item.logistician_id = order.id
       item.date_export = Utils.date()
       await item.save()
@@ -963,16 +956,16 @@ static toJuno = async (params) => {
       }
     }
 
+    console.log(products)
     for (const b of params.barcodes) {
-      if (projects[b.barcode]) {
-        await Stock.save({
-          project_id: projects[b.barcode],
-          type: params.transporter,
-          quantity: -b.quantity,
-          diff: true,
-          comment: 'manual'
-        })
-      }
+      console.log(products[b.barcode])
+      await Stock.save({
+        product_id: products[b.barcode],
+        type: params.transporter,
+        quantity: -b.quantity,
+        diff: true,
+        comment: 'manual'
+      })
     }
 
     if (item.user_id) {
@@ -1028,25 +1021,71 @@ static toJuno = async (params) => {
       .where('order_shop.id', params.id)
       .first()
 
+    let res: any = { success: true }
     const items = await DB('order_item')
-      .select('order_item.quantity', 'order_item.price', 'barcode', 'size', 'sizes')
-      .join('vod', 'vod.project_id', 'order_item.project_id')
+      .select('order_item.quantity', 'order_item.price', 'product.barcode')
+      .join('project_product', 'project_product.project_id', 'order_item.project_id')
+      .join('product', 'product.id', 'project_product.product_id')
       .where('order_shop_id', params.id)
       .all()
+
+    if (items.length === 0) {
+      await Notification.sendEmail({
+        to: 'victor@diggersfactory.com',
+        subject: `Problem with order : ${shop.id}`,
+        html: `<ul>
+          <li>Order Id : https://www.diggersfactory.com/sheraf/order/${shop.order_id}</li>
+          <li>Shop Id : ${shop.id}</li>
+          <li>Error: no item</li>
+        </ul>`
+      })
+      return false
+    }
 
     if (shop.transporter === 'daudin') {
       await DB('order_shop').where('id', shop.id).update({
         sending: true
       })
-      return Elogik.syncOrders([shop.id])
+      try {
+        res = await Elogik.syncOrders([shop.id])
+      } catch (err) {
+        if (throwError) {
+          throw err
+        } else {
+          await Notification.sendEmail({
+            to: 'victor@diggersfactory.com',
+            subject: `Problem with Elogik : ${shop.id}`,
+            html: `<ul>
+            <li>Order Id : https://www.diggersfactory.com/sheraf/order/${shop.order_id}</li>
+            <li>Shop Id : ${shop.id}</li>
+            <li>Error: ${err}</li>
+          </ul>`
+          })
+        }
+      }
     } else if (['whiplash', 'whiplash_uk'].includes(shop.transporter)) {
-      const res = await Whiplash.validOrder(shop, items)
+      try {
+        res = await Whiplash.validOrder(shop, items)
+      } catch (err) {
+        if (throwError) {
+          throw err
+        } else {
+          await Notification.sendEmail({
+            to: 'victor@diggersfactory.com',
+            subject: `Problem with Whiplash : ${shop.id}`,
+            html: `<ul>
+            <li>Order Id : https://www.diggersfactory.com/sheraf/order/${shop.order_id}</li>
+            <li>Shop Id : ${shop.id}</li>
+            <li>Error: ${err}</li>
+          </ul>`
+          })
+        }
+      }
       if (!res) {
         return { error: 'not_found' }
       }
     } else if (shop.transporter === 'sna') {
       const customer = await DB('customer').find(shop.customer_id)
-
       try {
         await Sna.sync([
           {
@@ -1086,7 +1125,7 @@ static toJuno = async (params) => {
       })
     }
 
-    return { success: true }
+    return res
   }
 
   static exportStripePaypal = async (params) => {

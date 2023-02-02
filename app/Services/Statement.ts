@@ -572,7 +572,7 @@ class StatementService {
 
   static async setWorksheet(
     workbook: any,
-    params: { id: number; number: number; start: string; end: string }
+    params: { id: number; number: number; auto: boolean; start: string; end: string }
   ) {
     const project = await DB()
       .select('vod.*', 'project.name', 'project.artist_name')
@@ -884,6 +884,7 @@ class StatementService {
         id: project.id,
         start: params.start || '2001-01-01',
         end: params.end || moment().format('YYYY-MM-DD'),
+        auto: params.auto,
         number: i
       })
 
@@ -1345,6 +1346,7 @@ class StatementService {
     payback?: boolean
     start?: string
     end?: string
+    auto: boolean
   }) {
     if (!params.start) {
       params.start = '2001-01-01'
@@ -1390,7 +1392,7 @@ class StatementService {
       .where('is_delete', false)
       .whereBetween(DB.raw("DATE_FORMAT(payment_artist.date, '%Y-%m-%d')"), [
         params.start,
-        `${params.end} 23:59`
+        `${params.auto ? moment().endOf('month').format('YYYY-MM-DD') : params.end} 23:59`
       ])
       .orderBy('date')
       .all()

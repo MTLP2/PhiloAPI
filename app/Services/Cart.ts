@@ -215,7 +215,7 @@ class Cart {
             .join('project', 'project.id', 'vod.project_id')
             .first()
 
-          const stocks = await Stock.getProject(item.project_id)
+          const stocks = await Stock.byProject({ project_id: item.project_id, size: item.size })
           for (const [key, value] of Object.entries(stocks)) {
             project[`stock_${key}`] = value
           }
@@ -2080,7 +2080,11 @@ class Cart {
           .all()
 
         if (shop.type === 'shop') {
-          Order.sync({ id: shop.id })
+          try {
+            Order.sync({ id: shop.id })
+          } catch (e) {
+            console.log(e)
+          }
         }
 
         for (const item of items) {
@@ -2185,10 +2189,11 @@ class Cart {
             await i.save()
           }
 
-          console.log('stocK_calcul', project.id)
-          await Stock.calcul({
-            id: project.id,
-            isShop: shop.type === 'shop',
+          await Stock.changeQtyProject({
+            project_id: project.id,
+            order_id: order.id,
+            size: item.size,
+            preorder: shop.type === 'vod',
             quantity: item.quantity,
             transporter: shop.transporter
           })
@@ -2429,8 +2434,7 @@ class Cart {
         'slug',
         'vod.user_id',
         'vod.barcode',
-        'vod.type',
-        DB.raw('vod.goal - vod.count - vod.count_other - vod.count_distrib as stock')
+        'vod.type'
       )
       .join('vod', 'vod.project_id', 'p.id')
       .whereIn(

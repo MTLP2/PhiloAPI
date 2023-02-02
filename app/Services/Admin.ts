@@ -99,18 +99,7 @@ class Admin {
     }
 
     const res = await Utils.getRows<any>({ ...params, query: projects })
-
-    const projectsWithStocks = await Promise.all(
-      res.data.map(async (project) => {
-        const stocks = await Stock.getProject(project.id)
-        return { ...project, stocks }
-      })
-    )
-
-    return {
-      count: res.count,
-      data: projectsWithStocks
-    }
+    return res
   }
 
   static getWishlists = async (params) => {
@@ -204,14 +193,9 @@ class Admin {
       .all()
 
     const projectImagesQuery = Project.getProjectImages({ projectId: id })
-    const stocksQuery = DB('stock').where('project_id', id).all()
 
-    const stocksHistoricQuery = DB('stock_historic')
-      .select('stock_historic.*', 'user.name')
-      .leftJoin('user', 'user.id', 'stock_historic.user_id')
-      .where('project_id', id)
-      .orderBy('id', 'desc')
-      .all()
+    const stocksSiteQuery = Stock.byProject({ project_id: id, is_distrib: false })
+    const stocksDistribQuery = Stock.byProject({ project_id: id, is_distrib: true })
 
     const itemsQuery = DB('item')
       .select(
@@ -263,8 +247,8 @@ class Admin {
       project,
       codes,
       costs,
-      stocks,
-      stocksHistoric,
+      stocksSite,
+      stocksDistrib,
       items,
       orders,
       reviews,
@@ -275,8 +259,8 @@ class Admin {
       projectQuery,
       codesQuery,
       costsQuery,
-      stocksQuery,
-      stocksHistoricQuery,
+      stocksSiteQuery,
+      stocksDistribQuery,
       itemsQuery,
       ordersQuery,
       reviewsQuery,
@@ -293,30 +277,37 @@ class Admin {
     project.costs = costs
     project.items = items
     project.project_images = projectImages
-    project.stocks_historic = stocksHistoric
-
-    project.stocks = stocks
     project.exports = exps
 
-    stocks.unshift({
+    project.stocks = []
+    project.stocks.push(
+      ...Object.entries(stocksSite).map(([key, value]) => {
+        return { type: key, quantity: value }
+      })
+    )
+    project.stocks.push(
+      ...Object.entries(stocksDistrib).map(([key, value]) => {
+        return { type: key, quantity: value }
+      })
+    )
+    project.stocks.unshift({
       type: 'distrib',
-      is_distrib: true,
-      quantity: stocks
-        .filter((s) => s.is_distrib)
-        .map((c) => c.quantity)
-        .reduce((a, c) => a + c, 0)
+      is_distrib: false,
+      quantity: Object.values(stocksDistrib).reduce(
+        (a: number, b: number) => a + (b < 0 ? 0 : b),
+        0
+      )
     })
-    stocks.unshift({
+    project.stocks.unshift({
       type: 'site',
       is_distrib: false,
-      quantity: stocks
-        .filter((s) => !s.is_distrib)
-        .map((c) => c.quantity)
-        .reduce((a, c) => a + c, 0)
+      quantity: Object.values(stocksSite).reduce((a: number, b: number) => a + (b < 0 ? 0 : b), 0)
     })
-    for (const stock of stocks) {
-      project[`stock_${stock.type}`] = stock.quantity
-    }
+    project.stocks.unshift({
+      type: 'project',
+      is_distrib: false,
+      quantity: project.stock
+    })
 
     project.stock_preorder =
       project.goal -
@@ -916,7 +907,7 @@ class Admin {
     vod.start = params.start || null
     vod.related_id = params.related_id || null
     vod.related_item_id = params.related_item_id || null
-    vod.barcode = params.barcode ? params.barcode.replace(/\s/g, '') : null
+    // vod.barcode = params.barcode ? params.barcode.replace(/\s/g, '') : null
     vod.send_tracks = params.send_tracks || null
     vod.disabled_cover = params.disabled_cover ? params.disabled_cover : 0
     vod.is_shop = params.is_shop ? params.is_shop : 0
@@ -3987,12 +3978,6 @@ class Admin {
         'count',
         'count_other',
         'count_distrib',
-        /**
-        'stock_daudin',
-        'stock_diggers',
-        'stock_whiplash',
-        'stock_whiplash_uk',
-        **/
         'date_shipping',
         'barcode',
         'picture',

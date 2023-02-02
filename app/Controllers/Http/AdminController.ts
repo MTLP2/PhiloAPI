@@ -28,7 +28,6 @@ import Artwork from 'App/Services/Artwork'
 import Stats from 'App/Services/Stats'
 import MailJet from 'App/Services/MailJet'
 import Review from 'App/Services/Review'
-import Product from 'App/Services/Product'
 import ApiError from 'App/ApiError'
 import ProjectService from 'App/Services/Project'
 import Dispatch from 'App/Services/Dispatch'
@@ -163,12 +162,13 @@ class AdminController {
 
   async setStock({ params, user }) {
     params.user_id = user.id
-    return Stock.setStocksProject(params)
+    params.project_id = params.id
+    return Stock.setStocks(params)
   }
 
   async getStocks({ params, user }) {
     params.user_id = user.id
-    return Stock.getAll(params)
+    return Stock.getAll()
   }
 
   async exportStocksPrices() {
@@ -183,8 +183,10 @@ class AdminController {
     })
   }
 
-  calculStock({ params }) {
-    return Stock.calcul({ id: params.id, recursive: false })
+  async calculStock({ params }) {
+    return Stock.setOrders({ projectIds: [params.id] })
+    await Stock.syncApi({ projectIds: [params.id] })
+    return Stock.setStockProject({ projectIds: [params.id] })
   }
 
   getBusiness({ params, user }) {
@@ -429,18 +431,6 @@ class AdminController {
 
   countOrdersError({ params }) {
     return Admin.countOrdersErrors()
-  }
-
-  async getProducts({ params }) {
-    return Product.all(params)
-  }
-
-  async getProduct({ params }) {
-    return Product.find(params)
-  }
-
-  async saveProduct({ params }) {
-    return Product.save(params)
   }
 
   getUsers({ params }) {

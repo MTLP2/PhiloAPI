@@ -33,18 +33,13 @@ class Project {
     project.nb_days = Math.ceil(Math.abs((startProject.getTime() - secondDate.getTime()) / oneDay))
     project.idx_day = project.nb_days - project.days_left
 
+    project.copies_left = project.stock
     if (project.is_shop) {
-      project.copies_left = project.stock
       project.sold_out = project.copies_left < 1
     } else {
-      project.copies_left = project.goal - project.count
       project.sold_out =
         ['limited_edition', 'test_pressing'].includes(project.type) && project.copies_left < 1
     }
-    delete project.count
-    delete project.count_distrib
-    delete project.count_bundle
-    delete project.count_other
 
     project.step = project.sold_out ? 'successful' : project.step
 
@@ -148,35 +143,21 @@ class Project {
       project.estimated_shipping = new Date(project.end)
       project.estimated_shipping.setDate(project.estimated_shipping.getDate() + 150)
     }
-    project.count =
-      project.count + project.count_other + project.count_distrib + project.count_bundle
 
-    project.next_goal = project.stage1
     project.styles = project.styles ? project.styles.split(',') : []
     project.styles = project.styles.map((s) => parseInt(s, 10))
     project.rating = project.rating ? project.rating : 0
 
+    project.copies_left = project.stock
     if (project.is_shop) {
-      project.copies_left = project.stock
       project.sold_out = project.copies_left < 1
     } else {
-      project.copies_left = project.goal - project.count
       project.sold_out =
         ['limited_edition', 'test_pressing'].includes(project.type) && project.copies_left < 1
     }
-    delete project.count
-    delete project.count_distrib
-    delete project.count_bundle
-    delete project.count_other
 
     project.step = project.sold_out ? 'successful' : project.step
-
-    project.sizes = project.sizes
-      ? Object.keys(JSON.parse(project.sizes)).filter((k) => {
-          const sizes = JSON.parse(project.sizes)
-          return sizes[k]
-        })
-      : []
+    project.sizes = project.products.filter((p) => p.size && p.size !== 'all').map((p) => p.size)
 
     if (!project.partner_distribution) {
       project.price_distribution = null
@@ -320,10 +301,6 @@ class Project {
       'v.splatter1',
       'v.splatter2',
       'p.likes',
-      'v.count',
-      'v.count_other',
-      'v.count_distrib',
-      'v.count_bundle',
       'v.stock',
       'v.step',
       'v.user_id',
@@ -763,14 +740,7 @@ class Project {
         where project_id = p.id AND user_id = ${params.user_id}
       ) as my_rate
       `),
-        'count',
-        'count_other',
-        'count_distrib',
-        'count_bundle',
         'stock',
-        'stage1',
-        'stage2',
-        'stage3',
         'only_country',
         'exclude_country',
         'v.step',
@@ -795,6 +765,13 @@ class Project {
       .all()
 
     const songsPromise = Song.byProject({ project_id: id, user_id: params.user_id, disabled: true })
+
+    const productsPromise = DB()
+      .select('product.id', 'product.size')
+      .from('product')
+      .join('project_product', 'project_product.product_id', 'product.id')
+      .where('project_product.project_id', id)
+      .all()
 
     const itemsPromise = DB('item')
       .select(
@@ -828,9 +805,10 @@ class Project {
     const reviewPromise = Review.find({ projectId: id })
     const projectImagesPromise = Project.getProjectImages({ projectId: id })
 
-    const [project, songs, styles, sales, items, currencies, reviews, projectImages] =
+    const [project, products, songs, styles, sales, items, currencies, reviews, projectImages] =
       await Promise.all([
         projectPromise,
+        productsPromise,
         songsPromise,
         stylesPromise,
         salesPromise,
@@ -844,6 +822,7 @@ class Project {
       return { error: 404 }
     }
 
+    project.products = products
     project.items = items.map((item) => {
       let soldout = true
       if (item.step === 'in_progress') {
