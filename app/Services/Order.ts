@@ -1029,6 +1029,19 @@ static toJuno = async (params) => {
       .where('order_shop_id', params.id)
       .all()
 
+    if (items.length === 0) {
+      await Notification.sendEmail({
+        to: 'victor@diggersfactory.com',
+        subject: `Problem with order : ${shop.id}`,
+        html: `<ul>
+          <li>Order Id : https://www.diggersfactory.com/sheraf/order/${shop.order_id}</li>
+          <li>Shop Id : ${shop.id}</li>
+          <li>Error: no item</li>
+        </ul>`
+      })
+      return false
+    }
+
     if (shop.transporter === 'daudin') {
       await DB('order_shop').where('id', shop.id).update({
         sending: true
