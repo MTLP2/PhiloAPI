@@ -200,20 +200,19 @@ class Product {
       .join('project', 'vod.project_id', 'project.id')
       .hasMany('stock', 'stock', 'project_id')
       .hasMany('stock_historic', 'stock_historic', 'project_id')
+      .orderBy('barcode')
       .all()
 
     for (const ref of refs) {
       const barcodes = ref.barcode ? ref.barcode.split(',') : ''
       for (const barcode of barcodes) {
         if (barcode === 'SIZE') {
-          const id = await DB('product')
-            .insert({
-              name: `${ref.artist_name} - ${ref.name}`,
-              type: 'merch',
-              size: 'all',
-              color: 'all'
-            })
-            .catch((e) => {})
+          const id = await DB('product').insert({
+            name: `${ref.artist_name} - ${ref.name}`,
+            type: 'merch',
+            size: 'all',
+            color: 'all'
+          })
 
           await DB('project_product').insert({
             project_id: ref.id,
@@ -224,30 +223,37 @@ class Product {
 
           if (sizes) {
             for (const [size, barcode] of Object.entries(sizes)) {
-              const child = await DB('product')
-                .insert({
+              let child = await DB('product').where('barcode', barcode).first()
+              if (!child) {
+                const childId = await DB('product').insert({
                   name: `${ref.artist_name} - ${ref.name}`,
                   parent_id: id,
                   type: 'merch',
                   barcode: barcode || null,
                   size: size
                 })
-                .catch((e) => {})
+                child = { id: childId }
+              }
 
-              await DB('stock').insert({
-                type: 'preorder',
-                product_id: child
-              })
+              await DB('stock')
+                .insert({
+                  type: 'preorder',
+                  product_id: child.id
+                })
+                .catch((err) => {})
 
-              await DB('project_product').insert({
-                project_id: ref.id,
-                product_id: child
-              })
+              await DB('project_product')
+                .insert({
+                  project_id: ref.id,
+                  product_id: child.id
+                })
+                .catch((err) => {})
             }
           }
         } else {
-          const id = await DB('product')
-            .insert({
+          let prod = await DB('product').where('barcode', barcode).first()
+          if (!prod) {
+            const id = await DB('product').insert({
               name: `${ref.artist_name} - ${ref.name}`,
               type: ref.category,
               barcode: barcode,
@@ -255,26 +261,31 @@ class Product {
               size: null,
               color: null
             })
-            .catch((e) => {})
+            prod = { id: id }
+          }
 
           await DB('project_product').insert({
             project_id: ref.id,
-            product_id: id
+            product_id: prod.id
           })
 
           if (!ref.is_shop) {
-            await DB('stock').insert({
-              type: 'preorder',
-              product_id: id
-            })
+            await DB('stock')
+              .insert({
+                type: 'preorder',
+                product_id: prod.id
+              })
+              .catch((err) => {})
           } else {
             for (const stock of ref.stock) {
-              await DB('stock').insert({
-                ...stock,
-                id: null,
-                project_id: null,
-                product_id: id
-              })
+              await DB('stock')
+                .insert({
+                  ...stock,
+                  id: null,
+                  project_id: null,
+                  product_id: prod.id
+                })
+                .catch((err) => {})
             }
           }
           for (const stock of ref.stock_historic) {
@@ -290,7 +301,7 @@ class Product {
                   quantity: stock.new
                 }
               },
-              product_id: id
+              product_id: prod.id
             })
           }
         }
