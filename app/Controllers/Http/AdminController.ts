@@ -184,7 +184,7 @@ class AdminController {
   }
 
   async calculStock({ params }) {
-    return Stock.setOrders({ projectIds: [params.id] })
+    await Stock.setOrders({ projectIds: [params.id] })
     await Stock.syncApi({ projectIds: [params.id] })
     return Stock.setStockProject({ projectIds: [params.id] })
   }
