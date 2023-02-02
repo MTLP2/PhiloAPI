@@ -1143,6 +1143,7 @@ class App {
       .join('project', 'project.id', 'vod.project_id')
       .where('order_shop.type', 'vod')
       .where('is_paid', true)
+      .where('is_paused', false)
       .whereNull('date_export')
       .whereRaw('stock.type = order_shop.transporter')
       .where('stock.quantity', '>', '0')
