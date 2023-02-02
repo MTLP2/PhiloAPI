@@ -73,16 +73,16 @@ class Stock {
     return { success: true }
   }
 
-  static async setStockProject(payload: { productIds?: number[]; projectIds?: number[] }) {
+  static async setStockProject(payload?: { productIds?: number[]; projectIds?: number[] }) {
     const listProjects = await DB('project_product as p1')
       .select('is_shop', 'p1.project_id', 'product_id')
       .join('vod', 'vod.project_id', 'p1.project_id')
       .join('product', 'product.id', 'p1.product_id')
       .whereIn('p1.project_id', (query) => {
         query.select('p2.project_id').from('project_product as p2')
-        if (payload.productIds) {
+        if (payload?.productIds) {
           query.whereIn('p2.product_id', payload.productIds)
-        } else if (payload.projectIds) {
+        } else if (payload?.projectIds) {
           query.whereIn('p2.project_id', payload.projectIds)
         }
       })
