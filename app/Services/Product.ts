@@ -300,46 +300,6 @@ class Product {
     return refs.length
   }
 
-  static calculatePreorders = async () => {
-    await DB('stock').update({
-      // preorder: 0,
-      sales: 0
-    })
-
-    const orders = await DB('order_shop')
-      .select(
-        'order_shop.transporter',
-        'product_id',
-        DB.raw(`IF(ISNULL(date_export), false, true) as sent`),
-        DB.raw('sum(quantity) as quantity')
-      )
-      .where('order_shop.type', 'vod')
-      .join('order_item', 'order_shop.id', 'order_item.order_shop_id')
-      .join('vod', 'vod.project_id', 'order_item.project_id')
-      .join('project_product', 'vod.project_id', 'project_product.project_id')
-      .where('is_paid', true)
-      .whereNotNull('order_shop.transporter')
-      .groupBy('transporter')
-      .groupBy('sent')
-      .groupBy('transporter')
-      .groupBy('product_id')
-      .all()
-
-    let qty = 0
-    for (const order of orders) {
-      qty += order.quantity
-      await DB('stock')
-        .where('product_id', order.product_id)
-        .where('type', order.transporter)
-        .update({
-          sales: DB.raw(`sales + ${order.quantity}`)
-          // preorder: order.sent ? 0 : order.quantity
-        })
-    }
-
-    return { success: true, quantity: qty }
-  }
-
   static saveSubProduct = async (payload: { id: number; product_id: number }) => {
     await DB('product').where('id', payload.product_id).update({
       parent_id: payload.id
