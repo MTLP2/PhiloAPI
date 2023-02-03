@@ -54,7 +54,8 @@ class Product {
           .sum('reserved')
           .whereRaw('product_id = product.id')
           .where('is_distrib', false)
-          .as('reserved')
+          .as('reserved'),
+        DB.query('project_product').count().whereRaw('product_id = product.id').as('projects')
       )
       .leftJoin('product as p2', 'p2.id', 'product.parent_id')
 
@@ -171,6 +172,15 @@ class Product {
     }
 
     return item
+  }
+
+  static remove = async (payload: { id: number }) => {
+    return DB('product')
+      .whereNotExists((query) => {
+        query.from('project_product').whereRaw('product_id = product.id')
+      })
+      .where('id', payload.id)
+      .delete()
   }
 
   static generate = async () => {

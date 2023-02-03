@@ -54,6 +54,16 @@ class ProductController {
     }
   }
 
+  async removeProduct({ params }) {
+    const payload = await validator.validate({
+      schema: schema.create({
+        id: schema.number()
+      }),
+      data: params
+    })
+    return Product.remove(payload)
+  }
+
   async saveStocks({ params, user }) {
     params.product_id = params.id
     params.user_id = user.id
