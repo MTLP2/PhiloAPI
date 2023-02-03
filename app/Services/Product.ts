@@ -205,6 +205,20 @@ class Product {
 
     for (const ref of refs) {
       const barcodes = ref.barcode ? ref.barcode.split(',') : ''
+      if (barcodes.length === 0) {
+        const id = await DB('product').insert({
+          name: `${ref.artist_name} - ${ref.name}`,
+          type: 'vinyl'
+        })
+        await DB('stock').insert({
+          type: 'preorder',
+          product_id: id
+        })
+        await DB('project_product').insert({
+          project_id: ref.id,
+          product_id: id
+        })
+      }
       for (const barcode of barcodes) {
         if (barcode === 'SIZE') {
           const id = await DB('product').insert({
