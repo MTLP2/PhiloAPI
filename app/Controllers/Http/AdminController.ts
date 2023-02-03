@@ -475,6 +475,10 @@ class AdminController {
     return Feedback.all(params)
   }
 
+  getPendingFeedbacks() {
+    return Feedback.getPendingFeedbacks()
+  }
+
   async toggleFeedbackContactStatus({ params }) {
     params.feedbackId = params.id
     try {
@@ -542,6 +546,21 @@ class AdminController {
 
   saveCategory({ params }) {
     return Category.save(params)
+  }
+
+  async duplicateCategory({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          id: schema.number()
+        }),
+        data: params
+      })
+
+      return Category.duplicate(payload)
+    } catch {
+      return new ApiError(500, 'Invalid category')
+    }
   }
 
   populateProjectsCategory({ params }) {

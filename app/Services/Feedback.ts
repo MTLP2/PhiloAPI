@@ -28,10 +28,19 @@ class Feedback {
       params.query.where('feedback.user_id', params.user_id)
     }
 
-    params.order = params.order === 'false' ? 'desc' : params.order
+    params.order = params.order === 'false' ? 'id' : params.order
     params.query.orderBy(params.sort || 'feedback.created_at', params.order || 'asc')
 
     return Utils.getRows<FeedbackModel>(params)
+  }
+
+  static async getPendingFeedbacks() {
+    return await DB('feedback')
+      .select(DB.raw('COUNT(*) as count'))
+      .where('is_contacted', 0)
+      .where('rating', '<=', 2)
+      .where('created_at', '>=', '2022-11-01')
+      .first()
   }
 
   static async toggleFeedbackContactStatus({ feedbackId }: { feedbackId: number }) {

@@ -1588,6 +1588,8 @@ class Admin {
         'user.facebook_id',
         'user.soundcloud_id',
         'om.id as order_manual_id',
+        'feedback.rating as feedback_rating',
+        'feedback.id as feedback_id',
         DB.raw("CONCAT(c.firstname, ' ', c.lastname) AS user_infos")
       )
       .join('order_item as oi', 'os.id', 'oi.order_shop_id')
@@ -1597,6 +1599,7 @@ class Admin {
       .join('vod', 'vod.project_id', 'oi.project_id')
       .leftJoin('order_manual as om', 'om.order_shop_id', 'os.id')
       .leftJoin('customer as c', 'c.id', 'os.customer_id')
+      .leftJoin('feedback', 'feedback.order_id', 'order.id')
       .where('os.step', '!=', 'creating')
       .where('os.step', '!=', 'failed')
 
@@ -1685,11 +1688,16 @@ class Admin {
         'user.points',
         'notification.id as notification_id',
         'notification.type as notification_type',
+        'feedback.rating as feedback_rating',
+        'feedback.id as feedback_id',
+        'feedback.comment as feedback_comment',
+        'feedback.is_contacted as feedback_contacted',
         DB.raw("CONCAT(customer.firstname, ' ', customer.lastname) AS customer_name")
       )
       .leftJoin('user', 'user.id', 'order.user_id')
       .leftJoin('customer', 'customer.id', 'user.customer_id')
       .leftJoin('notification', 'notification.order_id', 'order.id')
+      .leftJoin('feedback', 'feedback.order_id', 'order.id')
       .where('order.id', id)
       .first()
 
@@ -2230,6 +2238,7 @@ class Admin {
         'customer.firstname',
         'customer.lastname',
         'user.origin',
+        'user.birthday',
         DB.raw(`(
         select COUNT(*)
         from \`order_shop\`
@@ -3682,6 +3691,7 @@ class Admin {
         { name: 'Email', index: 'email' },
         { name: 'Firstname', index: 'firstname' },
         { name: 'Lastname', index: 'lastname' },
+        { name: 'Birthday', index: 'birthday' },
         { name: 'Country', index: 'country_id' },
         { name: 'Type', index: 'type' },
         { name: 'Pro', index: 'is_pro' },
@@ -4501,22 +4511,24 @@ class Admin {
       return project
     })
 
-    return Utils.arrayToCsv(
-      [
-        { index: 'id', name: 'ID' },
-        { index: 'created_at', name: 'Creation Date' },
-        { index: 'com_name', name: 'Commercial' },
-        { index: 'name', name: 'Name' },
-        { index: 'artist_name', name: 'Artist Name' },
-        { index: 'origin', name: 'Origin' },
-        { index: 'step', name: 'Step' },
-        { index: 'status', name: 'Status' },
-        { index: 'type', name: 'Type' },
-        { index: 'category', name: 'Category' },
-        { index: 'historic', name: 'Previous steps' }
-      ],
-      projects
-    )
+    return Utils.arrayToXlsx([
+      {
+        columns: [
+          { key: 'id', header: 'ID', width: 10 },
+          { key: 'created_at', header: 'Creation Date' },
+          { key: 'com_name', header: 'Commercial' },
+          { key: 'name', header: 'Name' },
+          { key: 'artist_name', header: 'Artist Name' },
+          { key: 'origin', header: 'Origin', width: 10 },
+          { key: 'step', header: 'Step' },
+          { key: 'status', header: 'Status' },
+          { key: 'type', header: 'Type' },
+          { key: 'category', header: 'Category' },
+          { key: 'historic', header: 'Previous steps' }
+        ],
+        data: projects
+      }
+    ])
   }
 
   static exportProjectsBox = async () => {

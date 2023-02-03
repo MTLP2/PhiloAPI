@@ -773,22 +773,22 @@ class Payment {
       .select(
         'payment.*',
         'invoice.resp_accounting',
-        'invoice.resp_commercial',
+        'invoice.resp_payment',
         'ura.email as email_accounting',
         'urc.email as email_commercial'
       )
       .join('invoice', 'invoice.id', 'payment.invoice_id')
       .join('user as ura', 'ura.id', 'invoice.resp_accounting')
-      .join('user as urc', 'urc.id', 'invoice.resp_commercial')
+      .join('user as urc', 'urc.id', 'invoice.resp_payment')
       .where('payment.date', '<', new Date())
       .whereNull('payment.date_payment')
       .whereNotNull('payment.date')
-      .whereNotNull('resp_commercial')
+      .whereNotNull('resp_payment')
       .whereNotNull('resp_accounting')
       .where('payment.is_delete', 0)
       .all()
 
-    // Group notifications by resp_accounting or resp_commercial.
+    // Group notifications by resp_accounting or resp_payment.
     const groupedNotifications = notifications.reduce((acc, notification) => {
       if (!acc[notification.email_accounting]) {
         acc[notification.email_accounting] = []

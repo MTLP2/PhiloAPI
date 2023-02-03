@@ -1037,15 +1037,18 @@ class Utils {
     let i = 0
     // For each sheet
     for (const sheet of sheets) {
-      const worksheet: any = workbook.addWorksheet(sheet.worksheetName || `Sheet ${i + 1}`)
+      const worksheet = workbook.addWorksheet(sheet.worksheetName || `Sheet ${i + 1}`)
       worksheet.columns = sheet.columns
+      worksheet.properties.defaultColWidth = 20
 
       for (const element of sheet.data) worksheet.addRow(element)
       for (const cell of Utils.getCells(
         worksheet,
         `A1:${String.fromCharCode(sheet.data.length + 64)}1`
-      ))
+      )) {
         cell.font = { bold: true }
+      }
+
       i++
     }
 
