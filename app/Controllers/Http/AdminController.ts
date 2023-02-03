@@ -71,7 +71,7 @@ class AdminController {
     if (isNaN(params.id)) {
       throw new ApiError(400)
     }
-    return Admin.getProject(params.id)
+    return Admin.getProject(params.id, params.more)
   }
 
   async saveProject({ params, user }) {

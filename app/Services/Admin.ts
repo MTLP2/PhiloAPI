@@ -153,7 +153,7 @@ class Admin {
     return res
   }
 
-  static getProject = async (id) => {
+  static getProject = async (id, more = false) => {
     const projectQuery = DB('project')
       .select(
         'vod.*',
@@ -183,6 +183,10 @@ class Admin {
       .leftJoin('user', 'user.id', 'vod.user_id')
       .where('project.id', id)
       .first()
+
+    if (!more) {
+      return projectQuery
+    }
 
     const codesQuery = DB('download').where('project_id', id).all()
 
