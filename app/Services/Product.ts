@@ -404,7 +404,7 @@ class Product {
 
     let barcodes = ''
     for (const product of products) {
-      if (!product.barcode) {
+      if (!product.barcode && product.type) {
         product.barcode = product.type.toUpperCase()
       }
       if (barcodes) {
