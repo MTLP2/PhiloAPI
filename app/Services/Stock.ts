@@ -142,7 +142,6 @@ class Stock {
         (prev: number, current: number) => prev + (current < 0 ? 0 : current),
         0
       )
-      console.log('lol', projects[p])
       await DB('vod').where('project_id', p).update({
         stock: projects[p]
       })
