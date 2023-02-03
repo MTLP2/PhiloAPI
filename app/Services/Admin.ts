@@ -1594,6 +1594,8 @@ class Admin {
         'user.facebook_id',
         'user.soundcloud_id',
         'om.id as order_manual_id',
+        'feedback.rating as feedback_rating',
+        'feedback.id as feedback_id',
         DB.raw("CONCAT(c.firstname, ' ', c.lastname) AS user_infos")
       )
       .join('order_item as oi', 'os.id', 'oi.order_shop_id')
@@ -1603,6 +1605,7 @@ class Admin {
       .join('vod', 'vod.project_id', 'oi.project_id')
       .leftJoin('order_manual as om', 'om.order_shop_id', 'os.id')
       .leftJoin('customer as c', 'c.id', 'os.customer_id')
+      .leftJoin('feedback', 'feedback.order_id', 'order.id')
       .where('os.step', '!=', 'creating')
       .where('os.step', '!=', 'failed')
 
@@ -1691,11 +1694,16 @@ class Admin {
         'user.points',
         'notification.id as notification_id',
         'notification.type as notification_type',
+        'feedback.rating as feedback_rating',
+        'feedback.id as feedback_id',
+        'feedback.comment as feedback_comment',
+        'feedback.is_contacted as feedback_contacted',
         DB.raw("CONCAT(customer.firstname, ' ', customer.lastname) AS customer_name")
       )
       .leftJoin('user', 'user.id', 'order.user_id')
       .leftJoin('customer', 'customer.id', 'user.customer_id')
       .leftJoin('notification', 'notification.order_id', 'order.id')
+      .leftJoin('feedback', 'feedback.order_id', 'order.id')
       .where('order.id', id)
       .first()
 

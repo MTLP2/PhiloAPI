@@ -28,7 +28,7 @@ class Feedback {
       params.query.where('feedback.user_id', params.user_id)
     }
 
-    params.order = params.order === 'false' ? 'desc' : params.order
+    params.order = params.order === 'false' ? 'id' : params.order
     params.query.orderBy(params.sort || 'feedback.created_at', params.order || 'asc')
 
     return Utils.getRows<FeedbackModel>(params)
