@@ -485,6 +485,10 @@ class AdminController {
     return Feedback.all(params)
   }
 
+  getPendingFeedbacks() {
+    return Feedback.getPendingFeedbacks()
+  }
+
   async toggleFeedbackContactStatus({ params }) {
     params.feedbackId = params.id
     try {

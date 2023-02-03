@@ -34,6 +34,15 @@ class Feedback {
     return Utils.getRows<FeedbackModel>(params)
   }
 
+  static async getPendingFeedbacks() {
+    return await DB('feedback')
+      .select(DB.raw('COUNT(*) as count'))
+      .where('is_contacted', 0)
+      .where('rating', '<=', 2)
+      .where('created_at', '>=', '2022-11-01')
+      .first()
+  }
+
   static async toggleFeedbackContactStatus({ feedbackId }: { feedbackId: number }) {
     const feedback: FeedbackModel = await DB('feedback').find(feedbackId)
     feedback.is_contacted = feedback.is_contacted ? 0 : 1
