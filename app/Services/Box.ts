@@ -1720,9 +1720,10 @@ class Box {
     } else {
       for (const barcode of barcodes) {
         const vod = await DB('vod')
-          .select('stock.project_id', 'stock.quantity as stock')
+          .select('stock.project_id', 'stock.quantity as stock', 'pp.product_id')
           .where('barcode', barcode)
           .join('stock', 'stock.project_id', 'vod.project_id')
+          .join('project_product as pp', 'pp.project_id', 'stock.project_id')
           .where('stock.type', 'daudin')
           .first()
 
@@ -1730,7 +1731,7 @@ class Box {
           return { error: 'No quantity' }
         } else if (vod) {
           Stock.save({
-            project_id: vod.project_id,
+            product_id: vod.product_id,
             type: 'daudin',
             quantity: -1,
             diff: true,
