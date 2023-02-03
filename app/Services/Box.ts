@@ -2287,7 +2287,10 @@ class Box {
     }
 
     const products = await DB('project_product')
-      .whereIn('project_id', [...add, ...sub])
+      .whereIn(
+        'project_id',
+        [...add, ...sub].filter((p) => p)
+      )
       .all()
 
     for (const a of add) {
