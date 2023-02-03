@@ -2236,6 +2236,7 @@ class Admin {
         'customer.firstname',
         'customer.lastname',
         'user.origin',
+        'user.birthday',
         DB.raw(`(
         select COUNT(*)
         from \`order_shop\`
@@ -3688,6 +3689,7 @@ class Admin {
         { name: 'Email', index: 'email' },
         { name: 'Firstname', index: 'firstname' },
         { name: 'Lastname', index: 'lastname' },
+        { name: 'Birthday', index: 'birthday' },
         { name: 'Country', index: 'country_id' },
         { name: 'Type', index: 'type' },
         { name: 'Pro', index: 'is_pro' },
