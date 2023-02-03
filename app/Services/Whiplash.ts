@@ -148,6 +148,10 @@ class Whiplash {
       .from('order_item as oi')
       .join('project_product', 'project_product.project_id', 'oi.project_id')
       .join('product', 'project_product.product_id', 'product.id')
+      .where((query) => {
+        query.whereRaw('product.size = oi.size')
+        query.orWhereNull('product.size')
+      })
       .whereIn(
         'order_shop_id',
         orders.map((o) => o.id)
@@ -158,6 +162,7 @@ class Whiplash {
     for (const item of items) {
       const idx = orders.findIndex((o: any) => o.id === item.order_shop_id)
       orders[idx].items = orders[idx].items ? [...orders[idx].items, item] : [item]
+      console.log(item)
       if (!item.barcode) {
         throw new ApiError(406, 'no_barcode')
       }
@@ -227,14 +232,6 @@ class Whiplash {
         transporter: params.type,
         quantity: count,
         date: Utils.date()
-      })
-
-      await Stock.save({
-        project_id: params.project_id,
-        type: params.type,
-        quantity: -count,
-        diff: true,
-        comment: 'sync'
       })
     }
 

@@ -1026,6 +1026,10 @@ static toJuno = async (params) => {
       .select('order_item.quantity', 'order_item.price', 'product.barcode')
       .join('project_product', 'project_product.project_id', 'order_item.project_id')
       .join('product', 'product.id', 'project_product.product_id')
+      .where((query) => {
+        query.whereRaw('product.size = order_item.size')
+        query.orWhereNull('product.size')
+      })
       .where('order_shop_id', params.id)
       .all()
 
