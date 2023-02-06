@@ -158,6 +158,8 @@ class Stock {
 
     const orders = await DB('order_shop')
       .select(
+        'order_item.id',
+        'order_item.order_shop_id',
         'order_shop.type',
         'vod.stage1',
         'order_shop.transporter',
@@ -173,10 +175,14 @@ class Stock {
       .where((query) => {
         if (payload && payload.productIds) {
           query.whereIn('pp.product_id', payload.productIds)
+          query.orWhereIn('product.parent_id', payload.productIds)
         }
       })
       .where((query) => {
-        query.whereNull('order_item.size')
+        query.where((query) => {
+          query.whereNull('order_item.size')
+          query.whereNull('product.size')
+        })
         query.orWhere((query) => {
           query.whereRaw('product.size = order_item.size')
           query.orWhere('product.size', 'all')
@@ -187,6 +193,17 @@ class Stock {
       .all()
 
     const products = {}
+    if (payload && payload.productIds) {
+      for (const id of payload.productIds) {
+        products[id] = {
+          preorder: {
+            preorder: 0,
+            sales: 0
+          }
+        }
+      }
+    }
+
     for (const order of orders) {
       if (!order.product_id) {
         continue
@@ -206,7 +223,6 @@ class Stock {
           sales: 0
         }
       }
-
       if (order.type === 'vod') {
         products[order.product_id]['preorder'].reserved = order.count_other
         products[order.product_id]['preorder'].preorder += order.quantity
@@ -228,7 +244,7 @@ class Stock {
           stock.type = type
         }
         if (type === 'preorder') {
-          if (!stock.quantity) {
+          if (!stock.quantity && products[productId].preorder_limit) {
             stock.quantity = products[productId].preorder_limit
           }
           stock.preorder = products[productId][type].preorder
