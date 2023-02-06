@@ -169,7 +169,7 @@ class Stats {
     query = `
       SELECT sub_total, currency, currency_rate, type, order_id, category, margin, DATE_FORMAT(date, '${format}') AS date
       FROM \`invoice\`
-      WHERE DATE_FORMAT(date, '%Y-%m-%d') BETWEEN '${params.start}' AND '${params.end}'
+      WHERE DATE_FORMAT(date, '%Y-%m-%d') BETWEEN '${params.start}' AND '${params.end}' AND compatibility = 1
     `
     names.push('invoices')
     promises.push(DB().execute(query))
