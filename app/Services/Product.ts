@@ -363,6 +363,15 @@ class Product {
       payload.product_id = product.id
     }
 
+    const exists = await DB('project_product')
+      .where('project_id', payload.project_id)
+      .where('product_id', payload.product_id)
+      .first()
+
+    if (exists) {
+      return { success: true }
+    }
+
     await DB('project_product').insert({
       project_id: payload.project_id,
       product_id: payload.product_id
