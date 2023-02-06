@@ -934,17 +934,18 @@ class Cart {
   }
 
   static calculateShippingByTransporter = async (params) => {
-    let transporters = DB('shipping_weight')
+    const transporters = await DB('shipping_weight')
       .where('partner', 'like', params.partner)
       .where('country_id', params.country_id)
-
-    if (params.mode) {
-      transporters.where('transporter', 'like', params.mode)
-    }
-    if (params.partner === 'shipehype' && params.state) {
-      transporters.where('state', 'like', params.state)
-    }
-    transporters = await transporters.all()
+      .where((query) => {
+        if (params.mode) {
+          query.where('transporter', 'like', params.mode)
+        }
+        if (params.partner === 'shipehype' && params.state) {
+          query.where('state', 'like', params.state)
+        }
+      })
+      .all()
 
     const weight = Math.ceil(params.weight / 1000) + 'kg'
 
@@ -960,10 +961,6 @@ class Cart {
         cost = 0
       } else {
         cost = transporter.packing + transporter.picking * params.insert
-      }
-
-      if (transporter.transporter === 'GLS') {
-        transporter.oil = 0
       }
 
       transporter[weight] = transporter.oil
