@@ -162,6 +162,7 @@ class Stock {
         'vod.stage1',
         'order_shop.transporter',
         'product_id',
+        'vod.count_other',
         'order_item.size',
         'quantity'
       )
@@ -207,6 +208,7 @@ class Stock {
       }
 
       if (order.type === 'vod') {
+        products[order.product_id]['preorder'].reserved = order.count_other
         products[order.product_id]['preorder'].preorder += order.quantity
         products[order.product_id]['preorder'].sales += order.quantity
         products[order.product_id][order.transporter].preorder += order.quantity
@@ -231,7 +233,11 @@ class Stock {
           }
           stock.preorder = products[productId][type].preorder
         }
+        if (!stock.reserved) {
+          stock.reserved = products[productId][type].reserved
+        }
         stock.sales = products[productId][type].sales
+        stock.updated_at = Utils.date()
         await stock.save()
       }
     }
