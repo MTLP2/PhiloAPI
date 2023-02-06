@@ -70,6 +70,10 @@ class ProductController {
     return Stock.setStocks(params)
   }
 
+  async setStockProduct({ params }) {
+    return Stock.setOrders({ productIds: [params.id] })
+  }
+
   async saveSubProduct({ params }) {
     const payload = await validator.validate({
       schema: schema.create({

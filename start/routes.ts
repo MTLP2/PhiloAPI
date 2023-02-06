@@ -425,6 +425,7 @@ Route.group(() => {
   Route.post('/products/:id', 'ProductController.saveProduct')
   Route.delete('/products/:id', 'ProductController.removeProduct')
   Route.post('/products/:id/stocks', 'ProductController.saveStocks')
+  Route.post('/products/:id/stocks/calcul', 'ProductController.setStockProduct')
   Route.post('/products/:id/sub-product', 'ProductController.saveSubProduct')
   Route.delete('/products/:id/sub-product', 'ProductController.removeSubProduct')
   Route.post('/products', 'AdminController.updateProduct')
