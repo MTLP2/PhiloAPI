@@ -1604,7 +1604,7 @@ class Admin {
       .where('os.step', '!=', 'failed')
 
     if (params.project_id) {
-      orders.where('oi.project_id', params.project_id)
+      orders.whereIn('oi.project_id', params.project_id.split(','))
     }
     if (params.type === 'no_tracking') {
       orders.where((query) => {
