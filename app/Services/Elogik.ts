@@ -560,11 +560,12 @@ class Elogik {
     console.log('boxes sent => ', k)
   }
 
-  static syncStocks = async (payload: { barcode?: string }) => {
+  static syncStocks = async (payload?: { barcode?: string }) => {
     const res = await Elogik.api('articles/stock', {
       method: 'POST',
       body: {
-        reference: payload.barcode
+        reference: payload?.barcode,
+        length: 99999
       }
     })
     const news: any[] = []
@@ -588,7 +589,7 @@ class Elogik {
         return p.barcode === ref.refEcommercant
       })
 
-      if (product) {
+      if (product && qty !== product.quantity) {
         /**
         if (product.quantity === null && qty > 0) {
           console.log(`==> new stock : ${product.name} = ${qty}`)
