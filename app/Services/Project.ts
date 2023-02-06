@@ -2035,6 +2035,7 @@ class Project {
       const feeDate = JSON.parse(projects[o.project_id].fee_date)
       const fee = 1 - Utils.getFee(feeDate, o.created_at) / 100
 
+      o.total = o.price * o.quantity
       if (o.discount_artist) {
         o.total -= o.discount
       }
