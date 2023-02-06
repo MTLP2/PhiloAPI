@@ -528,7 +528,12 @@ class App {
       data.order = order
       data.boxes = boxes
 
+      data.shops = {}
       data.order_items = items.map((item) => {
+        if (!data.shops[item.order_shop_id]) {
+          data.shops[item.order_shop_id] = []
+        }
+        data.shops[item.order_shop_id].push(item.id)
         item.picture = `${config.app.storage_url}/projects/${item.picture || item.project_id}/${
           item.picture_project ? `${item.picture_project}.png` : 'cover.jpg'
         }`
@@ -546,7 +551,6 @@ class App {
         }
       })
     }
-
     if (n.box_id) {
       data.box = await DB('box').where('id', n.box_id).first()
       data.box.type = data.box.jazz ? 'Jazz Box' : 'Discovery'
