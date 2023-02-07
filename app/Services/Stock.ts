@@ -249,7 +249,7 @@ class Stock {
           }
           stock.preorder = products[productId][type].preorder
         }
-        if (!stock.reserved) {
+        if (!stock.reserved && products[productId][type].reserved) {
           stock.reserved = products[productId][type].reserved
         }
         stock.sales = products[productId][type].sales
