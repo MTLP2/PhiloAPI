@@ -54,6 +54,7 @@ class Stock {
       .where((query) => {
         if (payload.productIds) {
           query.whereIn('pp.product_id', payload.productIds)
+          query.orWhereIn('product.parent_id', payload.productIds)
         } else if (payload.projectIds) {
           query.whereIn('pp.project_id', payload.projectIds)
         }
@@ -184,7 +185,7 @@ class Stock {
           query.whereNull('product.size')
         })
         query.orWhere((query) => {
-          query.whereRaw('product.size = order_item.size')
+          query.whereRaw('product.size like order_item.size')
           query.orWhere('product.size', 'all')
           query.orWhereNull('product.size')
         })
