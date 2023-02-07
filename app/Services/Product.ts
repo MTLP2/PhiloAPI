@@ -18,6 +18,8 @@ class Product {
         'stock.quantity as stock_site',
         'stock.sales as sales_site',
         'stock.reserved',
+        'preorder.quantity as stock_preorder',
+        'preorder.preorder as sales_preorder',
         'daudin.quantity as stock_daudin',
         'daudin.sales as sales_daudin',
         'whiplash.quantity as stock_whiplash',
@@ -51,6 +53,15 @@ class Product {
           .as('stock')
           .query(),
         'stock.product_id',
+        'product.id'
+      )
+      .leftJoin(
+        DB('stock')
+          .select(DB.raw('(quantity - preorder) as quantity'), 'preorder', 'product_id')
+          .where('type', 'preorder')
+          .as('preorder')
+          .query(),
+        'preorder.product_id',
         'product.id'
       )
       .leftJoin(
