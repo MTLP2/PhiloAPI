@@ -14,50 +14,81 @@ class Product {
       .select(
         'product.*',
         'p2.name as parent',
-        DB.query('stock')
-          .sum('sales')
-          .whereRaw('product_id = product.id')
-          .where('is_distrib', false)
-          .as('sales'),
-        DB.query('stock')
-          .select('quantity')
-          .whereRaw('product_id = product.id')
-          .where('type', 'daudin')
-          .as('daudin'),
-        DB.query('stock')
-          .select('quantity')
-          .whereRaw('product_id = product.id')
-          .where('type', 'whiplash')
-          .as('whiplash'),
-        DB.query('stock')
-          .select('quantity')
-          .whereRaw('product_id = product.id')
-          .where('type', 'whiplash_uk')
-          .as('whiplash_uk'),
-        DB.query('stock')
-          .select('quantity')
-          .whereRaw('product_id = product.id')
-          .where('type', 'diggers')
-          .as('diggers'),
-        DB.query('stock')
-          .sum('quantity')
-          .whereRaw('product_id = product.id')
-          .where('is_distrib', true)
-          .as('distrib'),
-        DB.query('stock')
-          .sum('quantity')
-          .whereRaw('product_id = product.id')
-          .where('is_distrib', false)
-          .as('site'),
-        DB.query('stock').sum('preorder').whereRaw('product_id = product.id').as('preorder'),
-        DB.query('stock')
-          .sum('reserved')
-          .whereRaw('product_id = product.id')
-          .where('is_distrib', false)
-          .as('reserved'),
-        DB.query('project_product').count().whereRaw('product_id = product.id').as('projects')
+        'projects',
+        'stock.quantity as stock_site',
+        'stock.sales as sales_site',
+        'stock.reserved',
+        'daudin.quantity as stock_daudin',
+        'daudin.sales as sales_daudin',
+        'whiplash.quantity as stock_whiplash',
+        'whiplash.sales as sales_whiplash',
+        'whiplash_uk.quantity as stock_whiplash_uk',
+        'whiplash_uk.sales as sales_whiplash_uk',
+        'diggers.quantity as stock_diggers',
+        'diggers.sales as sales_diggers'
       )
       .leftJoin('product as p2', 'p2.id', 'product.parent_id')
+      .leftJoin(
+        DB('project_product')
+          .select(DB.raw('count(*) as projects'), 'product_id')
+          .groupBy('product_id')
+          .as('projects')
+          .query(),
+        'projects.product_id',
+        'product.id'
+      )
+      .leftJoin(
+        DB('stock')
+          .select(
+            DB.raw('sum(reserved) as reserved'),
+            DB.raw('sum(sales) as sales'),
+            DB.raw('sum(quantity) as quantity'),
+            'product_id'
+          )
+          .where('is_distrib', false)
+          .where('type', '!=', 'preorder')
+          .groupBy('product_id')
+          .as('stock')
+          .query(),
+        'stock.product_id',
+        'product.id'
+      )
+      .leftJoin(
+        DB('stock')
+          .select('sales', 'quantity', 'product_id')
+          .where('type', 'daudin')
+          .as('daudin')
+          .query(),
+        'daudin.product_id',
+        'product.id'
+      )
+      .leftJoin(
+        DB('stock')
+          .select('sales', 'quantity', 'product_id')
+          .where('type', 'whiplash')
+          .as('whiplash')
+          .query(),
+        'whiplash.product_id',
+        'product.id'
+      )
+      .leftJoin(
+        DB('stock')
+          .select('sales', 'quantity', 'product_id')
+          .where('type', 'whiplash_uk')
+          .as('whiplash_uk')
+          .query(),
+        'whiplash_uk.product_id',
+        'product.id'
+      )
+      .leftJoin(
+        DB('stock')
+          .select('sales', 'quantity', 'product_id')
+          .where('type', 'diggers')
+          .as('diggers')
+          .query(),
+        'diggers.product_id',
+        'product.id'
+      )
 
     if (payload.project_id) {
       query.join('project_product', 'project_product.product_id', 'product.id')
