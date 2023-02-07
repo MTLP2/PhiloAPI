@@ -64,7 +64,7 @@ class Stock {
     await Promise.all(
       products.map((product) =>
         Promise.all([
-          Whiplash.syncStocks({ projectIds: payload.projectIds }),
+          Whiplash.syncStocks({ productIds: payload.productIds }),
           Elogik.syncStocks({ barcode: product.barcode })
         ])
       )

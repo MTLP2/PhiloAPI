@@ -497,7 +497,7 @@ class Whiplash {
     return csv
   }
 
-  static syncStocks = async (payload?: { projectIds?: number[] }) => {
+  static syncStocks = async (payload?: { projectIds?: number[]; productIds?: number[] }) => {
     const projects: any = await DB('vod')
       .select(
         'vod.project_id',
@@ -513,6 +513,9 @@ class Whiplash {
       .where((query: any) => {
         if (payload && payload.projectIds) {
           query.whereIn('vod.project_id', payload.projectIds)
+        }
+        if (payload && payload.productIds) {
+          query.whereIn('product.id', payload.productIds)
         }
       })
       .where((query: any) => {

@@ -575,16 +575,18 @@ class Elogik {
     }
     const products = await DB('product')
       .select('product.id', 'barcode', 'stock.quantity')
-      .leftJoin('stock', 'stock.product_id', 'product.id')
+      .leftJoin('stock', (query) => {
+        query.on('stock.product_id', 'product.id')
+        query.on('stock.type', '=', DB.raw('?', ['daudin']))
+      })
       .whereIn(
         'barcode',
         res.articles.map((r) => r.refEcommercant)
       )
-      .where('stock.type', 'daudin')
       .all()
 
     for (const ref of res.articles) {
-      const qty = ref.stocks[0].stockDispo
+      const qty = ref.stocks[0].stockDispo || 0
       const product = products.find((p: any) => {
         return p.barcode === ref.refEcommercant
       })
