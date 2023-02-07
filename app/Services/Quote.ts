@@ -635,7 +635,7 @@ class Quote {
     }
 
     // sticker
-    if (params.sticker !== '0') {
+    if (params.sticker && params.sticker !== '0') {
       quote.sticker = getCost(237, 'sticker', ` x ${params.quantity}`) / params.nb_vinyl
       quote.sticker += getCost(238, 'sticker', ` x ${params.quantity}`) / params.nb_vinyl
     }
