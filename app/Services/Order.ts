@@ -1056,6 +1056,7 @@ static toJuno = async (params) => {
         if (throwError) {
           throw err
         } else {
+          console.log(err)
           await Notification.sendEmail({
             to: 'victor@diggersfactory.com',
             subject: `Problem with Elogik : ${shop.id}`,
@@ -1063,6 +1064,7 @@ static toJuno = async (params) => {
             <li>Order Id : https://www.diggersfactory.com/sheraf/order/${shop.order_id}</li>
             <li>Shop Id : ${shop.id}</li>
             <li>Error: ${err}</li>
+            <li>${err.stack && err.stack.replace(/\n/g, '<br />')}</li>
           </ul>`
           })
         }
@@ -1074,6 +1076,7 @@ static toJuno = async (params) => {
         if (throwError) {
           throw err
         } else {
+          console.log(err)
           await Notification.sendEmail({
             to: 'victor@diggersfactory.com',
             subject: `Problem with Whiplash : ${shop.id}`,
@@ -1081,6 +1084,7 @@ static toJuno = async (params) => {
             <li>Order Id : https://www.diggersfactory.com/sheraf/order/${shop.order_id}</li>
             <li>Shop Id : ${shop.id}</li>
             <li>Error: ${err}</li>
+            <li>${err.stack && err.stack.replace(/\n/g, '<br />')}</li>
           </ul>`
           })
         }
@@ -1107,6 +1111,7 @@ static toJuno = async (params) => {
         if (throwError) {
           throw err
         } else {
+          console.log(err)
           await Notification.sendEmail({
             to: 'victor@diggersfactory.com',
             subject: `Problem with SNA : ${shop.id}`,
@@ -1114,6 +1119,7 @@ static toJuno = async (params) => {
             <li>Order Id : https://www.diggersfactory.com/sheraf/order/${shop.order_id}</li>
             <li>Shop Id : ${shop.id}</li>
             <li>Error: ${err}</li>
+            <li>${err.stack && err.stack.replace(/\n/g, '<br />')}</li>
           </ul>`
           })
         }
