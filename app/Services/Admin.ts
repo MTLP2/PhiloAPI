@@ -4803,6 +4803,127 @@ class Admin {
     await DB('project_nl').where('id', dnlid).delete()
     return true
   }
+
+  static exportMonthlyClientsStats = async () => {
+    const previousMonth = moment().subtract(1, 'months').month() + 1
+    const thisYear = moment().year()
+
+    const [
+      uniqueUsersWithOriginQuery,
+      uniqueUsersForLicenceWithOriginByMonth,
+      uniqueUsersAndOrdersByMonth
+    ]: [
+      { uniq_clients: number; origin: string; month: number; year: number }[],
+      { uniq_clients: number; origin: string; month: number; year: number }[],
+      { uniq_clients: number; orders: number; month: number; year: number }
+    ] = await Promise.all([
+      DB.raw(`
+      SELECT
+        year(o.created_at) AS year,
+        month(o.created_at) AS month,
+        o.origin,
+        COUNT(DISTINCT o.user_id) AS new_buyer
+        FROM \`order\` o
+        JOIN (
+          SELECT user_id, MIN(created_at) AS first_order_date
+          FROM \`order\`
+          WHERE status NOT IN ('creating', 'failed')
+          GROUP BY user_id
+        ) first_orders
+        ON o.user_id = first_orders.user_id AND o.created_at = first_orders.first_order_date
+        WHERE status NOT IN ('creating', 'failed')
+        AND YEAR(o.created_at) >= ${thisYear}
+        AND MONTH(o.created_at) = ${previousMonth}
+        GROUP BY
+            year(o.created_at),
+            month(o.created_at),
+            o.origin
+      `),
+      DB.raw(`
+        SELECT
+        year(o.created_at) AS year,
+        month(o.created_at) AS month,
+        o.origin,
+        COUNT(DISTINCT o.user_id) AS new_buyer
+      FROM \`order\` o
+      JOIN (
+        SELECT user_id, MIN(created_at) AS first_order_date
+        FROM \`order\`
+        WHERE status NOT IN ('creating', 'failed')
+        GROUP BY user_id
+      ) first_orders
+      ON o.user_id = first_orders.user_id AND o.created_at = first_orders.first_order_date
+      JOIN order_item oi on o.id = oi.order_id
+      JOIN project p on oi.project_id = p.id
+      JOIN vod v on p.id = v.project_id
+      WHERE o.status NOT IN ('creating', 'failed')
+      AND YEAR(o.created_at) >= ${thisYear}
+      AND MONTH(o.created_at) = ${previousMonth}
+      AND v.is_licence = true
+      GROUP BY
+          year(o.created_at),
+          month(o.created_at),
+          o.origin
+      `),
+      DB('order')
+        .select(
+          DB.raw('COUNT(distinct user_id) as uniq_clients'),
+          DB.raw('COUNT(*) as orders'),
+          DB.raw('month(created_at) as month'),
+          DB.raw('year(created_at) as year')
+        )
+        .whereNotIn('status', ['creating', 'failed'])
+        .whereRaw(`month(created_at) = ${previousMonth}`)
+        .whereRaw(`year(created_at) = ${thisYear}`)
+        .groupByRaw('year(created_at)')
+        .groupByRaw('month(created_at)')
+        .first()
+    ])
+
+    await Notification.sendEmail({
+      to: 'robin@diggersfactory.com,olivia@diggersfactory.com',
+      subject: `Export clients mensuel - ${previousMonth}/${thisYear}`,
+      html: `Bonjour,
+      <p>Nombre de clients uniques : ${uniqueUsersAndOrdersByMonth.uniq_clients}</p>
+      <p>Nombre de commandes : ${uniqueUsersAndOrdersByMonth.orders}</p>
+      <p>Vous trouverez l'export suivant en pièce jointe avec deux onglets :</p>
+      <ul>
+      <li>clients uniques par origin</li>
+      <li>clients uniques par origin, uniquement licence</li>
+      </ul>
+      
+        Diggers Factory`,
+      attachments: [
+        {
+          filename: `Clients_origin.xlsx`,
+          content: await Utils.arrayToXlsx([
+            {
+              worksheetName: 'Clients origin, total',
+              columns: [
+                { header: 'New clients', key: 'new_buyer' },
+                { header: 'Origin', key: 'origin' },
+                { header: 'Month', key: 'month' },
+                { header: 'Year', key: 'year' }
+              ],
+              data: uniqueUsersWithOriginQuery[0]
+            },
+            {
+              worksheetName: 'Clients origin, licence only',
+              columns: [
+                { header: 'New clients', key: 'new_buyer' },
+                { header: 'Origin', key: 'origin' },
+                { header: 'Month', key: 'month' },
+                { header: 'Year', key: 'year' }
+              ],
+              data: uniqueUsersForLicenceWithOriginByMonth[0]
+            }
+          ])
+        }
+      ]
+    })
+
+    return true
+  }
 }
 
 export default Admin

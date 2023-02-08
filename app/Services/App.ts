@@ -28,6 +28,7 @@ import View from '@ioc:Adonis/Core/View'
 import Excel from 'exceljs'
 import fs from 'fs'
 import Payment from './Payment'
+import Admin from './Admin'
 
 class App {
   static daily = async () => {
@@ -51,6 +52,7 @@ class App {
 
       if (+moment().format('D') === 1) {
         await Box.checkPayments()
+        await Admin.exportMonthlyClientsStats()
       }
 
       if (
