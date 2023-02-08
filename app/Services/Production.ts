@@ -1641,7 +1641,32 @@ class Production {
       })
       .all()
 
-    for (const prod of prods2) {
+    const toDoActions = await DB('production_action as pa')
+      .select('pa.production_id as id')
+      .join('production as p', 'p.id', 'pa.production_id')
+      .whereIn(
+        'pa.production_id',
+        prods2.map((prod) => prod.id)
+      )
+      .where('pa.for', 'artist')
+      .where('pa.status', 'to_do')
+      .where('pa.category', 'preprod')
+      .where('pa.type', '!=', 'order_form')
+      .where((query) => {
+        query.where('p.is_billing', true)
+        query.orWhere((query) => {
+          query.where('p.is_billing', false)
+          query.where('pa.type', '!=', 'billing')
+        })
+      })
+      .groupBy('pa.production_id')
+      .all()
+
+    for (const prod of toDoActions) {
+      if (!toDoActions.length) {
+        continue
+      }
+
       Production.addNotif({
         id: prod.id,
         type: 'preprod_todo',
