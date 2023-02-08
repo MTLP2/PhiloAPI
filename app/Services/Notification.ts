@@ -284,46 +284,47 @@ class Notification {
           } ${shopId}</td></tr>`
           items.map((itemId) => {
             const item = params.order_items.find((i) => i.id === itemId)
+            if (!item) {
+              return
+            }
             html += `<tr>
-            <td width="60"><img width="50" src="${item.picture}" alt="${item.name}" /></td>
-            <td width="30" class="total">${item.quantity} x</td>
-            <td width="100%">
-              <a href="${Env.get('APP_URL')}/vinyl/${item.project_id}/${item.slug}"><b>${
+          <td width="60"><img width="50" src="${item.picture}" alt="${item.name}" /></td>
+          <td width="30" class="total">${item.quantity} x</td>
+          <td width="100%">
+            <a href="${Env.get('APP_URL')}/vinyl/${item.project_id}/${item.slug}"><b>${
               item.artist_name
             }</b><br/>${item.name}</a>
-              <br />
-              ${
-                item.is_shop
-                  ? `${
-                      lang === 'fr' ? 'Livraison: De 2 à 10 jours' : 'Shipping : From 2 to 10 days'
-                    }`
-                  : ''
-              }
-              ${
-                item.tracks
-                  ? `<br /><br />
-                <a class="button" href="${item.tracks}" target="_blank">Download tracks</a>`
-                  : ''
-              }
-              ${
-                params.type === 'review_request'
-                  ? `<br /><br />
-                <a class="button" href="${Env.get('APP_URL')}/review/${
-                      item.project_id
-                    }" target="_blank">Review this item</a>`
-                  : ''
-              }
-              ${
-                item.message_order
-                  ? `<br />
-                <p>${item.message_order}</p>`
-                  : ''
-              }
-            </td>
-            <td  class="total">
-              ${item.total} ${cur[item.currency]}
-            </td>
-          </tr>`
+            <br />
+            ${
+              item.is_shop
+                ? `${lang === 'fr' ? 'Livraison: De 2 à 10 jours' : 'Shipping : From 2 to 10 days'}`
+                : ''
+            }
+            ${
+              item.tracks
+                ? `<br /><br />
+              <a class="button" href="${item.tracks}" target="_blank">Download tracks</a>`
+                : ''
+            }
+            ${
+              params.type === 'review_request'
+                ? `<br /><br />
+              <a class="button" href="${Env.get('APP_URL')}/review/${
+                    item.project_id
+                  }" target="_blank">Review this item</a>`
+                : ''
+            }
+            ${
+              item.message_order
+                ? `<br />
+              <p>${item.message_order}</p>`
+                : ''
+            }
+          </td>
+          <td  class="total">
+            ${item.total} ${cur[item.currency]}
+          </td>
+        </tr>`
           })
           return html
         })}
@@ -380,13 +381,6 @@ class Notification {
           : ''
       }
     `
-        /**
-      console.log(params)
-      params.order = await View.render('items', {
-        items: params.items,
-        t: v => I18n.locale(params.lang).formatMessage(v)
-      })
-      **/
       }
       params.html = _.template(params.html)(params)
     } catch (e) {
