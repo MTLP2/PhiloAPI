@@ -828,7 +828,18 @@ class Production {
   }
 
   static async getDispatchs(params) {
-    const query = DB('production_dispatch').belongsTo('customer').where('is_delete', false)
+    const query = DB('production_dispatch')
+      .select(
+        'production_dispatch.*',
+        'production.project_id',
+        'project.name',
+        'project.artist_name',
+        'project.picture'
+      )
+      .join('production', 'production.id', 'production_dispatch.production_id')
+      .join('project', 'project.id', 'production.project_id')
+      .belongsTo('customer')
+      .where('production_dispatch.is_delete', false)
 
     if (params.id === 'all') {
       if (!(await Utils.isTeam(params.user.id))) {
