@@ -76,7 +76,7 @@ class Stock {
 
   static async setStockProject(payload?: { productIds?: number[]; projectIds?: number[] }) {
     const listProjects = await DB('project_product as p1')
-      .select('is_shop', 'p1.project_id', 'product_id')
+      .select('is_shop', 'vod.step', 'p1.project_id', 'product_id')
       .join('vod', 'vod.project_id', 'p1.project_id')
       .join('product', 'product.id', 'p1.product_id')
       .whereIn('p1.project_id', (query) => {
@@ -124,7 +124,7 @@ class Stock {
       for (const t of Object.keys(trans)) {
         if (p.is_shop && t === 'preorder') {
           continue
-        } else if (!p.is_shop && t !== 'preorder') {
+        } else if (!p.is_shop && (t !== 'preorder' || p.step === 'successful')) {
           continue
         }
         if (!products[p.product_id] || !products[p.product_id][t]) {
@@ -138,6 +138,7 @@ class Stock {
       }
     }
 
+    console.log(projects)
     for (const p of Object.keys(projects)) {
       projects[p] = Object.values(projects[p]).reduce(
         (prev: number, current: number) => prev + (current < 0 ? 0 : current),
