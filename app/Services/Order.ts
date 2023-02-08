@@ -909,7 +909,6 @@ static toJuno = async (params) => {
             })
           }
         ])
-        console.log(dispatch)
         if (item.order_shop_id) {
           await DB('order_shop').where('id', item.order_shop_id).update({
             logistician_id: dispatch.id,
@@ -941,6 +940,7 @@ static toJuno = async (params) => {
         })
       }
 
+      console.log('LOL')
       const order: any = await Whiplash.saveOrder(pp)
       item.logistician_id = order.id
       item.date_export = Utils.date()
@@ -1019,8 +1019,12 @@ static toJuno = async (params) => {
       .select('order_shop.*', 'user.email')
       .join('user', 'user.id', 'order_shop.user_id')
       .where('order_shop.id', params.id)
+      .whereNull('logistician_id')
       .first()
 
+    if (!shop) {
+      return false
+    }
     let res: any = { success: true }
     const items = await DB('order_item')
       .select('order_item.quantity', 'order_item.price', 'product.barcode')
