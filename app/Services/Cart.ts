@@ -1000,13 +1000,15 @@ class Cart {
           transporter[weight] = 6.4
         }
 
-        costs = {
-          ...costs,
-          transporter: params.transporter,
-          partner: transporter.transporter,
-          currency: transporter.currency,
-          standard: Utils.round(transporter[weight] + cost),
-          tracking: Utils.round(transporter[weight] + cost + 2.5)
+        if (!costs.standard || costs.standard > Utils.round(transporter[weight] + cost)) {
+          costs = {
+            ...costs,
+            transporter: params.transporter,
+            partner: transporter.transporter,
+            currency: transporter.currency,
+            standard: Utils.round(transporter[weight] + cost),
+            tracking: Utils.round(transporter[weight] + cost + 2.5)
+          }
         }
       }
     }
