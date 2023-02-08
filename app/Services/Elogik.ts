@@ -462,21 +462,23 @@ class Elogik {
     )
 
     let i = 0
-    for (const pack of packages.colis) {
-      if (pack.numeroTracking) {
-        const order = orders.find((o) => o.logistician_id === pack.commande.referenceEKAN)
-        await DB('order_shop').where('id', order.id).update({
-          step: 'sent',
-          tracking_number: pack.numeroTracking,
-          tracking_link: pack.urlTracking
-        })
-        await Notification.add({
-          type: 'my_order_sent',
-          user_id: order.user_id,
-          order_id: order.order_id,
-          order_shop_id: order.id
-        })
-        i++
+    if (packages.colis) {
+      for (const pack of packages.colis) {
+        if (pack.numeroTracking) {
+          const order = orders.find((o) => o.logistician_id === pack.commande.referenceEKAN)
+          await DB('order_shop').where('id', order.id).update({
+            step: 'sent',
+            tracking_number: pack.numeroTracking,
+            tracking_link: pack.urlTracking
+          })
+          await Notification.add({
+            type: 'my_order_sent',
+            user_id: order.user_id,
+            order_id: order.order_id,
+            order_shop_id: order.id
+          })
+          i++
+        }
       }
     }
     console.log('orders sent => ', i)
