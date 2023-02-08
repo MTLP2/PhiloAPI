@@ -1000,7 +1000,7 @@ class Cart {
           transporter[weight] = 6.4
         }
 
-        if (!costs.standard || costs.standard > Utils.round(transporter[weight] + cost)) {
+        if (!costs || !costs.standard || costs.standard > Utils.round(transporter[weight] + cost)) {
           costs = {
             ...costs,
             transporter: params.transporter,
