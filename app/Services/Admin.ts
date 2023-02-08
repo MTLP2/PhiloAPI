@@ -3985,6 +3985,8 @@ class Admin {
         'artist_name',
         'name',
         'price',
+        'description_fr',
+        'description',
         'is_shop',
         'price_distribution',
         'quantity_distribution',
@@ -4075,10 +4077,11 @@ class Admin {
       csv += `${pp.barcode || ''};`
       csv += pp.inverse_name ? `${pp.name} - ${pp.artist_name};` : `${pp.artist_name} - ${pp.name};`
       csv += 'new;'
+      console.log(pp)
       csv +=
-        params.lang === 'FR'
-          ? `Découvrez tout l'album de ${pp.artist_name} chez Diggers Factory en édition limité;`
-          : `Discover the whole ${pp.artist_name} album at Diggers Factory in limited edition;`
+        params.lang === 'FR' && pp.description_fr
+          ? `"${pp.description_fr.replace(/"/g, '“')}";`
+          : `"${pp.description ? pp.description.replace(/"/g, '“') : ''}";`
       csv += `${pp.stock < 1 ? 'out of stock' : pp.is_shop ? 'in stock' : 'preorder'};`
       csv += `${pp.price};`
       csv +=
