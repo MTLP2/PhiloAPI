@@ -31,8 +31,11 @@ class Whiplash {
     })
   }
 
-  static getOrders = () => {
-    return Whiplash.api('orders')
+  static getOrders = (body = {}) => {
+    return Whiplash.api('orders', {
+      methid: 'POST',
+      body: body
+    })
   }
 
   static getOrder = (id) => {
@@ -686,6 +689,58 @@ class Whiplash {
       })
     }
     return data
+  }
+
+  static checkMultipleOrder = async () => {
+    const iii = {}
+
+    const oo: any = []
+    const promises: any = []
+    for (let i = 1; i < 30; i++) {
+      promises.push(Whiplash.getOrders({ page: i }))
+    }
+
+    const rr = await Promise.all(promises)
+    for (const r of rr) {
+      oo.push(...r)
+    }
+
+    for (const order of oo) {
+      if (!order.email) {
+        continue
+      }
+      if (!iii[order.email]) {
+        iii[order.email] = {}
+      }
+
+      for (const item of order.order_items) {
+        if (!isNaN(item.sku)) {
+          if (!iii[order.email][item.sku]) {
+            iii[order.email][item.sku] = []
+          }
+          iii[order.email][item.sku].push({
+            id: item.order_id,
+            date: order.created_at,
+            description: item.description,
+            status: order.status_name,
+            barcode: item.sku
+          })
+        }
+      }
+    }
+
+    for (const email of Object.keys(iii)) {
+      for (const sku of Object.keys(iii[email])) {
+        if (iii[email][sku].length === 1) {
+          delete iii[email][sku]
+        }
+      }
+      if (Object.keys(iii[email]).length === 0) {
+        delete iii[email]
+      }
+    }
+
+    return iii
   }
 }
 
