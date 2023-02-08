@@ -4089,7 +4089,7 @@ class Admin {
           : `https://www.diggersfactory.com/vinyl/${pp.id}/${pp.slug}?currency=${currency}${
               params.ori ? `&ori=${params.ori}` : ''
             };`
-      csv += `${Env.get('STORAGE_URL')}/projects/${pp.picture || pp.id}/cover.jpg;`
+      csv += `${Env.get('STORAGE_URL')}/projects/${pp.picture || pp.id}/vinyl.png;`
       csv += `${pp.artist_name};`
       csv += ';;;;;;'
       csv += pp.estimated_shipping + ';'
