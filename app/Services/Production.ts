@@ -852,13 +852,15 @@ class Production {
       query.where('production_id', params.id)
     }
 
-    const filters = JSON.parse(params.filters)
-    for (const i in filters) {
-      if (filters[i].name === 'project') {
-        const value = filters[i].value
-        query.whereRaw(`CONCAT(project.artist_name, ' - ', project.name) like '%${value}%'`)
-        filters.splice(i, 1)
-        params.filters = JSON.stringify(filters)
+    if (params.filters) {
+      const filters = JSON.parse(params.filters)
+      for (const i in filters) {
+        if (filters[i].name === 'project') {
+          const value = filters[i].value
+          query.whereRaw(`CONCAT(project.artist_name, ' - ', project.name) like '%${value}%'`)
+          filters.splice(i, 1)
+          params.filters = JSON.stringify(filters)
+        }
       }
     }
 
