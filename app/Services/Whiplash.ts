@@ -165,7 +165,6 @@ class Whiplash {
     for (const item of items) {
       const idx = orders.findIndex((o: any) => o.id === item.order_shop_id)
       orders[idx].items = orders[idx].items ? [...orders[idx].items, item] : [item]
-      console.log(item)
       if (!item.barcode) {
         throw new ApiError(406, 'no_barcode')
       }
