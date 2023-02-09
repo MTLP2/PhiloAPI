@@ -94,7 +94,6 @@ class PromoCode {
     const promos = {}
     for (const order of orders) {
       if (order.promo_code) {
-        console.log(order.promo_code)
         order.promo_code = order.promo_code.toString().toUpperCase()
         if (!promos[order.promo_code]) {
           promos[order.promo_code] = { ...cal }
