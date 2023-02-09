@@ -2183,6 +2183,7 @@ class Production {
       item = await DB('production_cost').find(params.id)
     } else {
       item.created_at = Utils.date()
+      item.check_status = 'unverified'
     }
 
     const log = new Log({
@@ -2208,6 +2209,7 @@ class Production {
 
     item.project_id = params.project_id
     item.type = params.type
+    item.check_status = params.check_status
     item.currency = params.currency
     item.production_id = params.production_id || null
     item.name = params.name
