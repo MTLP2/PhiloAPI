@@ -940,7 +940,6 @@ static toJuno = async (params) => {
         })
       }
 
-      console.log('LOL')
       const order: any = await Whiplash.saveOrder(pp)
       item.logistician_id = order.id
       item.date_export = Utils.date()
@@ -956,16 +955,16 @@ static toJuno = async (params) => {
       }
     }
 
-    console.log(products)
     for (const b of params.barcodes) {
-      console.log(products[b.barcode])
-      await Stock.save({
-        product_id: products[b.barcode],
-        type: params.transporter,
-        quantity: -b.quantity,
-        diff: true,
-        comment: 'manual'
-      })
+      if (products[b.barcode]) {
+        await Stock.save({
+          product_id: products[b.barcode],
+          type: params.transporter,
+          quantity: -b.quantity,
+          diff: true,
+          comment: 'manual'
+        })
+      }
     }
 
     if (item.user_id) {
