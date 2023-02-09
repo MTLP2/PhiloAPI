@@ -525,9 +525,11 @@ class App {
       if (items.length > 0) {
         if (items[0].shipping_type === 'pickup') {
           const address = JSON.parse(items[0].address_pickup)
-          data.address = `<p>${address.name}<br />`
-          data.address += `${address.address}<br />`
-          data.address += `${address.zip_code} ${address.city}, ${address.country_id}</p>`
+          if (address) {
+            data.address = `<p>${address.name}<br />`
+            data.address += `${address.address}<br />`
+            data.address += `${address.zip_code} ${address.city}, ${address.country_id}</p>`
+          }
         } else {
           const customer = await DB('customer')
             .select('customer.*', 'country.name as country')
