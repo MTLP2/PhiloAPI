@@ -295,19 +295,20 @@ class App {
   }
 
   static checkNotifications = async () => {
-    /**
-    const query = `
-      UPDATE notification
-        SET email = 1
-      WHERE
-        email = -1
-        AND created_at >= DATE_SUB(curdate(), INTERVAL 1 WEEK)
-    await DB().execute(query)
-    **/
+    const notifications = await DB('notification')
+      .where('email', 1)
+      .orWhere((query) => {
+        query
+          .where('email', -1)
+          .whereRaw(`sending_at <= '${moment().subtract(3, 'hours').format('YYYY-MM-DD HH:mm')}'`)
+      })
+      .limit(1000)
+      .all()
 
-    const notifications = await DB('notification').where('email', 1).limit(1000).all()
-
+    return notifications
     let statement = 0
+
+    let e = 0
     await Promise.all(
       notifications.map(async (notif) => {
         if (notif.type === 'statement') {
@@ -316,7 +317,23 @@ class App {
           }
           statement++
         }
-        await App.notification(notif)
+        try {
+          await App.notification(notif)
+        } catch (err) {
+          console.log(err)
+          if (e < 2) {
+            await Notification.sendEmail({
+              to: 'victor@diggersfactory.com',
+              subject: `Problem with email : ${notif.id}`,
+              html: `<ul>
+              <li>Id : ${notif.id}</li>
+              <li>Error: ${err}</li>
+              <li>${err.stack && err.stack.replace(/\n/g, '<br />')}</li>
+            </ul>`
+            })
+          }
+          e++
+        }
       })
     )
 
@@ -332,6 +349,7 @@ class App {
       }
 
       n.email = -1
+      n.sending_at = Utils.date()
       await n.save()
 
       const conf = await DB('notifications').where('user_id', n.user_id).first()
