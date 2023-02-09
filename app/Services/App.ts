@@ -509,7 +509,7 @@ class App {
             .add(80, 'days')
             .format('MMMM YYYY')
         }
-        if (order.is_gift) {
+        if (order.is_gift && data.type == 'my_order_confirmed') {
           const html = await View.render('gift', {
             artist: item.artist_name,
             name: item.name,
@@ -1375,7 +1375,6 @@ class App {
       project.stock_whiplash = project.stock_whiplash || 0
       project.stock_whiplash_uk = project.stock_whiplash_uk || 0
       project.stock_diggers = project.stock_diggers || 0
-      console.log(project)
       if (project.is_shop) {
         project.stock_daudin = project.stock_daudin < 0 ? 0 : project.stock_daudin
         project.stock_whiplash = project.stock_whiplash < 0 ? 0 : project.stock_whiplash
