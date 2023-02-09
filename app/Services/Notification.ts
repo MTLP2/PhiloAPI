@@ -281,13 +281,16 @@ class Notification {
         ${
           params.shops &&
           Object.entries(params.shops).map(([shopId, items]) => {
-            let html = `<tr><td colspan="4" style="font-size: 12px">${
-              lang === 'fr' ? 'Commande N°' : 'Order N°'
-            } ${shopId}</td></tr>`
+            let html = ``
             items.map((itemId) => {
               const item = params.order_items.find((i) => i.id === itemId)
               if (!item) {
                 return
+              }
+              if (html === '') {
+                html = `<tr><td colspan="4" style="font-size: 12px">${
+                  lang === 'fr' ? 'Commande N°' : 'Order N°'
+                } ${shopId}</td></tr>`
               }
               html += `<tr>
           <td width="60"><img width="50" src="${item.picture}" alt="${item.name}" /></td>
