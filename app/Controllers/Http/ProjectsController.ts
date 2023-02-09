@@ -97,7 +97,7 @@ class ProjectsController {
         ...params,
         fileName: `songs/${track.id}.mp3`
       })
-      if (res.success) {
+      if (res.success && !params.skipEncoding) {
         await Song.setInfo(track.id)
       }
       return {
@@ -107,6 +107,10 @@ class ProjectsController {
     } else {
       return track
     }
+  }
+
+  async encodeTrack({ params }) {
+    return await Song.setInfo(params.tid)
   }
 
   async deleteTrack({ params, user }) {
