@@ -278,22 +278,24 @@ class Notification {
           </tr>`
           )
         }
-        ${Object.entries(params.shops).map(([shopId, items]) => {
-          let html = `<tr><td colspan="4" style="font-size: 12px">${
-            lang === 'fr' ? 'Commande N°' : 'Order N°'
-          } ${shopId}</td></tr>`
-          items.map((itemId) => {
-            const item = params.order_items.find((i) => i.id === itemId)
-            if (!item) {
-              return
-            }
-            html += `<tr>
+        ${
+          params.shops &&
+          Object.entries(params.shops).map(([shopId, items]) => {
+            let html = `<tr><td colspan="4" style="font-size: 12px">${
+              lang === 'fr' ? 'Commande N°' : 'Order N°'
+            } ${shopId}</td></tr>`
+            items.map((itemId) => {
+              const item = params.order_items.find((i) => i.id === itemId)
+              if (!item) {
+                return
+              }
+              html += `<tr>
           <td width="60"><img width="50" src="${item.picture}" alt="${item.name}" /></td>
           <td width="30" class="total">${item.quantity} x</td>
           <td width="100%">
             <a href="${Env.get('APP_URL')}/vinyl/${item.project_id}/${item.slug}"><b>${
-              item.artist_name
-            }</b><br/>${item.name}</a>
+                item.artist_name
+              }</b><br/>${item.name}</a>
             <br />
             ${
               item.is_shop
@@ -325,9 +327,10 @@ class Notification {
             ${item.total} ${cur[item.currency]}
           </td>
         </tr>`
+            })
+            return html
           })
-          return html
-        })}
+        }
         ${
           false
             ? `<tr>
