@@ -192,6 +192,16 @@ class Cart {
           items.push(...params.shops.s_1_daudin.items)
           delete params.shops.s_1_daudin
         }
+        if (params.shops.s_1_sna) {
+          params.shops.s_1_sna.items = params.shops.s_1_sna.items.map((i) => {
+            return {
+              ...i,
+              shipping_type: params.shops.s_1_sna.shipping_type
+            }
+          })
+          items.push(...params.shops.s_1_sna.items)
+          delete params.shops.s_1_sna
+        }
         if (params.shops.s_1_diggers) {
           params.shops.s_1_diggers.items = params.shops.s_1_diggers.items.map((i) => {
             return {
@@ -216,6 +226,7 @@ class Cart {
             .first()
 
           const stocks = await Stock.byProject({ project_id: item.project_id, size: item.size })
+          console.log(stocks)
           for (const [key, value] of Object.entries(stocks)) {
             project[`stock_${key}`] = value
           }
@@ -1217,6 +1228,8 @@ class Cart {
     if (shippings.length === 0) {
       return { error: 'no_shipping' }
     }
+
+    // console.log(params, shippings)
 
     let shipping
     for (const ship of shippings) {
