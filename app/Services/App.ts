@@ -302,10 +302,9 @@ class App {
           .where('email', -1)
           .whereRaw(`sending_at <= '${moment().subtract(3, 'hours').format('YYYY-MM-DD HH:mm')}'`)
       })
-      .limit(1000)
+      .limit(500)
       .all()
 
-    return notifications
     let statement = 0
 
     let e = 0
@@ -344,10 +343,6 @@ class App {
     const n = await DB('notification').where('id', notif.id).first()
     let send = 1
     if (!test) {
-      if (n.email !== 1) {
-        return false
-      }
-
       n.email = -1
       n.sending_at = Utils.date()
       await n.save()
