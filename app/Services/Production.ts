@@ -51,6 +51,7 @@ class Production {
         'production.date_preprod',
         'production.date_prod',
         'production.date_postprod',
+        'costs_option',
         'project.artist_name',
         'project.name as project',
         'vod.barcode',
