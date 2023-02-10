@@ -4077,11 +4077,13 @@ class Admin {
       csv += `${pp.barcode || ''};`
       csv += pp.inverse_name ? `${pp.name} - ${pp.artist_name};` : `${pp.artist_name} - ${pp.name};`
       csv += 'new;'
-      console.log(pp)
+      /**
       csv +=
         params.lang === 'FR' && pp.description_fr
           ? `"${pp.description_fr.replace(/"/g, '“')}";`
           : `"${pp.description ? pp.description.replace(/"/g, '“') : ''}";`
+      **/
+      csv += `;`
       csv += `${pp.stock < 1 ? 'out of stock' : pp.is_shop ? 'in stock' : 'preorder'};`
       csv += `${pp.price};`
       csv +=
