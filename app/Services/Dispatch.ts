@@ -270,64 +270,26 @@ class Dispatch {
       throw new ApiError(400, '`barcode` is missing')
     }
 
-    const project = await DB('vod')
-      .select('vod.*', 'u1.email as prod', 'u2.email as com')
-      .leftJoin('user as u1', 'u1.id', 'vod.resp_prod_id')
-      .leftJoin('user as u2', 'u2.id', 'vod.com_id')
+    const product = await DB('product')
+      .select('product.*', 'stock.quantity')
+      .leftJoin('stock', (query) => {
+        query.on('stock.product_id', 'product.id')
+        query.on('stock.type', '=', DB.raw('?', ['sna']))
+      })
       .where('barcode', params.barcode)
       .first()
 
-    if (!project) {
+    if (!product) {
       throw new Error('not_found')
     }
 
-    const stocks = await Stock.byProject({ project_id: project.project_id })
-    for (const [key, value] of Object.entries(stocks)) {
-      project[`stock_${key}`] = value
-    }
-
-    if (project && project.stock_sna !== +params.quantity) {
+    if (product && product.quantity !== +params.quantity) {
       Stock.save({
-        project_id: project.project_id,
+        product_id: product.id,
         type: 'sna',
         quantity: params.quantity,
         comment: 'api'
       })
-
-      const html = `<ul>
-        <li><strong>Project:</strong> https://www.diggersfactory.com/sheraf/project/${
-          project.project_id
-        }/stocks</li>
-        <li><strong>Transporter:</strong> ${params.transporter || ''}</li>
-        <li><strong>Barcode:</strong> ${params.barcode || ''}</li>
-        <li><strong>Name:</strong> ${params.name || ''}</li>
-        <li><strong>Old:</strong> ${project.stock_sna}</li>
-        <li><strong>Quantity:</strong> ${params.quantity || ''}</li>
-        <li><strong>Comment:</strong> ${params.comment || ''}</li>
-      </ul>`
-
-      if (!project.stock_sna) {
-        await Notification.sendEmail({
-          to: [
-            'alexis@diggersfactory.com',
-            'victor@diggersfactory.com',
-            'ismail@diggersfactory.com',
-            'romain@diggersfactory.com',
-            project.com,
-            project.prod
-          ].join(','),
-          subject: `${params.transporter} - new stock : ${params.name}`,
-          html: html
-        })
-      }
-
-      if (params.quantity < 0) {
-        await Notification.sendEmail({
-          to: ['ismail@diggersfactory.com'].join(','),
-          subject: `${params.transporter} - negative stock : ${params.name}`,
-          html: html
-        })
-      }
     }
 
     return { success: true }
