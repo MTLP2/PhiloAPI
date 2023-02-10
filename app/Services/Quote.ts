@@ -450,6 +450,10 @@ class Quote {
         },
         'inner_sleeve'
       )
+    } else if (params.inner_sleeve === 'black_antistatic') {
+      quote.inner_sleeve = getCost(106, 'inner_sleeve')
+    } else if (params.inner_sleeve === 'white_antistatic') {
+      quote.inner_sleeve = getCost(105, 'inner_sleeve')
     } else {
       quote.inner_sleeve = getCost(
         {
