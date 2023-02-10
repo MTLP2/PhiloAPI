@@ -49,7 +49,7 @@ class Stock {
 
   static async syncApi(payload: { productIds?: number[]; projectIds?: number[] }) {
     const products = await DB('product')
-      .select('product.barcode')
+      .select('product.id', 'product.barcode')
       .join('project_product as pp', 'pp.product_id', 'product.id')
       .where((query) => {
         if (payload.productIds) {
@@ -65,7 +65,7 @@ class Stock {
     await Promise.all(
       products.map((product) =>
         Promise.all([
-          Whiplash.syncStocks({ productIds: payload.productIds }),
+          Whiplash.syncStocks({ productIds: products.map((p) => p.id) }),
           Elogik.syncStocks({ barcode: product.barcode })
         ])
       )
@@ -138,7 +138,6 @@ class Stock {
       }
     }
 
-    console.log(projects)
     for (const p of Object.keys(projects)) {
       projects[p] = Object.values(projects[p]).reduce(
         (prev: number, current: number) => prev + (current < 0 ? 0 : current),
@@ -278,6 +277,7 @@ class Stock {
   }) {
     let stock
 
+    console.log(payload)
     if (payload.preorder) {
       payload.type = 'preorder'
     }

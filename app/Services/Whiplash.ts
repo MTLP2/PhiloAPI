@@ -499,32 +499,13 @@ class Whiplash {
     return csv
   }
 
-  static syncStocks = async (payload?: { projectIds?: number[]; productIds?: number[] }) => {
-    const projects: any = await DB('vod')
+  static syncStocks = async (payload?: { productIds?: number[] }) => {
+    const listProducts = await DB('product')
       .select(
-        'vod.project_id',
-        'whiplash_stock',
-        'pp.product_id',
-        'product.barcode',
+        'product.*',
         'stock_us.quantity as stock_whiplash',
         'stock_uk.quantity as stock_whiplash_uk'
       )
-      .join('project_product as pp', 'pp.project_id', 'vod.project_id')
-      .join('product', 'product.id', 'pp.product_id')
-      .whereNotNull('product.barcode')
-      .where((query: any) => {
-        if (payload && payload.projectIds) {
-          query.whereIn('vod.project_id', payload.projectIds)
-        }
-        if (payload && payload.productIds) {
-          query.whereIn('product.id', payload.productIds)
-        }
-      })
-      .where((query: any) => {
-        query
-          .whereRaw('JSON_EXTRACT(transporters, "$.whiplash") = true')
-          .orWhereRaw('JSON_EXTRACT(transporters, "$.whiplash_uk") = true')
-      })
       .leftJoin('stock as stock_us', (query) => {
         query.on('stock_us.product_id', 'product.id')
         query.on('stock_us.type', DB.raw('?', ['whiplash']))
@@ -533,49 +514,57 @@ class Whiplash {
         query.on('stock_uk.product_id', 'product.id')
         query.on('stock_uk.type', DB.raw('?', ['whiplash_uk']))
       })
-      .orderBy('whiplash_stock')
-      .limit(20)
-      .all()
-
-    for (const project of projects) {
-      const res: any = await Whiplash.api(`items/sku/${project.barcode}`)
-      if (!res[0]) {
-        continue
-      }
-      const warehouses: any = await Whiplash.api(`items/${res[0].id}/warehouse_quantities`)
-
-      let us = 0
-      let uk = 0
-      for (const warehouse of warehouses) {
-        if (warehouse.id === 3) {
-          uk = warehouse.sellable_quantity
-        } else if (warehouse.id === 4) {
-          us = warehouse.sellable_quantity
+      .whereNotNull('barcode')
+      .where((query: any) => {
+        if (payload && payload.productIds) {
+          query.whereIn('product.id', payload.productIds)
         }
-      }
+      })
+      .all()  
 
-      if (us !== project.stock_whiplash || uk !== project.stock_whiplash_uk) {
-        if (us !== project.stock_whiplash) {
-          console.log(project)
-          Stock.save({
-            product_id: project.product_id,
-            type: 'whiplash',
-            comment: 'api',
-            quantity: us
-          })
-        }
-        if (uk !== project.stock_whiplash_uk) {
-          Stock.save({
-            product_id: project.product_id,
-            type: 'whiplash_uk',
-            comment: 'api',
-            quantity: uk
-          })
-        }
-      }
+    const items: any = await Whiplash.getItems()
+
+    const products = {}
+    for (const product of listProducts) {
+      products[product.barcode] = product
     }
 
-    return projects
+    for (const item of items) {
+      if (!products[item.sku]) {
+        continue
+      }
+      if ((products[item.sku].stock_whiplash + products[item.sku].stock_whiplash_uk) !== item.quantity) {
+        const warehouses: any = await Whiplash.api(`items/${item.id}/warehouse_quantities`)
+
+        let us = 0
+        let uk = 0
+        for (const warehouse of warehouses) {
+          if (warehouse.id === 3) {
+            uk = warehouse.sellable_quantity
+          } else if (warehouse.id === 4) {
+            us = warehouse.sellable_quantity
+          }
+        }
+
+        if (us !== products[item.sku].stock_whiplash || uk !== products[item.sku].stock_whiplash_uk) {
+          if (us !==  products[item.sku].stock_whiplash) {
+            Stock.save({
+              product_id:  products[item.sku].id,
+              type: 'whiplash',
+              comment: 'api',
+              quantity: us
+            })
+          }
+          if (uk !==  products[item.sku].stock_whiplash_uk) {
+            Stock.save({
+              product_id:  products[item.sku].id,
+              type: 'whiplash_uk',
+              comment: 'api',
+              quantity: uk
+            })
+          }
+      }
+    }
   }
 
   static setCost = async (buffer, force = false) => {
