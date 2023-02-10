@@ -344,6 +344,7 @@ class Production {
       item.prod.pressing_proof.action = 'check'
     }
 
+    item.costs_option = JSON.parse(item.costs_option)
     item.preprod = Object.values(item.preprod)
     item.prod = Object.values(item.prod)
     item.postprod = Object.values(item.postprod)
@@ -514,6 +515,8 @@ class Production {
     item.final_price = params.final_price || null
     item.notif = params.notif
     item.is_billing = params.is_billing
+    console.log(params.costs_option)
+    item.costs_option = JSON.stringify(params.costs_option)
     item.updated_at = Utils.date()
 
     await item.save()
