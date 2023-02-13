@@ -1516,7 +1516,6 @@ class StatementService {
         }
       }
     }
-
     const countries = {
       PIAS: 'France',
       ROM: 'Europe',
@@ -1548,14 +1547,13 @@ class StatementService {
           name: `--> ${name} ${dist.item && `- ${dist.item}`} - Total`,
           type: 'income'
         }
-        if (dist.name === 'PIAS' && digital) {
+        if (dist.digital) {
           digital = true
           data[`${dist.name}_${dist.item}_digital`] = {
             name: `--> ${name} ${dist.item && `- ${dist.item}`} - Digital`,
             type: 'income'
           }
         }
-
         if (project.storage_costs) {
           data[`${dist.name}_${dist.item}_storage`] = {
             name: `--> ${name} ${dist.item && `- ${dist.item}`} - Storage`,
