@@ -234,6 +234,8 @@ class Stock {
     }
 
     for (const productId of Object.keys(products)) {
+      await DB('stock').where('product_id', productId).update({ sales: 0, preorder: 0 })
+
       for (const type of Object.keys(products[productId])) {
         if (type === 'preorder_limit') {
           continue
