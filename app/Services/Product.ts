@@ -187,6 +187,7 @@ class Product {
     name?: string
     barcode?: number
     catnumber?: string
+    isrc?: number
     parent_id?: number
     size?: string
     color?: string
@@ -200,6 +201,7 @@ class Product {
     item.name = payload.name
     item.barcode = payload.barcode
     item.catnumber = payload.catnumber
+    item.isrc = payload.isrc
     item.parent_id = payload.parent_id
     item.size = payload.size
     item.color = payload.color
