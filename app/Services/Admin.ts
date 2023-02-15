@@ -1590,6 +1590,7 @@ class Admin {
         'om.id as order_manual_id',
         'feedback.rating as feedback_rating',
         'feedback.id as feedback_id',
+        'oi.discount_code',
         DB.raw("CONCAT(c.firstname, ' ', c.lastname) AS user_infos")
       )
       .join('order_item as oi', 'os.id', 'oi.order_shop_id')
@@ -1865,6 +1866,7 @@ class Admin {
     params.size = 0
     params.project_id = params.id
     const data = await Admin.getOrders(params)
+    console.log('🚀 ~ file: Admin.ts:1868 ~ Admin ~ extractOrders= ~ data', data)
 
     return Utils.arrayToCsv(
       [
@@ -1876,6 +1878,7 @@ class Admin {
         { name: 'Currency', index: 'currency' },
         { name: 'Size', index: 'size' },
         { name: 'Promo', index: 'promo_code' },
+        { name: 'Sales', index: 'discount_code' },
         { name: 'Origin', index: 'origin' },
         { name: 'Email', index: 'user_email' },
         { name: 'Name', index: 'user_name' },
