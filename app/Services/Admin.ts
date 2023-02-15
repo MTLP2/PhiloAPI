@@ -1866,7 +1866,6 @@ class Admin {
     params.size = 0
     params.project_id = params.id
     const data = await Admin.getOrders(params)
-    console.log('🚀 ~ file: Admin.ts:1868 ~ Admin ~ extractOrders= ~ data', data)
 
     return Utils.arrayToCsv(
       [
