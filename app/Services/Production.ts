@@ -116,18 +116,20 @@ class Production {
   }
 
   static async getStats() {
-    const factories = await DB('production')
-      .select(
-        'factory',
-        DB.raw(`date_format(date_factory, '%Y-%m') as date`),
-        DB.raw('sum(quantity) as quantity')
-      )
-      .whereNotNull('date_factory')
-      .whereNotNull('factory')
-      .groupBy('factory')
-      .groupBy('date')
-      .where('date_factory', '>', moment().subtract(6, 'months').format('YYYY-MM'))
-      .all()
+    // const factories = await DB('production')
+    //   .select(
+    //     'factory',
+    //     DB.raw(`date_format(date_factory, '%Y-%m') as date`),
+    //     DB.raw('sum(quantity) as quantity')
+    //   )
+    //   .whereNotNull('date_factory')
+    //   .whereNotNull('factory')
+    //   .groupBy('factory')
+    //   .groupBy('date')
+    //   .where('date_factory', '>', moment().subtract(6, 'months').format('YYYY-MM'))
+    //   .all()
+
+    const factories = []
 
     const res = {}
 
@@ -346,7 +348,7 @@ class Production {
       item.prod.pressing_proof.action = 'check'
     }
 
-    item.costs_option = JSON.parse(item.costs_option)
+    item.costs_option = JSON.parse(item.costs_option || null)
     item.preprod = Object.values(item.preprod)
     item.prod = Object.values(item.prod)
     item.postprod = Object.values(item.postprod)
@@ -1272,6 +1274,18 @@ class Production {
           action.check_user = params.user.id
           action.check_date = Utils.date()
           await action.save()
+        } else {
+          // Notif for respo prod on pressing proof valid from team
+          if (params.view === 'team') {
+            await Production.notif({
+              production_id: pfile.production_id,
+              file_id: pfile.id,
+              user_id: params.user.id,
+              type: 'production_proof_team_valid',
+              data: file.name,
+              resp: true
+            })
+          }
         }
 
         Production.notif({
@@ -1317,6 +1331,7 @@ class Production {
       pfile.status = params.status
       pfile.check_user = params.user.id
       pfile.check_date = Utils.date()
+
       // else if its the artist
     } else if (params.view === 'artist') {
       pfile.status_artist = params.status
