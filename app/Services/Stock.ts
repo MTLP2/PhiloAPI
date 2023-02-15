@@ -279,7 +279,6 @@ class Stock {
   }) {
     let stock
 
-    console.log(payload)
     if (payload.preorder) {
       payload.type = 'preorder'
     }
@@ -364,7 +363,7 @@ class Stock {
     transporter: string
   }) {
     const pp = await DB('project_product')
-      .select('project_product.product_id', 'vod.type')
+      .select('project_product.product_id', 'vod.is_shop', 'vod.type')
       .join('product', 'product.id', 'project_product.product_id')
       .join('vod', 'vod.project_id', 'project_product.project_id')
       .where('project_product.project_id', payload.project_id)
@@ -386,6 +385,7 @@ class Stock {
         comment: 'order'
       })
       if (
+        !product.is_shop &&
         product.type === 'limited_edition' &&
         payload.preorder &&
         stock.quantity - stock.reserved - stock.preorder < 1
