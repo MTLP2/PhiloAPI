@@ -1590,6 +1590,7 @@ class Admin {
         'om.id as order_manual_id',
         'feedback.rating as feedback_rating',
         'feedback.id as feedback_id',
+        'oi.discount_code',
         DB.raw("CONCAT(c.firstname, ' ', c.lastname) AS user_infos")
       )
       .join('order_item as oi', 'os.id', 'oi.order_shop_id')
@@ -1876,6 +1877,7 @@ class Admin {
         { name: 'Currency', index: 'currency' },
         { name: 'Size', index: 'size' },
         { name: 'Promo', index: 'promo_code' },
+        { name: 'Sales', index: 'discount_code' },
         { name: 'Origin', index: 'origin' },
         { name: 'Email', index: 'user_email' },
         { name: 'Name', index: 'user_name' },
@@ -4074,8 +4076,10 @@ class Admin {
 
       csv += `${pp.start};`
       csv += `${pp.id};`
-      csv += `${pp.barcode || ''};`
-      csv += pp.inverse_name ? `${pp.name} - ${pp.artist_name};` : `${pp.artist_name} - ${pp.name};`
+      csv += `"${pp.barcode || ''}";`
+      csv += pp.inverse_name
+        ? `"${pp.name} - ${pp.artist_name}";`
+        : `"${pp.artist_name} - ${pp.name}";`
       csv += 'new;'
       /**
       csv +=
@@ -4086,10 +4090,12 @@ class Admin {
       csv += ''
       csv +=
         params.lang === 'FR'
-          ? (pp.description_fr && pp.description_fr.replace(/"/g, '＂')) ||
-            `Découvrez tout l'album de ${pp.artist_name} chez Diggers Factory en édition limité`
-          : (pp.description_en && pp.description_en.replace(/"/g, '＂')) ||
-            `Discover the whole ${pp.artist_name} album at Diggers Factory in limited edition`
+          ? (pp.description_fr &&
+              `"${pp.description_fr.replace(/`/g, '＂').replace(/"/g, '＂')}"`) ||
+            `"Découvrez tout l'album de ${pp.artist_name} chez Diggers Factory en édition limité"`
+          : (pp.description_en &&
+              `"${pp.description_en.replace(/`/g, '＂').replace(/"/g, '＂')}"`) ||
+            `"Discover the whole ${pp.artist_name} album at Diggers Factory in limited edition"`
 
       csv += ';'
       csv += `${pp.stock < 1 ? 'out of stock' : pp.is_shop ? 'in stock' : 'preorder'};`
@@ -4103,9 +4109,10 @@ class Admin {
               params.ori ? `&ori=${params.ori}` : ''
             };`
       csv += `${Env.get('STORAGE_URL')}/projects/${pp.picture || pp.id}/vinyl.png;`
-      csv += `${pp.artist_name};`
-      csv += ';;;;;;'
+      csv += `"${pp.artist_name}";`
+      csv += ';;;;'
       csv += pp.estimated_shipping + ';'
+      csv += ';'
       csv += pp.com.follow_artist ? 'prio;' : ';'
       csv += pp.format + ';'
       csv += (pp.vinyl_weight || '140') + ';'
@@ -4904,7 +4911,7 @@ class Admin {
       <li>clients uniques par origin</li>
       <li>clients uniques par origin, uniquement licence</li>
       </ul>
-      
+
         Diggers Factory`,
       attachments: [
         {
