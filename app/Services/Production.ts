@@ -116,20 +116,18 @@ class Production {
   }
 
   static async getStats() {
-    // const factories = await DB('production')
-    //   .select(
-    //     'factory',
-    //     DB.raw(`date_format(date_factory, '%Y-%m') as date`),
-    //     DB.raw('sum(quantity) as quantity')
-    //   )
-    //   .whereNotNull('date_factory')
-    //   .whereNotNull('factory')
-    //   .groupBy('factory')
-    //   .groupBy('date')
-    //   .where('date_factory', '>', moment().subtract(6, 'months').format('YYYY-MM'))
-    //   .all()
-
-    const factories = []
+    const factories = await DB('production')
+      .select(
+        'factory',
+        DB.raw(`date_format(date_factory, '%Y-%m') as date`),
+        DB.raw('sum(quantity) as quantity')
+      )
+      .whereNotNull('date_factory')
+      .whereNotNull('factory')
+      .groupBy('factory')
+      .groupBy('date')
+      .where('date_factory', '>', moment().subtract(6, 'months').format('YYYY-MM'))
+      .all()
 
     const res = {}
 
@@ -348,7 +346,7 @@ class Production {
       item.prod.pressing_proof.action = 'check'
     }
 
-    item.costs_option = JSON.parse(item.costs_option || null)
+    item.costs_option = JSON.parse(item.costs_option)
     item.preprod = Object.values(item.preprod)
     item.prod = Object.values(item.prod)
     item.postprod = Object.values(item.postprod)
