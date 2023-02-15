@@ -25,4 +25,9 @@ Stripe.getCustomer = async (userId) => {
   return customer
 }
 
+Stripe.findDispute = async (paymentIntent) => {
+  const disputes = await stripe.disputes.list()
+  return disputes.data.find((d) => d.payment_intent === paymentIntent)
+}
+
 export default Stripe

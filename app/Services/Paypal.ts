@@ -19,6 +19,10 @@ class Paypal {
       json: true
     })
   }
+
+  static async getDisputes() {
+    return await this.execute('customer/disputes', {})
+  }
 }
 
 export default Paypal
