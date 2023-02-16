@@ -226,7 +226,7 @@ class Cart {
             .first()
 
           const stocks = await Stock.byProject({ project_id: item.project_id, size: item.size })
-          console.log(stocks)
+
           for (const [key, value] of Object.entries(stocks)) {
             project[`stock_${key}`] = value
           }
