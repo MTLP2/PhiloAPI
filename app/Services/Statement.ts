@@ -967,6 +967,7 @@ class StatementService {
         'vod.resp_prod_id',
         'vod.com_id',
         'statement_comment',
+        'balance_comment',
         'user.name as user',
         'vod.type',
         'step'
@@ -976,7 +977,10 @@ class StatementService {
       .orderBy('artist_name', 'name')
 
     if (params.type === 'follow_up') {
-      projectsPromise.where('balance_followup', true)
+      projectsPromise.where((query) => {
+        query.where('vod.balance_followup', true)
+        query.orWhere('user.balance_followup', true)
+      })
     } else {
       projectsPromise.whereIn('step', ['in_progress', 'successful', 'failed'])
     }
@@ -1036,7 +1040,9 @@ class StatementService {
       project.invoiced = 0
       project.direct_costs = 0
       project.direct_balance = 0
-
+      if (project.balance_comment) {
+        project.statement_comment = project.balance_comment
+      }
       projects[project.id] = project
 
       if (!rows[project.step]) {
@@ -1047,13 +1053,11 @@ class StatementService {
 
     if (params.type === 'follow_up') {
       for (const invoice of invoices) {
-        console.log(invoice.type)
         if (invoice.type === 'invoice') {
           projects[invoice.project_id].invoiced += invoice.sub_total * invoice.currency_rate
         } else {
           projects[invoice.project_id].invoiced -= invoice.sub_total * invoice.currency_rate
         }
-        console.log(projects[invoice.project_id].invoiced, invoice.sub_total)
         projects[invoice.project_id].direct_balance = projects[invoice.project_id].invoiced
       }
       for (const prod of prods) {
