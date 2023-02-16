@@ -161,6 +161,7 @@ class Stock {
       .select(
         'order_item.id',
         'order_item.order_shop_id',
+        'order_item.project_id',
         'order_shop.type',
         'vod.stage1',
         'order_shop.transporter',
@@ -194,6 +195,7 @@ class Stock {
       .all()
 
     const products = {}
+    const projects = {}
     if (payload && payload.productIds) {
       for (const id of payload.productIds) {
         products[id] = {
@@ -231,6 +233,11 @@ class Stock {
         products[order.product_id][order.transporter].preorder += order.quantity
       }
       products[order.product_id][order.transporter].sales += order.quantity
+
+      if (!projects[order.project_id]) {
+        projects[order.project_id] = {}
+      }
+      projects[order.project_id][order.id] = order.quantity
     }
 
     for (const productId of Object.keys(products)) {
@@ -259,6 +266,13 @@ class Stock {
         stock.updated_at = Utils.date()
         await stock.save()
       }
+    }
+
+    for (const projectId of Object.keys(projects)) {
+      const qty = Object.values(projects[projectId]).reduce((a: number, b: number) => a + b, 0)
+      await DB('vod').where('project_id', projectId).update({
+        count: qty
+      })
     }
 
     return { success: true }
@@ -375,6 +389,12 @@ class Stock {
         }
       })
       .all()
+
+    await DB('vod')
+      .where('project_id', payload.project_id)
+      .update({
+        count: DB.raw(`count + ${payload.quantity}`)
+      })
 
     for (const product of pp) {
       const stock = await Stock.save({
