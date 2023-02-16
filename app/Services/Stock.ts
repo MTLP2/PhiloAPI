@@ -301,6 +301,8 @@ class Stock {
       stock.type = payload.type
       stock.is_distrib = payload.is_distrib || false
       stock.quantity = 0
+      stock.sales = 0
+      stock.preorder = 0
       stock.created_at = Utils.date()
     }
 
