@@ -1,6 +1,7 @@
 import DB from 'App/DB'
 import Utils from 'App/Utils'
 import Stock from 'App/Services/Stock'
+import Whiplash from 'App/Services/Whiplash'
 
 class Product {
   static async all(payload: {
@@ -210,6 +211,9 @@ class Product {
 
     await item.save()
 
+    if (item.barcode) {
+      Whiplash.setProduct({ id: item.id })
+    }
     const projects = await DB('project_product').where('product_id', item.id).all()
     for (const project of projects) {
       Product.setBarcodes({ project_id: project.project_id })

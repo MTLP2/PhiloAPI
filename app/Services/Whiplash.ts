@@ -520,21 +520,18 @@ class Whiplash {
           query.whereIn('product.id', payload.productIds)
         }
       })
-      .all()  
-
-    const items: any = await Whiplash.getItems()
+      .all()
 
     const products = {}
     for (const product of listProducts) {
       products[product.barcode] = product
     }
 
-    for (const item of items) {
-      if (!products[item.sku]) {
-        continue
-      }
-      if ((products[item.sku].stock_whiplash + products[item.sku].stock_whiplash_uk) !== item.quantity) {
-        const warehouses: any = await Whiplash.api(`items/${item.id}/warehouse_quantities`)
+    if (payload?.productIds) {
+      for (const product of listProducts) {
+        const warehouses: any = await Whiplash.api(
+          `items/${product.whiplash_id}/warehouse_quantities`
+        )
 
         let us = 0
         let uk = 0
@@ -546,23 +543,69 @@ class Whiplash {
           }
         }
 
-        if (us !== products[item.sku].stock_whiplash || uk !== products[item.sku].stock_whiplash_uk) {
-          if (us !==  products[item.sku].stock_whiplash) {
+        if (us !== product.stock_whiplash || uk !== product.tock_whiplash_uk) {
+          if (us !== product.stock_whiplash) {
             Stock.save({
-              product_id:  products[item.sku].id,
+              product_id: product.id,
               type: 'whiplash',
               comment: 'api',
               quantity: us
             })
           }
-          if (uk !==  products[item.sku].stock_whiplash_uk) {
+          if (uk !== product.stock_whiplash_uk) {
             Stock.save({
-              product_id:  products[item.sku].id,
+              product_id: product.id,
               type: 'whiplash_uk',
               comment: 'api',
               quantity: uk
             })
           }
+        }
+      }
+    } else {
+      const items: any = await Whiplash.getItems()
+      for (const item of items) {
+        if (!products[item.sku]) {
+          continue
+        }
+        if (
+          products[item.sku].stock_whiplash + products[item.sku].stock_whiplash_uk !==
+          item.quantity
+        ) {
+          const warehouses: any = await Whiplash.api(`items/${item.id}/warehouse_quantities`)
+
+          let us = 0
+          let uk = 0
+          for (const warehouse of warehouses) {
+            if (warehouse.id === 3) {
+              uk = warehouse.sellable_quantity
+            } else if (warehouse.id === 4) {
+              us = warehouse.sellable_quantity
+            }
+          }
+
+          if (
+            us !== products[item.sku].stock_whiplash ||
+            uk !== products[item.sku].stock_whiplash_uk
+          ) {
+            if (us !== products[item.sku].stock_whiplash) {
+              Stock.save({
+                product_id: products[item.sku].id,
+                type: 'whiplash',
+                comment: 'api',
+                quantity: us
+              })
+            }
+            if (uk !== products[item.sku].stock_whiplash_uk) {
+              Stock.save({
+                product_id: products[item.sku].id,
+                type: 'whiplash_uk',
+                comment: 'api',
+                quantity: uk
+              })
+            }
+          }
+        }
       }
     }
   }
@@ -729,6 +772,28 @@ class Whiplash {
     }
 
     return iii
+  }
+
+  static setProduct = async (payload?: { id?: number }) => {
+    const products = await DB('product')
+      .whereNotNull('barcode')
+      .where((query) => {
+        if (payload && payload.id) {
+          query.where('id', payload.id)
+        } else {
+          query.whereNull('whiplash_id')
+        }
+      })
+      .all()
+
+    for (const product of products) {
+      const item: any = await Whiplash.api(`/items/sku/${product.barcode}`)
+      await DB('product')
+        .where('id', product.id)
+        .update({
+          whiplash_id: (item.length > 0 && item[0].id) || -1
+        })
+    }
   }
 }
 
