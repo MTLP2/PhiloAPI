@@ -201,7 +201,7 @@ class Quote {
       } else {
         line = q[l]
       }
-      if (line.type === 'F') {
+      if (line && line.type === 'F') {
         logs.push({
           type: type,
           value: l,
@@ -665,7 +665,9 @@ class Quote {
   static calculateVdp(params, getCost) {
     const quote: any = {}
 
-    if (params.sleeve === 'double_gatefold') {
+    if (params.sleeve === 'discobag') {
+      quote.cutting = getCost(6, 'cutting')
+    } else if (params.sleeve === 'double_gatefold') {
       if (params.nb_vinyl === 1) {
         quote.cutting = getCost(3, 'cutting')
         if (params.nb_vinyl === 1) {
@@ -682,70 +684,74 @@ class Quote {
       }
     }
 
-    quote.cutting = quote.cutting / params.nb_vinyl
+    if (params.sleeve === 'pvc') {
+      quote.sleeve = getCost(45, 'sleeve')
+    }
+
+    if (params.type_vinyl === 'splatter' || params.type_vinyl === 'marble') {
+      quote.cutting += 160 * params.nb_vinyl
+    }
 
     quote.type_vinyl = 0
     if (params.weight === '180') {
-      quote.type_vinyl += getCost(10, 'type_vinyl', ` x ${params.quantity}`) / params.nb_vinyl
+      quote.type_vinyl += getCost(25, 'type_vinyl', ` x ${params.quantity}`) / params.nb_vinyl
     }
 
     // color
     quote.color = 0
     if (params.color_vinyl !== 'black') {
-      quote.color += getCost(11, 'color', ` x ${params.quantity}`) / params.nb_vinyl
+      quote.color += getCost(19, 'color', ` x ${params.quantity}`) / params.nb_vinyl
     }
-
-    // sticker
-    quote.sleeve = getCost(21, 'sleeve') / params.nb_vinyl
 
     // print finish
     quote.print_finish = 0
     if (params.print_finish === 'matt_varnish') {
-      quote.print_finish = getCost(16, 'print_finish', ` x ${params.quantity}`) / params.nb_vinyl
+      quote.print_finish = getCost(29, 'print_finish', ` x ${params.quantity}`) / params.nb_vinyl
     } else if (params.print_finish === 'returned_cardboard') {
-      quote.print_finish = getCost(17, 'print_finish', ` x ${params.quantity}`) / params.nb_vinyl
+      quote.print_finish = getCost(34, 'print_finish', ` x ${params.quantity}`) / params.nb_vinyl
     }
 
     // inner_sleeve
     quote.inner_sleeve = 0
     if (params.inner_sleeve === 'black') {
-      quote.inner_sleeve = getCost(23, 'inner_sleeve', ` x ${params.quantity}`)
+      quote.inner_sleeve = getCost(39, 'inner_sleeve', ` x ${params.quantity}`)
+    } else if (params.inner_sleeve === 'white_antistatic') {
+      quote.inner_sleeve = getCost(40, 'inner_sleeve', ` x ${params.quantity}`)
+    } else if (params.inner_sleeve === 'black_antistatic') {
+      quote.inner_sleeve = getCost(41, 'inner_sleeve', ` x ${params.quantity}`)
     } else if (params.inner_sleeve === 'printed') {
-      quote.inner_sleeve = getCost(22, 'inner_sleeve', ` x ${params.quantity}`)
+      quote.inner_sleeve = getCost(38, 'inner_sleeve', ` x ${params.quantity}`)
     }
 
     // shrink
     if (params.shrink !== 0) {
-      quote.shrink = getCost(27, 'shrink', ` x ${params.quantity}`) / params.nb_vinyl
+      quote.shrink = getCost(48, 'shrink', ` x ${params.quantity}`) / params.nb_vinyl
     }
 
+    quote.insert = 0
     if (params.insert && params.insert !== 'none') {
       if (params.insert === 'two_sides_printed') {
-        quote.insert += getCost(41, 'insert', ` x ${params.quantity}`) / params.nb_vinyl
+        quote.insert += getCost(65, 'insert', ` x ${params.quantity}`) / params.nb_vinyl
       } else if (params.insert === 'one_side_printed') {
-        quote.insert += getCost(40, 'insert', ` x ${params.quantity}`) / params.nb_vinyl
+        quote.insert += getCost(66, 'insert', ` x ${params.quantity}`) / params.nb_vinyl
+      } else if (params.insert === 'booklet_printed') {
+        quote.insert += getCost(70, 'insert', ` x ${params.quantity}`) / params.nb_vinyl
       }
     }
 
     // sticker
-    if (params.sticker !== '0') {
-      quote.sticker = getCost(30, 'sticker')
-
-      if (params.sticker === 'barcode') {
-        quote.sticker = getCost(48, 'sticker')
-      } else {
-        quote.sticker = getCost(32, 'sticker')
-      }
+    if (params.sticker && params.sticker !== '0') {
+      quote.sleeve = getCost(51, 'sleeve') / params.nb_vinyl
+      quote.sleeve = getCost(57, 'sleeve') / params.nb_vinyl
     }
 
     // numbered
     quote.numbered = 0
     if (params.numbered === 'numbered' || params.numbered === 'hand_numbered') {
-      quote.numbered = getCost(47, 'numbered', ` x ${params.quantity}`) / params.nb_vinyl
+      quote.numbered = getCost(46, 'numbered', ` x ${params.quantity}`) / params.nb_vinyl
     }
 
     // Frais supplementaire + échentillon diggers
-    // logs.push({ type: 'test_pressing', comment: '+40' })
     quote.test_pressing = 45
 
     return quote
@@ -1076,12 +1082,13 @@ class Quote {
             id: rowNumber,
             label: row.getCell('A').toString(),
             type: row.getCell('B').toString(),
-            q300: +row.getCell('C').toString(),
-            q500: +row.getCell('D').toString(),
-            q1000: +row.getCell('E').toString(),
-            q2000: +row.getCell('E').toString(),
-            q3000: +row.getCell('F').toString(),
-            q5000: +row.getCell('G').toString()
+            q100: +row.getCell('C').toString(),
+            q200: +row.getCell('D').toString(),
+            q300: +row.getCell('E').toString(),
+            q500: +row.getCell('E').toString(),
+            q1000: +row.getCell('F').toString(),
+            q3000: +row.getCell('G').toString(),
+            q5000: +row.getCell('H').toString()
           })
         } else if (worksheet.name === 'kuroneko') {
           const line = {
@@ -1105,19 +1112,6 @@ class Quote {
           } else {
             costs[worksheet.name].push(line)
           }
-        } else {
-          costs[worksheet.name].push({
-            id: rowNumber,
-            label: row.getCell('A').toString(),
-            q100: +row.getCell('B').toString(),
-            q200: +row.getCell('C').toString(),
-            q300: +row.getCell('D').toString(),
-            q500: +row.getCell('E').toString(),
-            q1000: +row.getCell('F').toString(),
-            q2000: +row.getCell('G').toString(),
-            q3000: +row.getCell('H').toString(),
-            q5000: +row.getCell('I').toString()
-          })
         }
       })
     })
