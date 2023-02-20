@@ -2265,7 +2265,7 @@ class Production {
     if (resp) {
       const project = await DB('project').where('id', item.project_id).first()
       await Notification.sendEmail({
-        to: resp.email,
+        to: params.user_id === resp.resp_id ? 'compta@diggersfactory.com' : resp.email,
         subject: `${project.artist_name} ${project.name} - ${item.type} - ${
           params.id ? 'Cost changed' : 'New cost'
         }`,

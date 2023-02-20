@@ -2327,6 +2327,8 @@ class Admin {
     user.about_me = params.about_me
     user.confirmed = params.confirmed
     user.unsubscribed = params.unsubscribed
+    user.balance_followup = params.balance_followup
+    user.balance_comment = params.balance_comment
     user.country_id = params.country_id || null
     user.styles = JSON.stringify(params.styles)
     user.updated_at = Utils.date()
