@@ -589,28 +589,50 @@ class Stock {
     return stocks
   }
 
-  static async exportStocksPrices() {
-    const refs = await DB('project')
-      .select('project.id', 'project.name', 'project.artist_name', 'vod.barcode', 'vod.unit_cost')
-      .join('vod', 'vod.project_id', 'project.id')
+  static async exportStocksPrices(payload: { end: string }) {
+    const refs = await DB('product')
+      .select('product.id', 'product.name', 'product.barcode', 'vod.unit_cost')
+      .join('project_product', 'project_product.product_id', 'product.id')
+      .join('vod', 'vod.project_id', 'project_product.project_id')
       .where('vod.type', '!=', 'deposit_sales')
-      .where('vod.barcode', 'not like', '%,%')
       .hasMany('stock')
-      .whereExists(
-        DB('stock')
-          .select('stock.id')
-          .whereRaw('project_id = project.id')
-          .where('quantity', '>', 0)
-          .query()
-      )
-      .orderBy('artist_name', 'project.name')
+      .whereNotNull('product.barcode')
+      .orderBy('product.name')
       .all()
+
+    const his = await DB('stock_historic')
+      .where('created_at', '>', payload.end)
+      .whereNotNull('product_id')
+      .where('type', '!=', 'preorder')
+      .orderBy('created_at', 'desc')
+      .all()
+
+    const hh = {}
+    for (const h of his) {
+      if (!hh[h.product_id]) {
+        hh[h.product_id] = {}
+      }
+      if (!hh[h.product_id][h.type]) {
+        hh[h.product_id][h.type] = []
+      }
+      hh[h.product_id][h.type].push(h)
+    }
 
     const logisitians = {}
 
+    const lines = []
     for (const i in refs) {
       refs[i].quantity = 0
       for (const stock of refs[i].stock) {
+        if (stock.type === 'preorder') {
+          continue
+        }
+        if (hh[stock.product_id] && hh[stock.product_id][stock.type]) {
+          for (const h of hh[stock.product_id][stock.type]) {
+            const d = JSON.parse(h.data)
+            stock.quantity = d.old.quantity
+          }
+        }
         if (stock.quantity > 0) {
           logisitians[stock.type] = true
           refs[i][stock.type] = stock.quantity
@@ -637,10 +659,14 @@ class Stock {
     columns.push({ header: 'Unit cost', key: 'unit_cost' })
     columns.push({ header: 'Price stock', key: 'price_stock' })
 
+    console.log(
+      'quantity =>',
+      refs.reduce((prev: number, current: any) => prev + current.quantity, 0)
+    )
     return Utils.arrayToXlsx([
       {
         columns: columns,
-        data: refs
+        data: refs.filter((r) => r.quantity > 0)
       }
     ])
   }
