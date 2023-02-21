@@ -1726,9 +1726,10 @@ class Box {
     } else {
       for (const barcode of barcodes) {
         const vod = await DB('vod')
-          .select('stock.project_id', 'stock.quantity as stock')
+          .select('stock.project_id', 'stock.quantity as stock', 'pp.product_id')
           .where('barcode', barcode)
           .join('stock', 'stock.project_id', 'vod.project_id')
+          .join('project_product as pp', 'pp.project_id', 'stock.project_id')
           .where('stock.type', 'daudin')
           .first()
 
@@ -1736,7 +1737,7 @@ class Box {
           return { error: 'No quantity' }
         } else if (vod) {
           Stock.save({
-            project_id: vod.project_id,
+            product_id: vod.product_id,
             type: 'daudin',
             quantity: -1,
             diff: true,
@@ -2240,7 +2241,6 @@ class Box {
     const add: any = []
     const sub: any = []
     const barcodes: any = []
-
     const gifts: any = []
     let i = 0
 
@@ -2253,8 +2253,16 @@ class Box {
           .where('date', params.month)
           .first()
         const vod = await DB('vod')
-          .select('is_box', 'stock.quantity as stock', 'barcode')
-          .join('stock', 'stock.project_id', 'vod.project_id')
+          .select(
+            'is_box',
+            'vod.project_id',
+            'stock.quantity as stock',
+            'product.barcode',
+            'stock.product_id'
+          )
+          .join('project_product', 'project_product.project_id', 'vod.project_id')
+          .join('product', 'project_product.product_id', 'product.id')
+          .join('stock', 'stock.product_id', 'product.id')
           .where('vod.project_id', p)
           .where('stock.type', 'daudin')
           .first()
@@ -2285,6 +2293,13 @@ class Box {
       return { success: false }
     }
 
+    const products = await DB('project_product')
+      .whereIn(
+        'project_id',
+        [...add, ...sub].filter((p) => p)
+      )
+      .all()
+
     for (const a of add) {
       if (a) {
         await DB('vod')
@@ -2293,7 +2308,7 @@ class Box {
             count_box: DB.raw('count_box + 1')
           })
         await Stock.save({
-          project_id: a,
+          product_id: products.find((p) => p.project_id === a).product_id,
           type: 'daudin',
           quantity: -1,
           diff: true,
@@ -2309,7 +2324,7 @@ class Box {
             count_box: DB.raw('count_box - 1')
           })
         await Stock.save({
-          project_id: s,
+          product_id: products.find((p) => p.project_id === s).product_id,
           type: 'daudin',
           quantity: +1,
           diff: true,
