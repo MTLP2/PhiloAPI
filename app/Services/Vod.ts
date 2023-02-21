@@ -95,7 +95,7 @@ class Vod {
     }
     vod.price = params.price ? params.price.toString().trim().replace(',', '.') : 0
     vod.vinyl_weight = params.weight
-    vod.label = params.label
+    vod.label = params.label_color
     vod.sleeve = params.sleeve
     vod.inner_sleeve = params.inner_sleeve
     vod.test_pressing = params.test_pressing

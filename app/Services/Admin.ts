@@ -984,6 +984,14 @@ class Admin {
     }
     if (params.edit_price) {
       vod.price = params.price || null
+      const currencies = await Utils.getCurrenciesDb()
+      vod.prices = JSON.stringify(
+        Utils.getPrices({
+          price: params.price,
+          currencies: currencies,
+          currency: vod.currency
+        })
+      )
       vod.bid_step = params.bid_step || null
       vod.price_distribution = params.price_distribution || null
       vod.partner_distribution = params.partner_distribution
