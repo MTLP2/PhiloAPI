@@ -591,13 +591,28 @@ class Stock {
 
   static async exportStocksPrices(payload: { end: string }) {
     const refs = await DB('product')
-      .select('product.id', 'product.name', 'product.barcode', 'vod.unit_cost')
-      .join('project_product', 'project_product.product_id', 'product.id')
-      .join('vod', 'vod.project_id', 'project_product.project_id')
-      .where('vod.type', '!=', 'deposit_sales')
-      .hasMany('stock')
+      .select(
+        'product.id',
+        'product.name',
+        'product.barcode',
+        DB()
+          .select('vod.unit_cost')
+          .from('vod')
+          .join('project_product', 'project_product.project_id', 'vod.project_id')
+          .whereRaw('project_product.product_id = product.id')
+          .limit(1)
+          .as('unit_cost')
+          .query()
+      )
+      .whereNotExists((query) => {
+        query
+          .from('vod')
+          .join('project_product', 'project_product.project_id', 'vod.project_id')
+          .where('vod.type', '=', 'deposit_sales')
+          .whereRaw('project_product.product_id = product.id')
+      })
       .whereNotNull('product.barcode')
-      .orderBy('product.name')
+      .hasMany('stock')
       .all()
 
     const his = await DB('stock_historic')
@@ -620,7 +635,6 @@ class Stock {
 
     const logisitians = {}
 
-    const lines = []
     for (const i in refs) {
       refs[i].quantity = 0
       for (const stock of refs[i].stock) {
@@ -645,19 +659,18 @@ class Stock {
     }
 
     const columns = [
-      { header: 'ID', key: 'id' },
-      { header: 'Barcode', key: 'barcode', width: 18 },
-      { header: 'Artist', key: 'artist_name', width: 25 },
-      { header: 'Title', key: 'name', width: 25 }
+      { header: 'ID', key: 'id', width: 7 },
+      { header: 'Barcode', key: 'barcode', width: 16 },
+      { header: 'Name', key: 'name', width: 30 }
     ]
 
     for (const l of Object.keys(logisitians)) {
-      columns.push({ header: l, key: l })
+      columns.push({ header: l, key: l, width: 7 })
     }
 
-    columns.push({ header: 'Quantity', key: 'quantity' })
-    columns.push({ header: 'Unit cost', key: 'unit_cost' })
-    columns.push({ header: 'Price stock', key: 'price_stock' })
+    columns.push({ header: 'Quantity', key: 'quantity', width: 7 })
+    columns.push({ header: 'Unit cost', key: 'unit_cost', width: 7 })
+    columns.push({ header: 'Price stock', key: 'price_stock', width: 7 })
 
     console.log(
       'quantity =>',
