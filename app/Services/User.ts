@@ -1159,6 +1159,7 @@ static extractProjectOrders = async (params) => {
         .all()
 
       user.boxes = 0
+      user.monthly_dispatch = 0
       user.box_active = false
       user.box_type = null
       user.box_periodicity = null
@@ -1171,6 +1172,7 @@ static extractProjectOrders = async (params) => {
         if (box.step === 'confirmed') {
           user.box_active = true
         }
+        user.monthly_dispatch += box.monthly_dispatch
         user.box_type = box.type
         user.box_periodicity = box.periodicity
         user.box_start = box.start + ' 00:00:00'
@@ -1233,6 +1235,7 @@ static extractProjectOrders = async (params) => {
       box_start: user.box_start ? moment(user.box_start).unix() : null,
       box_end: user.box_end ? moment(user.box_end).unix() : null,
       box_monthly: user.box_monthly,
+      box_monthly_dispatch: user.monthly_dispatch,
       unsubscribed: user.unsubscribed,
       unsubscribed_code: User.encodeUnsubscribeNewseletter(user.id),
       newsletter: user.newsletter,
