@@ -249,7 +249,7 @@ class Quote {
 
     for (const c of Object.keys(quote)) {
       quote[c] = Math.round(quote[c] * (1 + feeProd / 100))
-      if (data.factory === 'vdp2') {
+      if (data.factory === 'vdp') {
         quote[c] = Math.round(quote[c] * 0.91)
       }
     }
