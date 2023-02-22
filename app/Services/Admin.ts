@@ -3990,12 +3990,12 @@ class Admin {
       ss[s.id] = s.name
     }
 
-    let projects = DB('project')
+    const projectsQuery = DB('project')
       .select(
         'project.id',
         'slug',
         'artist_name',
-        'name',
+        'product.name',
         'price',
         'description_en',
         'description_fr',
@@ -4007,9 +4007,10 @@ class Admin {
         'count_other',
         'count_distrib',
         'date_shipping',
-        'barcode',
+        'product.barcode',
         'picture',
-        'cat_number',
+        'project.cat_number',
+        'product.catnumber',
         'inverse_name',
         'com',
         'currency',
@@ -4022,21 +4023,23 @@ class Admin {
         'vod.vinyl_weight',
         'vod.type'
       )
+      .join('project_product as pp', 'project.id', 'pp.project_id')
+      .join('product', 'product.id', 'pp.product_id')
       .join('vod', 'vod.project_id', 'project.id')
       .orderBy('artist_name', 'name')
       .where('step', 'in_progress')
-      .where('category', 'vinyl')
-      .whereNotNull('barcode')
+      .where('product.type', 'vinyl')
+      .whereNotNull('product.barcode')
       .hasMany('stock')
 
     if (!params.lang) {
       params.lang = 'fr'
     }
     if (params.lang) {
-      projects.where(`facebook_${params.lang}`, 1)
+      projectsQuery.where(`facebook_${params.lang}`, 1)
     }
 
-    projects = await projects.all()
+    const projects = await projectsQuery.all()
 
     let csv =
       'date;id;gtin;title;condition;description;availability;price;link;image_link;brand;additional_image_link;product_type;sale_price;sale_price_effective_date;shipping;shipping_weight;custom_label_0;'
@@ -4046,6 +4049,7 @@ class Admin {
 
     for (const p in projects) {
       const pp = projects[p]
+
       for (const stock of pp.stock) {
         pp[`stock_${stock.type}`] = stock.quantity
       }

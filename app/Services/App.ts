@@ -116,6 +116,7 @@ class App {
       if (hour === 3) {
         await App.currencies()
         await App.generateSitemap()
+        await App.exportProductReviewFeed()
       } else if (hour === 4) {
         await Whiplash.setTrackingLinks()
       } else if (hour === 5) {
@@ -1673,6 +1674,88 @@ class App {
       }
     }
 
+    return { success: true }
+  }
+
+  static async exportProductReviewFeed() {
+    const reviews = await DB('review')
+      .select(
+        'review.*',
+        'user.name as user_name',
+        'project.name as project_name',
+        'project.artist_name'
+      )
+      .join('user', 'user.id', 'review.user_id')
+      .join('project', 'project.id', 'review.project_id')
+      .where('review.is_visible', true)
+      .all()
+
+    const barcodes: { barcode: string; project_id: number }[] = await DB('project_product as pp')
+      .select('barcode', 'project_id')
+      .join('product as p', 'p.id', 'pp.product_id')
+      .whereIn(
+        'project_id',
+        reviews.map((r) => r.project_id)
+      )
+      .whereNotNull('barcode')
+      .all()
+
+    const escape = (str) => {
+      return str ? str.replace(/[&<>]/g, '') : ''
+    }
+
+    let xml = `<?xml version="1.0" encoding="UTF-8"?>
+    <feed xmlns:vc="http://www.w3.org/2007/XMLSchema-versioning"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:noNamespaceSchemaLocation=
+ "http://www.google.com/shopping/reviews/schema/product/2.3/product_reviews.xsd">
+    <version>2.3</version>
+    <publisher>
+        <name>Diggers Factory</name>
+    </publisher>
+    <reviews>
+    `
+
+    for (const review of reviews) {
+      const gtins = barcodes.filter((b) => b.project_id === review.project_id)
+
+      // Skip if no barcode
+      if (!gtins.length) continue
+
+      xml += `
+      <review>
+        <review_id>${review.id}</review_id>
+        <reviewer>
+            <name>${review.user_name}</name>
+            <reviewer_id>${review.user_id}</reviewer_id>
+        </reviewer>
+        <review_timestamp>${new Date(review.created_at).toISOString()}</review_timestamp>
+        ${review.message && `<title>${escape(review.title)}</title>`}
+        <content>${escape(review.message ? review.message : review.title)}</content>
+        <review_url type="group">https://www.diggersfactory.com/vinyl/${
+          review.project_id
+        }#reviews</review_url>
+        <ratings>
+          <overall min="1" max="5">5</overall>
+        </ratings>
+        <products>
+          <product>
+            <product_ids>
+              <gtins>
+                ${gtins.map((g) => `<gtin>${g.barcode}</gtin>`).join('')}
+              </gtins>
+            </product_ids>
+            <product_name>${escape(`${review.project_name} - ${review.artist_name}`)}</product_name>
+            <product_url>https://www.diggersfactory.com/vinyl/${review.project_id}</product_url>
+          </product>
+        </products>
+        <collection_method>post_fulfillment</collection_method>
+      </review>`
+    }
+
+    xml += `</reviews></feed>`
+
+    await Storage.upload('product-reviews.xml', xml)
     return { success: true }
   }
 }

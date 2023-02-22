@@ -1666,6 +1666,12 @@ class Box {
             }
       )
 
+    if (params.cancel_box) {
+      await DB('box').where('id', order.box_id).update({
+        step: 'refunded'
+      })
+    }
+
     //? Insert into refund history
     Order.addRefund({
       id: order.order_id,
