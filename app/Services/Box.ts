@@ -31,14 +31,21 @@ class Box {
         'c.lastname',
         'box_code.partner',
         'user2.email as buy_email',
-        DB.raw(
-          '(select created_at from box_dispatch where box_id = box.id order by created_at desc limit 1) as last_dispatch'
-        )
+        'box_dispatch.last_dispatch'
       )
       .leftJoin('user', 'user.id', 'box.user_id')
       .leftJoin('user as user2', 'user2.id', 'box.buy_id')
       .leftJoin('customer as c', 'c.id', 'box.customer_id')
       .leftJoin('box_code', 'box_code.box_id', 'box.id')
+      .leftJoin(
+        DB('box_dispatch')
+          .select(DB.raw('MAX(created_at) as last_dispatch'), 'box_id')
+          .groupBy('box_id')
+          .as('box_dispatch')
+          .query(),
+        'box_dispatch.box_id',
+        'box.id'
+      )
       .where('box.step', '!=', 'creating')
 
     const filters = JSON.parse(params.filters)
