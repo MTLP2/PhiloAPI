@@ -171,8 +171,8 @@ class AdminController {
     return Stock.getAll()
   }
 
-  async exportStocksPrices() {
-    return Stock.exportStocksPrices()
+  async exportStocksPrices({ params }) {
+    return Stock.exportStocksPrices(params)
   }
 
   async uploadTracks({ params }) {
