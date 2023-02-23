@@ -1037,6 +1037,7 @@ class StatementService {
       project.costs_invoiced = 0
       project.resp_prod = team[project.resp_prod_id]?.name
       project.resp_com = team[project.com_id]?.name
+      project.url = 'https://www.diggersfactory.com/sheraf/project/' + project.id
       project.invoiced = 0
       project.direct_costs = 0
       project.direct_balance = 0
@@ -1085,6 +1086,7 @@ class StatementService {
     if (params.type === 'follow_up') {
       const columns = [
         { header: 'Id', key: 'id' },
+        { header: 'Url', key: 'url' },
         { header: 'User', key: 'user', width: 15 },
         { header: 'Artist', key: 'artist_name', width: 15 },
         { header: 'Project', key: 'name', width: 25 },
