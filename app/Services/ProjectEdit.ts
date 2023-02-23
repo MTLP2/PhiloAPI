@@ -41,12 +41,12 @@ class ProjectEdit {
       .where('project_style.project_id', params.id)
       .all()
 
-    const { barcode } = await DB('project_product')
+    const product = await DB('project_product')
       .select('barcode')
       .join('product', 'product.id', 'project_product.product_id')
       .where('project_product.project_id', params.id)
       .first()
-    project.barcode = barcode
+    project.barcode = product?.barcode ?? null
 
     return project
   }
