@@ -810,12 +810,22 @@ class Production {
     await item.save()
 
     if (params.type === 'information' && params.barcode_creation !== undefined) {
-      DB('vod').where('project_id', prod.project_id).update({
-        barcode: params.barcode,
+      await DB('vod').where('project_id', prod.project_id).update({
+        // barcode: params.barcode,
         barcode_location: params.barcode_location,
         barcode_creation: params.barcode_creation,
         catnumber_creation: params.catnumber_creation
       })
+
+      await DB('project_product')
+        .join('product', 'product.id', 'project_product.product_id')
+        .where('project_product.project_id', prod.project_id)
+        .orderBy('product.id', 'desc')
+        .limit(1)
+        .update({
+          barcode: params.barcode,
+          catnumber: params.cat_number
+        })
 
       if (params.cat_number) {
         DB('project').where('id', prod.project_id).update({
