@@ -974,7 +974,7 @@ class Admin {
       vod.count_distrib = params.count_distrib
 
       vod.is_size = params.is_size
-      vod.sizes = params.is_size ? JSON.stringify(params.sizes) : null
+      vod.sizes = JSON.stringify(params.sizes)
 
       vod.alert_stock = params.alert_stock || null
       vod.only_country = params.only_country
