@@ -157,12 +157,29 @@ class Project {
     }
 
     project.step = project.sold_out ? 'successful' : project.step
-    project.sizes = project.products.filter((p) => p.size && p.size !== 'all').map((p) => p.size)
+    project.sizes = project.products.filter((p) => p.size && p.size !== 'all').map((p) => p)
+    // Group sizes by parent_id
+    project.grouped_sizes = project.products.reduce((acc, cur) => {
+      if (!cur.size || cur.size === 'all') {
+        return acc
+      }
+
+      if (!acc[cur.parent_id]) {
+        acc[cur.parent_id] = {
+          name: cur.parent_name,
+          sizes: []
+        }
+      }
+      acc[cur.parent_id].sizes.push({
+        id: cur.id,
+        size: cur.size
+      })
+      return acc
+    }, {})
 
     if (!project.partner_distribution) {
       project.price_distribution = null
     } else if (project.price_distribution) {
-      // ! TO CONFIRM
       project.prices_distribution = Utils.getPrices({
         price: project.price_distribution,
         currencies,
@@ -767,9 +784,15 @@ class Project {
     const songsPromise = Song.byProject({ project_id: id, user_id: params.user_id, disabled: true })
 
     const productsPromise = DB()
-      .select('product.id', 'product.size')
+      .select(
+        'product.id',
+        'product.size',
+        'product.parent_id',
+        'parent_product.name as parent_name'
+      )
       .from('product')
       .join('project_product', 'project_product.product_id', 'product.id')
+      .leftJoin('product as parent_product', 'parent_product.id', 'product.parent_id')
       .where('project_product.project_id', id)
       .all()
 

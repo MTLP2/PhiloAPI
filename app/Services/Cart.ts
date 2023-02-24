@@ -59,6 +59,7 @@ class Cart {
   }
 
   static calculate = async (params) => {
+    console.log('🚀 ~ file: Cart.ts:62 ~ Cart ~ calculate= ~ params:', params)
     const cart: any = {
       id: params.id,
       shops: {},
@@ -214,6 +215,7 @@ class Cart {
         }
       }
       if (items.length > 0) {
+        console.log('heeeeeeere')
         for (const i in items) {
           const item = items[i]
           if (!item.project_id) {
@@ -225,7 +227,10 @@ class Cart {
             .join('project', 'project.id', 'vod.project_id')
             .first()
 
-          const stocks = await Stock.byProject({ project_id: item.project_id, size: item.size })
+          const stocks = await Stock.byProject({
+            project_id: item.project_id,
+            size: item.size
+          })
 
           for (const [key, value] of Object.entries(stocks)) {
             project[`stock_${key}`] = value
@@ -467,7 +472,8 @@ class Cart {
           item_id: item.item_id,
           marketplace_item_id: item.marketplace_item_id,
           quantity: item.quantity,
-          tips: item.tips
+          tips: item.tips,
+          chosen_sizes: item.chosen_sizes
         })
       })
       c.shops[key] = shop
@@ -1284,6 +1290,7 @@ class Cart {
   }
 
   static calculateItem = async (params) => {
+    console.log('🚀 ~ file: Cart.ts:1292 ~ Cart ~ calculateItem= ~ params:', params)
     const p = params
     const res: any = {}
     p.quantity = parseInt(params.quantity, 10)
@@ -1293,8 +1300,10 @@ class Cart {
     res.type = p.type
     res.is_shop = p.is_shop
     res.size = p.size
+    res.chosen_sizes = p.chosen_sizes
     res.is_size = p.project.is_size
     res.sizes = p.project.sizes ? p.project.sizes : []
+    res.grouped_sizes = p.project.grouped_sizes ? p.project.grouped_sizes : []
     res.coefficient = 1
     res.insert = p.quantity * (p.project.barcode ? p.project.barcode.split(',').length : 1)
     res.weight = p.quantity * (p.project.weight || Vod.calculateWeight(p.project))
@@ -1590,6 +1599,18 @@ class Cart {
           const rest = totalCurrenry - item.price_project
           const feeChange = item.quantity * (rest / currencyRateProject)
 
+          let chosenSizes: string | null = null
+          if (item.chosen_sizes) {
+            const sizes = await DB('product')
+              .select('size')
+              .whereIn('id', Object.values(item.chosen_sizes))
+              .all()
+
+            chosenSizes = sizes.map((s) => s.size).join(', ')
+          }
+
+          console.log(chosenSizes)
+
           const i = await DB('order_item').save({
             order_id: order.id,
             order_shop_id: shop.id,
@@ -1607,7 +1628,7 @@ class Cart {
             discount_code: item.discount_code,
             shipping_discount: user.is_pro ? 0 : item.shipping_discount ?? 0,
             tips: item.tips,
-            size: item.size,
+            size: chosenSizes,
             quantity: item.quantity,
             total: item.total,
             total_ship_discount: item.total_ship_discount || 0,
@@ -2100,6 +2121,7 @@ class Cart {
         }
 
         for (const item of items) {
+          console.log('🚀 ~ file: Cart.ts:2112 ~ Cart ~ validPayment= ~ item:', item)
           allItems.push(item)
 
           await User.event({
@@ -2201,10 +2223,18 @@ class Cart {
             await i.save()
           }
 
+          let sizes
+          try {
+            sizes = JSON.parse(item.size)
+          } catch (error) {
+            sizes = item.size
+          }
+
           await Stock.changeQtyProject({
             project_id: project.id,
             order_id: order.id,
-            size: item.size,
+            // size: item.size,
+            sizes: sizes,
             preorder: shop.type === 'vod',
             quantity: item.quantity,
             transporter: shop.transporter

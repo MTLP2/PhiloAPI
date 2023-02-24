@@ -10,8 +10,14 @@ class Stock {
     project_id: number
     is_distrib?: boolean
     size?: string
+    sizes?: { [key: string]: string }
     color?: string
   }) {
+    console.log('payload', payload)
+    console.log({
+      keys: payload.sizes && Object.keys(payload.sizes),
+      values: payload.sizes && Object.values(payload.sizes)
+    })
     const stocks = await DB('project_product as pp')
       .select('pp.product_id', 'stock.type', 'quantity')
       .join('product', 'product.id', 'pp.product_id')
@@ -24,6 +30,10 @@ class Stock {
         }
         if (payload.size) {
           query.whereNull('size').orWhere('size', payload.size)
+        }
+        if (payload.sizes) {
+          query.whereNull('size').orWhereIn('size', Object.values(payload.sizes))
+          query.whereIn('pp.product_id', Object.keys(payload.sizes))
         }
       })
       .all()
@@ -374,21 +384,32 @@ class Stock {
     project_id: number
     order_id: number
     preorder: boolean
-    size: string
+    // size: string
+    sizes?: { [key: string]: string } | string
     quantity: number
     transporter: string
   }) {
+    console.log('payload', payload)
     const pp = await DB('project_product')
       .select('project_product.product_id', 'vod.is_shop', 'vod.type')
       .join('product', 'product.id', 'project_product.product_id')
       .join('vod', 'vod.project_id', 'project_product.project_id')
       .where('project_product.project_id', payload.project_id)
       .where((query) => {
-        if (payload.size) {
-          query.where('size', payload.size).orWhere('size', 'all')
+        if (payload.sizes && typeof payload.sizes === 'string') {
+          query.where('size', payload.sizes).orWhere('size', 'all')
+        }
+
+        if (payload.sizes && Object.keys(payload.sizes).length) {
+          query
+            .whereNull('size')
+            .orWhere('size', 'all')
+            .orWhereIn('project_product.product_id', Object.values(payload.sizes))
         }
       })
       .all()
+
+    console.log('pp', pp)
 
     await DB('vod')
       .where('project_id', payload.project_id)
