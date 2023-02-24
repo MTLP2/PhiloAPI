@@ -365,8 +365,8 @@ class Quote {
     if (params.color_vinyl !== 'black') {
       quote.type_vinyl += getCost(
         {
-          '12"': 49,
-          '10"': 49,
+          '12"': 48,
+          '10"': 48,
           '7"': 51
         },
         'type_vinyl'
