@@ -529,6 +529,9 @@ class Whiplash {
 
     if (payload?.productIds) {
       for (const product of listProducts) {
+        if (product.whiplash_id === -1) {
+          continue
+        }
         const warehouses: any = await Whiplash.api(
           `items/${product.whiplash_id}/warehouse_quantities`
         )
