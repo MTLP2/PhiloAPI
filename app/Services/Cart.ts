@@ -59,7 +59,6 @@ class Cart {
   }
 
   static calculate = async (params) => {
-    console.log('🚀 ~ file: Cart.ts:62 ~ Cart ~ calculate= ~ params:', params)
     const cart: any = {
       id: params.id,
       shops: {},
@@ -215,7 +214,6 @@ class Cart {
         }
       }
       if (items.length > 0) {
-        console.log('heeeeeeere')
         for (const i in items) {
           const item = items[i]
           if (!item.project_id) {
@@ -229,8 +227,11 @@ class Cart {
 
           const stocks = await Stock.byProject({
             project_id: item.project_id,
-            size: item.size
+            // size: item.size
+            sizes: item.chosen_sizes
           })
+
+          console.log(stocks)
 
           for (const [key, value] of Object.entries(stocks)) {
             project[`stock_${key}`] = value
@@ -1290,7 +1291,6 @@ class Cart {
   }
 
   static calculateItem = async (params) => {
-    console.log('🚀 ~ file: Cart.ts:1292 ~ Cart ~ calculateItem= ~ params:', params)
     const p = params
     const res: any = {}
     p.quantity = parseInt(params.quantity, 10)
@@ -1608,8 +1608,6 @@ class Cart {
 
             chosenSizes = sizes.map((s) => s.size).join(', ')
           }
-
-          console.log(chosenSizes)
 
           const i = await DB('order_item').save({
             order_id: order.id,

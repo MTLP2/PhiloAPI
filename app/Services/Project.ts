@@ -13,7 +13,7 @@ import moment from 'moment'
 import JSZip from 'jszip'
 
 class Project {
-  static setInfos = (p, currencies?, sales?, styles?) => {
+  static setInfos = async (p, currencies?, sales?, styles?) => {
     const project = p
     const oneDay = 24 * 60 * 60 * 1000
     const firstDate = new Date()
@@ -127,7 +127,7 @@ class Project {
     return project
   }
 
-  static setInfo = (p, currencies, sales) => {
+  static setInfo = async (p, currencies, sales) => {
     const project = p
     const oneDay = 24 * 60 * 60 * 1000
     const firstDate = new Date()
@@ -158,19 +158,19 @@ class Project {
 
     project.step = project.sold_out ? 'successful' : project.step
     project.sizes = project.products.filter((p) => p.size && p.size !== 'all').map((p) => p)
-    // Group sizes by parent_id
+    // Group sizes by parent_id or id
     project.grouped_sizes = project.products.reduce((acc, cur) => {
       if (!cur.size || cur.size === 'all') {
         return acc
       }
 
-      if (!acc[cur.parent_id]) {
-        acc[cur.parent_id] = {
+      if (!acc[cur.parent_id || cur.id]) {
+        acc[cur.parent_id || cur.id] = {
           name: cur.parent_name,
           sizes: []
         }
       }
-      acc[cur.parent_id].sizes.push({
+      acc[cur.parent_id || cur.id].sizes.push({
         id: cur.id,
         size: cur.size
       })
@@ -204,7 +204,27 @@ class Project {
         : null
 
       if (project.items) {
+        const allProducts = await DB()
+          .select(
+            'product.id',
+            'product.size',
+            'product.parent_id',
+            'parent_product.name as parent_name',
+            'project_product.project_id'
+          )
+          .from('product')
+          .join('project_product', 'project_product.product_id', 'product.id')
+          .leftJoin('product as parent_product', 'parent_product.id', 'product.parent_id')
+          .whereIn(
+            'project_product.project_id',
+            project.items.map((i) => i.related_id)
+          )
+          .all()
+
         for (const i in project.items) {
+          const products = allProducts.filter(
+            (product) => product.project_id === project.items[i].related_id
+          )
           const price = project.items[i].related_price || project.items[i].price
           const currency = project.items[i].related_currency || project.currency
           project.items[i].prices = Utils.getPrices({
@@ -225,6 +245,23 @@ class Project {
                 return sizes[k]
               })
             : []
+          project.items[i].grouped_sizes = products.reduce((acc, cur) => {
+            if (!cur.size || cur.size === 'all') {
+              return acc
+            }
+
+            if (!acc[cur.parent_id || cur.id]) {
+              acc[cur.parent_id || cur.id] = {
+                name: cur.parent_name,
+                sizes: []
+              }
+            }
+            acc[cur.parent_id || cur.id].sizes.push({
+              id: cur.id,
+              size: cur.size
+            })
+            return acc
+          }, {})
         }
       }
     }
@@ -860,7 +897,7 @@ class Project {
         soldout: soldout
       }
     })
-    const p = Project.setInfo(project, currencies, sales)
+    const p = await Project.setInfo(project, currencies, sales)
 
     let item: any = null
     p.group_shipment = []

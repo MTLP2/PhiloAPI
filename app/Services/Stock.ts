@@ -13,11 +13,6 @@ class Stock {
     sizes?: { [key: string]: string }
     color?: string
   }) {
-    console.log('payload', payload)
-    console.log({
-      keys: payload.sizes && Object.keys(payload.sizes),
-      values: payload.sizes && Object.values(payload.sizes)
-    })
     const stocks = await DB('project_product as pp')
       .select('pp.product_id', 'stock.type', 'quantity')
       .join('product', 'product.id', 'pp.product_id')
@@ -28,15 +23,14 @@ class Stock {
         if (payload.is_distrib !== undefined) {
           query.where('is_distrib', payload.is_distrib)
         }
-        if (payload.size) {
-          query.whereNull('size').orWhere('size', payload.size)
-        }
+
         if (payload.sizes) {
-          query.whereNull('size').orWhereIn('size', Object.values(payload.sizes))
-          query.whereIn('pp.product_id', Object.keys(payload.sizes))
+          query.whereNull('size').orWhereIn('pp.product_id', Object.values(payload.sizes))
         }
       })
       .all()
+
+    console.log('stocks', stocks)
 
     const trans = <string[]>[...new Set(stocks.filter((p) => p.type).map((p) => p.type))]
     const products = <string[]>[...new Set(stocks.map((p) => p.product_id))]
@@ -389,7 +383,6 @@ class Stock {
     quantity: number
     transporter: string
   }) {
-    console.log('payload', payload)
     const pp = await DB('project_product')
       .select('project_product.product_id', 'vod.is_shop', 'vod.type')
       .join('product', 'product.id', 'project_product.product_id')
