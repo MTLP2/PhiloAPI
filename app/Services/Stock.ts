@@ -309,7 +309,6 @@ class Stock {
 
     let old = { ...stock }
 
-    console.log(stock)
     if (!stock) {
       stock = DB('stock')
       stock.product_id = payload.product_id
@@ -380,7 +379,6 @@ class Stock {
     quantity: number
     transporter: string
   }) {
-    console.log(payload)
     const pp = await DB('project_product')
       .select('project_product.product_id', 'vod.is_shop', 'vod.type')
       .join('product', 'product.id', 'project_product.product_id')
