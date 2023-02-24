@@ -1,4 +1,4 @@
-import sharp from 'sharp'
+import Artwork from 'App/Services/Artwork'
 import JSZip from 'jszip'
 import fs from 'fs'
 
@@ -50,37 +50,18 @@ class StorageService {
     fileContent: Buffer | string,
     params: { type?: string; width?: number; quality?: number } = { type: 'jpg' }
   ) {
-    const image = await this.compressImage(fileContent, {
+    const image = await Artwork.compressImage(fileContent, {
       ...params,
       type: params.type || 'jpg'
     })
     await this.upload(`${fileName}${params.type === 'png' ? '.png' : '.jpg'}`, image)
 
-    const webp = await this.compressImage(fileContent, {
+    const webp = await Artwork.compressImage(fileContent, {
       ...params,
       type: 'webp'
     })
     await this.upload(fileName + '.webp', webp)
     return true
-  }
-
-  static async compressImage(buffer, params = {}) {
-    return this.compressImageSharp(buffer, params)
-  }
-
-  static async compressImageSharp(buffer, params: any = {}) {
-    const image = sharp(buffer)
-    if (params.width) {
-      image.resize({ width: params.width, withoutEnlargement: true, fit: sharp.fit.inside })
-    }
-    if (params.type === 'jpg' || params.type === 'jpeg' || !params.type) {
-      image.jpeg({ quality: params.quality || 90 })
-    } else if (params.type === 'png') {
-      image.png({ quality: params.quality || 90 })
-    } else if (params.type === 'webp') {
-      image.webp({ quality: params.quality || 90 })
-    }
-    return image.toBuffer()
   }
 
   static delete(fileName: string, isPrivate = false) {

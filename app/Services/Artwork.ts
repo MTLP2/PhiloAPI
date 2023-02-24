@@ -1,5 +1,4 @@
 import Storage from 'App/Services/Storage'
-import sharp from 'sharp'
 import Color from 'color'
 import config from 'Config/index'
 import Utils from 'App/Utils'
@@ -7,7 +6,8 @@ import DB from 'App/DB'
 import Env from '@ioc:Adonis/Core/Env'
 import splatter from 'App/Splatter'
 // import Mockup from 'App/Services/Mockup'
-// const { createCanvas, Image } = require('canvas')
+import { createCanvas, Image } from 'canvas'
+import sharp from 'sharp'
 const Vibrant = require('node-vibrant')
 
 class Artwork {
@@ -719,6 +719,29 @@ class Artwork {
       } catch (e) {}
     }
     return projects
+  }
+
+  static async compressImage(buffer, params = {}) {
+    return this.compressImageSharp(buffer, params)
+  }
+
+  static async compressImageSharp(buffer, params: any = {}) {
+    const image = sharp(buffer)
+    if (params.width) {
+      image.resize({ width: params.width, withoutEnlargement: true, fit: sharp.fit.inside })
+    }
+    if (params.type === 'jpg' || params.type === 'jpeg' || !params.type) {
+      image.jpeg({ quality: params.quality || 90 })
+    } else if (params.type === 'png') {
+      image.png({ quality: params.quality || 90 })
+    } else if (params.type === 'webp') {
+      image.webp({ quality: params.quality || 90 })
+    }
+    return image.toBuffer()
+  }
+
+  static sharp(...args): sharp {
+    return sharp(args)
   }
 }
 
