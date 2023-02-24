@@ -309,6 +309,7 @@ class Stock {
 
     let old = { ...stock }
 
+    console.log(stock)
     if (!stock) {
       stock = DB('stock')
       stock.product_id = payload.product_id
@@ -343,6 +344,7 @@ class Stock {
     if (product.parent_id) {
       Stock.setParent(product.parent_id)
     }
+    Stock.setOrders({ productIds: [payload.product_id] })
     Stock.setStockProject({ productIds: [payload.product_id] })
 
     const filter = (item) => {
@@ -378,6 +380,7 @@ class Stock {
     quantity: number
     transporter: string
   }) {
+    console.log(payload)
     const pp = await DB('project_product')
       .select('project_product.product_id', 'vod.is_shop', 'vod.type')
       .join('product', 'product.id', 'project_product.product_id')
