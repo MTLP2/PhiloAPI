@@ -5,7 +5,7 @@ import Utils from 'App/Utils'
 import DB from 'App/DB'
 import Env from '@ioc:Adonis/Core/Env'
 import splatter from 'App/Splatter'
-// import Mockup from 'App/Services/Mockup'
+import Mockup from 'App/Services/Mockup'
 import { createCanvas, Image } from 'canvas'
 import sharp from 'sharp'
 const Vibrant = require('node-vibrant')
@@ -530,8 +530,8 @@ class Artwork {
     return buffer
   }
 
-  static async generateDisc(id, project) {
-    const path = `projects/${id}`
+  static async generateDisc(project) {
+    const path = `projects/${project.id}`
 
     const mockup = new Mockup({
       env: 'node',
@@ -542,15 +542,19 @@ class Artwork {
     })
 
     console.log(config.colors.vinyl[project.color_vinyl])
+    console.log(`${Env.get('STORAGE_URL')}/projects/${project.picture}/label.jpg`)
     const disc = await mockup.getDisc({
-      canvas: createCanvas(),
       color: config.colors.vinyl[project.color_vinyl],
       label: `${Env.get('STORAGE_URL')}/projects/${project.picture}/label.jpg`
     })
+
+    return disc.toBuffer()
+    /**
     await Storage.uploadImage(`${path}/disc`, disc.toBuffer('image/png'), {
       type: 'png'
       // width: 600
     })
+    **/
 
     return true
   }
@@ -678,7 +682,7 @@ class Artwork {
     if (!buffer) {
       return false
     }
-    const compress = await Storage.compressImage(buffer, { type: 'webp', quality: 90, ...params })
+    const compress = await Artwork.compressImage(buffer, { type: 'webp', quality: 90, ...params })
     await Storage.upload(to || `${path.split('.')[0]}.webp`, compress)
 
     return true
