@@ -30,8 +30,6 @@ class Stock {
       })
       .all()
 
-    console.log('stocks', stocks)
-
     const trans = <string[]>[...new Set(stocks.filter((p) => p.type).map((p) => p.type))]
     const products = <string[]>[...new Set(stocks.map((p) => p.product_id))]
 
@@ -401,8 +399,6 @@ class Stock {
         }
       })
       .all()
-
-    console.log('pp', pp)
 
     await DB('vod')
       .where('project_id', payload.project_id)
