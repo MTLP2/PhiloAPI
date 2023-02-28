@@ -1758,6 +1758,134 @@ class App {
     await Storage.upload('product-reviews.xml', xml)
     return { success: true }
   }
+
+  // Get Luminate Charts (US & CA shipped only)
+  static async getLuminateCharts(countryId: 'CA' | 'US') {
+    const formatLength = ({ str, maxLength }: { str?: string; maxLength: number }) => {
+      if (!str) return ''.padStart(maxLength, '0')
+      str = str.trim()
+      if (str.length > maxLength) {
+        return str.substring(0, maxLength)
+      }
+      return str.padStart(maxLength, '0')
+    }
+
+    const orders: {
+      oshop_id: number
+      step: string
+      oi_id: number
+      customer_id: number
+      project_id: number
+      quantity: number
+      country_id: string
+      zip_code: string
+      barcode?: string
+      created_at: string
+    }[] = await DB('order_shop as os')
+      .select(
+        'os.id as oshop_id',
+        'os.step',
+        'oi.id as oi_id',
+        'c.id as customer_id',
+        'p.id as project_id',
+        'oi.quantity',
+        'c.country_id',
+        'c.zip_code',
+        'v.barcode',
+        'os.created_at'
+      )
+      .leftJoin('refund as r', 'r.order_shop_id', 'os.id')
+      .join('customer as c', 'os.customer_id', 'c.id')
+      .join('order_item as oi', 'oi.order_shop_id', 'os.id')
+      .join('project as p', 'p.id', 'oi.project_id')
+      .join('vod as v', 'v.project_id', 'p.id')
+      .whereIn('os.step', ['sent', 'returned'])
+      .where('oi.total', '>', 3.49)
+      .where('c.country_id', countryId)
+      .whereRaw(
+        'DATE(os.created_at) BETWEEN DATE_SUB(CURDATE(), INTERVAL 7 DAY) AND DATE_SUB(CURDATE(), INTERVAL 0 DAY)'
+      )
+      .all()
+
+    const barcodes = await DB('project_product as pp')
+      .select('barcode', 'project_id', 'p.type')
+      .join('product as p', 'p.id', 'pp.product_id')
+      .whereIn(
+        'project_id',
+        orders.map((o) => o.project_id)
+      )
+      .whereNotNull('barcode')
+      .all()
+
+    let totalQuantity = 0
+
+    const projectBarcodes = barcodes.reduce((acc, cur) => {
+      if (!acc[cur.project_id]) acc[cur.project_id] = []
+      acc[cur.project_id].push({ barcode: cur.barcode, type: cur.type })
+      return acc
+    }, {}) as { [key: number]: { barcode: string; type: string }[] }
+
+    // Record Number (92)
+    // Chain Number (4030 US || C400 CA)
+    // Account Number (01864)
+    // Date (YYMMDD)
+    let text = '92'
+    text += countryId === 'US' ? '4030' : 'C400'
+    text += '01864'
+    text += moment().format('YYMMDD')
+    text += '\n'
+
+    // Order Item reference
+    // Record Number 'M3'
+    // Order Item Barcode (12 digits, left padded with 0)
+    // Zip Code (6 digits, left padded with 0)
+    // Record Type 'S' for Sales
+
+    // Check if every barcode type is either cd or vinyl or tape or digital as a bundle is allowed only if they share musical products (no merch or other products)
+    const filteredOrders = orders.filter(
+      (o) =>
+        o.barcode &&
+        projectBarcodes[o.project_id].every((b) =>
+          ['cd', 'vinyl', 'tape', 'digital'].includes(b.type)
+        )
+    )
+
+    text += filteredOrders
+      .map((o) => {
+        let orderLine = ''
+        for (let index = 0; index < o.quantity; index++) {
+          // orderLine += `M3${formatLength({ str: o.barcode, maxLength: 12 })}${formatLength({
+          //   str: o.zip_code,
+          //   maxLength: 6
+          // })}S\n`
+          orderLine += 'M3'
+          orderLine += formatLength({ str: o.barcode, maxLength: 12 })
+          orderLine += formatLength({ str: o.zip_code, maxLength: 6 })
+          orderLine += o.step === 'returned' ? 'R' : 'S'
+          orderLine += '\n'
+          // // ? Debugging
+          // orderLine += '--'
+          // orderLine += o.oshop_id
+          // orderLine += '--'
+          // orderLine += o.quantity
+          // orderLine += '\n'
+
+          totalQuantity++
+        }
+
+        return orderLine
+      })
+      .join('')
+
+    // Record Number (94)
+    // Number of Orders (5 digits, left padded with spaces)
+    // Number of Units (7 digits, left padded with spaces)
+    text += '94'
+    text += filteredOrders.length.toString().padStart(5, ' ')
+    text += totalQuantity.toString().padStart(7, ' ')
+
+    return text
+  }
 }
 
 export default App
