@@ -2293,7 +2293,7 @@ class Admin {
     const user = await DB('user')
       .select('user.*', 'notifications.newsletter')
       .where('user.id', id)
-      .join('notifications', 'notifications.user_id', 'user.id')
+      .leftJoin('notifications', 'notifications.user_id', 'user.id')
       .belongsTo('customer')
       .first()
 
@@ -2303,7 +2303,6 @@ class Admin {
     }
 
     user.passHistory = await Pass.getHistory({ userId: id })
-    // user.pass = await Pass.getUserPass({ userId: id })
 
     user.styles = user.styles ? JSON.parse(user.styles) : []
     user.digs = await Dig.byUser(id)
