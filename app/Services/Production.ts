@@ -126,7 +126,7 @@ class Production {
       .whereNotNull('factory')
       .groupBy('factory')
       .groupBy('date')
-      .where('date_factory', '>', moment().subtract(6, 'months').format('YYYY-MM'))
+      // .where('date_factory', '>', moment().subtract(6, 'months').format('YYYY-MM'))
       .all()
 
     const res = {}
@@ -818,16 +818,29 @@ class Production {
       })
 
       const product = await DB('project_product')
-        .select('product.id')
+        .select('product.id', 'project.name as project_name')
+        .join('project', 'project.id', 'project_product.project_id')
         .join('product', 'product.id', 'project_product.product_id')
         .where('project_product.project_id', prod.project_id)
         .orderBy('product.id', 'desc')
         .first()
 
-      await DB('product').where('id', product.id).update({
-        barcode: params.barcode,
-        catnumber: params.cat_number
-      })
+      if (!product) {
+        const [newProduct] = await DB('product').insert({
+          name: prod.project_name,
+          barcode: params.barcode,
+          catnumber: params.cat_number
+        })
+        await DB('project_product').insert({
+          project_id: prod.project_id,
+          product_id: newProduct
+        })
+      } else {
+        await DB('product').where('id', product.id).update({
+          barcode: params.barcode,
+          catnumber: params.cat_number
+        })
+      }
 
       if (params.cat_number) {
         DB('project').where('id', prod.project_id).update({
