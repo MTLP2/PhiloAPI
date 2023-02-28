@@ -797,8 +797,8 @@ class App {
 
     if (n.review_id) {
       const review = await DB('review')
-        .join('user', 'user.id', 'review.user_id')
-        .join('customer', 'customer.id', 'user.customer_id')
+        .leftJoin('user', 'user.id', 'review.user_id')
+        .leftJoin('customer', 'customer.id', 'user.customer_id')
         .where('review.id', n.review_id)
         .first()
 
