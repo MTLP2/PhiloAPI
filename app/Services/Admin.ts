@@ -454,6 +454,16 @@ class Admin {
       .where('p.id', params.id)
       .first()
 
+    const barcodes = await DB('project_product')
+      .select('barcode')
+      .join('product', 'project_product.product_id', 'product.id')
+      .where('project_product.project_id', params.id)
+      .all()
+    const filteredBarcodes = barcodes
+      .filter((b) => b.barcode)
+      .map((b) => b.barcode)
+      .join(', ')
+
     const manual = await DB('order_manual')
       .select('barcodes')
       .where('barcodes', 'like', `%${project.barcode}%`)
@@ -529,15 +539,17 @@ class Admin {
       stats.shipping += (pourcent * (o.shipping * o.currency_rate_project)) / tax
     }
 
-    const boxes = await DB()
-      .from('box_dispatch')
-      .where('barcodes', 'like', `%${project.barcode}%`)
-      .all()
+    if (filteredBarcodes) {
+      const boxes = await DB()
+        .from('box_dispatch')
+        .where('barcodes', 'like', `%${project.barcode}%`)
+        .all()
 
-    for (const box of boxes) {
-      stats.quantity_box++
-      stats.turnover_box += project.payback_box
-      stats.benefit_artist_box += project.payback_box
+      for (const box of boxes) {
+        stats.quantity_box++
+        stats.turnover_box += project.payback_box
+        stats.benefit_artist_box += project.payback_box
+      }
     }
 
     const costs = await DB('production_cost').where('project_id', params.id).all()
