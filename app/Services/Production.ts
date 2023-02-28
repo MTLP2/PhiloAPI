@@ -817,15 +817,17 @@ class Production {
         catnumber_creation: params.catnumber_creation
       })
 
-      await DB('project_product')
+      const product = await DB('project_product')
+        .select('product.id')
         .join('product', 'product.id', 'project_product.product_id')
         .where('project_product.project_id', prod.project_id)
         .orderBy('product.id', 'desc')
-        .limit(1)
-        .update({
-          barcode: params.barcode,
-          catnumber: params.cat_number
-        })
+        .first()
+
+      await DB('product').where('id', product.id).update({
+        barcode: params.barcode,
+        catnumber: params.cat_number
+      })
 
       if (params.cat_number) {
         DB('project').where('id', prod.project_id).update({
