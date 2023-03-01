@@ -966,12 +966,16 @@ class Box {
     }
 
     for (const b of Object.keys(bb)) {
-      const vod = await DB('vod').where('barcode', b).first()
+      const vod = await DB('vod')
+        .select('vod.project_id', 'project_product.product_id')
+        .join('project_product', 'project_product.project_id', 'vod.project_id')
+        .where('barcode', b)
+        .first()
 
       if (vod) {
         console.log('vod =>', bb[b], b)
         Stock.save({
-          project_id: vod.project_id,
+          product_id: vod.product_id,
           type: 'daudin',
           quantity: +bb[b],
           comment: 'boxes'
@@ -1067,10 +1071,11 @@ class Box {
     const styles = await DB('style').all()
 
     const projects = await DB().execute(`
-      SELECT project.id, box_month.project_id, barcode, project.styles, stock_base as stock, stock.quantity as stock_daudin
+      SELECT project.id, project_product.product_id, box_month.project_id, barcode, project.styles, stock_base as stock, stock.quantity as stock_daudin
       FROM box_month
       JOIN project ON project.id = box_month.project_id
-      JOIN stock ON stock.project_id = project.id
+      JOIN project_product ON  project_product.project_id = project.id
+      JOIN stock ON stock.product_id = project_product.product_id
       JOIN vod ON vod.project_id = box_month.project_id
       WHERE DATE_FORMAT(date, "%Y-%m") = DATE_FORMAT(NOW(), "%Y-%m")
         AND stock.type = 'daudin'
@@ -1095,7 +1100,8 @@ class Box {
     const selections = await DB().execute(`
       SELECT project.id, barcode, project.styles, stock.quantity as stock_daudin
       FROM vod JOIN project ON project.id = vod.project_id
-        JOIN stock ON stock.project_id = vod.project_id
+        JOIN project_product ON project_product.project_id = project.id
+        JOIN stock ON stock.product_id = project_product.product_id
         AND stock.type = 'daudin'
       WHERE vod.is_box = 1
     `)
@@ -1291,8 +1297,10 @@ class Box {
 
     console.log('selected', selected)
     for (const s of Object.keys(selected)) {
+      const product = await DB('project_product').where('project_id', s).first()
+
       Stock.save({
-        project_id: s,
+        product_id: product.product_id,
         type: 'daudin',
         quantity: -selected[s],
         diff: true,

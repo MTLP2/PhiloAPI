@@ -958,7 +958,14 @@ class Cart {
       })
       .all()
 
-    const weight = Math.ceil(params.weight / 1000) + 'kg'
+    let weight
+    if (params.weight < 500) {
+      weight = '500g'
+    } else if (params.weight < 750) {
+      weight = '750g'
+    } else {
+      weight = Math.ceil(params.weight / 1000) + 'kg'
+    }
 
     let costs = null
 
@@ -977,6 +984,7 @@ class Cart {
       transporter[weight] = transporter.oil
         ? transporter[weight] + (transporter.oil / 100) * transporter[weight]
         : transporter[weight]
+
       if (transporter.transporter === 'MDR') {
         if (params.pickup === false) {
           continue
@@ -1024,6 +1032,7 @@ class Cart {
       }
     }
 
+    console.log(costs)
     return costs
   }
 
