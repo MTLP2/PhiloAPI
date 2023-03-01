@@ -1596,16 +1596,24 @@ class Project {
       stocksPromises
     ])
 
-    if (params.period === 'last_month') {
-      params.start = moment().subtract('1', 'months').startOf('month').format('YYYY-MM-DD 23:59')
-      params.end = moment().subtract('1', 'months').endOf('month').format('YYYY-MM-DD 23:59')
-    } else if (params.period === 'all_time') {
+    if (!params.start) {
+      let start
       if (orders.length > 0) {
-        params.start = orders[0].created_at.substring(0, 10)
+        start = moment(orders[0].date)
       }
-      if (statements.length > 0 && (!params.start || `${statements[0].date}-01` < params.start)) {
-        params.start = `${statements[0].date}-01`
+      if (statements.length > 0 && (!start || start > moment(statements[0].date))) {
+        start = moment(statements[0].date)
       }
+      if (costs.length > 0 && (!start || start > moment(costs[0].date))) {
+        start = moment(costs[0].date)
+      }
+      if (payments.length > 0 && (!start || start > moment(payments[0].date))) {
+        start = moment(payments[0].date)
+      }
+      if (!start) {
+        return false
+      }
+      params.start = start.format('YYYY-MM-DD')
     }
     if (!params.end) {
       params.end = moment().format('YYYY-MM-DD 23:59')
