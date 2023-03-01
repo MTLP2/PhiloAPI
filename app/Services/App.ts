@@ -1761,6 +1761,7 @@ class App {
 
   // Get Luminate Charts (US & CA shipped only)
   static async getLuminateCharts(countryId: 'CA' | 'US') {
+    // Local helpers
     const formatLength = ({ str, maxLength }: { str?: string; maxLength: number }) => {
       if (!str) return ''.padStart(maxLength, '0')
       str = str.trim()
@@ -1768,6 +1769,33 @@ class App {
         return str.substring(0, maxLength)
       }
       return str.padStart(maxLength, '0')
+    }
+
+    const checkZipCode = (zipCode: string) => {
+      // US
+      if (countryId === 'US') {
+        // Check if zipcode is > 5 digits
+        zipCode = zipCode.trim().substring(0, 5)
+
+        // Check if every character is a number
+        let isNumber = true
+        for (let i = 0; i < zipCode.length; i++) {
+          if (isNaN(parseInt(zipCode[i]))) {
+            isNumber = false
+            break
+          }
+        }
+        if (!isNumber) {
+          return ''
+        }
+      }
+
+      // CA
+      if (countryId === 'CA') {
+        zipCode = zipCode.trim().substring(0, 6).toUpperCase().replace(' ', '')
+      }
+
+      return zipCode
     }
 
     const orders: {
@@ -1803,7 +1831,7 @@ class App {
       .where('oi.total', '>', 3.49)
       .where('c.country_id', countryId)
       .whereRaw(
-        'DATE(os.created_at) BETWEEN DATE_SUB(CURDATE(), INTERVAL 7 DAY) AND DATE_SUB(CURDATE(), INTERVAL 0 DAY)'
+        'DATE(os.created_at) BETWEEN DATE_SUB(CURDATE(), INTERVAL 8 DAY) AND DATE_SUB(CURDATE(), INTERVAL 0 DAY)'
       )
       .all()
 
@@ -1842,25 +1870,23 @@ class App {
     // Record Type 'S' for Sales
 
     // Check if every barcode type is either cd or vinyl or tape or digital as a bundle is allowed only if they share musical products (no merch or other products)
-    const filteredOrders = orders.filter(
-      (o) =>
+    const filteredOrders = orders.filter((o) => {
+      return (
         o.barcode &&
+        checkZipCode(o.zip_code) &&
         projectBarcodes[o.project_id].every((b) =>
           ['cd', 'vinyl', 'tape', 'digital'].includes(b.type)
         )
-    )
+      )
+    })
 
     text += filteredOrders
       .map((o) => {
         let orderLine = ''
         for (let index = 0; index < o.quantity; index++) {
-          // orderLine += `M3${formatLength({ str: o.barcode, maxLength: 12 })}${formatLength({
-          //   str: o.zip_code,
-          //   maxLength: 6
-          // })}S\n`
           orderLine += 'M3'
-          orderLine += formatLength({ str: o.barcode, maxLength: 12 })
-          orderLine += formatLength({ str: o.zip_code, maxLength: 6 })
+          orderLine += formatLength({ str: o.barcode, maxLength: 13 })
+          orderLine += formatLength({ str: checkZipCode(o.zip_code), maxLength: 6 })
           orderLine += o.step === 'returned' ? 'R' : 'S'
           orderLine += '\n'
           // // ? Debugging
