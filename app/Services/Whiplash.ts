@@ -53,6 +53,27 @@ class Whiplash {
     return Whiplash.api('items')
   }
 
+  static getAllItems = async () => {
+    const list: any = []
+    let page = 0
+    let next = true
+    while (next) {
+      page = page + 1
+      const res: any = await Whiplash.api(`items`, {
+        body: {
+          page: page,
+          limit: 250
+        }
+      })
+      if (res && res.length > 0) {
+        list.push(...res)
+      } else {
+        next = false
+      }
+    }
+    return list
+  }
+
   static validOrder = async (shop, items) => {
     const customer = await DB('customer').find(shop.customer_id)
 
@@ -566,7 +587,7 @@ class Whiplash {
         }
       }
     } else {
-      const items: any = await Whiplash.getItems()
+      const items: any = await Whiplash.getAllItems()
       for (const item of items) {
         if (!products[item.sku]) {
           continue

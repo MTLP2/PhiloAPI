@@ -122,6 +122,7 @@ class App {
       } else if (hour === 5) {
         await Elogik.syncStocks()
         await Elogik.syncBoxes()
+        await Whiplash.syncStocks()
         await Cio.syncNewsletterNoAccount()
       } else if (hour === 7) {
         await App.check5DaysLeftProjects()
@@ -139,6 +140,7 @@ class App {
       } else if (hour === 13) {
         await Elogik.setTrackingLinks()
         await Elogik.syncStocks()
+        await Whiplash.syncStocks()
       } else if (hour === 14) {
         await Elogik.checkBlockedOrders()
       } else if (hour === 18) {
@@ -146,7 +148,6 @@ class App {
       }
 
       await Storage.cleanTmp('storage')
-      await Whiplash.syncStocks()
       await Vod.checkCampaignStart(hour)
 
       cron.status = 'complete'
