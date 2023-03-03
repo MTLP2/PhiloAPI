@@ -1032,7 +1032,6 @@ class Cart {
       }
     }
 
-    console.log(costs)
     return costs
   }
 
