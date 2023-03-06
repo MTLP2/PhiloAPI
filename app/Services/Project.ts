@@ -1599,7 +1599,7 @@ class Project {
     if (!params.start) {
       let start
       if (orders.length > 0) {
-        start = moment(orders[0].date)
+        start = moment(orders[0].created_at)
       }
       if (statements.length > 0 && (!start || start > moment(statements[0].date))) {
         start = moment(statements[0].date)
