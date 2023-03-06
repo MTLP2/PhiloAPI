@@ -100,7 +100,7 @@ class Notification {
       p.to = p.user.email
     }
     if (p.user.emails) {
-      p.to += ',' + p.user.emails
+      p.to += ',' + p.user.emails.replace(/;/g, ',')
     }
     if (params.to) {
       p.to = params.to

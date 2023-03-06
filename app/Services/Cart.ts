@@ -1032,7 +1032,6 @@ class Cart {
       }
     }
 
-    console.log(costs)
     return costs
   }
 
@@ -1924,6 +1923,7 @@ class Cart {
             error: 'payment_ko',
             type: 'payment_already_done'
           })
+          return false
         }
         Cart.configurePaypal(order.payment_account)
 
