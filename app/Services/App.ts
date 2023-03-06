@@ -1887,7 +1887,10 @@ class App {
         for (let index = 0; index < o.quantity; index++) {
           orderLine += 'M3'
           orderLine += formatLength({ str: o.barcode, maxLength: 13 })
-          orderLine += formatLength({ str: checkZipCode(o.zip_code), maxLength: 6 })
+          orderLine += formatLength({
+            str: checkZipCode(o.zip_code),
+            maxLength: countryId === 'US' ? 5 : 6
+          })
           orderLine += o.step === 'returned' ? 'R' : 'S'
           orderLine += '\n'
           // // ? Debugging
