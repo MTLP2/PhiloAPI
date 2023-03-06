@@ -43,6 +43,15 @@ class Project {
 
     project.step = project.sold_out ? 'successful' : project.step
 
+    if (project.sizes) {
+      project.sizes = Object.entries(JSON.parse(project.sizes))
+        .filter(([size, value]) => value)
+        .map(([size, value]) => size)
+      if (project.sizes.length === 0) {
+        project.sizes = null
+      }
+    }
+
     if (project.sold_out && project.item_stock > 0) {
       project.copies_left = project.item_stock
       project.price = project.item_price
@@ -303,6 +312,7 @@ class Project {
       'p.likes',
       'v.stock',
       'v.step',
+      'v.sizes',
       'v.user_id',
       'v.created_at',
       'p.country_id',
