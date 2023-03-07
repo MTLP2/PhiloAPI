@@ -205,7 +205,7 @@ class App {
   }
 
   static search = async (s) => {
-    const response = {}
+    const response: any = {}
     response.projects = await Project.findAll({ search: s })
     response.users = await User.findAll(s)
 
@@ -230,7 +230,7 @@ class App {
         </p>`
       })
     } else {
-      const attachments = []
+      const attachments: any[] = []
       if (params.file) {
         attachments.push({
           filename: params.file.name,
@@ -787,7 +787,7 @@ class App {
       ) {
         data.to = 'cyril@diggersfactory.com'
       }
-      const pdf = await Invoice.download({ params: { id: n.invoice_id, lang: data.lang } })
+      const pdf: any = await Invoice.download({ params: { id: n.invoice_id, lang: data.lang } })
       data.attachments = [
         {
           filename: `${data.invoice.code}.pdf`,
@@ -1090,7 +1090,6 @@ class App {
     const file = fs.readFileSync('../orders.csv', 'utf-8')
     const lines = file.split('\r\n')
 
-    let change = 0
     for (const line of lines) {
       const values = line.split(';')
 
@@ -1436,7 +1435,7 @@ class App {
     return files
   }
 
-  static exportNoTracking = async (transporter) => {
+  static exportNoTracking = async () => {
     const orders = await DB('order_shop')
       .where((query) => {
         query
