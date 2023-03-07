@@ -1,59 +1,128 @@
 import Bid from 'App/Services/Bid'
 import Utils from 'App/Utils'
+import { validator, schema } from '@ioc:Adonis/Core/Validator'
+import ApiError from 'App/ApiError'
 const parser = require('ua-parser-js')
 
 class BidController {
-  async find({ params, response, user }) {
+  async find({ params, user }) {
     if (params.for === 'sheraf') {
       if (!(await Utils.isTeam(user.id, 'boss'))) {
-        return response.status(401).json({
-          error: 'Unauthorized'
-        })
+        throw new ApiError(401)
       }
     }
     return Bid.find(params.id, { for: params.for })
   }
 
-  pay({ request, params, user }) {
-    const ua = parser(request.header('user-agent'))
-    params.user_agent = {
-      browser: ua.browser,
-      device: ua.device,
-      os: ua.os
-    }
-
-    params.user = user
-    return Bid.pay(params)
-  }
-
-  payConfirm({ params, user }) {
-    params.user = user
-    return Bid.payConfirm(params)
-  }
-
-  async valid({ params, response, user }) {
-    if (!(await Utils.isTeam(user.id, 'boss'))) {
-      return response.status(401).json({
-        error: 'Unauthorized'
+  async pay({ request, params, user }) {
+    try {
+      const ua = parser(request.header('user-agent'))
+      params.user_agent = {
+        browser: ua.browser,
+        device: ua.device,
+        os: ua.os
+      }
+      params.user_id = user.id
+      const payload = await validator.validate({
+        schema: schema.create({
+          id: schema.number(),
+          user_id: schema.number(),
+          price: schema.number(),
+          card_save: schema.boolean(),
+          card: schema.object().members({
+            new: schema.boolean(),
+            customer: schema.string(),
+            card: schema.string()
+          }),
+          customer_id: schema.string.optional(),
+          user_agent: schema.object().anyMembers()
+        }),
+        data: params
       })
+      return Bid.pay(payload)
+    } catch (err) {
+      return { error: err.message, validation: err.messages }
     }
-    params.user = user
-    return Bid.valid(params)
+  }
+
+  async payConfirm({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          id: schema.number(),
+          payment_intent_id: schema.string()
+        }),
+        data: params
+      })
+      return Bid.payConfirm(payload)
+    } catch (err) {
+      return { error: err.message, validation: err.messages }
+    }
+  }
+
+  async valid({ params, user }) {
+    if (!(await Utils.isTeam(user.id, 'boss'))) {
+      throw new ApiError(401)
+    }
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          id: schema.number()
+        }),
+        data: params
+      })
+      return Bid.valid(payload)
+    } catch (err) {
+      return { error: err.message, validation: err.messages }
+    }
   }
 
   async cancel({ params, user }) {
-    params.user = user
-    return Bid.cancel(params)
+    try {
+      params.user_id = user.id
+      const payload = await validator.validate({
+        schema: schema.create({
+          id: schema.number(),
+          user_id: schema.number()
+        }),
+        data: params
+      })
+      return Bid.cancel(payload)
+    } catch (err) {
+      return { error: err.message, validation: err.messages }
+    }
   }
 
-  async editAddress({ params, response, user }) {
+  async editAddress({ params, user }) {
     if (!(await Utils.isTeam(user.id, 'boss'))) {
-      return response.status(401).json({
-        error: 'Unauthorized'
-      })
+      throw new ApiError(401)
     }
-    params.user = user
-    return Bid.editAddress(params)
+
+    try {
+      params.user_id = user.id
+      const payload = await validator.validate({
+        schema: schema.create({
+          id: schema.number(),
+          customer: schema.object().members({
+            id: schema.number.optional(),
+            type: schema.string.optional(),
+            name: schema.string.optional(),
+            firstname: schema.string.optional(),
+            lastname: schema.string.optional(),
+            address: schema.string.optional(),
+            state: schema.string.optional(),
+            city: schema.string.optional(),
+            zip_code: schema.string.optional(),
+            country_id: schema.string.optional(),
+            phone: schema.string.optional()
+          })
+        }),
+        data: params
+      })
+      return Bid.editAddress(payload)
+    } catch (err) {
+      return { error: err.message, validation: err.messages }
+    }
   }
 }
 
