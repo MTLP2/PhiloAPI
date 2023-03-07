@@ -212,3 +212,18 @@ const enum ShippingPartners {
   whiplash_uk = 'whiplash_uk',
   shipehype = 'shipehype'
 }
+
+type CustomerDb = {
+  id?: number
+  type?: string
+  name?: string
+  firstname?: string
+  lastname?: string
+  address?: string
+  state?: string
+  city?: string
+  zip_code?: string
+  country_id?: string
+  phone?: string
+  birthday?: string
+}
