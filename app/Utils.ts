@@ -552,7 +552,7 @@ class Utils {
   }
 
   static getCurrencies = (
-    base: Currencies = Currencies.EUR,
+    base: string,
     currencies: { id: string; value: Currencies; updated_at: string }[]
   ) => {
     /**
