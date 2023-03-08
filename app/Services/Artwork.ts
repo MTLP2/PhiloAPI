@@ -6,7 +6,7 @@ import DB from 'App/DB'
 import Env from '@ioc:Adonis/Core/Env'
 import splatter from 'App/Splatter'
 import Mockup from 'App/Services/Mockup'
-import { createCanvas, Image } from 'canvas'
+// import { createCanvas, Image } from 'canvas'
 import sharp from 'sharp'
 const Vibrant = require('node-vibrant')
 
