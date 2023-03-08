@@ -1828,6 +1828,7 @@ class App {
       .join('project as p', 'p.id', 'oi.project_id')
       .join('vod as v', 'v.project_id', 'p.id')
       .whereIn('os.step', ['sent', 'returned'])
+      .whereNotNull('os.date_export')
       .where('oi.total', '>', 3.49)
       .where('c.country_id', countryId)
       .whereRaw(
@@ -1835,7 +1836,9 @@ class App {
       )
       .all()
 
-    const barcodes = await DB('project_product as pp')
+    const barcodes: { barcode: string; project_id: number; type: string }[] = await DB(
+      'project_product as pp'
+    )
       .select('barcode', 'project_id', 'p.type')
       .join('product as p', 'p.id', 'pp.product_id')
       .whereIn(
@@ -1854,21 +1857,16 @@ class App {
     }, {}) as { [key: number]: { barcode: string; type: string }[] }
 
     // Record Number (92)
-    // Chain Number (4030 US || C400 CA)
-    // Account Number (01864)
-    // Date (YYMMDD)
     let text = '92'
+    // Chain Number (4030 US || C400 CA)
     text += countryId === 'US' ? '4030' : 'C400'
+    // Account Number (01864)
     text += '01864'
+    // Date (YYMMDD)
     text += moment().format('YYMMDD')
     text += '\n'
 
     // Order Item reference
-    // Record Number 'M3'
-    // Order Item Barcode (12 digits, left padded with 0)
-    // Zip Code (6 digits, left padded with 0)
-    // Record Type 'S' for Sales
-
     // Check if every barcode type is either cd or vinyl or tape or digital as a bundle is allowed only if they share musical products (no merch or other products)
     const filteredOrders = orders.filter((o) => {
       return (
@@ -1884,20 +1882,18 @@ class App {
       .map((o) => {
         let orderLine = ''
         for (let index = 0; index < o.quantity; index++) {
+          // Record Number 'M3'
           orderLine += 'M3'
+          // Order Item Barcode (12 digits, left padded with 0)
           orderLine += formatLength({ str: o.barcode, maxLength: 13 })
+          // Zip Code (6 digits, left padded with 0)
           orderLine += formatLength({
             str: checkZipCode(o.zip_code),
             maxLength: countryId === 'US' ? 5 : 6
           })
+          // Record Type 'S' for Sales
           orderLine += o.step === 'returned' ? 'R' : 'S'
           orderLine += '\n'
-          // // ? Debugging
-          // orderLine += '--'
-          // orderLine += o.oshop_id
-          // orderLine += '--'
-          // orderLine += o.quantity
-          // orderLine += '\n'
 
           totalQuantity++
         }
@@ -1907,10 +1903,10 @@ class App {
       .join('')
 
     // Record Number (94)
-    // Number of Orders (5 digits, left padded with spaces)
-    // Number of Units (7 digits, left padded with spaces)
     text += '94'
+    // Number of Orders (5 digits, left padded with spaces)
     text += filteredOrders.length.toString().padStart(5, ' ')
+    // Number of Units (7 digits, left padded with spaces)
     text += totalQuantity.toString().padStart(7, ' ')
 
     return text
