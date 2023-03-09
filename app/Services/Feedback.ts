@@ -28,6 +28,13 @@ class Feedback {
       params.query.where('feedback.user_id', params.user_id)
     }
 
+    if (params.onlyPending === 'true') {
+      params.query
+        .where('is_contacted', 0)
+        .where('rating', '<=', 2)
+        .where('feedback.created_at', '>=', '2022-11-01')
+    }
+
     if (!params.sort) {
       params.sort = 'id'
       params.order = 'desc'
@@ -41,7 +48,7 @@ class Feedback {
       .select(DB.raw('COUNT(*) as count'))
       .where('is_contacted', 0)
       .where('rating', '<=', 2)
-      .where('created_at', '>=', '2022-11-01')
+      .where('feedback.created_at', '>=', '2022-11-01')
       .first()
   }
 
