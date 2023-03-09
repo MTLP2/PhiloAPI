@@ -995,7 +995,7 @@ class StatementService {
       .all()
 
     const costsPromise = DB('production_cost')
-      .select('name', 'vod.project_id', 'cost_real', 'cost_invoiced')
+      .select('name', 'vod.project_id', 'cost_real', 'cost_invoiced', 'production_cost.currency')
       .join('vod', 'vod.project_id', 'production_cost.project_id')
       .where('balance_followup', true)
       .all()
@@ -1005,6 +1005,9 @@ class StatementService {
       .join('vod', 'vod.project_id', 'production.project_id')
       .where('balance_followup', true)
       .all()
+
+    const currenciesDb = await Utils.getCurrenciesDb()
+    const currencies = await Utils.getCurrencies('EUR', currenciesDb)
 
     const [projectsList, invoices, prods, costs] = await Promise.all([
       projectsPromise,
@@ -1074,8 +1077,8 @@ class StatementService {
             projects[cost.project_id].quantity_pressed2 = name[2]
           }
         }
-        projects[cost.project_id].direct_costs += cost.cost_real
-        projects[cost.project_id].costs_invoiced += cost.cost_invoiced
+        projects[cost.project_id].direct_costs += cost.cost_real / currencies[cost.currency]
+        projects[cost.project_id].costs_invoiced += cost.cost_invoiced / currencies[cost.currency]
         projects[cost.project_id].direct_balance =
           projects[cost.project_id].invoiced - projects[cost.project_id].direct_costs
       }
