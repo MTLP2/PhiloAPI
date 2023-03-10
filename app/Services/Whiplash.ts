@@ -550,6 +550,17 @@ class Whiplash {
 
     if (payload?.productIds) {
       for (const product of listProducts) {
+        if (product.whiplash_id === -1) {
+          const item: any = await Whiplash.api(`/items/sku/${product.barcode}`)
+          if (item.length > 0) {
+            product.whiplash_id = item[0].id
+            DB('product').where('id', product.id).update({
+              whiplash_id: item[0].id
+            })
+          } else {
+            continue
+          }
+        }
         const warehouses: any = await Whiplash.api(
           `items/${product.whiplash_id}/warehouse_quantities`
         )
