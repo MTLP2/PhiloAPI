@@ -49,7 +49,7 @@ class Stock {
 
   static async syncApi(payload: { productIds?: number[]; projectIds?: number[] }) {
     const products = await DB('product')
-      .select('product.id', 'product.barcode')
+      .select(DB.raw('distinct product.id, product.barcode'))
       .join('project_product as pp', 'pp.product_id', 'product.id')
       .where((query) => {
         if (payload.productIds) {
