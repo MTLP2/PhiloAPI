@@ -252,6 +252,10 @@ class AdminController {
     return Statement.getStats(params)
   }
 
+  getSalesByCountry({ params }) {
+    return Statement.getSalesByCountry(params)
+  }
+
   uploadStocks({ params, user }) {
     params.user_id = user.id
     return Stock.upload(params)

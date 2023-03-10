@@ -1881,6 +1881,84 @@ class StatementService {
 
     return { success: true }
   }
+
+  static getSalesByCountry = async (params: { start: string; end: string }) => {
+    let refs: any = DB('statement')
+      .select(
+        'statement.date',
+        'statement.project_id',
+        'vod.barcode',
+        'project.name',
+        'project.artist_name',
+        'dist.country_id',
+        'dist.quantity'
+      )
+      .join('statement_distributor as dist', 'dist.statement_id', 'statement.id')
+      .join('project', 'project.id', 'statement.project_id')
+      .join('vod', 'vod.project_id', 'project.id')
+      .orderBy('statement.date')
+
+    if (params.start) {
+      refs.where('statement.date', '>=', params.start.substring(0, 7))
+    }
+    if (params.end) {
+      refs.where('statement.date', '<=', params.end.substring(0, 7))
+    }
+
+    refs = await refs.all()
+
+    const data: any = {}
+    for (const ref of refs) {
+      if (!ref.country_id || !isNaN(ref.country_id)) {
+        continue
+      }
+      ref.country_id = ref.country_id.toUpperCase()
+      if (!data[ref.country_id]) {
+        data[ref.country_id] = {
+          dates: {}
+        }
+      }
+      data[ref.country_id].dates[ref.date] = true
+
+      if (!data[ref.country_id][ref.barcode]) {
+        data[ref.country_id][ref.barcode] = {
+          id: ref.project_id,
+          barcode: ref.barcode,
+          project: `${ref.artist_name} - ${ref.name}`,
+          quantity: 0
+        }
+      }
+      if (!data[ref.country_id][ref.barcode][ref.date]) {
+        data[ref.country_id][ref.barcode][ref.date] = 0
+      }
+      data[ref.country_id][ref.barcode].quantity += ref.quantity
+      data[ref.country_id][ref.barcode][ref.date] += ref.quantity
+    }
+
+    const workbook = new Excel.Workbook()
+
+    for (const country of Object.keys(data)) {
+      const worksheet = workbook.addWorksheet(country)
+
+      const columns = [
+        { header: 'Project', key: 'project', width: 50 },
+        { header: 'Barcode', key: 'barcode', width: 15 },
+        { header: 'Quantity', key: 'quantity' }
+      ]
+
+      for (const date of Object.keys(data[country].dates)) {
+        columns.push({ header: date, key: date })
+      }
+      delete data[country].dates
+
+      worksheet.columns = columns
+
+      const refs = Object.values(data[country]).sort((a: any, b: any) => b.quantity - a.quantity)
+      worksheet.addRows(refs)
+    }
+
+    return workbook.xlsx.writeBuffer()
+  }
 }
 
 export default StatementService
