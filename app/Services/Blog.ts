@@ -40,8 +40,9 @@ class Blog {
     return article
   }
 
-  static getArticles() {
-    return DB('article').orderBy('id', 'desc').all()
+  static getArticles(params) {
+    const query = DB('article')
+    return Utils.getRows({ ...params, query: query })
   }
 
   static getArticle(id: number) {

@@ -25,8 +25,8 @@ class BlogController {
     return Blog.find(payload.id, user)
   }
 
-  getArticles() {
-    return Blog.getArticles()
+  getArticles({ params }) {
+    return Blog.getArticles(params)
   }
 
   async getArticle({ params }) {
