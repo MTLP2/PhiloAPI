@@ -133,6 +133,9 @@ class StatementService {
       case 'FAB':
         data = this.parseFab(workbook)
         break
+      case 'Arcades':
+        data = this.parseArcades(workbook)
+        break
     }
 
     data = Object.values(data)
@@ -423,6 +426,29 @@ class StatementService {
     return data
   }
 
+  static parseArcades(workbook) {
+    const worksheet = workbook.getWorksheet(3)
+
+    const data = {}
+    worksheet.eachRow((row) => {
+      const barcode = row.getCell('B').value
+      if (!isNaN(barcode)) {
+        if (!data[barcode]) {
+          data[barcode] = {
+            country_id: 'FR',
+            barcode: barcode,
+            quantity: 0,
+            total: 0
+          }
+        }
+        data[barcode].quantity += row.getCell('E').result
+        data[barcode].total += row.getCell('G').result
+      }
+    })
+
+    return data
+  }
+
   static parseLITA(workbook) {
     const worksheet = workbook.getWorksheet(1)
 
@@ -572,7 +598,7 @@ class StatementService {
 
   static async setWorksheet(
     workbook: any,
-    params: { id: number; number: number; auto: boolean; start: string; end: string }
+    params: { id: number; number: number; auto?: boolean; start: string; end: string }
   ) {
     const project = await DB()
       .select('vod.*', 'project.name', 'project.artist_name')
@@ -1336,9 +1362,9 @@ class StatementService {
       if (!stockPrice) {
         stockPrice = [{ start: null, end: null, value: p.type === 'deposit_sales' ? 0.05 : 0.1 }]
       }
-      const price = Utils.getFee(stockPrice, moment().format('YYYY-MM-DD'))
+      const price = Utils.getFee(stockPrice, moment().format('YYYY-MM-DD')) as number
 
-      const unitPrice = p.category === 'vinyl' ? price : 0.05
+      const unitPrice: number = p.category === 'vinyl' ? price : 0.05
 
       statement.storage = (p.stock * unitPrice) / currencies.EUR
       statement.updated_at = Utils.date()
@@ -1355,7 +1381,7 @@ class StatementService {
     payback?: boolean
     start?: string
     end?: string
-    auto: boolean
+    auto?: boolean
   }) {
     if (!params.start) {
       params.start = '2001-01-01'
@@ -1527,6 +1553,7 @@ class StatementService {
     }
     const countries = {
       PIAS: 'France',
+      ARCADES: 'France',
       ROM: 'Europe',
       LITA: 'USA / Canada',
       LITA2: 'USA / Canada',
@@ -1621,7 +1648,10 @@ class StatementService {
 
       const feeDate = JSON.parse(project.fee_date)
       const fee =
-        1 - (params.fee !== undefined ? params.fee : Utils.getFee(feeDate, order.created_at) / 100)
+        1 -
+        (params.fee !== undefined
+          ? params.fee
+          : (Utils.getFee(feeDate, order.created_at) as number) / 100)
       const tax = 1 + order.tax_rate
       const discount = order.discount_artist ? order.discount : 0
       const total = order.price * order.quantity - discount - order.fee_change
@@ -1656,7 +1686,10 @@ class StatementService {
 
       const feeDistribDate = JSON.parse(project.fee_distrib_date)
       const feeDistrib =
-        1 - (params.fee !== undefined ? params.fee : Utils.getFee(feeDistribDate, stat.date) / 100)
+        1 -
+        (params.fee !== undefined
+          ? params.fee
+          : (Utils.getFee(feeDistribDate, stat.date) as number) / 100)
 
       for (const dist of stat.distributors) {
         if (!dist.item) {
@@ -1817,7 +1850,17 @@ class StatementService {
 
     const workbook = new Excel.Workbook()
 
-    for (const dist of ['ROM', 'PIAS', 'LITA', 'MGM', 'Altafonte', 'Good', 'Jet', 'FAB']) {
+    for (const dist of [
+      'ROM',
+      'PIAS',
+      'LITA',
+      'MGM',
+      'Altafonte',
+      'Arcades',
+      'Good',
+      'Jet',
+      'FAB'
+    ]) {
       if (!data[dist]) {
         continue
       }
