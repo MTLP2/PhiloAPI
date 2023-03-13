@@ -1327,16 +1327,20 @@ class App {
         'project.name',
         'project.id',
         'project.artist_name',
+        'stock.type',
+        'stock.quantity',
         'goal',
         'count',
         'is_shop',
-        'project_id',
+        'vod.project_id',
         'alert_stock'
       )
       .join('vod', 'vod.project_id', 'project.id')
-      .hasMany('stock')
+      .leftJoin('project_product', 'project_product.project_id', 'project.id')
+      .leftJoin('stock', 'stock.product_id', 'project_product.product_id')
       .where('alert_stock', '>', 0)
       .all()
+
     let html = `
     <style>
       td {
@@ -1368,10 +1372,20 @@ class App {
       </tr>
     </thead>
     <tbody>`
+
+    const pp = {}
     for (const project of projects) {
-      for (const stock of project.stock) {
-        project[`stock_${stock.type}`] = stock.quantity
+      if (!pp[project.id]) {
+        pp[project.id] = {
+          ...project
+        }
       }
+      pp[project.id][`stock_${project.type}`] = project.quantity
+    }
+
+    projects = Object.values(pp)
+
+    for (const project of projects) {
       project.stock_daudin = project.stock_daudin || 0
       project.stock_whiplash = project.stock_whiplash || 0
       project.stock_whiplash_uk = project.stock_whiplash_uk || 0
