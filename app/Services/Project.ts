@@ -13,7 +13,7 @@ import moment from 'moment'
 import JSZip from 'jszip'
 
 class Project {
-  static setInfos = async (p, currencies?, sales?, styles?) => {
+  static setInfos = (p, currencies?, sales?, styles?) => {
     const project = p
     const oneDay = 24 * 60 * 60 * 1000
     const firstDate = new Date()
@@ -273,47 +273,47 @@ class Project {
           }, {})
         }
       }
-    }
 
-    if (sales) {
-      for (const sale of sales) {
-        let discount = false
+      if (sales) {
+        for (const sale of sales) {
+          let discount = false
 
-        if (!sale.projects) {
-          discount = true
-        } else if (sale.projects.split(',').indexOf(project.id.toString()) !== -1) {
-          discount = true
-        }
-
-        if (discount) {
-          project.promo = sale.value
-          const discount = Utils.round(
-            (project.price + project.shipping_discount) * (sale.value / 100)
-          )
-          project.prices_discount = Utils.getPrices({
-            price: Utils.round(project.price + project.shipping_discount - discount),
-            currencies,
-            currency: project.currency
-          })
-          if (project.shipping_discount) {
-            project.prices_ship_discount = project.shipping_discount
-              ? Utils.getPrices({
-                  price: project.price + project.shipping_discount,
-                  currencies,
-                  currency: project.currency
-                })
-              : null
+          if (!sale.projects) {
+            discount = true
+          } else if (sale.projects.split(',').indexOf(project.id.toString()) !== -1) {
+            discount = true
           }
-          project.discount = Object.keys(project.prices).reduce((acc, key) => {
-            acc[key] =
-              (project.prices_ship_discount?.[key] || project.prices[key]) -
-              project.prices_discount[key]
-            return acc
-          }, {})
-          project.discount_artist = sale.artist_pay
-          project.discount_code = sale.code
 
-          break
+          if (discount) {
+            project.promo = sale.value
+            const discount = Utils.round(
+              (project.price + project.shipping_discount) * (sale.value / 100)
+            )
+            project.prices_discount = Utils.getPrices({
+              price: Utils.round(project.price + project.shipping_discount - discount),
+              currencies,
+              currency: project.currency
+            })
+            if (project.shipping_discount) {
+              project.prices_ship_discount = project.shipping_discount
+                ? Utils.getPrices({
+                    price: project.price + project.shipping_discount,
+                    currencies,
+                    currency: project.currency
+                  })
+                : null
+            }
+            project.discount = Object.keys(project.prices).reduce((acc, key) => {
+              acc[key] =
+                (project.prices_ship_discount?.[key] || project.prices[key]) -
+                project.prices_discount[key]
+              return acc
+            }, {})
+            project.discount_artist = sale.artist_pay
+            project.discount_code = sale.code
+
+            break
+          }
         }
       }
     }
