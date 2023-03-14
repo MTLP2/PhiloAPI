@@ -1636,9 +1636,11 @@ class Cart {
             shipping_discount: user.is_pro ? 0 : item.shipping_discount ?? 0,
             tips: item.tips,
             size: chosenSizes,
-            products: Object.values(item.chosen_sizes)
-              .map((v) => `[${v}]`)
-              .join(''),
+            products: item.chosen_sizes
+              ? Object.values(item.chosen_sizes)
+                  .map((v) => `[${v}]`)
+                  .join('')
+              : null,
             quantity: item.quantity,
             total: item.total,
             total_ship_discount: item.total_ship_discount || 0,
