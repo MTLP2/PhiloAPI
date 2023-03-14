@@ -189,8 +189,13 @@ class Stock {
         })
         query.orWhere((query) => {
           query.whereRaw('product.size like order_item.size')
-          query.orWhere('product.size', 'all')
-          query.orWhereNull('product.size')
+          query.orWhereRaw(`order_item.products LIKE CONCAT('%[',product.id,']%')`)
+          query.orWhere((query) => {
+            query.whereNull('product.size')
+            query.whereNotExists((query) => {
+              query.from('product as child').whereRaw('product.id = child.parent_id')
+            })
+          })
         })
       })
       .where('is_paid', true)

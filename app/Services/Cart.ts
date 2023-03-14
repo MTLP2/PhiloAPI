@@ -231,8 +231,6 @@ class Cart {
             sizes: item.chosen_sizes
           })
 
-          console.log(stocks)
-
           for (const [key, value] of Object.entries(stocks)) {
             project[`stock_${key}`] = value
           }
@@ -1638,6 +1636,9 @@ class Cart {
             shipping_discount: user.is_pro ? 0 : item.shipping_discount ?? 0,
             tips: item.tips,
             size: chosenSizes,
+            products: Object.values(item.chosen_sizes)
+              .map((v) => `[${v}]`)
+              .join(''),
             quantity: item.quantity,
             total: item.total,
             total_ship_discount: item.total_ship_discount || 0,
@@ -2131,7 +2132,6 @@ class Cart {
         }
 
         for (const item of items) {
-          console.log('🚀 ~ file: Cart.ts:2112 ~ Cart ~ validPayment= ~ item:', item)
           allItems.push(item)
 
           await User.event({

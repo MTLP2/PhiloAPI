@@ -1031,7 +1031,13 @@ static toJuno = async (params) => {
       .join('product', 'product.id', 'project_product.product_id')
       .where((query) => {
         query.whereRaw('product.size like order_item.size')
-        query.orWhereNull('product.size')
+        query.orWhereRaw(`order_item.products LIKE CONCAT('%[',product.id,']%')`)
+        query.orWhere((query) => {
+          query.whereNull('product.size')
+          query.whereNotExists((query) => {
+            query.from('product as child').whereRaw('product.id = child.parent_id')
+          })
+        })
       })
       .where('order_shop_id', params.id)
       .all()

@@ -174,7 +174,13 @@ class Whiplash {
       .join('product', 'project_product.product_id', 'product.id')
       .where((query) => {
         query.whereRaw('product.size like oi.size')
-        query.orWhereNull('product.size')
+        query.orWhereRaw(`oi.products LIKE CONCAT('%[',product.id,']%')`)
+        query.orWhere((query) => {
+          query.whereNull('product.size')
+          query.whereNotExists((query) => {
+            query.from('product as child').whereRaw('product.id = child.parent_id')
+          })
+        })
       })
       .whereIn(
         'order_shop_id',
