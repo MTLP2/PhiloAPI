@@ -447,6 +447,7 @@ class Cart {
     const c = {
       id: cart.id,
       count: cart.count,
+      customer: null,
       shops: {},
       boxes: []
     }
@@ -474,7 +475,9 @@ class Cart {
     })
 
     c.boxes = cart.boxes
-
+    if (cart.customer.type) {
+      c.customer = cart.customer
+    }
     return DB('user')
       .where('id', userId)
       .update({
