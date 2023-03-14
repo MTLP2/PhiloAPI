@@ -72,7 +72,14 @@ class Shop {
     let item: ShopModel = <any>DB('shop')
 
     const code = payload.code ? payload.code : Utils.slugify(payload.name)
-    const codeUsed = await DB('shop').where('code', code).where('id', '!=', payload.id).first()
+    const codeUsed = await DB('shop')
+      .where('code', code)
+      .where((query) => {
+        if (payload.id) {
+          query.where('id', '!=', payload.id)
+        }
+      })
+      .first()
 
     if (codeUsed) {
       throw new ApiError(406, 'code_used')
