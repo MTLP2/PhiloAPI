@@ -10,6 +10,7 @@ class Stock {
     project_id: number
     is_distrib?: boolean
     size?: string
+    sizes?: { [key: string]: string }
     color?: string
   }) {
     const stocks = await DB('project_product as pp')
@@ -22,8 +23,9 @@ class Stock {
         if (payload.is_distrib !== undefined) {
           query.where('is_distrib', payload.is_distrib)
         }
-        if (payload.size) {
-          query.whereNull('size').orWhere('size', payload.size)
+
+        if (payload.sizes) {
+          query.whereNull('size').orWhereIn('pp.product_id', Object.values(payload.sizes))
         }
       })
       .all()
@@ -375,7 +377,8 @@ class Stock {
     project_id: number
     order_id: number
     preorder: boolean
-    size: string
+    // size: string
+    sizes?: { [key: string]: string } | string
     quantity: number
     transporter: string
   }) {
@@ -385,8 +388,15 @@ class Stock {
       .join('vod', 'vod.project_id', 'project_product.project_id')
       .where('project_product.project_id', payload.project_id)
       .where((query) => {
-        if (payload.size) {
-          query.where('size', payload.size).orWhere('size', 'all')
+        if (payload.sizes && typeof payload.sizes === 'string') {
+          query.where('size', payload.sizes).orWhere('size', 'all')
+        }
+
+        if (payload.sizes && Object.keys(payload.sizes).length) {
+          query
+            .whereNull('size')
+            .orWhere('size', 'all')
+            .orWhereIn('project_product.product_id', Object.values(payload.sizes))
         }
       })
       .all()
