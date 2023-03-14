@@ -454,6 +454,16 @@ class Admin {
       .where('p.id', params.id)
       .first()
 
+    const barcodes = await DB('project_product')
+      .select('barcode')
+      .join('product', 'project_product.product_id', 'product.id')
+      .where('project_product.project_id', params.id)
+      .all()
+    const filteredBarcodes = barcodes
+      .filter((b) => b.barcode)
+      .map((b) => b.barcode)
+      .join(', ')
+
     const manual = await DB('order_manual')
       .select('barcodes')
       .where('barcodes', 'like', `%${project.barcode}%`)
@@ -529,15 +539,17 @@ class Admin {
       stats.shipping += (pourcent * (o.shipping * o.currency_rate_project)) / tax
     }
 
-    const boxes = await DB()
-      .from('box_dispatch')
-      .where('barcodes', 'like', `%${project.barcode}%`)
-      .all()
+    if (filteredBarcodes) {
+      const boxes = await DB()
+        .from('box_dispatch')
+        .where('barcodes', 'like', `%${project.barcode}%`)
+        .all()
 
-    for (const box of boxes) {
-      stats.quantity_box++
-      stats.turnover_box += project.payback_box
-      stats.benefit_artist_box += project.payback_box
+      for (const box of boxes) {
+        stats.quantity_box++
+        stats.turnover_box += project.payback_box
+        stats.benefit_artist_box += project.payback_box
+      }
     }
 
     const costs = await DB('production_cost').where('project_id', params.id).all()
@@ -974,7 +986,7 @@ class Admin {
       vod.count_distrib = params.count_distrib
 
       vod.is_size = params.is_size
-      vod.sizes = params.is_size ? JSON.stringify(params.sizes) : null
+      vod.sizes = JSON.stringify(params.sizes)
 
       vod.alert_stock = params.alert_stock || null
       vod.only_country = params.only_country
@@ -2293,7 +2305,7 @@ class Admin {
     const user = await DB('user')
       .select('user.*', 'notifications.newsletter')
       .where('user.id', id)
-      .join('notifications', 'notifications.user_id', 'user.id')
+      .leftJoin('notifications', 'notifications.user_id', 'user.id')
       .belongsTo('customer')
       .first()
 
@@ -2303,7 +2315,6 @@ class Admin {
     }
 
     user.passHistory = await Pass.getHistory({ userId: id })
-    // user.pass = await Pass.getUserPass({ userId: id })
 
     user.styles = user.styles ? JSON.parse(user.styles) : []
     user.digs = await Dig.byUser(id)
@@ -4009,6 +4020,7 @@ class Admin {
         'date_shipping',
         'product.barcode',
         'picture',
+        'picture_project',
         'project.cat_number',
         'product.catnumber',
         'inverse_name',
@@ -4122,7 +4134,9 @@ class Admin {
           : `https://www.diggersfactory.com/vinyl/${pp.id}/${pp.slug}?currency=${currency}${
               params.ori ? `&ori=${params.ori}` : ''
             };`
-      csv += `${Env.get('STORAGE_URL')}/projects/${pp.picture || pp.id}/vinyl.png;`
+      csv += pp.picture_project
+        ? `${Env.get('STORAGE_URL')}/projects/${pp.picture || pp.id}/${pp.picture_project}.png;`
+        : `${Env.get('STORAGE_URL')}/projects/${pp.picture || pp.id}/vinyl.png;`
       csv += `"${pp.artist_name}";`
       csv += ';;;;'
       csv += pp.estimated_shipping + ';'

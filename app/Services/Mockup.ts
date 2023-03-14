@@ -1,27 +1,42 @@
 const storageUrl = 'https://diggers-public.s3.eu-west-3.amazonaws.com'
 
 class Mockup {
-  env
-  Image
+  env: string
+  Image: () => void
+  createContext: () => any
+  createCanvas: () => any
 
-  constructor(params) {
+  constructor(params: { env: string; image: () => void; createContext: () => any }) {
     this.env = params.env
     this.Image = params.image
     this.createContext = params.createContext
-    this.createCanvas = () => params.createContext().canvas
-    this.Perspective = require('./perspective')
+    this.createCanvas = params.createContext().canvas
   }
 
-  async drawImage(params) {
-    const that = this
+  async drawImage(params: {
+    ctx: any
+    url: string
+    opacity?: number
+    clear?: boolean
+    color?: string
+    tint?: string
+    x?: number
+    y?: number
+    width?: number
+    height?: number
+    sWidth?: number
+    sHeight?: number
+    sx?: number
+    sy?: number
+  }) {
     return new Promise((resolve, reject) => {
-      const ctx = that.createContext()
-      const img = new that.Image()
+      const ctx = this.createContext()
+      const img = new this.Image()
       img.crossOrigin = 'Anonymous'
       img.onerror = (err) => {
         reject(err)
       }
-      img.onload = function () {
+      img.onload = () => {
         if (params.width && !params.height) {
           const scale = img.width / params.width
           params.height = img.height / scale
@@ -52,7 +67,7 @@ class Mockup {
         ctx.drawImage(img, 0, 0)
 
         if (params.color) {
-          const ctxColor = that.createContext()
+          const ctxColor = this.createContext()
           ctxColor.canvas.width = ctx.canvas.width
           ctxColor.canvas.height = ctx.canvas.height
           ctxColor.drawImage(ctx.canvas, 0, 0)
@@ -83,23 +98,29 @@ class Mockup {
     })
   }
 
-  getPerspective = (cover, matrice, resize = {}) => {
-    const that = this
-    return new Promise((resolve, reject) => {
-      const ctx = that.createContext()
+  getPerspective = ({
+    cover,
+    matrice,
+    resize = {}
+  }: {
+    cover: string
+    matrice: any
+    resize: { w?: number; h?: number }
+  }) => {
+    return new Promise((resolve) => {
+      const ctx = this.createContext()
 
       ctx.imageSmoothingEnabled = true
 
-      const image = new that.Image()
-      image.onload = function () {
+      const image = new this.Image()
+      image.onload = () => {
         const w = resize.w ? resize.w + resize.w / 2 : image.width + image.width / 2
-
         const h = resize.h ? resize.h + resize.h / 2 : image.height + image.height / 2
 
         ctx.canvas.width = w
         ctx.canvas.height = h
 
-        const p = new that.Perspective({ ctx, image, resize, createCanvas: that.createCanvas })
+        const p = new this.perspective({ ctx, image, resize })
         p.draw(matrice(image))
 
         resolve(ctx.canvas)
@@ -110,42 +131,48 @@ class Mockup {
     })
   }
 
-  resizeImage(url, w, h) {
-    return new Promise((resolve, reject) => {
-      const ctx = document.createElement('canvas').getContext('2d')
-      ctx.canvas.width = w
-      ctx.canvas.height = h
+  resizeImage(payload: { url: string; w: number; h: number }) {
+    return new Promise((resolve) => {
+      const ctx = this.createContext()
+      ctx.canvas.width = payload.w
+      ctx.canvas.height = payload.h
 
-      const img = new Image()
+      const img = new this.Image()
       img.crossOrigin = 'Anonymous'
-      img.onload = function () {
-        ctx.drawImage(img, 0, 0, w, h)
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, payload.w, payload.h)
         resolve(ctx.canvas)
       }
-      img.src = url
+      img.src = payload.url
     })
   }
 
-  async getDisc(params) {
-    const that = this
+  async getDisc(params: {
+    color: string
+    label: string
+    splatter1?: string
+    splatter2?: string
+    galaxy?: string
+    colorincolor?: string
+  }) {
     return new Promise((resolve, reject) => {
-      const ctx = params.canvas.getContext('2d')
-      const canvas = params.canvas
+      const ctx = this.createContext()
+      const canvas = ctx.canvas
 
-      const img = new that.Image()
+      const img = new this.Image()
 
       img.onerror = (err) => {
         reject(err)
       }
-      img.onload = function () {
+      img.onload = () => {
         canvas.width = img.width
         canvas.height = img.height
 
-        const img2 = new that.Image()
+        const img2 = new this.Image()
         img2.onerror = (err) => {
           reject(err)
         }
-        img2.onload = async function () {
+        img2.onload = async () => {
           canvas.width = img.width
           canvas.height = img.height
 
@@ -161,7 +188,7 @@ class Mockup {
           ctx.globalAlpha = 1
 
           if (params.splatter1) {
-            await that.drawImage({
+            await this.drawImage({
               ctx: ctx,
               url: `${storageUrl}/assets/images/mockup/splatter1.png`,
               x: 0,
@@ -173,7 +200,7 @@ class Mockup {
           }
 
           if (params.splatter2) {
-            await that.drawImage({
+            await this.drawImage({
               ctx: ctx,
               url: `${storageUrl}/assets/images/mockup/splatter2.png`,
               x: 0,
@@ -185,7 +212,7 @@ class Mockup {
           }
 
           if (params.galaxy) {
-            await that.drawImage({
+            await this.drawImage({
               ctx: ctx,
               url: `${storageUrl}/assets/images/mockup/galaxy.png`,
               x: 0,
@@ -197,7 +224,7 @@ class Mockup {
           }
 
           if (params.colorincolor) {
-            await that.drawImage({
+            await this.drawImage({
               ctx: ctx,
               url: `${storageUrl}/assets/images/mockup/colorincolor.png`,
               x: 0,
@@ -242,7 +269,6 @@ class Mockup {
   }
 
   async getMockup(params) {
-    const that = this
     const ctx = params.canvas.getContext('2d')
 
     const w = 2500
@@ -267,7 +293,7 @@ class Mockup {
       ctx.imageSmoothingEnabled = true
 
       ctx.globalAlpha = 0.5
-      await that.drawImage({
+      await this.drawImage({
         ctx: ctx,
         url: `${storageUrl}/assets/images/mockup/BG1.jpg`,
         x: 0,
@@ -279,7 +305,7 @@ class Mockup {
       ctx.globalAlpha = 1
     }
 
-    await that.drawImage({
+    await this.drawImage({
       ctx: ctx,
       url: `${storageUrl}/assets/images/mockup/mockup1_shadow.png`,
       x: offsetX + 0,
@@ -299,7 +325,7 @@ class Mockup {
       [0, resizeDisc.h + 520]
     ]
 
-    const coverDisc = await that.getPerspective(params.disc, matrice, resizeDisc)
+    const coverDisc = await this.getPerspective(params.disc, matrice, resizeDisc)
     ctx.drawImage(coverDisc, offsetX + 1050, offsetY - 45, resizeDisc.w, resizeDisc.h)
 
     const resize = {
@@ -312,10 +338,10 @@ class Mockup {
       [resize.w - 15, resize.h + 170],
       [0, resize.h + 520]
     ]
-    const coverPers = await that.getPerspective(params.cover, matrice2, resize)
+    const coverPers = await this.getPerspective(params.cover, matrice2, resize)
     ctx.drawImage(coverPers, offsetX + 505, offsetY + 0, resize.w, resize.h)
 
-    await that.drawImage({
+    await this.drawImage({
       ctx: ctx,
       url: `${storageUrl}/assets/images/mockup/mockup2_light.png`,
       x: offsetX + 0,
@@ -327,7 +353,6 @@ class Mockup {
   }
 
   async get2Getfold(params) {
-    const that = this
     const ctx = params.canvas.getContext('2d')
 
     const w = 2500
@@ -351,7 +376,7 @@ class Mockup {
 
       ctx.imageSmoothingEnabled = true
 
-      await that.drawImage({
+      await this.drawImage({
         ctx: ctx,
         url: `${storageUrl}/assets/images/mockup/BG1.jpg`,
         x: 0,
@@ -361,7 +386,7 @@ class Mockup {
       })
     }
 
-    await that.drawImage({
+    await this.drawImage({
       ctx: ctx,
       url: `${storageUrl}/assets/images/mockup/gatefold_2_shadow.png`,
       x: offsetX + 0,
@@ -379,7 +404,7 @@ class Mockup {
       [resizeBack.w - 60, resizeBack.h + 400],
       [12, resizeBack.h + 720]
     ]
-    const coverBack = await that.getPerspective(params.cover2, matriceBack, resizeBack)
+    const coverBack = await this.getPerspective(params.cover2, matriceBack, resizeBack)
     ctx.drawImage(coverBack, offsetX + 420, offsetY + 480, resizeBack.w, resizeBack.h)
 
     const resizeDisc = {
@@ -392,15 +417,15 @@ class Mockup {
       [resizeDisc.w, resizeDisc.h + 170],
       [0, resizeDisc.h + 520]
     ]
-    const coverDisc = await that.getPerspective(params.disc, matriceDisc, resizeDisc)
+    const coverDisc = await this.getPerspective(params.disc, matriceDisc, resizeDisc)
     ctx.drawImage(coverDisc, offsetX + 1050, offsetY + 440, resizeDisc.w, resizeDisc.h)
 
     const spin = () => {
-      return new Promise((resolve, reject) => {
-        const canvCtx = that.createCanvas().getContext('2d')
-        const img = new that.Image()
+      return new Promise((resolve) => {
+        const canvCtx = this.createContext()
+        const img = new this.Image()
         img.crossOrigin = 'Anonymous'
-        img.onload = function () {
+        img.onload = () => {
           const width = 25
           const height = 1300
           const scale = width / height
@@ -412,15 +437,14 @@ class Mockup {
           // canvCtx.drawImage(img, 0, 0, img.width * scale, img.height, 0, 0, -width, height)
           canvCtx.drawImage(img, 0, 0, img.width * scale, img.height, 0, 0, width, height)
 
-          const canvCtx2 = that.createCanvas().getContext('2d')
+          const canvCtx2 = this.createContext()
           canvCtx2.canvas.width = canvCtx.canvas.width
           canvCtx2.canvas.height = canvCtx.canvas.height
 
-          const p = new that.Perspective({
+          const p = new this.perspective({
             ctx: canvCtx2,
             image: canvCtx.canvas,
-            resize: {},
-            createCanvas: that.createCanvas
+            resize: {}
           })
           p.draw([
             [0, 0],
@@ -437,7 +461,7 @@ class Mockup {
     }
     await spin()
 
-    await that.drawImage({
+    await this.drawImage({
       ctx: ctx,
       url: `${storageUrl}/assets/images/mockup/gatefold_2_back.png`,
       x: offsetX + 0,
@@ -455,10 +479,10 @@ class Mockup {
       [resize.w - 10, resize.h + 175],
       [0, resize.h + 510]
     ]
-    const coverPers = await that.getPerspective(params.cover, matrice2, resize)
+    const coverPers = await this.getPerspective(params.cover, matrice2, resize)
     ctx.drawImage(coverPers, offsetX + 450, offsetY + 500, resize.w, resize.h)
 
-    await that.drawImage({
+    await this.drawImage({
       ctx: ctx,
       url: `${storageUrl}/assets/images/mockup/gatefold_2_front.png`,
       x: offsetX + 0,
@@ -471,8 +495,7 @@ class Mockup {
   }
 
   async get3Getfold(params) {
-    const that = this
-    return new Promise(async (resolve, reject) => {
+    return new Promise(async (resolve) => {
       const ctx = params.canvas.getContext('2d')
 
       const w = 2500
@@ -496,7 +519,7 @@ class Mockup {
         ctx.imageSmoothingEnabled = true
 
         ctx.globalAlpha = 0.5
-        await that.drawImage({
+        await this.drawImage({
           ctx: ctx,
           url: `${storageUrl}/assets/images/mockup/BG1.jpg`,
           x: 0,
@@ -508,7 +531,7 @@ class Mockup {
         ctx.globalAlpha = 1
       }
 
-      await that.drawImage({
+      await this.drawImage({
         ctx: ctx,
         url: `${storageUrl}/assets/images/mockup/gatefold_3_shadow.png`,
         x: offsetX + 0,
@@ -526,27 +549,26 @@ class Mockup {
         [resizeDisc.w - 310, resizeDisc.h - 140],
         [0, resizeDisc.h - 285]
       ]
-      const coverDisc = await that.getPerspective(params.disc, matriceDisc, resizeDisc)
+      const coverDisc = await this.getPerspective(params.disc, matriceDisc, resizeDisc)
       ctx.drawImage(coverDisc, 1340, 775, resizeDisc.w, resizeDisc.h)
 
-      const img = new that.Image()
+      const img = new this.Image()
       img.crossOrigin = 'Anonymous'
-      img.onload = async function () {
+      img.onload = async () => {
         // Center
         const center = async () => {
-          return new Promise((resolve, reject) => {
-            const img = new that.Image()
+          return new Promise((resolve) => {
+            const img = new this.Image()
             img.crossOrigin = 'Anonymous'
-            img.onload = async function () {
+            img.onload = async () => {
               const w = 1200
               const h = 1200
-              const can2 = that.createCanvas().getContext('2d')
+              const can2 = this.createContext()
               can2.canvas.width = w
               can2.canvas.height = h
-              const p2 = new that.Perspective({
+              const p2 = new this.perspective({
                 ctx: can2,
-                image: img,
-                createCanvas: that.createCanvas
+                image: img
               })
               p2.draw([
                 [0, 210],
@@ -564,19 +586,18 @@ class Mockup {
 
         // back
         const back = async () => {
-          return new Promise((resolve, reject) => {
-            const img = new that.Image()
+          return new Promise((resolve) => {
+            const img = new this.Image()
             img.crossOrigin = 'Anonymous'
-            img.onload = async function () {
+            img.onload = async () => {
               const w2 = 1100
               const h2 = 1100
-              const can3 = that.createCanvas().getContext('2d')
+              const can3 = this.createContext()
               can3.canvas.width = w2
               can3.canvas.height = h2
-              const p3 = new that.Perspective({
+              const p3 = new this.perspective({
                 ctx: can3,
-                image: img,
-                createCanvas: that.createCanvas
+                image: img
               })
               p3.draw([
                 [0, 0],
@@ -597,21 +618,20 @@ class Mockup {
         const height = 1020
         const scale = width / height
 
-        const canvSpin = that.createCanvas().getContext('2d')
+        const canvSpin = this.createContext()
         canvSpin.canvas.width = width
         canvSpin.canvas.height = img.height
         // canvSpin.scale(-1, 1)
         // canvSpin.drawImage(img, 0, 0, img.width * scale, img.height, 0, 0, -width, height)
         canvSpin.drawImage(img, 0, 0, img.width * scale, img.height, 0, 0, width, height)
 
-        const canvCtx3 = that.createCanvas().getContext('2d')
+        const canvCtx3 = this.createContext()
         canvCtx3.canvas.width = canvSpin.canvas.width
         canvCtx3.canvas.height = canvSpin.canvas.height
 
-        const p = new that.Perspective({
+        const p = new this.perspective({
           ctx: canvCtx3,
-          image: canvSpin.canvas,
-          createCanvas: that.createCanvas
+          image: canvSpin.canvas
         })
         p.draw([
           [0, 5],
@@ -622,7 +642,7 @@ class Mockup {
 
         ctx.drawImage(canvCtx3.canvas, 505, 885)
 
-        await that.drawImage({
+        await this.drawImage({
           ctx: ctx,
           url: `${storageUrl}/assets/images/mockup/gatefold_3_back.png`,
           x: offsetX + 0,
@@ -633,10 +653,10 @@ class Mockup {
         // Front
         const w4 = 1100
         const h4 = 1100
-        const can4 = that.createCanvas().getContext('2d')
+        const can4 = this.createContext()
         can4.canvas.width = w4
         can4.canvas.height = h4
-        const p4 = new that.Perspective({ ctx: can4, image: img, createCanvas: that.createCanvas })
+        const p4 = new this.perspective({ ctx: can4, image: img })
         p4.draw([
           [0, 60],
           [can4.canvas.width - 175, 0],
@@ -645,7 +665,7 @@ class Mockup {
         ])
         ctx.drawImage(can4.canvas, 525, 840, w4, h4)
 
-        await that.drawImage({
+        await this.drawImage({
           ctx: ctx,
           url: `${storageUrl}/assets/images/mockup/gatefold_3_front.png`,
           x: offsetX + 0,
@@ -991,7 +1011,7 @@ class Mockup {
   }
 
   async getSpace(params) {
-    const ctx = params.canvas.getContext('2d')
+    const ctx = this.createContext()
     const w = 2500
     const h = 2500
 
@@ -1045,8 +1065,8 @@ class Mockup {
     return ctx.createCanvas
   }
 
-  async getPlate(params) {
-    const ctx = params.canvas.getContext('2d')
+  async getPlate(params: { disc: string; cover: string }) {
+    const ctx = this.createContext().getContext('2d')
     const w = 2500
     const h = 1250
 
@@ -1055,7 +1075,6 @@ class Mockup {
 
     ctx.imageSmoothingEnabled = true
 
-    console.log(`${storageUrl}/assets/images/vinyl/background_cover.png`)
     await this.drawImage({
       ctx: ctx,
       url: `${storageUrl}/assets/images/vinyl/background_cover.png`,
@@ -1081,6 +1100,178 @@ class Mockup {
     })
 
     return ctx.createCanvas
+  }
+
+  perspective({ ctx: ctxd, image, resize = {} }) {
+    const html5jp: any = {}
+
+    html5jp.createCanvas = this.createContext().canvas
+    // check the arguments
+    if (!ctxd || !ctxd.strokeStyle) {
+      return
+    }
+    if (!image || !image.width || !image.height) {
+      return
+    }
+    // prepare a <canvas> for the image
+    const cvso = html5jp.createCanvas()
+    cvso.width = resize.w || parseInt(image.width)
+    cvso.height = resize.h || parseInt(image.height)
+    const ctxo = cvso.getContext('2d')
+
+    ctxo.drawImage(image, 0, 0, cvso.width, cvso.height)
+    // prepare a <canvas> for the transformed image
+    const cvst = html5jp.createCanvas()
+    cvst.width = ctxd.canvas.width
+    cvst.height = ctxd.canvas.height
+    const ctxt = cvst.getContext('2d')
+    // parameters
+    this.p = {
+      ctxd: ctxd,
+      cvso: cvso,
+      ctxo: ctxo,
+      ctxt: ctxt
+    }
+
+    /* -------------------------------------------------------------------
+     * prototypes
+     * ----------------------------------------------------------------- */
+
+    const proto = html5jp.perspective.prototype
+
+    /* -------------------------------------------------------------------
+     * public methods
+     * ----------------------------------------------------------------- */
+
+    proto.draw = function (points) {
+      const d0x = points[0][0]
+      const d0y = points[0][1]
+      const d1x = points[1][0]
+      const d1y = points[1][1]
+      const d2x = points[2][0]
+      const d2y = points[2][1]
+      const d3x = points[3][0]
+      const d3y = points[3][1]
+      // compute the dimension of each side
+      const dims = [
+        Math.sqrt(Math.pow(d0x - d1x, 2) + Math.pow(d0y - d1y, 2)), // top side
+        Math.sqrt(Math.pow(d1x - d2x, 2) + Math.pow(d1y - d2y, 2)), // right side
+        Math.sqrt(Math.pow(d2x - d3x, 2) + Math.pow(d2y - d3y, 2)), // bottom side
+        Math.sqrt(Math.pow(d3x - d0x, 2) + Math.pow(d3y - d0y, 2)) // left side
+      ]
+
+      //
+      const ow = this.p.cvso.width
+      const oh = this.p.cvso.height
+      // specify the index of which dimension is longest
+      let base_index = 0
+      let max_scale_rate = 0
+      let zero_num = 0
+      for (let i = 0; i < 4; i++) {
+        let rate = 0
+        if (i % 2) {
+          rate = dims[i] / ow
+        } else {
+          rate = dims[i] / oh
+        }
+        if (rate > max_scale_rate) {
+          base_index = i
+          max_scale_rate = rate
+        }
+        if (dims[i] == 0) {
+          zero_num++
+        }
+      }
+      if (zero_num > 1) {
+        return
+      }
+      //
+      const step = 2
+      const cover_step = step * 5
+      //
+      const ctxo = this.p.ctxo
+      const ctxt = this.p.ctxt
+      ctxt.clearRect(0, 0, ctxt.canvas.width, ctxt.canvas.height)
+      if (base_index % 2 == 0) {
+        // top or bottom side
+        var ctxl = this.create_canvas_context(ow, cover_step)
+        ctxl.globalCompositeOperation = 'copy'
+        var cvsl = ctxl.canvas
+        for (let y = 0; y < oh; y += step) {
+          var r = y / oh
+          var sx = d0x + (d3x - d0x) * r
+          var sy = d0y + (d3y - d0y) * r
+          var ex = d1x + (d2x - d1x) * r
+          var ey = d1y + (d2y - d1y) * r
+          var ag = Math.atan((ey - sy) / (ex - sx))
+          var sc = Math.sqrt(Math.pow(ex - sx, 2) + Math.pow(ey - sy, 2)) / ow
+          ctxl.setTransform(1, 0, 0, 1, 0, -y)
+          ctxl.drawImage(ctxo.canvas, 0, 0)
+          //
+          ctxt.translate(sx, sy)
+          ctxt.rotate(ag)
+          ctxt.scale(sc, sc)
+          ctxt.drawImage(cvsl, 0, 0)
+          //
+          ctxt.setTransform(1, 0, 0, 1, 0, 0)
+        }
+      } else if (base_index % 2 == 1) {
+        // right or left side
+        var ctxl = this.create_canvas_context(cover_step, oh)
+        ctxl.globalCompositeOperation = 'copy'
+        var cvsl = ctxl.canvas
+        for (let x = 0; x < ow; x += step) {
+          var r = x / ow
+          var sx = d0x + (d1x - d0x) * r
+          var sy = d0y + (d1y - d0y) * r
+          var ex = d3x + (d2x - d3x) * r
+          var ey = d3y + (d2y - d3y) * r
+          var ag = Math.atan((sx - ex) / (ey - sy))
+          var sc = Math.sqrt(Math.pow(ex - sx, 2) + Math.pow(ey - sy, 2)) / oh
+          ctxl.setTransform(1, 0, 0, 1, -x, 0)
+          ctxl.drawImage(ctxo.canvas, 0, 0)
+          //
+          ctxt.translate(sx, sy)
+          ctxt.rotate(ag)
+          ctxt.scale(sc, sc)
+          ctxt.drawImage(cvsl, 0, 0)
+          //
+          ctxt.setTransform(1, 0, 0, 1, 0, 0)
+        }
+      }
+      // set a clipping path and draw the transformed image on the destination canvas.
+      this.p.ctxd.save()
+      this._applyClipPath(this.p.ctxd, [
+        [d0x, d0y],
+        [d1x, d1y],
+        [d2x, d2y],
+        [d3x, d3y]
+      ])
+      this.p.ctxd.drawImage(ctxt.canvas, 0, 0)
+      this.p.ctxd.restore()
+    }
+
+    /* -------------------------------------------------------------------
+     * private methods
+     * ----------------------------------------------------------------- */
+
+    proto.create_canvas_context = function (w, h) {
+      const canvas = html5jp.createCanvas()
+      canvas.width = w
+      canvas.height = h
+      const ctx = canvas.getContext('2d')
+      return ctx
+    }
+
+    proto._applyClipPath = function (ctx, points) {
+      ctx.beginPath()
+      ctx.moveTo(points[0][0], points[0][1])
+      for (let i = 1; i < points.length; i++) {
+        ctx.lineTo(points[i][0], points[i][1])
+      }
+      ctx.closePath()
+      ctx.clip()
+    }
   }
 }
 

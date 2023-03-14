@@ -552,7 +552,7 @@ class Utils {
   }
 
   static getCurrencies = (
-    base: Currencies = Currencies.EUR,
+    base: string,
     currencies: { id: string; value: Currencies; updated_at: string }[]
   ) => {
     /**
@@ -941,7 +941,7 @@ class Utils {
     return locales
   }
 
-  static getFee = (dates, date) => {
+  static getFee = (dates, date): number | null => {
     date = date.substr(0, 10)
     if (date.length === 7) {
       date += '-01'

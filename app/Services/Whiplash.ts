@@ -53,6 +53,27 @@ class Whiplash {
     return Whiplash.api('items')
   }
 
+  static getAllItems = async () => {
+    const list: any = []
+    let page = 0
+    let next = true
+    while (next) {
+      page = page + 1
+      const res: any = await Whiplash.api(`items`, {
+        body: {
+          page: page,
+          limit: 250
+        }
+      })
+      if (res && res.length > 0) {
+        list.push(...res)
+      } else {
+        next = false
+      }
+    }
+    return list
+  }
+
   static validOrder = async (shop, items) => {
     const customer = await DB('customer').find(shop.customer_id)
 
@@ -529,6 +550,17 @@ class Whiplash {
 
     if (payload?.productIds) {
       for (const product of listProducts) {
+        if (product.whiplash_id === -1) {
+          const item: any = await Whiplash.api(`/items/sku/${product.barcode}`)
+          if (item.length > 0) {
+            product.whiplash_id = item[0].id
+            DB('product').where('id', product.id).update({
+              whiplash_id: item[0].id
+            })
+          } else {
+            continue
+          }
+        }
         const warehouses: any = await Whiplash.api(
           `items/${product.whiplash_id}/warehouse_quantities`
         )
@@ -563,7 +595,7 @@ class Whiplash {
         }
       }
     } else {
-      const items: any = await Whiplash.getItems()
+      const items: any = await Whiplash.getAllItems()
       for (const item of items) {
         if (!products[item.sku]) {
           continue

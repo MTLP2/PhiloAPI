@@ -1,13 +1,13 @@
 import Storage from 'App/Services/Storage'
-import sharp from 'sharp'
 import Color from 'color'
 import config from 'Config/index'
 import Utils from 'App/Utils'
 import DB from 'App/DB'
 import Env from '@ioc:Adonis/Core/Env'
 import splatter from 'App/Splatter'
-// import Mockup from 'App/Services/Mockup'
-// const { createCanvas, Image } = require('canvas')
+import Mockup from 'App/Services/Mockup'
+// import { createCanvas, Image } from 'canvas'
+import sharp from 'sharp'
 const Vibrant = require('node-vibrant')
 
 class Artwork {
@@ -530,8 +530,8 @@ class Artwork {
     return buffer
   }
 
-  static async generateDisc(id, project) {
-    const path = `projects/${id}`
+  static async generateDisc(project) {
+    const path = `projects/${project.id}`
 
     const mockup = new Mockup({
       env: 'node',
@@ -542,15 +542,19 @@ class Artwork {
     })
 
     console.log(config.colors.vinyl[project.color_vinyl])
+    console.log(`${Env.get('STORAGE_URL')}/projects/${project.picture}/label.jpg`)
     const disc = await mockup.getDisc({
-      canvas: createCanvas(),
       color: config.colors.vinyl[project.color_vinyl],
       label: `${Env.get('STORAGE_URL')}/projects/${project.picture}/label.jpg`
     })
+
+    return disc.toBuffer()
+    /**
     await Storage.uploadImage(`${path}/disc`, disc.toBuffer('image/png'), {
       type: 'png'
       // width: 600
     })
+    **/
 
     return true
   }
@@ -678,7 +682,7 @@ class Artwork {
     if (!buffer) {
       return false
     }
-    const compress = await Storage.compressImage(buffer, { type: 'webp', quality: 90, ...params })
+    const compress = await Artwork.compressImage(buffer, { type: 'webp', quality: 90, ...params })
     await Storage.upload(to || `${path.split('.')[0]}.webp`, compress)
 
     return true
@@ -719,6 +723,29 @@ class Artwork {
       } catch (e) {}
     }
     return projects
+  }
+
+  static async compressImage(buffer, params = {}) {
+    return this.compressImageSharp(buffer, params)
+  }
+
+  static async compressImageSharp(buffer, params: any = {}) {
+    const image = sharp(buffer)
+    if (params.width) {
+      image.resize({ width: params.width, withoutEnlargement: true, fit: sharp.fit.inside })
+    }
+    if (params.type === 'jpg' || params.type === 'jpeg' || !params.type) {
+      image.jpeg({ quality: params.quality || 90 })
+    } else if (params.type === 'png') {
+      image.png({ quality: params.quality || 90 })
+    } else if (params.type === 'webp') {
+      image.webp({ quality: params.quality || 90 })
+    }
+    return image.toBuffer()
+  }
+
+  static sharp(...args): sharp {
+    return sharp(args)
   }
 }
 

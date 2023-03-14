@@ -43,6 +43,15 @@ class Project {
 
     project.step = project.sold_out ? 'successful' : project.step
 
+    if (project.sizes) {
+      project.sizes = Object.entries(JSON.parse(project.sizes))
+        .filter(([size, value]) => value)
+        .map(([size, value]) => size)
+      if (project.sizes.length === 0) {
+        project.sizes = null
+      }
+    }
+
     if (project.sold_out && project.item_stock > 0) {
       project.copies_left = project.item_stock
       project.price = project.item_price
@@ -357,6 +366,7 @@ class Project {
       'p.likes',
       'v.stock',
       'v.step',
+      'v.sizes',
       'v.user_id',
       'v.created_at',
       'p.country_id',
@@ -1656,16 +1666,24 @@ class Project {
       stocksPromises
     ])
 
-    if (params.period === 'last_month') {
-      params.start = moment().subtract('1', 'months').startOf('month').format('YYYY-MM-DD 23:59')
-      params.end = moment().subtract('1', 'months').endOf('month').format('YYYY-MM-DD 23:59')
-    } else if (params.period === 'all_time') {
+    if (!params.start) {
+      let start
       if (orders.length > 0) {
-        params.start = orders[0].created_at.substring(0, 10)
+        start = moment(orders[0].created_at)
       }
-      if (statements.length > 0 && (!params.start || `${statements[0].date}-01` < params.start)) {
-        params.start = `${statements[0].date}-01`
+      if (statements.length > 0 && (!start || start > moment(statements[0].date))) {
+        start = moment(statements[0].date)
       }
+      if (costs.length > 0 && (!start || start > moment(costs[0].date))) {
+        start = moment(costs[0].date)
+      }
+      if (payments.length > 0 && (!start || start > moment(payments[0].date))) {
+        start = moment(payments[0].date)
+      }
+      if (!start) {
+        return false
+      }
+      params.start = start.format('YYYY-MM-DD')
     }
     if (!params.end) {
       params.end = moment().format('YYYY-MM-DD 23:59')

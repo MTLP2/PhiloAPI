@@ -817,15 +817,30 @@ class Production {
         catnumber_creation: params.catnumber_creation
       })
 
-      await DB('project_product')
+      const product = await DB('project_product')
+        .select('product.id', 'project.name as project_name')
+        .join('project', 'project.id', 'project_product.project_id')
         .join('product', 'product.id', 'project_product.product_id')
         .where('project_product.project_id', prod.project_id)
         .orderBy('product.id', 'desc')
-        .limit(1)
-        .update({
+        .first()
+
+      if (!product) {
+        const [newProduct] = await DB('product').insert({
+          name: prod.project_name,
           barcode: params.barcode,
           catnumber: params.cat_number
         })
+        await DB('project_product').insert({
+          project_id: prod.project_id,
+          product_id: newProduct
+        })
+      } else {
+        await DB('product').where('id', product.id).update({
+          barcode: params.barcode,
+          catnumber: params.cat_number
+        })
+      }
 
       if (params.cat_number) {
         DB('project').where('id', prod.project_id).update({

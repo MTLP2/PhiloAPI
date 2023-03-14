@@ -133,6 +133,9 @@ class StatementService {
       case 'FAB':
         data = this.parseFab(workbook)
         break
+      case 'Arcades':
+        data = this.parseArcades(workbook)
+        break
     }
 
     data = Object.values(data)
@@ -423,6 +426,29 @@ class StatementService {
     return data
   }
 
+  static parseArcades(workbook) {
+    const worksheet = workbook.getWorksheet(3)
+
+    const data = {}
+    worksheet.eachRow((row) => {
+      const barcode = row.getCell('B').value
+      if (!isNaN(barcode)) {
+        if (!data[barcode]) {
+          data[barcode] = {
+            country_id: 'FR',
+            barcode: barcode,
+            quantity: 0,
+            total: 0
+          }
+        }
+        data[barcode].quantity += row.getCell('E').result
+        data[barcode].total += row.getCell('G').result
+      }
+    })
+
+    return data
+  }
+
   static parseLITA(workbook) {
     const worksheet = workbook.getWorksheet(1)
 
@@ -572,7 +598,7 @@ class StatementService {
 
   static async setWorksheet(
     workbook: any,
-    params: { id: number; number: number; auto: boolean; start: string; end: string }
+    params: { id: number; number: number; auto?: boolean; start: string; end: string }
   ) {
     const project = await DB()
       .select('vod.*', 'project.name', 'project.artist_name')
@@ -995,7 +1021,7 @@ class StatementService {
       .all()
 
     const costsPromise = DB('production_cost')
-      .select('name', 'vod.project_id', 'cost_real', 'cost_invoiced')
+      .select('name', 'vod.project_id', 'cost_real', 'cost_invoiced', 'production_cost.currency')
       .join('vod', 'vod.project_id', 'production_cost.project_id')
       .where('balance_followup', true)
       .all()
@@ -1005,6 +1031,9 @@ class StatementService {
       .join('vod', 'vod.project_id', 'production.project_id')
       .where('balance_followup', true)
       .all()
+
+    const currenciesDb = await Utils.getCurrenciesDb()
+    const currencies = await Utils.getCurrencies('EUR', currenciesDb)
 
     const [projectsList, invoices, prods, costs] = await Promise.all([
       projectsPromise,
@@ -1037,6 +1066,7 @@ class StatementService {
       project.costs_invoiced = 0
       project.resp_prod = team[project.resp_prod_id]?.name
       project.resp_com = team[project.com_id]?.name
+      project.url = 'https://www.diggersfactory.com/sheraf/project/' + project.id
       project.invoiced = 0
       project.direct_costs = 0
       project.direct_balance = 0
@@ -1073,8 +1103,8 @@ class StatementService {
             projects[cost.project_id].quantity_pressed2 = name[2]
           }
         }
-        projects[cost.project_id].direct_costs += cost.cost_real
-        projects[cost.project_id].costs_invoiced += cost.cost_invoiced
+        projects[cost.project_id].direct_costs += cost.cost_real / currencies[cost.currency]
+        projects[cost.project_id].costs_invoiced += cost.cost_invoiced / currencies[cost.currency]
         projects[cost.project_id].direct_balance =
           projects[cost.project_id].invoiced - projects[cost.project_id].direct_costs
       }
@@ -1085,6 +1115,7 @@ class StatementService {
     if (params.type === 'follow_up') {
       const columns = [
         { header: 'Id', key: 'id' },
+        { header: 'Url', key: 'url' },
         { header: 'User', key: 'user', width: 15 },
         { header: 'Artist', key: 'artist_name', width: 15 },
         { header: 'Project', key: 'name', width: 25 },
@@ -1331,9 +1362,9 @@ class StatementService {
       if (!stockPrice) {
         stockPrice = [{ start: null, end: null, value: p.type === 'deposit_sales' ? 0.05 : 0.1 }]
       }
-      const price = Utils.getFee(stockPrice, moment().format('YYYY-MM-DD'))
+      const price = Utils.getFee(stockPrice, moment().format('YYYY-MM-DD')) as number
 
-      const unitPrice = p.category === 'vinyl' ? price : 0.05
+      const unitPrice: number = p.category === 'vinyl' ? price : 0.05
 
       statement.storage = (p.stock * unitPrice) / currencies.EUR
       statement.updated_at = Utils.date()
@@ -1350,7 +1381,7 @@ class StatementService {
     payback?: boolean
     start?: string
     end?: string
-    auto: boolean
+    auto?: boolean
   }) {
     if (!params.start) {
       params.start = '2001-01-01'
@@ -1522,6 +1553,7 @@ class StatementService {
     }
     const countries = {
       PIAS: 'France',
+      ARCADES: 'France',
       ROM: 'Europe',
       LITA: 'USA / Canada',
       LITA2: 'USA / Canada',
@@ -1616,7 +1648,10 @@ class StatementService {
 
       const feeDate = JSON.parse(project.fee_date)
       const fee =
-        1 - (params.fee !== undefined ? params.fee : Utils.getFee(feeDate, order.created_at) / 100)
+        1 -
+        (params.fee !== undefined
+          ? params.fee
+          : (Utils.getFee(feeDate, order.created_at) as number) / 100)
       const tax = 1 + order.tax_rate
       const discount = order.discount_artist ? order.discount : 0
       const total = order.price * order.quantity - discount - order.fee_change
@@ -1651,7 +1686,10 @@ class StatementService {
 
       const feeDistribDate = JSON.parse(project.fee_distrib_date)
       const feeDistrib =
-        1 - (params.fee !== undefined ? params.fee : Utils.getFee(feeDistribDate, stat.date) / 100)
+        1 -
+        (params.fee !== undefined
+          ? params.fee
+          : (Utils.getFee(feeDistribDate, stat.date) as number) / 100)
 
       for (const dist of stat.distributors) {
         if (!dist.item) {
@@ -1812,7 +1850,17 @@ class StatementService {
 
     const workbook = new Excel.Workbook()
 
-    for (const dist of ['ROM', 'PIAS', 'LITA', 'MGM', 'Altafonte', 'Good', 'Jet', 'FAB']) {
+    for (const dist of [
+      'ROM',
+      'PIAS',
+      'LITA',
+      'MGM',
+      'Altafonte',
+      'Arcades',
+      'Good',
+      'Jet',
+      'FAB'
+    ]) {
       if (!data[dist]) {
         continue
       }
@@ -1875,6 +1923,84 @@ class StatementService {
     }
 
     return { success: true }
+  }
+
+  static getSalesByCountry = async (params: { start: string; end: string }) => {
+    let refs: any = DB('statement')
+      .select(
+        'statement.date',
+        'statement.project_id',
+        'vod.barcode',
+        'project.name',
+        'project.artist_name',
+        'dist.country_id',
+        'dist.quantity'
+      )
+      .join('statement_distributor as dist', 'dist.statement_id', 'statement.id')
+      .join('project', 'project.id', 'statement.project_id')
+      .join('vod', 'vod.project_id', 'project.id')
+      .orderBy('statement.date')
+
+    if (params.start) {
+      refs.where('statement.date', '>=', params.start.substring(0, 7))
+    }
+    if (params.end) {
+      refs.where('statement.date', '<=', params.end.substring(0, 7))
+    }
+
+    refs = await refs.all()
+
+    const data: any = {}
+    for (const ref of refs) {
+      if (!ref.country_id || !isNaN(ref.country_id)) {
+        continue
+      }
+      ref.country_id = ref.country_id.toUpperCase()
+      if (!data[ref.country_id]) {
+        data[ref.country_id] = {
+          dates: {}
+        }
+      }
+      data[ref.country_id].dates[ref.date] = true
+
+      if (!data[ref.country_id][ref.barcode]) {
+        data[ref.country_id][ref.barcode] = {
+          id: ref.project_id,
+          barcode: ref.barcode,
+          project: `${ref.artist_name} - ${ref.name}`,
+          quantity: 0
+        }
+      }
+      if (!data[ref.country_id][ref.barcode][ref.date]) {
+        data[ref.country_id][ref.barcode][ref.date] = 0
+      }
+      data[ref.country_id][ref.barcode].quantity += ref.quantity
+      data[ref.country_id][ref.barcode][ref.date] += ref.quantity
+    }
+
+    const workbook = new Excel.Workbook()
+
+    for (const country of Object.keys(data)) {
+      const worksheet = workbook.addWorksheet(country)
+
+      const columns = [
+        { header: 'Project', key: 'project', width: 50 },
+        { header: 'Barcode', key: 'barcode', width: 15 },
+        { header: 'Quantity', key: 'quantity' }
+      ]
+
+      for (const date of Object.keys(data[country].dates)) {
+        columns.push({ header: date, key: date })
+      }
+      delete data[country].dates
+
+      worksheet.columns = columns
+
+      const refs = Object.values(data[country]).sort((a: any, b: any) => b.quantity - a.quantity)
+      worksheet.addRows(refs)
+    }
+
+    return workbook.xlsx.writeBuffer()
   }
 }
 

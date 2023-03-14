@@ -250,8 +250,7 @@ class Quote {
     for (const c of Object.keys(quote)) {
       quote[c] = Math.round(quote[c] * (1 + feeProd / 100))
       if (data.factory === 'vdp') {
-        quote[c] = Math.round(quote[c] * 1.14)
-        quote[c] = Math.round(quote[c] * 0.97)
+        quote[c] = Math.round(quote[c] * 0.91)
       }
     }
 
@@ -297,10 +296,6 @@ class Quote {
       if (vod && vod.fee_date) {
         fee = Utils.getFee(JSON.parse(vod.fee_date), Utils.date()) / 100
       }
-    }
-
-    if (data.factory === 'vdp') {
-      logs.push({ type: 'surcharge', comment: '19%' })
     }
 
     const quantitySell = params.quantity - params.count_other
@@ -370,8 +365,8 @@ class Quote {
     if (params.color_vinyl !== 'black') {
       quote.type_vinyl += getCost(
         {
-          '12"': 49,
-          '10"': 49,
+          '12"': 48,
+          '10"': 48,
           '7"': 51
         },
         'type_vinyl'
@@ -639,7 +634,10 @@ class Quote {
     }
 
     // sticker
-    if (params.sticker && params.sticker !== '0') {
+    if (params.sticker === 'barcode_sticker') {
+      quote.sticker = getCost(534, 'sticker', ` x ${params.quantity}`) / params.nb_vinyl
+      quote.sticker += getCost(535, 'sticker', ` x ${params.quantity}`) / params.nb_vinyl
+    } else if (params.sticker && params.sticker !== '0') {
       quote.sticker = getCost(237, 'sticker', ` x ${params.quantity}`) / params.nb_vinyl
       quote.sticker += getCost(238, 'sticker', ` x ${params.quantity}`) / params.nb_vinyl
     }
@@ -671,21 +669,25 @@ class Quote {
       if (params.nb_vinyl === 1) {
         quote.cutting = getCost(3, 'cutting')
         if (params.nb_vinyl === 1) {
-          quote.gatefold = getCost(35, 'gatefold')
+          quote.gatefold = getCost(33, 'gatefold')
         }
       } else if (params.nb_vinyl === 2) {
-        quote.cutting = getCost(2, 'cutting')
+        quote.cutting = getCost(2, 'cutting') / params.nb_vinyl
       }
     } else {
       if (params.nb_vinyl === 1) {
         quote.cutting = getCost(5, 'cutting')
       } else if (params.nb_vinyl === 2) {
-        quote.cutting = getCost(4, 'cutting')
+        quote.cutting = getCost(4, 'cutting') / params.nb_vinyl
       }
     }
 
+    quote.sleeve = 0
     if (params.sleeve === 'pvc') {
       quote.sleeve = getCost(45, 'sleeve')
+    }
+    if (params.quantity >= 300) {
+      quote.sleeve += getCost(35, 'sleeve', ` x ${params.quantity}`) / params.nb_vinyl
     }
 
     if (params.type_vinyl === 'splatter' || params.type_vinyl === 'marble') {
@@ -752,7 +754,7 @@ class Quote {
     }
 
     // Frais supplementaire + échentillon diggers
-    quote.test_pressing = 45
+    quote.test_pressing = 40
 
     return quote
   }
@@ -1081,10 +1083,9 @@ class Quote {
           costs[worksheet.name].push({
             id: rowNumber,
             label: row.getCell('A').toString(),
-            type: row.getCell('B').toString(),
-            q100: +row.getCell('C').toString(),
-            q200: +row.getCell('D').toString(),
-            q300: +row.getCell('E').toString(),
+            q100: +row.getCell('B').toString(),
+            q200: +row.getCell('C').toString(),
+            q300: +row.getCell('D').toString(),
             q500: +row.getCell('E').toString(),
             q1000: +row.getCell('F').toString(),
             q3000: +row.getCell('G').toString(),
@@ -1219,7 +1220,7 @@ class Quote {
     html += '</table>'
 
     await Notification.sendEmail({
-      to: 'ferdinand@diggersfactory.com',
+      to: 'sophie@diggersfactory.com',
       subject: `Quote - ${params.email}`,
       html: html
     })
