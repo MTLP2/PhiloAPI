@@ -125,7 +125,7 @@ class Utils {
       })
     })
 
-  static request = (url, params) =>
+  static request = (url, params?) =>
     new Promise((resolve, reject) => {
       request(url, params, (error, res, body) => {
         if (error) {
