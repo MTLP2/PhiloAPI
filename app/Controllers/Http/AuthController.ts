@@ -126,66 +126,11 @@ class AuthController {
     }
 
     return { error: true }
-    /**
-    const profile = await Utils.request('https://graph.facebook.com/me', {
-      qs: {
-        access_token: params.access_token,
-        fields: 'id,name,email'
-      },
-      json: true
-    })
-
-    if (profile.error) {
-      throw new ApiError(500, profile.error, profile.error.message)
-    }
-    const profilee = profile
-    profilee.facebook_id = profile.id
-    profilee.lang = params.lang ? params.lang : 'en'
-    profilee.referrer = params.referrer
-    profilee.styles = params.styles
-    profilee.origin = params.origin
-    profilee.type = params.type
-    profilee.currency = params.currency
-    profilee.sponsor = params.sponsor
-    profilee.newsletter = params.newsletter
-
-    if (profile.gender) {
-      profilee.gender = profile.gender === 'male' ? 'M' : 'F'
-    } else {
-      profilee.gender = null
-    }
-    if (profile.birthday) {
-      const date = profile.birthday.split('/')
-      profilee.birthday = date.length === 3 ? `${date[2]}-${date[0]}-${date[1]}` : null
-    } else {
-      profilee.birthday = null
-    }
-    if (profile.location && profile.location.location.country) {
-      const country = await DB('country').where('name', profile.location.location.country).first()
-      if (country) {
-        profilee.country_id = country.id
-      }
-    }
-
-    if (!profile.email) {
-      response.json({ error: 'no_email' })
-      return false
-    }
-    const resss = await Sign.loginFacebook(profilee)
-    if (resss.error) {
-      response.json(resss)
-      return false
-    }
-
-    const me = await User.me(resss.user_id)
-    response.json({ token: resss.token, me, new: resss.new })
-    User.lastVisit(resss.user_id).then()
-    **/
   }
 
   async soundcloud({ params, response }) {
     if (params.code) {
-      const res = await Utils.request({
+      const res: any = await Utils.request({
         method: 'POST',
         uri: 'https://api.soundcloud.com/oauth2/token',
         form: {
@@ -202,10 +147,17 @@ class AuthController {
         return { success: false }
       }
 
-      const profile = await Utils.request({
-        uri: `https://api.soundcloud.com/me?oauth_token=${res.access_token}`,
+      const profile: any = await Utils.request({
+        uri: `https://api.soundcloud.com/me`,
+        headers: {
+          Authorization: `OAuth ${res.access_token}`
+        },
         json: true
       })
+
+      if (!profile.id) {
+        return false
+      }
 
       const user = await DB('user').where('soundcloud_id', profile.id).first()
 
@@ -236,7 +188,10 @@ class AuthController {
       }
 
       const profile = await Utils.request({
-        uri: `https://api.soundcloud.com/me?oauth_token=${params.access_token}`,
+        uri: `https://api.soundcloud.com/me`,
+        headers: {
+          Authorization: `OAuth ${params.access_token}`
+        },
         json: true
       })
 
