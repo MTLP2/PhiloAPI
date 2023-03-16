@@ -150,7 +150,8 @@ class Artwork {
         })
       }
 
-      await Artwork.generateDisc(project)
+      await Artwork.generateVinyl(uid, project)
+      // await Artwork.generateDisc(project)
 
       if (project.category === 'cd') {
         await Artwork.generateSleeve(uid, 'cd')
