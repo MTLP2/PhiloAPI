@@ -147,6 +147,19 @@ class Mockup {
     })
   }
 
+  loadImage(src: string) {
+    return new Promise((resolve, reject) => {
+      const img = new this.Image()
+      img.onerror = (err) => {
+        reject(err)
+      }
+      img.onload = () => {
+        resolve(img)
+      }
+      img.src = src
+    })
+  }
+
   async getDisc(params: {
     label: string
     type?: string
@@ -165,139 +178,131 @@ class Mockup {
       img.onerror = (err) => {
         reject(err)
       }
-      img.onload = () => {
+      img.onload = async () => {
         canvas.width = img.width
         canvas.height = img.height
 
-        const img2 = new this.Image()
-        img2.onerror = (err) => {
-          reject(err)
-        }
-        img2.onload = async () => {
-          canvas.width = img.width
-          canvas.height = img.height
+        const centerX = canvas.width / 2
+        const centerY = canvas.height / 2
+        const radius = img.width / 2
 
-          const centerX = canvas.width / 2
-          const centerY = canvas.height / 2
-          const radius = img.width / 2
+        ctx.globalAlpha = 1
+        ctx.beginPath()
+        ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI, false)
+        ctx.fillStyle = params.color
+        ctx.fill()
+        ctx.globalAlpha = 1
 
-          ctx.globalAlpha = 1
-          ctx.beginPath()
-          ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI, false)
-          ctx.fillStyle = params.color
-          ctx.fill()
-          ctx.globalAlpha = 1
-
-          if (params.picture) {
-            ctx.globalCompositeOperation = 'source-in'
+        if (params.picture) {
+          ctx.globalCompositeOperation = 'source-in'
+          await this.drawImage({
+            ctx: ctx,
+            url: params.picture,
+            x: 0,
+            y: 0,
+            width: canvas.width,
+            clear: true
+          })
+          ctx.globalCompositeOperation = 'source-over'
+        } else {
+          if (params.type === 'splatter') {
             await this.drawImage({
               ctx: ctx,
-              url: params.picture,
+              url: `${storageUrl}/assets/images/mockup/splatter1.png`,
               x: 0,
               y: 0,
               width: canvas.width,
+              color: params.color2,
               clear: true
             })
-            ctx.globalCompositeOperation = 'source-over'
-          } else {
-            if (params.type === 'splatter') {
-              await this.drawImage({
-                ctx: ctx,
-                url: `${storageUrl}/assets/images/mockup/splatter1.png`,
-                x: 0,
-                y: 0,
-                width: canvas.width,
-                color: params.color2,
-                clear: true
-              })
-            }
-
-            if (params.type === 'splatter' && params.color3) {
-              await this.drawImage({
-                ctx: ctx,
-                url: `${storageUrl}/assets/images/mockup/splatter2.png`,
-                x: 0,
-                y: 0,
-                width: canvas.width,
-                color: params.color3,
-                clear: true
-              })
-            }
-
-            if (params.type === 'marble') {
-              await this.drawImage({
-                ctx: ctx,
-                url: `${storageUrl}/assets/images/mockup/marble1.png`,
-                x: 0,
-                y: 0,
-                width: canvas.width,
-                color: params.color2,
-                clear: true
-              })
-            }
-
-            if (params.type === 'galaxy') {
-              await this.drawImage({
-                ctx: ctx,
-                url: `${storageUrl}/assets/images/mockup/galaxy.png`,
-                x: 0,
-                y: 0,
-                width: canvas.width,
-                color: params.color2,
-                clear: true
-              })
-            }
-
-            if (params.type === 'colorincolor') {
-              await this.drawImage({
-                ctx: ctx,
-                url: `${storageUrl}/assets/images/mockup/colorincolor.png`,
-                x: 0,
-                y: 0,
-                width: canvas.width,
-                color: params.color2,
-                clear: true
-              })
-            }
-
-            if (params.type === 'half&half') {
-              await this.drawImage({
-                ctx: ctx,
-                url: `${storageUrl}/assets/images/mockup/halfandhalf.png`,
-                x: 0,
-                y: 0,
-                width: canvas.width,
-                color: params.color2,
-                clear: true
-              })
-            }
           }
 
-          ctx.drawImage(img, 0, 0)
+          if (params.type === 'splatter' && params.color3) {
+            await this.drawImage({
+              ctx: ctx,
+              url: `${storageUrl}/assets/images/mockup/splatter2.png`,
+              x: 0,
+              y: 0,
+              width: canvas.width,
+              color: params.color3,
+              clear: true
+            })
+          }
 
+          if (params.type === 'marble') {
+            await this.drawImage({
+              ctx: ctx,
+              url: `${storageUrl}/assets/images/mockup/marble1.png`,
+              x: 0,
+              y: 0,
+              width: canvas.width,
+              color: params.color2,
+              clear: true
+            })
+          }
+
+          if (params.type === 'galaxy') {
+            await this.drawImage({
+              ctx: ctx,
+              url: `${storageUrl}/assets/images/mockup/galaxy.png`,
+              x: 0,
+              y: 0,
+              width: canvas.width,
+              color: params.color2,
+              clear: true
+            })
+          }
+
+          if (params.type === 'colorincolor') {
+            await this.drawImage({
+              ctx: ctx,
+              url: `${storageUrl}/assets/images/mockup/colorincolor.png`,
+              x: 0,
+              y: 0,
+              width: canvas.width,
+              color: params.color2,
+              clear: true
+            })
+          }
+
+          if (params.type === 'half&half') {
+            await this.drawImage({
+              ctx: ctx,
+              url: `${storageUrl}/assets/images/mockup/halfandhalf.png`,
+              x: 0,
+              y: 0,
+              width: canvas.width,
+              color: params.color2,
+              clear: true
+            })
+          }
+        }
+
+        ctx.drawImage(img, 0, 0)
+
+        if (params.label) {
           ctx.beginPath()
           ctx.arc(centerX, centerY, 280, 0, 2 * Math.PI, false)
-          ctx.fillStyle = '#000'
+          ctx.fillStyle = params.color
           ctx.fill()
           ctx.clip()
-
           const labelSize = 560
+          const label = await this.loadImage(params.label)
           ctx.drawImage(
-            img2,
+            label,
             centerX - labelSize / 2,
             centerY - labelSize / 2,
             labelSize,
             labelSize
           )
-          ctx.restore()
-
-          ctx.beginPath()
-          ctx.arc(centerX, centerY, 15, 0, 2 * Math.PI, false)
-          ctx.fill()
-
-          resolve(ctx.canvas)
         }
-        img2.src = params.label
+        ctx.restore()
+
+        ctx.beginPath()
+        ctx.arc(centerX, centerY, 15, 0, 2 * Math.PI, false)
+        ctx.fill()
+
+        resolve(ctx.canvas)
       }
       img.src =
         params.color !== 'black'
