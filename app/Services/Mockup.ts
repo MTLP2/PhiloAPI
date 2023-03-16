@@ -151,7 +151,7 @@ class Mockup {
     return new Promise((resolve, reject) => {
       const img = new this.Image()
       img.onerror = (err) => {
-        reject(err)
+        resolve(null)
       }
       img.onload = () => {
         resolve(img)
@@ -288,32 +288,35 @@ class Mockup {
           ctx.clip()
           const labelSize = 560
           const label = await this.loadImage(params.label)
-          ctx.drawImage(
-            label,
-            centerX - labelSize / 2,
-            centerY - labelSize / 2,
-            labelSize,
-            labelSize
-          )
+          if (label) {
+            ctx.drawImage(
+              label,
+              centerX - labelSize / 2,
+              centerY - labelSize / 2,
+              labelSize,
+              labelSize
+            )
+          }
         }
         ctx.restore()
 
         ctx.beginPath()
+        ctx.globalCompositeOperation = 'destination-out'
         ctx.arc(centerX, centerY, 15, 0, 2 * Math.PI, false)
         ctx.fill()
 
         resolve(ctx.canvas)
       }
-      /**
       img.src =
         params.color !== 'black'
           ? `${storageUrl}/assets/images/mockup/disc2.png`
           : `${storageUrl}/assets/images/mockup/disc.png`
-      **/
+      /**
       img.src =
         params.color !== 'black'
           ? `${storageUrl}/assets/images/vinyl/vinyl11.png`
           : `${storageUrl}/assets/images/vinyl/vinyl22.png`
+      **/
     })
   }
 
