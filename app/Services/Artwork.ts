@@ -488,7 +488,7 @@ class Artwork {
           top: 5
         })
       }
-      if (project.splatter2) {
+      if (project.splatter2 && project.splatter2 !== 'none') {
         const splatter2 = await sharp(Buffer.from(splatter(config.colors.vinyl[project.splatter2])))
           .rotate(50, { background: '#FFFFFF00' })
           .resize({ width: 602, height: 602 })
