@@ -6,6 +6,7 @@ import DB from 'App/DB'
 import Env from '@ioc:Adonis/Core/Env'
 import splatter from 'App/Splatter'
 import Mockup from 'App/Services/Mockup'
+import { createCanvas, Image } from 'canvas'
 import sharp from 'sharp'
 const Vibrant = require('node-vibrant')
 
@@ -150,8 +151,8 @@ class Artwork {
         })
       }
 
-      await Artwork.generateVinyl(uid, project)
-      // await Artwork.generateDisc(project)
+      // await Artwork.generateVinyl(uid, project)
+      await Artwork.generateDisc(project)
 
       if (project.category === 'cd') {
         await Artwork.generateSleeve(uid, 'cd')
@@ -526,7 +527,6 @@ class Artwork {
   }
 
   static async generateDisc(project) {
-    const { createCanvas, Image } = require('canvas')
     const path = `projects/${project.picture}`
 
     const mockup = new Mockup({
