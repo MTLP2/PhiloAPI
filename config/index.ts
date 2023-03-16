@@ -124,7 +124,7 @@ export default {
 
   colors: {
     vinyl: {
-      black: '#333',
+      black: '#000',
       white: '#fbfbfb',
       yellow: 'rgb(239 234 59)',
       red: '#ef2f2f',
