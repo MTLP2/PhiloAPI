@@ -592,14 +592,14 @@ class Artwork {
       composite.push({
         input: vinyl,
         left: 650,
-        top: 40
+        top: 48
       })
 
       if (nb === 2) {
         composite.push({
           input: vinyl,
           left: 700,
-          top: 40
+          top: 48
         })
       }
     }
