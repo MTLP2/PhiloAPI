@@ -80,8 +80,8 @@ class Vod {
     vod.send_tracks = params.send_tracks
     vod.type_vinyl = params.type_vinyl
     vod.color_vinyl = params.color_vinyl ? params.color_vinyl : null
-    vod.splatter1 = params.type_vinyl === 'splatter' ? params.splatter1 : null
-    vod.splatter2 = params.type_vinyl === 'splatter' ? params.splatter2 : null
+    vod.splatter1 = params.splatter1
+    vod.splatter2 = params.splatter2
     vod.count_other = params.count_other ? params.count_other : 0
     if (vod.price !== parseFloat(params.price) || !vod.prices) {
       const currencies = await Utils.getCurrenciesDb()

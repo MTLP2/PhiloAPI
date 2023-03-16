@@ -6,7 +6,7 @@ class Mockup {
   createContext: () => any
   createCanvas: () => any
 
-  constructor(params: { env: string; image: () => void; createContext: () => any }) {
+  constructor(params: { env: string; image: any; createContext: () => any }) {
     this.env = params.env
     this.Image = params.image
     this.createContext = params.createContext
@@ -105,7 +105,7 @@ class Mockup {
   }: {
     cover: string
     matrice: any
-    resize: { w?: number; h?: number }
+    resize?: { w?: number; h?: number }
   }) => {
     return new Promise((resolve) => {
       const ctx = this.createContext()
@@ -148,15 +148,16 @@ class Mockup {
   }
 
   async getDisc(params: {
-    color: string
     label: string
-    splatter1?: string
-    splatter2?: string
-    galaxy?: string
-    colorincolor?: string
-  }) {
+    type?: string
+    color: string
+    color2?: string
+    color3?: string
+    picture?: string
+    canvas?: HTMLCanvasElement
+  }): Promise<HTMLCanvasElement> {
     return new Promise((resolve, reject) => {
-      const ctx = this.createContext()
+      const ctx = params.canvas ? params.canvas.getContext('2d') : this.createContext()
       const canvas = ctx.canvas
 
       const img = new this.Image()
@@ -187,52 +188,89 @@ class Mockup {
           ctx.fill()
           ctx.globalAlpha = 1
 
-          if (params.splatter1) {
+          if (params.picture) {
+            ctx.globalCompositeOperation = 'source-in'
             await this.drawImage({
               ctx: ctx,
-              url: `${storageUrl}/assets/images/mockup/splatter1.png`,
+              url: params.picture,
               x: 0,
               y: 0,
               width: canvas.width,
-              color: params.splatter1,
               clear: true
             })
-          }
+            ctx.globalCompositeOperation = 'source-over'
+          } else {
+            if (params.type === 'splatter') {
+              await this.drawImage({
+                ctx: ctx,
+                url: `${storageUrl}/assets/images/mockup/splatter1.png`,
+                x: 0,
+                y: 0,
+                width: canvas.width,
+                color: params.color2,
+                clear: true
+              })
+            }
 
-          if (params.splatter2) {
-            await this.drawImage({
-              ctx: ctx,
-              url: `${storageUrl}/assets/images/mockup/splatter2.png`,
-              x: 0,
-              y: 0,
-              width: canvas.width,
-              color: params.splatter2,
-              clear: true
-            })
-          }
+            if (params.type === 'splatter' && params.color3) {
+              await this.drawImage({
+                ctx: ctx,
+                url: `${storageUrl}/assets/images/mockup/splatter2.png`,
+                x: 0,
+                y: 0,
+                width: canvas.width,
+                color: params.color3,
+                clear: true
+              })
+            }
 
-          if (params.galaxy) {
-            await this.drawImage({
-              ctx: ctx,
-              url: `${storageUrl}/assets/images/mockup/galaxy.png`,
-              x: 0,
-              y: 0,
-              width: canvas.width,
-              color: params.galaxy,
-              clear: true
-            })
-          }
+            if (params.type === 'marble') {
+              await this.drawImage({
+                ctx: ctx,
+                url: `${storageUrl}/assets/images/mockup/marble1.png`,
+                x: 0,
+                y: 0,
+                width: canvas.width,
+                color: params.color2,
+                clear: true
+              })
+            }
 
-          if (params.colorincolor) {
-            await this.drawImage({
-              ctx: ctx,
-              url: `${storageUrl}/assets/images/mockup/colorincolor.png`,
-              x: 0,
-              y: 0,
-              width: canvas.width,
-              color: params.colorincolor,
-              clear: true
-            })
+            if (params.type === 'galaxy') {
+              await this.drawImage({
+                ctx: ctx,
+                url: `${storageUrl}/assets/images/mockup/galaxy.png`,
+                x: 0,
+                y: 0,
+                width: canvas.width,
+                color: params.color2,
+                clear: true
+              })
+            }
+
+            if (params.type === 'colorincolor') {
+              await this.drawImage({
+                ctx: ctx,
+                url: `${storageUrl}/assets/images/mockup/colorincolor.png`,
+                x: 0,
+                y: 0,
+                width: canvas.width,
+                color: params.color2,
+                clear: true
+              })
+            }
+
+            if (params.type === 'half&half') {
+              await this.drawImage({
+                ctx: ctx,
+                url: `${storageUrl}/assets/images/mockup/halfandhalf.png`,
+                x: 0,
+                y: 0,
+                width: canvas.width,
+                color: params.color2,
+                clear: true
+              })
+            }
           }
 
           ctx.drawImage(img, 0, 0)
@@ -325,7 +363,11 @@ class Mockup {
       [0, resizeDisc.h + 520]
     ]
 
-    const coverDisc = await this.getPerspective(params.disc, matrice, resizeDisc)
+    const coverDisc = await this.getPerspective({
+      cover: params.disc,
+      matrice: matrice,
+      resize: resizeDisc
+    })
     ctx.drawImage(coverDisc, offsetX + 1050, offsetY - 45, resizeDisc.w, resizeDisc.h)
 
     const resize = {
@@ -338,7 +380,11 @@ class Mockup {
       [resize.w - 15, resize.h + 170],
       [0, resize.h + 520]
     ]
-    const coverPers = await this.getPerspective(params.cover, matrice2, resize)
+    const coverPers = await this.getPerspective({
+      cover: params.cover,
+      matrice: matrice2,
+      resize: resize
+    })
     ctx.drawImage(coverPers, offsetX + 505, offsetY + 0, resize.w, resize.h)
 
     await this.drawImage({
@@ -404,7 +450,11 @@ class Mockup {
       [resizeBack.w - 60, resizeBack.h + 400],
       [12, resizeBack.h + 720]
     ]
-    const coverBack = await this.getPerspective(params.cover2, matriceBack, resizeBack)
+    const coverBack = await this.getPerspective({
+      cover: params.cover2,
+      matrice: matriceBack,
+      resize: resizeBack
+    })
     ctx.drawImage(coverBack, offsetX + 420, offsetY + 480, resizeBack.w, resizeBack.h)
 
     const resizeDisc = {
@@ -417,7 +467,11 @@ class Mockup {
       [resizeDisc.w, resizeDisc.h + 170],
       [0, resizeDisc.h + 520]
     ]
-    const coverDisc = await this.getPerspective(params.disc, matriceDisc, resizeDisc)
+    const coverDisc = await this.getPerspective({
+      cover: params.disc,
+      matrice: matriceDisc,
+      resize: resizeDisc
+    })
     ctx.drawImage(coverDisc, offsetX + 1050, offsetY + 440, resizeDisc.w, resizeDisc.h)
 
     const spin = () => {
@@ -479,7 +533,11 @@ class Mockup {
       [resize.w - 10, resize.h + 175],
       [0, resize.h + 510]
     ]
-    const coverPers = await this.getPerspective(params.cover, matrice2, resize)
+    const coverPers = await this.getPerspective({
+      cover: params.cover,
+      matrice: matrice2,
+      resize: resize
+    })
     ctx.drawImage(coverPers, offsetX + 450, offsetY + 500, resize.w, resize.h)
 
     await this.drawImage({
@@ -549,7 +607,11 @@ class Mockup {
         [resizeDisc.w - 310, resizeDisc.h - 140],
         [0, resizeDisc.h - 285]
       ]
-      const coverDisc = await this.getPerspective(params.disc, matriceDisc, resizeDisc)
+      const coverDisc = await this.getPerspective({
+        cover: params.disc,
+        matrice: matriceDisc,
+        resize: resizeDisc
+      })
       ctx.drawImage(coverDisc, 1340, 775, resizeDisc.w, resizeDisc.h)
 
       const img = new this.Image()
@@ -809,7 +871,7 @@ class Mockup {
     ]
 
     ctx.globalAlpha = 1
-    const discPer = await this.getPerspective(params.disc, matrice)
+    const discPer = await this.getPerspective({ cover: params.disc, matrice: matrice })
     ctx.drawImage(discPer, 950, 420, 2200, 2200)
 
     const resize = {
@@ -822,7 +884,11 @@ class Mockup {
       [resize.w + 40, resize.h + 60],
       [265, resize.h + 565]
     ]
-    const coverPers = await this.getPerspective(params.cover, matrice2, resize)
+    const coverPers = await this.getPerspective({
+      cover: params.cover,
+      matrice: matrice2,
+      resize: resize
+    })
     ctx.drawImage(coverPers, 350, 400, resize.w, resize.h)
 
     await this.drawImage({
@@ -899,7 +965,11 @@ class Mockup {
       [resize.w + 40, resize.h + 60],
       [265, resize.h + 565]
     ]
-    const coverPers = await this.getPerspective(params.cover, matrice2, resize)
+    const coverPers = await this.getPerspective({
+      cover: params.cover,
+      matrice: matrice2,
+      resize: resize
+    })
     ctx.drawImage(coverPers, 350, 400, resize.w, resize.h)
 
     await this.drawImage({
@@ -922,7 +992,7 @@ class Mockup {
     })
     ctx.globalAlpha = 1
 
-    const discPer = await this.getPerspective(params.disc, matrice)
+    const discPer = await this.getPerspective({ cover: params.disc, matrice: matrice })
     ctx.drawImage(discPer, 880, 480, 2230, 2230)
 
     return ctx.canvas
@@ -1038,16 +1108,16 @@ class Mockup {
       w: 1950,
       h: 1950
     }
-    const coverPers = await this.getPerspective(
-      params.cover,
-      () => [
+    const coverPers = await this.getPerspective({
+      cover: params.cover,
+      matrice: () => [
         [100, 100],
         [resize.w + 0, 0],
         [resize.w, resize.h],
         [100, resize.h - 100]
       ],
-      resize
-    )
+      resize: resize
+    })
     ctx.rotate((12 * Math.PI) / 180)
 
     ctx.globalAlpha = 1
@@ -1102,7 +1172,15 @@ class Mockup {
     return ctx.createCanvas
   }
 
-  perspective({ ctx: ctxd, image, resize = {} }) {
+  perspective({
+    ctx: ctxd,
+    image,
+    resize
+  }: {
+    ctx: any
+    image: any
+    resize?: { w?: number; h?: number }
+  }) {
     const html5jp: any = {}
 
     html5jp.createCanvas = this.createContext().canvas
@@ -1115,8 +1193,8 @@ class Mockup {
     }
     // prepare a <canvas> for the image
     const cvso = html5jp.createCanvas()
-    cvso.width = resize.w || parseInt(image.width)
-    cvso.height = resize.h || parseInt(image.height)
+    cvso.width = (resize && resize.w) || parseInt(image.width)
+    cvso.height = (resize && resize.h) || parseInt(image.height)
     const ctxo = cvso.getContext('2d')
 
     ctxo.drawImage(image, 0, 0, cvso.width, cvso.height)
@@ -1125,8 +1203,8 @@ class Mockup {
     cvst.width = ctxd.canvas.width
     cvst.height = ctxd.canvas.height
     const ctxt = cvst.getContext('2d')
-    // parameters
-    this.p = {
+
+    const p = {
       ctxd: ctxd,
       cvso: cvso,
       ctxo: ctxo,
@@ -1161,8 +1239,8 @@ class Mockup {
       ]
 
       //
-      const ow = this.p.cvso.width
-      const oh = this.p.cvso.height
+      const ow = p.cvso.width
+      const oh = p.cvso.height
       // specify the index of which dimension is longest
       let base_index = 0
       let max_scale_rate = 0
@@ -1189,8 +1267,8 @@ class Mockup {
       const step = 2
       const cover_step = step * 5
       //
-      const ctxo = this.p.ctxo
-      const ctxt = this.p.ctxt
+      const ctxo = p.ctxo
+      const ctxt = p.ctxt
       ctxt.clearRect(0, 0, ctxt.canvas.width, ctxt.canvas.height)
       if (base_index % 2 == 0) {
         // top or bottom side
@@ -1240,15 +1318,15 @@ class Mockup {
         }
       }
       // set a clipping path and draw the transformed image on the destination canvas.
-      this.p.ctxd.save()
+      p.ctxd.save()
       this._applyClipPath(this.p.ctxd, [
         [d0x, d0y],
         [d1x, d1y],
         [d2x, d2y],
         [d3x, d3y]
       ])
-      this.p.ctxd.drawImage(ctxt.canvas, 0, 0)
-      this.p.ctxd.restore()
+      p.ctxd.drawImage(ctxt.canvas, 0, 0)
+      p.ctxd.restore()
     }
 
     /* -------------------------------------------------------------------

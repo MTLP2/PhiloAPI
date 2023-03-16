@@ -6,7 +6,6 @@ import DB from 'App/DB'
 import Env from '@ioc:Adonis/Core/Env'
 import splatter from 'App/Splatter'
 import Mockup from 'App/Services/Mockup'
-// import { createCanvas, Image } from 'canvas'
 import sharp from 'sharp'
 const Vibrant = require('node-vibrant')
 
@@ -19,6 +18,8 @@ class Artwork {
           'project.*',
           'vod.type',
           'vod.step',
+          'vod.type_vinyl',
+          'vod.color_vinyl',
           'vod.splatter1',
           'vod.splatter2',
           'vod.sleeve',
@@ -149,9 +150,7 @@ class Artwork {
         })
       }
 
-      const color = params.color || 'black'
-      project.color_vinyl = color
-      await Artwork.generateVinyl(uid, project)
+      await Artwork.generateDisc(project)
 
       if (project.category === 'cd') {
         await Artwork.generateSleeve(uid, 'cd')
@@ -161,11 +160,6 @@ class Artwork {
         }
         await Artwork.generateSleeve(uid, project.sleeve, project.nb_vinyl)
       }
-
-      /**
-      await Artwork.generateDisc(project.picture, project)
-      await Artwork.generateItem(project.picture, project)
-      **/
 
       return { success: true }
     } catch (e) {
@@ -531,76 +525,35 @@ class Artwork {
   }
 
   static async generateDisc(project) {
-    const path = `projects/${project.id}`
+    const { createCanvas, Image } = require('canvas')
+    const path = `projects/${project.picture}`
 
     const mockup = new Mockup({
       env: 'node',
       image: Image,
       createContext: () => {
-        return createCanvas().getContext('2d')
+        return createCanvas(0, 0).getContext('2d')
       }
     })
 
-    console.log(config.colors.vinyl[project.color_vinyl])
-    console.log(`${Env.get('STORAGE_URL')}/projects/${project.picture}/label.jpg`)
-    const disc = await mockup.getDisc({
+    const disc: any = await mockup.getDisc({
       color: config.colors.vinyl[project.color_vinyl],
-      label: `${Env.get('STORAGE_URL')}/projects/${project.picture}/label.jpg`
+      color2: config.colors.vinyl[project.splatter1],
+      color3: config.colors.vinyl[project.splatter2],
+      label:
+        project.type === 'test_pressing'
+          ? `${Env.get('STORAGE_URL')}/assets/images/vinyl/white_label.png`
+          : `${Env.get('STORAGE_URL')}/projects/${project.picture}/label.jpg`,
+      picture:
+        project.url_vinyl === '1'
+          ? `${Env.get('STORAGE_URL')}/projects/${project.picture || project.id}/disc.png`
+          : project.url_vinyl,
+      type: project.type_vinyl
     })
 
-    return disc.toBuffer()
-    /**
-    await Storage.uploadImage(`${path}/disc`, disc.toBuffer('image/png'), {
-      type: 'png'
-      // width: 600
-    })
-    **/
-
-    return true
-  }
-
-  static async generateItem(id, project) {
-    const path = `projects/${id}`
-
-    const mockup = new Mockup({
-      env: 'node',
-      image: Image,
-      createContext: () => {
-        return createCanvas().getContext('2d')
-      }
-    })
-
-    let item
-    if (project.sleeve === 'triple_gatefold') {
-      item = await mockup.get3Getfold({
-        canvas: createCanvas(),
-        cover: `${Env.get('STORAGE_URL')}/projects/${project.picture}/original.jpg`,
-        cover2: `${Env.get('STORAGE_URL')}/projects/${project.picture}/cover2.jpg`,
-        cover3: `${Env.get('STORAGE_URL')}/projects/${project.picture}/cover3.jpg`,
-        disc: `${Env.get('STORAGE_URL')}/projects/${project.picture}/disc.png`,
-        bg: false
-      })
-    } else if (project.sleeve === 'double_gatefold') {
-      item = await mockup.get2Getfold({
-        canvas: createCanvas(),
-        cover: `${Env.get('STORAGE_URL')}/projects/${project.picture}/original.jpg`,
-        cover2: `${Env.get('STORAGE_URL')}/projects/${project.picture}/cover2.jpg`,
-        disc: `${Env.get('STORAGE_URL')}/projects/${project.picture}/disc.png`,
-        bg: false
-      })
-    } else {
-      item = await mockup.getMockup({
-        canvas: createCanvas(),
-        cover: `${Env.get('STORAGE_URL')}/projects/${project.picture}/original.jpg`,
-        disc: `${Env.get('STORAGE_URL')}/projects/${project.picture}/disc.png`,
-        bg: false
-      })
-    }
-    console.log('finish item')
-
-    await Storage.uploadImage(`${path}/item`, item.toBuffer('image/png'), {
-      type: 'png'
-      // width: 900
+    await Storage.uploadImage(`${path}/only_vinyl`, disc.toBuffer('image/png'), {
+      type: 'png',
+      width: 600
     })
 
     return true
