@@ -304,10 +304,16 @@ class Mockup {
 
         resolve(ctx.canvas)
       }
+      /**
       img.src =
         params.color !== 'black'
           ? `${storageUrl}/assets/images/mockup/disc2.png`
           : `${storageUrl}/assets/images/mockup/disc.png`
+      **/
+      img.src =
+        params.color !== 'black'
+          ? `${storageUrl}/assets/images/vinyl/vinyl11.png`
+          : `${storageUrl}/assets/images/vinyl/vinyl22.png`
     })
   }
 
