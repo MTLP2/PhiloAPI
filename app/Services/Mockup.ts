@@ -241,7 +241,19 @@ class Mockup {
             })
           }
 
-          if (params.type === 'galaxy') {
+          if (params.type === 'cloudy') {
+            await this.drawImage({
+              ctx: ctx,
+              url: `${storageUrl}/assets/images/mockup/cloudy.png`,
+              x: 0,
+              y: 0,
+              width: canvas.width,
+              color: params.color2,
+              clear: true
+            })
+          }
+
+          if (params.type === 'asidebside') {
             await this.drawImage({
               ctx: ctx,
               url: `${storageUrl}/assets/images/mockup/galaxy.png`,
@@ -301,6 +313,13 @@ class Mockup {
         ctx.restore()
 
         ctx.beginPath()
+        ctx.fillStyle = '#00000050'
+        ctx.arc(centerX, centerY, 18, 0, 2 * Math.PI, false)
+        ctx.fill()
+        ctx.closePath()
+
+        ctx.beginPath()
+        ctx.fillStyle = '#FFF'
         ctx.globalCompositeOperation = 'destination-out'
         ctx.arc(centerX, centerY, 15, 0, 2 * Math.PI, false)
         ctx.fill()

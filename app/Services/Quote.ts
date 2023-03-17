@@ -411,7 +411,7 @@ class Quote {
       )
       // extra charge splater
       quote.type_vinyl += getCost(73, 'type_vinyl')
-    } else if (params.type_vinyl === 'galaxy') {
+    } else if (params.type_vinyl === 'asidebside') {
       quote.type_vinyl += getCost(
         {
           '12"': 64,
@@ -423,7 +423,11 @@ class Quote {
       // extra charge splater
       quote.type_vinyl += getCost(73, 'type_vinyl')
       quote.type_vinyl += getCost(74, 'type_vinyl')
-    } else if (params.type_vinyl === 'colorincolor' || params.type_vinyl === 'half&half') {
+    } else if (
+      params.type_vinyl === 'cloudy' ||
+      params.type_vinyl === 'colorincolor' ||
+      params.type_vinyl === 'half&half'
+    ) {
       quote.type_vinyl += getCost(
         {
           '12"': 53,
