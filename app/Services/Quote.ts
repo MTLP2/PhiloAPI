@@ -667,7 +667,7 @@ class Quote {
             ` x ${params.quantity}`
           ) / params.nb_vinyl
       } else if (params.insert === 'booklet_printed') {
-        quote.insert += getCost(366, 'insert', ` x ${params.quantity}`) / params.nb_vinyl
+        quote.insert += getCost(402, 'insert', ` x ${params.quantity}`) / params.nb_vinyl
       }
     }
 
@@ -771,9 +771,9 @@ class Quote {
     quote.insert = 0
     if (params.insert && params.insert !== 'none') {
       if (params.insert === 'two_sides_printed') {
-        quote.insert += getCost(65, 'insert', ` x ${params.quantity}`) / params.nb_vinyl
-      } else if (params.insert === 'one_side_printed') {
         quote.insert += getCost(66, 'insert', ` x ${params.quantity}`) / params.nb_vinyl
+      } else if (params.insert === 'one_side_printed') {
+        quote.insert += getCost(65, 'insert', ` x ${params.quantity}`) / params.nb_vinyl
       } else if (params.insert === 'booklet_printed') {
         quote.insert += getCost(70, 'insert', ` x ${params.quantity}`) / params.nb_vinyl
       }
@@ -781,8 +781,12 @@ class Quote {
 
     // sticker
     if (params.sticker && params.sticker !== '0') {
-      quote.sleeve = getCost(51, 'sleeve') / params.nb_vinyl
-      quote.sleeve = getCost(57, 'sleeve') / params.nb_vinyl
+      quote.sleeve = getCost(51, 'sticker') / params.nb_vinyl
+      if (params.sticker === 'barcode_sticker') {
+        quote.sleeve = getCost(58, 'sticker') / params.nb_vinyl
+      } else {
+        quote.sleeve = getCost(57, 'sticker') / params.nb_vinyl
+      }
     }
 
     // numbered
@@ -1126,6 +1130,7 @@ class Quote {
             q300: +row.getCell('D').toString(),
             q500: +row.getCell('E').toString(),
             q1000: +row.getCell('F').toString(),
+            q2000: +row.getCell('F').toString(),
             q3000: +row.getCell('G').toString(),
             q5000: +row.getCell('H').toString()
           })
