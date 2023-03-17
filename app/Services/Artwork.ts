@@ -34,9 +34,9 @@ class Artwork {
 
       if (project.picture) {
         if (project.step === 'creating') {
-          await Storage.moveFolder(`projects/${old}`, `projects/${uid}`)
+          await Storage.moveFolder(`projects/${old}/`, `projects/${uid}`)
         } else {
-          await Storage.copyFolder(`projects/${old}`, `projects/${uid}`)
+          await Storage.copyFolder(`projects/${old}/`, `projects/${uid}`)
         }
       }
 
