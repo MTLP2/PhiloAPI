@@ -294,7 +294,7 @@ class Quote {
     } else if (params.id) {
       const vod = await DB('vod').where('project_id', params.id).first()
       if (vod && vod.fee_date) {
-        fee = Utils.getFee(JSON.parse(vod.fee_date), Utils.date()) / 100
+        fee = (Utils.getFee(JSON.parse(vod.fee_date), Utils.date()) as number) / 100
       }
     }
 
@@ -311,6 +311,82 @@ class Quote {
 
     quote.logs = logs
     return quote
+  }
+
+  static getPrice = () => {
+    return {
+      format: {
+        12: null,
+        10: null,
+        7: null
+      },
+      type: {
+        black: null,
+        color: null,
+        splatter: null,
+        marble: null,
+        cloudy: null,
+        asidebside: null,
+        colorincolor: null,
+        halfandhalf: null
+      },
+      label_color: {
+        color: null,
+        white: null
+      },
+      cutting: {
+        dmm: null,
+        lacque: null
+      },
+      number: {
+        1: null,
+        2: null,
+        3: null,
+        4: null
+      },
+      test_pressing: {
+        0: null,
+        5: null
+      },
+      quantity: {
+        100: null,
+        200: null,
+        300: null,
+        500: null,
+        1000: null,
+        2000: null,
+        3000: null,
+        5000: null
+      },
+      print_finish: {
+        gloss_varnish: null,
+        matt_varnish: null,
+        returned_cardboard: null
+      },
+      numbered: {
+        none: null,
+        numbered: null,
+        hand_numbered: null
+      },
+      inner_sleeve: {
+        white: null,
+        black: null,
+        printed: null,
+        white_antistatic: null,
+        black_antistatic: null
+      },
+      insert: {
+        none: null,
+        one_side_printed: null,
+        two_sides_printed: null,
+        booklet_printed: null
+      },
+      sticker: {
+        none: null,
+        sticker: null,
+        barcode_sticker: null
+      }
+    }
   }
 
   static calculateSna(params, getCost) {
@@ -670,6 +746,12 @@ class Quote {
         quote.insert += getCost(402, 'insert', ` x ${params.quantity}`) / params.nb_vinyl
       }
     }
+
+    /**
+    quote.price = Quote.getPrice()
+    quote.price.sticker.sticker = (getCost(237) + getCost(238)) / params.nb_vinyl
+    quote.price.sticker.barcode_sticker = (getCost(534) + getCost(535)) / params.nb_vinyl
+    **/
 
     // sticker
     if (params.sticker === 'barcode_sticker') {
