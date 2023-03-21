@@ -48,6 +48,10 @@ class BoxController {
     return Box.statsDispatchs()
   }
 
+  exportDispatchs() {
+    return Box.exportDispatchs()
+  }
+
   getBoxesStats() {
     return Box.stats()
   }

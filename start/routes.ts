@@ -371,6 +371,7 @@ Route.group(() => {
   Route.get('/boxes', 'BoxController.getBoxes')
   Route.get('/boxes/export', 'BoxController.exportBoxes')
   Route.get('/boxes/dispatchs', 'BoxController.statsDispatchs')
+  Route.get('/boxes/dispatchs/export', 'BoxController.exportDispatchs')
   Route.get('/boxes/months', 'BoxController.getBoxMonths')
   Route.post('/boxes/months', 'BoxController.saveBoxMonth')
   Route.delete('/boxes/months', 'BoxController.removeBoxMonth')

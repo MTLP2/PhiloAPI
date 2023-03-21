@@ -3246,6 +3246,29 @@ class Box {
     await Box.setDispatchLeft({ boxId: +params.id })
     return { success: true }
   }
+
+  static async exportDispatchs() {
+    const dispatchs = await DB('box_dispatch')
+      .select('box.id', 'box.type', 'box.periodicity', 'box_dispatch.created_at')
+      .join('box', 'box.id', 'box_dispatch.box_id')
+      .orderBy('box_dispatch.id', 'desc')
+      .all()
+
+    return Utils.arrayToCsv(
+      [
+        { name: 'date', index: 'created_at' },
+        { name: 'id', index: 'id' },
+        { name: 'type', index: 'type' },
+        { name: 'periodicity', index: 'periodicity' }
+      ],
+      dispatchs.map((d) => {
+        return {
+          ...d,
+          created_at: d.created_at.substring(0, 10)
+        }
+      })
+    )
+  }
 }
 
 export default Box
