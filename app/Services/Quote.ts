@@ -459,8 +459,7 @@ class Quote {
         },
         'colored vinyl'
       ) + getCost(73, 'colored vinyl')
-    quote.prices.type_vinyl.base =
-      params.color_vinyl !== 'black' ? quote.prices.type_vinyl.color : 0
+    quote.prices.type_vinyl.base = quote.prices.type_vinyl.color
     quote.prices.type_vinyl.splatter =
       quote.prices.type_vinyl.base +
       getCost(
