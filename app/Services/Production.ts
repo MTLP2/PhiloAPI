@@ -1763,8 +1763,6 @@ class Production {
           query.where('p.is_billing', false)
           query.where('pa.type', '!=', 'billing')
         })
-
-        //! WIP orWhere vod.type !== 'direct_pressing' && pa.type, false ?
       })
       .groupBy('pa.production_id')
       .all()
