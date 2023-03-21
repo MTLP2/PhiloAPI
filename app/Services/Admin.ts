@@ -1622,7 +1622,6 @@ class Admin {
       .leftJoin('customer as c', 'c.id', 'os.customer_id')
       .leftJoin('feedback', 'feedback.order_id', 'order.id')
       .where('os.step', '!=', 'creating')
-      .where('os.step', '!=', 'failed')
 
     if (params.project_id) {
       orders.whereIn('oi.project_id', params.project_id.split(','))
