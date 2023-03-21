@@ -920,7 +920,6 @@ class Production {
   }
 
   static async saveDispatchUser(params) {
-    console.log(params)
     if (params.no_tp_dispatch) params.test_pressing = true
 
     const prod = await DB('production')
@@ -1023,9 +1022,15 @@ class Production {
     }
 
     // Notification for PS resp when action changes from to check to pending team
-    if (params.personal_stock && action.status === 'to_check_team') {
+    if (
+      params.personal_stock &&
+      (action.status === 'to_check_team' || action.type === 'delivery')
+    ) {
       await Notification.add({
-        type: 'production_pending_personal_stock',
+        type:
+          action.type === 'delivery'
+            ? 'production_pending_delivery'
+            : 'production_pending_personal_stock',
         prod_id: prod.id,
         project_id: prod.project_id,
         user_id: prod.resp_id
