@@ -126,7 +126,7 @@ class Production {
       .whereNotNull('factory')
       .groupBy('factory')
       .groupBy('date')
-      .where('date_factory', '>', moment().subtract(6, 'months').format('YYYY-MM'))
+      // .where('date_factory', '>', moment().subtract(6, 'months').format('YYYY-MM'))
       .all()
 
     const res = {}
@@ -202,6 +202,12 @@ class Production {
         type: 'payment',
         action: 'check',
         for: 'team'
+      },
+      {
+        category: 'preprod',
+        type: 'delivery',
+        action: 'check',
+        for: 'artist'
       },
       {
         category: 'preprod',
@@ -288,6 +294,7 @@ class Production {
       .select(
         'production.*',
         'vod.currency as vod_currency',
+        'vod.type as vod_type',
         'user.customer_invoice_id as billing_customer',
         'project.category as project_category'
       )
@@ -357,15 +364,16 @@ class Production {
       item.postprod = item.postprod.filter((a) => a.for !== 'team')
     }
 
-    item.preprod_actions = item.preprod.filter((a) => {
+    item.preprod_actions = item.preprod.filter((action) => {
       // Don't count billing if is_billing is false
-      if (!item.is_billing && a.type === 'billing') return false
-
+      if (!item.is_billing && action.type === 'billing') return false
+      // Don't count delivery if vod_type is 'direct_pressing
+      if (item.vod_type === 'direct_pressing' && action.type === 'delivery') return false
       // Don't count shipping if project is cd
-      if (item.project_category === 'cd' && ['shipping'].includes(a.type)) return false
+      if (item.project_category === 'cd' && ['shipping'].includes(action.type)) return false
 
       // Then count to_dos
-      return a.status === 'to_do'
+      return action.status === 'to_do'
     }).length
 
     item.prod_actions = item.prod.filter((a) => {
@@ -611,7 +619,13 @@ class Production {
     return action || {}
   }
 
-  static async createAction(params) {
+  static async createAction(params: {
+    production_id: number
+    type: string
+    category: 'preprod' | 'prod' | 'postprod'
+    for: 'team' | 'artist' | 'all'
+    action?: string
+  }) {
     const [id] = await DB('production_action').insert({
       production_id: params.production_id,
       type: params.type,
@@ -636,6 +650,9 @@ class Production {
     if (!item) {
       const actions = Production.listActions()
       const action = actions.find((action) => action.type === params.type)
+      if (!action) {
+        throw new Error('Action not found')
+      }
       item = await Production.createAction({
         ...action,
         production_id: params.production_id
@@ -903,6 +920,7 @@ class Production {
   }
 
   static async saveDispatchUser(params) {
+    console.log(params)
     if (params.no_tp_dispatch) params.test_pressing = true
 
     const prod = await DB('production')
@@ -914,16 +932,32 @@ class Production {
     await Utils.checkProjectOwner({ project_id: prod.project_id, user: params.user })
 
     // Handle both PS/TP status change
-    const action = await DB('production_action')
+    let action = await DB('production_action')
       .where('production_id', prod.id)
-      .where('type', params.test_pressing ? 'shipping' : 'dispatchs')
+      .where(
+        'type',
+        params.is_direct_pressing ? 'delivery' : params.test_pressing ? 'shipping' : 'dispatchs'
+      )
       .first()
+
+    if (!action) {
+      action = await Production.createAction({
+        production_id: prod.id,
+        type: params.is_direct_pressing
+          ? 'delivery'
+          : params.test_pressing
+          ? 'shipping'
+          : 'dispatchs',
+        category: 'preprod',
+        for: 'artist'
+      })
+    }
 
     if (params.test_pressing && action.status === 'to_do') {
       action.status = 'pending'
     }
-    if (params.personal_stock && action.status === 'to_check') {
-      action.status = 'to_check_team'
+    if (params.personal_stock && ['to_check', 'to_do'].includes(action.status)) {
+      action.status = action.status === 'to_check' ? 'to_check_team' : 'pending'
     }
     action.created_at = Utils.date()
     await action.save()
@@ -1724,6 +1758,8 @@ class Production {
           query.where('p.is_billing', false)
           query.where('pa.type', '!=', 'billing')
         })
+
+        //! WIP orWhere vod.type !== 'direct_pressing' && pa.type, false ?
       })
       .groupBy('pa.production_id')
       .all()
