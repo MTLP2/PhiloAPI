@@ -399,9 +399,23 @@ class App {
       // Add refuse details
       if (notif.type !== 'production_new_file') {
         const prodAction = await DB('production_file').where('id', n.file_id).first()
+        data.no_further_action =
+          data.lang === 'en'
+            ? 'No further action is required from you.'
+            : "Aucune action supplémentaire n'est requise de votre part."
+
+        data.action_type =
+          data.lang === 'en'
+            ? `This file is part of: ${prodAction?.action}.`
+            : `Ce fichier fait partie de: ${prodAction?.action}.`
+
         data.file_reason =
           prodAction?.comment ||
-          (data.lang === 'en' ? 'Cause is unspecified.' : "Aucun motif de refus n'a été précisé.")
+          (notif.type === 'production_valid_file'
+            ? ''
+            : data.lang === 'en'
+            ? 'Cause is unspecified.'
+            : "Aucun motif de refus n'a été précisé.")
       }
     }
     data.data = n.data ? JSON.parse(n.data) : null
