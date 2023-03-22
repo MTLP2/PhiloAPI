@@ -1152,6 +1152,7 @@ class Quote {
     quote.prices.inner_sleeve.white_antistatic = getCost(40, 'inner_sleeve white_antistatic')
     quote.prices.inner_sleeve.black_antistatic = getCost(41, 'inner_sleeve black_antistatic')
     quote.prices.inner_sleeve.printed = getCost(38, 'inner_sleeve printed')
+    quote.inner_sleeve = quote.prices.inner_sleeve[params.inner_sleeve]
     quote.shrink = quote.prices.inner_sleeve[params.inner_sleeve]
 
     // shrink
