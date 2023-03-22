@@ -1158,7 +1158,7 @@ class Quote {
     quote.prices.shrink['1'] = getCost(48, 'shrink', true)
     quote.shrink = quote.prices.shrink[params.shrink]
 
-    quote.prices.print_finish.matt_varnish = getCost(29, 'print_finish matt_varnish', true)
+    quote.prices.print_finish.matt_varnish = getCost(27, 'print_finish matt_varnish', true)
     quote.prices.print_finish.returned_cardboard = getCost(
       34,
       'print_finish returned_cardboard',
