@@ -59,6 +59,7 @@ class User {
         'cart',
         'unsubscribed',
         'type',
+        'early_access',
         'created_at'
       )
       .from('user as u')
