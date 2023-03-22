@@ -124,23 +124,84 @@ class Quote {
       params.is_admin = await DB('user').where('id', params.user.id).where('is_admin', true).first()
     }
 
-    if (!params.factory) {
-      params.factory = 'sna'
+    const factories = {}
+
+    for (const f of ['sna', 'vdp']) {
+      factories[f] = await Quote.calculateFactory({
+        ...params,
+        factory: f
+      })
     }
 
-    const quote = await Quote.calculateFactory(params)
-
-    if (params.is_admin) {
-      quote.factories = {}
-      for (const f of ['sna', 'vdp']) {
-        quote.factories[f] = await Quote.calculateFactory({
-          ...params,
-          factory: f
-        })
+    const disableFactories = {}
+    const prices = this.getPrices()
+    for (const p of Object.keys(prices)) {
+      for (const f of Object.keys(factories)) {
+        if (factories[f].prices[p][params[p]] === false) {
+          disableFactories[f] = true
+          continue
+        }
       }
     }
 
-    return quote
+    let cheaperPrice = null
+    let cheaperFactory = ''
+    for (const f of Object.keys(factories)) {
+      if (disableFactories[f]) {
+        continue
+      }
+      if (!cheaperPrice || cheaperPrice > factories[f].total) {
+        cheaperPrice = factories[f].total
+        cheaperFactory = f
+      }
+    }
+
+    for (const p of Object.keys(prices)) {
+      for (const o of Object.keys(prices[p])) {
+        let cheapPrice = null
+        let cheapFactory = ''
+        for (const f of Object.keys(factories)) {
+          if (params.factory && f !== params.factory) {
+            continue
+          }
+          if (disableFactories[f]) {
+            continue
+          }
+          if (factories[f].prices[p][o] === false) {
+            continue
+          }
+          let pp = factories[f].total - (factories[f].prices[p][params[p]] || 0)
+          const price = pp + factories[f].prices[p][o] || 0
+
+          if (price && (!cheapPrice || price < cheapPrice)) {
+            cheapPrice = price
+            cheapFactory = f
+          }
+        }
+        if (cheapPrice === null) {
+          continue
+        }
+        prices[p][o] = {
+          value: cheapPrice - factories[params.factory || cheaperFactory].total,
+          factory: params.is_admin ? cheapFactory : null
+        }
+      }
+    }
+
+    if (!params.factory) {
+      params.factory = cheaperFactory
+    }
+
+    const res = {
+      ...factories[params.factory],
+      prices: prices
+    }
+
+    if (params.is_admin) {
+      res.factories = factories
+    }
+
+    return res
   }
 
   static async calculateFactory(params) {
@@ -271,6 +332,10 @@ class Quote {
 
     quote.total = 0
     for (const c of Object.values(quote)) {
+      if (c === false) {
+        quote.total = null
+        break
+      }
       if (!isNaN(c as number)) {
         quote.total += c
       }
@@ -319,7 +384,7 @@ class Quote {
     return quote
   }
 
-  static getPrice = () => {
+  static getPrices = () => {
     return {
       format: {
         12: null,
@@ -412,7 +477,7 @@ class Quote {
 
   static calculateSna(params, getCost) {
     const quote: any = {}
-    quote.prices = Quote.getPrice()
+    quote.prices = Quote.getPrices()
 
     quote.prices.cutting.DMM = getCost(
       {
@@ -723,7 +788,7 @@ class Quote {
 
   static calculateSna2(params, getCost) {
     const quote: any = {}
-    quote.prices = Quote.getPrice()
+    quote.prices = Quote.getPrices()
 
     // Cutting
     if (params.cutting === 'DMM') {
@@ -1106,9 +1171,15 @@ class Quote {
     return quote
   }
 
+  static getPrice(quote, params, type): number {
+    return quote.prices[type][params[type]] === false
+      ? false
+      : quote.prices[type][params[type]] || 0
+  }
+
   static calculateVdp(params, getCost) {
     const quote: any = {}
-    quote.prices = Quote.getPrice()
+    quote.prices = Quote.getPrices()
 
     quote.prices.sleeve.triple_gatefold = false
     quote.prices.type_vinyl.splatter = false
@@ -1117,7 +1188,7 @@ class Quote {
     quote.prices.type_vinyl.asidebside = false
     quote.prices.type_vinyl.colorincolor = false
     quote.prices.type_vinyl['half&half'] = false
-    quote.prices.cutting.DMM = false
+    // quote.prices.cutting.DMM = false
     quote.prices.label_color.white = false
 
     // Disacobag base price
@@ -1139,13 +1210,11 @@ class Quote {
       quote.sleeve += getCost(35, 'sleeve', true)
     }
 
-    quote.type_vinyl = 0
     quote.prices.weight['180'] = getCost(25, '180g')
-    quote.type_vinyl += quote.prices.weight[params.weight] || 0
+    quote.weight = this.getPrice(quote, params, 'weight')
 
-    // color
     quote.prices.type_vinyl.color = getCost(19, 'color', true)
-    quote.color = quote.prices.type_vinyl[params.type_vinyl] || 0
+    quote.type_vinyl = this.getPrice(quote, params, 'type_vinyl')
 
     // inner_sleeve
     quote.prices.inner_sleeve.black = getCost(39, 'inner_sleeve black')
@@ -1186,6 +1255,7 @@ class Quote {
 
     // Frais supplementaire + échentillon diggers
     quote.test_pressing = 40
+
     return quote
   }
 
