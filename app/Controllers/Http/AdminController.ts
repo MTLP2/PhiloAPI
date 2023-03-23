@@ -146,9 +146,6 @@ class AdminController {
     project.tags = params.tags && params.tags.join(',')
     project.cat_number = params.cat_number ? params.cat_number.trim() : null
     project.is_visible = params.is_visible
-    project.show_info = params.show_info
-    project.show_image_bar = params.show_image_bar
-    project.show_reviews = params.show_reviews
     project.hide = params.hide.join(',')
     project.nb_vinyl = params.nb_vinyl
     project.color = params.color
@@ -156,6 +153,7 @@ class AdminController {
     project.artist_name = params.artist_name ?? project.artist_name
 
     await project.save()
+
     await Admin.saveVod(params)
 
     return { success: true }
