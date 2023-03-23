@@ -166,6 +166,7 @@ class Project {
     }
 
     project.step = project.sold_out ? 'successful' : project.step
+    project.hide = project.hide ? project.hide.split(',') : []
     project.sizes = project.products.filter((p) => p.size && p.size !== 'all').map((p) => p)
     // Group sizes by parent_id or id
     project.grouped_sizes = project.products.reduce((acc, cur) => {
@@ -920,7 +921,6 @@ class Project {
     if (p.picture_project) {
       p.picture_project = `projects/${p.picture || p.id}/${p.picture_project}.png`
     }
-    p.hide = p.hide ? p.hide.split(',') : []
     if (item) {
       p.item_id = item.id
       p.picture_project = `${item.picture}.${item.picture_trans ? 'png' : 'jpg'}`
