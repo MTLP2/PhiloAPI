@@ -277,7 +277,7 @@ class Mockup {
             })
           }
 
-          if (params.type === 'half&half') {
+          if (params.type === 'halfandhalf') {
             await this.drawImage({
               ctx: ctx,
               url: `${storageUrl}/assets/images/mockup/halfandhalf.png`,
