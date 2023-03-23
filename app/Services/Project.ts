@@ -732,6 +732,7 @@ class Project {
         'url_vinyl',
         'picture_disc',
         'p.bg',
+        'p.hide',
         'youtube',
         'p.show_info',
         'p.format',
@@ -922,6 +923,7 @@ class Project {
     if (p.picture_project) {
       p.picture_project = `projects/${p.picture || p.id}/${p.picture_project}.png`
     }
+    p.hide = p.hide ? p.hide.split(',') : []
     if (item) {
       p.item_id = item.id
       p.picture_project = `${item.picture}.${item.picture_trans ? 'png' : 'jpg'}`

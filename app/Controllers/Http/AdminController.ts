@@ -149,6 +149,7 @@ class AdminController {
     project.show_info = params.show_info
     project.show_image_bar = params.show_image_bar
     project.show_reviews = params.show_reviews
+    project.hide = params.hide.join(',')
     project.nb_vinyl = params.nb_vinyl
     project.color = params.color
     project.name = params.name ?? project.name
