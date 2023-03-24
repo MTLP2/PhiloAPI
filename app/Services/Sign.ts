@@ -96,6 +96,9 @@ class Sign {
       if (!user.picture && profile.avatar_url) {
         UserService.updatePictureFromUrl(user.id, profile.avatar_url, 'soundcloud')
       }
+      user.soundcloud_sub = profile.soundcloud_sub || null
+      await user.save()
+
       const response = {}
       response.user_id = user.id
       response.token = Sign.getToken(user)
