@@ -166,6 +166,7 @@ class Project {
     }
 
     project.step = project.sold_out ? 'successful' : project.step
+    project.hide = project.hide ? project.hide.split(',') : []
     project.sizes = project.products.filter((p) => p.size && p.size !== 'all').map((p) => p)
     // Group sizes by parent_id or id
     project.grouped_sizes = project.products.reduce((acc, cur) => {
@@ -732,8 +733,8 @@ class Project {
         'url_vinyl',
         'picture_disc',
         'p.bg',
+        'p.hide',
         'youtube',
-        'p.show_info',
         'p.format',
         'p.country_id',
         'cat_number',
@@ -746,9 +747,7 @@ class Project {
         'v.show_prod',
         'v.sizes',
         'v.is_size',
-        'show_image_bar',
         'show_countdown',
-        'show_reviews',
         'v.bonus',
         // DB.raw('GROUP_CONCAT(ps.style_id SEPARATOR \',\') as styles'),
         DB.raw("DATE_FORMAT(end, '%Y-%m-%d %H:%i') as end"),
