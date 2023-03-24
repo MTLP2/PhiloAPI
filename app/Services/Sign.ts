@@ -223,6 +223,7 @@ class Sign {
         google_id: params.google_id ? params.google_id : null,
         soundcloud_id: params.soundcloud_id || null,
         soundcloud_token: params.soundcloud_token || null,
+        soundcloud_sub: params.soundcloud_sub || null,
         referrer: params.referrer ? params.referrer : null,
         origin: params.origin ? params.origin : null,
         is_guest: params.is_guest || false,
