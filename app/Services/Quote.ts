@@ -560,7 +560,7 @@ class Quote {
     quote.prices.type_vinyl.cloudy =
       quote.prices.type_vinyl.base + getCost(53, 'cloudy') + getCost(73, 'cloudy')
     quote.prices.type_vinyl.colorincolor = quote.prices.type_vinyl.cloudy
-    quote.prices.type_vinyl['half&half'] = quote.prices.type_vinyl.cloudy
+    quote.prices.type_vinyl.halfandhalf = quote.prices.type_vinyl.cloudy
 
     quote.type_vinyl += quote.prices.type_vinyl[params.type_vinyl] || 0
 
@@ -914,7 +914,7 @@ class Quote {
     } else if (
       params.type_vinyl === 'cloudy' ||
       params.type_vinyl === 'colorincolor' ||
-      params.type_vinyl === 'half&half'
+      params.type_vinyl === 'halfandhalf'
     ) {
       quote.type_vinyl += getCost(
         {
@@ -1201,22 +1201,22 @@ class Quote {
     quote.prices.type_vinyl.cloudy = false
     quote.prices.type_vinyl.asidebside = false
     quote.prices.type_vinyl.colorincolor = false
-    quote.prices.type_vinyl['half&half'] = false
+    quote.prices.type_vinyl.halfandhalf = false
     // quote.prices.cutting.DMM = false
     quote.prices.label_color.white = false
 
     // Disacobag base price
-    quote.cutting = getCost(6, 'cutting', true)
+    quote.cutting = getCost(6, 'cutting')
 
     quote.prices.sleeve.discobag = 0
     if (params.nb_vinyl === 1) {
-      quote.prices.sleeve.color = getCost(5, 'sleeve color', true) - getCost(6, null, true)
+      quote.prices.sleeve.color = getCost(5, 'sleeve color', true) - quote.cutting
       quote.prices.sleeve.double_gatefold =
-        getCost(3, 'sleeve double gatefold', true) - getCost(6, null, true)
+        getCost(3, 'sleeve double gatefold', true) - quote.cutting
     } else if (params.nb_vinyl === 2) {
-      quote.prices.sleeve.color = getCost(4, 'sleeve color', true) - getCost(6, null, true)
+      quote.prices.sleeve.color = getCost(4, 'sleeve color', true) - quote.cutting
       quote.prices.sleeve.double_gatefold =
-        getCost(2, 'sleeve double gatefold', true) - getCost(6, null, true)
+        getCost(2, 'sleeve double gatefold', true) - quote.cutting
     }
     quote.prices.sleeve.pvc = quote.prices.sleeve.color + getCost(45, 'sleeve pvc', true)
     quote.sleeve = quote.prices.sleeve[params.sleeve]
