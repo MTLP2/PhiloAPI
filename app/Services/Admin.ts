@@ -3992,7 +3992,7 @@ class Admin {
     ])
   }
 
-  static exportCatalog = async (params) => {
+  static exportCatalog = async (params: { lang: 'FR' | 'US' | 'UK'; ori: string }) => {
     const styles = await DB('style').all()
 
     const ss = {}
@@ -4044,7 +4044,7 @@ class Admin {
       .hasMany('stock')
 
     if (!params.lang) {
-      params.lang = 'fr'
+      params.lang === 'FR'
     }
     if (params.lang) {
       projectsQuery.where(`facebook_${params.lang}`, 1)
@@ -4054,9 +4054,13 @@ class Admin {
 
     let csv =
       'date;id;gtin;title;condition;description;availability;price;link;image_link;brand;additional_image_link;product_type;sale_price;sale_price_effective_date;shipping;shipping_weight;custom_label_0;'
-    csv += 'format;weight;rpm;color;nb_vinyl;type\n'
+    csv += 'format;weight;rpm;color;nb_vinyl;type;google_product_category;product_type\n'
 
     const currencies = await Utils.getCurrenciesDb()
+
+    const sanitizeForCSV = (str: string) => {
+      return str.replace(/[`"]/g, '＂')
+    }
 
     for (const p in projects) {
       const pp = projects[p]
@@ -4115,11 +4119,9 @@ class Admin {
       csv += ''
       csv +=
         params.lang === 'FR'
-          ? (pp.description_fr &&
-              `"${pp.description_fr.replace(/`/g, '＂').replace(/"/g, '＂')}"`) ||
+          ? (pp.description_fr && `"${sanitizeForCSV(pp.description_fr)}"`) ||
             `"Découvrez tout l'album de ${pp.artist_name} chez Diggers Factory en édition limité"`
-          : (pp.description_en &&
-              `"${pp.description_en.replace(/`/g, '＂').replace(/"/g, '＂')}"`) ||
+          : (pp.description_en && `"${sanitizeForCSV(pp.description_en)}"`) ||
             `"Discover the whole ${pp.artist_name} album at Diggers Factory in limited edition"`
 
       csv += ';'
@@ -4147,6 +4149,10 @@ class Admin {
       csv += (pp.color_vinyl || 'black') + ';'
       csv += pp.nb_vinyl + ';'
       csv += pp.type + ';'
+      csv += params.lang === 'FR' ? 'Disques et vinyles' : 'Records & LPs' + ';'
+      csv += pp.styles.includes('Soundtrack')
+        ? `"Soundtrack > ${sanitizeForCSV(pp.name.split('-')[1].trim())}"`
+        : '' + ';'
       csv += '\n'
     }
 
