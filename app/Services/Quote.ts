@@ -378,6 +378,20 @@ class Quote {
     quote.total_cost = Utils.round(quote.total_tax + quote.fee)
     quote.per_vinyl = Utils.round(quote.total_cost / quantitySell)
 
+    if (params.user) {
+      const user = await DB('user').where('id', params.user.id).first()
+      if (user && user.soundcloud_sub) {
+        const subs = JSON.parse(user.soundcloud_sub)
+        if (subs.some((s) => s.indexOf('pro') !== -1)) {
+          quote.discount = quote.total * 0.1
+          quote.total_discount = quote.total - quote.discount
+        } else if (subs.length > 0) {
+          quote.discount = 50
+          quote.total_discount = quote.total - quote.discount
+        }
+      }
+    }
+
     quote.logs = logs
     quote.prices = prices
 

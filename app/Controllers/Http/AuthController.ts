@@ -201,6 +201,7 @@ class AuthController {
           id: profile.id,
           soundcloud_id: profile.id,
           soundcloud_token: params.access_token,
+          soundcloud_sub: JSON.stringify(profile.subscriptions.map((s) => s.product.id)),
           name: profile.username,
           email: params.email,
           type: params.type,
