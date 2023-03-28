@@ -40,8 +40,10 @@ class CartController {
           is_guest: true
         })
       }
-    } else {
+    } else if (user && user.id) {
       params.user_id = user.id
+    } else {
+      return { error: 'no_account' }
     }
 
     return Cart.pay(params)
