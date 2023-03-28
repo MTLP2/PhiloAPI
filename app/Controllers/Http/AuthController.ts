@@ -24,7 +24,7 @@ class AuthController {
     })
 
     params.email = params.email && params.email.trim()
-    const check = await Sign.login(params.email, params.password)
+    const check: any = await Sign.login(params.email, params.password)
     if (!check) {
       response.json(false)
     } else {
@@ -35,7 +35,7 @@ class AuthController {
   }
 
   async facebook({ params, response }) {
-    const profile = await Utils.request('https://graph.facebook.com/me', {
+    const profile: any = await Utils.request('https://graph.facebook.com/me', {
       qs: {
         access_token: params.access_token,
         fields: 'id,name,email'
@@ -79,7 +79,7 @@ class AuthController {
       response.json({ error: 'no_email' })
       return false
     }
-    const resss = await Sign.loginFacebook(profilee)
+    const resss: any = await Sign.loginFacebook(profilee)
     if (resss.error) {
       response.json(resss)
       return false
@@ -124,8 +124,6 @@ class AuthController {
     } catch (err) {
       return { error: true }
     }
-
-    return { error: true }
   }
 
   async soundcloud({ params, response }) {
@@ -162,7 +160,7 @@ class AuthController {
       const user = await DB('user').where('soundcloud_id', profile.id).first()
 
       if (user) {
-        const sign = await Sign.loginSoundcloud({
+        const sign: any = await Sign.loginSoundcloud({
           id: profile.id,
           soundcloud_id: profile.id,
           soundcloud_token: res.access_token,
@@ -188,7 +186,7 @@ class AuthController {
         return { error: 'EMAIL_TAKEN' }
       }
 
-      const profile = await Utils.request({
+      const profile: any = await Utils.request({
         uri: `https://api.soundcloud.com/me`,
         headers: {
           Authorization: `OAuth ${params.access_token}`
@@ -197,7 +195,7 @@ class AuthController {
       })
 
       if (profile) {
-        const sign = await Sign.loginSoundcloud({
+        const sign: any = await Sign.loginSoundcloud({
           id: profile.id,
           soundcloud_id: profile.id,
           soundcloud_token: params.access_token,

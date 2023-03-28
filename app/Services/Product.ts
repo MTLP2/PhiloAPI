@@ -312,14 +312,14 @@ class Product {
                   type: 'preorder',
                   product_id: child.id
                 })
-                .catch((err) => {})
+                .catch(() => {})
 
               await DB('project_product')
                 .insert({
                   project_id: ref.id,
                   product_id: child.id
                 })
-                .catch((err) => {})
+                .catch(() => {})
             }
           }
         } else {
@@ -347,7 +347,7 @@ class Product {
                 type: 'preorder',
                 product_id: prod.id
               })
-              .catch((err) => {})
+              .catch(() => {})
           } else {
             for (const stock of ref.stock) {
               await DB('stock')
@@ -357,7 +357,7 @@ class Product {
                   project_id: null,
                   product_id: prod.id
                 })
-                .catch((err) => {})
+                .catch(() => {})
             }
           }
           for (const stock of ref.stock_historic) {

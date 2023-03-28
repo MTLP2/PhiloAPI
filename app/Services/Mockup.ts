@@ -148,9 +148,9 @@ class Mockup {
   }
 
   loadImage(src: string) {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       const img = new this.Image()
-      img.onerror = (err) => {
+      img.onerror = () => {
         resolve(null)
       }
       img.onload = () => {
@@ -1275,9 +1275,9 @@ class Mockup {
       const ow = p.cvso.width
       const oh = p.cvso.height
       // specify the index of which dimension is longest
-      let base_index = 0
-      let max_scale_rate = 0
-      let zero_num = 0
+      let baseIndex = 0
+      let maxScaleRate = 0
+      let zeroNum = 0
       for (let i = 0; i < 4; i++) {
         let rate = 0
         if (i % 2) {
@@ -1285,27 +1285,27 @@ class Mockup {
         } else {
           rate = dims[i] / oh
         }
-        if (rate > max_scale_rate) {
-          base_index = i
-          max_scale_rate = rate
+        if (rate > maxScaleRate) {
+          baseIndex = i
+          maxScaleRate = rate
         }
-        if (dims[i] == 0) {
-          zero_num++
+        if (dims[i] === 0) {
+          zeroNum++
         }
       }
-      if (zero_num > 1) {
+      if (zeroNum > 1) {
         return
       }
       //
       const step = 2
-      const cover_step = step * 5
+      const coverStep = step * 5
       //
       const ctxo = p.ctxo
       const ctxt = p.ctxt
       ctxt.clearRect(0, 0, ctxt.canvas.width, ctxt.canvas.height)
-      if (base_index % 2 == 0) {
+      if (baseIndex % 2 === 0) {
         // top or bottom side
-        var ctxl = this.create_canvas_context(ow, cover_step)
+        var ctxl = this.create_canvas_context(ow, coverStep)
         ctxl.globalCompositeOperation = 'copy'
         var cvsl = ctxl.canvas
         for (let y = 0; y < oh; y += step) {
@@ -1326,9 +1326,9 @@ class Mockup {
           //
           ctxt.setTransform(1, 0, 0, 1, 0, 0)
         }
-      } else if (base_index % 2 == 1) {
+      } else if (baseIndex % 2 === 1) {
         // right or left side
-        var ctxl = this.create_canvas_context(cover_step, oh)
+        var ctxl = this.create_canvas_context(coverStep, oh)
         ctxl.globalCompositeOperation = 'copy'
         var cvsl = ctxl.canvas
         for (let x = 0; x < ow; x += step) {
