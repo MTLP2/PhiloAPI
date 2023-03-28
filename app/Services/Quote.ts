@@ -382,7 +382,7 @@ class Quote {
       const user = await DB('user').where('id', params.user.id).first()
       if (user && user.soundcloud_sub) {
         const subs = JSON.parse(user.soundcloud_sub)
-        if (subs.some((s) => s.indexOf('pro') !== -1)) {
+        if (subs.some((s) => s.includes('pro-unlimited'))) {
           quote.discount = quote.total * 0.1
           quote.total_discount = quote.total - quote.discount
         } else if (subs.length > 0) {
