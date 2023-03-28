@@ -197,6 +197,11 @@ class Product {
     let item: any = DB('product')
     if (payload.id) {
       item = await DB('product').where('id', payload.id).first()
+    } else {
+      const exists = await DB('product').where('barcode', payload.barcode).first()
+      if (exists) {
+        return { error: 'barcode_already_used' }
+      }
     }
     item.type = payload.type
     item.name = payload.name
