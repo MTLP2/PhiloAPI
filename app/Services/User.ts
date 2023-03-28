@@ -53,6 +53,7 @@ class User {
         'twitter',
         'password',
         'soundcloud',
+        'soundcloud_sub',
         'is_pro as pro',
         'role',
         'currency',
@@ -89,6 +90,7 @@ class User {
       u.notifications = data[1]
       u.alerts = data[2]
       u.styles = u.styles ? JSON.parse(u.styles) : []
+      u.soundcloud_sub = u.soundcloud_sub ? JSON.parse(u.soundcloud_sub) : []
 
       if (!u.customer_id) {
         u.customer = null
