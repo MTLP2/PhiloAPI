@@ -21,6 +21,7 @@
     "rules": {
       "comma-dangle": "off",
       "@typescript-eslint/explicit-member-accessibility": "off",
+      "handle-callback-err": "off",
       "prettier/prettier": [
         "error"
       ]
