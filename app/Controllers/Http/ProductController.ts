@@ -41,7 +41,7 @@ class ProductController {
           type: schema.string.optional(),
           barcode: schema.number.optional(),
           catnumber: schema.string.optional(),
-          isrc: schema.number.optional(),
+          isrc: schema.string.optional(),
           parent_id: schema.number.optional(),
           size: schema.string.optional(),
           color: schema.string.optional(),
