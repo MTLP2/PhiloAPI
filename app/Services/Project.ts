@@ -554,7 +554,7 @@ class Project {
     }
 
     if (params.ids) {
-      projects.whereIn('p.id', params.ids)
+      projects.whereIn('p.id', params.ids.split(','))
     }
     if (params.liked) {
       projects.join('like', 'p.id', 'like.project_id').where('like.user_id', params.liked)
