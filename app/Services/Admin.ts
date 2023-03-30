@@ -3042,7 +3042,7 @@ class Admin {
   }
 
   static getBusiness = async (params) => {
-    const admin = [1, 2]
+    const admin = [1, 2, 6140]
     let query = `
     select com_id, order_item.total, order_item.currency_rate, tax_rate
     from order_item, order_shop, vod
