@@ -1252,7 +1252,7 @@ class Project {
         1837, // Horace Andy, Phillippe Cohen
         1278, // Dj Pierre (wild pitch)
         953 // Hilight Tribe
-      ],
+      ].join(','),
       sort: 'random'
     })
   }
