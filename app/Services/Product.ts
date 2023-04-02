@@ -188,7 +188,7 @@ class Product {
     name?: string
     barcode?: number
     catnumber?: string
-    isrc?: number
+    isrc?: string
     parent_id?: number
     size?: string
     color?: string
