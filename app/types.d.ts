@@ -62,6 +62,25 @@ type DigitalDB = {
 
 type DigitalModel = DigitalDB & Model
 
+type DigitalActionDB = {
+  id: number
+  type: string
+  created_at: string
+}
+
+type DigitalActionModel = DigitalActionDB & Model
+
+type DigitalTodo = {
+  id: number
+  action_id: number
+  digital_id: number
+  is_completed: TinyIntBool
+  created_at: string
+  updated_at?: string
+}
+
+type DigitalTodoModel = DigitalTodo & Model
+
 type FeedbackDB = {
   id: number
   user_id: number

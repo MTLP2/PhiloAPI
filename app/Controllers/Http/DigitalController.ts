@@ -101,12 +101,11 @@ class DigitalController {
           barcode: schema.string.optional({ trim: true }),
           comment: schema.string.optional({ trim: true }),
           prerelease: schema.string.optional({ trim: true }),
-          preorder: schema.string.optional({ trim: true })
+          preorder: schema.string.optional({ trim: true }),
+          actions: schema.object().anyMembers()
         }),
         data: params
       })
-
-      console.log(payload)
 
       return await Digital.update(payload)
     } catch (error) {

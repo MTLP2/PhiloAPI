@@ -10,7 +10,7 @@ class Digital {
   }
 
   static async find(params: { id: number }) {
-    const res = await DB('digital')
+    const digital = await DB('digital')
       .select(
         'digital.*',
         'product.barcode',
@@ -23,7 +23,37 @@ class Digital {
       .leftJoin('product', 'product.id', 'digital.product_id')
       .where('digital.id', params.id)
       .first()
-    return res
+
+    digital.actions = await Digital.getActions({ digitalId: params.id })
+
+    return digital
+  }
+
+  static async getActions({ digitalId }: { digitalId: number }) {
+    const actions = await DB('digital_action').all()
+
+    let todo = await DB('digital_todo')
+      .select('digital_todo.id', 'type', 'is_completed', 'digital_todo.updated_at')
+      .join('digital_action', 'digital_action.id', 'digital_todo.action_id')
+      .where('digital_id', digitalId)
+      .all()
+
+    if (todo.length === 0) {
+      await DB('digital_todo').insert(
+        actions.map((action) => ({
+          digital_id: digitalId,
+          action_id: action.id
+        }))
+      )
+
+      todo = await DB('digital_todo')
+        .select('digital_todo.id', 'type', 'is_completed', 'digital_todo.updated_at')
+        .join('digital_action', 'digital_action.id', 'digital_todo.action_id')
+        .where('digital_id', digitalId)
+        .all()
+    }
+
+    return todo
   }
 
   static async create(params: {
@@ -43,7 +73,7 @@ class Digital {
     barcode?: string
     comment?: string
   }) {
-    await DB('digital').insert({
+    const [id] = await DB('digital').insert({
       email: params.email,
       project_name: params.project_name,
       artist_name: params.artist_name,
@@ -53,6 +83,8 @@ class Digital {
       barcode: params.barcode,
       comment: params.comment
     })
+
+    await Digital.getActions({ digitalId: id })
     return { success: true }
   }
 
@@ -76,15 +108,37 @@ class Digital {
     comment?: string
     preorder?: string
     prerelease?: string
+    actions: { [key: string]: any }
   }) {
     const digitalSingle: DigitalModel = await DB('digital').find(params.id)
     if (!digitalSingle) throw new ApiError(404, 'Digital not found')
 
     await digitalSingle.save({
-      ...params,
+      email: params.email,
+      product_id: params.product_id,
+      project_name: params.project_name,
+      artist_name: params.artist_name,
+      step: params.step,
+      distribution: params.distribution,
+      project_type: params.project_type,
+      barcode: params.barcode,
+      comment: params.comment,
+      preorder: params.preorder,
+      prerelease: params.prerelease,
       updated_at: new Date(),
       done_date: params.step === 'uploaded' ? new Date() : null
     })
+
+    await Promise.all([
+      ...Object.keys(params.actions).map((key) =>
+        DB('digital_todo')
+          .where('id', Object.keys(params.actions[key])[0])
+          .update({
+            is_completed: Object.values(params.actions[key])[0],
+            updated_at: new Date()
+          })
+      )
+    ])
 
     return { success: true }
   }
