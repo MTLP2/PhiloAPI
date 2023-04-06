@@ -34,10 +34,22 @@ type ChatDb = {
 type ChatModel = ChatDb & Model
 
 type DigitalDB = {
-  id: number
-  email: string
-  project_name?: string
   artist_name?: string
+  barcode?: string
+  checklist?: string
+  comment?: string
+  created_at: string
+  distribution?: 'ci' | 'pias'
+  done_date?: string
+  email: string
+  id: number
+  is_delete: TinyIntBool
+  preorder?: string
+  prerelease?: string
+  product_id?: number
+  project_name?: string
+  project_type?: 'album' | 'single' | 'ep' | 'compilation'
+  updated_at?: string
   step:
     | 'pending'
     | 'contacted'
@@ -46,14 +58,6 @@ type DigitalDB = {
     | 'refused'
     | 'in_process'
     | 'uploaded'
-  done_date?: string
-  distribution?: 'ci' | 'pias'
-  project_type?: 'album' | 'single' | 'ep' | 'compilation'
-  barcode?: string
-  checklist?: string
-  comment?: string
-  created_at: string
-  updated_at?: string
 }
 
 type DigitalModel = DigitalDB & Model

@@ -4,7 +4,9 @@ import Utils from 'App/Utils'
 
 class Digital {
   static async getAll(): Promise<any> {
-    return await Utils.getRows({ query: DB('digital').orderBy('created_at', 'desc') })
+    return await Utils.getRows({
+      query: DB('digital').where('is_delete', false).orderBy('created_at', 'desc')
+    })
   }
 
   static async find(params: { id: number }) {
@@ -82,6 +84,40 @@ class Digital {
       ...params,
       updated_at: new Date(),
       done_date: params.step === 'uploaded' ? new Date() : null
+    })
+
+    return { success: true }
+  }
+
+  static async duplicate(params: { id: number }) {
+    const digitalSingle: DigitalModel = await DB('digital').find(params.id)
+    if (!digitalSingle) throw new ApiError(404, 'Digital not found')
+
+    const [id] = await DB('digital').insert({
+      email: digitalSingle.email,
+      project_name: digitalSingle.project_name,
+      artist_name: digitalSingle.artist_name,
+      step: digitalSingle.step,
+      distribution: digitalSingle.distribution,
+      project_type: digitalSingle.project_type,
+      comment: digitalSingle.comment,
+      prerelease: digitalSingle.prerelease,
+      preorder: digitalSingle.preorder,
+      product_id: digitalSingle.product_id,
+      created_at: new Date(),
+      updated_at: new Date()
+    })
+
+    return { newId: id }
+  }
+
+  static async delete(params: { id: number }) {
+    const digitalSingle: DigitalModel = await DB('digital').find(params.id)
+    if (!digitalSingle) throw new ApiError(404, 'Digital not found')
+
+    await digitalSingle.save({
+      is_delete: true,
+      updated_at: new Date()
     })
 
     return { success: true }

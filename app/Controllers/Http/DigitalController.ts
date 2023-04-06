@@ -135,6 +135,42 @@ class DigitalController {
       )
     }
   }
+
+  async duplicate({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          id: schema.number()
+        }),
+        data: params
+      })
+
+      return await Digital.duplicate(payload)
+    } catch (error) {
+      throw new ApiError(
+        error.messages ? 400 : 500,
+        JSON.stringify(error.messages) || error.message
+      )
+    }
+  }
+
+  async delete({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          id: schema.number()
+        }),
+        data: params
+      })
+
+      return await Digital.delete(payload)
+    } catch (error) {
+      throw new ApiError(
+        error.messages ? 400 : 500,
+        JSON.stringify(error.messages) || error.message
+      )
+    }
+  }
 }
 
 export default DigitalController
