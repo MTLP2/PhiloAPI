@@ -1,6 +1,8 @@
 import ApiError from 'App/ApiError'
 import DB from 'App/DB'
 import Utils from 'App/Utils'
+import Storage from 'App/Services/Storage'
+import File from 'App/Services/File'
 
 class Digital {
   static async getAll(): Promise<any> {
@@ -175,6 +177,44 @@ class Digital {
     })
 
     return { success: true }
+  }
+
+  static async getFiles(params: { id: number }) {
+    const files = await DB('digital_file')
+      .where('digital_id', params.id)
+      .join('file', 'file.id', 'digital_file.file_id')
+      .select('file.*', 'digital_file.type', 'digital_file.comment')
+      .all()
+
+    return files
+  }
+
+  static async addFile(params: {
+    id: number
+    digitalId: number
+    file: any
+    type: 'artwork' | 'tracks' | 'other'
+    comment?: string
+  }) {
+    const fileId = Utils.uuid()
+    const fileName = params.file.name
+
+    const buffer = Buffer.from(params.file.data, 'base64')
+    const fileSize = Buffer.byteLength(buffer)
+
+    await Storage.upload(`files/${fileId}`, buffer, true)
+    const file = await File.save({
+      name: fileName,
+      uuid: fileId,
+      size: fileSize
+    })
+
+    await DB('digital_file').insert({
+      digital_id: params.digitalId,
+      file_id: file.id,
+      type: params.type,
+      comment: params.comment
+    })
   }
 
   static async export(params: { start: string; end: string }) {

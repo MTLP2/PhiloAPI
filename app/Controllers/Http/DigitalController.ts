@@ -170,6 +170,46 @@ class DigitalController {
       )
     }
   }
+
+  async getFiles({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          id: schema.number()
+        }),
+        data: params
+      })
+
+      return await Digital.getFiles(payload)
+    } catch (error) {
+      throw new ApiError(
+        error.messages ? 400 : 500,
+        JSON.stringify(error.messages) || error.message
+      )
+    }
+  }
+
+  async addFile({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          id: schema.number(),
+          digitalId: schema.number(),
+          file: schema.file(),
+          type: schema.enum(['tracks', 'artwork', 'other'] as const),
+          comment: schema.string.optional({ trim: true })
+        }),
+        data: params
+      })
+
+      return await Digital.addFile(payload)
+    } catch (error) {
+      throw new ApiError(
+        error.messages ? 400 : 500,
+        JSON.stringify(error.messages) || error.message
+      )
+    }
+  }
 }
 
 export default DigitalController
