@@ -8,7 +8,19 @@ class Digital {
   }
 
   static async find(params: { id: number }) {
-    const res = await DB('digital').find(params.id)
+    const res = await DB('digital')
+      .select(
+        'digital.*',
+        'product.barcode',
+        'product.isrc',
+        'product.catnumber',
+        'product.id as product_id',
+        'product.name as product_name',
+        'product.type as product_type'
+      )
+      .leftJoin('product', 'product.id', 'digital.product_id')
+      .where('digital.id', params.id)
+      .first()
     return res
   }
 
@@ -44,6 +56,7 @@ class Digital {
 
   static async update(params: {
     id: number
+    product_id?: number
     email: string
     project_name?: string
     artist_name?: string
@@ -59,6 +72,8 @@ class Digital {
     project_type?: 'album' | 'single' | 'ep' | 'compilation'
     barcode?: string
     comment?: string
+    preorder?: string
+    prerelease?: string
   }) {
     const digitalSingle: DigitalModel = await DB('digital').find(params.id)
     if (!digitalSingle) throw new ApiError(404, 'Digital not found')

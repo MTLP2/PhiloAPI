@@ -83,6 +83,7 @@ class DigitalController {
       const payload = await validator.validate({
         schema: schema.create({
           id: schema.number(),
+          product_id: schema.number.optional(),
           email: schema.string({ trim: true }, [rules.email()]),
           project_name: schema.string.optional({ trim: true }),
           artist_name: schema.string.optional({ trim: true }),
@@ -98,10 +99,14 @@ class DigitalController {
           distribution: schema.enum.optional(['ci', 'pias'] as const),
           project_type: schema.enum.optional(['album', 'single', 'ep', 'compilation'] as const),
           barcode: schema.string.optional({ trim: true }),
-          comment: schema.string.optional({ trim: true })
+          comment: schema.string.optional({ trim: true }),
+          prerelease: schema.string.optional({ trim: true }),
+          preorder: schema.string.optional({ trim: true })
         }),
         data: params
       })
+
+      console.log(payload)
 
       return await Digital.update(payload)
     } catch (error) {
