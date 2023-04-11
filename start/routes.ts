@@ -542,6 +542,7 @@ Route.group(() => {
     Route.post('/duplicate/:id', 'DigitalController.duplicate')
     Route.get(':id', 'DigitalController.getDigitalSingle')
     Route.get(':id/files', 'DigitalController.getFiles')
+    Route.post(':did/files', 'DigitalController.addFile')
     Route.put(':id', 'DigitalController.update')
     Route.delete(':id', 'DigitalController.delete')
   }).prefix('digital')

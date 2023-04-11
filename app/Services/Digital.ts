@@ -180,18 +180,16 @@ class Digital {
   }
 
   static async getFiles(params: { id: number }) {
-    const files = await DB('digital_file')
+    const query = DB('digital_file')
+      .select('file.*', 'digital_file.id', 'digital_file.type', 'digital_file.comment')
       .where('digital_id', params.id)
       .join('file', 'file.id', 'digital_file.file_id')
-      .select('file.*', 'digital_file.type', 'digital_file.comment')
-      .all()
 
-    return files
+    return Utils.getRows({ query })
   }
 
   static async addFile(params: {
-    id: number
-    digitalId: number
+    did: number
     file: any
     type: 'artwork' | 'tracks' | 'other'
     comment?: string
@@ -210,11 +208,13 @@ class Digital {
     })
 
     await DB('digital_file').insert({
-      digital_id: params.digitalId,
+      digital_id: params.did,
       file_id: file.id,
       type: params.type,
       comment: params.comment
     })
+
+    return { success: true }
   }
 
   static async export(params: { start: string; end: string }) {

@@ -190,12 +190,18 @@ class DigitalController {
   }
 
   async addFile({ params }) {
+    console.log(
+      '🚀 ~ file: DigitalController.ts:193 ~ DigitalController ~ addFile ~ params:',
+      params
+    )
     try {
       const payload = await validator.validate({
         schema: schema.create({
-          id: schema.number(),
-          digitalId: schema.number(),
-          file: schema.file(),
+          did: schema.number(),
+          file: schema.object().members({
+            name: schema.string(),
+            data: schema.string()
+          }),
           type: schema.enum(['tracks', 'artwork', 'other'] as const),
           comment: schema.string.optional({ trim: true })
         }),
