@@ -217,6 +217,29 @@ class Digital {
     return { success: true }
   }
 
+  static async updateFile(params: {
+    id: number
+    type?: 'artwork' | 'tracks' | 'other'
+    comment?: string
+  }) {
+    await DB('digital_file').where('id', params.id).update({
+      type: params.type,
+      comment: params.comment
+    })
+
+    return { success: true }
+  }
+
+  static async deleteFile(params: { id: number }) {
+    const file = await DB('digital_file').where('id', params.id).first()
+    if (!file) throw new ApiError(404, 'File not found')
+    await File.delete(file.file_id, 'digital')
+
+    await file.delete()
+
+    return { success: true }
+  }
+
   static async downloadFile(params: { id: number }) {
     const item = await DB('digital_file as dfile').where('dfile.id', params.id).first()
 

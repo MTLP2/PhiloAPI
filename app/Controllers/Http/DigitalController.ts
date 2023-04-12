@@ -213,6 +213,44 @@ class DigitalController {
     }
   }
 
+  async updateFile({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          id: schema.number(),
+          type: schema.enum(['tracks', 'artwork', 'other'] as const),
+          comment: schema.string.optional({ trim: true })
+        }),
+        data: params
+      })
+
+      return await Digital.updateFile(payload)
+    } catch (error) {
+      throw new ApiError(
+        error.messages ? 400 : 500,
+        JSON.stringify(error.messages) || error.message
+      )
+    }
+  }
+
+  async deleteFile({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          id: schema.number()
+        }),
+        data: params
+      })
+
+      return await Digital.deleteFile(payload)
+    } catch (error) {
+      throw new ApiError(
+        error.messages ? 400 : 500,
+        JSON.stringify(error.messages) || error.message
+      )
+    }
+  }
+
   async downloadFile({ params }) {
     try {
       const payload = await validator.validate({

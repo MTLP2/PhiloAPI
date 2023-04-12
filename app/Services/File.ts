@@ -33,10 +33,10 @@ class File {
     return item
   }
 
-  static async delete(id: number) {
+  static async delete(id: number, folder = 'files') {
     const file = await DB('file').find(id)
     await file.delete()
-    await Storage.delete(`files/${file.uuid}`, true)
+    await Storage.delete(`${folder}/${file.uuid}`, true)
   }
 
   static async url(

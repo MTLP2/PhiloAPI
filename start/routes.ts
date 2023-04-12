@@ -544,6 +544,8 @@ Route.group(() => {
     Route.get(':id/download', 'DigitalController.downloadFile')
     Route.get(':id/files', 'DigitalController.getFiles')
     Route.post(':did/files', 'DigitalController.addFile')
+    Route.post(':did/files/:id', 'DigitalController.updateFile')
+    Route.delete(':did/files/:id', 'DigitalController.deleteFile')
     Route.put(':id', 'DigitalController.update')
     Route.delete(':id', 'DigitalController.delete')
   }).prefix('digital')
