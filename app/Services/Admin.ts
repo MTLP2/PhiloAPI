@@ -4006,6 +4006,7 @@ class Admin {
         'slug',
         'artist_name',
         'product.name',
+        'project.name as project_name',
         'price',
         'description_en',
         'description_fr',
@@ -4065,6 +4066,8 @@ class Admin {
     for (const p in projects) {
       const pp = projects[p]
 
+      console.log('pp', pp)
+
       for (const stock of pp.stock) {
         pp[`stock_${stock.type}`] = stock.quantity
       }
@@ -4107,8 +4110,8 @@ class Admin {
       csv += `${pp.id};`
       csv += `"${pp.barcode || ''}";`
       csv += pp.inverse_name
-        ? `"${pp.name} - ${pp.artist_name}";`
-        : `"${pp.artist_name} - ${pp.name}";`
+        ? `"${pp.project_name} - ${pp.artist_name}";`
+        : `"${pp.artist_name} - ${pp.project_name}";`
       csv += 'new;'
       /**
       csv +=
@@ -4149,7 +4152,10 @@ class Admin {
       csv += (pp.color_vinyl || 'black') + ';'
       csv += pp.nb_vinyl + ';'
       csv += pp.type + ';'
-      csv += params.lang === 'FR' ? 'Disques et vinyles' : 'Records & LPs' + ';'
+      csv +=
+        params.lang === 'FR'
+          ? 'Médias > Musique et enregistrements audio > Disques et vinyles'
+          : 'Media > Music & Sound Recordings > Records & LPs' + ';'
       csv += pp.styles.includes('Soundtrack')
         ? `"Soundtrack > ${sanitizeForCSV(pp.name.split('-')[1].trim())}"`
         : '' + ';'
