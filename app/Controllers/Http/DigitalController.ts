@@ -198,7 +198,7 @@ class DigitalController {
             name: schema.string(),
             data: schema.string()
           }),
-          type: schema.enum(['tracks', 'artwork', 'other'] as const),
+          type: schema.enum(['tracks', 'artwork', 'pias_file', 'artist_sheet', 'other'] as const),
           comment: schema.string.optional({ trim: true })
         }),
         data: params
@@ -218,7 +218,7 @@ class DigitalController {
       const payload = await validator.validate({
         schema: schema.create({
           id: schema.number(),
-          type: schema.enum(['tracks', 'artwork', 'other'] as const),
+          type: schema.enum(['tracks', 'artwork', 'pias_file', 'artist_sheet', 'other'] as const),
           comment: schema.string.optional({ trim: true })
         }),
         data: params

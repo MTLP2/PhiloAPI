@@ -219,7 +219,7 @@ class Digital {
 
   static async updateFile(params: {
     id: number
-    type?: 'artwork' | 'tracks' | 'other'
+    type?: 'artwork' | 'tracks' | 'other' | 'pias_file' | 'artist_sheet'
     comment?: string
   }) {
     await DB('digital_file').where('id', params.id).update({
