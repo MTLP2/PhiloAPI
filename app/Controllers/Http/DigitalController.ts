@@ -190,10 +190,6 @@ class DigitalController {
   }
 
   async addFile({ params }) {
-    console.log(
-      '🚀 ~ file: DigitalController.ts:193 ~ DigitalController ~ addFile ~ params:',
-      params
-    )
     try {
       const payload = await validator.validate({
         schema: schema.create({
@@ -209,6 +205,24 @@ class DigitalController {
       })
 
       return await Digital.addFile(payload)
+    } catch (error) {
+      throw new ApiError(
+        error.messages ? 400 : 500,
+        JSON.stringify(error.messages) || error.message
+      )
+    }
+  }
+
+  async downloadFile({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          id: schema.number()
+        }),
+        data: params
+      })
+
+      return await Digital.downloadFile(payload)
     } catch (error) {
       throw new ApiError(
         error.messages ? 400 : 500,

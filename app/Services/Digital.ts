@@ -200,7 +200,7 @@ class Digital {
     const buffer = Buffer.from(params.file.data, 'base64')
     const fileSize = Buffer.byteLength(buffer)
 
-    await Storage.upload(`files/${fileId}`, buffer, true)
+    await Storage.upload(`digital/${fileId}`, buffer, true)
     const file = await File.save({
       name: fileName,
       uuid: fileId,
@@ -215,6 +215,12 @@ class Digital {
     })
 
     return { success: true }
+  }
+
+  static async downloadFile(params: { id: number }) {
+    const item = await DB('digital_file as dfile').where('dfile.id', params.id).first()
+
+    return File.url(item.file_id, 'digital')
   }
 
   static async export(params: { start: string; end: string }) {
