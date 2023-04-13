@@ -2428,7 +2428,7 @@ class Admin {
       }
     )
 
-    return res.deliveries
+    return res.deliveries || []
   }
 
   static getAudiences = async (params) => {
