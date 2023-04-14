@@ -1563,7 +1563,8 @@ class Admin {
     const orders = DB('order_shop as os')
       .select(
         DB.raw('(os.shipping - os.shipping_cost) as shipping_diff'),
-        DB.raw('ROUND(os.total * order.currency_rate, 2) as euro_rate'),
+        DB.raw('ROUND(oi.total * order.currency_rate, 2) as euro_rate'),
+        'order.currency_rate',
         'os.*',
         'order.origin',
         'order.promo_code',
