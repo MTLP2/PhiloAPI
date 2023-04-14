@@ -1886,37 +1886,72 @@ class Admin {
     params.project_id = params.id
     const data = await Admin.getOrders(params)
 
-    return Utils.arrayToCsv(
-      [
-        { name: 'ID', index: 'order_shop_id' },
-        { name: 'Project', index: 'project_name' },
-        { name: 'Artist', index: 'artist_name' },
-        { name: 'Quantity', index: 'quantity' },
-        { name: 'Total', index: 'total' },
-        { name: 'Currency', index: 'currency' },
-        { name: 'Size', index: 'size' },
-        { name: 'Promo', index: 'promo_code' },
-        { name: 'Sales', index: 'discount_code' },
-        { name: 'Origin', index: 'origin' },
-        { name: 'Email', index: 'user_email' },
-        { name: 'Name', index: 'user_name' },
-        { name: 'Step', index: 'step' },
-        { name: 'Transporter', index: 'transporter' },
-        { name: 'Date export', index: 'date_export' },
-        { name: 'Tracking', index: 'tracking_number' },
-        { name: 'Paid?', index: 'is_paid' },
-        { name: 'Date', index: 'created_at' },
-        { name: 'Firstname', index: 'firstname' },
-        { name: 'Lastanme', index: 'lastname' },
-        { name: 'Name', index: 'name' },
-        { name: 'Address', index: 'address' },
-        { name: 'City', index: 'city' },
-        { name: 'Zip code', index: 'zip_code' },
-        { name: 'State', index: 'state' },
-        { name: 'Country', index: 'country_id' }
-      ],
-      data.data
-    )
+    return Utils.arrayToXlsx([
+      {
+        worksheetName: 'Orders',
+        columns: [
+          { header: 'ID', key: 'order_shop_id' },
+          { header: 'Project', key: 'project_name' },
+          { header: 'Artist', key: 'artist_name' },
+          { header: 'Quantity', key: 'quantity' },
+          { header: 'Total', key: 'total' },
+          { header: 'Currency', key: 'currency' },
+          { header: 'Size', key: 'size' },
+          { header: 'Promo', key: 'promo_code' },
+          { header: 'Sales', key: 'discount_code' },
+          { header: 'Origin', key: 'origin' },
+          { header: 'Email', key: 'user_email' },
+          { header: 'Name', key: 'user_name' },
+          { header: 'Step', key: 'step' },
+          { header: 'Transporter', key: 'transporter' },
+          { header: 'Date export', key: 'date_export' },
+          { header: 'Tracking', key: 'tracking_number' },
+          { header: 'Paid?', key: 'is_paid' },
+          { header: 'Date', key: 'created_at' },
+          { header: 'Firstname', key: 'firstname' },
+          { header: 'Lastanme', key: 'lastname' },
+          { header: 'Name', key: 'name' },
+          { header: 'Address', key: 'address' },
+          { header: 'City', key: 'city' },
+          { header: 'Zip code', key: 'zip_code' },
+          { header: 'State', key: 'state' },
+          { header: 'Country', key: 'country_id' }
+        ],
+        data: data.data
+      }
+    ])
+
+    // return Utils.arrayToCsv(
+    //   [
+    //     { name: 'ID', index: 'order_shop_id' },
+    //     { name: 'Project', index: 'project_name' },
+    //     { name: 'Artist', index: 'artist_name' },
+    //     { name: 'Quantity', index: 'quantity' },
+    //     { name: 'Total', index: 'total' },
+    //     { name: 'Currency', index: 'currency' },
+    //     { name: 'Size', index: 'size' },
+    //     { name: 'Promo', index: 'promo_code' },
+    //     { name: 'Sales', index: 'discount_code' },
+    //     { name: 'Origin', index: 'origin' },
+    //     { name: 'Email', index: 'user_email' },
+    //     { name: 'Name', index: 'user_name' },
+    //     { name: 'Step', index: 'step' },
+    //     { name: 'Transporter', index: 'transporter' },
+    //     { name: 'Date export', index: 'date_export' },
+    //     { name: 'Tracking', index: 'tracking_number' },
+    //     { name: 'Paid?', index: 'is_paid' },
+    //     { name: 'Date', index: 'created_at' },
+    //     { name: 'Firstname', index: 'firstname' },
+    //     { name: 'Lastanme', index: 'lastname' },
+    //     { name: 'Name', index: 'name' },
+    //     { name: 'Address', index: 'address' },
+    //     { name: 'City', index: 'city' },
+    //     { name: 'Zip code', index: 'zip_code' },
+    //     { name: 'State', index: 'state' },
+    //     { name: 'Country', index: 'country_id' }
+    //   ],
+    //   data.data
+    // )
   }
 
   static exportReviews = async (params) => {

@@ -1044,7 +1044,7 @@ class Utils {
       for (const element of sheet.data) worksheet.addRow(element)
       for (const cell of Utils.getCells(
         worksheet,
-        `A1:${String.fromCharCode(sheet.data.length + 64)}1`
+        `A1:${String.fromCharCode(sheet.columns.length + 64)}1`
       )) {
         cell.font = { bold: true }
       }
