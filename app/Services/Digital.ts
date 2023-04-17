@@ -7,7 +7,13 @@ import File from 'App/Services/File'
 class Digital {
   static async getAll(): Promise<any> {
     return await Utils.getRows({
-      query: DB('digital').where('is_delete', false).orderBy('created_at', 'desc')
+      query: DB('digital')
+        .select('digital.*', 'project.picture', 'project.id as project_id')
+        .where('digital.is_delete', false)
+        .leftJoin('product', 'product.id', 'digital.product_id')
+        .leftJoin('project_product', 'project_product.product_id', 'product.id')
+        .leftJoin('project', 'project.id', 'project_product.project_id')
+        .orderBy('digital.created_at', 'desc')
     })
   }
 
@@ -20,9 +26,12 @@ class Digital {
         'product.catnumber',
         'product.id as product_id',
         'product.name as product_name',
-        'product.type as product_type'
+        'product.type as product_type',
+        'project.picture'
       )
       .leftJoin('product', 'product.id', 'digital.product_id')
+      .leftJoin('project_product', 'project_product.product_id', 'product.id')
+      .leftJoin('project', 'project.id', 'project_product.project_id')
       .where('digital.id', params.id)
       .first()
 
@@ -266,6 +275,8 @@ class Digital {
             { header: 'Distribution', key: 'distribution', width: 32 },
             { header: 'Project type', key: 'project_type', width: 32 },
             { header: 'Barcode', key: 'barcode', width: 32 },
+            { header: 'Release Date', key: 'prerelease', width: 32 },
+            { header: 'Preorder Date', key: 'preorder', width: 32 },
             { header: 'Comment', key: 'comment', width: 64 },
             { header: 'Created at', key: 'created_at', width: 32 },
             { header: 'Updated at', key: 'updated_at', width: 32 },
