@@ -49,6 +49,7 @@ class PromoCode {
     code.box_6_months = params.box_6_months
     code.box_12_months = params.box_12_months
     code.max_quantity = params.max_quantity || null
+    code.min_quantity = params.min_quantity || null
     code.max_total = params.max_total || null
 
     if (params.temporary) {
