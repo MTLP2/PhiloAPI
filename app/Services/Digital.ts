@@ -260,7 +260,8 @@ class Digital {
       const { data } = await Utils.getRows<DigitalModel[]>({
         query: DB('digital')
           .where('created_at', '>=', params.start)
-          .where('created_at', '<=', params.end),
+          .where('created_at', '<=', params.end)
+          .where('is_delete', false),
         size: 0
       })
 

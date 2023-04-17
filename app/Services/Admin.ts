@@ -2335,7 +2335,21 @@ class Admin {
       params.order = 'desc'
     }
 
-    return Utils.getRows(params)
+    const rows = await Utils.getRows<any>(params)
+
+    const haveBox = await DB('box')
+      .select('id', 'user_id', 'step')
+      .whereIn(
+        'user_id',
+        rows.data.map((row) => row.id)
+      )
+      .all()
+
+    for (const user of rows.data) {
+      user.have_box = haveBox.find((box) => box.user_id === user.id)?.step || ''
+    }
+
+    return rows
   }
 
   static getUser = async (id) => {
@@ -3755,6 +3769,7 @@ class Admin {
         { name: 'Country', index: 'country_id' },
         { name: 'Type', index: 'type' },
         { name: 'Pro', index: 'is_pro' },
+        { name: 'Box', index: 'have_box' },
         { name: 'Guest', index: 'is_guest' },
         { name: 'Unsubscribed', index: 'unsubscribed' },
         { name: 'Orders', index: 'orders' },
