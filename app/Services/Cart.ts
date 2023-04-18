@@ -292,7 +292,8 @@ class Cart {
           // Checking quantity items and cart total for promocode limits
           if (
             (promocode?.max_total && promocode.max_total < cart.total) ||
-            (promocode?.max_quantity && maxQuantity > promocode?.max_quantity)
+            (promocode?.max_quantity && maxQuantity > promocode?.max_quantity) ||
+            (promocode?.min_quantity && promocode?.min_quantity > maxQuantity)
           ) {
             // Resetting cart to recalculate
             cart.sub_total = 0

@@ -83,6 +83,7 @@ class DigitalController {
       const payload = await validator.validate({
         schema: schema.create({
           id: schema.number(),
+          product_id: schema.number.optional(),
           email: schema.string({ trim: true }, [rules.email()]),
           project_name: schema.string.optional({ trim: true }),
           artist_name: schema.string.optional({ trim: true }),
@@ -98,7 +99,10 @@ class DigitalController {
           distribution: schema.enum.optional(['ci', 'pias'] as const),
           project_type: schema.enum.optional(['album', 'single', 'ep', 'compilation'] as const),
           barcode: schema.string.optional({ trim: true }),
-          comment: schema.string.optional({ trim: true })
+          comment: schema.string.optional({ trim: true }),
+          prerelease: schema.string.optional({ trim: true }),
+          preorder: schema.string.optional({ trim: true }),
+          actions: schema.object().anyMembers()
         }),
         data: params
       })
@@ -123,6 +127,140 @@ class DigitalController {
       })
 
       return await Digital.export(payload)
+    } catch (error) {
+      throw new ApiError(
+        error.messages ? 400 : 500,
+        JSON.stringify(error.messages) || error.message
+      )
+    }
+  }
+
+  async duplicate({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          id: schema.number()
+        }),
+        data: params
+      })
+
+      return await Digital.duplicate(payload)
+    } catch (error) {
+      throw new ApiError(
+        error.messages ? 400 : 500,
+        JSON.stringify(error.messages) || error.message
+      )
+    }
+  }
+
+  async delete({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          id: schema.number()
+        }),
+        data: params
+      })
+
+      return await Digital.delete(payload)
+    } catch (error) {
+      throw new ApiError(
+        error.messages ? 400 : 500,
+        JSON.stringify(error.messages) || error.message
+      )
+    }
+  }
+
+  async getFiles({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          id: schema.number()
+        }),
+        data: params
+      })
+
+      return await Digital.getFiles(payload)
+    } catch (error) {
+      throw new ApiError(
+        error.messages ? 400 : 500,
+        JSON.stringify(error.messages) || error.message
+      )
+    }
+  }
+
+  async addFile({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          did: schema.number(),
+          file: schema.object().members({
+            name: schema.string(),
+            data: schema.string()
+          }),
+          type: schema.enum(['tracks', 'artwork', 'pias_file', 'artist_sheet', 'other'] as const),
+          comment: schema.string.optional({ trim: true })
+        }),
+        data: params
+      })
+
+      return await Digital.addFile(payload)
+    } catch (error) {
+      throw new ApiError(
+        error.messages ? 400 : 500,
+        JSON.stringify(error.messages) || error.message
+      )
+    }
+  }
+
+  async updateFile({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          id: schema.number(),
+          type: schema.enum(['tracks', 'artwork', 'pias_file', 'artist_sheet', 'other'] as const),
+          comment: schema.string.optional({ trim: true })
+        }),
+        data: params
+      })
+
+      return await Digital.updateFile(payload)
+    } catch (error) {
+      throw new ApiError(
+        error.messages ? 400 : 500,
+        JSON.stringify(error.messages) || error.message
+      )
+    }
+  }
+
+  async deleteFile({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          id: schema.number()
+        }),
+        data: params
+      })
+
+      return await Digital.deleteFile(payload)
+    } catch (error) {
+      throw new ApiError(
+        error.messages ? 400 : 500,
+        JSON.stringify(error.messages) || error.message
+      )
+    }
+  }
+
+  async downloadFile({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          id: schema.number()
+        }),
+        data: params
+      })
+
+      return await Digital.downloadFile(payload)
     } catch (error) {
       throw new ApiError(
         error.messages ? 400 : 500,

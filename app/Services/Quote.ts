@@ -752,12 +752,12 @@ class Quote {
           true
         )
       } else if (params.insert === 'booklet_printed') {
-        quote.insert += getCost(402, 'insert', true)
+        quote.insert += getCost(403, 'insert', true)
       }
     }
     quote.prices.insert.base = getCost(252, 'insert base', true)
     quote.prices.insert.booklet_printed =
-      quote.prices.insert.base + getCost(402, 'insert booklet printed', true)
+      quote.prices.insert.base + getCost(403, 'insert booklet printed', true)
     quote.prices.insert.one_side_printed =
       quote.prices.insert.base +
       getCost(
@@ -1154,7 +1154,7 @@ class Quote {
             ` x ${params.quantity}`
           ) / params.nb_vinyl
       } else if (params.insert === 'booklet_printed') {
-        quote.insert += getCost(402, 'insert', ` x ${params.quantity}`) / params.nb_vinyl
+        quote.insert += getCost(403, 'insert', ` x ${params.quantity}`) / params.nb_vinyl
       }
     }
 

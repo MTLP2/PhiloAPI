@@ -1563,6 +1563,8 @@ class Admin {
     const orders = DB('order_shop as os')
       .select(
         DB.raw('(os.shipping - os.shipping_cost) as shipping_diff'),
+        DB.raw('ROUND(oi.total * order.currency_rate, 2) as euro_rate'),
+        'order.currency_rate',
         'os.*',
         'order.origin',
         'order.promo_code',
@@ -1886,37 +1888,73 @@ class Admin {
     params.project_id = params.id
     const data = await Admin.getOrders(params)
 
-    return Utils.arrayToCsv(
-      [
-        { name: 'ID', index: 'order_shop_id' },
-        { name: 'Project', index: 'project_name' },
-        { name: 'Artist', index: 'artist_name' },
-        { name: 'Quantity', index: 'quantity' },
-        { name: 'Total', index: 'total' },
-        { name: 'Currency', index: 'currency' },
-        { name: 'Size', index: 'size' },
-        { name: 'Promo', index: 'promo_code' },
-        { name: 'Sales', index: 'discount_code' },
-        { name: 'Origin', index: 'origin' },
-        { name: 'Email', index: 'user_email' },
-        { name: 'Name', index: 'user_name' },
-        { name: 'Step', index: 'step' },
-        { name: 'Transporter', index: 'transporter' },
-        { name: 'Date export', index: 'date_export' },
-        { name: 'Tracking', index: 'tracking_number' },
-        { name: 'Paid?', index: 'is_paid' },
-        { name: 'Date', index: 'created_at' },
-        { name: 'Firstname', index: 'firstname' },
-        { name: 'Lastanme', index: 'lastname' },
-        { name: 'Name', index: 'name' },
-        { name: 'Address', index: 'address' },
-        { name: 'City', index: 'city' },
-        { name: 'Zip code', index: 'zip_code' },
-        { name: 'State', index: 'state' },
-        { name: 'Country', index: 'country_id' }
-      ],
-      data.data
-    )
+    return Utils.arrayToXlsx([
+      {
+        worksheetName: 'Orders',
+        columns: [
+          { header: 'ID', key: 'order_shop_id' },
+          { header: 'Project', key: 'project_name' },
+          { header: 'Artist', key: 'artist_name' },
+          { header: 'Quantity', key: 'quantity' },
+          { header: 'Total', key: 'total' },
+          { header: 'Currency', key: 'currency' },
+          { header: 'Total Euro', key: 'euro_rate' },
+          { header: 'Size', key: 'size' },
+          { header: 'Promo', key: 'promo_code' },
+          { header: 'Sales', key: 'discount_code' },
+          { header: 'Origin', key: 'origin' },
+          { header: 'Email', key: 'user_email' },
+          { header: 'Name', key: 'user_name' },
+          { header: 'Step', key: 'step' },
+          { header: 'Transporter', key: 'transporter' },
+          { header: 'Date export', key: 'date_export' },
+          { header: 'Tracking', key: 'tracking_number' },
+          { header: 'Paid?', key: 'is_paid' },
+          { header: 'Date', key: 'created_at' },
+          { header: 'Firstname', key: 'firstname' },
+          { header: 'Lastanme', key: 'lastname' },
+          { header: 'Name', key: 'name' },
+          { header: 'Address', key: 'address' },
+          { header: 'City', key: 'city' },
+          { header: 'Zip code', key: 'zip_code' },
+          { header: 'State', key: 'state' },
+          { header: 'Country', key: 'country_id' }
+        ],
+        data: data.data
+      }
+    ])
+
+    // return Utils.arrayToCsv(
+    //   [
+    //     { name: 'ID', index: 'order_shop_id' },
+    //     { name: 'Project', index: 'project_name' },
+    //     { name: 'Artist', index: 'artist_name' },
+    //     { name: 'Quantity', index: 'quantity' },
+    //     { name: 'Total', index: 'total' },
+    //     { name: 'Currency', index: 'currency' },
+    //     { name: 'Size', index: 'size' },
+    //     { name: 'Promo', index: 'promo_code' },
+    //     { name: 'Sales', index: 'discount_code' },
+    //     { name: 'Origin', index: 'origin' },
+    //     { name: 'Email', index: 'user_email' },
+    //     { name: 'Name', index: 'user_name' },
+    //     { name: 'Step', index: 'step' },
+    //     { name: 'Transporter', index: 'transporter' },
+    //     { name: 'Date export', index: 'date_export' },
+    //     { name: 'Tracking', index: 'tracking_number' },
+    //     { name: 'Paid?', index: 'is_paid' },
+    //     { name: 'Date', index: 'created_at' },
+    //     { name: 'Firstname', index: 'firstname' },
+    //     { name: 'Lastanme', index: 'lastname' },
+    //     { name: 'Name', index: 'name' },
+    //     { name: 'Address', index: 'address' },
+    //     { name: 'City', index: 'city' },
+    //     { name: 'Zip code', index: 'zip_code' },
+    //     { name: 'State', index: 'state' },
+    //     { name: 'Country', index: 'country_id' }
+    //   ],
+    //   data.data
+    // )
   }
 
   static exportReviews = async (params) => {
@@ -2297,7 +2335,21 @@ class Admin {
       params.order = 'desc'
     }
 
-    return Utils.getRows(params)
+    const rows = await Utils.getRows<any>(params)
+
+    const haveBox = await DB('box')
+      .select('id', 'user_id', 'step')
+      .whereIn(
+        'user_id',
+        rows.data.map((row) => row.id)
+      )
+      .all()
+
+    for (const user of rows.data) {
+      user.have_box = haveBox.find((box) => box.user_id === user.id)?.step || ''
+    }
+
+    return rows
   }
 
   static getUser = async (id) => {
@@ -2428,7 +2480,7 @@ class Admin {
       }
     )
 
-    return res.deliveries
+    return res.deliveries || []
   }
 
   static getAudiences = async (params) => {
@@ -3717,6 +3769,7 @@ class Admin {
         { name: 'Country', index: 'country_id' },
         { name: 'Type', index: 'type' },
         { name: 'Pro', index: 'is_pro' },
+        { name: 'Box', index: 'have_box' },
         { name: 'Guest', index: 'is_guest' },
         { name: 'Unsubscribed', index: 'unsubscribed' },
         { name: 'Orders', index: 'orders' },
@@ -4006,6 +4059,7 @@ class Admin {
         'slug',
         'artist_name',
         'product.name',
+        'project.name as project_name',
         'price',
         'description_en',
         'description_fr',
@@ -4065,6 +4119,8 @@ class Admin {
     for (const p in projects) {
       const pp = projects[p]
 
+      console.log('pp', pp)
+
       for (const stock of pp.stock) {
         pp[`stock_${stock.type}`] = stock.quantity
       }
@@ -4107,8 +4163,8 @@ class Admin {
       csv += `${pp.id};`
       csv += `"${pp.barcode || ''}";`
       csv += pp.inverse_name
-        ? `"${pp.name} - ${pp.artist_name}";`
-        : `"${pp.artist_name} - ${pp.name}";`
+        ? `"${pp.project_name} - ${pp.artist_name}";`
+        : `"${pp.artist_name} - ${pp.project_name}";`
       csv += 'new;'
       /**
       csv +=
@@ -4149,7 +4205,10 @@ class Admin {
       csv += (pp.color_vinyl || 'black') + ';'
       csv += pp.nb_vinyl + ';'
       csv += pp.type + ';'
-      csv += params.lang === 'FR' ? 'Disques et vinyles' : 'Records & LPs' + ';'
+      csv +=
+        params.lang === 'FR'
+          ? 'Médias > Musique et enregistrements audio > Disques et vinyles'
+          : 'Media > Music & Sound Recordings > Records & LPs' + ';'
       csv += pp.styles.includes('Soundtrack')
         ? `"Soundtrack > ${sanitizeForCSV(pp.name.split('-')[1].trim())}"`
         : '' + ';'
