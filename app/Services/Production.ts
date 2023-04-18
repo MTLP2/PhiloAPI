@@ -78,7 +78,7 @@ class Production {
           this.where(function () {
             this.where('production_action.type', 'artwork')
             this.whereIn('production_action.status', ['pending'])
-            this.where('production.step', 'preprod')
+            // this.where('production.step', 'preprod')
           })
           this.orWhere(function () {
             this.where('production_action.type', 'pressing_proof')
