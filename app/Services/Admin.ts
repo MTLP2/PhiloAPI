@@ -2089,6 +2089,11 @@ class Admin {
     if (isNaN(params.amount)) return { error: 'Amount is not a number' }
 
     const order = await DB('order').find(params.id)
+
+    if (order.refunded + params.amount > order.total) {
+      return { error: 'Amount is bigger than the amount of the order' }
+    }
+
     const customer = await DB('order_shop')
       .select('customer_id')
       .where('order_id', params.id)
