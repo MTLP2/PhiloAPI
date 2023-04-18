@@ -209,6 +209,9 @@ class Sign {
 
   static createUser = async (params) => {
     try {
+      if (params.lang !== 'fr' && params.lang !== 'en') {
+        params.lang = 'en'
+      }
       const user = await DB('user').save({
         name: params.name,
         slug: Utils.slugify(params.name),
