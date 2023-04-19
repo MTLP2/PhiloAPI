@@ -5,6 +5,13 @@ import Excel from 'exceljs'
 import View from '@ioc:Adonis/Core/View'
 import I18n from '@ioc:Adonis/Addons/I18n'
 
+type CostPayloads = {
+  l: number | { '12"'?: number; '10"'?: number; '7"'?: number }
+  type?: string
+  onceByCopy?: boolean
+  log?: boolean
+}
+
 class Quote {
   static async all(params) {
     params.query = DB('quote')
@@ -238,13 +245,13 @@ class Quote {
     data.project = data.id !== undefined
 
     const logs: any[] = []
-    const getCost = (l: string, type: string, onceByCopy = false) => {
-      if (!l) {
+    const getCost = (payload: CostPayloads): number => {
+      if (!payload.l) {
         logs.push({
-          type: type,
+          type: payload.type,
           value: null
         })
-        return false
+        return 0
       }
       let qty
       if (data.quantity < 200) {
@@ -266,21 +273,21 @@ class Quote {
       }
 
       let line
-      if (typeof l === 'object') {
-        line = q[l[data.format]]
+      if (typeof payload.l === 'object') {
+        line = q[payload.l[data.format]]
       } else {
-        line = q[l]
+        line = q[payload.l]
       }
       let quantity
       if (line && line.type === 'F') {
         quantity = params.nb_vinyl
       } else {
-        quantity = onceByCopy ? params.quantity + 5 : params.quantity * params.nb_vinyl + 5
+        quantity = payload.onceByCopy ? params.quantity + 5 : params.quantity * params.nb_vinyl + 5
       }
-      if (type) {
+      if (payload.type && payload.log) {
         logs.push({
-          type: type,
-          value: l,
+          type: payload.type,
+          value: payload.l,
           comment: `x ${quantity}`
         })
       }
@@ -305,10 +312,6 @@ class Quote {
       quote = this.calculateVdp(data, getCost)
       prices = quote.prices
       delete quote.prices
-    } else if (data.factory === 'mpo') {
-      quote = this.calculateMpo(data, getCost)
-    } else if (data.factory === 'kuroneko') {
-      quote = this.calculateKuroneko(data, getCost)
     }
 
     if (data.project) {
@@ -489,698 +492,342 @@ class Quote {
     }
   }
 
-  static calculateSna(params, getCost) {
+  static calculateSna(params, getCost: (payload: CostPayloads) => number) {
     const quote: any = {}
     quote.prices = Quote.getPrices()
 
-    quote.prices.cutting.DMM = getCost(
-      {
+    quote.prices.cutting.DMM = getCost({
+      l: {
         '12"': 3,
         '10"': 3,
         '7"': 5
       },
-      'DMM'
-    )
-    quote.prices.cutting.LACQUE = getCost(
-      {
+      type: 'DMM',
+      log: params.cutting === 'DMM'
+    })
+    quote.prices.cutting.LACQUE = getCost({
+      l: {
         '12"': 15,
         '10"': 15,
         '7"': 17
       },
-      'LACQUE'
-    )
+      type: 'LACQUE',
+      log: params.cutting === 'LACQUE'
+    })
     quote.cutting = quote.prices.cutting[params.cutting]
 
-    quote.prices.weight['140'] = getCost(
-      {
+    quote.prices.weight['140'] = getCost({
+      l: {
         '12"': 39,
         '10"': 40,
         '7"': 42
       },
-      '140g'
-    )
-    quote.prices.weight['180'] = getCost(
-      {
+      type: '140g',
+      log: params.weight === '140g'
+    })
+    quote.prices.weight['180'] = getCost({
+      l: {
         '12"': 41,
         '10"': 41,
         '7"': 43
       },
-      '180g'
-    )
+      type: '180g',
+      log: params.weight === '180g'
+    })
     quote.type_vinyl = quote.prices.weight[params.weight]
 
     quote.prices.type_vinyl.color =
-      getCost(
-        {
+      getCost({
+        l: {
           '12"': 48,
           '10"': 48,
           '7"': 51
         },
-        'colored vinyl'
-      ) + getCost(73, 'colored vinyl')
+        type: 'colored vinyl',
+        log: params.type_vinyl !== 'black'
+      }) + getCost({ l: 73, type: 'colored vinyl' })
     quote.prices.type_vinyl.base = quote.prices.type_vinyl.color
     quote.prices.type_vinyl.splatter =
       quote.prices.type_vinyl.base +
-      getCost(
-        {
+      getCost({
+        l: {
           '12"': 60,
           '10"': 60,
           '7"': 61
         },
-        'splatter'
-      ) +
-      getCost(74, 'splatter')
+        type: 'splatter'
+      }) +
+      getCost({ l: 74, type: 'splatter' })
     quote.prices.type_vinyl.marble =
-      quote.prices.type_vinyl.base + getCost(64, 'marble') + getCost(74, 'marble')
+      quote.prices.type_vinyl.base +
+      getCost({ l: 64, type: 'marble' }) +
+      getCost({ l: 74, type: 'marble' })
     quote.prices.type_vinyl.asidebside =
       quote.prices.type_vinyl.base +
-      getCost(64, 'asidebside') +
-      getCost(73, 'asidebside') +
-      getCost(74, 'asidebside')
+      getCost({ l: 64, type: 'asidebside' }) +
+      getCost({ l: 73, type: 'asidebside' }) +
+      getCost({ l: 74, type: 'asidebside' })
     quote.prices.type_vinyl.cloudy =
-      quote.prices.type_vinyl.base + getCost(53, 'cloudy') + getCost(73, 'cloudy')
+      quote.prices.type_vinyl.base +
+      getCost({ l: 53, type: 'cloudy' }) +
+      getCost({ l: 73, type: 'cloudy' })
     quote.prices.type_vinyl.colorincolor = quote.prices.type_vinyl.cloudy
     quote.prices.type_vinyl.halfandhalf = quote.prices.type_vinyl.cloudy
 
     quote.type_vinyl += quote.prices.type_vinyl[params.type_vinyl] || 0
 
-    quote.prices.label_color.white = getCost(
-      {
+    quote.prices.label_color.white = getCost({
+      l: {
         '12"': 91,
         '10"': 91,
         '7"': 91
       },
-      'label white'
-    )
-    quote.prices.label_color.color = getCost(
-      {
+      type: 'label white'
+    })
+    quote.prices.label_color.color = getCost({
+      l: {
         '12"': 96,
         '10"': 96,
         '7"': 99
       },
-      'label color'
-    )
+      type: 'label color'
+    })
     quote.label = quote.prices.label_color[params.label_color]
 
-    quote.prices.inner_sleeve.black = getCost(
-      {
+    quote.prices.inner_sleeve.black = getCost({
+      l: {
         '12"': 104,
         '10"': 104,
         '7"': 109
       },
-      'inner sleeve black'
-    )
-    quote.prices.inner_sleeve.white = getCost(
-      {
+      type: 'inner sleeve black'
+    })
+    quote.prices.inner_sleeve.white = getCost({
+      l: {
         '12"': 103,
         '10"': 103,
         '7"': 108
       },
-      'inner sleeve white'
-    )
-    quote.prices.inner_sleeve.printed = quote.inner_sleeve = getCost(
-      {
+      type: 'inner sleeve white'
+    })
+    quote.prices.inner_sleeve.printed = quote.inner_sleeve = getCost({
+      l: {
         '12"': 119,
         '10"': 119,
         '7"': 123
       },
-      'inner sleeve printed'
-    )
-    quote.prices.inner_sleeve.black_antistatic = getCost(106, 'inner sleeve black antistatic')
-    quote.prices.inner_sleeve.white_antistatic = getCost(105, 'inner sleeve white antistatic')
+      type: 'inner sleeve printed'
+    })
+    quote.prices.inner_sleeve.black_antistatic = getCost({
+      l: 106,
+      type: 'inner sleeve black antistatic'
+    })
+    quote.prices.inner_sleeve.white_antistatic = getCost({
+      l: 105,
+      type: 'inner sleeve white antistatic'
+    })
 
     quote.inner_sleeve = quote.prices.inner_sleeve[params.inner_sleeve] || 0
 
-    quote.prices.sleeve.pvc = getCost(
-      {
+    quote.prices.sleeve.pvc = getCost({
+      l: {
         '12"': 111,
         '10"': 111,
         '7"': 114
       },
-      'sleeve pvc',
-      true
-    )
-    quote.prices.sleeve.discobag = getCost(
-      {
+      type: 'sleeve pvc',
+      onceByCopy: true
+    })
+    quote.prices.sleeve.discobag = getCost({
+      l: {
         '12"': 128,
         '10"': 128,
         '7"': 131
       },
-      'sleeve discobag',
-      true
-    )
-    quote.prices.sleeve.double_gatefold = getCost(
-      {
+      type: 'sleeve discobag',
+      onceByCopy: true
+    })
+    quote.prices.sleeve.double_gatefold = getCost({
+      l: {
         '12"': 162,
         '10"': 162,
         '7"': 166
       },
-      'sleeve double gatefold',
-      true
-    )
+      type: 'sleeve double gatefold',
+      onceByCopy: true
+    })
     if (params.nb_vinyl === 1) {
-      quote.prices.sleeve.double_gatefold += getCost(167, 'sleeve double gatefold')
+      quote.prices.sleeve.double_gatefold += getCost({
+        l: 167,
+        type: 'sleeve double gatefold'
+      })
     }
-    quote.prices.sleeve.triple_gatefold = getCost(
-      {
+    quote.prices.sleeve.triple_gatefold = getCost({
+      l: {
         '12"': 163,
         '10"': 163,
         '7"': 163
       },
-      'sleeve triple gatefold',
-      true
-    )
+      type: 'sleeve triple gatefold',
+      onceByCopy: true
+    })
     if (params.nb_vinyl === 1) {
-      quote.prices.sleeve.triple_gatefold += getCost(167, 'sleeve triple gatefold')
+      quote.prices.sleeve.triple_gatefold += getCost({ l: 167, type: 'sleeve triple gatefold' })
     }
     if (params.nb_vinyl === 1) {
       if (params.quantity < 300) {
-        quote.prices.sleeve.color = getCost(
-          {
+        quote.prices.sleeve.color = getCost({
+          l: {
             '12"': 141,
             '10"': 141,
             '7"': 141
           },
-          'sleeve color',
-          true
-        )
+          type: 'sleeve color',
+          onceByCopy: true
+        })
       } else {
-        quote.prices.sleeve.color = getCost(
-          {
+        quote.prices.sleeve.color = getCost({
+          l: {
             '12"': 146,
             '10"': 146,
             '7"': 141
           },
-          'sleeve color',
-          true
-        )
+          type: 'sleeve color',
+          onceByCopy: true
+        })
       }
     } else {
       if (params.quantity < 300) {
-        quote.prices.sleeve.color = getCost(
-          {
+        quote.prices.sleeve.color = getCost({
+          l: {
             '12"': 142,
             '10"': 142,
             '7"': 141
           },
-          'sleeve color',
-          true
-        )
+          type: 'sleeve color',
+          onceByCopy: true
+        })
       } else {
-        quote.prices.sleeve.color = getCost(
-          {
+        quote.prices.sleeve.color = getCost({
+          l: {
             '12"': 148,
             '10"': 148,
             '7"': 141
           },
-          'sleeve color',
-          true
-        )
+          type: 'sleeve color',
+          onceByCopy: true
+        })
       }
     }
     quote.sleeve = quote.prices.sleeve[params.sleeve] || 0
 
     // insert records
-    quote.insert_sleeve = getCost(249, 'insert sleeve')
-    quote.insert_vinyl = getCost(250, 'insert vinyl')
+    quote.insert_sleeve = getCost({ l: 249, type: 'insert sleeve' })
+    quote.insert_vinyl = getCost({ l: 250, type: 'insert vinyl' })
 
     // numbered
     if (params.quantity < 300) {
       quote.prices.numbered.numbered = false
     } else {
-      quote.prices.numbered.numbered = getCost(260, 'numbered', true)
+      quote.prices.numbered.numbered = getCost({ l: 260, type: 'numbered', onceByCopy: true })
     }
-    quote.prices.numbered.hand_numbered = getCost(261, 'numbered by hand', true)
+    quote.prices.numbered.hand_numbered = getCost({
+      l: 261,
+      type: 'numbered by hand',
+      onceByCopy: true
+    })
     quote.numbered = quote.prices.numbered[params.numbered] || 0
 
     // shrink
-    quote.prices.shrink['1'] = getCost(
-      {
+    quote.prices.shrink['1'] = getCost({
+      l: {
         '12"': 255,
         '10"': 256,
         '7"': 257
       },
-      'shrink',
-      true
-    )
+      type: 'shrink',
+      onceByCopy: true
+    })
     quote.shrink = quote.prices.shrink[params.shrink] || 0
 
-    quote.prices.print_finish.returned_cardboard = getCost(352, 'retruned cardborard', true)
+    quote.prices.print_finish.returned_cardboard = getCost({
+      l: 352,
+      type: 'retruned cardborard',
+      onceByCopy: true
+    })
     quote.print_finish = quote.prices.print_finish[params.print_finish] || 0
 
     // insert
     if (params.insert && params.insert !== 'none') {
-      quote.insert = getCost(252, 'insert', true)
+      quote.insert = getCost({ l: 252, type: 'insert', onceByCopy: true })
       if (params.insert === 'two_sides_printed') {
-        quote.insert += getCost(
-          {
+        quote.insert += getCost({
+          l: {
             '12"': 368,
             '10"': 368,
             '7"': 378
           },
-          'insert',
-          true
-        )
+          type: 'insert',
+          onceByCopy: true
+        })
       } else if (params.insert === 'one_side_printed') {
-        quote.insert += getCost(
-          {
+        quote.insert += getCost({
+          l: {
             '12"': 366,
             '10"': 366,
             '7"': 376
           },
-          'insert',
-          true
-        )
+          type: 'insert',
+          onceByCopy: true
+        })
       } else if (params.insert === 'booklet_printed') {
-        quote.insert += getCost(403, 'insert', true)
+        quote.insert += getCost({ l: 403, type: 'insert', onceByCopy: true })
       }
     }
-    quote.prices.insert.base = getCost(252, 'insert base', true)
+    quote.prices.insert.base = getCost({ l: 252, type: 'insert base', onceByCopy: true })
     quote.prices.insert.booklet_printed =
-      quote.prices.insert.base + getCost(403, 'insert booklet printed', true)
+      quote.prices.insert.base +
+      getCost({ l: 403, type: 'insert booklet printed', onceByCopy: true })
     quote.prices.insert.one_side_printed =
       quote.prices.insert.base +
-      getCost(
-        {
+      getCost({
+        l: {
           '12"': 366,
           '10"': 366,
           '7"': 376
         },
-        'insert one side printed',
-        true
-      )
+        type: 'insert one side printed',
+        onceByCopy: true
+      })
     quote.prices.insert.two_sides_printed =
       quote.prices.insert.base +
-      getCost(
-        {
+      getCost({
+        l: {
           '12"': 368,
           '10"': 368,
           '7"': 378
         },
-        'insert tow side printed',
-        true
-      )
+        type: 'insert tow side printed',
+        onceByCopy: true
+      })
     quote.insert = quote.prices.insert[params.insert] || 0
 
     quote.prices.sticker.sticker =
-      getCost(237, 'insert sticker', true) + getCost(238, 'insert sticker', true)
+      getCost({ l: 237, type: 'insert sticker', onceByCopy: true }) +
+      getCost({ l: 238, type: 'insert sticker', onceByCopy: true })
     quote.prices.sticker.barcode_sticker =
-      getCost(534, 'insert barcode sticker', true) + getCost(535, 'insert barcode sticker', true)
+      getCost({ l: 534, type: 'insert barcode sticker', onceByCopy: true }) +
+      getCost({ l: 535, type: 'insert barcode sticker', onceByCopy: true })
     quote.sticker = quote.prices.sticker[params.sticker] || 0
 
     // test pressing
     quote.test_pressing = 0
     if (params.test_pressing) {
-      quote.test_pressing += getCost(20, 'test_pressing')
-      quote.test_pressing += (getCost(22, 'test_pressing', 'x 2') / params.nb_vinyl) * 2
+      quote.test_pressing += getCost({ l: 20, type: 'test_pressing' })
+      quote.test_pressing += getCost({ l: 22, type: 'test_pressing', onceByCopy: true }) * 2
     }
 
-    quote.energy_cost = 0.5 * params.quantity * params.nb_vinyl
-
-    return quote
-  }
-
-  static calculateSna2(params, getCost) {
-    const quote: any = {}
-    quote.prices = Quote.getPrices()
-
-    // Cutting
-    if (params.cutting === 'DMM') {
-      quote.cutting = getCost(
-        {
-          '12"': 3,
-          '10"': 3,
-          '7"': 5
-        },
-        'cutting'
-      )
-    } else if (params.cutting === 'LACQUE') {
-      quote.cutting = getCost(
-        {
-          '12"': 15,
-          '10"': 15,
-          '7"': 17
-        },
-        'cutting'
-      )
-    } else {
-      return false
-    }
-
-    // Black or color records
-    quote.type_vinyl = 0
-    if (params.weight === '140') {
-      quote.type_vinyl += getCost(
-        {
-          '12"': 39,
-          '10"': 40,
-          '7"': 42
-        },
-        'type_vinyl'
-      )
-    } else if (params.weight === '180') {
-      quote.type_vinyl += getCost(
-        {
-          '12"': 41,
-          '10"': 41,
-          '7"': 43
-        },
-        'type_vinyl'
-      )
-    }
-
-    // color records
-    if (params.color_vinyl !== 'black') {
-      quote.type_vinyl += getCost(
-        {
-          '12"': 48,
-          '10"': 48,
-          '7"': 51
-        },
-        'type_vinyl'
-      )
-
-      // extra charge color
-      quote.type_vinyl += getCost(73, 'type_vinyl')
-    }
-
-    // splatter record
-    if (params.type_vinyl === 'splatter' && params.splatter2 !== 'none') {
-      quote.type_vinyl += getCost(
-        {
-          '12"': 61,
-          '10"': 61,
-          '7"': 63
-        },
-        'type_vinyl'
-      )
-      // extra charge splater
-      quote.type_vinyl += getCost(74, 'type_vinyl')
-      quote.type_vinyl += getCost(74, 'type_vinyl')
-    } else if (params.type_vinyl === 'splatter') {
-      quote.type_vinyl += getCost(
-        {
-          '12"': 60,
-          '10"': 60,
-          '7"': 62
-        },
-        'type_vinyl'
-      )
-      // extra charge splater
-      quote.type_vinyl += getCost(74, 'type_vinyl')
-    } else if (params.type_vinyl === 'marble') {
-      quote.type_vinyl += getCost(
-        {
-          '12"': 64,
-          '10"': 64,
-          '7"': 64
-        },
-        'type_vinyl'
-      )
-      // extra charge splater
-      quote.type_vinyl += getCost(73, 'type_vinyl')
-    } else if (params.type_vinyl === 'asidebside') {
-      quote.type_vinyl += getCost(
-        {
-          '12"': 64,
-          '10"': 64,
-          '7"': 64
-        },
-        'type_vinyl'
-      )
-      // extra charge splater
-      quote.type_vinyl += getCost(73, 'type_vinyl')
-      quote.type_vinyl += getCost(74, 'type_vinyl')
-    } else if (
-      params.type_vinyl === 'cloudy' ||
-      params.type_vinyl === 'colorincolor' ||
-      params.type_vinyl === 'halfandhalf'
-    ) {
-      quote.type_vinyl += getCost(
-        {
-          '12"': 53,
-          '10"': 53,
-          '7"': 55
-        },
-        'type_vinyl'
-      )
-      // extra charge splater
-      quote.type_vinyl += getCost(73, 'type_vinyl')
-    }
-
-    // label
-    if (params.label_color === 'white') {
-      quote.label = getCost(
-        {
-          '12"': 91,
-          '10"': 91,
-          '7"': 91
-        },
-        'label'
-      )
-    } else {
-      quote.label = getCost(
-        {
-          '12"': 96,
-          '10"': 96,
-          '7"': 99
-        },
-        'label'
-      )
-    }
-
-    // inner sleeve
-    quote.inner_sleeve = 0
-    quote.insert_sleeve = 0
-
-    if (params.inner_sleeve === 'white') {
-      quote.inner_sleeve = getCost(
-        {
-          '12"': 103,
-          '10"': 103,
-          '7"': 108
-        },
-        'inner_sleeve'
-      )
-    } else if (params.inner_sleeve === 'printed') {
-      quote.inner_sleeve = getCost(
-        {
-          '12"': 119,
-          '10"': 119,
-          '7"': 123
-        },
-        'inner_sleeve'
-      )
-    } else if (params.inner_sleeve === 'black_antistatic') {
-      quote.inner_sleeve = getCost(106, 'inner_sleeve')
-    } else if (params.inner_sleeve === 'white_antistatic') {
-      quote.inner_sleeve = getCost(105, 'inner_sleeve')
-    } else {
-      quote.inner_sleeve = getCost(
-        {
-          '12"': 104,
-          '10"': 104,
-          '7"': 109
-        },
-        'inner_sleeve'
-      )
-    }
-    quote.insert_sleeve = getCost(249, 'insert_sleeve')
-
-    // sleeve
-    quote.sleeve = 0
-    if (params.sleeve === 'pvc') {
-      quote.sleeve =
-        getCost(
-          {
-            '12"': 111,
-            '10"': 111,
-            '7"': 114
-          },
-          'sleeve',
-          ` x ${params.quantity}`
-        ) / params.nb_vinyl
-    } else if (params.sleeve === 'discobag') {
-      quote.sleeve =
-        getCost(
-          {
-            '12"': 128,
-            '10"': 128,
-            '7"': 131
-          },
-          'sleeve',
-          ` x ${params.quantity}`
-        ) / params.nb_vinyl
-    } else if (params.sleeve !== 'no') {
-      if (params.sleeve === 'double_gatefold') {
-        quote.sleeve =
-          getCost(
-            {
-              '12"': 162,
-              '10"': 162,
-              '7"': 166
-            },
-            'sleeve',
-            ` x ${params.quantity}`
-          ) / params.nb_vinyl
-
-        if (params.nb_vinyl === 1) {
-          quote.sleeve += getCost(167, 'sleeve', ` x ${params.quantity}`)
-        }
-      } else if (params.sleeve === 'triple_gatefold') {
-        quote.sleeve =
-          getCost(
-            {
-              '12"': 163,
-              '10"': 163,
-              '7"': 163
-            },
-            'sleeve',
-            ` x ${params.quantity}`
-          ) / params.nb_vinyl
-
-        if (params.nb_vinyl === 1) {
-          quote.sleeve += getCost(167)
-        }
-      } else {
-        if (params.nb_vinyl === 1) {
-          if (params.quantity < 300) {
-            quote.sleeve =
-              getCost(
-                {
-                  '12"': 141,
-                  '10"': 141,
-                  '7"': 141
-                },
-                'sleeve',
-                ` x ${params.quantity}`
-              ) / params.nb_vinyl
-          } else {
-            quote.sleeve =
-              getCost(
-                {
-                  '12"': 146,
-                  '10"': 146,
-                  '7"': 141
-                },
-                'sleeve',
-                ` x ${params.quantity}`
-              ) / params.nb_vinyl
-          }
-        } else {
-          if (params.quantity < 300) {
-            quote.sleeve =
-              getCost(
-                {
-                  '12"': 142,
-                  '10"': 142,
-                  '7"': 141
-                },
-                'sleeve',
-                ` x ${params.quantity}`
-              ) / params.nb_vinyl
-          } else {
-            quote.sleeve =
-              getCost(
-                {
-                  '12"': 148,
-                  '10"': 148,
-                  '7"': 141
-                },
-                'sleeve',
-                ` x ${params.quantity}`
-              ) / params.nb_vinyl
-          }
-        }
-      }
-    }
-
-    // numbered
-    quote.numbered = 0
-    if (params.numbered === 'numbered' && params.quantity >= 300) {
-      quote.numbered = getCost(260, 'numbered', ` x ${params.quantity}`) / params.nb_vinyl
-    } else if (params.numbered === 'hand_numbered') {
-      quote.numbered =
-        getCost(261, 'numbered', ` x ${params.quantity}`, '÷ nbVinyl') / params.nb_vinyl
-    }
-
-    // insert records
-    quote.insert_vinyl = getCost(250, 'insert_vinyl')
-
-    // shrink
-    if (params.shrink !== 0) {
-      quote.shrink =
-        getCost(
-          {
-            '12"': 255,
-            '10"': 256,
-            '7"': 257
-          },
-          'shrink',
-          ` x ${params.quantity}`
-        ) / params.nb_vinyl
-    }
-    // print finish
-    quote.print_finish = 0
-    if (params.print_finish === 'returned_cardboard') {
-      quote.print_finish = getCost(352, 'print_finish') / params.nb_vinyl
-    } else if (params.print_finish === 'matt_varnish') {
-      // quote.print_finish = getCost(284, 'print_finish') / params.nb_vinyl
-    }
-
-    // insert
-    if (params.insert && params.insert !== 'none') {
-      quote.insert = getCost(252, 'insert', ` x ${params.quantity}`) / params.nb_vinyl
-      if (params.insert === 'two_sides_printed') {
-        quote.insert +=
-          getCost(
-            {
-              '12"': 368,
-              '10"': 368,
-              '7"': 378
-            },
-            'insert',
-            ` x ${params.quantity}`
-          ) / params.nb_vinyl
-      } else if (params.insert === 'one_side_printed') {
-        quote.insert +=
-          getCost(
-            {
-              '12"': 366,
-              '10"': 366,
-              '7"': 376
-            },
-            'insert',
-            ` x ${params.quantity}`
-          ) / params.nb_vinyl
-      } else if (params.insert === 'booklet_printed') {
-        quote.insert += getCost(403, 'insert', ` x ${params.quantity}`) / params.nb_vinyl
-      }
-    }
-
-    // sticker
-    if (params.sticker === 'barcode_sticker') {
-      quote.sticker = getCost(534, 'sticker', ` x ${params.quantity}`) / params.nb_vinyl
-      quote.sticker += getCost(535, 'sticker', ` x ${params.quantity}`) / params.nb_vinyl
-    } else if (params.sticker && params.sticker !== '0') {
-      quote.sticker = getCost(237, 'sticker', ` x ${params.quantity}`) / params.nb_vinyl
-      quote.sticker += getCost(238, 'sticker', ` x ${params.quantity}`) / params.nb_vinyl
-    }
-
-    // test pressing
-    quote.test_pressing = 0
-    if (params.test_pressing) {
-      quote.test_pressing += getCost(20, 'test_pressing')
-      quote.test_pressing += (getCost(22, 'test_pressing', 'x 2') / params.nb_vinyl) * 2
-    }
-
-    quote.energy_cost = 0.5 * params.quantity * params.nb_vinyl
-
-    getCost(
-      null,
-      'energy_cost',
-      `0.5 x quantity (${params.quantity}) x nbVinyl (${params.nb_vinyl})`
-    )
+    quote.energy_cost = 0.2 * params.quantity * params.nb_vinyl
 
     return quote
   }
@@ -1191,7 +838,7 @@ class Quote {
       : quote.prices[type][params[type]] || 0
   }
 
-  static calculateVdp(params, getCost) {
+  static calculateVdp(params, getCost: (payload: CostPayloads) => number) {
     const quote: any = {}
     quote.prices = Quote.getPrices()
 
@@ -1206,434 +853,99 @@ class Quote {
     quote.prices.label_color.white = false
 
     // Disacobag base price
-    quote.cutting = getCost(6, 'cutting')
+    quote.cutting = getCost({ l: 6, type: 'cutting' })
 
     quote.prices.sleeve.discobag = 0
     if (params.nb_vinyl === 1) {
-      quote.prices.sleeve.color = getCost(5, 'sleeve color', true) - quote.cutting
+      quote.prices.sleeve.color =
+        getCost({ l: 5, type: 'sleeve color', onceByCopy: true }) - quote.cutting
       quote.prices.sleeve.double_gatefold =
-        getCost(3, 'sleeve double gatefold', true) - quote.cutting
+        getCost({ l: 3, type: 'sleeve double gatefold', onceByCopy: true }) - quote.cutting
     } else if (params.nb_vinyl === 2) {
-      quote.prices.sleeve.color = getCost(4, 'sleeve color', true) - quote.cutting
+      quote.prices.sleeve.color =
+        getCost({ l: 4, type: 'sleeve color', onceByCopy: true }) - quote.cutting
       quote.prices.sleeve.double_gatefold =
-        getCost(2, 'sleeve double gatefold', true) - quote.cutting
+        getCost({ l: 2, type: 'sleeve double gatefold', onceByCopy: true }) - quote.cutting
     }
-    quote.prices.sleeve.pvc = quote.prices.sleeve.color + getCost(45, 'sleeve pvc', true)
+    quote.prices.sleeve.pvc =
+      quote.prices.sleeve.color + getCost({ l: 45, type: 'sleeve pvc', onceByCopy: true })
     quote.sleeve = quote.prices.sleeve[params.sleeve]
     if (params.quantity >= 300) {
-      quote.sleeve += getCost(35, 'sleeve', true)
+      quote.sleeve += getCost({ l: 35, type: 'sleeve', onceByCopy: true })
     }
 
-    quote.prices.weight['180'] = getCost(25, '180g')
+    quote.prices.weight['180'] = getCost({ l: 25, type: '180g' })
     quote.weight = this.getPrice(quote, params, 'weight')
 
-    quote.prices.type_vinyl.color = getCost(19, 'color', true)
+    quote.prices.type_vinyl.color = getCost({ l: 19, type: 'color', onceByCopy: true })
     quote.type_vinyl = this.getPrice(quote, params, 'type_vinyl')
 
     // inner_sleeve
-    quote.prices.inner_sleeve.black = getCost(39, 'inner_sleeve black')
-    quote.prices.inner_sleeve.white_antistatic = getCost(40, 'inner_sleeve white_antistatic')
-    quote.prices.inner_sleeve.black_antistatic = getCost(41, 'inner_sleeve black_antistatic')
-    quote.prices.inner_sleeve.printed = getCost(38, 'inner_sleeve printed')
+    quote.prices.inner_sleeve.black = getCost({ l: 39, type: 'inner_sleeve black' })
+    quote.prices.inner_sleeve.white_antistatic = getCost({
+      l: 40,
+      type: 'inner_sleeve white_antistatic'
+    })
+    quote.prices.inner_sleeve.black_antistatic = getCost({
+      l: 41,
+      type: 'inner_sleeve black_antistatic'
+    })
+    quote.prices.inner_sleeve.printed = getCost({ l: 38, type: 'inner_sleeve printed' })
     quote.inner_sleeve = quote.prices.inner_sleeve[params.inner_sleeve]
     quote.shrink = quote.prices.inner_sleeve[params.inner_sleeve]
 
     // shrink
-    quote.prices.shrink['1'] = getCost(48, 'shrink', true)
+    quote.prices.shrink['1'] = getCost({ l: 48, type: 'shrink', onceByCopy: true })
     quote.shrink = quote.prices.shrink[params.shrink]
 
-    quote.prices.print_finish.matt_varnish = getCost(27, 'print_finish matt_varnish', true)
-    quote.prices.print_finish.returned_cardboard = getCost(
-      34,
-      'print_finish returned_cardboard',
-      true
-    )
+    quote.prices.print_finish.matt_varnish = getCost({
+      l: 27,
+      type: 'print_finish matt_varnish',
+      onceByCopy: true
+    })
+    quote.prices.print_finish.returned_cardboard = getCost({
+      l: 34,
+      type: 'print_finish returned_cardboard',
+      onceByCopy: true
+    })
     quote.print_finish = quote.prices.print_finish[params.print_finish]
 
-    quote.prices.insert.two_sides_printed = getCost(66, 'insert two_sides_printed', true)
-    quote.prices.insert.one_side_printed = getCost(65, 'insert one_side_printed', true)
-    quote.prices.insert.booklet_printed = getCost(70, 'insert booklet_printed', true)
+    quote.prices.insert.two_sides_printed = getCost({
+      l: 66,
+      type: 'insert two_sides_printed',
+      onceByCopy: true
+    })
+    quote.prices.insert.one_side_printed = getCost({
+      l: 65,
+      type: 'insert one_side_printed',
+      onceByCopy: true
+    })
+    quote.prices.insert.booklet_printed = getCost({
+      l: 70,
+      type: 'insert booklet_printed',
+      onceByCopy: true
+    })
     quote.insert = quote.prices.insert[params.insert]
 
     // sticker
-    quote.prices.sticker.base = getCost(51, 'sticker base', true)
+    quote.prices.sticker.base = getCost({ l: 51, type: 'sticker base', onceByCopy: true })
     quote.prices.sticker.barcode_sticker =
-      quote.prices.sticker.base + getCost(58, 'sticker barcode', true)
-    quote.prices.sticker.sticker = quote.prices.sticker.base + getCost(57, 'sticker barcode', true)
+      quote.prices.sticker.base + getCost({ l: 58, type: 'sticker barcode', onceByCopy: true })
+    quote.prices.sticker.sticker =
+      quote.prices.sticker.base + getCost({ l: 57, type: 'sticker barcode', onceByCopy: true })
     quote.sticker = quote.prices.sticker[params.sticker]
 
     // numbered
-    quote.prices.numbered.hand_numbered = getCost(46, 'hand_numbered', true)
-    quote.prices.numbered.numbered = getCost(46, 'numbered', true)
+    quote.prices.numbered.hand_numbered = getCost({
+      l: 46,
+      type: 'hand_numbered',
+      onceByCopy: true
+    })
+    quote.prices.numbered.numbered = getCost({ l: 46, type: 'numbered', onceByCopy: true })
     quote.numbered = quote.prices.numbered[params.numbered]
 
     // Frais supplementaire + échentillon diggers
     quote.test_pressing = 40
-
-    return quote
-  }
-
-  static calculateVdp2(params, getCost) {
-    const quote: any = {}
-
-    if (params.sleeve === 'discobag') {
-      quote.cutting = getCost(6, 'cutting')
-    } else if (params.sleeve === 'double_gatefold') {
-      if (params.nb_vinyl === 1) {
-        quote.cutting = getCost(3, 'cutting')
-        if (params.nb_vinyl === 1) {
-          quote.gatefold = getCost(33, 'gatefold')
-        }
-      } else if (params.nb_vinyl === 2) {
-        quote.cutting = getCost(2, 'cutting') / params.nb_vinyl
-      }
-    } else {
-      if (params.nb_vinyl === 1) {
-        quote.cutting = getCost(5, 'cutting')
-      } else if (params.nb_vinyl === 2) {
-        quote.cutting = getCost(4, 'cutting') / params.nb_vinyl
-      }
-    }
-
-    quote.sleeve = 0
-    if (params.sleeve === 'pvc') {
-      quote.sleeve = getCost(45, 'sleeve')
-    }
-    if (params.quantity >= 300) {
-      quote.sleeve += getCost(35, 'sleeve', ` x ${params.quantity}`) / params.nb_vinyl
-    }
-
-    if (params.type_vinyl === 'splatter' || params.type_vinyl === 'marble') {
-      quote.cutting += 160 * params.nb_vinyl
-    }
-
-    quote.type_vinyl = 0
-    if (params.weight === '180') {
-      quote.type_vinyl += getCost(25, 'type_vinyl', ` x ${params.quantity}`) / params.nb_vinyl
-    }
-
-    // color
-    quote.color = 0
-    if (params.color_vinyl !== 'black') {
-      quote.color += getCost(19, 'color', ` x ${params.quantity}`) / params.nb_vinyl
-    }
-
-    // print finish
-    quote.print_finish = 0
-    if (params.print_finish === 'matt_varnish') {
-      quote.print_finish = getCost(29, 'print_finish', ` x ${params.quantity}`) / params.nb_vinyl
-    } else if (params.print_finish === 'returned_cardboard') {
-      quote.print_finish = getCost(34, 'print_finish', ` x ${params.quantity}`) / params.nb_vinyl
-    }
-
-    // inner_sleeve
-    quote.inner_sleeve = 0
-    if (params.inner_sleeve === 'black') {
-      quote.inner_sleeve = getCost(39, 'inner_sleeve', ` x ${params.quantity}`)
-    } else if (params.inner_sleeve === 'white_antistatic') {
-      quote.inner_sleeve = getCost(40, 'inner_sleeve', ` x ${params.quantity}`)
-    } else if (params.inner_sleeve === 'black_antistatic') {
-      quote.inner_sleeve = getCost(41, 'inner_sleeve', ` x ${params.quantity}`)
-    } else if (params.inner_sleeve === 'printed') {
-      quote.inner_sleeve = getCost(38, 'inner_sleeve', ` x ${params.quantity}`)
-    }
-
-    // shrink
-    if (params.shrink !== 0) {
-      quote.shrink = getCost(48, 'shrink', ` x ${params.quantity}`) / params.nb_vinyl
-    }
-
-    quote.insert = 0
-    if (params.insert && params.insert !== 'none') {
-      if (params.insert === 'two_sides_printed') {
-        quote.insert += getCost(66, 'insert', ` x ${params.quantity}`) / params.nb_vinyl
-      } else if (params.insert === 'one_side_printed') {
-        quote.insert += getCost(65, 'insert', ` x ${params.quantity}`) / params.nb_vinyl
-      } else if (params.insert === 'booklet_printed') {
-        quote.insert += getCost(70, 'insert', ` x ${params.quantity}`) / params.nb_vinyl
-      }
-    }
-
-    // sticker
-    if (params.sticker && params.sticker !== '0') {
-      quote.sleeve = getCost(51, 'sticker') / params.nb_vinyl
-      if (params.sticker === 'barcode_sticker') {
-        quote.sleeve = getCost(58, 'sticker') / params.nb_vinyl
-      } else {
-        quote.sleeve = getCost(57, 'sticker') / params.nb_vinyl
-      }
-    }
-
-    // numbered
-    quote.numbered = 0
-    if (params.numbered === 'numbered' || params.numbered === 'hand_numbered') {
-      quote.numbered = getCost(46, 'numbered', ` x ${params.quantity}`) / params.nb_vinyl
-    }
-
-    // Frais supplementaire + échentillon diggers
-    quote.test_pressing = 40
-
-    return quote
-  }
-
-  static calculateMpo(params, getCost) {
-    const quote: any = {}
-
-    quote.cutting = getCost(3, 'cutting') * 2
-    quote.cutting += getCost(4, 'cutting') * 2
-
-    if (params.color_vinyl !== 'black' && params.quantity < 500) {
-      quote.cutting += getCost(9, 'cutting')
-    }
-
-    quote.design = getCost(6, 'design', ` x ${params.nb_vinyl}`) * params.nb_vinyl
-    quote.design += getCost(7, 'design')
-    if (params.inner_sleeve === 'printed') {
-      quote.design += getCost(7, 'design', ` x ${params.nb_vinyl}`) * params.nb_vinyl
-    }
-
-    quote.test_pressing = getCost(5, 'test_pressing') * 2
-
-    if (params.weight === '180') {
-      quote.type_vinyl = getCost(12, 'type_vinyl')
-    } else {
-      quote.type_vinyl = getCost(11, 'type_vinyl')
-    }
-
-    if (params.color_vinyl !== 'black') {
-      if (params.weight === '180') {
-        quote.type_vinyl += getCost(16, 'type_vinyl')
-      } else {
-        quote.type_vinyl += getCost(15, 'type_vinyl')
-      }
-    }
-
-    if (params.type_vinyl === 'splatter' && params.splatter2 !== 'none') {
-      if (params.weight === '180') {
-        quote.type_vinyl += getCost(22, 'type_vinyl')
-        quote.type_vinyl += getCost(22, 'type_vinyl')
-      } else {
-        quote.type_vinyl += getCost(21, 'type_vinyl')
-        quote.type_vinyl += getCost(21, 'type_vinyl')
-      }
-    } else if (params.type_vinyl === 'splatter') {
-      if (params.weight === '180') {
-        quote.type_vinyl += getCost(22, 'type_vinyl')
-      } else {
-        quote.type_vinyl += getCost(21, 'type_vinyl')
-      }
-    }
-
-    quote.sleeve = 0
-    quote.label = getCost(23, 'label')
-
-    // inner_sleeve
-    if (params.inner_sleeve === 'black') {
-      quote.inner_sleeve = getCost(28, 'inner_sleeve')
-    } else if (params.inner_sleeve === 'printed') {
-      quote.inner_sleeve = getCost(30, 'inner_sleeve')
-    } else {
-      quote.inner_sleeve = getCost(26, 'inner_sleeve')
-    }
-
-    // sleeve
-    if (params.sleeve === 'discobag') {
-      quote.sleeve += getCost(31, 'sleeve')
-    } else if (params.sleeve === 'double_gatefold' || params.sleeve === 'triple_gatefold') {
-      quote.sleeve += getCost(36, 'sleeve')
-      if (params.nb_vinyl === 1) {
-        quote.sleeve += getCost(41, 'sleeve')
-      }
-    } else {
-      if (params.nb_vinyl > 1) {
-        quote.sleeve += getCost(35, 'sleeve')
-      } else {
-        quote.sleeve += getCost(34, 'sleeve')
-      }
-    }
-
-    // print finish
-    quote.print_finish = 0
-    if (params.print_finish === 'matt_varnish') {
-      quote.print_finish = getCost(47, 'print_finish', ` x ${params.quantity}`) / params.nb_vinyl
-    } else if (params.print_finish === 'returned_cardboard') {
-      quote.print_finish = getCost(49, 'print_finish', ` x ${params.quantity}`) / params.nb_vinyl
-    }
-
-    quote.numbered = 0
-    if (params.numbered === 'numbered') {
-      quote.numbered = getCost(42, 'numbered', ` x ${params.quantity}`) / params.nb_vinyl
-    } else if (params.numbered === 'hand_numbered') {
-      quote.numbered = getCost(43, 'numbered', ` x ${params.quantity}`) / params.nb_vinyl
-    }
-
-    if (params.shrink !== 0) {
-      if (
-        params.nb_vinyl > 1 ||
-        params.sleeve === 'double_gatefold' ||
-        params.sleeve === 'triple_gatefold'
-      ) {
-        quote.shrink = getCost(86, 'shrink', ` x ${params.quantity}`) / params.nb_vinyl
-      } else {
-        quote.shrink = getCost(85, 'shrink', ` x ${params.quantity}`) / params.nb_vinyl
-      }
-    }
-
-    if (params.sleeve === 'double_gatefold' || params.sleeve === 'triple_gatefold') {
-      quote.insert_vinyl = getCost(81, 'insert_vinyl')
-    } else {
-      quote.insert_vinyl = getCost(80, 'insert_vinyl')
-    }
-    quote.insert_sleeve = getCost(79, 'insert_sleeve')
-
-    return quote
-  }
-
-  static calculateKuroneko(params, getCost) {
-    const quote: any = {}
-    // Cutting
-    if (params.cutting === 'DMM') {
-      quote.cutting = getCost(
-        {
-          '12"': 3,
-          '10"': 3,
-          '7"': 5
-        },
-        'cutting'
-      )
-    } else if (params.cutting === 'LACQUE') {
-      quote.cutting = getCost(
-        {
-          '12"': 3,
-          '10"': 3,
-          '7"': 5
-        },
-        'cutting'
-      )
-    } else {
-      return false
-    }
-
-    // Black or color records
-    quote.type_vinyl = 0
-    if (params.weight === '140') {
-      quote.type_vinyl += getCost(
-        {
-          '12"': 21,
-          '10"': 23,
-          '7"': 23
-        },
-        'type_vinyl'
-      )
-    } else if (params.weight === '180') {
-      quote.type_vinyl += getCost(
-        {
-          '12"': 22,
-          '10"': 23,
-          '7"': 23
-        },
-        'type_vinyl'
-      )
-    }
-
-    // color records
-    if (params.color_vinyl !== 'black') {
-      quote.type_vinyl += getCost(26, 'type_vinyl')
-      // extra charge color
-      quote.type_vinyl += getCost(25, 'type_vinyl')
-    }
-
-    // splatter record
-    if (params.type_vinyl === 'splatter' && params.splatter2 !== 'none') {
-      quote.type_vinyl += getCost(30, 'type_vinyl')
-      quote.type_vinyl += getCost(41, 'type_vinyl')
-    } else if (params.type_vinyl === 'splatter') {
-      quote.type_vinyl += getCost(31, 'type_vinyl')
-      quote.type_vinyl += getCost(42, 'type_vinyl')
-    }
-
-    // label
-    quote.label = getCost(56, 'label')
-
-    // inner sleeve
-    quote.inner_sleeve = 0
-
-    if (params.inner_sleeve === 'white') {
-      quote.inner_sleeve = getCost(63, 'inner_sleeve')
-    } else if (params.inner_sleeve === 'printed') {
-      quote.inner_sleeve = getCost(68, 'inner_sleeve')
-    } else {
-      quote.inner_sleeve = getCost(64, 'inner_sleeve')
-    }
-
-    // sleeve
-    quote.sleeve = 0
-    if (params.sleeve === 'discobag') {
-      quote.sleeve = getCost(87, 'sleeve', ` x ${params.quantity}`) / params.nb_vinyl
-    } else if (params.sleeve !== 'no') {
-      if (params.sleeve === 'double_gatefold') {
-        quote.sleeve = getCost(91, 'sleeve', ` x ${params.quantity}`) / params.nb_vinyl
-      } else if (params.sleeve === 'triple_gatefold') {
-        quote.sleeve = getCost(91, 'sleeve', ` x ${params.quantity}`) / params.nb_vinyl
-      } else {
-        if (params.nb_vinyl === 1) {
-          quote.sleeve = getCost(73, 'sleeve', ` x ${params.quantity}`) / params.nb_vinyl
-        } else {
-          quote.sleeve = getCost(75, 'sleeve', ` x ${params.quantity}`) / params.nb_vinyl
-        }
-        quote.sleeve += getCost(95, 'sleeve', ` x ${params.quantity}`) / params.nb_vinyl
-      }
-    }
-
-    // numbered
-    quote.numbered = 0
-    if (params.numbered === 'numbered' && params.quantity >= 300) {
-      quote.numbered = getCost(142, 'numbered', ` x ${params.quantity}`) / params.nb_vinyl
-    } else if (params.numbered === 'hand_numbered') {
-      quote.numbered = getCost(143, 'numbered', ` x ${params.quantity}`) / params.nb_vinyl
-    }
-
-    // insert records
-    quote.insert_vinyl = getCost(140, 'insert_vinyl')
-    quote.insert_sleeve = getCost(140, 'insert_sleeve')
-
-    // shrink
-    if (params.shrink !== 0) {
-      quote.shrink = getCost(138, 'shrink', ` x ${params.quantity}`) / params.nb_vinyl
-    }
-
-    // print finish
-    quote.print_finish = 0
-
-    if (params.print_finish === 'matt_varnish') {
-      quote.print_finish = getCost(97, 'print_finish')
-    } else if (params.print_finish === 'returned_cardboard') {
-      quote.print_finish = getCost(96, 'print_finish')
-    }
-
-    if (params.sleeve === 'double_gatefold' || params.sleeve === 'triple_gatefold') {
-      quote.print_finish = quote.print_finish * 2
-    }
-
-    // insert
-    if (params.insert !== 'none') {
-      if (params.insert === 'two_sides_printed') {
-        quote.insert = getCost(110, 'insert')
-      } else if (params.insert === 'booklet_printed') {
-        quote.insert = getCost(111, 'insert')
-      }
-    }
-
-    // sticker
-    if (params.sticker !== '0') {
-      quote.sticker = getCost(127, 'sticker')
-    }
-
-    // test pressing
-    quote.test_pressing = 0
-    if (params.test_pressing) {
-      quote.test_pressing += params.nb_vinyl * getCost(16, 'test_pressing', ` x ${params.nb_vinyl}`)
-    }
 
     return quote
   }
