@@ -2098,7 +2098,8 @@ class Box {
         'description_en'
       )
       .join('project as p', 'p.id', 'project_id')
-      .join('stock', 'stock.project_id', 'p.id')
+      .join('project_product', 'project_product.project_id', 'p.id')
+      .join('stock', 'project_product.product_id', 'stock.product_id')
       .where('stock.type', 'daudin')
       .where('is_shop', true)
       .where('stock.quantity', '>', 0)
