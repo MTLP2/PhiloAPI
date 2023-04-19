@@ -69,6 +69,7 @@ class Digital {
 
   static async create(params: {
     email: string
+    origin?: string
     project_name?: string
     artist_name?: string
     step?:
@@ -86,6 +87,7 @@ class Digital {
   }) {
     const [id] = await DB('digital').insert({
       email: params.email,
+      origin: params.origin,
       project_name: params.project_name,
       artist_name: params.artist_name,
       step: params.step,

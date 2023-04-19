@@ -29,6 +29,7 @@ class DigitalController {
     try {
       const payload = await validator.validate({
         schema: schema.create({
+          origin: schema.string.optional({ trim: true }),
           email: schema.string({ trim: true }, [rules.email()]),
           comment: schema.string.optional({ trim: true }),
           artist_name: schema.string.optional({ trim: true })
