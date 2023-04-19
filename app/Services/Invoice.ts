@@ -489,7 +489,7 @@ class Invoice {
       .orderBy('date', 'asc')
       .all()
 
-    const invoices = []
+    const invoices: any = []
 
     for (const data of datas) {
       data.number = data.code
@@ -520,6 +520,7 @@ class Invoice {
         data.price = 0 - data.price
         data.shipping = 0 - data.shipping
       }
+      data.total_ht_eur = Utils.round(data.total_ht * data.currency_rate)
 
       invoices.push(data)
     }
@@ -535,6 +536,7 @@ class Invoice {
       { header: 'Vente HT', key: 'sub_total' },
       { header: 'Transport HT', key: 'shipping' },
       { header: 'Total HT', key: 'total_ht' },
+      { header: 'Total HT EUR', key: 'total_ht_eur' },
       { header: 'TVA', key: 'tax' },
       { header: 'Total TTC', key: 'total' },
       { header: 'Pays', key: 'country' },
