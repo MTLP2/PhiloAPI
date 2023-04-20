@@ -316,10 +316,6 @@ class AdminController {
     }
   }
 
-  getBalanceProject({ params }) {
-    return Payment.getBalanceProject(params)
-  }
-
   async downloadProject({ params }) {
     const url = await Song.downloadProject(params.id, false)
     return { url: url }
