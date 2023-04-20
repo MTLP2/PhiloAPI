@@ -1,27 +1,36 @@
-import config from 'Config/index'
 import Utils from 'App/Utils'
+import Env from '@ioc:Adonis/Core/Env'
+
+const base =
+  process.env.NODE_ENV === 'production'
+    ? 'https://api-m.paypal.com/v2/'
+    : 'https://api-m.sandbox.paypal.com'
 
 class Paypal {
-  static async execute(endPoint, params) {
-    const url =
-      process.env.NODE_ENV === 'production'
-        ? 'https://api.paypal.com/v1/'
-        : 'https://api.sandbox.paypal.com/v1/'
-
-    return Utils.request(`${url}${endPoint}`, {
+  static async getCredential() {
+    const auth = Buffer.from(
+      Env.get('PAYPAL_DEFAULT_CLIENT_ID') + ':' + Env.get('PAYPAL_DEFAULT_SECRET')
+    ).toString('base64')
+    const access: any = await Utils.request(`${base}/v1/oauth2/token`, {
+      method: 'post',
+      body: 'grant_type=client_credentials',
       headers: {
-        Authorization:
-          'Basic ' +
-          new Buffer(
-            config.paypal.default.client_id + ':' + config.paypal.default.client_secret
-          ).toString('base64')
-      },
-      json: true
+        Authorization: `Basic ${auth}`
+      }
     })
+    return JSON.parse(access).access_token
   }
 
-  static async getDisputes() {
-    return await this.execute('customer/disputes', {})
+  static async capture(payload: { orderId: number }) {
+    const credential = await Paypal.getCredential()
+    const res: any = await Utils.request(`${base}/v2/checkout/orders/${payload.orderId}/capture`, {
+      method: 'post',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${credential}`
+      }
+    })
+    return JSON.parse(res)
   }
 }
 
