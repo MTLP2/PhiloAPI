@@ -487,6 +487,7 @@ class Invoice {
       .where('date', '>=', params.start)
       .where('date', '<=', params.end)
       .orderBy('date', 'asc')
+      .where('compatibility', true)
       .all()
 
     const invoices: any = []
@@ -501,17 +502,9 @@ class Invoice {
       data.shipping = 0
 
       if (data.order_id) {
-        data.total = data.order_total
-        data.price = Utils.round(data.order_total - data.order_shipping)
-        data.sub_total = Utils.round(
-          (data.order_total - data.order_shipping) / (1 + data.tax_rate / 100)
-        )
-        data.shipping = Utils.round(data.order_shipping / (1 + data.tax_rate / 100))
-        data.tax = Utils.round(data.total - data.sub_total - data.shipping)
-        data.total_ht = data.total - data.tax
-
-        delete data.order
+        data.shipping = data.order_shipping / (1 + data.tax_rate / 100)
       }
+
       if (data.type === 'credit_note') {
         data.total = 0 - data.total
         data.total_ht = 0 - data.total_ht
@@ -520,7 +513,7 @@ class Invoice {
         data.price = 0 - data.price
         data.shipping = 0 - data.shipping
       }
-      data.total_ht_eur = Utils.round(data.total_ht * data.currency_rate)
+      data.total_ht_eur = data.total_ht * data.currency_rate
 
       invoices.push(data)
     }
