@@ -365,6 +365,84 @@ class Payment {
     return { success: true }
   }
 
+  static getCustomer = async (userId) => {
+    const user = await DB('user').select('id', 'email', 'stripe_customer').find(userId)
+
+    if (process.env.NODE_ENV !== 'production') {
+      user.stripe_customer = 'cus_KJiRI5dzm4Ll1C'
+    }
+
+    let customer = null
+    if (user.stripe_customer) {
+      customer = await stripe.customers.retrieve(user.stripe_customer)
+    } else {
+      customer = await stripe.customers.create({
+        email: user.email
+      })
+      await DB('user').where('id', user.id).update({ stripe_customer: customer.id })
+    }
+    return customer
+  }
+
+  static addCard = async (params) => {
+    const customer = await Payment.getCustomer(params.user.user_id)
+
+    return stripe.customers.createSource(customer.id, { source: params.token.id })
+  }
+
+  static getCards = async (params) => {
+    const user = await DB('user').select('id', 'email', 'stripe_customer').find(params.user.user_id)
+
+    if (process.env.NODE_ENV !== 'production') {
+      user.stripe_customer = 'cus_KJiRI5dzm4Ll1C'
+    }
+
+    if (user.stripe_customer) {
+      const customer = await Payment.getCustomer(params.user.user_id)
+      customer.payment_methods = (
+        await stripe.paymentMethods.list({
+          customer: user.stripe_customer,
+          type: 'card'
+        })
+      ).data
+      customer.default_source =
+        customer.invoice_settings.default_payment_method || customer.default_source
+      return customer
+    } else {
+      return []
+    }
+  }
+
+  static saveCards = async (params) => {
+    const customer = await Payment.getCustomer(params.user.user_id)
+
+    try {
+      if (params.default_source) {
+        await stripe.customers.update(customer.id, {
+          invoice_settings: {
+            default_payment_method: params.default_source
+          },
+          default_source: params.default_source
+        })
+      } else if (params.add_card) {
+        await stripe.paymentMethods.attach(params.add_card, { customer: customer.id })
+      } else if (params.delete_card) {
+        await stripe.paymentMethods.detach(params.delete_card)
+      }
+    } catch (err) {
+      return {
+        error: err.raw ? err.raw.code : 'card_declined'
+      }
+    }
+
+    return Payment.getCards(params)
+  }
+
+  static saveCard = async (userId, token) => {
+    const customer = await Payment.getCustomer(userId)
+    return stripe.paymentMethods.attach(token, { customer: customer.id })
+  }
+
   static alertDatePassed = async () => {
     const notifications = await DB('payment')
       .select(
