@@ -3275,11 +3275,11 @@ class Admin {
 
     const res = Object.values(com)
 
-    res.sort((a, b) => {
-      if (a.turnover < b.turnover) {
+    res.sort((a: any, b: any) => {
+      if (a.total < b.total) {
         return 1
       }
-      if (a.turnover > b.turnover) {
+      if (a.total > b.total) {
         return -1
       }
       return 0
