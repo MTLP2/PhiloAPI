@@ -15,10 +15,12 @@ import Payment from 'App/Services/Payment'
 import Invoice from 'App/Services/Invoice'
 import Stock from 'App/Services/Stock'
 import Order from 'App/Services/Order'
+import PayPal from 'App/Services/PayPal'
 import cio from 'App/Services/CIO'
 import I18n from '@ioc:Adonis/Addons/I18n'
 import moment from 'moment'
 import Pass from './Pass'
+
 const stripe = require('stripe')(config.stripe.client_secret)
 
 const paypal = require('paypal-rest-sdk')
@@ -1515,7 +1517,7 @@ class Cart {
         user_id: params.user_id,
         cart_id: params.cart_id,
         paying: params.payment_type === 'stripe' ? true : null,
-        payment_type: calculate.payment_type,
+        payment_type: params.payment_type,
         currency: calculate.currency,
         currency_rate: currencyRate,
         status: 'creating',
@@ -1864,161 +1866,35 @@ class Cart {
     }
   }
 
-  static createPaypalPayment = (params) =>
-    new Promise((resolve, reject) => {
-      try {
-        const items = []
-
-        Object.keys(params.calculate.shops).map((s) => {
-          const shop = params.calculate.shops[s]
-          Cart.configurePaypal(shop.pa)
-          shop.items.map((item) => {
-            const name = `${item.name} - ${item.artist_name}`
-            items.push({
-              name: name.substring(0, 126),
-              price: item.total,
-              currency: item.currency,
-              quantity: 1
-            })
-          })
-        })
-
-        if (params.calculate.discount) {
-          items.push({
-            name: 'Discount',
-            price: -params.calculate.discount,
-            currency: params.calculate.currency,
-            quantity: 1
-          })
-        }
-
-        const paymentInformation = {
-          intent: 'sale',
-          payer: {
-            payment_method: 'paypal'
-          },
-          redirect_urls: {
-            return_url: Utils.link('cart', params.lang),
-            cancel_url: Utils.link('cart', params.lang)
-          },
-          transactions: [
-            {
-              item_list: {
-                // items
-              },
-              amount: {
-                currency: params.calculate.currency,
-                total: params.calculate.total
-              }
-            }
-          ]
-        }
-
-        paypal.payment.create(paymentInformation, (error, payment) => {
-          if (error) {
-            console.log(error)
-            reject(new ApiError(500, error.response))
-          } else {
-            DB('order')
-              .where('id', params.order.id)
-              .update({
-                payment_type: 'paypal',
-                payment_id: payment.id
-              })
-              .then()
-
-            resolve({ redirect: payment.links[1].href })
-          }
-        })
-      } catch (e) {
-        reject(e)
-      }
+  static createPaypalPayment = async (params) => {
+    const capture: any = await PayPal.capture({
+      orderId: params.orderId
     })
-
-  static execute = (params) =>
-    new Promise(async (resolve, reject) => {
-      try {
-        const order = await DB('order')
-          .select('order.*', 'order_shop.payment_account')
-          .where('payment_id', params.paymentId)
-          .join('order_shop', 'order.id', 'order_shop.order_id')
-          .first()
-
-        if (order.transaction_id) {
-          resolve({
-            error: 'payment_ko',
-            type: 'payment_already_done'
-          })
-          return false
-        }
-        Cart.configurePaypal(order.payment_account)
-
-        paypal.payment.execute(params.paymentId, { payer_id: params.PayerID }, (error, payment) => {
-          if (error) {
-            if (error.response.name === 'payment_already_done') {
-              resolve({
-                error: 'payment_ko',
-                type: error.response.name
-              })
-              return false
-            } else {
-              DB('order')
-                .where('id', order.id)
-                .update({
-                  status: 'failed',
-                  paying: null,
-                  error: error.response.name
-                })
-                .then(() => {
-                  resolve({
-                    error: 'payment_ko',
-                    type: error.response.name
-                  })
-                })
-                .catch((err) => reject(err))
-              return false
-            }
-          } else if (payment.state !== 'approved') {
-            DB('order')
-              .where('id', order.id)
-              .update({
-                status: 'failed',
-                paying: null,
-                error: payment.state
-              })
-              .then(() => {
-                resolve({
-                  error: 'payment_ko',
-                  type: payment.type
-                })
-              })
-              .catch((err) => reject(err))
-          } else {
-            const sale = payment.transactions[0].related_resources[0].sale
-
-            DB('order')
-              .where('id', order.id)
-              .update({
-                fee_bank: sale.transaction_fee ? sale.transaction_fee.value : null,
-                updated_at: Utils.date()
-              })
-              .then()
-              .catch((err) => reject(err))
-            resolve(
-              Cart.validPayment(
-                order.id,
-                sale.id,
-                sale.state === 'completed' ? 'confirmed' : sale.state
-              )
-            )
-          }
-        })
-      } catch (e) {
-        reject(e)
+    if (capture.status === 'COMPLETED') {
+      const net = capture.purchase_units[0].payments.captures[0].seller_receivable_breakdown
+      await DB('order').where('id', params.order.id).update({
+        payment_id: params.orderId,
+        transaction_id: capture.purchase_units[0].payments.captures[0].id,
+        fee_bank: net.paypal_fee.value,
+        net_total: net.net_amount.value,
+        net_currency: net.net_amount.currency_code
+      })
+      return Cart.validPayment(params.order.id)
+    } else {
+      await DB('order').where('id', params.order.id).update({
+        status: 'failed',
+        paying: null
+      })
+      await DB('order_box').where('order_id', params.order.id).update({
+        step: 'failed'
+      })
+      return {
+        error: 'payment_ko'
       }
-    })
+    }
+  }
 
-  static validPayment = async (orderId, transactionId, status = 'confirmed') => {
+  static validPayment = async (orderId, transactionId?, status = 'confirmed') => {
     const order = await DB()
       .select(
         'order.id',
@@ -2400,6 +2276,7 @@ class Cart {
       p !== null ? config.paypal[p].client_secret : config.paypal.default.client_secret
     const mode = p !== null ? config.paypal[p].mode : config.paypal.default.mode
 
+    console.log(clientId, clientSecret)
     paypal.configure({
       mode,
       client_id: clientId,
