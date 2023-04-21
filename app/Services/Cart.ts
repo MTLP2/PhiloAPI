@@ -1872,13 +1872,15 @@ class Cart {
     })
     if (capture.status === 'COMPLETED') {
       const net = capture.purchase_units[0].payments.captures[0].seller_receivable_breakdown
-      await DB('order').where('id', params.order.id).update({
-        payment_id: params.orderId,
-        transaction_id: capture.purchase_units[0].payments.captures[0].id,
-        fee_bank: net.paypal_fee.value,
-        net_total: net.net_amount.value,
-        net_currency: net.net_amount.currency_code
-      })
+      await DB('order')
+        .where('id', params.order.id)
+        .update({
+          payment_id: params.orderId,
+          transaction_id: capture.purchase_units[0].payments.captures[0].id,
+          fee_bank: net && net.paypal_fee.value,
+          net_total: net && net.net_amount.value,
+          net_currency: net && net.net_amount.currency_code
+        })
       return Cart.validPayment(params.order.id)
     } else {
       await DB('order').where('id', params.order.id).update({
