@@ -3,7 +3,7 @@ import Env from '@ioc:Adonis/Core/Env'
 
 const base =
   process.env.NODE_ENV === 'production'
-    ? 'https://api-m.paypal.com/v2/'
+    ? 'https://api-m.paypal.com'
     : 'https://api-m.sandbox.paypal.com'
 
 class Paypal {
@@ -21,7 +21,7 @@ class Paypal {
     return JSON.parse(access).access_token
   }
 
-  static async capture(payload: { orderId: number }) {
+  static async capture(payload: { orderId: string }) {
     const credential = await Paypal.getCredential()
     const res: any = await Utils.request(`${base}/v2/checkout/orders/${payload.orderId}/capture`, {
       method: 'post',
