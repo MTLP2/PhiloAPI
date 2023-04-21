@@ -1871,16 +1871,24 @@ class Cart {
       orderId: params.orderId
     })
     if (capture.status === 'COMPLETED') {
-      const net = capture.purchase_units[0].payments.captures[0].seller_receivable_breakdown
+      const payment = capture.purchase_units[0].payments.captures[0]
+      const net = payment.seller_receivable_breakdown
       await DB('order')
         .where('id', params.order.id)
         .update({
           payment_id: params.orderId,
-          transaction_id: capture.purchase_units[0].payments.captures[0].id,
+          transaction_id: payment.id,
           fee_bank: net && net.paypal_fee.value,
           net_total: net && net.net_amount.value,
           net_currency: net && net.net_amount.currency_code
         })
+      if (payment.status !== 'COMPLETED') {
+        await Notification.sendEmail({
+          to: 'victor@diggersfactory.com',
+          subject: `Paypal order not completed`,
+          html: `<p>Order: https://www.diggersfactory.com/sheraf/order/${params.order.id}</p>`
+        })
+      }
       return Cart.validPayment(params.order.id)
     } else {
       await DB('order').where('id', params.order.id).update({
