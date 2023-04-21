@@ -4035,6 +4035,7 @@ class Admin {
           { key: 'start', header: 'Start', width: 15 },
           { key: 'name', header: 'Project', width: 30 },
           { key: 'artist_name', header: 'Artist name', width: 30 },
+          { key: 'user_email', header: 'email', width: 15 },
           { key: 'status', header: 'Status', width: 15 },
           { key: 'resp_prod', header: 'Resp. prod', width: 15 },
           { key: 'com', header: 'Resp. com', width: 15 },
