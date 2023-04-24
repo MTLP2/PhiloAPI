@@ -1316,7 +1316,10 @@ class StatementService {
     return res.map((row: any) => row.join(',')).join('\n')
   }
 
-  static async setStorageCosts() {
+  static async setStorageCosts(payload: { month?: string; projectIds?: string[] } = {}) {
+    if (!payload.month) {
+      payload.month = moment().format('YYYY-MM-01')
+    }
     const projects = await DB('project')
       .select(
         'project.id',
@@ -1326,16 +1329,51 @@ class StatementService {
         'vod.stock_price',
         DB.raw('SUM(stock.quantity) as stock')
       )
-      .join('stock', 'project.id', 'stock.project_id')
+      .join('project_product', 'project_product.project_id', 'project.id')
+      .join('stock', 'project_product.product_id', 'stock.product_id')
       .join('vod', 'project.id', 'vod.project_id')
       .where('stock.is_distrib', false)
       .where('stock.type', '!=', 'diggers')
+      .where('stock.type', '!=', 'preorder')
       .having('stock', '>', 0)
       .groupBy('project.id')
       .groupBy('vod.type')
       .groupBy('vod.currency')
       .groupBy('vod.stock_price')
+      .where((query) => {
+        if (payload.projectIds) {
+          query.whereIn('project.id', payload.projectIds)
+        }
+      })
       .all()
+
+    const historic = await DB('stock_historic')
+      .select(
+        'project_product.project_id',
+        'stock_historic.product_id',
+        'type',
+        'data',
+        'stock_historic.created_at'
+      )
+      .join('project_product', 'project_product.product_id', 'stock_historic.product_id')
+      .where('type', '!=', 'diggers')
+      .where('type', '!=', 'preorder')
+      .where('stock_historic.created_at', '>=', payload.month)
+      .orderBy('stock_historic.created_at', 'desc')
+      .whereIn(
+        'project_product.project_id',
+        projects.map((p) => p.id)
+      )
+      .all()
+
+    const change = {}
+    for (const h of historic) {
+      const data = JSON.parse(h.data)
+      if (!data) {
+        continue
+      }
+      change[h.project_id] = data.old.quantity
+    }
 
     const currenciesDb = await Utils.getCurrenciesDb()
 
@@ -1347,15 +1385,19 @@ class StatementService {
       const currencies = Utils.getCurrencies(p.currency, currenciesDb)
 
       i++
-      const month = moment().format('YYYY-MM')
 
-      let statement = await DB('statement').where('project_id', p.id).where('date', month).first()
+      let cost = await DB('production_cost')
+        .where('project_id', p.id)
+        .where('type', 'storage')
+        .where('date', payload.month)
+        .first()
 
-      if (!statement) {
-        statement = DB('statement')
-        statement.project_id = p.id
-        statement.date = month
-        statement.created_at = Utils.date()
+      if (!cost) {
+        cost = DB('production_cost')
+        cost.project_id = p.id
+        cost.date = payload.month
+        cost.type = 'storage'
+        cost.created_at = Utils.date()
       }
 
       let stockPrice = JSON.parse(p.stock_price)
@@ -1363,13 +1405,17 @@ class StatementService {
         stockPrice = [{ start: null, end: null, value: p.type === 'deposit_sales' ? 0.05 : 0.1 }]
       }
       const price = Utils.getFee(stockPrice, moment().format('YYYY-MM-DD')) as number
-
       const unitPrice: number = p.category === 'vinyl' ? price : 0.05
 
-      statement.storage = (p.stock * unitPrice) / currencies.EUR
-      statement.updated_at = Utils.date()
+      if (change[p.id]) {
+        p.stock = change[p.id]
+      }
+      cost.is_statement = true
+      cost.currency = 'EUR'
+      cost.in_statement = (p.stock * unitPrice) / currencies.EUR
+      cost.updated_at = Utils.date()
 
-      await statement.save()
+      await cost.save()
     }
 
     return i
@@ -1897,7 +1943,7 @@ class StatementService {
       .orderBy('date', 'asc')
       .all()
 
-    for1: for (const stat of statements) {
+    for (const stat of statements) {
       const types = [
         'production',
         'marketing',
