@@ -1911,10 +1911,16 @@ class Stats {
       .all()
 
     const costsPromise = await DB('production_cost')
-      .select('date', 'production_cost.type', 'is_licence', 'margin')
+      .select(
+        'date',
+        'production_cost.type',
+        'is_licence',
+        'in_statement',
+        'margin',
+        'production_cost.currency'
+      )
       .join('vod', 'vod.project_id', 'production_cost.project_id')
       .whereBetween('date', [params.start, params.end])
-      .whereNotNull('margin')
       .all()
 
     const stocksPromise = await DB('stock')
@@ -2359,9 +2365,7 @@ class Stats {
 
     for (const stat of statements) {
       const date = moment(stat.date).format(format)
-      if (stat.storage) {
-        addMarge('storage', null, date, stat.storage / currencies[stat.currency])
-      }
+
       for (const dis of stat.distributors) {
         dis.name = dis.name.toLowerCase().trim()
 
@@ -2474,6 +2478,9 @@ class Stats {
         addMarge('licence', 'cost', date, cost.margin)
       } else if (cost.type !== 'direct_pressing') {
         addMarge('prod', null, date, cost.margin)
+      }
+      if (cost.type === 'storage') {
+        addMarge('storage', null, date, cost.in_statement / currencies[cost.currency])
       }
     }
 
