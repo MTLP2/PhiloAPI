@@ -1694,7 +1694,11 @@ class Cart {
     } else if (params.payment_type === 'stripe') {
       return Cart.createStripePayment(params)
     } else if (params.payment_type === 'paypal') {
-      return Cart.createPaypalPayment(params)
+      if (params.orderId) {
+        return Cart.capturePaypalPayment(params)
+      } else {
+        return Cart.createPaypalPayment(params)
+      }
     }
   }
 
@@ -1867,6 +1871,65 @@ class Cart {
   }
 
   static createPaypalPayment = async (params) => {
+    const { calculate } = params
+    const data: any = {
+      items: [],
+      amount: {
+        currency_code: calculate.currency,
+        value: calculate.total,
+        breakdown: {
+          item_total: {
+            currency_code: calculate.currency,
+            value: `${Utils.round(calculate.total - calculate.shipping + calculate.discount, 2)}`
+          },
+          shipping: {
+            currency_code: calculate.currency,
+            value: calculate.shipping
+          }
+        }
+      }
+    }
+    for (const shop of Object.values(calculate.shops) as any) {
+      data.items.push(
+        ...shop.items.map((item) => {
+          return {
+            name: item.artist_name + ' - ' + item.name,
+            quantity: item.quantity,
+            unit_amount: {
+              currency_code: calculate.currency,
+              value: item.price
+            }
+          }
+        })
+      )
+    }
+
+    if (calculate.discount) {
+      data.amount.breakdown.discount = {
+        currency_code: calculate.currency,
+        value: calculate.discount
+      }
+    }
+
+    const order: any = await PayPal.create({
+      intent: 'CAPTURE',
+      purchase_units: [data]
+    })
+
+    if (order.status === 'CREATED') {
+      return { id: order.id }
+    } else {
+      console.log(order)
+      await Notification.sendEmail({
+        to: 'victor@diggersfactory.com',
+        subject: `Paypal creation order error`,
+        html: `${JSON.stringify(data)}`
+      })
+      return { error: 'paypal_creation_error' }
+    }
+  }
+
+  static capturePaypalPayment = async (params) => {
     const capture: any = await PayPal.capture({
       orderId: params.orderId
     })
