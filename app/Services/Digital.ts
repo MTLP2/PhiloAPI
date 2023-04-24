@@ -5,15 +5,19 @@ import Storage from 'App/Services/Storage'
 import File from 'App/Services/File'
 
 class Digital {
-  static async getAll(): Promise<any> {
+  static async getAll(params): Promise<any> {
+    if (!params.sort) {
+      params.sort = 'id'
+      params.order = 'desc'
+    }
     return await Utils.getRows({
+      ...params,
       query: DB('digital')
         .select('digital.*', 'project.picture', 'project.id as project_id')
         .where('digital.is_delete', false)
         .leftJoin('product', 'product.id', 'digital.product_id')
         .leftJoin('project_product', 'project_product.product_id', 'product.id')
         .leftJoin('project', 'project.id', 'project_product.project_id')
-        .orderBy('digital.created_at', 'desc')
     })
   }
 

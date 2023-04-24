@@ -3,8 +3,8 @@ import { validator, schema, rules } from '@ioc:Adonis/Core/Validator'
 import ApiError from 'App/ApiError'
 
 class DigitalController {
-  async getAll() {
-    return await Digital.getAll()
+  async getAll({ params }) {
+    return await Digital.getAll(params)
   }
 
   async getDigitalSingle({ params }) {
