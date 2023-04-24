@@ -271,6 +271,7 @@ class Digital {
         {
           columns: [
             { header: 'ID', key: 'id', width: 10 },
+            { header: 'Ori', key: 'origin', width: 10 },
             { header: 'Email', key: 'email', width: 32 },
             { header: 'Project name', key: 'project_name', width: 32 },
             { header: 'Artist name', key: 'artist_name', width: 32 },
