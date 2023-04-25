@@ -1897,7 +1897,7 @@ class Cart {
             quantity: item.quantity,
             unit_amount: {
               currency_code: calculate.currency,
-              value: item.price
+              value: item.price + item.tips
             }
           }
         })
