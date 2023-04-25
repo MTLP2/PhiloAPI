@@ -1583,7 +1583,7 @@ class StatementService {
       data.box_total = { name: 'Box - Total', type: 'income' }
     }
     data.distrib_quantity = { name: 'Retail - Quantity', currency: false }
-    data.distrib_returned = { name: 'Retail - Quantity', currency: false }
+    data.distrib_returned = { name: 'Returned - Quantity', currency: false }
     data.distrib_total = { name: 'Retail - Total' }
 
     const distribs = {}
@@ -1598,14 +1598,18 @@ class StatementService {
       }
     }
     const countries = {
-      PIAS: 'France',
-      ARCADES: 'France',
-      ROM: 'Europe',
-      LITA: 'USA / Canada',
-      LITA2: 'USA / Canada',
-      MGM: 'Australie',
-      ALOADED: 'Scandinavie',
-      RAMBLING: 'Japon'
+      'PIAS': 'France',
+      'ARCADES': 'France',
+      'Altafonte': 'Spain',
+      'ROM': 'Europe',
+      'LITA': 'USA',
+      'LITA2': 'USA',
+      'FAB': 'Canada',
+      'FAB Distribution': 'Canada',
+      'MGM': 'Australia',
+      'Good Co international': 'South Korea',
+      'ALOADED': 'Scandinavie',
+      'RAMBLING': 'Japon'
     }
 
     for (const stat of statements) {
@@ -1740,6 +1744,9 @@ class StatementService {
       for (const dist of stat.distributors) {
         if (!dist.item) {
           dist.item = ''
+        }
+        if (!dist.returned) {
+          dist.returned = 0
         }
         data[`${dist.name}_${dist.item}_quantity`][stat.date] += parseInt(dist.quantity)
         data[`${dist.name}_${dist.item}_returned`][stat.date] += parseInt(dist.returned)
