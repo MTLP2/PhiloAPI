@@ -1872,8 +1872,22 @@ class Cart {
 
   static createPaypalPayment = async (params) => {
     const { calculate } = params
+    const { customer } = calculate
     const data: any = {
       items: [],
+      shipping: {
+        type: 'SHIPPING',
+        name: {
+          full_name: `${customer.firstname} ${customer.lastname}`
+        },
+        address: {
+          address_line_1: customer.address,
+          admin_area_1: customer.state,
+          admin_area_2: customer.city,
+          postal_code: customer.zip_code,
+          country_code: customer.country_id
+        }
+      },
       amount: {
         currency_code: calculate.currency,
         value: calculate.total,
@@ -1889,6 +1903,7 @@ class Cart {
         }
       }
     }
+
     for (const shop of Object.values(calculate.shops) as any) {
       data.items.push(
         ...shop.items.map((item) => {
