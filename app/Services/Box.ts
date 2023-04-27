@@ -1239,8 +1239,6 @@ class Box {
         barcodes.push('QOBUZFLYER')
       }
 
-      barcodes.push('FLYERSKOPO')
-
       const gg: any = await Box.getMyGoodie(
         box,
         goodies,
