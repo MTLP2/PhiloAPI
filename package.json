@@ -86,6 +86,7 @@
     "sitemap": "^7.1.1",
     "soap": "^0.45.0",
     "source-map-support": "^0.5.21",
+    "ssh2-sftp-client": "^9.0.4",
     "stripe": "^10.2.0",
     "ua-parser-js": "^1.0.2",
     "underscore": "^1.13.4"
