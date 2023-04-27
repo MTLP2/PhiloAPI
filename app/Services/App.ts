@@ -1,6 +1,7 @@
 import juice from 'juice'
 import { marked } from 'marked'
 import moment from 'moment'
+import SftpClient from 'ssh2-sftp-client'
 import { SitemapStream, streamToPromise } from 'sitemap'
 import DB from 'App/DB'
 import config from 'Config/index'
@@ -142,6 +143,10 @@ class App {
         await Whiplash.syncStocks()
       } else if (hour === 14) {
         await Elogik.checkBlockedOrders()
+      } else if (hour === 16) {
+        if (moment().format('E') === '2') {
+          await App.uploadCharts()
+        }
       }
 
       await Elogik.setTrackingLinks()
@@ -1936,6 +1941,36 @@ class App {
     text += totalQuantity.toString().padStart(7, ' ')
 
     return text
+  }
+
+  static async uploadCharts() {
+    const us = await App.getLuminateCharts('US')
+    const ca = await App.getLuminateCharts('CA')
+
+    let client = new SftpClient()
+    let config = {
+      host: 'sftp.mrc-data.com',
+      port: 22,
+      username: '40301864',
+      password: 'QC9cAVEmKL52iKCb'
+    }
+
+    client
+      .connect(config)
+      .then(() => {
+        console.log('connected to charts')
+        client.put(Buffer.from(us), '40301864.txt')
+        client.put(Buffer.from(ca), 'C4001864.txt')
+
+        setTimeout(() => {
+          console.log('close connection to charts')
+          client.end()
+        }, 20000)
+      })
+      // .finally(() => client.end())
+      .catch((err) => {
+        console.error(err.message)
+      })
   }
 }
 
