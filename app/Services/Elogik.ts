@@ -451,17 +451,30 @@ class Elogik {
       .where('transporter', 'daudin')
       .whereNotNull('logistician_id')
       .whereNull('tracking_number')
+      .orderBy('step_check', 'asc')
       .orderBy('date_export', 'asc')
       .all()
 
     console.log('orders => ', orders.length)
+
     const packages = await Elogik.listeColis(
-      orders.map((o: any) => {
+      orders.slice(0, 300).map((o: any) => {
         return {
           referenceEKAN: o.logistician_id
         }
       })
     )
+
+    await DB('order_shop')
+      .whereIn(
+        'id',
+        orders.map((o) => o.id)
+      )
+      .update({
+        step_check: Utils.date()
+      })
+
+    console.log('packages =>', packages.colis.length)
 
     let i = 0
     if (packages.colis) {
