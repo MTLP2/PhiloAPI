@@ -1873,7 +1873,7 @@ class Cart {
   static createPaypalPayment = async (params) => {
     const { calculate } = params
     const { customer } = calculate
-    const data: any = {
+    let data: any = {
       items: [],
       shipping: {
         type: 'SHIPPING',
@@ -1905,18 +1905,27 @@ class Cart {
     }
 
     for (const shop of Object.values(calculate.shops) as any) {
-      data.items.push(
-        ...shop.items.map((item) => {
-          return {
-            name: item.artist_name + ' - ' + item.name,
-            quantity: item.quantity,
-            unit_amount: {
-              currency_code: calculate.currency,
-              value: +item.price + +item.tips
-            }
+      for (const item of shop.items) {
+        data.items.push({
+          name: item.artist_name + ' - ' + item.name,
+          quantity: item.quantity,
+          unit_amount: {
+            currency_code: calculate.currency,
+            value: +item.price
           }
         })
-      )
+
+        if (item.tips) {
+          data.items.push({
+            name: item.artist_name + ' - ' + item.name + ' - tips',
+            quantity: 1,
+            unit_amount: {
+              currency_code: calculate.currency,
+              value: +item.tips
+            }
+          })
+        }
+      }
     }
 
     if (calculate.discount) {
