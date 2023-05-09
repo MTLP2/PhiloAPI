@@ -1022,20 +1022,16 @@ class Production {
     }
 
     // Notification for PS resp when action changes from to check to pending team
-    if (
-      params.personal_stock &&
-      (action.status === 'to_check_team' || action.type === 'delivery')
-    ) {
-      await Notification.add({
-        type:
-          action.type === 'delivery'
-            ? 'production_pending_delivery'
-            : 'production_pending_personal_stock',
-        prod_id: prod.id,
-        project_id: prod.project_id,
-        user_id: prod.resp_id
-      })
-    }
+    await Notification.add({
+      type: params.test_pressing
+        ? 'production_pending_test_pressing_delivery'
+        : params.is_direct_pressing
+        ? 'production_pending_delivery'
+        : 'production_pending_personal_stock',
+      prod_id: prod.id,
+      project_id: prod.project_id,
+      user_id: prod.resp_id
+    })
 
     return { success: true }
   }
