@@ -935,7 +935,7 @@ class Production {
       .where('production_id', prod.id)
       .where(
         'type',
-        params.is_direct_pressing ? 'delivery' : params.test_pressing ? 'shipping' : 'dispatchs'
+        params.test_pressing ? 'shipping' : params.is_direct_pressing ? 'delivery' : 'dispatchs'
       )
       .first()
 
