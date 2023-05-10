@@ -220,7 +220,7 @@ class Production {
         category: 'prod',
         type: 'pressing_proof',
         action: 'file',
-        for: 'artist'
+        for: 'all'
       },
       {
         category: 'prod',
