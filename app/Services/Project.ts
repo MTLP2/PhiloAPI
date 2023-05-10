@@ -1950,9 +1950,13 @@ class Project {
 
     for (const box of boxes) {
       const date = moment(box.created_at).format(format)
-      const project: any = Object.values(projects).find((p: any) =>
-        box.barcodes.split(',').includes(p.barcode)
-      )
+      const project: any = Object.values(projects).find((p: any) => {
+        if (!isNaN(p.barcode)) {
+          return box.barcodes.split(',').includes(p.barcode)
+        } else {
+          return false
+        }
+      })
 
       if (!project) {
         continue
