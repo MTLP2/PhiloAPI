@@ -469,7 +469,7 @@ class Project {
       projects.join('shop_project', 'shop_project.project_id', 'p.id')
       projects.where('shop_project.shop_id', params.shop_id)
       if (!params.all_project) {
-        projects.whereIn('v.step', ['in_progress', 'coming_soon', 'successful', 'promo'])
+        projects.whereIn('v.step', ['in_progress', 'coming_soon', 'successful', 'private', 'promo'])
       }
       projects.orderBy('shop_project.position')
     }
