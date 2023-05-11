@@ -1281,8 +1281,6 @@ class Project {
       await DB('project_style').select('style_id').whereIn('project_id', params.refs).all()
     ).map((s) => s.style_id)
 
-    if (styles.length === 0) return []
-
     const selects = [
       'p.id',
       'p.picture',
@@ -1355,32 +1353,35 @@ class Project {
         .all()
     ).map((project) => Project.setInfos(project, currencies, null, ss))
 
-    const refs1 = (
-      await DB('project as p')
-        .select(...selects)
-        .join('vod as v', 'v.project_id', 'p.id')
-        .whereNotIn('p.id', params.refs)
-        .whereNotIn(
-          'p.id',
-          refs0.map((r) => r.id)
-        )
-        .where((query) => {
-          query.where('is_shop', false)
-          query.orWhere('v.stock', '>', 0)
-        })
-        .where('v.step', 'in_progress')
-        // .where('v.is_shop', params.shop)
-        .whereExists(
-          DB.raw(`
-      SELECT 1
-      FROM project_style
-      WHERE p.id = project_id
-        AND style_id IN (${styles.join(',')})
-    `)
-        )
-        .limit(6)
-        .all()
-    ).map((project) => Project.setInfos(project, currencies, null, ss))
+    let refs1 = []
+    if (styles.length > 0) {
+      refs1 = (
+        await DB('project as p')
+          .select(...selects)
+          .join('vod as v', 'v.project_id', 'p.id')
+          .whereNotIn('p.id', params.refs)
+          .whereNotIn(
+            'p.id',
+            refs0.map((r) => r.id)
+          )
+          .where((query) => {
+            query.where('is_shop', false)
+            query.orWhere('v.stock', '>', 0)
+          })
+          .where('v.step', 'in_progress')
+          // .where('v.is_shop', params.shop)
+          .whereExists(
+            DB.raw(`
+        SELECT 1
+        FROM project_style
+        WHERE p.id = project_id
+          AND style_id IN (${styles.join(',')})
+      `)
+          )
+          .limit(6)
+          .all()
+      ).map((project) => Project.setInfos(project, currencies, null, ss))
+    }
 
     const refs = refs0.concat(refs1)
 
