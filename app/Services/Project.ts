@@ -5,6 +5,7 @@ import DB from 'App/DB'
 import PromoCode from 'App/Services/PromoCode'
 import Storage from 'App/Services/Storage'
 import Pass from 'App/Services/Pass'
+import Stock from 'App/Services/Stock'
 import Statement from 'App/Services/Statement'
 import Bid from 'App/Services/Bid'
 import Review from 'App/Services/Review'
@@ -1651,20 +1652,19 @@ class Project {
       })
       .all()
 
-    const stocksPromises = DB('stock')
-      .select('stock.*', 'stock_place.country_id')
-      .join('stock_place', 'stock_place.code', 'stock.type')
-      .whereIn('project_id', ids)
-      .all()
+    const stocksSiteQuery = Stock.byProject({ project_id: +ids[0], is_distrib: false })
+    const stocksDistribQuery = Stock.byProject({ project_id: +ids[0], is_distrib: true })
 
-    const [orders, statements, costs, payments, boxes, stocks] = await Promise.all([
-      ordersPromise,
-      statementsPromise,
-      costsPromise,
-      paymentsPromise,
-      boxesPromise,
-      stocksPromises
-    ])
+    const [orders, statements, costs, payments, boxes, stocksSite, stockDistrib] =
+      await Promise.all([
+        ordersPromise,
+        statementsPromise,
+        costsPromise,
+        paymentsPromise,
+        boxesPromise,
+        stocksSiteQuery,
+        stocksDistribQuery
+      ])
 
     if (!params.start) {
       let start
@@ -1937,16 +1937,13 @@ class Project {
       s.setCountry('site', 'quantity', order.country_id, order.quantity)
     }
 
-    for (const stock of stocks) {
-      if (stock.quantity > 0) {
-        if (stock.is_distrib) {
-          s.setCountry('distrib', 'stocks', stock.country_id, stock.quantity)
-          s.setCountry('distrib', 'stocks', 'ALL', stock.quantity)
-        } else {
-          s.setCountry('site', 'stocks', stock.country_id, stock.quantity)
-          s.setCountry('site', 'stocks', 'ALL', stock.quantity)
-        }
-      }
+    for (const [log, stock] of Object.entries(stocksSite)) {
+      s.setCountry('site', 'stocks', Utils.getCountryStock(log), stock)
+      s.setCountry('site', 'stocks', 'ALL', stock)
+    }
+    for (const [log, stock] of Object.entries(stockDistrib)) {
+      s.setCountry('distrib', 'stocks', Utils.getCountryStock(log), stock)
+      s.setCountry('distrib', 'stocks', 'ALL', stock)
     }
 
     for (const box of boxes) {
