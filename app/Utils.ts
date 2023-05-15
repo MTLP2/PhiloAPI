@@ -1201,6 +1201,40 @@ class Utils {
     }
   }
 
+  static getCountryStock = (type) => {
+    switch (type) {
+      case 'daudin':
+      case 'pias':
+      case 'diggers':
+      case 'sna':
+      case 'fnac':
+        return 'FR'
+      case 'whiplash':
+      case 'lita':
+        return 'US'
+      case 'whiplash_uk':
+      case 'rom':
+        return 'GB'
+      case 'rom_de':
+        return 'DE'
+      case 'altafonte':
+        return 'ES'
+      case 'shipehype':
+        return 'CA'
+      case 'mgm':
+        return 'AU'
+      case 'site':
+      case 'all':
+        return 'site'
+      case 'distrib':
+        return 'distrib'
+      case 'preorder':
+        return 'distrib'
+      default:
+        return ''
+    }
+  }
+
   static validate = async (data, schema) => {
     const payload = await validator.validate({
       schema: schema,
