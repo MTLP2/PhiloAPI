@@ -147,7 +147,6 @@ Route.post('/auth/unsubscribe-newsletter', 'AuthController.unsubscribeNewsletter
 
 Route.post('/cart/calculate', 'CartController.calculate').middleware(['auth:optional'])
 Route.post('/cart/pay', 'CartController.pay').middleware(['auth:optional'])
-Route.post('/cart/execute', 'CartController.execute').middleware(['auth:optional'])
 Route.post('/cart/confirm', 'CartController.confirm').middleware(['auth:optional'])
 Route.post('/cart/related', 'CartController.related').middleware(['auth:optional'])
 Route.post('/cart/feedback', 'CartController.saveFeedback').middleware(['auth:optional'])
