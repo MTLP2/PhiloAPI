@@ -611,38 +611,12 @@ class Stock {
         'product.id',
         'product.name',
         'product.barcode',
-        DB()
-          .select('vod.unit_cost')
-          .from('vod')
-          .join('project_product', 'project_product.project_id', 'vod.project_id')
-          .whereRaw('project_product.product_id = product.id')
-          .limit(1)
-          .as('unit_cost')
-          .query(),
-        DB()
-          .select('vod.type')
-          .from('vod')
-          .join('project_product', 'project_product.project_id', 'vod.project_id')
-          .whereRaw('project_product.product_id = product.id')
-          .limit(1)
-          .as('type')
-          .query(),
-        DB()
-          .select('vod.is_licence')
-          .from('vod')
-          .join('project_product', 'project_product.project_id', 'vod.project_id')
-          .whereRaw('project_product.product_id = product.id')
-          .limit(1)
-          .as('is_licence')
-          .query()
+        'vod.type',
+        'vod.unit_cost',
+        'vod.is_licence'
       )
-      .whereNotExists((query) => {
-        query
-          .from('vod')
-          .join('project_product', 'project_product.project_id', 'vod.project_id')
-          .where('vod.type', '=', 'deposit_sales')
-          .whereRaw('project_product.product_id = product.id')
-      })
+      .join('project_product', 'project_product.product_id', 'product.id')
+      .join('vod', 'vod.project_id', 'project_product.project_id')
       .whereNotNull('product.barcode')
       .hasMany('stock')
       .all()
