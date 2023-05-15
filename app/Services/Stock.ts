@@ -618,6 +618,22 @@ class Stock {
           .whereRaw('project_product.product_id = product.id')
           .limit(1)
           .as('unit_cost')
+          .query(),
+        DB()
+          .select('vod.type')
+          .from('vod')
+          .join('project_product', 'project_product.project_id', 'vod.project_id')
+          .whereRaw('project_product.product_id = product.id')
+          .limit(1)
+          .as('type')
+          .query(),
+        DB()
+          .select('vod.is_licence')
+          .from('vod')
+          .join('project_product', 'project_product.project_id', 'vod.project_id')
+          .whereRaw('project_product.product_id = product.id')
+          .limit(1)
+          .as('is_licence')
           .query()
       )
       .whereNotExists((query) => {
@@ -677,7 +693,9 @@ class Stock {
     const columns = [
       { header: 'ID', key: 'id', width: 7 },
       { header: 'Barcode', key: 'barcode', width: 16 },
-      { header: 'Name', key: 'name', width: 30 }
+      { header: 'Name', key: 'name', width: 30 },
+      { header: 'Type', key: 'type', width: 15 },
+      { header: 'Licence', key: 'is_licence', width: 7 }
     ]
 
     for (const l of Object.keys(logisitians)) {
