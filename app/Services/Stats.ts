@@ -1764,6 +1764,7 @@ class Stats {
         },
         shipping: { total: 0, dates: { ...dates } },
         fee_change: { total: 0, dates: { ...dates } },
+        service_charge: { total: 0, dates: { ...dates } },
         distrib: {
           total: { total: 0, dates: { ...dates } },
           project: { total: 0, dates: { ...dates } },
@@ -1986,15 +1987,17 @@ class Stats {
       .select(
         'order_shop.id as order_shop_id',
         'order_shop.order_id',
-        'shipping',
-        'shipping_cost',
-        'sub_total',
-        'tax_rate',
+        'order_shop.shipping',
+        'order_shop.shipping_cost',
+        'order_shop.sub_total',
+        'order_shop.tax_rate',
+        'order.service_charge',
         'order_shop.currency',
-        'currency_rate',
+        'order_shop.currency_rate',
         'user.is_pro'
       )
       .join('user', 'user.id', 'order_shop.user_id')
+      .join('order', 'order.id', 'order_shop.order_id')
       .whereIn(
         'order_id',
         invoices.map((i) => i.order_id)
@@ -2107,6 +2110,12 @@ class Stats {
 
       const ods = orders[invoice.order_id]
       if (ods) {
+        addMarge(
+          'service_charge',
+          null,
+          date,
+          (ods[0].service_charge * invoice.currency_rate) / (1 + ods[0].tax_rate)
+        )
         for (const order of ods) {
           let shipping = order.shipping * invoice.currency_rate
           if (order.tax_rate) {

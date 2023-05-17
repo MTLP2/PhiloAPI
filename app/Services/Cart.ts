@@ -417,6 +417,8 @@ class Cart {
         cart.tax_rate = cart.shops[s].tax_rate
         cart.sub_total = Utils.round(cart.sub_total + cart.shops[s].sub_total * cur)
         cart.total = Utils.round(cart.total + cart.shops[s].total * cur)
+        cart.service_charge = Utils.round(cart.total * 0.06)
+        cart.total = Utils.round(cart.total + cart.service_charge)
         cart.pickup = params.pickup
         cart.discount = Utils.round(cart.discount + cart.shops[s].discount)
         if (cart.shops[s].save_shipping) {
@@ -1527,6 +1529,7 @@ class Cart {
         tax_rate: calculate.tax_rate,
         promo_code: calculate.promo_code,
         discount: calculate.discount,
+        service_charge: calculate.service_charge,
         total: calculate.total,
         origin: params.origin,
         is_gift: params.is_gift,
@@ -1928,6 +1931,15 @@ class Cart {
       }
     }
 
+    data.items.push({
+      name: 'Service charge',
+      quantity: 1,
+      unit_amount: {
+        currency_code: calculate.currency,
+        value: calculate.service_charge
+      }
+    })
+
     if (calculate.discount) {
       data.amount.breakdown.discount = {
         currency_code: calculate.currency,
@@ -2000,6 +2012,7 @@ class Cart {
         'shipping',
         'order.currency',
         'order.currency_rate',
+        'order.service_charge',
         'user_agent',
         'promo_code',
         'discount',
