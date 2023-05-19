@@ -450,7 +450,7 @@ class Cart {
     )
 
     cart.service_charge = Utils.round(cart.total * 0.06)
-    cart.total = cart.total + cart.service_charge
+    cart.total = Utils.round(cart.total + cart.service_charge)
   }
 
   static saveCart = (userId, cart) => {
