@@ -417,8 +417,6 @@ class Cart {
         cart.tax_rate = cart.shops[s].tax_rate
         cart.sub_total = Utils.round(cart.sub_total + cart.shops[s].sub_total * cur)
         cart.total = Utils.round(cart.total + cart.shops[s].total * cur)
-        cart.service_charge = Utils.round(cart.total * 0.06)
-        cart.total = Utils.round(cart.total + cart.service_charge)
         cart.pickup = params.pickup
         cart.discount = Utils.round(cart.discount + cart.shops[s].discount)
         if (cart.shops[s].save_shipping) {
@@ -450,6 +448,9 @@ class Cart {
         cart.count += cart.shops[s].items.length
       })
     )
+
+    cart.service_charge = Utils.round(cart.total * 0.06)
+    cart.total = cart.total + cart.service_charge
   }
 
   static saveCart = (userId, cart) => {
@@ -1947,6 +1948,7 @@ class Cart {
       }
     }
 
+    console.log(data.items)
     const order: any = await PayPal.create({
       intent: 'CAPTURE',
       purchase_units: [data]
