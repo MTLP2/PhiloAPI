@@ -1263,8 +1263,9 @@ class App {
         'stock.type',
         'stock.quantity'
       )
-      .join('stock', 'stock.project_id', 'vod.project_id')
       .join('project', 'project.id', 'vod.project_id')
+      .leftJoin('project_product', 'project_product.project_id', 'project.id')
+      .join('stock', 'stock.product_id', 'project_product.product_id')
       .where('vod.is_shop', false)
       .where('stock.quantity', '>', '0')
       .where('stock.is_distrib', false)
