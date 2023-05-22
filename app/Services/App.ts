@@ -1253,7 +1253,7 @@ class App {
   }
 
   static alertProjectsToShop = async () => {
-    const projects = await DB('vod')
+    const pp = await DB('vod')
       .select(
         'project.id',
         'project.name',
@@ -1288,6 +1288,19 @@ class App {
       .groupBy('stock.type')
       .groupBy('stock.quantity')
       .all()
+
+    const projects: any[] = []
+    for (const project of pp) {
+      const idx = projects.findIndex((p) => p.id === project.id)
+
+      if (idx !== -1) {
+        if (project.quantity < projects[idx].quantity) {
+          projects[idx].quantity = project.quantity
+        }
+      } else {
+        projects.push(project)
+      }
+    }
 
     let html = `
     <style>
