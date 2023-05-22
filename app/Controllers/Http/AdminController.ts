@@ -1231,6 +1231,10 @@ class AdminController {
   getLogs({ params }) {
     return Log.all(params)
   }
+
+  extractTestPressing({ params }) {
+    return ProjectService.exportTestPressing(params)
+  }
 }
 
 export default AdminController

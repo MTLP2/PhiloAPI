@@ -2286,6 +2286,54 @@ class Project {
       .orderByRaw('FIELD(id, ' + projectIds.join(',') + ')')
       .all()
   }
+
+  static exportTestPressing = async (payload: { start: string; end: string }) => {
+    const items = await DB('vod')
+      .select(
+        'project.id',
+        'project.name',
+        'project.artist_name',
+        'vod.count',
+        'vod.price',
+        DB('order_item')
+          .select(DB.raw('count(*)'))
+          .join('order_shop', 'order_shop.id', 'order_item.order_shop_id')
+          .whereRaw('order_item.project_id = project.id')
+          .where('is_paid', true)
+          .where((query) => {
+            if (payload.start) {
+              query.where('order_item.created_at', '>=', payload.start)
+            }
+            if (payload.end) {
+              query.where('order_item.created_at', '<=', payload.end)
+            }
+          })
+          .as('quantity')
+          .query()
+      )
+      .join('project', 'project.id', 'vod.project_id')
+      .where('vod.type', 'test_pressing')
+      .where('vod.count', '>', 0)
+      .all()
+
+    for (const i in items) {
+      items[i].price = Utils.round(items[i].price / 1.2)
+    }
+
+    return Utils.arrayToXlsx([
+      {
+        worksheetName: 'Test Pressing',
+        columns: [
+          { header: 'ID', key: 'id' },
+          { header: 'Artist', key: 'artist_name' },
+          { header: 'Project', key: 'name' },
+          { header: 'Price', key: 'price' },
+          { header: 'Total', key: 'quantity' }
+        ],
+        data: items.filter((i) => i.quantity > 0)
+      }
+    ])
+  }
 }
 
 export default Project
