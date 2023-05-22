@@ -32,7 +32,7 @@ class Sign {
         .where('is_delete', 0)
         .first()
         .then(async (res) => {
-          if (!res) {
+          if (!res || !res.password) {
             resolve(false)
           }
           const passwordHashed = res.password && res.password.replace('$2y$', '$2a$')
