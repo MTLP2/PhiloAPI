@@ -1309,6 +1309,7 @@ class Project {
       'v.count_bundle',
       'v.goal',
       'v.end',
+      'v.user_id',
       'v.shipping_discount',
       'v.save_shipping'
     ]
