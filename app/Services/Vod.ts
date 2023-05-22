@@ -28,6 +28,11 @@ class Vod {
       vod.user_id = params.user.user_id !== 0 ? params.user.user_id : null
       vod.created_at = Utils.date()
 
+      const user = await DB('user').where('id', params.user.user_id).first()
+      if (user && user.soundcloud_sub) {
+        vod.sponsor = 34632
+      }
+
       vod = await vod.save()
 
       await User.event({
@@ -53,10 +58,12 @@ class Vod {
       }
     }
 
-    if (sponsor) {
-      vod.sponsor = sponsor.user_id
-    } else {
-      vod.sponsor = null
+    if (!vod.sponsor) {
+      if (sponsor) {
+        vod.sponsor = sponsor.user_id
+      } else {
+        vod.sponsor = null
+      }
     }
 
     vod.updated_at = Utils.date()
