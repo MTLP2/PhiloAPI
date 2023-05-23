@@ -46,7 +46,12 @@ class ProjectEdit {
       .join('product', 'product.id', 'project_product.product_id')
       .where('project_product.project_id', params.id)
       .first()
+
     project.barcode = product?.barcode ?? null
+    project.quantity = project.stage1
+    project.weight = project.vinyl_weight ? project.vinyl_weight.toString() : '140'
+    project.sticker = project.sticker || '0'
+    project.insert = project.insert || 'none'
 
     return project
   }
@@ -91,17 +96,7 @@ class ProjectEdit {
 
     const vod = await DB('vod').where('project_id', pp.id).first()
 
-    if (
-      params.type_project === 'production' ||
-      params.type_project === 'reedition' ||
-      params.type_project === 'funding' ||
-      params.type_project === 'test_pressing' ||
-      params.type_project === 'limited_edition' ||
-      params.type_project === 'direct_pressing' ||
-      params.type_project === 'deposit_sale'
-    ) {
-      await Vod.save(params, pp)
-    }
+    await Vod.save(params, pp)
 
     if (params.type === 'wishlist') {
       await DB('wishlist').insert({
