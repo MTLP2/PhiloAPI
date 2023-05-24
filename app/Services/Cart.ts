@@ -450,6 +450,9 @@ class Cart {
     )
 
     cart.service_charge = Utils.round(cart.total * 0.06)
+    if (cart.service_charge > 20) {
+      cart.service_charge = 20
+    }
     cart.total = Utils.round(cart.total + cart.service_charge)
   }
 
