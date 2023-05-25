@@ -192,7 +192,7 @@ class AppController {
         unsubscribed_code: User.encodeUnsubscribeNewseletter(id)
       })
       if (params.campaign) {
-        cio.track(params.email, {
+        cio.myTrack(params.email, {
           name: 'inscription',
           data: {
             type: params.campaign

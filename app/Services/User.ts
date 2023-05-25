@@ -954,7 +954,7 @@ static extractProjectOrders = async (params) => {
 
   static event = async (params) => {
     if (params.type === 'page_view') {
-      cio.track(params.user_id, {
+      cio.myTrack(params.user_id, {
         name: params.url,
         type: 'page'
       })
@@ -965,7 +965,7 @@ static extractProjectOrders = async (params) => {
         project_id: params.project_id,
         created_at: Utils.date()
       })
-      await cio.track(params.user_id, {
+      await cio.myTrack(params.user_id, {
         name: params.type,
         data: {
           project_id: params.project_id,
@@ -1249,7 +1249,7 @@ static extractProjectOrders = async (params) => {
     await cio.identify(user.id, params)
 
     if (user.last) {
-      cio.track(user.id, {
+      cio.myTrack(user.id, {
         name: 'https://www.diggersfactory.com',
         type: 'page',
         timestamp: moment(user.last).unix()
@@ -1271,7 +1271,7 @@ static extractProjectOrders = async (params) => {
         price: order.price
       }
 
-      await cio.track(user.id, {
+      await cio.myTrack(user.id, {
         name: 'purchase',
         timestamp: moment(order.created_at).unix(),
         data: data
@@ -1293,7 +1293,7 @@ static extractProjectOrders = async (params) => {
       .all()
 
     for (const event of events) {
-      await cio.track(event.user_id, {
+      await cio.myTrack(event.user_id, {
         name: event.type,
         timestamp: moment(event.created_at).unix(),
         data: {

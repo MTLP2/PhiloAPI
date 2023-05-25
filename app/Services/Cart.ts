@@ -2161,7 +2161,7 @@ class Cart {
           project.styles = project.styles.map((s) => styles[s.id || s].name)
           orderGenres.push(project.genres)
 
-          cio.track(user.id, {
+          cio.myTrack(user.id, {
             name: 'purchase',
             data: {
               id: item.id,

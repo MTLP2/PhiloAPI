@@ -47,4 +47,10 @@ cio.syncNewsletterNoAccount = async () => {
   }
 }
 
+cio.myTrack = (payload) => {
+  if (process.env.NODE_ENV === 'production') {
+    cio.track(payload)
+  }
+}
+
 export default cio
