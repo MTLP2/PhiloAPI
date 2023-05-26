@@ -170,46 +170,30 @@ class ProjectEdit {
 
   static saveTrack = async (params) => {
     await Utils.checkProjectOwner({ project_id: params.project_id, user: params.user })
-
-    let song
+    let song: any = DB('song')
     if (params.id !== 0) {
-      song = DB('song').where('id', params.id).where('project_id', params.project_id).first()
-
+      song = await DB('song').find(params.id)
       if (!song) {
         throw new ApiError(404)
       }
-
-      song = DB('song')
-      song.id = params.id
-      song.title = params.title
-      song.artist = params.artist
-      song.side = params.side
-      song.disc = params.disc
-      song.digital_bonus = params.digital_bonus
-      if (params.duration) {
-        song.duration_str = params.duration
-        song.duration = Utils.toSeconds(params.duration)
-      }
-      song.position = params.position
-      song.disabled = params.disabled
-      song.updated_at = Utils.date()
-      await song.save()
     } else {
-      song = await DB('song').save({
-        project_id: params.project_id,
-        title: params.title || '',
-        artist: params.artist,
-        position: params.position,
-        disabled: params.disabled,
-        digital_bonus: params.digital_bonus,
-        disc: params.disc,
-        side: params.side,
-        duration: 0,
-        duration_str: 0,
-        created_at: Utils.date(),
-        updated_at: Utils.date()
-      })
+      song.project_id = params.project_id
+      song.created_at = Utils.date()
     }
+
+    song.title = params.title || ''
+    song.artist = params.artist
+    song.side = params.side
+    song.disc = params.disc
+    song.digital_bonus = params.digital_bonus
+    if (params.duration) {
+      song.duration_str = params.duration
+      song.duration = Utils.toSeconds(params.duration)
+    }
+    song.position = params.position
+    song.disabled = params.disabled
+    song.updated_at = Utils.date()
+    await song.save()
 
     return song
   }
