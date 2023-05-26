@@ -47,9 +47,9 @@ cio.syncNewsletterNoAccount = async () => {
   }
 }
 
-cio.myTrack = (payload) => {
+cio.myTrack = (...args) => {
   if (process.env.NODE_ENV === 'production') {
-    cio.track(payload)
+    cio.track(...args)
   }
 }
 
