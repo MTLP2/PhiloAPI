@@ -197,7 +197,7 @@ class ProjectEdit {
     } else {
       song = await DB('song').save({
         project_id: params.project_id,
-        title: params.title,
+        title: params.title || '',
         artist: params.artist,
         position: params.position,
         disabled: params.disabled,
