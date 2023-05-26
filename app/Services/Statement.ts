@@ -637,12 +637,18 @@ class StatementService {
 
     const rows: any[] = []
     for (const d in data) {
-      rows.push(data[d])
+      if (data[d].type === 'expense') {
+        if (data[d].total === undefined || data[d].total > 0) {
+          rows.push(data[d])
+        }
+      } else {
+        rows.push(data[d])
+      }
     }
 
-    const columns = [{ header: project.artist_name + ' - ' + project.name, key: 'name', width: 50 }]
+    const columns = [{ header: project.artist_name + ' - ' + project.name, key: 'name', width: 40 }]
     for (const month of months) {
-      columns.push({ header: month, key: month, width: 15 })
+      columns.push({ header: month, key: month, width: 12 })
     }
 
     let name = params.number ? `${params.number}. ${project.name}` : `${project.name}`
@@ -664,8 +670,13 @@ class StatementService {
     const totalExcl = 2 + 3 + Object.values(data).filter((d: any) => d.type === 'income').length
     const idxExpenses = totalExcl + 2
     const startExepense = idxExpenses + 1
+
     const endExpenses =
-      totalExcl + Object.values(data).filter((d: any) => d.type === 'expense').length
+      totalExcl +
+      Object.values(data).filter(
+        (d: any) => d.type === 'expense' && (d.total === undefined || d.total > 0)
+      ).length
+
     const netCosts = endExpenses + 1
     const netTotal = netCosts + 2
     const paymentsIdx = netTotal + 2
@@ -673,7 +684,10 @@ class StatementService {
 
     for (let i = 1; i <= rows.length + 1; i++) {
       worksheet.getRow(i).font = { size: 14 }
-      worksheet.getRow(i).height = 20
+      worksheet.getRow(i).height = 18
+      worksheet.getRow(i).alignment = {
+        vertical: 'middle'
+      }
     }
 
     for (let i = 1; i <= months.length; i++) {
@@ -855,6 +869,14 @@ class StatementService {
       }
     })
 
+    worksheet.eachRow(function (row) {
+      row.eachCell(function (cell, colNumber) {
+        if (cell.value === 0) {
+          row.getCell(colNumber).font = { size: 14, color: { argb: '00BBBBBB' } }
+        }
+      })
+    })
+
     for (let i = 0; i < months.length; i++) {
       const l = Utils.columnToLetter(i + 1)
       worksheet.addConditionalFormatting({
@@ -884,7 +906,8 @@ class StatementService {
       .table('project')
       .join('vod', 'vod.project_id', 'project.id')
       .where('vod.user_id', params.id)
-      .where('is_delete', '!=', '1')
+      .where('is_delete', '!=', true)
+      .where('send_statement', true)
 
     if (params.auto) {
       projects.where('send_statement', true)
