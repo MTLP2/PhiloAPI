@@ -91,26 +91,29 @@ class ProjectsController {
     params.user = user
     await Utils.checkProjectOwner({ project_id: params.project_id, user: user })
 
-    const track = await ProjectEdit.saveTrack(params)
     if (params.uploading) {
       const res = await Utils.upload({
         ...params,
-        fileName: `songs/${track.id}.mp3`
+        fileName: `songs/${params.id}.mp3`
       })
       if (res.success) {
         if (params.skipEncoding) {
-          Song.setInfo(track.id)
+          Song.setInfo(params.id)
         } else {
-          await Song.setInfo(track.id)
+          await Song.setInfo(params.id)
         }
       }
       return {
         ...res,
-        id: track.id
+        id: params.id
       }
     } else {
-      return track
+      return { success: true }
     }
+  }
+
+  async saveTracks({ params }) {
+    return Song.saveTracks(params.tracks)
   }
 
   async encodeTrack({ params }) {
