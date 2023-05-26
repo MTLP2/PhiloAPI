@@ -97,8 +97,12 @@ class ProjectsController {
         ...params,
         fileName: `songs/${track.id}.mp3`
       })
-      if (res.success && !params.skipEncoding) {
-        await Song.setInfo(track.id)
+      if (res.success) {
+        if (params.skipEncoding) {
+          Song.setInfo(track.id)
+        } else {
+          await Song.setInfo(track.id)
+        }
       }
       return {
         ...res,
