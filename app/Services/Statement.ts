@@ -637,13 +637,7 @@ class StatementService {
 
     const rows: any[] = []
     for (const d in data) {
-      if (data[d].type === 'expense') {
-        if (data[d].total === undefined || data[d].total > 0) {
-          rows.push(data[d])
-        }
-      } else {
-        rows.push(data[d])
-      }
+      rows.push(data[d])
     }
 
     const columns = [{ header: project.artist_name + ' - ' + project.name, key: 'name', width: 40 }]
@@ -672,10 +666,7 @@ class StatementService {
     const startExepense = idxExpenses + 1
 
     const endExpenses =
-      totalExcl +
-      Object.values(data).filter(
-        (d: any) => d.type === 'expense' && (d.total === undefined || d.total > 0)
-      ).length
+      totalExcl + Object.values(data).filter((d: any) => d.type === 'expense').length
 
     const netCosts = endExpenses + 1
     const netTotal = netCosts + 2
