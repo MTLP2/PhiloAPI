@@ -17,6 +17,7 @@ class Song {
         's.id',
         's.title',
         's.artist',
+        's.listenable',
         'p.artist_name',
         'p.slug',
         's.url',
@@ -49,6 +50,7 @@ class Song {
         's.id',
         's.title',
         's.artist',
+        's.listenable',
         'p.artist_name',
         'p.slug',
         's.url',
@@ -133,13 +135,14 @@ class Song {
 
   static setInfo = async (id) => {
     const buffer = await Storage.get(`songs/${id}.mp3`)
-    const track = await Song.compressSong(buffer)
+    const track: any = await Song.compressSong(buffer)
 
     await Storage.upload(`songs/${id}.mp3`, track.buffer)
     const seconds = moment.duration(track.duration).asSeconds()
     await DB('song')
       .where('id', id)
       .update({
+        listenable: true,
         duration: seconds,
         duration_str: track.duration.substr(3, 5),
         updated_at: Utils.date()
@@ -222,6 +225,18 @@ class Song {
       created_at: Utils.date(),
       updated_at: Utils.date()
     })
+  }
+
+  static saveTracks = async (tracks) => {
+    for (const track of tracks) {
+      await DB('song').where('id', track.id).update({
+        disc: track.disc,
+        side: track.side,
+        position: track.position
+      })
+    }
+
+    return { success: true }
   }
 }
 
