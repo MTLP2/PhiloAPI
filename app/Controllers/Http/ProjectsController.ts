@@ -108,7 +108,8 @@ class ProjectsController {
         id: params.id
       }
     } else {
-      return { success: true }
+      const track = await ProjectEdit.saveTrack(params)
+      return track
     }
   }
 
