@@ -130,7 +130,7 @@ class User {
         updated_at: Utils.date()
       })
     }
-    return true
+    return { success: true }
   }
 
   static findAll = async (params) => {
