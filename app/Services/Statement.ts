@@ -891,14 +891,24 @@ class StatementService {
     return data
   }
 
-  static async userDownload(params: { id: number; auto: boolean; start?: string; end: string }) {
+  static async userDownload(params: {
+    id: number
+    auto: boolean
+    start?: string
+    end: string
+    send_statement?: boolean
+  }) {
     let projects: any = DB()
       .select('project.id', 'artist_name', 'name')
       .table('project')
       .join('vod', 'vod.project_id', 'project.id')
       .where('vod.user_id', params.id)
       .where('is_delete', '!=', true)
-      .where('send_statement', true)
+      .where((query) => {
+        if (params.send_statement !== false) {
+          query.where('send_statement', true)
+        }
+      })
 
     if (params.auto) {
       projects.where('send_statement', true)

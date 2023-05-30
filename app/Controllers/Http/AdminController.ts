@@ -919,6 +919,7 @@ class AdminController {
   }
 
   getUserStatements({ params }) {
+    params.send_statement = params.send_statement !== 'false'
     return Statement.userDownload(params)
   }
 
