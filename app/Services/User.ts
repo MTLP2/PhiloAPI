@@ -169,17 +169,6 @@ class User {
     }
     user.styles = user.styles ? JSON.parse(user.styles) : []
 
-    /**
-  user.marketplace = await DB('marketplace')
-    .select('seller_terms')
-    .where('user_id', params.id).first()
-  user.ratings = await DB('marketplace_rating AS r')
-    .select('r.*', 'user.name AS user_name', 'user.slug AS user_slug', 'user.country_id AS user_country')
-    .join('user', 'user.id', 'r.user_id')
-    .where('shop_id', user.id)
-    .all()
-
-  **/
     user.followers = await DB('user')
       .select('id', 'name', 'slug')
       .join('follower', 'follower.follower', 'user.id')
@@ -190,6 +179,23 @@ class User {
       .join('follower', 'follower.user_id', 'user.id')
       .where('follower.follower', user.id)
       .all()
+    user.items = await DB('order_item')
+      .select('p.*')
+      .join('order', 'order.id', 'order_item.order_id')
+      .join('project as p', 'p.id', 'order_item.project_id')
+      .join('vod as v', 'p.id', 'v.project_id')
+      .where('order.user_id', user.id)
+      .whereNotIn('order.status', ['creating', 'failed'])
+      .whereIn('p.category', ['vinyl'])
+      .groupBy('order_item.project_id')
+      .all()
+
+    const stylesDB = await DB('style').all()
+
+    for (const item of user.items) {
+      item.styles = item.styles?.split(',')
+      item.styles = stylesDB.filter((style) => item.styles.includes(style.id.toString()))
+    }
 
     return user
   }
