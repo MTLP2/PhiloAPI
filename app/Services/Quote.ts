@@ -877,7 +877,7 @@ class Quote {
     quote.prices.weight['180'] = getCost({ l: 25, type: '180g' })
     quote.weight = this.getPrice(quote, params, 'weight')
 
-    quote.prices.type_vinyl.color = getCost({ l: 19, type: 'color', onceByCopy: true })
+    quote.prices.type_vinyl.color = getCost({ l: 19, type: 'color' })
     quote.type_vinyl = this.getPrice(quote, params, 'type_vinyl')
 
     // inner_sleeve
