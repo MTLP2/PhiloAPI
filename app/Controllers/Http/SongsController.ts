@@ -1,4 +1,5 @@
 import Song from 'App/Services/Song'
+import { validator, schema } from '@ioc:Adonis/Core/Validator'
 
 class SongsController {
   all({ params, user }) {
@@ -6,11 +7,21 @@ class SongsController {
     return Song.all(params)
   }
 
-  async addPlay({ params, user, request, response }) {
+  async addPlay({ params, user, request }) {
     params.user_id = user.id === 0 ? null : user.id
     params.cookie_id = request.headers['cookie-id'] || null
 
-    return Song.addPlay(params)
+    const payload = await validator.validate({
+      schema: schema.create({
+        song_id: schema.number(),
+        duration: schema.number(),
+        user_id: schema.number.optional(),
+        cookie_id: schema.string.optional()
+      }),
+      data: params
+    })
+
+    return Song.addPlay(payload)
   }
 }
 
