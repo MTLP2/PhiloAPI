@@ -302,14 +302,16 @@ class Quote {
     }
 
     let quote: any = {}
-    let prices = null
+    let prices: any = null
 
     if (data.factory === 'sna') {
       quote = this.calculateSna(data, getCost)
+
       prices = quote.prices
       delete quote.prices
     } else if (data.factory === 'vdp') {
       quote = this.calculateVdp(data, getCost)
+
       prices = quote.prices
       delete quote.prices
     }
@@ -319,6 +321,18 @@ class Quote {
         quote.test_pressing = 0
       }
     }
+
+    prices.design[0] = 0
+    prices.design[1] = 100
+    quote.design = prices.design[params.design]
+
+    prices.mechanical_right[0] = 0
+    prices.mechanical_right[1] = 100
+    quote.design = prices.mechanical_right[params.mechanical_right]
+
+    prices.partner_mastering[0] = 0
+    prices.partner_mastering[1] = 60 * (data.tracks?.length || 0)
+    quote.design = prices.partner_mastering[params.partner_mastering]
 
     quote.mastering = 0
     if (params.partner_mastering) {
@@ -486,6 +500,26 @@ class Quote {
         barcode_sticker: null
       },
       shrink: {
+        0: null,
+        1: null
+      },
+      design: {
+        0: null,
+        1: null
+      },
+      partner_mastering: {
+        0: null,
+        1: null
+      },
+      mechanical_right: {
+        0: null,
+        1: null
+      },
+      partner_distribution: {
+        0: null,
+        1: null
+      },
+      partner_distribution_digit: {
         0: null,
         1: null
       }
