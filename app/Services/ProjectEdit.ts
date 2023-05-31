@@ -2,6 +2,7 @@ import ApiError from 'App/ApiError'
 import DB from 'App/DB'
 import Utils from 'App/Utils'
 import Artwork from './Artwork'
+import Song from './Song'
 import Vod from './Vod'
 
 class ProjectEdit {
@@ -52,7 +53,7 @@ class ProjectEdit {
     project.weight = project.vinyl_weight ? project.vinyl_weight.toString() : '140'
     project.sticker = project.sticker || '0'
     project.insert = project.insert || 'none'
-
+    project.tracks = await Song.byProject({ project_id: project.id })
     return project
   }
 
