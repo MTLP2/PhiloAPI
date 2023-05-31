@@ -119,6 +119,8 @@ class Vod {
     vod.partner_transport = params.partner_transport
     vod.partner_distribution = params.partner_distribution
     vod.partner_distribution_digit = params.partner_distribution_digit
+    vod.design = params.design
+    vod.mechanical_right = params.mechanical_right
     if (!vod.weight_custom) {
       vod.weight = Vod.calculateWeight(params)
     }
