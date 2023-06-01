@@ -561,10 +561,17 @@ class Project {
       projects.join('like', 'p.id', 'like.project_id').where('like.user_id', params.liked)
     }
     if (params.search) {
-      params.search = params.search.replace('-', ' ').replace(/[^a-zA-Z0-9 ]/g, '')
+      params.search = params.search.replace('-', ' ').replace(/'/g, '')
       projects.where(function () {
-        this.whereRaw(
-          `REPLACE(CONCAT(artist_name, ' ', p.name), '-', ' ') like '%${params.search}%'`
+        this.where(
+          DB.raw(`REPLACE(CONCAT(artist_name, ' ', p.name), '-', ' ')`),
+          'like',
+          `%${params.search}%`
+        )
+        this.orWhere(
+          DB.raw(`REPLACE(CONCAT(p.name, ' ', artist_name), '-', ' ')`),
+          'like',
+          `%${params.search}%`
         ).orWhere('label_name', 'like', `%${params.search}%`)
       })
     }
