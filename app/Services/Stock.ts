@@ -361,7 +361,7 @@ class Stock {
       }
     }
 
-    if (filter(old) !== filter(stock)) {
+    if (JSON.stringify(filter(old)) !== JSON.stringify(filter(stock))) {
       const data = {
         old: filter(old),
         new: filter(stock)
