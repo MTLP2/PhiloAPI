@@ -2,6 +2,7 @@ import DB from 'App/DB'
 import Utils from 'App/Utils'
 import Elogik from 'App/Services/Elogik'
 import Whiplash from 'App/Services/Whiplash'
+import Notification from 'App/Services/Notification'
 import Excel from 'exceljs'
 import fs from 'fs'
 
@@ -505,7 +506,14 @@ class Stock {
     return { success: true }
   }
 
-  static async upload(params) {
+  static async upload(params: {
+    user_id: number
+    file: string
+    type: string
+    distributor: string
+    barcode: string
+    quantity: string
+  }) {
     const file = Buffer.from(params.file, 'base64')
     const workbook = new Excel.Workbook()
     await workbook.xlsx.load(file)
@@ -542,18 +550,30 @@ class Stock {
     }
 
     if (params.type === 'save') {
-      for (const stock of stocks) {
-        if (stock.product) {
-          await Stock.save({
-            product_id: stock.product.id,
-            type: params.distributor,
-            quantity: stock.quantity,
-            comment: 'upload',
-            user_id: params.user_id,
-            is_distrib: true
-          })
+      const update = async () => {
+        for (const stock of stocks) {
+          if (stock.product) {
+            await Stock.save({
+              product_id: stock.product.id,
+              type: params.distributor,
+              quantity: stock.quantity,
+              comment: 'upload',
+              user_id: params.user_id,
+              is_distrib: true
+            })
+          }
         }
+
+        const user = await DB('user').where('id', params.user_id).first()
+
+        await Notification.sendEmail({
+          to: user.email,
+          subject: `Stock ${params.distributor} updated`,
+          html: `<p>${stocks.length} products updated</p>`
+        })
       }
+
+      update()
       return { success: true }
     } else {
       return stocks
