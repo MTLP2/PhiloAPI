@@ -626,9 +626,9 @@ class Stock {
   }
 
   static async exportStocksPrices(payload: { end: string }) {
-    const refs = await DB('product')
+    let refs = await DB('product')
       .select(
-        'product.id',
+        DB.raw('distinct product.id'),
         'product.name',
         'product.barcode',
         'vod.type',
@@ -639,7 +639,14 @@ class Stock {
       .join('vod', 'vod.project_id', 'project_product.project_id')
       .whereNotNull('product.barcode')
       .hasMany('stock')
+      .orderBy('vod.unit_cost')
       .all()
+
+    const products = {}
+    for (const ref of refs) {
+      products[ref.id] = ref
+    }
+    refs = Object.values(products)
 
     const his = await DB('stock_historic')
       .where('created_at', '>', payload.end)
