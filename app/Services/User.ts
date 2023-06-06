@@ -93,7 +93,7 @@ class User {
     const follows = DB().select('f.*').from('follower as f').where('f.user_id', id).all()
     const followers = DB().select('f.*').from('follower as f').where('f.follower', id).all()
 
-    return Promise.all([user, notifications, alerts, follows, followers, wishlist]).then((data) => {
+    return Promise.all([user, notifications, alerts, wishlist, follows, followers]).then((data) => {
       const u = data[0]
       if (!u) return { error: 'not_found' }
       u.password = u.password !== null
