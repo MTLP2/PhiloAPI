@@ -83,12 +83,20 @@ class User {
       .orderBy('n.id', 'desc')
       .all()
 
-    return Promise.all([user, notifications, alerts]).then((data) => {
+    const wishlist = DB()
+      .select('w.*')
+      .from('user_wishlist as w')
+      .where('w.user_id', id)
+      .orderBy('w.id', 'desc')
+      .all()
+
+    return Promise.all([user, notifications, alerts, wishlist]).then((data) => {
       const u = data[0]
       if (!u) return { error: 'not_found' }
       u.password = u.password !== null
       u.notifications = data[1]
       u.alerts = data[2]
+      u.wishlist = data[3]
       u.styles = u.styles ? JSON.parse(u.styles) : []
       u.soundcloud_sub = u.soundcloud_sub ? JSON.parse(u.soundcloud_sub) : []
 
@@ -1318,6 +1326,57 @@ static extractProjectOrders = async (params) => {
       })
 
     return { success: true }
+  }
+
+  static saveWish = async (payload: {
+    id?: number
+    user_id: number
+    project_id: number
+    created_at?: string
+  }) => {
+    let projectWl: any = null
+    projectWl = DB('user_wishlist')
+
+    if (!projectWl) {
+      throw new ApiError(404)
+    }
+
+    if (payload.id === undefined) {
+      projectWl.created_at = Utils.date()
+    } else {
+      projectWl = await DB('user_wishlist').find(payload.id)
+    }
+
+    projectWl.user_id = payload.user_id
+    projectWl.project_id = payload.project_id
+
+    await projectWl.save()
+    return true
+  }
+
+  static getWishes = async (payload) => {
+    const query = DB('user_wishlist').select('*')
+    const items = await Utils.getRows<any>({ ...payload, query: query })
+    return items
+  }
+
+  static deleteWish = async (payload: { project_id: number; user_id: number }) => {
+    const project = await DB('user_wishlist')
+      .select('user_wishlist.*')
+      .where('project_id', payload.project_id)
+      .where('user_id', payload.user_id)
+      .all()
+
+    if (!project) {
+      throw new ApiError(404)
+    }
+
+    await DB('user_wishlist')
+      .where('project_id', payload.project_id)
+      .where('user_id', payload.user_id)
+      .delete()
+
+    return true
   }
 }
 
