@@ -1120,7 +1120,7 @@ class Quote {
           return {
             position: ii + 1,
             label: i.label,
-            value: Math.ceil(+i.value.split(' ')[0] / (1 + quote.fee / 100))
+            value: Math.ceil(+i.value.toString().split(' ')[0] / (1 + quote.fee / 100))
           }
         })
     )
@@ -1158,8 +1158,9 @@ class Quote {
 
     html += `<tr>
       <td><b>Name</b></td>
-      <td>${params.name}</td>
-    </tr><tr>
+      <td>${params.label}</td>
+    </tr>
+    <tr>
       <td><b>Email</b></td>
       <td>${params.email}</td>
     </tr>
