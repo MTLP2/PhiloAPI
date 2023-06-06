@@ -83,6 +83,7 @@ class User {
       .orderBy('n.id', 'desc')
       .all()
 
+<<<<<<< HEAD
     const wishlist = DB()
       .select('w.*')
       .from('user_wishlist as w')
@@ -91,12 +92,21 @@ class User {
       .all()
 
     return Promise.all([user, notifications, alerts, wishlist]).then((data) => {
+=======
+    const follows = DB().select('f.*').from('follower as f').where('f.user_id', id).all()
+
+    return Promise.all([user, notifications, alerts, follows]).then((data) => {
+>>>>>>> 6a389bfb6bab33c6516413a95ae58ffabdea344b
       const u = data[0]
       if (!u) return { error: 'not_found' }
       u.password = u.password !== null
       u.notifications = data[1]
       u.alerts = data[2]
+<<<<<<< HEAD
       u.wishlist = data[3]
+=======
+      u.follows = data[3]
+>>>>>>> 6a389bfb6bab33c6516413a95ae58ffabdea344b
       u.styles = u.styles ? JSON.parse(u.styles) : []
       u.soundcloud_sub = u.soundcloud_sub ? JSON.parse(u.soundcloud_sub) : []
 
@@ -113,6 +123,29 @@ class User {
           return u
         })
     })
+  }
+
+  static follow = async (payload: { user_id: number; follower: number }) => {
+    const follower = await DB()
+      .from('follower')
+      .where('user_id', payload.user_id)
+      .where('follower', payload.follower)
+      .first()
+    if (follower) {
+      await DB()
+        .table('follower')
+        .where('follower', payload.follower)
+        .where('user_id', payload.user_id)
+        .delete()
+    } else {
+      await DB('follower').insert({
+        user_id: payload.user_id,
+        follower: payload.follower,
+        created_at: Utils.date(),
+        updated_at: Utils.date()
+      })
+    }
+    return { success: true }
   }
 
   static findAll = async (params) => {
@@ -887,25 +920,6 @@ static extractProjectOrders = async (params) => {
       })
     )
 
-    return true
-  }
-
-  static follow = async (params) => {
-    const exist = await DB('follower')
-      .where('follower', params.user.user_id)
-      .where('user_id', params.for)
-      .first()
-
-    if (!exist) {
-      await DB('follower').insert({
-        follower: params.user.user_id,
-        user_id: params.for,
-        created_at: Utils.date(),
-        updated_at: Utils.date()
-      })
-    } else {
-      await DB('follower').where({ follower: params.user.user_id, user_id: params.for }).delete()
-    }
     return true
   }
 
