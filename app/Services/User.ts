@@ -425,6 +425,10 @@ class User {
       await Pass.errorNotification('newsletter', userId, err)
     }
 
+    if (params.newsletter) {
+      User.syncCIOs({ id: userId })
+    }
+
     return DB('notifications')
       .where('user_id', userId)
       .update({
@@ -923,9 +927,12 @@ static extractProjectOrders = async (params) => {
       await user.save()
 
       // update customer.io
+      cio.destroy(user.id)
+      /**
       cio.identify(user.id, {
         unsubscribed: 1
       })
+      **/
       return { success: true }
     } else {
       // if no user we search on the no_account newsletter emails
@@ -939,9 +946,12 @@ static extractProjectOrders = async (params) => {
         await noAccount.save()
 
         // update customer.io
+        cio.destroy(params.email)
+        /**
         cio.identify(params.email, {
           unsubscribed: 1
         })
+        **/
         return { success: true }
       }
     }
@@ -1030,6 +1040,7 @@ static extractProjectOrders = async (params) => {
         'mailjet_update'
       )
       .whereNotNull('email')
+      .where('unsubscribed', false)
       .belongsTo('customer')
 
     if (params.id) {
