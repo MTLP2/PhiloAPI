@@ -260,12 +260,9 @@ Route.group(() => {
   Route.get('/pass/badge-progress', 'UserController.getPassBadgeProgress')
   Route.post('/pass/gift/:id/claim', 'UserController.claimGift')
 
-<<<<<<< HEAD
   Route.post('/wishes', 'UserController.saveWish')
   Route.get('/wishes', 'UserController.getWishes')
-=======
   Route.post('/follows/:id', 'UserController.follow')
->>>>>>> 6a389bfb6bab33c6516413a95ae58ffabdea344b
 })
   .prefix('user')
   .middleware(['auth'])

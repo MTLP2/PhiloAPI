@@ -83,7 +83,6 @@ class User {
       .orderBy('n.id', 'desc')
       .all()
 
-<<<<<<< HEAD
     const wishlist = DB()
       .select('w.*')
       .from('user_wishlist as w')
@@ -91,22 +90,18 @@ class User {
       .orderBy('w.id', 'desc')
       .all()
 
-    return Promise.all([user, notifications, alerts, wishlist]).then((data) => {
-=======
     const follows = DB().select('f.*').from('follower as f').where('f.user_id', id).all()
+    const followers = DB().select('f.*').from('follower as f').where('f.follower', id).all()
 
-    return Promise.all([user, notifications, alerts, follows]).then((data) => {
->>>>>>> 6a389bfb6bab33c6516413a95ae58ffabdea344b
+    return Promise.all([user, notifications, alerts, follows, followers, wishlist]).then((data) => {
       const u = data[0]
       if (!u) return { error: 'not_found' }
       u.password = u.password !== null
       u.notifications = data[1]
       u.alerts = data[2]
-<<<<<<< HEAD
       u.wishlist = data[3]
-=======
-      u.follows = data[3]
->>>>>>> 6a389bfb6bab33c6516413a95ae58ffabdea344b
+      u.follows = data[4]
+      u.followers = data[5]
       u.styles = u.styles ? JSON.parse(u.styles) : []
       u.soundcloud_sub = u.soundcloud_sub ? JSON.parse(u.soundcloud_sub) : []
 
