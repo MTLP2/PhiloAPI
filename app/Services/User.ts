@@ -1211,7 +1211,7 @@ static extractProjectOrders = async (params) => {
     return items
   }
 
-  static syncCIOs = async (params) => {
+  static syncCIOs = async (params = {}) => {
     const users = await User.getFullData(params)
 
     for (const user of users) {
@@ -1301,7 +1301,7 @@ static extractProjectOrders = async (params) => {
     })
   }
 
-  static syncEvents = async (params) => {
+  static syncEvents = async () => {
     const events = await DB('event')
       .where('sync', false)
       .where('type', '!=', 'add_to_cart')
