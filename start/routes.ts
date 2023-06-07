@@ -118,6 +118,7 @@ Route.group(() => {
   Route.post('/projects', 'ProjectsController.saveProject')
   Route.post('/projects/:id/artwork', 'ProjectsController.updateArtwork')
   Route.post('/projects/:id/tracks', 'ProjectsController.saveTrack')
+  Route.post('/projects/:id/tracks-new', 'ProjectsController.saveTrackNew')
   Route.put('/projects/:id/tracks', 'ProjectsController.saveTracks')
   Route.post('/projects/:id/tracks/:tid/encode', 'ProjectsController.encodeTrack')
   Route.delete('/projects/:project_id/tracks/:id', 'ProjectsController.deleteTrack')
