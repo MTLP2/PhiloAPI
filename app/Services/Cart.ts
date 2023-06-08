@@ -1421,7 +1421,8 @@ class Cart {
       userIsPro = !!user.is_pro
 
       if (userIsPro && p.project.price_distribution) {
-        res.price_project = p.project.price_distribution
+        res.price_discount = p.project.prices_distribution[res.currency]
+        res.discount = 0
       }
       if (userIsPro && p.project.partner_distribution && p.project.prices_distribution) {
         res.price = p.project.prices_distribution[params.currency]
@@ -1454,6 +1455,7 @@ class Cart {
       res.ship_discount_sale_diff = (res.shipping_discount * res.quantity * p.project.promo) / 100
     }
 
+    //console.log(p.project)
     return res
   }
 
