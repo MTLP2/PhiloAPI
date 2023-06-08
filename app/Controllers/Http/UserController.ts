@@ -326,6 +326,10 @@ class UserController {
   getWishes = async ({ params }) => {
     return User.getWishes(params)
   }
+
+  getWishesByUserId = async ({ params }) => {
+    return User.getWishesByUserId(params)
+  }
 }
 
 export default UserController

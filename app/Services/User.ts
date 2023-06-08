@@ -226,11 +226,34 @@ class User {
       .groupBy('order_item.project_id')
       .all()
 
+    user.wishlist = await DB('user_wishlist')
+      .select('p.*')
+      .join('project as p', 'p.id', 'user_wishlist.project_id')
+      .where('user_wishlist.user_id', user.id)
+      .groupBy('user_wishlist.project_id')
+      .all()
+
+    user.projects = await DB('project as p')
+      .select('p.*')
+      .join('user as u', 'u.name', 'p.label_name')
+      .where('u.id', user.id)
+      .all()
+
     const stylesDB = await DB('style').all()
 
     for (const item of user.items) {
       item.styles = item.styles?.split(',')
       item.styles = stylesDB.filter((style) => item.styles.includes(style.id.toString()))
+    }
+
+    for (const wish of user.wishlist) {
+      wish.styles = wish.styles?.split(',')
+      wish.styles = stylesDB.filter((style) => wish.styles.includes(style.id.toString()))
+    }
+
+    for (const project of user.projects) {
+      project.styles = project.styles?.split(',')
+      project.styles = stylesDB.filter((style) => project.styles.includes(style.id.toString()))
     }
 
     return user
@@ -1365,6 +1388,12 @@ static extractProjectOrders = async (params) => {
 
   static getWishes = async (payload) => {
     const query = DB('user_wishlist').select('*')
+    const items = await Utils.getRows<any>({ ...payload, query: query })
+    return items
+  }
+
+  static getWishesByUserId = async (payload: { user_id: number }) => {
+    const query = await DB('user_wishlist').select('*').where('user_id', payload.user_id).all()
     const items = await Utils.getRows<any>({ ...payload, query: query })
     return items
   }
