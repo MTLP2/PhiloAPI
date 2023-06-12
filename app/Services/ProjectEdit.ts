@@ -121,6 +121,7 @@ class ProjectEdit {
       params.label_picture ||
       params.label_bside_picture ||
       params.back_picture ||
+      params.back_cover ||
       params.cover2_picture ||
       params.cover3_picture ||
       params.cover4_picture ||
@@ -135,13 +136,13 @@ class ProjectEdit {
     ) {
       const res = await Artwork.updateArtwork({
         id: pp.id,
-        cover: params.cover_picture,
+        cover: params.cover_picture || params.front_cover,
         cover2: params.cover2_picture,
         cover3: params.cover3_picture,
         cover4: params.cover4_picture,
         cover5: params.cover5_picture,
         vinyl_picture: params.vinyl_picture,
-        back: params.back_picture,
+        back: params.back_picture || params.back_cover,
         label: params.label_picture,
         label_bside: params.label_bside_picture,
         background: params.background,
