@@ -1423,7 +1423,7 @@ class Quote {
 
     html += `<tr>
       <td><b>Name</b></td>
-      <td>${params.label}</td>
+      <td>${params.name}</td>
     </tr>
     <tr>
       <td><b>Email</b></td>
