@@ -1354,6 +1354,7 @@ class Quote {
     quote.user_id = params.user ? params.user.id : null
     quote.name = 'Quote direct pressing'
     quote.client = params.name
+    quote.type = params.type
     quote.origin = params.origin
     quote.email = params.email
     quote.phone = params.phone
@@ -1371,24 +1372,26 @@ class Quote {
     if (!quote.fee) {
       quote.fee = 30
     }
-    const calculate = await Quote.calculate(params)
-    quote.total = calculate.total
-    quote.sub_total = calculate.total - calculate.tax
-    quote.tax_rate = 20
-    quote.tax = calculate.tax
-    quote.lines = JSON.stringify(
-      params.list
-        .filter((i) => {
-          return !i.param && !i.className && i.value
-        })
-        .map((i, ii) => {
-          return {
-            position: ii + 1,
-            label: i.label,
-            value: Math.ceil(+i.value.toString().split(' ')[0] / (1 + quote.fee / 100))
-          }
-        })
-    )
+    if (params.type === 'vinyl') {
+      const calculate = await Quote.calculate(params)
+      quote.total = calculate.total
+      quote.sub_total = calculate.total - calculate.tax
+      quote.tax_rate = 20
+      quote.tax = calculate.tax
+      quote.lines = JSON.stringify(
+        params.list
+          .filter((i) => {
+            return !i.param && !i.className && i.value
+          })
+          .map((i, ii) => {
+            return {
+              position: ii + 1,
+              label: i.label,
+              value: Math.ceil(+i.value.toString().split(' ')[0] / (1 + quote.fee / 100))
+            }
+          })
+      )
+    }
     quote.updated_at = Utils.date()
     quote.created_at = Utils.date()
     await quote.save()
@@ -1407,11 +1410,13 @@ class Quote {
       <td>${quote.id}</td>
     </tr>
   `
-    for (const p of params.list) {
-      html += `<tr>
+    if (params.list) {
+      for (const p of params.list) {
+        html += `<tr>
         <td width="100"><b>${p.label}</b></td>
         <td>${p.value}</td>
       </tr>`
+      }
     }
     const p = { ...params }
     delete p.list
@@ -1423,6 +1428,10 @@ class Quote {
 
     html += `<tr>
       <td><b>Name</b></td>
+      <td>${params.name}</td>
+    </tr>
+    <tr>
+      <td><b>Type</b></td>
       <td>${params.name}</td>
     </tr>
     <tr>
@@ -1451,10 +1460,10 @@ class Quote {
 
     await Notification.sendEmail({
       to: 'sophie@diggersfactory.com',
-      subject: `Quote - ${params.email}`,
+      subject: `Quote - ${params.type} - ${params.email}`,
       html: html
     })
-    return true
+    return { success: true }
   }
 
   static exportAll = async (params) => {
