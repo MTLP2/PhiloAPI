@@ -1,7 +1,6 @@
 import Env from '@ioc:Adonis/Core/Env'
 import jwt from 'jsonwebtoken'
 import DB from 'App/DB'
-process.env.APP_KEY = '.JhWbj5kKM@7q.$['
 
 class Auth {
   async handle(ctx, next, properties) {
