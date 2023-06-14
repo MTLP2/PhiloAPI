@@ -260,6 +260,7 @@ Route.group(() => {
   Route.get('/pass/quest-progress', 'UserController.getPassQuestProgress')
   Route.get('/pass/badge-progress', 'UserController.getPassBadgeProgress')
   Route.post('/pass/gift/:id/claim', 'UserController.claimGift')
+  Route.post('/digital', 'DigitalController.createOne')
 })
   .prefix('user')
   .middleware(['auth'])

@@ -105,6 +105,83 @@ class Digital {
     return { success: true }
   }
 
+  static async createOne(params: {
+    project_name?: string
+    artist_name?: string
+    barcode?: string
+    catalogue_number?: string
+    project_type?: string
+    spotify_url?: string
+    genre?: string
+    commercial_release_date?: string
+    preview_date?: string
+    explicit_content?: boolean
+    territory_included?: string
+    territory_excluded?: string
+    platforms_excluded?: string
+    registration_year?: string
+    digital_rights_owner?: string
+    label_name?: string
+    nationality_project?: string
+    track_number?: string
+    track_name?: string
+    start_of_preview?: string
+    isrc_code?: string
+    primary_artist?: string
+    secondary_artist?: string
+    first_genre?: string
+    secondary_genre?: string
+    featured_artist?: string
+    remixer_artist?: string
+    lyricist_language?: string
+    producer?: string
+    mixer?: string
+    composer?: string
+    lyricist?: string
+    publisher?: string
+    email: string
+  }) {
+    const [id] = await DB('digital').insert({
+      email: params.email,
+      project_name: params.project_name,
+      artist_name: params.artist_name,
+      barcode: params.barcode,
+      catalogue_number: params.catalogue_number,
+      project_type: params.project_type,
+      spotify_url: params.spotify_url,
+      genre: params.genre,
+      commercial_release_date: params.commercial_release_date,
+      preview_date: params.preview_date,
+      explicit_content: params.explicit_content,
+      territory_included: params.territory_included,
+      territory_excluded: params.territory_excluded,
+      platforms_excluded: params.platforms_excluded,
+      registration_year: params.registration_year,
+      digital_rights_owner: params.digital_rights_owner,
+      label_name: params.label_name,
+      nationality_project: params.nationality_project,
+      track_number: params.track_number,
+      track_name: params.track_name,
+      start_of_preview: params.start_of_preview,
+      isrc_code: params.isrc_code,
+      primary_artist: params.primary_artist,
+      secondary_artist: params.secondary_artist,
+      first_genre: params.first_genre,
+      secondary_genre: params.secondary_genre,
+      featured_artist: params.featured_artist,
+      remixer_artist: params.remixer_artist,
+      lyricist_language: params.lyricist_language,
+      producer: params.producer,
+      mixer: params.mixer,
+      composer: params.composer,
+      lyricist: params.lyricist,
+      publisher: params.publisher
+    })
+
+    await Digital.getActions({ digitalId: id })
+    return { success: true }
+  }
+
   static async update(params: {
     id: number
     product_id?: number
