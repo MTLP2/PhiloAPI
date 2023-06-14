@@ -243,17 +243,19 @@ class User {
 
     for (const item of user.items) {
       item.styles = item.styles?.split(',')
-      item.styles = stylesDB.filter((style) => item.styles.includes(style.id.toString()))
+      item.styles = stylesDB.filter((style) => item.styles.includes(style.id.toString()))?.name
     }
 
     for (const wish of user.wishlist) {
       wish.styles = wish.styles?.split(',')
-      wish.styles = stylesDB.filter((style) => wish.styles.includes(style.id.toString()))
+      wish.styles = stylesDB.filter((style) => wish.styles.includes(style.id.toString()))?.name
     }
 
     for (const project of user.projects) {
       project.styles = project.styles?.split(',')
-      project.styles = stylesDB.filter((style) => project.styles.includes(style.id.toString()))
+      project.styles = stylesDB.filter((style) =>
+        project.styles.includes(style.id.toString())
+      )?.name
     }
 
     return user
