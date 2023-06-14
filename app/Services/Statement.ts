@@ -136,6 +136,12 @@ class StatementService {
       case 'Arcades':
         data = this.parseArcades(workbook)
         break
+      case 'TerminalD':
+        data = this.parseTerminalD(workbook)
+        break
+      case 'CoastToCoast':
+        data = this.parseCoastToCoast(workbook)
+        break
     }
 
     data = Object.values(data)
@@ -573,6 +579,52 @@ class StatementService {
           country_id: 'ES',
           quantity: quantity || 0,
           returned: returned || 0,
+          total: total
+        }
+      }
+    })
+
+    return data
+  }
+
+  static parseTerminalD(workbook: any) {
+    const worksheet = workbook.getWorksheet(1)
+
+    const data = {}
+    worksheet.eachRow((row) => {
+      const barcode = row.getCell('C').value
+      const quantity = row.getCell('F').result
+      const total = row.getCell('G').result
+
+      if (Number.isInteger(quantity)) {
+        data[barcode] = {
+          barcode: barcode,
+          country_id: 'IT',
+          quantity: quantity || 0,
+          returned: 0,
+          total: total
+        }
+      }
+    })
+
+    return data
+  }
+
+  static parseCoastToCoast(workbook: any) {
+    const worksheet = workbook.getWorksheet(1)
+
+    const data = {}
+    worksheet.eachRow((row) => {
+      const barcode = row.getCell('B').value
+      const quantity = row.getCell('P').value
+      const total = row.getCell('S').value
+
+      if (Number.isInteger(quantity) && total !== 0) {
+        data[barcode] = {
+          barcode: barcode,
+          country_id: 'NL',
+          quantity: quantity || 0,
+          returned: 0,
           total: total
         }
       }

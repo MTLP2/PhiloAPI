@@ -474,8 +474,6 @@ class Elogik {
         step_check: Utils.date()
       })
 
-    console.log('packages =>', packages.colis.length)
-
     let i = 0
     if (packages.colis) {
       for (const pack of packages.colis) {

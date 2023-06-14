@@ -53,4 +53,20 @@ cio.myTrack = (...args) => {
   }
 }
 
+cio.cleanUsersUnsubscribed = async () => {
+  const users = await DB('user').where('unsubscribed', true).all()
+
+  let i = 0
+  for (const user of users) {
+    if (user.email) {
+      i++
+      await cio.destroy(user.email)
+    }
+    if (i % 100 === 0) {
+      console.log(i)
+    }
+  }
+  return { success: true }
+}
+
 export default cio

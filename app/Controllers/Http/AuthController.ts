@@ -183,7 +183,7 @@ class AuthController {
       const user = await DB('user').where('email', params.email).first()
 
       if (user) {
-        return { error: 'EMAIL_TAKEN' }
+        return { error: 'email_taken' }
       }
 
       const profile: any = await Utils.request({

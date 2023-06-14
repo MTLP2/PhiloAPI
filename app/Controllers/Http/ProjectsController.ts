@@ -6,6 +6,7 @@ import Song from 'App/Services/Song'
 import Category from 'App/Services/Category'
 import Statement from 'App/Services/Statement'
 import ApiError from 'App/ApiError'
+import DB from 'App/DB'
 import Utils from 'App/Utils'
 import Stats from 'App/Services/Stats'
 
@@ -110,6 +111,40 @@ class ProjectsController {
       }
     } else {
       return track
+    }
+  }
+
+  async saveTrackNew({ params, user }) {
+    params.user = user
+    await Utils.checkProjectOwner({ project_id: params.project_id, user: user })
+
+    if (!params.id) {
+      const track = await ProjectEdit.saveTrack(params)
+      params.id = track.id
+    }
+    if (params.uploading) {
+      const res = await Utils.upload({
+        ...params,
+        fileName: `songs/${params.id}.mp3`
+      })
+      if (res.success) {
+        if (params.skipEncoding) {
+          await DB('song').where('id', params.id).update({
+            listenable: true
+          })
+          Song.setInfo(params.id)
+        } else {
+          await Song.setInfo(params.id)
+        }
+      }
+      return {
+        ...res,
+        id: params.id
+      }
+    } else {
+      return {
+        id: params.id
+      }
     }
   }
 

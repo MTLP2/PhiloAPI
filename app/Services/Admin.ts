@@ -2467,7 +2467,7 @@ class Admin {
       json: true
     })
 
-    if (!profile.results) {
+    if (!profile.results || profile.results.lenth === 0) {
       return { success: false }
     }
 
