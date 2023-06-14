@@ -183,7 +183,7 @@ class ProjectEdit {
       song.created_at = Utils.date()
     }
 
-    song.title = params.title || ''
+    song.title = params.title
     song.artist = params.artist
     song.side = params.side
     song.disc = params.disc
