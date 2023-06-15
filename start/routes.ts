@@ -261,8 +261,6 @@ Route.group(() => {
   Route.post('/pass/gift/:id/claim', 'UserController.claimGift')
 
   Route.post('/wishes', 'UserController.saveWish')
-  Route.get('/wishes', 'UserController.getWishes')
-  Route.get('/wishes/:id', 'UserController.getWishByUserId')
   Route.post('/follows/:id', 'UserController.follow')
 })
   .prefix('user')

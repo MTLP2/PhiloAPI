@@ -1388,18 +1388,6 @@ static extractProjectOrders = async (params) => {
     return true
   }
 
-  static getWishes = async (payload) => {
-    const query = DB('user_wishlist').select('*')
-    const items = await Utils.getRows<any>({ ...payload, query: query })
-    return items
-  }
-
-  static getWishesByUserId = async (payload: { user_id: number }) => {
-    const query = await DB('user_wishlist').select('*').where('user_id', payload.user_id).all()
-    const items = await Utils.getRows<any>({ ...payload, query: query })
-    return items
-  }
-
   static deleteWish = async (payload: { project_id: number; user_id: number }) => {
     const project = await DB('user_wishlist')
       .select('user_wishlist.*')
