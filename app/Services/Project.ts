@@ -296,6 +296,16 @@ class Project {
               currencies,
               currency: project.currency
             })
+            const discountDistrib = Utils.round(
+              (project.price_distribution + project.shipping_discount) * (sale.value / 100)
+            )
+            project.prices_distribution = Utils.getPrices({
+              price: Utils.round(
+                project.price_distribution + project.shipping_discount - discountDistrib
+              ),
+              currencies,
+              currency: project.currency
+            })
             if (project.shipping_discount) {
               project.prices_ship_discount = project.shipping_discount
                 ? Utils.getPrices({
@@ -561,10 +571,17 @@ class Project {
       projects.join('like', 'p.id', 'like.project_id').where('like.user_id', params.liked)
     }
     if (params.search) {
-      params.search = params.search.replace('-', ' ').replace(/[^a-zA-Z0-9 ]/g, '')
+      params.search = params.search.replace('-', ' ').replace(/'/g, '')
       projects.where(function () {
-        this.whereRaw(
-          `REPLACE(CONCAT(artist_name, ' ', p.name), '-', ' ') like '%${params.search}%'`
+        this.where(
+          DB.raw(`REPLACE(CONCAT(artist_name, ' ', p.name), '-', ' ')`),
+          'like',
+          `%${params.search}%`
+        )
+        this.orWhere(
+          DB.raw(`REPLACE(CONCAT(p.name, ' ', artist_name), '-', ' ')`),
+          'like',
+          `%${params.search}%`
         ).orWhere('label_name', 'like', `%${params.search}%`)
       })
     }

@@ -541,8 +541,8 @@ class Dispatch {
         continue
       }
       const path = file.path.split('.')[0].split(' ')
-      console.log(path)
-      if (path[0] !== 'shippings/sna/sna_2022-09') {
+      // console.log(path)
+      if (path[2] < '2022-12') {
         continue
       }
       console.log('=>', path)

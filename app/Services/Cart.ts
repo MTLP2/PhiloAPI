@@ -15,7 +15,7 @@ import Payment from 'App/Services/Payment'
 import Invoice from 'App/Services/Invoice'
 import Stock from 'App/Services/Stock'
 import Order from 'App/Services/Order'
-import PayPal from 'App/Services/PayPal'
+import PayPal from 'App/Services/Paypal'
 import cio from 'App/Services/CIO'
 import I18n from '@ioc:Adonis/Addons/I18n'
 import moment from 'moment'
@@ -984,14 +984,14 @@ class Cart {
       weight = Math.ceil(params.weight / 1000) + 'kg'
     }
 
-    let costs = null
+    let costs: any = null
 
     for (const transporter of transporters) {
       if (params.quantity > 1) {
         transporter.picking = 1
       }
 
-      let cost
+      let cost: any
       if (params.transporter === 'diggers') {
         cost = 0
       } else {
@@ -1043,7 +1043,7 @@ class Cart {
             partner: transporter.transporter,
             currency: transporter.currency,
             standard: Utils.round(transporter[weight] + cost),
-            tracking: Utils.round(transporter[weight] + cost + 2.5)
+            tracking: Utils.round(transporter[weight] + cost + 2)
           }
         }
       }
@@ -1071,7 +1071,7 @@ class Cart {
       weight = Math.ceil(params.weight / 1000) + 'kg'
     }
 
-    let costs = null
+    let costs: any = null
 
     for (const transporter of transporters) {
       if (params.quantity > 1) {
@@ -1092,7 +1092,7 @@ class Cart {
           partner: transporter.transporter,
           currency: transporter.currency,
           standard: Utils.round(transporter[weight] + cost),
-          tracking: Utils.round(transporter[weight] + cost + 2.5)
+          tracking: Utils.round(transporter[weight] + cost + 2)
         }
       }
     }
@@ -1132,7 +1132,7 @@ class Cart {
       partner: '',
       currency: transporter.currency,
       standard: cost,
-      tracking: Utils.round(cost + 2.5)
+      tracking: Utils.round(cost + 2)
     }
 
     /**
@@ -1168,7 +1168,7 @@ class Cart {
       partner: '',
       currency: transporter.currency,
       standard: cost,
-      tracking: Utils.round(cost + 2.5)
+      tracking: Utils.round(cost + 2)
     }
     return costs
   }
@@ -1271,6 +1271,8 @@ class Cart {
       }
 
       ship.standard = ship.standard * (await Utils.getCurrency(ship.currency))
+      ship.tracking = ship.tracking * (await Utils.getCurrency(ship.currency))
+
       ship.standard2 = ship.standard
       if (ship.transporter === 'whiplash') {
         ship.standard2 += 1.5
@@ -1419,7 +1421,8 @@ class Cart {
       userIsPro = !!user.is_pro
 
       if (userIsPro && p.project.price_distribution) {
-        res.price_project = p.project.price_distribution
+        res.price_discount = p.project.prices_distribution[res.currency]
+        res.discount = 0
       }
       if (userIsPro && p.project.partner_distribution && p.project.prices_distribution) {
         res.price = p.project.prices_distribution[params.currency]
@@ -1452,6 +1455,7 @@ class Cart {
       res.ship_discount_sale_diff = (res.shipping_discount * res.quantity * p.project.promo) / 100
     }
 
+    //console.log(p.project)
     return res
   }
 
@@ -1723,7 +1727,7 @@ class Cart {
           })
         })
 
-        const intent = {
+        const intent: any = {
           amount: Math.round(params.calculate.total * 100),
           currency: params.calculate.currency,
           transfer_group: `{ORDER_${params.order.id}}`,

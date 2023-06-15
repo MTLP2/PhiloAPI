@@ -2,6 +2,7 @@ import ApiError from 'App/ApiError'
 import DB from 'App/DB'
 import Utils from 'App/Utils'
 import Artwork from './Artwork'
+import Song from './Song'
 import Vod from './Vod'
 
 class ProjectEdit {
@@ -52,7 +53,7 @@ class ProjectEdit {
     project.weight = project.vinyl_weight ? project.vinyl_weight.toString() : '140'
     project.sticker = project.sticker || '0'
     project.insert = project.insert || 'none'
-
+    project.tracks = await Song.byProject({ project_id: project.id })
     return project
   }
 
@@ -120,6 +121,7 @@ class ProjectEdit {
       params.label_picture ||
       params.label_bside_picture ||
       params.back_picture ||
+      params.back_cover ||
       params.cover2_picture ||
       params.cover3_picture ||
       params.cover4_picture ||
@@ -134,13 +136,13 @@ class ProjectEdit {
     ) {
       const res = await Artwork.updateArtwork({
         id: pp.id,
-        cover: params.cover_picture,
+        cover: params.cover_picture || params.front_cover,
         cover2: params.cover2_picture,
         cover3: params.cover3_picture,
         cover4: params.cover4_picture,
         cover5: params.cover5_picture,
         vinyl_picture: params.vinyl_picture,
-        back: params.back_picture,
+        back: params.back_picture || params.back_cover,
         label: params.label_picture,
         label_bside: params.label_bside_picture,
         background: params.background,
@@ -181,7 +183,7 @@ class ProjectEdit {
       song.created_at = Utils.date()
     }
 
-    song.title = params.title || ''
+    song.title = params.title
     song.artist = params.artist
     song.side = params.side
     song.disc = params.disc

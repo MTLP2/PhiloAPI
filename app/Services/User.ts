@@ -486,6 +486,10 @@ class User {
       await Pass.errorNotification('newsletter', userId, err)
     }
 
+    if (params.newsletter) {
+      User.syncCIOs({ id: userId })
+    }
+
     return DB('notifications')
       .where('user_id', userId)
       .update({
@@ -965,9 +969,12 @@ static extractProjectOrders = async (params) => {
       await user.save()
 
       // update customer.io
+      cio.destroy(user.id)
+      /**
       cio.identify(user.id, {
         unsubscribed: 1
       })
+      **/
       return { success: true }
     } else {
       // if no user we search on the no_account newsletter emails
@@ -981,9 +988,12 @@ static extractProjectOrders = async (params) => {
         await noAccount.save()
 
         // update customer.io
+        cio.destroy(params.email)
+        /**
         cio.identify(params.email, {
           unsubscribed: 1
         })
+        **/
         return { success: true }
       }
     }
@@ -1072,6 +1082,7 @@ static extractProjectOrders = async (params) => {
         'mailjet_update'
       )
       .whereNotNull('email')
+      .where('unsubscribed', false)
       .belongsTo('customer')
 
     if (params.id) {
@@ -1242,7 +1253,7 @@ static extractProjectOrders = async (params) => {
     return items
   }
 
-  static syncCIOs = async (params) => {
+  static syncCIOs = async (params = {}) => {
     const users = await User.getFullData(params)
 
     for (const user of users) {
@@ -1332,7 +1343,7 @@ static extractProjectOrders = async (params) => {
     })
   }
 
-  static syncEvents = async (params) => {
+  static syncEvents = async () => {
     const events = await DB('event')
       .where('sync', false)
       .where('type', '!=', 'add_to_cart')

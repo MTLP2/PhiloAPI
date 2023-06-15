@@ -639,6 +639,8 @@ static toJuno = async (params) => {
         'order.payment_id',
         'order.transaction_id',
         'order.payment_type',
+        'order.total as order_total',
+        'order.service_charge',
         'order_item.project_id',
         'order.id as order_id'
       )
@@ -651,6 +653,9 @@ static toJuno = async (params) => {
     if (order.total <= 0) {
       return false
     }
+
+    const pourcent = order.total / (order.order_total - order.service_charge)
+    order.total = Utils.round(order.total + order.service_charge * pourcent, 2)
 
     // Proceed to transaction refund if order is not only history (or if params are not set)
     if (!params || (params && params.only_history === 'false')) {

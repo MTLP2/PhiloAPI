@@ -1201,9 +1201,46 @@ class Daudin {
 
     const workbook = new Excel.Workbook()
     await workbook.xlsx.load(buffer)
-    const worksheet = workbook.getWorksheet(1)
 
-    const columnMode = worksheet.getCell('S1').value === 'Nom transporteur' ? 'S' : 'R'
+    let worksheet
+    let columns: any = {}
+    if (date >= '2022-12') {
+      let name
+      workbook.eachSheet((sheet) => {
+        if (!name) {
+          name = sheet.name
+        }
+      })
+      worksheet = workbook.getWorksheet(name)
+
+      worksheet.getRow(2).eachCell(function (cell) {
+        if (cell.value === 'N° commande') {
+          columns.id = cell._column.letter
+        } else if (cell.value === 'Prix transport') {
+          columns.trans = cell._column.letter
+        } else if (cell.value === 'Poids Ekan') {
+          columns.weight = cell._column.letter
+        } else if (cell.value === 'Transporteur') {
+          columns.mode = cell._column.letter
+        } else if (cell.value === 'Nb. articles contenus') {
+          columns.quantity = cell._column.letter
+        } else if (cell.value === 'Taxe Gazoil') {
+          columns.oil = cell._column.letter
+        } else if (cell.value === 'Taxe Surete') {
+          columns.security = cell._column.letter
+        }
+      })
+      console.log(columns)
+    } else {
+      worksheet = workbook.getWorksheet(1)
+      columns = {
+        id: 'C',
+        trans: 'G',
+        weight: 'D',
+        quantity: 'H',
+        mode: worksheet.getCell('S1').value === 'Nom transporteur' ? 'S' : 'R'
+      }
+    }
 
     const oils = await DB('shipping_oil').where('date', date).all()
 
@@ -1212,26 +1249,30 @@ class Daudin {
         return
       }
       const dispatch: any = {
-        id: row.getCell('C') && row.getCell('C').value,
-        trans: row.getCell('G') && +row.getCell('G').toString(),
-        weight: row.getCell('D') && +row.getCell('D').toString(),
-        quantity: row.getCell('H') && +row.getCell('H').toString(),
-        mode: row.getCell(columnMode) && row.getCell(columnMode).toString()
+        id: row.getCell(columns.id) && row.getCell(columns.id).value,
+        trans: row.getCell(columns.trans) && +row.getCell(columns.trans).toString(),
+        oil: row.getCell(columns.oil) && +row.getCell(columns.oil).toString(),
+        security: row.getCell(columns.security) && +row.getCell(columns.security).toString(),
+        weight: row.getCell(columns.weight) && +row.getCell(columns.weight).toString(),
+        quantity: row.getCell(columns.quantity) && +row.getCell(columns.quantity).toString(),
+        mode: row.getCell(columns.mode) && row.getCell(columns.mode).toString()
       }
 
       if (!dispatch.id || !dispatch.trans || isNaN(dispatch.trans)) {
         return
       }
 
-      dispatch.cost = dispatch.trans
+      dispatch.cost = dispatch.trans + (dispatch.oil || 0) + (dispatch.security || 0)
 
-      // Add oil tax if exists
-      if (['COL', 'MDR'].includes(dispatch.mode)) {
-        const oil = oils.find((o) => o.transporter === dispatch.mode)
-        if (oil) {
-          dispatch.cost += dispatch.trans * (oil.rate / 100)
-        } else {
-          return
+      if (date < '2022-12') {
+        // Add oil tax if exists
+        if (['COL', 'MDR'].includes(dispatch.mode)) {
+          const oil = oils.find((o) => o.transporter === dispatch.mode)
+          if (oil) {
+            dispatch.cost += dispatch.trans * (oil.rate / 100)
+          } else {
+            return
+          }
         }
       }
 
