@@ -383,7 +383,6 @@ class Stock {
     project_id: number
     order_id: number
     preorder: boolean
-    // size: string
     sizes?: { [key: string]: string } | string
     quantity: number
     transporter: string
