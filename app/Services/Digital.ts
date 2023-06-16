@@ -3,6 +3,47 @@ import DB from 'App/DB'
 import Utils from 'App/Utils'
 import Storage from 'App/Services/Storage'
 import File from 'App/Services/File'
+import { integer } from 'aws-sdk/clients/cloudfront'
+
+type DigitalDb = {
+  id?: integer
+  project_name?: string
+  artist_name?: string
+  barcode?: string
+  catalogue_number?: number
+  project_type?: string
+  spotify_url?: string
+  genre?: string[]
+  commercial_release_date?: string
+  preview_date?: string
+  explicit_content?: boolean
+  territory_included?: string[]
+  territory_excluded?: string[]
+  platforms_excluded?: string
+  registration_year?: number
+  digital_rights_owner?: string
+  label_name?: string
+  nationality_project?: string
+  producer?: string
+  mixer?: string
+  composer?: string
+  lyricist?: string
+  publisher?: string
+  email?: string
+  track_number?: number
+  track_name?: string
+  start_of_preview?: string
+  isrc_code?: string
+  primary_artist?: string
+  secondary_artist?: string
+  first_genre?: string[]
+  secondary_genre?: string[]
+  featured_artist?: string
+  remixer_artist?: string
+  lyricist_language?: string
+  created_at?: string
+  updated_at?: string
+}
 
 class Digital {
   static async getAll(params): Promise<any> {
@@ -97,7 +138,7 @@ class Digital {
       step: params.step,
       distribution: params.distribution,
       project_type: params.project_type,
-      barcode: params.barcode,
+      // barcode: params.barcode,
       comment: params.comment
     })
 
@@ -105,81 +146,80 @@ class Digital {
     return { success: true }
   }
 
-  static async createOne(params: {
-    project_name?: string
-    artist_name?: string
-    barcode?: string
-    catalogue_number?: string
-    project_type?: string
-    spotify_url?: string
-    genre?: string
-    commercial_release_date?: string
-    preview_date?: string
-    explicit_content?: boolean
-    territory_included?: string
-    territory_excluded?: string
-    platforms_excluded?: string
-    registration_year?: string
-    digital_rights_owner?: string
-    label_name?: string
-    nationality_project?: string
-    track_number?: string
-    track_name?: string
-    start_of_preview?: string
-    isrc_code?: string
-    primary_artist?: string
-    secondary_artist?: string
-    first_genre?: string
-    secondary_genre?: string
-    featured_artist?: string
-    remixer_artist?: string
-    lyricist_language?: string
-    producer?: string
-    mixer?: string
-    composer?: string
-    lyricist?: string
-    publisher?: string
-    email: string
-  }) {
-    const [id] = await DB('digital').insert({
-      email: params.email,
-      project_name: params.project_name,
-      artist_name: params.artist_name,
-      barcode: params.barcode,
-      catalogue_number: params.catalogue_number,
-      project_type: params.project_type,
-      spotify_url: params.spotify_url,
-      genre: params.genre,
-      commercial_release_date: params.commercial_release_date,
-      preview_date: params.preview_date,
-      explicit_content: params.explicit_content,
-      territory_included: params.territory_included,
-      territory_excluded: params.territory_excluded,
-      platforms_excluded: params.platforms_excluded,
-      registration_year: params.registration_year,
-      digital_rights_owner: params.digital_rights_owner,
-      label_name: params.label_name,
-      nationality_project: params.nationality_project,
-      track_number: params.track_number,
-      track_name: params.track_name,
-      start_of_preview: params.start_of_preview,
-      isrc_code: params.isrc_code,
-      primary_artist: params.primary_artist,
-      secondary_artist: params.secondary_artist,
-      first_genre: params.first_genre,
-      secondary_genre: params.secondary_genre,
-      featured_artist: params.featured_artist,
-      remixer_artist: params.remixer_artist,
-      lyricist_language: params.lyricist_language,
-      producer: params.producer,
-      mixer: params.mixer,
-      composer: params.composer,
-      lyricist: params.lyricist,
-      publisher: params.publisher
-    })
+  static async store(payload: DigitalDb) {
+    let item = <any>DB('digital')
 
-    await Digital.getActions({ digitalId: id })
-    return { success: true }
+    if (payload.id) {
+      item = await DB('digital').find(payload.id)
+      if (!item) {
+        throw new ApiError(404)
+      }
+    } else {
+      item.created_at = Utils.date()
+    }
+    item.email = payload.email
+    item.barcode = payload.barcode
+    item.project_name = payload.project_name
+    item.artist_name = payload.artist_name
+    item.barcode = payload.barcode
+    item.catalogue_number = payload.catalogue_number
+    item.project_type = payload.project_type
+    item.spotify_url = payload.spotify_url
+    item.genre = payload.genre?.join(',')
+    item.commercial_release_date = payload.commercial_release_date
+    item.preview_date = payload.preview_date
+    item.explicit_content = payload.explicit_content
+    item.territory_included = payload.territory_included?.join(',')
+    item.territory_excluded = payload.territory_excluded?.join(',')
+    item.platforms_excluded = payload.platforms_excluded
+    item.registration_year = payload.registration_year
+    item.digital_rights_owner = payload.digital_rights_owner
+    item.label_name = payload.label_name
+    item.nationality_project = payload.nationality_project
+    item.producer = payload.producer
+    item.mixer = payload.mixer
+    item.composer = payload.composer
+    item.lyricist = payload.lyricist
+    item.publisher = payload.publisher
+    item.track_number = payload.track_number
+    item.track_name = payload.track_name
+    item.start_of_preview = payload.start_of_preview
+    item.isrc_code = payload.isrc_code
+    item.primary_artist = payload.primary_artist
+    item.secondary_artist = payload.secondary_artist
+    item.first_genre = payload.first_genre?.join(',')
+    item.secondary_genre = payload.secondary_genre?.join(',')
+    item.featured_artist = payload.featured_artist
+    item.remixer_artist = payload.remixer_artist
+    item.lyricist_language = payload.lyricist_language
+    item.updated_at = Utils.date()
+
+    await item.save()
+
+    return { success: true, id: item.id }
+  }
+
+  static async getOne(params: { id: number }) {
+    const digital = await DB('digital')
+      .select(
+        'digital.*',
+        'product.barcode',
+        'product.isrc',
+        'product.catnumber',
+        'product.id as product_id',
+        'product.name as product_name',
+        'product.type as product_type',
+        'project.picture'
+      )
+      .leftJoin('product', 'product.id', 'digital.product_id')
+      .leftJoin('project_product', 'project_product.product_id', 'product.id')
+      .leftJoin('project', 'project.id', 'project_product.project_id')
+      .where('digital.id', params.id)
+      .first()
+
+    digital.actions = await Digital.getActions({ digitalId: params.id })
+
+    return digital
   }
 
   static async update(params: {

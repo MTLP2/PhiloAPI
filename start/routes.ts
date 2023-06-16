@@ -260,7 +260,6 @@ Route.group(() => {
   Route.get('/pass/quest-progress', 'UserController.getPassQuestProgress')
   Route.get('/pass/badge-progress', 'UserController.getPassBadgeProgress')
   Route.post('/pass/gift/:id/claim', 'UserController.claimGift')
-  Route.post('/digital', 'DigitalController.createOne')
 })
   .prefix('user')
   .middleware(['auth'])
@@ -551,6 +550,8 @@ Route.group(() => {
     Route.delete(':did/files/:id', 'DigitalController.deleteFile')
     Route.put(':id', 'DigitalController.update')
     Route.delete(':id', 'DigitalController.delete')
+    Route.post('/new', 'DigitalController.createOne')
+    Route.get('/new/:id', 'DigitalController.getOne')
   }).prefix('digital')
 
   // Pass routes

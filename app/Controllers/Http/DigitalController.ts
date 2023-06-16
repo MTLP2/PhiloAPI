@@ -26,7 +26,6 @@ class DigitalController {
   }
 
   async create({ params }) {
-    console.log(params)
     try {
       const payload = await validator.validate({
         schema: schema.create({
@@ -48,48 +47,65 @@ class DigitalController {
   }
 
   async createOne({ params }) {
-    console.log(params)
-
     const payload = await validator.validate({
       schema: schema.create({
+        id: schema.number.optional(),
         email: schema.string({ trim: true }, [rules.email()]),
         project_name: schema.string.optional({ trim: true }),
         artist_name: schema.string.optional({ trim: true }),
         barcode: schema.string.optional({ trim: true }),
-        catalogue_number: schema.string.optional({ trim: true }),
+        catalogue_number: schema.number.optional(),
         project_type: schema.string.optional({ trim: true }),
         spotify_url: schema.string.optional({ trim: true }),
-        genre: schema.string.optional({ trim: true }),
+        genre: schema.array.optional().members(schema.string({ trim: true })),
         commercial_release_date: schema.string.optional({ trim: true }),
         preview_date: schema.string.optional({ trim: true }),
         explicit_content: schema.boolean.optional(),
-        territory_included: schema.string.optional({ trim: true }),
-        territory_excluded: schema.string.optional({ trim: true }),
+        territory_included: schema.array.optional().members(schema.string({ trim: true })),
+        territory_excluded: schema.array.optional().members(schema.string({ trim: true })),
         platforms_excluded: schema.string.optional({ trim: true }),
-        registration_year: schema.string.optional(),
+        registration_year: schema.number.optional(),
         digital_rights_owner: schema.string.optional({ trim: true }),
         label_name: schema.string.optional({ trim: true }),
         nationality_project: schema.string.optional({ trim: true }),
-        track_number: schema.string.optional(),
+        producer: schema.string.optional({ trim: true }),
+        mixer: schema.string.optional({ trim: true }),
+        composer: schema.string.optional({ trim: true }),
+        lyricist: schema.string.optional({ trim: true }),
+        publisher: schema.string.optional({ trim: true }),
+        track_number: schema.number.optional(),
         track_name: schema.string.optional({ trim: true }),
         start_of_preview: schema.string.optional({ trim: true }),
         isrc_code: schema.string.optional({ trim: true }),
         primary_artist: schema.string.optional({ trim: true }),
         secondary_artist: schema.string.optional({ trim: true }),
-        first_genre: schema.string.optional({ trim: true }),
-        secondary_genre: schema.string.optional({ trim: true }),
+        first_genre: schema.array.optional().members(schema.string({ trim: true })),
+        secondary_genre: schema.array.optional().members(schema.string({ trim: true })),
         featured_artist: schema.string.optional({ trim: true }),
         remixer_artist: schema.string.optional({ trim: true }),
-        lyricist_language: schema.string.optional({ trim: true }),
-        producer: schema.string.optional({ trim: true }),
-        mixer: schema.string.optional({ trim: true }),
-        composer: schema.string.optional({ trim: true }),
-        lyricist: schema.string.optional({ trim: true }),
-        publisher: schema.string.optional({ trim: true })
+        lyricist_language: schema.string.optional({ trim: true })
       }),
       data: params
     })
-    return await Digital.createOne(payload)
+    return await Digital.store(payload)
+  }
+
+  async getOne({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          id: schema.number()
+        }),
+        data: params
+      })
+
+      return await Digital.getOne(payload)
+    } catch (error) {
+      throw new ApiError(
+        error.messages ? 400 : 500,
+        JSON.stringify(error.messages) || error.message
+      )
+    }
   }
 
   async createAdmin({ params }) {
