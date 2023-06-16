@@ -4041,6 +4041,8 @@ class Admin {
           { key: 'com', header: 'Resp. com', width: 15 },
           { key: 'type', header: 'Type', width: 15 },
           { key: 'category', header: 'Category', width: 15 },
+          { key: 'price', header: 'price', width: 15 },
+          { key: 'currency', header: 'currency', width: 15 },
           { key: 'date_shipping', header: 'Date Shipping', width: 15 },
           { key: 'country_id', header: 'Country ID', width: 15 },
           { key: 'origin', header: 'Origin', width: 15 },
