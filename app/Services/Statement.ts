@@ -1421,7 +1421,7 @@ class StatementService {
       .groupBy('vod.currency')
       .groupBy('vod.stock_price')
       // .whereIn('project.id', [226728, 299489])
-      .whereIn('project.id', [247230])
+      // .whereIn('project.id', [247230])
       .where((query) => {
         if (payload.projectIds) {
           query.whereIn('project.id', payload.projectIds)

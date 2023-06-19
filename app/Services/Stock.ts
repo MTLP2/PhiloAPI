@@ -81,6 +81,12 @@ class Stock {
       )
       .all()
 
+    if (historic.length === 0) {
+      return {
+        list: [],
+        months: {}
+      }
+    }
     const startDate = moment(historic.at(-1).created_at)
     const endDate = moment()
     const mm: any = []
@@ -148,7 +154,6 @@ class Stock {
       }
     }
 
-    console.log(months)
     const chart = {}
     for (const type of Object.keys(types)) {
       chart[type] = {}
@@ -157,7 +162,6 @@ class Stock {
       }
     }
 
-    // console.log(chart)
     return {
       list: historic,
       months: chart
