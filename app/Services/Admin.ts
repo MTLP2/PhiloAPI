@@ -2461,7 +2461,7 @@ class Admin {
   }
 
   static getUserEmails = async (params) => {
-    const profile = await Utils.request('https://beta-api-eu.customer.io/v1/api/customers', {
+    const profile: any = await Utils.request('https://beta-api-eu.customer.io/v1/api/customers', {
       qs: {
         email: params.email
       },
@@ -2471,11 +2471,11 @@ class Admin {
       json: true
     })
 
-    if (!profile.results || profile.results.lenth === 0) {
+    if (!profile.results || !profile.results[0] || !profile.results[0].cio_id) {
       return { success: false }
     }
 
-    const res = await Utils.request(
+    const res: any = await Utils.request(
       'https://fly-eu.customer.io/v1/environments/110794/deliveries',
       {
         qs: {
