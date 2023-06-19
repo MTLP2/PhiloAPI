@@ -83,15 +83,25 @@ class User {
       .orderBy('n.id', 'desc')
       .all()
 
-    const follows = DB().select('f.*').from('follower as f').where('f.user_id', id).all()
+    const wishlist = DB()
+      .select('w.*')
+      .from('user_wishlist as w')
+      .where('w.user_id', id)
+      .orderBy('w.id', 'desc')
+      .all()
 
-    return Promise.all([user, notifications, alerts, follows]).then((data) => {
+    const follows = DB().select('f.*').from('follower as f').where('f.user_id', id).all()
+    const followers = DB().select('f.*').from('follower as f').where('f.follower', id).all()
+
+    return Promise.all([user, notifications, alerts, wishlist, follows, followers]).then((data) => {
       const u = data[0]
       if (!u) return { error: 'not_found' }
       u.password = u.password !== null
       u.notifications = data[1]
       u.alerts = data[2]
-      u.follows = data[3]
+      u.wishlist = data[3]
+      u.follows = data[4]
+      u.followers = data[5]
       u.styles = u.styles ? JSON.parse(u.styles) : []
       u.soundcloud_sub = u.soundcloud_sub ? JSON.parse(u.soundcloud_sub) : []
 
@@ -216,11 +226,36 @@ class User {
       .groupBy('order_item.project_id')
       .all()
 
+    user.wishlist = await DB('user_wishlist')
+      .select('p.*')
+      .join('project as p', 'p.id', 'user_wishlist.project_id')
+      .where('user_wishlist.user_id', user.id)
+      .groupBy('user_wishlist.project_id')
+      .all()
+
+    user.projects = await DB('project as p')
+      .select('p.*')
+      .join('user as u', 'u.name', 'p.label_name')
+      .where('u.id', user.id)
+      .all()
+
     const stylesDB = await DB('style').all()
 
     for (const item of user.items) {
       item.styles = item.styles?.split(',')
-      item.styles = stylesDB.filter((style) => item.styles.includes(style.id.toString()))
+      item.styles = stylesDB.filter((style) => item.styles.includes(style.id.toString()))?.name
+    }
+
+    for (const wish of user.wishlist) {
+      wish.styles = wish.styles?.split(',')
+      wish.styles = stylesDB.filter((style) => wish.styles.includes(style.id.toString()))?.name
+    }
+
+    for (const project of user.projects) {
+      project.styles = project.styles?.split(',')
+      project.styles = stylesDB.filter((style) =>
+        project.styles.includes(style.id.toString())
+      )?.name
     }
 
     return user
@@ -1336,6 +1371,51 @@ static extractProjectOrders = async (params) => {
       })
 
     return { success: true }
+  }
+
+  static saveWish = async (payload: {
+    id?: number
+    user_id: number
+    project_id: number
+    created_at?: string
+  }) => {
+    let projectWl: any = null
+    projectWl = DB('user_wishlist')
+
+    if (!projectWl) {
+      throw new ApiError(404)
+    }
+
+    if (payload.id === undefined) {
+      projectWl.created_at = Utils.date()
+    } else {
+      projectWl = await DB('user_wishlist').find(payload.id)
+    }
+
+    projectWl.user_id = payload.user_id
+    projectWl.project_id = payload.project_id
+
+    await projectWl.save()
+    return true
+  }
+
+  static deleteWish = async (payload: { project_id: number; user_id: number }) => {
+    const project = await DB('user_wishlist')
+      .select('user_wishlist.*')
+      .where('project_id', payload.project_id)
+      .where('user_id', payload.user_id)
+      .all()
+
+    if (!project) {
+      throw new ApiError(404)
+    }
+
+    await DB('user_wishlist')
+      .where('project_id', payload.project_id)
+      .where('user_id', payload.user_id)
+      .delete()
+
+    return true
   }
 }
 

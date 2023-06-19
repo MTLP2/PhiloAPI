@@ -298,6 +298,30 @@ class UserController {
     params.user_id = user.id
     return Pass.claimGift(params)
   }
+
+  saveWish = async ({ request, user }) => {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          id: schema.number.optional(),
+          user_id: schema.number(),
+          project_id: schema.number(),
+          created_at: schema.string.optional(),
+          in_whishlist: schema.boolean()
+        }),
+        data: {
+          ...request.body(),
+          user_id: user.user_id
+        }
+      })
+      if (!payload.in_whishlist) {
+        return User.deleteWish(payload)
+      }
+      return User.saveWish(payload)
+    } catch (err) {
+      return { error: err.message, validation: err.messages }
+    }
+  }
 }
 
 export default UserController
