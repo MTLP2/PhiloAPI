@@ -4,6 +4,7 @@ import Elogik from 'App/Services/Elogik'
 import Whiplash from 'App/Services/Whiplash'
 import Notification from 'App/Services/Notification'
 import Excel from 'exceljs'
+import moment from 'moment'
 import fs from 'fs'
 
 class Stock {
@@ -48,6 +49,119 @@ class Stock {
     }
 
     return res
+  }
+
+  static getHistoric = async (payload: {
+    product_id?: number
+    project_id?: number
+    start?: string
+  }) => {
+    const ids: number[] = []
+    if (payload.product_id) {
+      ids.push(payload.product_id)
+    }
+    if (payload.project_id) {
+      const products = await DB('project_product').where('project_id', payload.project_id).all()
+      ids.push(...products.map((p) => p.product_id))
+    }
+
+    console.log(ids)
+
+    const stocks = await DB('stock').select('stock.*').whereIn('product_id', ids).all()
+
+    const historic = await DB('stock_historic')
+      .select('stock_historic.*', 'user.name')
+      .leftJoin('user', 'user.id', 'stock_historic.user_id')
+      .whereIn('product_id', ids)
+      .orderBy('id', 'desc')
+      .where(
+        'stock_historic.created_at',
+        '>',
+        payload.start || moment().subtract(6, 'months').format('YYYY-MM-DD')
+      )
+      .all()
+
+    const startDate = moment(historic.at(-1).created_at)
+    const endDate = moment()
+    const mm: any = []
+    const flag = startDate
+    while (flag.diff(endDate) <= 0) {
+      mm.push(flag.format('YYYY-MM'))
+      flag.add(1, 'M')
+    }
+
+    const months: any = {}
+    const types = {
+      total: true
+    }
+
+    for (let mIdx = mm.length - 1; mIdx > 0; mIdx--) {
+      const m = mm[mIdx]
+
+      if (mIdx === mm.length - 1) {
+        months[m] = {
+          fix: {
+            total: 0
+          },
+          var: {
+            total: 0
+          }
+        }
+        for (const stock of stocks) {
+          if (stock.type !== 'preorder' && stock.quantity !== 0) {
+            types[stock.type] = true
+            months[m].fix[stock.type] = stock.quantity
+            months[m].var[stock.type] = stock.quantity
+          }
+        }
+      } else {
+        const previous = { ...months[mm[mIdx + 1]] }
+        months[m] = {
+          fix: { ...previous.var },
+          var: { ...previous.var }
+        }
+      }
+
+      const hh = historic.filter((h) => h.created_at.substr(0, 7) === m)
+      console.log(m, hh.length)
+      for (const item of hh) {
+        const data = JSON.parse(item.data)
+
+        if (!months[m][item.type]) {
+          months[m].var[item.type] = 0
+        }
+        if (data.new.quantity !== undefined) {
+          console.log(item.type, item.created_at, data.old.quantity)
+          months[m].var[item.type] = data.old.quantity
+        }
+        if (!types[item.type]) {
+          types[item.type] = true
+        }
+      }
+      months[m].var.total = 0
+      months[m].fix.total = 0
+      for (const key of Object.keys(months[m].var)) {
+        if (key !== 'total' && key !== 'preorder') {
+          months[m].var.total += months[m].var[key]
+          months[m].fix.total += months[m].fix[key]
+        }
+      }
+    }
+
+    console.log(months)
+    const chart = {}
+    for (const type of Object.keys(types)) {
+      chart[type] = {}
+      for (const m of Object.keys(months).reverse()) {
+        chart[type][m] = months[m].fix[type] || 0
+      }
+    }
+
+    // console.log(chart)
+    return {
+      list: historic,
+      months: chart
+    }
   }
 
   static async syncApi(payload: { productIds?: number[]; projectIds?: number[] }) {

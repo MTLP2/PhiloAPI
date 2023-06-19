@@ -198,6 +198,7 @@ class Admin {
 
     const projectImagesQuery = Project.getProjectImages({ projectId: id })
 
+    const stockHistoricQuery = Stock.getHistoric({ project_id: id })
     const stocksSiteQuery = Stock.byProject({ project_id: id, is_distrib: false })
     const stocksDistribQuery = Stock.byProject({ project_id: id, is_distrib: true })
 
@@ -251,6 +252,7 @@ class Admin {
       project,
       codes,
       costs,
+      stockHistoric,
       stocksSite,
       stocksDistrib,
       items,
@@ -263,6 +265,7 @@ class Admin {
       projectQuery,
       codesQuery,
       costsQuery,
+      stockHistoricQuery,
       stocksSiteQuery,
       stocksDistribQuery,
       itemsQuery,
@@ -283,6 +286,7 @@ class Admin {
     project.project_images = projectImages
     project.exports = exps
 
+    project.stock_historic = stockHistoric
     project.stocks = []
     project.stocks.push(
       ...Object.entries(stocksSite).map(([key, value]) => {
