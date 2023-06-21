@@ -1881,16 +1881,17 @@ class Project {
       }
     }
 
+    const inDate = (date) =>
+      moment(periodicity === 'months' ? `${date}-01` : date).isBetween(
+        params.start,
+        params.end,
+        undefined,
+        '[]'
+      )
+
     s.setDate = function (type, cat, date, value) {
       if (value) {
-        if (
-          moment(periodicity === 'months' ? `${date}-01` : date).isBetween(
-            params.start,
-            params.end,
-            undefined,
-            '[]'
-          )
-        ) {
+        if (inDate(date)) {
           this[cat][type].dates[date] += value
           this[cat].all.dates[date] += value
           this[cat][type].total += value
@@ -1915,7 +1916,7 @@ class Project {
     }
 
     s.addList = function (type, cat, date, value, project) {
-      if (value) {
+      if (value && inDate(date)) {
         s[cat].list.push({
           type: type,
           project_id: project,
@@ -1951,8 +1952,10 @@ class Project {
       // s.setDate('tips', 'income', date, tips)
       s.setDate('site', 'quantity', date, order.quantity)
 
-      s.setCountry('site', 'income', order.country_id, value)
-      s.setCountry('site', 'quantity', order.country_id, order.quantity)
+      if (inDate(date)) {
+        s.setCountry('site', 'income', order.country_id, value)
+        s.setCountry('site', 'quantity', order.country_id, order.quantity)
+      }
     }
 
     for (const [log, stock] of Object.entries(stocksSite)) {
@@ -1977,11 +1980,14 @@ class Project {
       if (!project) {
         continue
       }
+
       s.setDate('box', 'income', date, project.payback_box)
       s.setDate('box', 'quantity', date, 1)
 
-      s.setCountry('box', 'income', box.country_id, project.payback_box)
-      s.setCountry('box', 'quantity', box.country_id, 1)
+      if (inDate(date)) {
+        s.setCountry('box', 'income', box.country_id, project.payback_box)
+        s.setCountry('box', 'quantity', box.country_id, 1)
+      }
     }
 
     for (const stat of statements) {
@@ -2004,7 +2010,6 @@ class Project {
           value = dist.total * feeDistrib
         }
         s.setDate('distrib', 'income', date, value)
-        s.setCountry('distrib', 'income', dist.country_id, value)
 
         if (dist.digital) {
           s.setDate('digital', 'income', date, dist.digital * feeDistrib)
@@ -2015,7 +2020,10 @@ class Project {
 
         s.setDate('distrib', 'quantity', date, dist.quantity)
 
-        s.setCountry('distrib', 'quantity', dist.country_id, dist.quantity)
+        if (inDate(date)) {
+          s.setCountry('distrib', 'income', dist.country_id, value)
+          s.setCountry('distrib', 'quantity', dist.country_id, dist.quantity)
+        }
       }
     }
 
