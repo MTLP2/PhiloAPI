@@ -63,6 +63,7 @@ class Admin {
           AND user.is_pro
           AND order_item.project_id = project.id) AS count_distribution
       `),
+        DB().raw(`DATEDIFF(NOW(), vod.start) AS days_elapsed`),
         DB().raw(`
         (SELECT SUM(quantity)
         FROM order_item, order_shop
