@@ -1067,6 +1067,8 @@ class Cart {
       } else {
         weight = Math.ceil(params.weight / 1000) + 'kg'
       }
+    } else if (weight < 750) {
+      weight = '750g'
     } else {
       weight = Math.ceil(params.weight / 1000) + 'kg'
     }
@@ -1081,7 +1083,6 @@ class Cart {
         transporter.packing = 0.2
       }
       const cost = transporter.packing + transporter.picking * params.insert
-
       if (
         transporter[weight] &&
         (!costs || !costs.standard || costs.standard > transporter[weight])
