@@ -1403,6 +1403,7 @@ class StatementService {
         'project.artist_name',
         'project.category',
         'vod.is_licence',
+        'vod.user_id',
         'vod.type',
         'vod.currency',
         'vod.stock_price',
@@ -1417,6 +1418,7 @@ class StatementService {
       .having('stock', '>', 0)
       .groupBy('project.id')
       .groupBy('vod.is_licence')
+      .groupBy('vod.user_id')
       .groupBy('vod.type')
       .groupBy('vod.currency')
       .groupBy('vod.stock_price')
@@ -1511,20 +1513,22 @@ class StatementService {
 
       const diff = Utils.round(cost.in_statement - old)
 
+      if (diff < 0) {
+        continue
+      }
+
       diffs[cost.project_id] = {
         project_id: cost.project_id,
         name: projects.find((p) => p.id === cost.project_id).name,
         artist: projects.find((p) => p.id === cost.project_id).artist_name,
         is_licence: projects.find((p) => p.id === cost.project_id).is_licence,
+        user_id: projects.find((p) => p.id === cost.project_id).user_id,
         change: change[p.id],
         diff: diff,
         old: old,
         new: cost.in_statement
       }
-      if (diff > 10) {
-        // console.log('diff', cost.project_id, diff, old, Utils.round(cost.in_statement))
-      }
-      // await cost.save()
+      await cost.save()
     }
 
     return diffs
