@@ -1886,7 +1886,6 @@ class Cart {
     const { calculate } = params
     const { customer } = calculate
 
-    console.log(calculate)
     let data: any = {
       items: [],
       shipping: {
@@ -2001,8 +2000,10 @@ class Cart {
           subject: `Paypal order not completed`,
           html: `<p>Order: https://www.diggersfactory.com/sheraf/order/${params.order.id}</p>`
         })
+        return Cart.validPayment(params.order.id, payment.id, 'paused')
+      } else {
+        return Cart.validPayment(params.order.id)
       }
-      return Cart.validPayment(params.order.id)
     } else {
       await DB('order').where('id', params.order.id).update({
         status: 'failed',
@@ -2101,10 +2102,13 @@ class Cart {
       customerId = shop.customer_invoice_id || shop.customer_id
 
       if (shop.type === 'vod' || shop.type === 'shop') {
-        await DB('order_shop').where('id', shop.id).update({
-          is_paid: 1,
-          step: 'confirmed'
-        })
+        await DB('order_shop')
+          .where('id', shop.id)
+          .update({
+            is_paid: 1,
+            step: 'confirmed',
+            is_paused: status === 'paused' ? 1 : 0
+          })
       }
 
       if (shop.type === 'vod' || shop.type === 'shop') {
@@ -2126,7 +2130,7 @@ class Cart {
           .where('order_shop_id', shop.id)
           .all()
 
-        if (shop.type === 'shop') {
+        if (shop.type === 'shop' && status === 'confirmed') {
           try {
             Order.sync({ id: shop.id })
           } catch (e) {
