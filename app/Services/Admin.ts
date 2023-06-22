@@ -1214,6 +1214,11 @@ class Admin {
     }
 
     vod.date_shipping = params.date_shipping || null
+
+    if (vod.step === 'in_progress' && !vod.date_shipping) {
+      vod.date_shipping = moment().add(3, 'months').format('YYYY-MM-DD')
+    }
+
     vod.status = params.status
     vod.step = params.step
 
@@ -1856,7 +1861,6 @@ class Admin {
   }
 
   static saveOrderShop = async (params) => {
-    console.log(params)
     const shop = await DB('order_shop').find(params.id)
 
     const customer = await Customer.save(params.customer)
