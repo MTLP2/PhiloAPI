@@ -123,6 +123,7 @@ class ProjectsController {
       params.id = track.id
     }
     if (params.uploading) {
+      await ProjectEdit.saveTrack(params)
       const res = await Utils.upload({
         ...params,
         fileName: `songs/${params.id}.mp3`
