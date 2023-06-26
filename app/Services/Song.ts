@@ -176,6 +176,7 @@ class Song {
           duration = data.duration
         })
         .on('error', (err) => {
+          fs.unlinkSync(input)
           reject(err)
         })
         .on('end', async () => {
