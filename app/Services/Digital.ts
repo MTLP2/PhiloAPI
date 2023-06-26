@@ -29,7 +29,7 @@ type DigitalDb = {
   composer?: string
   lyricist?: string
   publisher?: string
-  email?: string
+  user_id?: number
   track_number?: number
   track_name?: string
   start_of_preview?: string
@@ -66,20 +66,25 @@ class Digital {
     const digital = await DB('digital')
       .select(
         'digital.*',
-        'product.barcode',
+        // 'product.barcode',
         'product.isrc',
         'product.catnumber',
         'product.id as product_id',
         'product.name as product_name',
         'product.type as product_type',
-        'project.picture'
+        'project.picture',
+        'user.email'
       )
       .leftJoin('product', 'product.id', 'digital.product_id')
       .leftJoin('project_product', 'project_product.product_id', 'product.id')
       .leftJoin('project', 'project.id', 'project_product.project_id')
+      .leftJoin('user', 'user.id', 'digital.user_id')
       .where('digital.id', params.id)
       .first()
-
+    console.log(digital)
+    digital.genre = digital.genre?.split(',')
+    digital.territory_included = digital.territory_included?.split(',')
+    digital.territory_excluded = digital.territory_excluded?.split(',')
     digital.actions = await Digital.getActions({ digitalId: params.id })
 
     return digital
@@ -157,41 +162,42 @@ class Digital {
     } else {
       item.created_at = Utils.date()
     }
-    item.email = payload.email
-    item.barcode = payload.barcode
-    item.project_name = payload.project_name
-    item.artist_name = payload.artist_name
-    item.barcode = payload.barcode
-    item.catalogue_number = payload.catalogue_number
-    item.project_type = payload.project_type
-    item.spotify_url = payload.spotify_url
-    item.genre = payload.genre?.join(',')
-    item.commercial_release_date = payload.commercial_release_date
-    item.preview_date = payload.preview_date
-    item.explicit_content = payload.explicit_content
-    item.territory_included = payload.territory_included?.join(',')
-    item.territory_excluded = payload.territory_excluded?.join(',')
-    item.platforms_excluded = payload.platforms_excluded
-    item.registration_year = payload.registration_year
-    item.digital_rights_owner = payload.digital_rights_owner
-    item.label_name = payload.label_name
-    item.nationality_project = payload.nationality_project
-    item.producer = payload.producer
-    item.mixer = payload.mixer
-    item.composer = payload.composer
-    item.lyricist = payload.lyricist
-    item.publisher = payload.publisher
-    item.track_number = payload.track_number
-    item.track_name = payload.track_name
+
+    item.user_id = payload.user_id
+    item.barcode = payload.barcode || null
+    item.project_name = payload.project_name || null
+    item.artist_name = payload.artist_name || null
+    item.barcode = payload.barcode || null
+    item.catalogue_number = payload.catalogue_number || null
+    item.project_type = payload.project_type || null
+    item.spotify_url = payload.spotify_url || null
+    item.genre = payload.genre?.join(',') || null
+    item.commercial_release_date = payload.commercial_release_date || null
+    item.preview_date = payload.preview_date || null
+    item.explicit_content = payload.explicit_content || null
+    item.territory_included = payload.territory_included?.join(',') || null
+    item.territory_excluded = payload.territory_excluded?.join(',') || null
+    item.platforms_excluded = payload.platforms_excluded || null
+    item.registration_year = payload.registration_year || null
+    item.digital_rights_owner = payload.digital_rights_owner || null
+    item.label_name = payload.label_name || null
+    item.nationality_project = payload.nationality_project || null
+    item.producer = payload.producer || null
+    item.mixer = payload.mixer || null
+    item.composer = payload.composer || null
+    item.lyricist = payload.lyricist || null
+    item.publisher = payload.publisher || null
+    item.track_number = payload.track_number || null
+    item.track_name = payload.track_name || null
     item.start_of_preview = payload.start_of_preview
-    item.isrc_code = payload.isrc_code
-    item.primary_artist = payload.primary_artist
-    item.secondary_artist = payload.secondary_artist
-    item.first_genre = payload.first_genre?.join(',')
-    item.secondary_genre = payload.secondary_genre?.join(',')
-    item.featured_artist = payload.featured_artist
-    item.remixer_artist = payload.remixer_artist
-    item.lyricist_language = payload.lyricist_language
+    item.isrc_code = payload.isrc_code || null
+    item.primary_artist = payload.primary_artist || null
+    item.secondary_artist = payload.secondary_artist || null
+    item.first_genre = payload.first_genre?.join(',') || null
+    item.secondary_genre = payload.secondary_genre?.join(',') || null
+    item.featured_artist = payload.featured_artist || null
+    item.remixer_artist = payload.remixer_artist || null
+    item.lyricist_language = payload.lyricist_language || null
     item.updated_at = Utils.date()
 
     await item.save()
@@ -200,25 +206,12 @@ class Digital {
   }
 
   static async getOne(params: { id: number }) {
-    const digital = await DB('digital')
-      .select(
-        'digital.*',
-        'product.barcode',
-        'product.isrc',
-        'product.catnumber',
-        'product.id as product_id',
-        'product.name as product_name',
-        'product.type as product_type',
-        'project.picture'
-      )
-      .leftJoin('product', 'product.id', 'digital.product_id')
-      .leftJoin('project_product', 'project_product.product_id', 'product.id')
-      .leftJoin('project', 'project.id', 'project_product.project_id')
-      .where('digital.id', params.id)
-      .first()
-
-    digital.actions = await Digital.getActions({ digitalId: params.id })
-
+    const digital = await DB('digital').select('digital.*').where('digital.id', params.id).first()
+    digital.genre = digital.genre !== '' ? digital.genre?.split(',') : []
+    digital.territory_included =
+      digital.territory_included !== '' ? digital.territory_included?.split(',') : []
+    digital.territory_excluded =
+      digital.territory_excluded !== '' ? digital.territory_excluded?.split(',') : []
     return digital
   }
 
