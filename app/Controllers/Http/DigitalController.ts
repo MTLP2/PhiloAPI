@@ -46,11 +46,12 @@ class DigitalController {
     }
   }
 
-  async createOne({ params }) {
+  async createOne({ params, user }) {
+    params.user_id = user.user_id
     const payload = await validator.validate({
       schema: schema.create({
+        user_id: schema.number(),
         id: schema.number.optional(),
-        email: schema.string({ trim: true }, [rules.email()]),
         project_name: schema.string.optional({ trim: true }),
         artist_name: schema.string.optional({ trim: true }),
         barcode: schema.string.optional({ trim: true }),
