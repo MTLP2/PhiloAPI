@@ -123,6 +123,12 @@ Route.group(() => {
   Route.post('/projects/:id/tracks/:tid/encode', 'ProjectsController.encodeTrack')
   Route.delete('/projects/:project_id/tracks/:id', 'ProjectsController.deleteTrack')
 
+  Route.put('/digital/:id/tracks', 'DigitalController.saveTracks')
+  Route.post('/digital/:id/tracks', 'DigitalController.saveTrack')
+  Route.post('/digital/:id/tracks-new', 'DigitalController.saveTrackNew')
+  Route.get('/digital/:id/songs', 'DigitalController.getSongs')
+  Route.delete('/digital/:project_id/tracks/:id', 'DigitalController.deleteTrack')
+
   Route.get('/users', 'UsersController.all')
   Route.get('/users/:id', 'UsersController.find')
 

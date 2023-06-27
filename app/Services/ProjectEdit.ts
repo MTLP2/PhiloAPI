@@ -170,6 +170,46 @@ class ProjectEdit {
     }
   }
 
+  static saveDigitalTrack = async (params) => {
+    await Utils.checkProjectOwner({ project_id: params.project_id, user: params.user })
+    let song: any = DB('song')
+
+    if (params.id !== 0) {
+      song = await DB('song').find(params.id)
+      if (!song) {
+        throw new ApiError(404)
+      }
+    } else {
+      song.project_id = params.project_id
+      song.created_at = Utils.date()
+    }
+
+    song.title = params.title
+    song.artist = params.artist
+    song.side && (song.side = params.side)
+    song.disc && (song.disc = params.disc)
+    song.digital_bonus && (song.digital_bonus = params.digital_bonus)
+    if (params.duration) {
+      // song.duration_str = params.duration
+      // song.duration = Utils.toSeconds(params.duration)
+      song.duration = params.duration
+    }
+    song.position = params.position
+    song.disabled = params.disabled
+    song.updated_at = Utils.date()
+    song.start_of_preview = params.start_of_preview
+    song.isrc_code = params.isrc_code
+    song.secondary_artist = params.secondary_artist
+    song.featured_artist = params.featured_artist
+    song.first_genre = params.first_genre
+    song.secondary_genre = params.secondary_genre
+    song.lyrics_language = params.lyrics_language
+    song.remixer_artist = params.remixer_artist
+    await song.save()
+
+    return song
+  }
+
   static saveTrack = async (params) => {
     await Utils.checkProjectOwner({ project_id: params.project_id, user: params.user })
     let song: any = DB('song')
