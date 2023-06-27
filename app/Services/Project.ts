@@ -1577,9 +1577,9 @@ class Project {
   static getDashboard = async (params: {
     user_id?: number
     project_id?: number
-    period?: string
     start?: string
     end?: string
+    only_data?: boolean
   }) => {
     let projects = DB('project')
       .select(
@@ -1684,23 +1684,26 @@ class Project {
         stocksDistribQuery
       ])
 
+    let start
+    if (orders.length > 0) {
+      start = moment(orders[0].created_at)
+    }
+    if (statements.length > 0 && (!start || start > moment(statements[0].date))) {
+      start = moment(statements[0].date)
+    }
+    if (costs.length > 0 && (!start || start > moment(costs[0].date))) {
+      start = moment(costs[0].date)
+    }
+    if (payments.length > 0 && (!start || start > moment(payments[0].date))) {
+      start = moment(payments[0].date)
+    }
     if (!params.start) {
-      let start
-      if (orders.length > 0) {
-        start = moment(orders[0].created_at)
-      }
-      if (statements.length > 0 && (!start || start > moment(statements[0].date))) {
-        start = moment(statements[0].date)
-      }
-      if (costs.length > 0 && (!start || start > moment(costs[0].date))) {
-        start = moment(costs[0].date)
-      }
-      if (payments.length > 0 && (!start || start > moment(payments[0].date))) {
-        start = moment(payments[0].date)
-      }
       if (!start) {
         return false
       }
+      params.start = start.format('YYYY-MM-DD')
+    }
+    if (params.only_data && params.start && moment(params.start) < start) {
       params.start = start.format('YYYY-MM-DD')
     }
     if (!params.end) {
@@ -1839,6 +1842,7 @@ class Project {
           all: 0,
           total: 0,
           dates: { ...dates },
+          country: {},
           countries: {}
         },
         digital: {
@@ -1871,6 +1875,7 @@ class Project {
           all: 0,
           total: 0,
           dates: { ...dates },
+          country: {},
           countries: {}
         }
       },
@@ -1902,8 +1907,8 @@ class Project {
       }
     }
 
-    s.setCountry = function (type, cat, country, quantity) {
-      country = country || null
+    s.setCountry = function (type, cat, country, quantity, date) {
+      country = country ? country.toUpperCase() : null
       if (!s[cat].all.countries[country]) {
         s[cat].all.countries[country] = 0
       }
@@ -1913,6 +1918,13 @@ class Project {
         s[cat][type].countries[country] = 0
       }
       s[cat][type].countries[country] += quantity
+
+      if (date && type === 'distrib') {
+        if (!s[cat][type].country[country]) {
+          s[cat][type].country[country] = { ...dates }
+        }
+        s[cat][type].country[country][date] += quantity
+      }
     }
 
     s.addList = function (type, cat, date, value, project) {
@@ -2021,8 +2033,8 @@ class Project {
         s.setDate('distrib', 'quantity', date, dist.quantity)
 
         if (inDate(date)) {
-          s.setCountry('distrib', 'income', dist.country_id, value)
-          s.setCountry('distrib', 'quantity', dist.country_id, dist.quantity)
+          s.setCountry('distrib', 'income', dist.country_id, value, date)
+          s.setCountry('distrib', 'quantity', dist.country_id, dist.quantity, date)
         }
       }
     }
