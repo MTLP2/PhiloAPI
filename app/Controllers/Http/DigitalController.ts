@@ -1,6 +1,9 @@
 import Digital from 'App/Services/Digital'
 import { validator, schema, rules } from '@ioc:Adonis/Core/Validator'
 import ApiError from 'App/ApiError'
+import Storage from 'App/Services/Storage'
+import DB from 'App/DB'
+import Utils from 'App/Utils'
 
 class DigitalController {
   async getAll({ params }) {
@@ -47,9 +50,13 @@ class DigitalController {
   }
 
   async createOne({ params, user }) {
+    const uid = Utils.uuid()
     params.user_id = user.user_id
+
+    console.log('0')
     const payload = await validator.validate({
       schema: schema.create({
+        artwork: schema.string.optional({ trim: true }),
         user_id: schema.number(),
         id: schema.number.optional(),
         project_name: schema.string.optional({ trim: true }),
