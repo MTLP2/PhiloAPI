@@ -90,6 +90,60 @@ class Song {
 
     return songs.all()
   }
+  static byDigitalProject = (params) => {
+    const songs = DB()
+      .select(
+        's.id',
+        's.title',
+        's.artist',
+        's.listenable',
+        'p.artist_name',
+        'p.slug',
+        's.url',
+        's.duration',
+        's.position',
+        's.disc',
+        's.side',
+        's.disabled',
+        's.digital_bonus',
+        'p.id as project_id',
+        'p.name as project_name',
+        'p.picture as project_picture',
+        's.isrc_code',
+        's.start_of_preview',
+        's.secondary_artist',
+        's.featured_artist',
+        's.first_genre',
+        's.secondary_genre',
+        's.lyrics_language',
+        's.remixer_artist',
+        DB.raw(`(
+        select count(*)
+        from \`like\`
+        where project_id = p.id and user_id = ${params.user_id ? params.user_id : 0}
+      ) as liked
+      `)
+      )
+      .from('song as s')
+      .join('project as p', 'p.id', 's.project_id')
+      .where('p.id', params.project_id)
+      .orderBy('disc')
+      .orderBy('side')
+      .orderBy(
+        DB().raw(`
+      CAST(position AS UNSIGNED)=0,
+      CAST(position AS UNSIGNED),
+      LEFT(position,1),
+      CAST(MID(position,2) AS UNSIGNED)
+    `)
+      )
+
+    if (!params.disabled) {
+      songs.where('disabled', 0)
+    }
+
+    return songs.all()
+  }
 
   static addPlay = async (payload: {
     song_id: number
@@ -198,6 +252,16 @@ class Song {
     await DB('song').where('id', params.id).delete()
 
     Storage.delete(`songs/${params.id}.mp3`)
+
+    return true
+  }
+  static deleteDigitalTrack = async (params) => {
+    await Utils.checkProjectOwner({ project_id: params.project_id, user: params.user })
+
+    await DB('song_play').where('song_id', params.id).delete()
+    await DB('song').where('id', params.id).delete()
+
+    Storage.delete(`dev/tracks/${params.id}.wav`)
 
     return true
   }

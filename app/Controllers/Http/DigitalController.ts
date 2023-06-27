@@ -1,11 +1,94 @@
 import Digital from 'App/Services/Digital'
 import { validator, schema, rules } from '@ioc:Adonis/Core/Validator'
 import ApiError from 'App/ApiError'
-import Storage from 'App/Services/Storage'
-import DB from 'App/DB'
+import Song from 'App/Services/Song'
 import Utils from 'App/Utils'
+import ProjectEdit from 'App/Services/ProjectEdit'
+import DB from 'App/DB'
 
 class DigitalController {
+  async saveTrackNew({ params, user }) {
+    params.user = user
+    await Utils.checkProjectOwner({
+      project_id: params.project_id,
+      user: user
+    })
+
+    if (!params.id) {
+      const track = await ProjectEdit.saveTrack(params)
+      params.id = track.id
+    }
+    if (params.uploading) {
+      const res = await Utils.upload({
+        ...params,
+        fileName: `dev/tracks/${params.id}.wav`
+      })
+      if (res.success) {
+        await DB('song').where('id', params.id).update({
+          listenable: true
+        })
+        // Digital.uploadTrack(params.id)
+      }
+      return {
+        ...res,
+        id: params.id
+      }
+    } else {
+      return {
+        id: params.id
+      }
+    }
+  }
+
+  getSongs({ params, user }) {
+    params.user = user
+    params.project_id = params.id
+    return Song.byDigitalProject(params)
+  }
+
+  async saveTrack({ params, user }) {
+    params.user = user
+    console.log('params', params)
+    await Utils.checkProjectOwner({
+      project_id: params.project_id,
+      user: user
+    })
+    const track = await ProjectEdit.saveDigitalTrack(params)
+    if (params.uploading) {
+      const res = await Utils.upload({
+        ...params,
+        fileName: `dev/track/${track.id}.mp3`
+      })
+      if (res.success) {
+        if (params.skipEncoding) {
+          Song.setInfo(track.id)
+        } else {
+          await Song.setInfo(track.id)
+        }
+      }
+      return {
+        ...res,
+        id: track.id
+      }
+    } else {
+      return track
+    }
+  }
+
+  async saveTracks({ params }) {
+    return Song.saveTracks(params.tracks)
+  }
+
+  async encodeTrack({ params }) {
+    return await Song.setInfo(params.tid)
+  }
+
+  async deleteTrack({ params, user }) {
+    params.user = user
+    const song = await Song.find(params.id)
+    await Utils.checkProjectOwner({ project_id: song.project_id, user: user })
+    return Song.deleteDigitalTrack(params)
+  }
   async getAll({ params }) {
     return await Digital.getAll(params)
   }

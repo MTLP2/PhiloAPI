@@ -578,6 +578,9 @@ Route.group(() => {
   .prefix('admin')
   .middleware(['auth', 'admin'])
 
+Route.get('digital/:id/songs', 'DigitalController.getSongs')
+Route.post('digital/:id/tracks', 'DigitalController.saveTrack')
+
 Route.group(() => {
   Route.post('/dispatch', 'DispatchController.update')
   Route.post('/dispatchs', 'DispatchController.batch')
