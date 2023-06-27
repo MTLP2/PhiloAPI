@@ -109,8 +109,8 @@ class Song {
         'p.id as project_id',
         'p.name as project_name',
         'p.picture as project_picture',
-        's.isrc_code',
         's.start_of_preview',
+        's.isrc_code',
         's.secondary_artist',
         's.featured_artist',
         's.first_genre',
@@ -245,6 +245,15 @@ class Song {
     })
   }
 
+  static deleteDigitalTrack = async (params) => {
+    await Utils.checkProjectOwner({ project_id: params.project_id, user: params.user })
+
+    await DB('song_play').where('song_id', params.id).delete()
+    await DB('song').where('id', params.id).delete()
+
+    return true
+  }
+
   static deleteTrack = async (params) => {
     await Utils.checkProjectOwner({ project_id: params.project_id, user: params.user })
 
@@ -252,16 +261,6 @@ class Song {
     await DB('song').where('id', params.id).delete()
 
     Storage.delete(`songs/${params.id}.mp3`)
-
-    return true
-  }
-  static deleteDigitalTrack = async (params) => {
-    await Utils.checkProjectOwner({ project_id: params.project_id, user: params.user })
-
-    await DB('song_play').where('song_id', params.id).delete()
-    await DB('song').where('id', params.id).delete()
-
-    Storage.delete(`dev/tracks/${params.id}.wav`)
 
     return true
   }

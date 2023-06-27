@@ -118,7 +118,7 @@ class Digital {
   }
 
   static async create(params: {
-    email: string
+    user_id?: number
     origin?: string
     project_name?: string
     artist_name?: string
@@ -136,7 +136,7 @@ class Digital {
     comment?: string
   }) {
     const [id] = await DB('digital').insert({
-      email: params.email,
+      user_id: params.user_id,
       origin: params.origin,
       project_name: params.project_name,
       artist_name: params.artist_name,
