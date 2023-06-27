@@ -164,7 +164,6 @@ class Digital {
       item.created_at = Utils.date()
     }
 
-    item.artwork = payload.artwork || null
     item.user_id = payload.user_id
     item.barcode = payload.barcode || null
     item.project_name = payload.project_name || null
@@ -204,21 +203,21 @@ class Digital {
 
     await item.save()
 
-    console.log('1', payload.artwork)
     if (payload.artwork) {
-      console.log('2')
       if (item?.artwork) {
         Storage.deleteImage(`dev/artworks/${item.artwork}`)
       }
       const uuid = Utils.uuid()
       const filename = `dev/artworks/${uuid}`
-      const data = payload.artwork.replace(/^data:image\/(png|jpg|jpeg);base64,/, ‘’)
-      console.log(data.substring(0, 10))
 
-      Storage.uploadImage(filename, Buffer.from(data, 'base64'), {
-        width: 2000,
-        quality: 85
-      })
+      Storage.uploadImage(
+        filename,
+        Buffer.from(payload.artwork.replace(/^data:image\/(png|jpg|jpeg);base64,/, ''), 'base64'),
+        {
+          width: 2000,
+          quality: 85
+        }
+      )
       item.artwork = uuid
       await item.save()
     }
