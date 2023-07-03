@@ -209,6 +209,15 @@ class Digital {
       }
       const uuid = Utils.uuid()
       const filename = `dev/artworks/${uuid}`
+
+      Storage.uploadImage(
+        filename,
+        Buffer.from(payload.artwork.replace(/^data:image\/(png|jpg|jpeg);base64,/, ''), 'base64'),
+        {
+          width: 2000,
+          quality: 85
+        }
+      )
       Storage.uploadImage(
         filename,
         Buffer.from(payload.artwork.replace(/^data:image\/(png|jpg|jpeg);base64,/, ''), 'base64'),
