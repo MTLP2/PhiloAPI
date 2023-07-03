@@ -135,7 +135,6 @@ class DigitalController {
     const uid = Utils.uuid()
     params.user_id = user.user_id
 
-    console.log('0')
     const payload = await validator.validate({
       schema: schema.create({
         artwork: schema.string.optional({ trim: true }),
