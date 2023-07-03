@@ -257,6 +257,35 @@ class Shop {
 
     return { success: true }
   }
+
+  static async groupShipment(payload: { shop_id: number }) {
+    const projects = await DB('shop_project').where('shop_id', payload.shop_id).all()
+
+    for (const project of projects) {
+      await DB('item')
+        .where('project_id', project.project_id)
+        .where('group_shipment', true)
+        .delete()
+
+      for (const project2 of projects) {
+        if (project.project_id === project2.project_id) {
+          continue
+        }
+
+        await DB('item').insert({
+          project_id: project.project_id,
+          related_id: project2.project_id,
+          group_shipment: 1,
+          is_statement: 0,
+          is_active: 0,
+          created_at: new Date(),
+          updated_at: new Date()
+        })
+      }
+    }
+
+    return { success: true }
+  }
 }
 
 export default Shop
