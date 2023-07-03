@@ -3,6 +3,7 @@ import moment from 'moment'
 import Utils from 'App/Utils'
 import Storage from 'App/Services/Storage'
 import Project from 'App/Services/Project'
+import Stock from 'App/Services/Stock'
 import Notification from 'App/Services/Notification'
 import Log from 'App/Services/Log'
 import DB from 'App/DB'
@@ -928,7 +929,7 @@ class StatementService {
     }
     if (data.payments.artist.all > 0) {
       addLine({
-        label: 'From Diggers to artist',
+        label: 'From artist to Diggers',
         dates: data.payments.artist.dates,
         currency: currency,
         font: { size: 14 }
@@ -1359,6 +1360,7 @@ class StatementService {
     worksheet.columns = [
       { header: 'Artist', key: 'artist_name', width: 30 },
       { header: 'Project', key: 'name', width: 30 },
+      { header: 'Stocks', key: 'stock', width: 15 },
       { header: 'Profits', key: 'profits', width: 15 },
       { header: 'Costs', key: 'costs', width: 15 },
       { header: 'Benefits', key: 'benefits', width: 15 },
@@ -1374,6 +1376,13 @@ class StatementService {
         auto: params.auto,
         number: i
       })
+
+      const stock = await Stock.byProject({ project_id: project.id })
+
+      project.stock = 0
+      for (const s of Object.keys(stock)) {
+        project.stock += stock[s]
+      }
 
       worksheet.addRow({
         ...project,
