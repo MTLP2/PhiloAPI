@@ -31,17 +31,6 @@ type DigitalDb = {
   lyricist?: string
   publisher?: string
   user_id?: number
-  track_number?: number
-  track_name?: string
-  start_of_preview?: string
-  isrc_code?: string
-  primary_artist?: string
-  secondary_artist?: string
-  first_genre?: string[]
-  secondary_genre?: string[]
-  featured_artist?: string
-  remixer_artist?: string
-  lyricist_language?: string
   created_at?: string
   updated_at?: string
 }
@@ -188,17 +177,6 @@ class Digital {
     item.composer = payload.composer || null
     item.lyricist = payload.lyricist || null
     item.publisher = payload.publisher || null
-    item.track_number = payload.track_number || null
-    item.track_name = payload.track_name || null
-    item.start_of_preview = payload.start_of_preview
-    item.isrc_code = payload.isrc_code || null
-    item.primary_artist = payload.primary_artist || null
-    item.secondary_artist = payload.secondary_artist || null
-    item.first_genre = payload.first_genre?.join(',') || null
-    item.secondary_genre = payload.secondary_genre?.join(',') || null
-    item.featured_artist = payload.featured_artist || null
-    item.remixer_artist = payload.remixer_artist || null
-    item.lyricist_language = payload.lyricist_language || null
     item.updated_at = Utils.date()
 
     await item.save()
