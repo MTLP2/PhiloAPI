@@ -209,6 +209,14 @@ class Song {
 
     return { success: true }
   }
+  static setDigitalInfo = async (id) => {
+    await DB('song').where('id', id).update({
+      listenable: true,
+      updated_at: Utils.date()
+    })
+
+    return { success: true }
+  }
 
   static compressSong = (buffer) => {
     return new Promise((resolve, reject) => {
