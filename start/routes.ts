@@ -543,13 +543,12 @@ Route.group(() => {
     Route.get('/export', 'AdminController.exportPassCulture')
   }).prefix('pass-culture')
 
-  // Digital routes
   Route.group(() => {
     Route.get('/', 'DigitalController.getAll')
     Route.post('/', 'DigitalController.createAdmin')
     Route.get('/export', 'DigitalController.export')
     Route.post('/duplicate/:id', 'DigitalController.duplicate')
-    Route.get(':id', 'DigitalController.getDigitalSingle')
+    // Route.get(':id', 'DigitalController.getDigitalSingle')
     Route.get(':id/download', 'DigitalController.downloadFile')
     Route.get(':id/files', 'DigitalController.getFiles')
     Route.post(':did/files', 'DigitalController.addFile')
@@ -584,6 +583,13 @@ Route.group(() => {
 })
   .prefix('admin')
   .middleware(['auth', 'admin'])
+
+// Digital routes
+Route.group(() => {
+  Route.get('/projects', 'UserController.getMyDigitalProjects')
+})
+  .prefix('user/digital')
+  .middleware(['auth'])
 
 Route.group(() => {
   Route.post('/dispatch', 'DispatchController.update')
