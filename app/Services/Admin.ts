@@ -4121,7 +4121,6 @@ class Admin {
     }
 
     const projects = await projectsQuery.all()
-    console.log(projects[0])
 
     let csv =
       'date;id;gtin;title;condition;description;availability;price;link;image_link;brand;additional_image_link;product_type;sale_price;sale_price_effective_date;shipping;shipping_weight;custom_label_0;'
