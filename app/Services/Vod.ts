@@ -22,7 +22,7 @@ class Vod {
       vod.type = params.type
       vod.project_id = pp.id
       vod.step = 'creating'
-      vod.type = 'funding'
+      vod.type = params.type === 'direct_pressing' ? 'direct_pressing' : 'funding'
       vod.transporters = '{"daudin":true}'
       vod.origin = params.origin
       vod.user_id = params.user.user_id !== 0 ? params.user.user_id : null
@@ -64,6 +64,13 @@ class Vod {
       } else {
         vod.sponsor = null
       }
+    }
+
+    if (params.type === 'direct_pressing' && vod.type !== 'direct_pressing') {
+      vod.type = 'direct_pressing'
+    }
+    if (params.type === 'vod' && vod.type === 'direct_pressing') {
+      vod.type = 'funding'
     }
 
     vod.updated_at = Utils.date()
