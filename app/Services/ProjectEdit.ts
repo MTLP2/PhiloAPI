@@ -173,7 +173,6 @@ class ProjectEdit {
   static saveDigitalTrack = async (params) => {
     await Utils.checkProjectOwner({ project_id: params.project_id, user: params.user })
     let song: any = DB('song')
-
     if (params.id !== 0) {
       song = await DB('song').find(params.id)
       if (!song) {
