@@ -161,18 +161,7 @@ class DigitalController {
         mixer: schema.string.optional({ trim: true }),
         composer: schema.string.optional({ trim: true }),
         lyricist: schema.string.optional({ trim: true }),
-        publisher: schema.string.optional({ trim: true }),
-        track_number: schema.number.optional(),
-        track_name: schema.string.optional({ trim: true }),
-        start_of_preview: schema.string.optional({ trim: true }),
-        isrc_code: schema.string.optional({ trim: true }),
-        primary_artist: schema.string.optional({ trim: true }),
-        secondary_artist: schema.string.optional({ trim: true }),
-        first_genre: schema.array.optional().members(schema.string({ trim: true })),
-        secondary_genre: schema.array.optional().members(schema.string({ trim: true })),
-        featured_artist: schema.string.optional({ trim: true }),
-        remixer_artist: schema.string.optional({ trim: true }),
-        lyricist_language: schema.string.optional({ trim: true })
+        publisher: schema.string.optional({ trim: true })
       }),
       data: params
     })
