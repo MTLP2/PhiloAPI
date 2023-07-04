@@ -839,6 +839,7 @@ class Project {
       .leftOuterJoin('customer as c', 'c.id', 'v.customer_id')
       .leftOuterJoin('currency as cu', 'cu.id', 'v.currency')
       .where('p.id', related)
+      .where('p.is_delete', false)
       .first()
 
     const stylesPromise = DB()
