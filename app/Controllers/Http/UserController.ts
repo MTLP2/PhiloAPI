@@ -284,6 +284,10 @@ class UserController {
     params.user_id = user.id
     return Pass.claimGift(params)
   }
+
+  getMyDigitalProjects({ user }) {
+    return User.getMyDigitalProjects({ userId: user.id })
+  }
 }
 
 export default UserController
