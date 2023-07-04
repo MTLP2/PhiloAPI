@@ -4211,11 +4211,8 @@ class Admin {
         ? `${Env.get('STORAGE_URL')}/projects/${pp.picture || pp.id}/${pp.picture_project}.png;`
         : `${Env.get('STORAGE_URL')}/projects/${pp.picture || pp.id}/vinyl.png;`
       csv += `"${pp.artist_name}";`
-      csv += ';;;;'
-      csv += ';'
-      csv += ';'
+      csv += ';;;;;;'
       csv += pp.estimated_shipping + ';'
-      csv += pp.com.follow_artist ? 'prio;' : ';'
       csv += pp.format + ';'
       csv += (pp.vinyl_weight || '140') + ';'
       csv += pp.rpm + ';'
