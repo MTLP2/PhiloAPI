@@ -269,6 +269,7 @@ Route.group(() => {
 
   Route.post('/wishes', 'UserController.saveWish')
   Route.post('/follows/:id', 'UserController.follow')
+  Route.get('/wishes/project/:id', 'ProjectsController.getWishes')
 })
   .prefix('user')
   .middleware(['auth'])

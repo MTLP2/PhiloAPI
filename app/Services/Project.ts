@@ -690,6 +690,21 @@ class Project {
     return projects.all()
   }
 
+  static getWishes = async (projectId: number, lang: string) => {
+    const wishes = await DB()
+      .select('w.id', 'w.user_id', 'u.name', 'u.picture', 'c.name as country_name')
+      .from('user_wishlist as w')
+      .join('user as u', 'w.user_id', 'u.id')
+      // ajoute une ligne qui permet de selectionner la bonne langue simplement en comparant la langue est dans la table country fais le sans fonction
+      .leftJoin('country as c', 'u.country_id', 'c.id')
+      .where('c.lang', lang)
+      .where('w.project_id', projectId)
+      .orderBy('w.created_at', 'desc')
+      .all()
+    console.log('----------------------------------------', wishes)
+    return wishes
+  }
+
   static find = async (id, params) => {
     const vod = await DB()
       .select('related_id', 'related_item_id')

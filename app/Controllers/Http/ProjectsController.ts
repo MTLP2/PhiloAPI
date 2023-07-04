@@ -62,6 +62,10 @@ class ProjectsController {
     return Project.getGroupShipment(params.id, user.id)
   }
 
+  getWishes({ params }) {
+    return Project.getWishes(params.id, params.lang)
+  }
+
   getSongs({ params, user }) {
     params.user = user
     params.project_id = params.id
