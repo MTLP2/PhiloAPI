@@ -1337,7 +1337,7 @@ class StatementService {
     send_statement?: boolean
   }) {
     let projects: any = DB()
-      .select('project.id', 'artist_name', 'name')
+      .select('project.id', 'vod.barcode', 'artist_name', 'name')
       .table('project')
       .join('vod', 'vod.project_id', 'project.id')
       .where('vod.user_id', params.id)
@@ -1358,6 +1358,7 @@ class StatementService {
     const worksheet: any = workbook.addWorksheet('Summary')
 
     worksheet.columns = [
+      { header: 'Barcode', key: 'barcode', width: 15 },
       { header: 'Artist', key: 'artist_name', width: 30 },
       { header: 'Project', key: 'name', width: 30 },
       { header: 'Stocks', key: 'stock', width: 15 },
