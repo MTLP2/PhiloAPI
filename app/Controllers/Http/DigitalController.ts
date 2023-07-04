@@ -18,17 +18,17 @@ class DigitalController {
     if (params.uploading) {
       const res = await Utils.upload({
         ...params,
-        isPrivate: true,
-        fileName: `dev/${params.id}.wav`
+        isPrivate: false,
+        fileName: `dev/tracks/${params.id}.wav`
       })
       if (res.success) {
         if (params.skipEncoding) {
           await DB('song').where('id', params.id).update({
             listenable: true
           })
-          Song.setInfo(params.id)
+          Song.setDigitalInfo(params.id)
         } else {
-          await Song.setInfo(params.id)
+          await Song.setDigitalInfo(params.id)
         }
       }
       return {
@@ -55,7 +55,8 @@ class DigitalController {
     if (params.uploading) {
       const res = await Utils.upload({
         ...params,
-        fileName: `songs/${track.id}.mp3`
+        isPrivate: true,
+        fileName: `dev/tracks/${track.id}.wav`
       })
       if (res.success) {
         if (params.skipEncoding) {
@@ -161,18 +162,7 @@ class DigitalController {
         mixer: schema.string.optional({ trim: true }),
         composer: schema.string.optional({ trim: true }),
         lyricist: schema.string.optional({ trim: true }),
-        publisher: schema.string.optional({ trim: true }),
-        track_number: schema.number.optional(),
-        track_name: schema.string.optional({ trim: true }),
-        start_of_preview: schema.string.optional({ trim: true }),
-        isrc_code: schema.string.optional({ trim: true }),
-        primary_artist: schema.string.optional({ trim: true }),
-        secondary_artist: schema.string.optional({ trim: true }),
-        first_genre: schema.array.optional().members(schema.string({ trim: true })),
-        secondary_genre: schema.array.optional().members(schema.string({ trim: true })),
-        featured_artist: schema.string.optional({ trim: true }),
-        remixer_artist: schema.string.optional({ trim: true }),
-        lyricist_language: schema.string.optional({ trim: true })
+        publisher: schema.string.optional({ trim: true })
       }),
       data: params
     })
@@ -183,7 +173,7 @@ class DigitalController {
     try {
       const payload = await validator.validate({
         schema: schema.create({
-          id: schema.number()
+          id: schema.number.optional()
         }),
         data: params
       })
