@@ -199,7 +199,6 @@ class Song {
   }
 
   static compressToMP3 = async (id) => {
-    console.log('dans la fonction')
     const buffer = await Storage.get(`dev/tracks/${id}.wav`)
     const track: any = await Song.compressSong(buffer)
     await Storage.upload(`songs/${id}.mp3`, track.buffer)
