@@ -4113,7 +4113,6 @@ class Admin {
       .where('product.type', 'vinyl')
       .whereNotNull('product.barcode')
       .hasMany('stock')
-
     if (!params.lang) {
       params.lang === 'FR'
     }
@@ -4136,7 +4135,7 @@ class Admin {
     for (const p in projects) {
       const pp = projects[p]
 
-      console.log('pp', pp)
+      // console.log('pp', pp)
 
       for (const stock of pp.stock) {
         pp[`stock_${stock.type}`] = stock.quantity
@@ -4212,10 +4211,8 @@ class Admin {
         ? `${Env.get('STORAGE_URL')}/projects/${pp.picture || pp.id}/${pp.picture_project}.png;`
         : `${Env.get('STORAGE_URL')}/projects/${pp.picture || pp.id}/vinyl.png;`
       csv += `"${pp.artist_name}";`
-      csv += ';;;;'
+      csv += ';;;;;;'
       csv += pp.estimated_shipping + ';'
-      csv += ';'
-      csv += pp.com.follow_artist ? 'prio;' : ';'
       csv += pp.format + ';'
       csv += (pp.vinyl_weight || '140') + ';'
       csv += pp.rpm + ';'
