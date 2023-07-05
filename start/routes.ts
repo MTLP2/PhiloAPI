@@ -218,6 +218,7 @@ Route.group(() => {
     Route.post('/:id/tracks-new', 'DigitalController.saveTrackNew')
     Route.get('/:id/songs', 'DigitalController.getSongs')
     Route.delete('/:project_id/tracks/:id', 'DigitalController.deleteTrack')
+    Route.get('/:id/artwork', 'DigitalController.getArtwork')
   }).prefix('digital')
 
   Route.get('/digital/:id/track', 'DigitalController.downloadTrack')
@@ -588,7 +589,6 @@ Route.group(() => {
   .prefix('admin')
   .middleware(['auth', 'admin'])
 
-// Digital routes
 Route.group(() => {
   Route.get('/projects', 'UserController.getMyDigitalProjects')
 })

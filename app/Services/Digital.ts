@@ -52,6 +52,17 @@ class Digital {
     })
   }
 
+  static async getArtwork(params) {
+    const digital = await DB('digital').select('artwork').where('id', params.id).first()
+    console.log('salut', digital.artwork)
+
+    if (!digital) {
+      throw new ApiError(404)
+    }
+
+    return await Storage.get(`dev/artworks/${digital.artwork}.jpg`)
+  }
+
   static async find(params: { id: number }) {
     const digital = await DB('digital')
       .select(

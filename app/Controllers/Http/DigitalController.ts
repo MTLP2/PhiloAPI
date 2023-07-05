@@ -62,6 +62,10 @@ class DigitalController {
     return await Song.setInfo(params.tid)
   }
 
+  async getArtwork({ params }) {
+    return await Digital.getArtwork(params)
+  }
+
   async deleteTrack({ params, user }) {
     params.user = user
     const song = await Song.find(params.id)
