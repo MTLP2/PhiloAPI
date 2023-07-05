@@ -145,6 +145,12 @@ class Song {
     return songs.all()
   }
 
+  static downloadTrack = async (params) => {
+    const track = await Storage.get(`dev/tracks/${params.id}.wav`)
+
+    return track
+  }
+
   static addPlay = async (payload: {
     song_id: number
     duration: number

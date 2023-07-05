@@ -69,6 +69,10 @@ class DigitalController {
     return Song.deleteDigitalTrack(params)
   }
 
+  async downloadTrack({ params }) {
+    return await Song.downloadTrack(params)
+  }
+
   async getAll({ params }) {
     return await Digital.getAll(params)
   }

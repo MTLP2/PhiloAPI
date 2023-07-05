@@ -123,13 +123,6 @@ Route.group(() => {
   Route.post('/projects/:id/tracks/:tid/encode', 'ProjectsController.encodeTrack')
   Route.delete('/projects/:project_id/tracks/:id', 'ProjectsController.deleteTrack')
 
-  Route.post('digital/create', 'DigitalController.createDigitalProject')
-  Route.put('/digital/:id/tracks', 'DigitalController.saveTracks')
-  Route.post('/digital/:id/tracks', 'DigitalController.saveTrack')
-  Route.post('/digital/:id/tracks-new', 'DigitalController.saveTrackNew')
-  Route.get('/digital/:id/songs', 'DigitalController.getSongs')
-  Route.delete('/digital/:project_id/tracks/:id', 'DigitalController.deleteTrack')
-
   Route.get('/users', 'UsersController.all')
   Route.get('/users/:id', 'UsersController.find')
 
@@ -217,6 +210,17 @@ Route.group(() => {
   Route.post('/shop/project/position', 'ShopController.changeProjectPosition')
   Route.post('/shop/project/featured', 'ShopController.setFeatured')
   Route.delete('/shop/image', 'ShopController.removeShopImage')
+
+  Route.group(() => {
+    Route.post('/create', 'DigitalController.createDigitalProject')
+    Route.put('/:id/tracks', 'DigitalController.saveTracks')
+    Route.post('/:id/tracks', 'DigitalController.saveTrack')
+    Route.post('/:id/tracks-new', 'DigitalController.saveTrackNew')
+    Route.get('/:id/songs', 'DigitalController.getSongs')
+    Route.delete('/:project_id/tracks/:id', 'DigitalController.deleteTrack')
+  }).prefix('digital')
+
+  Route.get('/digital/:id/track', 'DigitalController.downloadTrack')
 }).middleware('auth')
 
 Route.get('/productions/:id/order-form', 'ProductionController.orderForm')
@@ -548,7 +552,7 @@ Route.group(() => {
     Route.post('/', 'DigitalController.createAdmin')
     Route.get('/export', 'DigitalController.export')
     Route.post('/duplicate/:id', 'DigitalController.duplicate')
-    // Route.get(':id', 'DigitalController.getDigitalSingle')
+    Route.get(':id', 'DigitalController.getDigitalSingle')
     Route.get(':id/download', 'DigitalController.downloadFile')
     Route.get(':id/files', 'DigitalController.getFiles')
     Route.post(':did/files', 'DigitalController.addFile')
