@@ -21,8 +21,8 @@ class Vod {
 
       vod.type = params.type
       vod.project_id = pp.id
-      vod.step = 'creating'
       vod.type = params.type === 'direct_pressing' ? 'direct_pressing' : 'funding'
+      vod.step = params.type === 'direct_pressing' ? 'checking' : 'creating'
       vod.transporters = '{"daudin":true}'
       vod.origin = params.origin
       vod.user_id = params.user.user_id !== 0 ? params.user.user_id : null
