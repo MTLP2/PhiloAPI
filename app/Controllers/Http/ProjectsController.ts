@@ -119,7 +119,7 @@ class ProjectsController {
     await Utils.checkProjectOwner({ project_id: params.project_id, user: user })
 
     if (!params.id) {
-      const track = await ProjectEdit.saveTrack(params)
+      const track = await ProjectEdit.saveDigitalTrack(params)
       params.id = track.id
     }
     if (params.uploading) {

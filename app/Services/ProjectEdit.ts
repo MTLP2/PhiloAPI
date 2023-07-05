@@ -182,7 +182,11 @@ class ProjectEdit {
       song.project_id = params.project_id
       song.created_at = Utils.date()
     }
-
+    if (params) {
+      song.is_digital = 1
+    } else {
+      song.is_digital = 0
+    }
     song.title = params.title
     song.artist = params.artist
     song.side && (song.side = params.side)

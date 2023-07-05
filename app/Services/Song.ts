@@ -97,8 +97,7 @@ class Song {
         's.title',
         's.artist',
         's.listenable',
-        'p.artist_name',
-        'p.slug',
+        'd.artist_name',
         's.url',
         's.duration',
         's.position',
@@ -106,9 +105,9 @@ class Song {
         's.side',
         's.disabled',
         's.digital_bonus',
-        'p.id as project_id',
-        'p.name as project_name',
-        'p.picture as project_picture',
+        'd.id as project_id',
+        'd.project_name as project_name',
+        'd.artwork as artwork',
         's.start_of_preview',
         's.isrc_code',
         's.secondary_artist',
@@ -118,28 +117,29 @@ class Song {
         's.lyrics_language',
         's.remixer_artist',
         DB.raw(`(
-        select count(*)
-        from \`like\`
-        where project_id = p.id and user_id = ${params.user_id ? params.user_id : 0}
-      ) as liked
-      `)
+          select count(*)
+          from \`like\`
+          where project_id = d.id and user_id = ${params.user_id ? params.user_id : 0}
+        ) as liked
+        `)
       )
       .from('song as s')
-      .join('project as p', 'p.id', 's.project_id')
-      .where('p.id', params.project_id)
+      .join('digital as d', 'd.id', 's.project_id')
+      .where('d.id', params.project_id)
+      .where('s.is_digital', 1)
       .orderBy('disc')
       .orderBy('side')
       .orderBy(
         DB().raw(`
-      CAST(position AS UNSIGNED)=0,
-      CAST(position AS UNSIGNED),
-      LEFT(position,1),
-      CAST(MID(position,2) AS UNSIGNED)
-    `)
+        CAST(position AS UNSIGNED)=0,
+        CAST(position AS UNSIGNED),
+        LEFT(position,1),
+        CAST(MID(position,2) AS UNSIGNED)
+      `)
       )
 
     if (!params.disabled) {
-      songs.where('disabled', 0)
+      songs.where('s.disabled', 0)
     }
 
     return songs.all()
@@ -190,6 +190,24 @@ class Song {
     await Storage.upload(`tracks/${id}.zip`, buffer, true)
 
     return Storage.url(path, `${project.artist_name} - ${project.name}.zip`)
+  }
+
+  static compressToMP3 = async (id) => {
+    console.log('dans la fonction')
+    const buffer = await Storage.get(`dev/tracks/${id}.wav`)
+    const track: any = await Song.compressSong(buffer)
+    await Storage.upload(`songs/${id}.mp3`, track.buffer)
+    const seconds = moment.duration(track.duration).asSeconds()
+    await DB('song')
+      .where('id', id)
+      .update({
+        listenable: true,
+        duration: seconds,
+        duration_str: track.duration.substr(3, 5),
+        updated_at: Utils.date()
+      })
+
+    return { success: true }
   }
 
   static setInfo = async (id) => {

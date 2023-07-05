@@ -12,13 +12,12 @@ class DigitalController {
     await Utils.checkProjectOwner({ project_id: params.project_id, user: user })
 
     if (!params.id) {
-      const track = await ProjectEdit.saveTrack(params)
+      const track = await ProjectEdit.saveDigitalTrack(params)
       params.id = track.id
     }
     if (params.uploading) {
       const res = await Utils.upload({
         ...params,
-        isPrivate: false,
         fileName: `dev/tracks/${params.id}.wav`
       })
       if (res.success) {
@@ -26,9 +25,9 @@ class DigitalController {
           await DB('song').where('id', params.id).update({
             listenable: true
           })
-          Song.setDigitalInfo(params.id)
+          // Song.compressToMP3(params.id)
         } else {
-          await Song.setDigitalInfo(params.id)
+          // await Song.compressToMP3(params.id)
         }
       }
       return {
@@ -52,26 +51,7 @@ class DigitalController {
     params.user = user
     await Utils.checkProjectOwner({ project_id: params.project_id, user: user })
     const track = await ProjectEdit.saveDigitalTrack(params)
-    if (params.uploading) {
-      const res = await Utils.upload({
-        ...params,
-        isPrivate: true,
-        fileName: `dev/tracks/${track.id}.wav`
-      })
-      if (res.success) {
-        if (params.skipEncoding) {
-          Song.setInfo(track.id)
-        } else {
-          await Song.setInfo(track.id)
-        }
-      }
-      return {
-        ...res,
-        id: track.id
-      }
-    } else {
-      return track
-    }
+    return track
   }
 
   async saveTracks({ params }) {
