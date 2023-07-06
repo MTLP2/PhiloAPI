@@ -29,6 +29,10 @@ class Vod {
       vod.user_id = params.user.user_id !== 0 ? params.user.user_id : null
       vod.created_at = Utils.date()
 
+      if (params.type === 'direct_pressing' && !params.user.user_id) {
+        vod.user_id = 181134
+      }
+
       const user = await DB('user').where('id', params.user.user_id).first()
       if (user && user.soundcloud_sub) {
         vod.sponsor = 34632
@@ -45,7 +49,7 @@ class Vod {
       if (params.type === 'direct_pressing') {
         await Notification.sendEmail({
           to: 'sophie@diggersfactory.com',
-          subject: `New direct pressing : ${params.email}`,
+          subject: `New direct pressing : ${params.customer.email}`,
           html: `<p>
             <ul>
               <li><b>Project :</b> 
@@ -53,7 +57,7 @@ class Vod {
                   ${vod.project_id}
                 </a>
               </li>
-              <li><b>Email :</b> ${params.email}</li>
+              <li><b>Email :</b> ${params.customer.email}</li>
               <li><b>Quantity :</b> ${params.quantity}</li>
               <li><b>Lang :</b> ${params.lang}</li>
             </ul>

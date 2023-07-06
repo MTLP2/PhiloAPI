@@ -47,6 +47,7 @@ class Admin {
         'user.email as user_email',
         'user.sponsor as user_sponsor',
         'customer.phone as phone',
+        'customer.email as customer_email',
         'resp_prod.name as resp_prod',
         'com.name as com',
         'vod.id as vod_id',
