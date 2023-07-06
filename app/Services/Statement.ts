@@ -1554,18 +1554,31 @@ class StatementService {
 
     if (params.type === 'follow_up') {
       for (const invoice of invoices) {
+        if (!projects[invoice.project_id]) {
+          continue
+        }
         if (invoice.type === 'invoice') {
           projects[invoice.project_id].invoiced += invoice.sub_total * invoice.currency_rate
         } else {
           projects[invoice.project_id].invoiced -= invoice.sub_total * invoice.currency_rate
         }
         projects[invoice.project_id].direct_balance = projects[invoice.project_id].invoiced
+
+        if (!projects[invoice.project_id].date) {
+          projects[invoice.project_id].date = invoice.date
+        }
       }
       for (const prod of prods) {
+        if (!projects[prod.project_id]) {
+          continue
+        }
         projects[prod.project_id].quantity = prod.quantity
         projects[prod.project_id].quantity_pressed = prod.quantity_pressed
       }
       for (const cost of costs) {
+        if (!projects[cost.project_id]) {
+          continue
+        }
         if (cost.name) {
           const name = cost.name.split(' ')
           if (!isNaN(name[1])) {
@@ -1641,6 +1654,7 @@ class StatementService {
         { header: 'Invoiced', key: 'invoiced', width: 10 },
         { header: 'Costs', key: 'direct_costs', width: 10 },
         { header: 'Balance', key: 'direct_balance', width: 10 },
+        { header: 'Date', key: 'date', width: 10 },
         { header: 'Comment', key: 'statement_comment', width: 50 }
       ]
 
