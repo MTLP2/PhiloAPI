@@ -1309,7 +1309,24 @@ class Project {
     return code
   }
 
-  static recommendations = async (params) => {
+  static recommandationsForUser = async (id: number) => {
+    const artists = await DB('order_item')
+      .join('order_shop', 'order_item.order_shop_id', 'order_shop.id')
+      .where('order_shop.is_paid', true)
+      .where('order_shop.user_id', id)
+      .groupBy('order_item.project_id')
+      .select('order_item.project_id')
+      .all()
+
+    return this.recommendations({ refs: artists.map((a) => a.project_id), shop: false })
+  }
+
+  static recommendations = async (params: {
+    refs: number[]
+    shops?: number[]
+    shop: boolean
+    user?: number
+  }) => {
     if (!params.refs) return []
 
     const styles = (
@@ -1356,7 +1373,7 @@ class Project {
         .select(...selects)
         .join('vod as v', 'v.project_id', 'p.id')
         .join('item', 'item.related_id', 'p.id')
-        .where('item.project_id', params.refs)
+        .whereIn('item.project_id', params.refs)
         .where('v.step', 'in_progress')
         .where((query) => {
           query.where('is_shop', false)
@@ -1420,7 +1437,6 @@ class Project {
     }
 
     const refs = refs0.concat(refs1)
-
     const refs2 = (
       await DB('project as p')
         .select(...selects)
