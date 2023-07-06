@@ -1,3 +1,4 @@
+import { Quote } from './../../../web/pages/project/manage2/manage-types.d'
 import DB from 'App/DB'
 import Customer from 'App/Services/Customer'
 import Notification from 'App/Services/Notification'
@@ -29,8 +30,12 @@ class Vod {
       vod.user_id = params.user.user_id !== 0 ? params.user.user_id : null
       vod.created_at = Utils.date()
 
-      if (params.type === 'direct_pressing' && !params.user.user_id) {
-        vod.user_id = 181134
+      if (params.type === 'direct_pressing') {
+        vod.quote = params.quote
+        vod.currency = params.currency
+        if (!params.user.user_id) {
+          vod.user_id = 181134
+        }
       }
 
       const user = await DB('user').where('id', params.user.user_id).first()
