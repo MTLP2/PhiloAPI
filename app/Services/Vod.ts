@@ -4,6 +4,7 @@ import Notification from 'App/Services/Notification'
 import Utils from 'App/Utils'
 import config from 'Config/index'
 import User from './User'
+import Env from '@ioc:Adonis/Core/Env'
 import fs from 'fs'
 
 class Vod {
@@ -40,6 +41,26 @@ class Vod {
         project_id: pp.id,
         user_id: params.user.user_id
       })
+
+      if (params.type === 'direct_pressing') {
+        const user = await DB('user').where('id', vod.user_id).first()
+        await Notification.sendEmail({
+          to: 'sophie@diggersfactory.com',
+          subject: `New direct pressing : ${user.email}`,
+          html: `<p>
+            <ul>
+              <li><b>Project :</b> 
+                <a href="${Env.get('APP_URL')}/sheraf/project/${vod.project_id}">
+                  ${vod.project_id}
+                </a>
+              </li>
+              <li><b>Email :</b> ${user.email}</li>
+              <li><b>Quantity :</b> ${params.quantity}</li>
+              <li><b>Lang :</b> ${user.lang}</li>
+            </ul>
+          </p>`
+        })
+      }
     }
 
     if (vod.user_id === null && params.user.user_id !== 0) {
