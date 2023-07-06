@@ -193,13 +193,15 @@ class Product {
     color?: string
     weight?: number
   }) {
-    const alreadyExists = await DB('product')
-      .where('barcode', payload.barcode)
-      .where('id', '!=', payload.id || 0)
-      .first()
+    if (payload.barcode) {
+      const alreadyExists = await DB('product')
+        .where('barcode', payload.barcode)
+        .where('id', '!=', payload.id || 0)
+        .first()
 
-    if (alreadyExists) {
-      return { error: 'barcode_already_used' }
+      if (alreadyExists) {
+        return { error: 'barcode_already_used' }
+      }
     }
     let item: any = DB('product')
     if (payload.id) {
