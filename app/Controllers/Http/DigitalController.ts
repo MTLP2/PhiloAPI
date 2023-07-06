@@ -3,7 +3,6 @@ import { validator, schema, rules } from '@ioc:Adonis/Core/Validator'
 import ApiError from 'App/ApiError'
 import Utils from 'App/Utils'
 import ProjectEdit from 'App/Services/ProjectEdit'
-import DB from 'App/DB'
 import Song from 'App/Services/Song'
 
 class DigitalController {
@@ -16,24 +15,7 @@ class DigitalController {
       params.id = track.id
     }
     if (params.uploading) {
-      const res = await Utils.upload({
-        ...params,
-        fileName: `dev/tracks/${params.id}.wav`
-      })
-      if (res.success) {
-        if (params.skipEncoding) {
-          await DB('song').where('id', params.id).update({
-            listenable: true
-          })
-          // Song.compressToMP3(params.id)
-        } else {
-          // await Song.compressToMP3(params.id)
-        }
-      }
-      return {
-        ...res,
-        id: params.id
-      }
+      return await Digital.uploadTrack(params)
     } else {
       return {
         id: params.id
@@ -54,9 +36,9 @@ class DigitalController {
     return track
   }
 
-  async saveTracks({ params }) {
-    return Song.saveTracks(params.tracks)
-  }
+  // async saveTracks({ params }) {
+  //   return Song.saveTracks(params.tracks)
+  // }
 
   async encodeTrack({ params }) {
     return await Song.setInfo(params.tid)
@@ -121,9 +103,7 @@ class DigitalController {
   }
 
   async createOne({ params, user }) {
-    const uid = Utils.uuid()
     params.user_id = user.user_id
-
     const payload = await validator.validate({
       schema: schema.create({
         artwork: schema.string.optional({ trim: true }),
@@ -138,19 +118,14 @@ class DigitalController {
         genre: schema.array.optional().members(schema.string({ trim: true })),
         commercial_release_date: schema.string.optional({ trim: true }),
         preview_date: schema.string.optional({ trim: true }),
-        explicit_content: schema.boolean.optional(),
+        explicit_content: schema.number.optional(),
         territory_included: schema.array.optional().members(schema.string({ trim: true })),
         territory_excluded: schema.array.optional().members(schema.string({ trim: true })),
         platforms_excluded: schema.string.optional({ trim: true }),
         registration_year: schema.number.optional(),
         digital_rights_owner: schema.string.optional({ trim: true }),
         label_name: schema.string.optional({ trim: true }),
-        nationality_project: schema.string.optional({ trim: true }),
-        producer: schema.string.optional({ trim: true }),
-        mixer: schema.string.optional({ trim: true }),
-        composer: schema.string.optional({ trim: true }),
-        lyricist: schema.string.optional({ trim: true }),
-        publisher: schema.string.optional({ trim: true })
+        nationality_project: schema.string.optional({ trim: true })
       }),
       data: params
     })

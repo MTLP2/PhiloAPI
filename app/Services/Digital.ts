@@ -4,6 +4,7 @@ import Utils from 'App/Utils'
 import Storage from 'App/Services/Storage'
 import File from 'App/Services/File'
 import { integer } from 'aws-sdk/clients/cloudfront'
+import Song from './Song'
 
 type DigitalDb = {
   id?: integer
@@ -17,7 +18,7 @@ type DigitalDb = {
   genre?: string[]
   commercial_release_date?: string
   preview_date?: string
-  explicit_content?: boolean
+  explicit_content?: number
   territory_included?: string[]
   territory_excluded?: string[]
   platforms_excluded?: string
@@ -25,11 +26,6 @@ type DigitalDb = {
   digital_rights_owner?: string
   label_name?: string
   nationality_project?: string
-  producer?: string
-  mixer?: string
-  composer?: string
-  lyricist?: string
-  publisher?: string
   user_id?: number
   created_at?: string
   updated_at?: string
@@ -154,7 +150,6 @@ class Digital {
 
   static async store(payload: DigitalDb) {
     let item = <any>DB('digital')
-
     if (payload.id) {
       item = await DB('digital').find(payload.id)
       if (!item) {
@@ -175,7 +170,7 @@ class Digital {
     item.genre = payload.genre?.join(',') || null
     item.commercial_release_date = payload.commercial_release_date || null
     item.preview_date = payload.preview_date || null
-    item.explicit_content = payload.explicit_content || null
+    item.explicit_content = payload.explicit_content || 0
     item.territory_included = payload.territory_included?.join(',') || null
     item.territory_excluded = payload.territory_excluded?.join(',') || null
     item.platforms_excluded = payload.platforms_excluded || null
@@ -183,11 +178,6 @@ class Digital {
     item.digital_rights_owner = payload.digital_rights_owner || null
     item.label_name = payload.label_name || null
     item.nationality_project = payload.nationality_project || null
-    item.producer = payload.producer || null
-    item.mixer = payload.mixer || null
-    item.composer = payload.composer || null
-    item.lyricist = payload.lyricist || null
-    item.publisher = payload.publisher || null
     item.updated_at = Utils.date()
 
     await item.save()
@@ -278,6 +268,23 @@ class Digital {
     ])
 
     return { success: true }
+  }
+
+  static async uploadTrack(params) {
+    const res = await Utils.upload({
+      ...params,
+      fileName: `songs/${params.id}.wav`
+    })
+    if (res.success) {
+      await DB('song').where('id', params.id).update({
+        listenable: true
+      })
+      await Song.compressToMP3(params.id)
+    }
+    return {
+      ...res,
+      id: params.id
+    }
   }
 
   static async duplicate(params: { id: number }) {

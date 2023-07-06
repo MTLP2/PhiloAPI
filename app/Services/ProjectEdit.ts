@@ -202,12 +202,16 @@ class ProjectEdit {
     song.updated_at = Utils.date()
     song.start_of_preview = params.start_of_preview
     song.isrc_code = params.isrc_code
-    song.secondary_artist = params.secondary_artist
     song.featured_artist = params.featured_artist
     song.first_genre = params.first_genre
     song.secondary_genre = params.secondary_genre
     song.lyrics_language = params.lyrics_language
     song.remixer_artist = params.remixer_artist
+    song.producer = params.producer
+    song.publisher = params.publisher
+    song.composer = params.composer
+    song.mixer = params.mixer
+    song.lyricist = params.lyricist
     await song.save()
 
     return song

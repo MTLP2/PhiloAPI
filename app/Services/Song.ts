@@ -90,6 +90,7 @@ class Song {
 
     return songs.all()
   }
+
   static byDigitalProject = (params) => {
     const songs = DB()
       .select(
@@ -110,12 +111,16 @@ class Song {
         'd.artwork as artwork',
         's.start_of_preview',
         's.isrc_code',
-        's.secondary_artist',
         's.featured_artist',
         's.first_genre',
         's.secondary_genre',
         's.lyrics_language',
         's.remixer_artist',
+        's.producer',
+        's.composer',
+        's.publisher',
+        's.lyricist',
+        's.mixer',
         DB.raw(`(
           select count(*)
           from \`like\`
@@ -199,7 +204,7 @@ class Song {
   }
 
   static compressToMP3 = async (id) => {
-    const buffer = await Storage.get(`dev/tracks/${id}.wav`)
+    const buffer = await Storage.get(`songs/${id}.wav`)
     const track: any = await Song.compressSong(buffer)
     await Storage.upload(`songs/${id}.mp3`, track.buffer)
     const seconds = moment.duration(track.duration).asSeconds()

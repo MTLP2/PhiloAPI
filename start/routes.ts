@@ -213,10 +213,9 @@ Route.group(() => {
 
   Route.group(() => {
     Route.post('/create', 'DigitalController.createDigitalProject')
-    Route.put('/:id/tracks', 'DigitalController.saveTracks')
+    Route.put('/:id/tracks', 'DigitalController.saveTrack')
     Route.post('/:id/tracks', 'DigitalController.saveTrack')
     Route.post('/:id/tracks-new', 'DigitalController.saveTrackNew')
-    Route.get('/:id/songs', 'DigitalController.getSongs')
     Route.delete('/:project_id/tracks/:id', 'DigitalController.deleteTrack')
     Route.get('/:id/artwork', 'DigitalController.getArtwork')
   }).prefix('digital')
@@ -224,6 +223,7 @@ Route.group(() => {
   Route.get('/digital/:id/track', 'DigitalController.downloadTrack')
 }).middleware('auth')
 
+Route.get('/digital/:id/songs', 'DigitalController.getSongs')
 Route.get('/productions/:id/order-form', 'ProductionController.orderForm')
 
 Route.group(() => {
