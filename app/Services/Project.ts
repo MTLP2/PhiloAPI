@@ -1318,6 +1318,10 @@ class Project {
       .select('order_item.project_id')
       .all()
 
+    if (!artists.length) {
+      return []
+    }
+
     return this.recommendations({ refs: artists.map((a) => a.project_id), shop: false })
   }
 
@@ -1457,7 +1461,9 @@ class Project {
         .all()
     ).map((project) => Project.setInfos(project, currencies, null, ss))
 
-    return reco.concat(refs0).concat(refs1).concat(refs2).slice(0, 6)
+    const allProjects = reco.concat(refs0).concat(refs1).concat(refs2)
+    const randomProjects = allProjects.sort(() => Math.random() - 0.5).slice(0, 6)
+    return randomProjects
   }
 
   static checkDownloadCode = async ({ projectId, userId }) => {
