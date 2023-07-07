@@ -38,6 +38,10 @@ class ProjectsController {
     return Project.getSoundcloud(params)
   }
 
+  recommandationsForUser({ user }) {
+    return Project.recommandationsForUser(user.user_id)
+  }
+
   recommandations({ params, user }) {
     params.refs = params.refs && params.refs.split(',')
     params.shops = params.shops && params.shops.split(',')

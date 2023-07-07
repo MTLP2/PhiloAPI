@@ -105,6 +105,7 @@ Route.group(() => {
   Route.get('/projects', 'ProjectsController.getProjects')
   Route.get('/projects/all', 'ProjectsController.getAll')
   Route.get('/projects/recommandations', 'ProjectsController.recommandations')
+  Route.get('/projects/recommandations-for-user', 'ProjectsController.recommandationsForUser')
   Route.get('/projects/soundcloud', 'ProjectsController.getSoundcloud')
   Route.get('/projects/dashboard', 'ProjectsController.getDashboard')
   Route.get('/projects/:id', 'ProjectsController.find')
