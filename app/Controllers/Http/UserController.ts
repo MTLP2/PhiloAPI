@@ -12,6 +12,10 @@ import ApiError from 'App/ApiError'
 import { validator, schema } from '@ioc:Adonis/Core/Validator'
 
 class UserController {
+  async getAllFeatured() {
+    return User.getAllFeatured()
+  }
+
   async follow({ params, user }) {
     const payload = await validator.validate({
       schema: schema.create({
