@@ -2398,7 +2398,25 @@ class Admin {
     return user
   }
 
-  static saveUser = async (params) => {
+  static saveUser = async (params: {
+    id?: number
+    name: string
+    email: string
+    emails: string
+    code_client: string
+    user_type: string
+    is_pro: number
+    is_delete: number
+    lang: string
+    about_me: string
+    confirmed: number
+    unsubscribed: number
+    balance_followup: number
+    balance_comment: number
+    country_id: number
+    styles: string
+    featured: number
+  }) => {
     const user = await DB('user').find(params.id)
 
     user.name = params.name
@@ -2416,6 +2434,7 @@ class Admin {
     user.balance_comment = params.balance_comment
     user.country_id = params.country_id || null
     user.styles = JSON.stringify(params.styles)
+    user.featured = params.featured
     user.updated_at = Utils.date()
 
     try {
