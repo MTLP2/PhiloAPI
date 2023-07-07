@@ -235,8 +235,9 @@ class User {
 
     user.projects = await DB('project as p')
       .select('p.*')
-      .join('user as u', 'u.name', 'p.label_name')
-      .where('u.id', user.id)
+      .join('vod', 'vod.project_id', 'p.id')
+      .where('vod.user_id', user.id)
+      .whereIn('vod.step', ['in_progress', 'successful'])
       .all()
 
     const stylesDB = await DB('style').all()
