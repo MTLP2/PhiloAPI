@@ -90,6 +90,9 @@ export default class ExceptionHandler extends HttpExceptionHandler {
   }
 
   public async report(error: any) {
+    if (error.message.includes('E_ROUTE_NOT_FOUND')) {
+      return
+    }
     if (process.env.NODE_ENV === 'production') {
       console.log(error)
     } else {
