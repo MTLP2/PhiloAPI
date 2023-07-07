@@ -90,10 +90,10 @@ export default class ExceptionHandler extends HttpExceptionHandler {
   }
 
   public async report(error: any) {
-    if (error.message.includes('E_ROUTE_NOT_FOUND')) {
-      return
-    }
     if (process.env.NODE_ENV === 'production') {
+      if (error.stats < 500) {
+        return
+      }
       console.log(error)
     } else {
       const jsonResponse = await new Youch(error, {}).toJSON()
