@@ -36,6 +36,7 @@ class Admin {
     start?: string
     end?: string
     query?: any
+    filters?: string
     size?: number
   }) => {
     const projects = DB('project')
@@ -48,6 +49,7 @@ class Admin {
         'user.sponsor as user_sponsor',
         'customer.phone as phone',
         'customer.email as customer_email',
+        'customer.country_id as customer_country',
         'resp_prod.name as resp_prod',
         'com.name as com',
         'vod.id as vod_id',
@@ -100,6 +102,20 @@ class Admin {
       projects.where('vod.created_at', '<=', `${params.end} 23:59`)
     }
 
+    const filters = params.filters ? JSON.parse(params.filters) : null
+    if (filters) {
+      for (const f in filters) {
+        const filter = filters[f]
+        if (filter.name === 'customer.email') {
+          projects.where((query) => {
+            query.where('customer.email', 'LIKE', `%${filter.value}%`)
+            query.orWhere('user.email', 'LIKE', `%${filter.value}%`)
+          })
+          filters.splice(f, 1)
+          params.filters = JSON.stringify(filters)
+        }
+      }
+    }
     const res = await Utils.getRows<any>({ ...params, query: projects })
     return res
   }
