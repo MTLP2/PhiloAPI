@@ -54,7 +54,7 @@ class Vod {
       if (params.type === 'direct_pressing') {
         await Notification.sendEmail({
           to: 'sophie@diggersfactory.com',
-          subject: `New direct pressing : ${params.customer.email}`,
+          subject: `New direct pressing : ${params.customer.email || user.email}`,
           html: `<p>
             <ul>
               <li><b>Project :</b> 
@@ -62,8 +62,9 @@ class Vod {
                   ${vod.project_id}
                 </a>
               </li>
-              <li><b>Email :</b> ${params.customer.email}</li>
+              <li><b>Email :</b> ${params.customer.email || user.email}</li>
               <li><b>Quantity :</b> ${params.quantity}</li>
+              <li><b>Price :</b> ${params.quote} ${params.currency}</li>
               <li><b>Lang :</b> ${params.lang}</li>
             </ul>
           </p>`
