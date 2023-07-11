@@ -209,7 +209,6 @@ class Song {
   static compressToMP3 = async (params) => {
     const buffer = await Storage.get(`songs/${params.id}.wav`)
     const check = await Storage.get(`songs/${params.uuid}.mp3`)
-    console.log('ancien uuid', params.uuid)
     if (check) {
       await Storage.delete(`songs/${params.uuid}.mp3`)
     }

@@ -64,6 +64,28 @@ Route.group(() => {
   .prefix('intercom')
   .middleware('intercom')
 
+// Digital
+
+Route.group(() => {
+  Route.group(() => {
+    Route.post('/create', 'DigitalController.createDigitalProject')
+    Route.put('/:id/tracks', 'DigitalController.saveTrack')
+    Route.post('/:id/tracks', 'DigitalController.saveTrack')
+    Route.post('/:id/tracks-new', 'DigitalController.saveTrackNew')
+    Route.delete('/:project_id/tracks/:id', 'DigitalController.deleteTrack')
+    Route.get('/:id/artwork', 'DigitalController.getArtwork')
+    Route.get('/:id/track', 'DigitalController.downloadTrack')
+  }).prefix('digital')
+}).middleware(['auth'])
+
+Route.get('/digital/:id/songs', 'DigitalController.getSongs')
+
+Route.group(() => {
+  Route.get('/projects', 'UserController.getMyDigitalProjects')
+})
+  .prefix('user/digital')
+  .middleware(['auth'])
+
 Route.group(() => {
   Route.get('/emails/:id', 'AppController.previewEmail')
 })
@@ -210,20 +232,8 @@ Route.group(() => {
   Route.post('/shop/project/position', 'ShopController.changeProjectPosition')
   Route.post('/shop/project/featured', 'ShopController.setFeatured')
   Route.delete('/shop/image', 'ShopController.removeShopImage')
-
-  Route.group(() => {
-    Route.post('/create', 'DigitalController.createDigitalProject')
-    Route.put('/:id/tracks', 'DigitalController.saveTrack')
-    Route.post('/:id/tracks', 'DigitalController.saveTrack')
-    Route.post('/:id/tracks-new', 'DigitalController.saveTrackNew')
-    Route.delete('/:project_id/tracks/:id', 'DigitalController.deleteTrack')
-    Route.get('/:id/artwork', 'DigitalController.getArtwork')
-  }).prefix('digital')
-
-  Route.get('/digital/:id/track', 'DigitalController.downloadTrack')
 }).middleware('auth')
 
-Route.get('/digital/:id/songs', 'DigitalController.getSongs')
 Route.get('/productions/:id/order-form', 'ProductionController.orderForm')
 
 Route.group(() => {
@@ -588,12 +598,6 @@ Route.group(() => {
 })
   .prefix('admin')
   .middleware(['auth', 'admin'])
-
-Route.group(() => {
-  Route.get('/projects', 'UserController.getMyDigitalProjects')
-})
-  .prefix('user/digital')
-  .middleware(['auth'])
 
 Route.group(() => {
   Route.post('/dispatch', 'DispatchController.update')

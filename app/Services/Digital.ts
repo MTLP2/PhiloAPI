@@ -50,7 +50,6 @@ class Digital {
 
   static async getArtwork(params) {
     const digital = await DB('digital').select('artwork').where('id', params.id).first()
-    console.log('salut', digital.artwork)
 
     if (!digital) {
       throw new ApiError(404)
@@ -63,7 +62,6 @@ class Digital {
     const digital = await DB('digital')
       .select(
         'digital.*',
-        // 'product.barcode',
         'product.isrc',
         'product.catnumber',
         'product.id as product_id',
@@ -140,7 +138,6 @@ class Digital {
       step: params.step,
       distribution: params.distribution,
       project_type: params.project_type,
-      // barcode: params.barcode,
       comment: params.comment
     })
 

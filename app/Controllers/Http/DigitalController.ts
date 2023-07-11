@@ -36,10 +36,6 @@ class DigitalController {
     return track
   }
 
-  // async saveTracks({ params }) {
-  //   return Song.saveTracks(params.tracks)
-  // }
-
   async encodeTrack({ params }) {
     return await Song.setInfo(params.tid)
   }
