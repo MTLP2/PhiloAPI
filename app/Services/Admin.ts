@@ -36,6 +36,7 @@ class Admin {
     start?: string
     end?: string
     query?: any
+    filters?: string
     size?: number
   }) => {
     const projects = DB('project')
@@ -47,6 +48,8 @@ class Admin {
         'user.email as user_email',
         'user.sponsor as user_sponsor',
         'customer.phone as phone',
+        'customer.email as customer_email',
+        'customer.country_id as customer_country',
         'resp_prod.name as resp_prod',
         'com.name as com',
         'vod.id as vod_id',
@@ -63,6 +66,7 @@ class Admin {
           AND user.is_pro
           AND order_item.project_id = project.id) AS count_distribution
       `),
+        DB().raw(`DATEDIFF(NOW(), vod.start) AS days_elapsed`),
         DB().raw(`
         (SELECT SUM(quantity)
         FROM order_item, order_shop
@@ -98,6 +102,20 @@ class Admin {
       projects.where('vod.created_at', '<=', `${params.end} 23:59`)
     }
 
+    const filters = params.filters ? JSON.parse(params.filters) : null
+    if (filters) {
+      for (const f in filters) {
+        const filter = filters[f]
+        if (filter.name === 'customer.email') {
+          projects.where((query) => {
+            query.where('customer.email', 'LIKE', `%${filter.value}%`)
+            query.orWhere('user.email', 'LIKE', `%${filter.value}%`)
+          })
+          filters.splice(f, 1)
+          params.filters = JSON.stringify(filters)
+        }
+      }
+    }
     const res = await Utils.getRows<any>({ ...params, query: projects })
     return res
   }
@@ -198,6 +216,7 @@ class Admin {
 
     const projectImagesQuery = Project.getProjectImages({ projectId: id })
 
+    const stockHistoricQuery = Stock.getHistoric({ project_id: id })
     const stocksSiteQuery = Stock.byProject({ project_id: id, is_distrib: false })
     const stocksDistribQuery = Stock.byProject({ project_id: id, is_distrib: true })
 
@@ -251,6 +270,7 @@ class Admin {
       project,
       codes,
       costs,
+      stockHistoric,
       stocksSite,
       stocksDistrib,
       items,
@@ -263,6 +283,7 @@ class Admin {
       projectQuery,
       codesQuery,
       costsQuery,
+      stockHistoricQuery,
       stocksSiteQuery,
       stocksDistribQuery,
       itemsQuery,
@@ -283,6 +304,7 @@ class Admin {
     project.project_images = projectImages
     project.exports = exps
 
+    project.stock_historic = stockHistoric
     project.stocks = []
     project.stocks.push(
       ...Object.entries(stocksSite).map(([key, value]) => {
@@ -1209,6 +1231,11 @@ class Admin {
     }
 
     vod.date_shipping = params.date_shipping || null
+
+    if (vod.step === 'in_progress' && !vod.date_shipping) {
+      vod.date_shipping = moment().add(3, 'months').format('YYYY-MM-DD')
+    }
+
     vod.status = params.status
     vod.step = params.step
 
@@ -1851,7 +1878,6 @@ class Admin {
   }
 
   static saveOrderShop = async (params) => {
-    console.log(params)
     const shop = await DB('order_shop').find(params.id)
 
     const customer = await Customer.save(params.customer)
@@ -2457,7 +2483,7 @@ class Admin {
   }
 
   static getUserEmails = async (params) => {
-    const profile = await Utils.request('https://beta-api-eu.customer.io/v1/api/customers', {
+    const profile: any = await Utils.request('https://beta-api-eu.customer.io/v1/api/customers', {
       qs: {
         email: params.email
       },
@@ -2467,11 +2493,11 @@ class Admin {
       json: true
     })
 
-    if (!profile.results) {
+    if (!profile.results || !profile.results[0] || !profile.results[0].cio_id) {
       return { success: false }
     }
 
-    const res = await Utils.request(
+    const res: any = await Utils.request(
       'https://fly-eu.customer.io/v1/environments/110794/deliveries',
       {
         qs: {
@@ -4041,6 +4067,8 @@ class Admin {
           { key: 'com', header: 'Resp. com', width: 15 },
           { key: 'type', header: 'Type', width: 15 },
           { key: 'category', header: 'Category', width: 15 },
+          { key: 'price', header: 'price', width: 15 },
+          { key: 'currency', header: 'currency', width: 15 },
           { key: 'date_shipping', header: 'Date Shipping', width: 15 },
           { key: 'country_id', header: 'Country ID', width: 15 },
           { key: 'origin', header: 'Origin', width: 15 },
@@ -4102,7 +4130,6 @@ class Admin {
       .where('product.type', 'vinyl')
       .whereNotNull('product.barcode')
       .hasMany('stock')
-
     if (!params.lang) {
       params.lang === 'FR'
     }
@@ -4125,7 +4152,7 @@ class Admin {
     for (const p in projects) {
       const pp = projects[p]
 
-      console.log('pp', pp)
+      // console.log('pp', pp)
 
       for (const stock of pp.stock) {
         pp[`stock_${stock.type}`] = stock.quantity
@@ -4201,10 +4228,8 @@ class Admin {
         ? `${Env.get('STORAGE_URL')}/projects/${pp.picture || pp.id}/${pp.picture_project}.png;`
         : `${Env.get('STORAGE_URL')}/projects/${pp.picture || pp.id}/vinyl.png;`
       csv += `"${pp.artist_name}";`
-      csv += ';;;;'
+      csv += ';;;;;;'
       csv += pp.estimated_shipping + ';'
-      csv += ';'
-      csv += pp.com.follow_artist ? 'prio;' : ';'
       csv += pp.format + ';'
       csv += (pp.vinyl_weight || '140') + ';'
       csv += pp.rpm + ';'

@@ -155,12 +155,11 @@ class Product {
       .select('*', DB.raw('quantity - preorder - reserved as available'))
       .where('product_id', payload.id)
       .all()
-    item.stocks_historic = await DB('stock_historic')
-      .select('stock_historic.*', 'user.name')
-      .leftJoin('user', 'user.id', 'stock_historic.user_id')
-      .where('product_id', payload.id)
-      .orderBy('id', 'desc')
-      .all()
+
+    const stock = await Stock.getHistoric({ product_id: payload.id })
+
+    item.stocks_historic = stock.list
+    item.stocks_months = stock.months
 
     item.stocks.unshift({
       type: 'distrib',
@@ -194,6 +193,16 @@ class Product {
     color?: string
     weight?: number
   }) {
+    if (payload.barcode) {
+      const alreadyExists = await DB('product')
+        .where('barcode', payload.barcode)
+        .where('id', '!=', payload.id || 0)
+        .first()
+
+      if (alreadyExists) {
+        return { error: 'barcode_already_used' }
+      }
+    }
     let item: any = DB('product')
     if (payload.id) {
       item = await DB('product').where('id', payload.id).first()

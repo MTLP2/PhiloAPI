@@ -1,9 +1,11 @@
+import { Quote } from './../../../web/pages/project/manage2/manage-types.d'
 import DB from 'App/DB'
 import Customer from 'App/Services/Customer'
 import Notification from 'App/Services/Notification'
 import Utils from 'App/Utils'
 import config from 'Config/index'
 import User from './User'
+import Env from '@ioc:Adonis/Core/Env'
 import fs from 'fs'
 
 class Vod {
@@ -21,12 +23,20 @@ class Vod {
 
       vod.type = params.type
       vod.project_id = pp.id
-      vod.step = 'creating'
-      vod.type = 'funding'
+      vod.type = params.type === 'direct_pressing' ? 'direct_pressing' : 'funding'
+      vod.step = params.type === 'direct_pressing' ? 'checking' : 'creating'
       vod.transporters = '{"daudin":true}'
       vod.origin = params.origin
       vod.user_id = params.user.user_id !== 0 ? params.user.user_id : null
       vod.created_at = Utils.date()
+
+      if (params.type === 'direct_pressing') {
+        vod.quote = params.quote
+        vod.currency = params.currency
+        if (!params.user.user_id) {
+          vod.user_id = 181134
+        }
+      }
 
       const user = await DB('user').where('id', params.user.user_id).first()
       if (user && user.soundcloud_sub) {
@@ -40,6 +50,26 @@ class Vod {
         project_id: pp.id,
         user_id: params.user.user_id
       })
+
+      if (params.type === 'direct_pressing') {
+        await Notification.sendEmail({
+          to: 'kendale@diggersfactory.com',
+          subject: `New direct pressing : ${params.customer.email || user.email}`,
+          html: `<p>
+            <ul>
+              <li><b>Project :</b> 
+                <a href="${Env.get('APP_URL')}/sheraf/project/${vod.project_id}">
+                  ${vod.project_id}
+                </a>
+              </li>
+              <li><b>Email :</b> ${params.customer.email || user.email}</li>
+              <li><b>Quantity :</b> ${params.quantity}</li>
+              <li><b>Price :</b> ${params.quote} ${params.currency}</li>
+              <li><b>Lang :</b> ${params.lang}</li>
+            </ul>
+          </p>`
+        })
+      }
     }
 
     if (vod.user_id === null && params.user.user_id !== 0) {
@@ -64,6 +94,13 @@ class Vod {
       } else {
         vod.sponsor = null
       }
+    }
+
+    if (params.type === 'direct_pressing' && vod.type !== 'direct_pressing') {
+      vod.type = 'direct_pressing'
+    }
+    if (params.type === 'vod' && vod.type === 'direct_pressing') {
+      vod.type = 'funding'
     }
 
     vod.updated_at = Utils.date()

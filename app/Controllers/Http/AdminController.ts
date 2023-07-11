@@ -923,6 +923,11 @@ class AdminController {
     return Statement.userDownload(params)
   }
 
+  getUserStatements2({ params }) {
+    params.send_statement = params.send_statement !== 'false'
+    return Statement.userDownload2(params)
+  }
+
   getUserBalance({ params }) {
     return Statement.userBalance(params)
   }

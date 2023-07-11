@@ -1579,6 +1579,42 @@ class App {
       ]
     })
     sitemap.write({
+      url: '/pressing',
+      changefreq: 'monthly',
+      priority: 0.6,
+      links: [
+        { lang: 'en', url: '/pressing' },
+        { lang: 'fr', url: '/fr/pressing' }
+      ]
+    })
+    sitemap.write({
+      url: '/cd-pressing',
+      changefreq: 'monthly',
+      priority: 0.6,
+      links: [
+        { lang: 'en', url: '/cd-pressing' },
+        { lang: 'fr', url: '/fr/cd-pressing' }
+      ]
+    })
+    sitemap.write({
+      url: '/merch-pressing',
+      changefreq: 'monthly',
+      priority: 0.6,
+      links: [
+        { lang: 'en', url: '/merch-pressing' },
+        { lang: 'fr', url: '/fr/merch-pressing' }
+      ]
+    })
+    sitemap.write({
+      url: '/tape-pressing',
+      changefreq: 'monthly',
+      priority: 0.6,
+      links: [
+        { lang: 'en', url: '/tape-pressing' },
+        { lang: 'fr', url: '/fr/tape-pressing' }
+      ]
+    })
+    sitemap.write({
       url: '/direct-pressing',
       changefreq: 'monthly',
       priority: 0.6,

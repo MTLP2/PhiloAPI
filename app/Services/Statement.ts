@@ -1,10 +1,13 @@
 import Excel from 'exceljs'
 import moment from 'moment'
 import Utils from 'App/Utils'
-import Notification from 'App/Services/Notification'
 import Storage from 'App/Services/Storage'
+import Project from 'App/Services/Project'
+import Stock from 'App/Services/Stock'
+import Notification from 'App/Services/Notification'
 import Log from 'App/Services/Log'
 import DB from 'App/DB'
+import I18n from '@ioc:Adonis/Addons/I18n'
 
 class StatementService {
   static async get(params: { id: number }) {
@@ -639,6 +642,314 @@ class StatementService {
     return workbook.xlsx.writeBuffer()
   }
 
+  static async download2(params: { id: number; number: number; start?: string; end?: string }) {
+    const workbook = new Excel.Workbook()
+    await this.setWorksheet2(workbook, params)
+    return workbook.xlsx.writeBuffer()
+  }
+
+  static async setWorksheet2(
+    workbook: any,
+    params: { id: number; number: number; auto?: boolean; start?: string; end?: string }
+  ) {
+    const project = await DB()
+      .select('vod.*', 'project.name', 'project.artist_name')
+      .from('vod')
+      .join('project', 'project.id', 'vod.project_id')
+      .where('project_id', params.id)
+      .first()
+
+    let currency
+    switch (project.currency) {
+      case 'EUR':
+        currency = '€'
+        break
+      case 'USD':
+        currency = '$'
+        break
+      case 'GBP':
+        currency = '£'
+        break
+      case 'AUD':
+        currency = '$A'
+        break
+    }
+
+    const data: any = await Project.getDashboard({
+      project_id: params.id,
+      start: params.start,
+      end: params.end,
+      only_data: true
+    })
+    if (!data) {
+      return null
+    }
+
+    const months: any[] = []
+    for (const d of Object.keys(data.balance.dates)) {
+      months.push(d)
+    }
+    months.push('Total')
+
+    const colors = {
+      blue: 'd5eeff',
+      green: 'd7ffe2',
+      gray: 'DDDDDD'
+    }
+
+    let name = params.number ? `${params.number}. ${project.name}` : `${project.name}`
+    name = name
+      .replace(/\*/gi, '')
+      .replace(/\?/gi, '')
+      .replace(/:/gi, '')
+      .replace(/'/gi, '')
+      .replace(/\//gi, '')
+      .replace(/\\/gi, '')
+      .replace(/\[/gi, '-')
+      .replace(/\]/gi, '-')
+
+    const ws = workbook.addWorksheet(name)
+
+    let y = 1
+    ws.mergeCells(`A${y}:${Utils.columnToLetter(8)}1`)
+    ws.getCell(`A${y}`).value = `${project.artist_name} - ${project.name}`
+    ws.getCell(`A${y}`).alignment = { horizontal: 'left' }
+    ws.getCell(`A${y}`).font = { bold: true, size: 20 }
+
+    y++
+    y++
+
+    for (let i = 0; i < months.length; i++) {
+      const cell = ws.getCell(Utils.columnToLetter(i + 2) + y)
+      cell.value = months[i]
+      cell.font = { bold: true, size: 15 }
+      cell.alignment = { horizontal: 'right', vertical: 'middle' }
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: colors.gray }
+      }
+    }
+    ws.columns.forEach(function (column, i) {
+      column.width = i === 0 ? 25 : i === months.length ? 18 : 12
+    })
+
+    const addLine = (props: {
+      label: string
+      currency?: string
+      height?: number
+      dates?: [key: string]
+      background?: string
+      total?: string | number
+      font?: {
+        bold?: boolean
+        italic?: boolean
+        size?: number
+      }
+    }) => {
+      y++
+      const row = ws.getRow(y)
+      row.height = props.height || 20
+      row.alignment = { vertical: 'middle' }
+      row.font = {
+        size: 14,
+        ...props.font
+      }
+
+      const cell = ws.getCell('A' + y)
+      cell.value = props.label
+      for (let m in months) {
+        const month = months[m]
+        const cell = ws.getCell(Utils.columnToLetter(months.indexOf(month) + 2) + y)
+        cell.value = props.dates ? props.dates[month] : ''
+        if (props.currency) {
+          cell.numFmt = `${props.currency}#,##0.00`
+        }
+        const font: any = {
+          ...props.font,
+          size: +m === months.length - 1 ? 15 : 14
+        }
+
+        if (props.dates && +props.dates[month] === 0) {
+          font.color = {
+            argb: '00BBBBBB'
+          }
+        }
+        cell.font = font
+      }
+      const cellTotal = ws.getCell(Utils.columnToLetter(months.length + 1) + y)
+      cellTotal.value = props.total
+        ? props.total
+        : props.dates
+        ? {
+            formula: `SUM(B${y}:${Utils.columnToLetter(months.length)}${y})`
+          }
+        : ''
+      if (props.currency) {
+        cellTotal.numFmt = `${props.currency}#,##0.00`
+      }
+      if (props.background) {
+        row.eachCell(function (cell) {
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: props.background }
+          }
+        })
+      }
+    }
+
+    addLine({
+      label: 'Quantity Sold',
+      dates: data.quantity.all.dates,
+      background: colors.blue,
+      font: { bold: true, size: 15 }
+    })
+    addLine({
+      label: 'Website - Total',
+      dates: data.quantity.site.dates,
+      font: { size: 15 }
+    })
+    if (data.quantity.box.all > 0) {
+      addLine({
+        label: 'Box - Total',
+        dates: data.quantity.box.dates,
+        font: { size: 15 }
+      })
+    }
+    if (data.quantity.distrib.all > 0) {
+      addLine({
+        label: 'Retail - Total',
+        dates: data.quantity.distrib.dates,
+        font: { size: 15 }
+      })
+    }
+
+    for (const country of Object.keys(data.quantity.distrib.country)) {
+      if (data.quantity.distrib.countries[country] > 0) {
+        addLine({
+          label: `Retail - ${I18n.locale('en').formatMessage(`countries.${country}`)}`,
+          dates: data.quantity.distrib.country[country],
+          font: { size: 12, italic: true }
+        })
+      }
+    }
+
+    y++
+    y++
+    addLine({
+      label: 'Revenues',
+      dates: data.income.all.dates,
+      background: colors.blue,
+      currency: currency,
+      font: { bold: true, size: 15 }
+    })
+    addLine({
+      label: 'Website - Total',
+      dates: data.income.site.dates,
+      currency: currency,
+      font: { size: 15 }
+    })
+    if (data.income.box.all > 0) {
+      addLine({
+        label: 'Box - Total',
+        dates: data.income.box.dates,
+        font: { size: 15 }
+      })
+    }
+    if (data.income.distrib.all > 0) {
+      addLine({
+        label: 'Retail - Total',
+        dates: data.income.distrib.dates,
+        currency: currency,
+        font: { size: 15 }
+      })
+    }
+    if (data.income.digital.all > 0) {
+      addLine({
+        label: 'Digital - Total',
+        dates: data.income.digital.dates,
+        currency: currency,
+        font: { size: 15 }
+      })
+    }
+    for (const country of Object.keys(data.income.distrib.country)) {
+      if (data.income.distrib.countries[country] > 0) {
+        addLine({
+          label: `Retail - ${I18n.locale('en').formatMessage(`countries.${country}`)}`,
+          dates: data.income.distrib.country[country],
+          font: { size: 12, italic: true }
+        })
+      }
+    }
+    y++
+    y++
+    addLine({
+      label: 'Cost Detail',
+      background: colors.blue,
+      dates: data.costs.all.dates,
+      currency: currency,
+      font: { size: 15, bold: true }
+    })
+    const costs = [
+      { label: 'Production', key: 'production' },
+      { label: 'SDRM', key: 'sdrm' },
+      { label: 'Mastering', key: 'mastering' },
+      { label: 'Marketing', key: 'marketing' },
+      { label: 'Logistic', key: 'logistic' },
+      { label: 'Distribution', key: 'distribution' },
+      { label: 'Storage', key: 'storage' }
+    ]
+    for (const cost of costs) {
+      if (data.costs[cost.key].all > 0) {
+        addLine({
+          label: cost.label,
+          dates: data.costs[cost.key].dates,
+          currency: currency,
+          font: { size: 14 }
+        })
+      }
+    }
+    y++
+    y++
+    addLine({
+      label: 'Payments',
+      background: colors.blue,
+      dates: data.payments.all.dates,
+      currency: currency,
+      font: { size: 15, bold: true }
+    })
+    if (data.payments.diggers.all > 0) {
+      addLine({
+        label: 'From Diggers to artist',
+        dates: data.payments.diggers.dates,
+        currency: currency,
+        font: { size: 14 }
+      })
+    }
+    if (data.payments.artist.all > 0) {
+      addLine({
+        label: 'From artist to Diggers',
+        dates: data.payments.artist.dates,
+        currency: currency,
+        font: { size: 14 }
+      })
+    }
+
+    y++
+    y++
+    addLine({
+      label: 'Benefits For Artists',
+      background: colors.green,
+      dates: data.outstanding.dates,
+      currency: currency,
+      total: data.outstanding.total,
+      font: { size: 15, bold: true }
+    })
+
+    return data
+  }
+
   static async downloadHistory(params: { id: number }) {
     const stat = await DB('statement_history').where('id', params.id).first()
     const file = await Storage.get(`statements/${stat.user_id}_${stat.date}.xlsx`, true)
@@ -1018,6 +1329,90 @@ class StatementService {
     return workbook.xlsx.writeBuffer()
   }
 
+  static async userDownload2(params: {
+    id: number
+    auto: boolean
+    start?: string
+    end: string
+    send_statement?: boolean
+  }) {
+    let projects: any = DB()
+      .select('project.id', 'vod.barcode', 'artist_name', 'name')
+      .table('project')
+      .join('vod', 'vod.project_id', 'project.id')
+      .where('vod.user_id', params.id)
+      .where('is_delete', '!=', true)
+      .where((query) => {
+        if (params.send_statement !== false) {
+          query.where('send_statement', true)
+        }
+      })
+
+    if (params.auto) {
+      projects.where('send_statement', true)
+    }
+
+    projects = await projects.all()
+    const workbook = new Excel.Workbook()
+
+    const worksheet: any = workbook.addWorksheet('Summary')
+
+    worksheet.columns = [
+      { header: 'Barcode', key: 'barcode', width: 15 },
+      { header: 'Artist', key: 'artist_name', width: 30 },
+      { header: 'Project', key: 'name', width: 30 },
+      { header: 'Stocks', key: 'stock', width: 15 },
+      { header: 'Profits', key: 'profits', width: 15 },
+      { header: 'Costs', key: 'costs', width: 15 },
+      { header: 'Benefits', key: 'benefits', width: 15 },
+      { header: 'To pay', key: 'net', width: 15 }
+    ]
+
+    let i = 1
+    for (const project of projects) {
+      const data = await this.setWorksheet2(workbook, {
+        id: project.id,
+        start: params.start || '2001-01-01',
+        end: params.end || moment().format('YYYY-MM-DD'),
+        auto: params.auto,
+        number: i
+      })
+
+      const stock = await Stock.byProject({ project_id: project.id })
+
+      project.stock = 0
+      for (const s of Object.keys(stock)) {
+        project.stock += stock[s]
+      }
+
+      worksheet.addRow({
+        ...project,
+        profits: data ? Utils.round(data.income.all.all) : 0,
+        costs: data ? Utils.round(data.costs.all.all) : 0,
+        benefits: data ? Utils.round(data.income.all.all - data.costs.all.all) : 0,
+        net: data ? Utils.round(data.outstanding.all) : 0
+      })
+      i++
+    }
+
+    const n = projects.length + 1
+    for (let i = 3; i <= 6; i++) {
+      const l = Utils.columnToLetter(i)
+
+      const f = `SUM(${l}2:${l}${n})`
+      worksheet.getCell(`${l}${n + 1}`).value = { formula: f }
+    }
+
+    for (const cell of Utils.getCells(worksheet, 'A1:F1')) {
+      cell.font = { bold: true }
+    }
+    for (const cell of Utils.getCells(worksheet, `C${n + 1}:F${n + 1}`)) {
+      cell.font = { bold: true }
+    }
+
+    return workbook.xlsx.writeBuffer()
+  }
+
   static async userBalance(paylaod: { user_id: number; start?: string; end: string }) {
     let projects: any = await DB()
       .select('project.id', 'project.picture', 'artist_name', 'name', 'currency')
@@ -1159,18 +1554,31 @@ class StatementService {
 
     if (params.type === 'follow_up') {
       for (const invoice of invoices) {
+        if (!projects[invoice.project_id]) {
+          continue
+        }
         if (invoice.type === 'invoice') {
           projects[invoice.project_id].invoiced += invoice.sub_total * invoice.currency_rate
         } else {
           projects[invoice.project_id].invoiced -= invoice.sub_total * invoice.currency_rate
         }
         projects[invoice.project_id].direct_balance = projects[invoice.project_id].invoiced
+
+        if (!projects[invoice.project_id].date) {
+          projects[invoice.project_id].date = invoice.date
+        }
       }
       for (const prod of prods) {
+        if (!projects[prod.project_id]) {
+          continue
+        }
         projects[prod.project_id].quantity = prod.quantity
         projects[prod.project_id].quantity_pressed = prod.quantity_pressed
       }
       for (const cost of costs) {
+        if (!projects[cost.project_id]) {
+          continue
+        }
         if (cost.name) {
           const name = cost.name.split(' ')
           if (!isNaN(name[1])) {
@@ -1246,6 +1654,7 @@ class StatementService {
         { header: 'Invoiced', key: 'invoiced', width: 10 },
         { header: 'Costs', key: 'direct_costs', width: 10 },
         { header: 'Balance', key: 'direct_balance', width: 10 },
+        { header: 'Date', key: 'date', width: 10 },
         { header: 'Comment', key: 'statement_comment', width: 50 }
       ]
 
@@ -1399,7 +1808,11 @@ class StatementService {
     const projects = await DB('project')
       .select(
         'project.id',
+        'project.name',
+        'project.artist_name',
         'project.category',
+        'vod.is_licence',
+        'vod.user_id',
         'vod.type',
         'vod.currency',
         'vod.stock_price',
@@ -1413,9 +1826,13 @@ class StatementService {
       .where('stock.type', '!=', 'preorder')
       .having('stock', '>', 0)
       .groupBy('project.id')
+      .groupBy('vod.is_licence')
+      .groupBy('vod.user_id')
       .groupBy('vod.type')
       .groupBy('vod.currency')
       .groupBy('vod.stock_price')
+      // .whereIn('project.id', [226728, 299489])
+      // .whereIn('project.id', [247230])
       .where((query) => {
         if (payload.projectIds) {
           query.whereIn('project.id', payload.projectIds)
@@ -1423,36 +1840,46 @@ class StatementService {
       })
       .all()
 
-    const historic = await DB('stock_historic')
-      .select(
-        'project_product.project_id',
-        'stock_historic.product_id',
-        'type',
-        'data',
-        'stock_historic.created_at'
-      )
-      .join('project_product', 'project_product.product_id', 'stock_historic.product_id')
-      .where('type', '!=', 'diggers')
-      .where('type', '!=', 'preorder')
-      .where('stock_historic.created_at', '>=', payload.month)
-      .orderBy('stock_historic.created_at', 'desc')
-      .whereIn(
-        'project_product.project_id',
-        projects.map((p) => p.id)
-      )
-      .all()
-
     const change = {}
-    for (const h of historic) {
-      const data = JSON.parse(h.data)
-      if (!data) {
-        continue
+    if (payload.month) {
+      const historic = await DB('stock_historic')
+        .select(
+          'project_product.project_id',
+          'stock_historic.product_id',
+          'type',
+          'data',
+          'stock_historic.created_at'
+        )
+        .join('project_product', 'project_product.product_id', 'stock_historic.product_id')
+        .where('type', '!=', 'diggers')
+        .where('type', '!=', 'preorder')
+        .where('stock_historic.created_at', '>=', payload.month)
+        .orderBy('stock_historic.created_at', 'desc')
+        .whereIn(
+          'project_product.project_id',
+          projects.map((p) => p.id)
+        )
+        .all()
+
+      for (const h of historic) {
+        const data = JSON.parse(h.data)
+        if (!data) {
+          continue
+        }
+        if (!change[h.project_id]) {
+          change[h.project_id] = 0
+        }
+        if (data.old.quantity !== undefined && data.new.quantity !== undefined) {
+          change[h.project_id] += +data.old.quantity - +data.new.quantity
+        }
       }
-      change[h.project_id] = data.old.quantity
     }
+
+    payload.month = payload.month.substring(0, 7) + '-01'
 
     const currenciesDb = await Utils.getCurrenciesDb()
 
+    const diffs = {}
     let i = 0
     for (const p of projects) {
       if (p.stock < 10) {
@@ -1465,7 +1892,7 @@ class StatementService {
       let cost = await DB('production_cost')
         .where('project_id', p.id)
         .where('type', 'storage')
-        .where('date', payload.month)
+        .where('date', payload.month.substring(0, 7) + '-01')
         .first()
 
       if (!cost) {
@@ -1476,6 +1903,8 @@ class StatementService {
         cost.created_at = Utils.date()
       }
 
+      let old = cost.in_statement || 0
+
       let stockPrice = JSON.parse(p.stock_price)
       if (!stockPrice) {
         stockPrice = [{ start: null, end: null, value: p.type === 'deposit_sales' ? 0.05 : 0.1 }]
@@ -1484,17 +1913,34 @@ class StatementService {
       const unitPrice: number = p.category === 'vinyl' ? price : 0.05
 
       if (change[p.id]) {
-        p.stock = change[p.id]
+        p.stock = p.stock + change[p.id]
       }
       cost.is_statement = true
       cost.currency = 'EUR'
       cost.in_statement = (p.stock * unitPrice) / currencies.EUR
       cost.updated_at = Utils.date()
 
+      const diff = Utils.round(cost.in_statement - old)
+
+      if (diff < 0) {
+        continue
+      }
+
+      diffs[cost.project_id] = {
+        project_id: cost.project_id,
+        name: projects.find((p) => p.id === cost.project_id).name,
+        artist: projects.find((p) => p.id === cost.project_id).artist_name,
+        is_licence: projects.find((p) => p.id === cost.project_id).is_licence,
+        user_id: projects.find((p) => p.id === cost.project_id).user_id,
+        change: change[p.id],
+        diff: diff,
+        old: old,
+        new: cost.in_statement
+      }
       await cost.save()
     }
 
-    return i
+    return diffs
   }
 
   static async getStatement(params: {

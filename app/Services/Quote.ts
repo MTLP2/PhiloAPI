@@ -233,13 +233,14 @@ class Quote {
 
     const data = { ...params }
 
-    let feeProd = 20
+    let feeProd = 30
+
     if (params.fee) {
       if (!params.is_admin) {
         return false
       }
       feeProd = data.fee
-    } else if (data.project) {
+    } else if (data.id) {
       feeProd = 20
     }
 
@@ -1372,6 +1373,7 @@ class Quote {
     if (!quote.fee) {
       quote.fee = 30
     }
+
     if (params.type === 'vinyl') {
       const calculate = await Quote.calculate(params)
       quote.total = calculate.total
@@ -1459,7 +1461,7 @@ class Quote {
     html += '</table>'
 
     await Notification.sendEmail({
-      to: 'sophie@diggersfactory.com',
+      to: 'kendale@diggersfactory.com',
       subject: `Quote - ${params.type} - ${params.email}`,
       html: html
     })

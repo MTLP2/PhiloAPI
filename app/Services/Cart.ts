@@ -617,7 +617,6 @@ class Cart {
       item.currency = p.currency
       item.shipping_discount = p.shipping_discount
       const calculatedItem = await Cart.calculateItem(item)
-
       if (calculatedItem.error) {
         shop.error = calculatedItem.error
       }
@@ -636,9 +635,11 @@ class Cart {
         shop.transporter = calculatedItem.transporter
         shop.transporters = calculatedItem.transporters
       }
-      shop.quantity += calculatedItem.quantity_coef
-      shop.weight += calculatedItem.weight
-      shop.insert += calculatedItem.insert
+      if (calculatedItem.category !== 'digital') {
+        shop.quantity += calculatedItem.quantity_coef
+        shop.weight += calculatedItem.weight
+        shop.insert += calculatedItem.insert
+      }
       shop.category = calculatedItem.category
 
       let cur = 1
@@ -680,157 +681,119 @@ class Cart {
           return acc + cur.project.shipping_discount * cur.quantity
         }, 0) - shop.total_ship_discount_sale_diff
 
-    const shipping: any = await Cart.calculateShipping({
-      quantity: shop.quantity,
-      weight: shop.weight,
-      insert: shop.insert,
-      currency: shop.currency,
-      transporter: shop.transporter,
-      category: shop.category,
-      transporters:
-        shop.type === 'shop' ? { [shop.transporter || 'all']: true } : shop.transporters,
-      country_id: p.country_id,
-      state: p.customer.state
-    })
-
     shop.tax_rate = await Cart.getTaxRate(p.customer)
-    // Standard
-    shipping.original_standard = Utils.getShipDiscounts({
-      ship: shipping.standard,
-      taxRate: shop.tax_rate
-    })
-    shipping.standard = Utils.getShipDiscounts({
-      ship: shipping.standard,
-      shippingDiscount,
-      taxRate: shop.tax_rate
-    })
 
-    // Tracking
-    // shipping.original_tracking = shipping.tracking
-    //   ? Utils.round(shipping.tracking + shipping.tracking * shop.tax_rate, 2, 0.1)
-    //   : null
-    // shipping.tracking = shipping.tracking
-    //   ? Math.max(
-    //       Utils.round(
-    //         shipping.tracking - shippingDiscount + shipping.tracking * shop.tax_rate,
-    //         2,
-    //         0.1
-    //       ),
-    //       0
-    //     )
-    //   : null
-    shipping.original_tracking = Utils.getShipDiscounts({
-      ship: shipping.tracking,
-      taxRate: shop.tax_rate
-    })
-    shipping.tracking = Utils.getShipDiscounts({
-      ship: shipping.tracking,
-      shippingDiscount,
-      taxRate: shop.tax_rate
-    })
+    if (shop.quantity === 0) {
+      shop.shipping = 0
+    } else {
+      const shipping: any = await Cart.calculateShipping({
+        quantity: shop.quantity,
+        weight: shop.weight,
+        insert: shop.insert,
+        currency: shop.currency,
+        transporter: shop.transporter,
+        category: shop.category,
+        transporters:
+          shop.type === 'shop' ? { [shop.transporter || 'all']: true } : shop.transporters,
+        country_id: p.country_id,
+        state: p.customer.state
+      })
 
-    // Pickup
-    // shipping.original_pickup = shipping.pickup
-    //   ? Utils.round(shipping.pickup + shipping.pickup * shop.tax_rate, 2, 0.1)
-    //   : null
-    // shipping.pickup = shipping.pickup
-    //   ? Math.max(
-    //       Utils.round(shipping.pickup - shippingDiscount + shipping.pickup * shop.tax_rate, 2, 0.1),
-    //       0
-    //     )
-    //   : null
+      // Standard
+      shipping.original_standard = Utils.getShipDiscounts({
+        ship: shipping.standard,
+        taxRate: shop.tax_rate
+      })
+      shipping.standard = Utils.getShipDiscounts({
+        ship: shipping.standard,
+        shippingDiscount,
+        taxRate: shop.tax_rate
+      })
+      shipping.original_tracking = Utils.getShipDiscounts({
+        ship: shipping.tracking,
+        taxRate: shop.tax_rate
+      })
+      shipping.tracking = Utils.getShipDiscounts({
+        ship: shipping.tracking,
+        shippingDiscount,
+        taxRate: shop.tax_rate
+      })
+      shipping.original_pickup = Utils.getShipDiscounts({
+        ship: shipping.pickup,
+        taxRate: shop.tax_rate
+      })
+      shipping.pickup = Utils.getShipDiscounts({
+        ship: shipping.pickup,
+        shippingDiscount,
+        taxRate: shop.tax_rate
+      })
 
-    shipping.original_pickup = Utils.getShipDiscounts({
-      ship: shipping.pickup,
-      taxRate: shop.tax_rate
-    })
-    shipping.pickup = Utils.getShipDiscounts({
-      ship: shipping.pickup,
-      shippingDiscount,
-      taxRate: shop.tax_rate
-    })
+      // If shipping is lower than 1 we offer the shipping costs
+      const min = 1
+      shop.shipping_standard = shipping.standard <= min ? 0 : shipping.standard
+      shop.shipping_tracking = shipping.tracking <= min ? 0 : shipping.tracking
+      shop.shipping_pickup =
+        shipping.pickup !== null && shipping.pickup <= min ? 0 : shipping.pickup
+      shop.shipping_type = p.shipping_type
+      shop.transporter = shipping.transporter
 
-    // if (shipping.letter > shipping.standard) {
-    //   shipping.letter = 0
-    // }
+      if (shop.save_shipping) {
+        let shipping = shop.shipping_pickup !== null ? shop.shipping_pickup : shop.shipping_standard
+        let vinyl = 0
 
-    // If shipping is lower than 1 we offer the shipping costs
-    const min = 1
-    shop.shipping_standard = shipping.standard <= min ? 0 : shipping.standard
-    shop.shipping_tracking = shipping.tracking <= min ? 0 : shipping.tracking
-    shop.shipping_pickup = shipping.pickup !== null && shipping.pickup <= min ? 0 : shipping.pickup
-    shop.shipping_type = p.shipping_type
-    shop.transporter = shipping.transporter
+        while (shipping > 1) {
+          vinyl++
+          shipping = shipping - 3 + 1
+        }
 
-    if (shop.save_shipping) {
-      let shipping = shop.shipping_pickup !== null ? shop.shipping_pickup : shop.shipping_standard
-      let vinyl = 0
-
-      while (shipping > 1) {
-        vinyl++
-        shipping = shipping - 3 + 1
+        shop.free_shipping = vinyl
+      }
+      if (
+        !p.shipping_type &&
+        shipping.pickup !== null &&
+        (shipping.pickup > 0 || shippingDiscount > 0)
+      ) {
+        shop.shipping = shipping.pickup
+        shop.original_shipping = shipping.original_pickup
+        shop.shipping_type = 'pickup'
+      } else if (
+        p.shipping_type === 'standard' &&
+        shipping.standard !== null &&
+        (shipping.standard > 0 || shippingDiscount > 0)
+      ) {
+        shop.shipping = shipping.standard
+        shop.original_shipping = shipping.original_standard
+      } else if (
+        p.shipping_type === 'tracking' &&
+        shipping.tracking !== null &&
+        (shipping.tracking > 0 || shippingDiscount > 0)
+      ) {
+        shop.shipping = shipping.tracking
+        shop.original_shipping = shipping.original_tracking
+      } else if (
+        p.shipping_type === 'pickup' &&
+        shipping.pickup !== null &&
+        (shipping.pickup > 0 || shippingDiscount > 0)
+      ) {
+        shop.shipping = shipping.pickup
+        shop.original_shipping = shipping.original_pickup
+      } else if (shipping.standard !== null && (shipping.standard > 0 || shippingDiscount > 0)) {
+        shop.shipping = shipping.standard
+        shop.original_shipping = shipping.original_standard
+        shop.shipping_type = 'standard'
+      } else if (shipping.tracking !== null && (shipping.tracking > 0 || shippingDiscount > 0)) {
+        shop.shipping = shipping.tracking
+        shop.original_shipping = shipping.original_tracking
+        shop.shipping_type = 'tracking'
+      } else if (shipping.pickup !== null && (shipping.pickup > 0 || shippingDiscount > 0)) {
+        shop.shipping = shipping.pickup
+        shop.original_shipping = shipping.original_pickup
+        shop.shipping_type = 'pickup'
       }
 
-      shop.free_shipping = vinyl
-    }
-
-    if (
-      !p.shipping_type &&
-      shipping.pickup !== null &&
-      (shipping.pickup > 0 || shippingDiscount > 0)
-    ) {
-      shop.shipping = shipping.pickup
-      shop.original_shipping = shipping.original_pickup
-      shop.shipping_type = 'pickup'
-    } else if (
-      p.shipping_type === 'standard' &&
-      shipping.standard !== null &&
-      (shipping.standard > 0 || shippingDiscount > 0)
-    ) {
-      shop.shipping = shipping.standard
-      shop.original_shipping = shipping.original_standard
-    } else if (
-      p.shipping_type === 'tracking' &&
-      shipping.tracking !== null &&
-      (shipping.tracking > 0 || shippingDiscount > 0)
-    ) {
-      shop.shipping = shipping.tracking
-      shop.original_shipping = shipping.original_tracking
-    }
-    // else if (p.shipping_type === 'letter' && shipping.letter > 0) {
-    //   shop.shipping = shipping.letter
-    //   shop.original_shipping = shipping.letter
-    // }
-    else if (
-      p.shipping_type === 'pickup' &&
-      shipping.pickup !== null &&
-      (shipping.pickup > 0 || shippingDiscount > 0)
-    ) {
-      shop.shipping = shipping.pickup
-      shop.original_shipping = shipping.original_pickup
-    }
-    // else if (shipping.letter > 0 || shippingDiscount > 0) {
-    //   console.log('6')
-    //   shop.shipping = shipping.letter
-    //   shop.shipping_type = 'letter'
-    //   shop.original_shipping = shipping.letter
-    // }
-    else if (shipping.standard !== null && (shipping.standard > 0 || shippingDiscount > 0)) {
-      shop.shipping = shipping.standard
-      shop.original_shipping = shipping.original_standard
-      shop.shipping_type = 'standard'
-    } else if (shipping.tracking !== null && (shipping.tracking > 0 || shippingDiscount > 0)) {
-      shop.shipping = shipping.tracking
-      shop.original_shipping = shipping.original_tracking
-      shop.shipping_type = 'tracking'
-    } else if (shipping.pickup !== null && (shipping.pickup > 0 || shippingDiscount > 0)) {
-      shop.shipping = shipping.pickup
-      shop.original_shipping = shipping.original_pickup
-      shop.shipping_type = 'pickup'
-    }
-
-    if (!shop.shipping && !shop.error && !shop.total_ship_discount) {
-      shop.error = 'no_shipping'
+      if (!shop.shipping && !shop.error && !shop.total_ship_discount) {
+        shop.error = 'no_shipping'
+      }
     }
 
     const total = shop.total
@@ -1067,6 +1030,8 @@ class Cart {
       } else {
         weight = Math.ceil(params.weight / 1000) + 'kg'
       }
+    } else if (weight < 750) {
+      weight = '750g'
     } else {
       weight = Math.ceil(params.weight / 1000) + 'kg'
     }
@@ -1081,7 +1046,6 @@ class Cart {
         transporter.packing = 0.2
       }
       const cost = transporter.packing + transporter.picking * params.insert
-
       if (
         transporter[weight] &&
         (!costs || !costs.standard || costs.standard > transporter[weight])
@@ -1253,8 +1217,6 @@ class Cart {
     if (shippings.length === 0) {
       return { error: 'no_shipping' }
     }
-
-    // console.log(params, shippings)
 
     let shipping
     for (const ship of shippings) {
@@ -1431,7 +1393,7 @@ class Cart {
           params.country_id === 'FR' ||
           (!params.customer?.tax_intra && Utils.isEuropean(params.customer?.country_id))
         ) {
-          res.price_distrib = p.project.prices_distribution[params.currency] * 1.2
+          res.price = Utils.round(p.project.prices_distribution[params.currency] * 1.2)
         }
       }
     }
@@ -1455,7 +1417,6 @@ class Cart {
       res.ship_discount_sale_diff = (res.shipping_discount * res.quantity * p.project.promo) / 100
     }
 
-    //console.log(p.project)
     return res
   }
 
@@ -1884,6 +1845,7 @@ class Cart {
   static createPaypalPayment = async (params) => {
     const { calculate } = params
     const { customer } = calculate
+
     let data: any = {
       items: [],
       shipping: {
@@ -1956,6 +1918,8 @@ class Cart {
     }
 
     console.log(data.items)
+
+    console.log(data.amount)
     const order: any = await PayPal.create({
       intent: 'CAPTURE',
       purchase_units: [data]
@@ -1996,8 +1960,10 @@ class Cart {
           subject: `Paypal order not completed`,
           html: `<p>Order: https://www.diggersfactory.com/sheraf/order/${params.order.id}</p>`
         })
+        return Cart.validPayment(params.order.id, payment.id, 'paused')
+      } else {
+        return Cart.validPayment(params.order.id)
       }
-      return Cart.validPayment(params.order.id)
     } else {
       await DB('order').where('id', params.order.id).update({
         status: 'failed',
@@ -2096,10 +2062,13 @@ class Cart {
       customerId = shop.customer_invoice_id || shop.customer_id
 
       if (shop.type === 'vod' || shop.type === 'shop') {
-        await DB('order_shop').where('id', shop.id).update({
-          is_paid: 1,
-          step: 'confirmed'
-        })
+        await DB('order_shop')
+          .where('id', shop.id)
+          .update({
+            is_paid: 1,
+            step: 'confirmed',
+            is_paused: status === 'paused' ? 1 : 0
+          })
       }
 
       if (shop.type === 'vod' || shop.type === 'shop') {
@@ -2121,7 +2090,7 @@ class Cart {
           .where('order_shop_id', shop.id)
           .all()
 
-        if (shop.type === 'shop') {
+        if (shop.type === 'shop' && status === 'confirmed') {
           try {
             Order.sync({ id: shop.id })
           } catch (e) {
