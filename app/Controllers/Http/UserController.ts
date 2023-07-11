@@ -12,6 +12,20 @@ import ApiError from 'App/ApiError'
 import { validator, schema } from '@ioc:Adonis/Core/Validator'
 
 class UserController {
+  async follow({ params, user }) {
+    const payload = await validator.validate({
+      schema: schema.create({
+        user_id: schema.number(),
+        follower: schema.number()
+      }),
+      data: {
+        user_id: user.id,
+        follower: params.id
+      }
+    })
+    return User.follow(payload)
+  }
+
   async updateProfile({ params, user }) {
     await validator.validate({
       schema: schema.create({
@@ -283,6 +297,30 @@ class UserController {
   claimGift({ user, params }) {
     params.user_id = user.id
     return Pass.claimGift(params)
+  }
+
+  saveWish = async ({ request, user }) => {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          id: schema.number.optional(),
+          user_id: schema.number(),
+          project_id: schema.number(),
+          created_at: schema.string.optional(),
+          in_whishlist: schema.boolean()
+        }),
+        data: {
+          ...request.body(),
+          user_id: user.user_id
+        }
+      })
+      if (!payload.in_whishlist) {
+        return User.deleteWish(payload)
+      }
+      return User.saveWish(payload)
+    } catch (err) {
+      return { error: err.message, validation: err.messages }
+    }
   }
 
   getMyDigitalProjects({ user }) {

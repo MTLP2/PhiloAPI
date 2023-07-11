@@ -703,6 +703,7 @@ static toJuno = async (params) => {
               project_id: item.project_id,
               order_id: order.order_id,
               quantity: -item.quantity,
+              preorder: order.type === 'vod',
               transporter: order.transporter
             })
           } catch (err) {

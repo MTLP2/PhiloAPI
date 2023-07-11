@@ -63,6 +63,7 @@ class Admin {
           AND user.is_pro
           AND order_item.project_id = project.id) AS count_distribution
       `),
+        DB().raw(`DATEDIFF(NOW(), vod.start) AS days_elapsed`),
         DB().raw(`
         (SELECT SUM(quantity)
         FROM order_item, order_shop
@@ -198,6 +199,7 @@ class Admin {
 
     const projectImagesQuery = Project.getProjectImages({ projectId: id })
 
+    const stockHistoricQuery = Stock.getHistoric({ project_id: id })
     const stocksSiteQuery = Stock.byProject({ project_id: id, is_distrib: false })
     const stocksDistribQuery = Stock.byProject({ project_id: id, is_distrib: true })
 
@@ -251,6 +253,7 @@ class Admin {
       project,
       codes,
       costs,
+      stockHistoric,
       stocksSite,
       stocksDistrib,
       items,
@@ -263,6 +266,7 @@ class Admin {
       projectQuery,
       codesQuery,
       costsQuery,
+      stockHistoricQuery,
       stocksSiteQuery,
       stocksDistribQuery,
       itemsQuery,
@@ -283,6 +287,7 @@ class Admin {
     project.project_images = projectImages
     project.exports = exps
 
+    project.stock_historic = stockHistoric
     project.stocks = []
     project.stocks.push(
       ...Object.entries(stocksSite).map(([key, value]) => {
@@ -2457,7 +2462,7 @@ class Admin {
   }
 
   static getUserEmails = async (params) => {
-    const profile = await Utils.request('https://beta-api-eu.customer.io/v1/api/customers', {
+    const profile: any = await Utils.request('https://beta-api-eu.customer.io/v1/api/customers', {
       qs: {
         email: params.email
       },
@@ -2467,11 +2472,11 @@ class Admin {
       json: true
     })
 
-    if (!profile.results) {
+    if (!profile.results || !profile.results[0] || !profile.results[0].cio_id) {
       return { success: false }
     }
 
-    const res = await Utils.request(
+    const res: any = await Utils.request(
       'https://fly-eu.customer.io/v1/environments/110794/deliveries',
       {
         qs: {
@@ -4041,6 +4046,8 @@ class Admin {
           { key: 'com', header: 'Resp. com', width: 15 },
           { key: 'type', header: 'Type', width: 15 },
           { key: 'category', header: 'Category', width: 15 },
+          { key: 'price', header: 'price', width: 15 },
+          { key: 'currency', header: 'currency', width: 15 },
           { key: 'date_shipping', header: 'Date Shipping', width: 15 },
           { key: 'country_id', header: 'Country ID', width: 15 },
           { key: 'origin', header: 'Origin', width: 15 },

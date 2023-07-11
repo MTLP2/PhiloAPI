@@ -1431,7 +1431,7 @@ class Cart {
           params.country_id === 'FR' ||
           (!params.customer?.tax_intra && Utils.isEuropean(params.customer?.country_id))
         ) {
-          res.price_distrib = p.project.prices_distribution[params.currency] * 1.2
+          res.price = Utils.round(p.project.prices_distribution[params.currency] * 1.2)
         }
       }
     }
@@ -1884,6 +1884,8 @@ class Cart {
   static createPaypalPayment = async (params) => {
     const { calculate } = params
     const { customer } = calculate
+
+    console.log(calculate)
     let data: any = {
       items: [],
       shipping: {
@@ -1956,6 +1958,8 @@ class Cart {
     }
 
     console.log(data.items)
+
+    console.log(data.amount)
     const order: any = await PayPal.create({
       intent: 'CAPTURE',
       purchase_units: [data]

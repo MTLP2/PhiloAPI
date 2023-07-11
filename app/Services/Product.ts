@@ -155,12 +155,11 @@ class Product {
       .select('*', DB.raw('quantity - preorder - reserved as available'))
       .where('product_id', payload.id)
       .all()
-    item.stocks_historic = await DB('stock_historic')
-      .select('stock_historic.*', 'user.name')
-      .leftJoin('user', 'user.id', 'stock_historic.user_id')
-      .where('product_id', payload.id)
-      .orderBy('id', 'desc')
-      .all()
+
+    const stock = await Stock.getHistoric({ product_id: payload.id })
+
+    item.stocks_historic = stock.list
+    item.stocks_months = stock.months
 
     item.stocks.unshift({
       type: 'distrib',

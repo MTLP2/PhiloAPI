@@ -1399,7 +1399,10 @@ class StatementService {
     const projects = await DB('project')
       .select(
         'project.id',
+        'project.name',
+        'project.artist_name',
         'project.category',
+        'vod.is_licence',
         'vod.type',
         'vod.currency',
         'vod.stock_price',
@@ -1413,9 +1416,12 @@ class StatementService {
       .where('stock.type', '!=', 'preorder')
       .having('stock', '>', 0)
       .groupBy('project.id')
+      .groupBy('vod.is_licence')
       .groupBy('vod.type')
       .groupBy('vod.currency')
       .groupBy('vod.stock_price')
+      // .whereIn('project.id', [226728, 299489])
+      // .whereIn('project.id', [247230])
       .where((query) => {
         if (payload.projectIds) {
           query.whereIn('project.id', payload.projectIds)
@@ -1423,36 +1429,46 @@ class StatementService {
       })
       .all()
 
-    const historic = await DB('stock_historic')
-      .select(
-        'project_product.project_id',
-        'stock_historic.product_id',
-        'type',
-        'data',
-        'stock_historic.created_at'
-      )
-      .join('project_product', 'project_product.product_id', 'stock_historic.product_id')
-      .where('type', '!=', 'diggers')
-      .where('type', '!=', 'preorder')
-      .where('stock_historic.created_at', '>=', payload.month)
-      .orderBy('stock_historic.created_at', 'desc')
-      .whereIn(
-        'project_product.project_id',
-        projects.map((p) => p.id)
-      )
-      .all()
-
     const change = {}
-    for (const h of historic) {
-      const data = JSON.parse(h.data)
-      if (!data) {
-        continue
+    if (payload.month) {
+      const historic = await DB('stock_historic')
+        .select(
+          'project_product.project_id',
+          'stock_historic.product_id',
+          'type',
+          'data',
+          'stock_historic.created_at'
+        )
+        .join('project_product', 'project_product.product_id', 'stock_historic.product_id')
+        .where('type', '!=', 'diggers')
+        .where('type', '!=', 'preorder')
+        .where('stock_historic.created_at', '>=', payload.month)
+        .orderBy('stock_historic.created_at', 'desc')
+        .whereIn(
+          'project_product.project_id',
+          projects.map((p) => p.id)
+        )
+        .all()
+
+      for (const h of historic) {
+        const data = JSON.parse(h.data)
+        if (!data) {
+          continue
+        }
+        if (!change[h.project_id]) {
+          change[h.project_id] = 0
+        }
+        if (data.old.quantity !== undefined && data.new.quantity !== undefined) {
+          change[h.project_id] += +data.old.quantity - +data.new.quantity
+        }
       }
-      change[h.project_id] = data.old.quantity
     }
+
+    payload.month = payload.month.substring(0, 7) + '-01'
 
     const currenciesDb = await Utils.getCurrenciesDb()
 
+    const diffs = {}
     let i = 0
     for (const p of projects) {
       if (p.stock < 10) {
@@ -1465,7 +1481,7 @@ class StatementService {
       let cost = await DB('production_cost')
         .where('project_id', p.id)
         .where('type', 'storage')
-        .where('date', payload.month)
+        .where('date', payload.month.substring(0, 7) + '-01')
         .first()
 
       if (!cost) {
@@ -1476,6 +1492,8 @@ class StatementService {
         cost.created_at = Utils.date()
       }
 
+      let old = cost.in_statement || 0
+
       let stockPrice = JSON.parse(p.stock_price)
       if (!stockPrice) {
         stockPrice = [{ start: null, end: null, value: p.type === 'deposit_sales' ? 0.05 : 0.1 }]
@@ -1484,17 +1502,32 @@ class StatementService {
       const unitPrice: number = p.category === 'vinyl' ? price : 0.05
 
       if (change[p.id]) {
-        p.stock = change[p.id]
+        p.stock = p.stock + change[p.id]
       }
       cost.is_statement = true
       cost.currency = 'EUR'
       cost.in_statement = (p.stock * unitPrice) / currencies.EUR
       cost.updated_at = Utils.date()
 
-      await cost.save()
+      const diff = Utils.round(cost.in_statement - old)
+
+      diffs[cost.project_id] = {
+        project_id: cost.project_id,
+        name: projects.find((p) => p.id === cost.project_id).name,
+        artist: projects.find((p) => p.id === cost.project_id).artist_name,
+        is_licence: projects.find((p) => p.id === cost.project_id).is_licence,
+        change: change[p.id],
+        diff: diff,
+        old: old,
+        new: cost.in_statement
+      }
+      if (diff > 10) {
+        // console.log('diff', cost.project_id, diff, old, Utils.round(cost.in_statement))
+      }
+      // await cost.save()
     }
 
-    return i
+    return diffs
   }
 
   static async getStatement(params: {
