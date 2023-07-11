@@ -9,7 +9,6 @@ class DigitalController {
   async saveTrackNew({ params, user }) {
     params.user = user
     await Utils.checkProjectOwner({ project_id: params.project_id, user: user })
-
     if (!params.id) {
       const track = await ProjectEdit.saveDigitalTrack(params)
       params.id = track.id
@@ -31,6 +30,7 @@ class DigitalController {
 
   async saveTrack({ params, user }) {
     params.user = user
+    params.uuid = Utils.uuid()
     await Utils.checkProjectOwner({ project_id: params.project_id, user: user })
     const track = await ProjectEdit.saveDigitalTrack(params)
     return track

@@ -242,6 +242,7 @@ class ProjectEdit {
     song.position = params.position
     song.disabled = params.disabled
     song.updated_at = Utils.date()
+    song.uuid = params.uuid
     await song.save()
 
     return song

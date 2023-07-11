@@ -4,6 +4,8 @@ import Utils from 'App/Utils'
 import fs from 'fs'
 import JSZip from 'jszip'
 import moment from 'moment'
+import ProjectEdit from './ProjectEdit'
+import User from './User'
 const ffmpeg = require('fluent-ffmpeg')
 
 class Song {
@@ -121,6 +123,7 @@ class Song {
         's.publisher',
         's.lyricist',
         's.mixer',
+        's.uuid',
         DB.raw(`(
           select count(*)
           from \`like\`
@@ -203,18 +206,31 @@ class Song {
     return Storage.url(path, `${project.artist_name} - ${project.name}.zip`)
   }
 
-  static compressToMP3 = async (id) => {
-    const buffer = await Storage.get(`songs/${id}.wav`)
+  static compressToMP3 = async (params) => {
+    const buffer = await Storage.get(`songs/${params.id}.wav`)
+    const check = await Storage.get(`songs/${params.uuid}.mp3`)
+    console.log('ancien uuid', params.uuid)
+    if (check) {
+      await Storage.delete(`songs/${params.uuid}.mp3`)
+    }
+    const uuid = Utils.uuid()
     const track: any = await Song.compressSong(buffer)
-    await Storage.upload(`songs/${id}.mp3`, track.buffer)
+    await Storage.upload(`songs/${uuid}.mp3`, track.buffer)
+
+    await User.event({
+      type: 'track_uploaded',
+      user_id: params.user.id,
+      project_id: params.id
+    })
     const seconds = moment.duration(track.duration).asSeconds()
     await DB('song')
-      .where('id', id)
+      .where('id', params.id)
       .update({
         listenable: true,
         duration: seconds,
         duration_str: track.duration.substr(3, 5),
-        updated_at: Utils.date()
+        updated_at: Utils.date(),
+        uuid: uuid
       })
 
     return { success: true }
@@ -234,14 +250,6 @@ class Song {
         duration_str: track.duration.substr(3, 5),
         updated_at: Utils.date()
       })
-
-    return { success: true }
-  }
-  static setDigitalInfo = async (id) => {
-    await DB('song').where('id', id).update({
-      listenable: true,
-      updated_at: Utils.date()
-    })
 
     return { success: true }
   }
