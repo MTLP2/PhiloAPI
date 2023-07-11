@@ -36,6 +36,7 @@ class Admin {
     start?: string
     end?: string
     query?: any
+    filters?: string
     size?: number
   }) => {
     const projects = DB('project')
@@ -47,6 +48,8 @@ class Admin {
         'user.email as user_email',
         'user.sponsor as user_sponsor',
         'customer.phone as phone',
+        'customer.email as customer_email',
+        'customer.country_id as customer_country',
         'resp_prod.name as resp_prod',
         'com.name as com',
         'vod.id as vod_id',
@@ -99,6 +102,20 @@ class Admin {
       projects.where('vod.created_at', '<=', `${params.end} 23:59`)
     }
 
+    const filters = params.filters ? JSON.parse(params.filters) : null
+    if (filters) {
+      for (const f in filters) {
+        const filter = filters[f]
+        if (filter.name === 'customer.email') {
+          projects.where((query) => {
+            query.where('customer.email', 'LIKE', `%${filter.value}%`)
+            query.orWhere('user.email', 'LIKE', `%${filter.value}%`)
+          })
+          filters.splice(f, 1)
+          params.filters = JSON.stringify(filters)
+        }
+      }
+    }
     const res = await Utils.getRows<any>({ ...params, query: projects })
     return res
   }
@@ -1214,6 +1231,11 @@ class Admin {
     }
 
     vod.date_shipping = params.date_shipping || null
+
+    if (vod.step === 'in_progress' && !vod.date_shipping) {
+      vod.date_shipping = moment().add(3, 'months').format('YYYY-MM-DD')
+    }
+
     vod.status = params.status
     vod.step = params.step
 
@@ -1856,7 +1878,6 @@ class Admin {
   }
 
   static saveOrderShop = async (params) => {
-    console.log(params)
     const shop = await DB('order_shop').find(params.id)
 
     const customer = await Customer.save(params.customer)
@@ -4109,7 +4130,6 @@ class Admin {
       .where('product.type', 'vinyl')
       .whereNotNull('product.barcode')
       .hasMany('stock')
-
     if (!params.lang) {
       params.lang === 'FR'
     }
@@ -4132,7 +4152,7 @@ class Admin {
     for (const p in projects) {
       const pp = projects[p]
 
-      console.log('pp', pp)
+      // console.log('pp', pp)
 
       for (const stock of pp.stock) {
         pp[`stock_${stock.type}`] = stock.quantity
@@ -4208,10 +4228,8 @@ class Admin {
         ? `${Env.get('STORAGE_URL')}/projects/${pp.picture || pp.id}/${pp.picture_project}.png;`
         : `${Env.get('STORAGE_URL')}/projects/${pp.picture || pp.id}/vinyl.png;`
       csv += `"${pp.artist_name}";`
-      csv += ';;;;'
+      csv += ';;;;;;'
       csv += pp.estimated_shipping + ';'
-      csv += ';'
-      csv += pp.com.follow_artist ? 'prio;' : ';'
       csv += pp.format + ';'
       csv += (pp.vinyl_weight || '140') + ';'
       csv += pp.rpm + ';'

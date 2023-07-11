@@ -163,10 +163,13 @@ class Project {
       project.sold_out = project.copies_left < 1
     } else {
       project.sold_out =
-        ['limited_edition', 'test_pressing'].includes(project.type) && project.copies_left < 1
+        ['limited_edition', 'test_pressing'].includes(project.type) &&
+        project.copies_left < 1 &&
+        project.step !== 'coming_soon'
     }
 
     project.step = project.sold_out ? 'successful' : project.step
+
     project.hide = project.hide ? project.hide.split(',') : []
     project.sizes = project.products.filter((p) => p.size && p.size !== 'all').map((p) => p)
     // Group sizes by parent_id or id
@@ -690,6 +693,19 @@ class Project {
     return projects.all()
   }
 
+  static getWishes = async (projectId: number, lang: string) => {
+    const wishes = await DB()
+      .select('w.id', 'w.user_id', 'u.name', 'u.picture', 'c.name as country_name')
+      .from('user_wishlist as w')
+      .join('user as u', 'w.user_id', 'u.id')
+      .leftJoin('country as c', 'u.country_id', 'c.id')
+      .where('c.lang', lang)
+      .where('w.project_id', projectId)
+      .orderBy('w.created_at', 'desc')
+      .all()
+    return wishes
+  }
+
   static find = async (id, params) => {
     const vod = await DB()
       .select('related_id', 'related_item_id')
@@ -836,6 +852,7 @@ class Project {
       .leftOuterJoin('customer as c', 'c.id', 'v.customer_id')
       .leftOuterJoin('currency as cu', 'cu.id', 'v.currency')
       .where('p.id', related)
+      .where('p.is_delete', false)
       .first()
 
     const stylesPromise = DB()
@@ -1292,7 +1309,28 @@ class Project {
     return code
   }
 
-  static recommendations = async (params) => {
+  static recommandationsForUser = async (id: number) => {
+    const artists = await DB('order_item')
+      .join('order_shop', 'order_item.order_shop_id', 'order_shop.id')
+      .where('order_shop.is_paid', true)
+      .where('order_shop.user_id', id)
+      .groupBy('order_item.project_id')
+      .select('order_item.project_id')
+      .all()
+
+    if (!artists.length) {
+      return []
+    }
+
+    return this.recommendations({ refs: artists.map((a) => a.project_id), shop: false })
+  }
+
+  static recommendations = async (params: {
+    refs: number[]
+    shops?: number[]
+    shop: boolean
+    user?: number
+  }) => {
     if (!params.refs) return []
 
     const styles = (
@@ -1339,7 +1377,7 @@ class Project {
         .select(...selects)
         .join('vod as v', 'v.project_id', 'p.id')
         .join('item', 'item.related_id', 'p.id')
-        .where('item.project_id', params.refs)
+        .whereIn('item.project_id', params.refs)
         .where('v.step', 'in_progress')
         .where((query) => {
           query.where('is_shop', false)
@@ -1403,7 +1441,6 @@ class Project {
     }
 
     const refs = refs0.concat(refs1)
-
     const refs2 = (
       await DB('project as p')
         .select(...selects)
@@ -1424,7 +1461,9 @@ class Project {
         .all()
     ).map((project) => Project.setInfos(project, currencies, null, ss))
 
-    return reco.concat(refs0).concat(refs1).concat(refs2).slice(0, 6)
+    const allProjects = reco.concat(refs0).concat(refs1).concat(refs2)
+    const randomProjects = allProjects.sort(() => Math.random() - 0.5).slice(0, 6)
+    return randomProjects
   }
 
   static checkDownloadCode = async ({ projectId, userId }) => {
@@ -1577,9 +1616,9 @@ class Project {
   static getDashboard = async (params: {
     user_id?: number
     project_id?: number
-    period?: string
     start?: string
     end?: string
+    only_data?: boolean
   }) => {
     let projects = DB('project')
       .select(
@@ -1684,23 +1723,26 @@ class Project {
         stocksDistribQuery
       ])
 
+    let start
+    if (orders.length > 0) {
+      start = moment(orders[0].created_at)
+    }
+    if (statements.length > 0 && (!start || start > moment(statements[0].date))) {
+      start = moment(statements[0].date)
+    }
+    if (costs.length > 0 && (!start || start > moment(costs[0].date))) {
+      start = moment(costs[0].date)
+    }
+    if (payments.length > 0 && (!start || start > moment(payments[0].date))) {
+      start = moment(payments[0].date)
+    }
     if (!params.start) {
-      let start
-      if (orders.length > 0) {
-        start = moment(orders[0].created_at)
-      }
-      if (statements.length > 0 && (!start || start > moment(statements[0].date))) {
-        start = moment(statements[0].date)
-      }
-      if (costs.length > 0 && (!start || start > moment(costs[0].date))) {
-        start = moment(costs[0].date)
-      }
-      if (payments.length > 0 && (!start || start > moment(payments[0].date))) {
-        start = moment(payments[0].date)
-      }
       if (!start) {
         return false
       }
+      params.start = start.format('YYYY-MM-DD')
+    }
+    if (params.only_data && params.start && moment(params.start) < start) {
       params.start = start.format('YYYY-MM-DD')
     }
     if (!params.end) {
@@ -1839,6 +1881,7 @@ class Project {
           all: 0,
           total: 0,
           dates: { ...dates },
+          country: {},
           countries: {}
         },
         digital: {
@@ -1871,6 +1914,7 @@ class Project {
           all: 0,
           total: 0,
           dates: { ...dates },
+          country: {},
           countries: {}
         }
       },
@@ -1881,16 +1925,17 @@ class Project {
       }
     }
 
+    const inDate = (date) =>
+      moment(periodicity === 'months' ? `${date}-01` : date).isBetween(
+        params.start,
+        params.end,
+        undefined,
+        '[]'
+      )
+
     s.setDate = function (type, cat, date, value) {
       if (value) {
-        if (
-          moment(periodicity === 'months' ? `${date}-01` : date).isBetween(
-            params.start,
-            params.end,
-            undefined,
-            '[]'
-          )
-        ) {
+        if (inDate(date)) {
           this[cat][type].dates[date] += value
           this[cat].all.dates[date] += value
           this[cat][type].total += value
@@ -1901,8 +1946,8 @@ class Project {
       }
     }
 
-    s.setCountry = function (type, cat, country, quantity) {
-      country = country || null
+    s.setCountry = function (type, cat, country, quantity, date) {
+      country = country ? country.toUpperCase() : null
       if (!s[cat].all.countries[country]) {
         s[cat].all.countries[country] = 0
       }
@@ -1912,10 +1957,17 @@ class Project {
         s[cat][type].countries[country] = 0
       }
       s[cat][type].countries[country] += quantity
+
+      if (date && type === 'distrib') {
+        if (!s[cat][type].country[country]) {
+          s[cat][type].country[country] = { ...dates }
+        }
+        s[cat][type].country[country][date] += quantity
+      }
     }
 
     s.addList = function (type, cat, date, value, project) {
-      if (value) {
+      if (value && inDate(date)) {
         s[cat].list.push({
           type: type,
           project_id: project,
@@ -1951,8 +2003,10 @@ class Project {
       // s.setDate('tips', 'income', date, tips)
       s.setDate('site', 'quantity', date, order.quantity)
 
-      s.setCountry('site', 'income', order.country_id, value)
-      s.setCountry('site', 'quantity', order.country_id, order.quantity)
+      if (inDate(date)) {
+        s.setCountry('site', 'income', order.country_id, value)
+        s.setCountry('site', 'quantity', order.country_id, order.quantity)
+      }
     }
 
     for (const [log, stock] of Object.entries(stocksSite)) {
@@ -1977,11 +2031,14 @@ class Project {
       if (!project) {
         continue
       }
+
       s.setDate('box', 'income', date, project.payback_box)
       s.setDate('box', 'quantity', date, 1)
 
-      s.setCountry('box', 'income', box.country_id, project.payback_box)
-      s.setCountry('box', 'quantity', box.country_id, 1)
+      if (inDate(date)) {
+        s.setCountry('box', 'income', box.country_id, project.payback_box)
+        s.setCountry('box', 'quantity', box.country_id, 1)
+      }
     }
 
     for (const stat of statements) {
@@ -2004,7 +2061,6 @@ class Project {
           value = dist.total * feeDistrib
         }
         s.setDate('distrib', 'income', date, value)
-        s.setCountry('distrib', 'income', dist.country_id, value)
 
         if (dist.digital) {
           s.setDate('digital', 'income', date, dist.digital * feeDistrib)
@@ -2015,7 +2071,10 @@ class Project {
 
         s.setDate('distrib', 'quantity', date, dist.quantity)
 
-        s.setCountry('distrib', 'quantity', dist.country_id, dist.quantity)
+        if (inDate(date)) {
+          s.setCountry('distrib', 'income', dist.country_id, value, date)
+          s.setCountry('distrib', 'quantity', dist.country_id, dist.quantity, date)
+        }
       }
     }
 

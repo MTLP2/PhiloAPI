@@ -235,27 +235,30 @@ class User {
 
     user.projects = await DB('project as p')
       .select('p.*')
-      .join('user as u', 'u.name', 'p.label_name')
-      .where('u.id', user.id)
+      .join('vod', 'vod.project_id', 'p.id')
+      .where('vod.user_id', user.id)
+      .whereIn('vod.step', ['in_progress', 'successful'])
       .all()
 
     const stylesDB = await DB('style').all()
 
     for (const item of user.items) {
       item.styles = item.styles?.split(',')
-      item.styles = stylesDB.filter((style) => item.styles.includes(style.id.toString()))?.name
+      item.styles =
+        item.styles && stylesDB.filter((style) => item.styles.includes(style.id.toString()))?.name
     }
 
     for (const wish of user.wishlist) {
       wish.styles = wish.styles?.split(',')
-      wish.styles = stylesDB.filter((style) => wish.styles.includes(style.id.toString()))?.name
+      wish.styles =
+        wish.styles && stylesDB.filter((style) => wish.styles.includes(style.id.toString()))?.name
     }
 
     for (const project of user.projects) {
       project.styles = project.styles?.split(',')
-      project.styles = stylesDB.filter((style) =>
-        project.styles.includes(style.id.toString())
-      )?.name
+      project.styles =
+        project.styles &&
+        stylesDB.filter((style) => project.styles.includes(style.id.toString()))?.name
     }
 
     return user

@@ -367,6 +367,7 @@ export default class Pass {
     times?: number
     updateTotal?: boolean
   }) {
+    return
     // console.log('addHistory', type, userId, refId, times)
     const quests = await Pass.findQuest({ type, userId })
 
@@ -447,6 +448,7 @@ export default class Pass {
   }
 
   static async addGenreHistory({ userId, genreList }: { userId: number; genreList: string[] }) {
+    return
     // lowercase genre type and convert spaces to underscores to match quest type
     const questListFromGenres: string[] = []
     for (const genre of genreList) {

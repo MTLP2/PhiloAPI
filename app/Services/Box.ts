@@ -1229,7 +1229,7 @@ class Box {
         errors.push({ id: box.id, type: 'vinyl_missing' })
       }
 
-      barcodes.push('BOXDIGGERS')
+      barcodes.push('BOXDIGGERSV2')
 
       if (
         !boxDispatchs[box.id] &&
@@ -1396,7 +1396,7 @@ class Box {
         continue
       }
 
-      barcodes.push('BOXDIGGERS')
+      barcodes.push('BOXDIGGERSV2')
       if (box.dispatchs === 0 && ['3_months', '6_months', '12_months'].includes(box.periodicity)) {
         barcodes.push('TOTEBAGBLANC')
       }
@@ -2063,7 +2063,8 @@ class Box {
       )
       .join('project as p', 'p.id', 'project_id')
       .join('vod as v', 'v.project_id', 'p.id')
-      .join('stock', 'stock.project_id', 'v.project_id')
+      .join('project_product', 'project_product.project_id', 'v.project_id')
+      .join('stock', 'stock.product_id', 'project_product.product_id')
       .where('stock.type', 'daudin')
       .orderBy('box_month.date', 'desc')
       .limit(100)
@@ -2386,7 +2387,7 @@ class Box {
     }
     await Box.checkStock(params.month)
 
-    barcodes.push('BOXDIGGERS')
+    barcodes.push('BOXDIGGERSV2')
     if (box.dispatchs === 0 && ['3_months', '6_months', '12_months'].includes(box.periodicity)) {
       barcodes.push('TOTEBAGBLANC')
     }

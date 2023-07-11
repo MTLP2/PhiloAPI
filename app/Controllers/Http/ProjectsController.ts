@@ -38,6 +38,10 @@ class ProjectsController {
     return Project.getSoundcloud(params)
   }
 
+  recommandationsForUser({ user }) {
+    return Project.recommandationsForUser(user.user_id)
+  }
+
   recommandations({ params, user }) {
     params.refs = params.refs && params.refs.split(',')
     params.shops = params.shops && params.shops.split(',')
@@ -60,6 +64,10 @@ class ProjectsController {
 
   getGroupShipment({ params, user }) {
     return Project.getGroupShipment(params.id, user.id)
+  }
+
+  getWishes({ params }) {
+    return Project.getWishes(params.id, params.lang)
   }
 
   getSongs({ params, user }) {
@@ -123,6 +131,7 @@ class ProjectsController {
       params.id = track.id
     }
     if (params.uploading) {
+      await ProjectEdit.saveTrack(params)
       const res = await Utils.upload({
         ...params,
         fileName: `songs/${params.id}.mp3`
