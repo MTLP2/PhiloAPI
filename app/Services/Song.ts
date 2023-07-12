@@ -4,8 +4,6 @@ import Utils from 'App/Utils'
 import fs from 'fs'
 import JSZip from 'jszip'
 import moment from 'moment'
-import ProjectEdit from './ProjectEdit'
-import User from './User'
 const ffmpeg = require('fluent-ffmpeg')
 
 class Song {
