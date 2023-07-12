@@ -2,7 +2,6 @@ import Digital from 'App/Services/Digital'
 import { validator, schema, rules } from '@ioc:Adonis/Core/Validator'
 import ApiError from 'App/ApiError'
 import Utils from 'App/Utils'
-import ProjectEdit from 'App/Services/ProjectEdit'
 import Song from 'App/Services/Song'
 
 class DigitalController {
@@ -10,7 +9,7 @@ class DigitalController {
     params.user = user
     await Utils.checkProjectOwner({ project_id: params.project_id, user: user })
     if (!params.id) {
-      const track = await ProjectEdit.saveDigitalTrack(params)
+      const track = await Digital.saveDigitalTrack(params)
       params.id = track.id
     }
     if (params.uploading) {
@@ -25,14 +24,14 @@ class DigitalController {
   getSongs({ params, user }) {
     params.user = user
     params.project_id = params.id
-    return Song.byDigitalProject(params)
+    return Digital.byDigitalProject(params)
   }
 
   async saveTrack({ params, user }) {
     params.user = user
     params.uuid = Utils.uuid()
     await Utils.checkProjectOwner({ project_id: params.project_id, user: user })
-    const track = await ProjectEdit.saveDigitalTrack(params)
+    const track = await Digital.saveDigitalTrack(params)
     return track
   }
 
@@ -48,11 +47,7 @@ class DigitalController {
     params.user = user
     const song = await Song.find(params.id)
     await Utils.checkProjectOwner({ project_id: song.project_id, user: user })
-    return Song.deleteDigitalTrack(params)
-  }
-
-  async downloadTrack({ params }) {
-    return await Song.downloadTrack(params)
+    return Digital.deleteDigitalTrack(params)
   }
 
   async getAll({ params }) {

@@ -112,6 +112,122 @@ class Digital {
     return todo
   }
 
+  static saveDigitalTrack = async (params) => {
+    await Utils.checkProjectOwner({ project_id: params.project_id, user: params.user })
+    let song: any = DB('song')
+    if (params.id !== 0) {
+      song = await DB('song').find(params.id)
+      if (!song) {
+        throw new ApiError(404)
+      }
+    } else {
+      song.project_id = params.project_id
+      song.created_at = Utils.date()
+    }
+    if (params) {
+      song.is_digital = 1
+    } else {
+      song.is_digital = 0
+    }
+    song.title = params.title
+    song.artist = params.artist
+    song.side && (song.side = params.side)
+    song.disc && (song.disc = params.disc)
+    song.digital_bonus && (song.digital_bonus = params.digital_bonus)
+    if (params.duration) {
+      // song.duration_str = params.duration
+      // song.duration = Utils.toSeconds(params.duration)
+      song.duration = params.duration
+    }
+    song.position = params.position
+    song.disabled = params.disabled
+    song.updated_at = Utils.date()
+    song.start_of_preview = params.start_of_preview
+    song.isrc_code = params.isrc_code
+    song.featured_artist = params.featured_artist
+    song.first_genre = params.first_genre
+    song.secondary_genre = params.secondary_genre
+    song.lyrics_language = params.lyrics_language
+    song.remixer_artist = params.remixer_artist
+    song.producer = params.producer
+    song.publisher = params.publisher
+    song.composer = params.composer
+    song.mixer = params.mixer
+    song.lyricist = params.lyricist
+    await song.save()
+
+    return song
+  }
+
+  static byDigitalProject = (params) => {
+    const songs = DB()
+      .select(
+        's.id',
+        's.title',
+        's.artist',
+        's.listenable',
+        'd.artist_name',
+        's.url',
+        's.duration',
+        's.position',
+        's.disc',
+        's.side',
+        's.disabled',
+        's.digital_bonus',
+        'd.id as project_id',
+        'd.project_name as project_name',
+        'd.artwork as artwork',
+        's.start_of_preview',
+        's.isrc_code',
+        's.featured_artist',
+        's.first_genre',
+        's.secondary_genre',
+        's.lyrics_language',
+        's.remixer_artist',
+        's.producer',
+        's.composer',
+        's.publisher',
+        's.lyricist',
+        's.mixer',
+        's.uuid',
+        DB.raw(`(
+          select count(*)
+          from \`like\`
+          where project_id = d.id and user_id = ${params.user_id ? params.user_id : 0}
+        ) as liked
+        `)
+      )
+      .from('song as s')
+      .join('digital as d', 'd.id', 's.project_id')
+      .where('d.id', params.project_id)
+      .where('s.is_digital', 1)
+      .orderBy('disc')
+      .orderBy('side')
+      .orderBy(
+        DB().raw(`
+        CAST(position AS UNSIGNED)=0,
+        CAST(position AS UNSIGNED),
+        LEFT(position,1),
+        CAST(MID(position,2) AS UNSIGNED)
+      `)
+      )
+
+    if (!params.disabled) {
+      songs.where('s.disabled', 0)
+    }
+
+    return songs.all()
+  }
+
+  static deleteDigitalTrack = async (params) => {
+    await Utils.checkProjectOwner({ project_id: params.project_id, user: params.user })
+
+    await DB('song_play').where('song_id', params.id).delete()
+    await DB('song').where('id', params.id).delete()
+
+    return true
+  }
+
   static async create(params: {
     user_id?: number
     origin?: string

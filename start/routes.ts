@@ -74,7 +74,6 @@ Route.group(() => {
     Route.post('/:id/tracks-new', 'DigitalController.saveTrackNew')
     Route.delete('/:project_id/tracks/:id', 'DigitalController.deleteTrack')
     Route.get('/:id/artwork', 'DigitalController.getArtwork')
-    Route.get('/:id/track', 'DigitalController.downloadTrack')
   }).prefix('digital')
 }).middleware(['auth'])
 
