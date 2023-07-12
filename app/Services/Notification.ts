@@ -346,7 +346,7 @@ class Notification {
         </tr>`
             : ''
         }
-        <tr>
+        <tr class="small">
           <td class="right" colspan="3">${t('invoice.shipping_costs')}</td>
           <td  class="total">
             ${params.order.shipping} ${cur[params.order.currency]}
@@ -354,7 +354,7 @@ class Notification {
         </tr>
         ${
           params.order.discount > 0
-            ? `<tr>
+            ? `<tr class="small">
           <td class="right" colspan="3">${t('invoice.discount')}</td>
           <td class="total">
             -${params.order.discount} ${cur[params.order.currency]}
@@ -363,8 +363,28 @@ class Notification {
             : ''
         }
         ${
+          params.order.tips > 0
+            ? `<tr class="small">
+          <td class="right" colspan="3">${t('invoice.tips')}</td>
+          <td class="total">
+            ${params.order.tips} ${cur[params.order.currency]}
+          </td>
+        </tr>`
+            : ''
+        }
+        ${
+          params.order.service_charge > 0
+            ? `<tr class="small">
+          <td class="right" colspan="3">${t('invoice.service_charge')}</td>
+          <td class="total">
+            ${params.order.service_charge} ${cur[params.order.currency]}
+          </td>
+        </tr>`
+            : ''
+        }
+        ${
           false
-            ? `<tr>
+            ? `<tr class="small">
           <td class="right" colspan="3">${t('invoice.tax')}</td>
           <td class="total">
             ${params.order.tax} ${cur[params.order.currency]}
@@ -442,6 +462,11 @@ class Notification {
     }
     a {
       color: #000;
+    }
+
+    table.order tr.small td {
+      font-size: 12px;
+      padding: 5px 10px;
     }
 
     td.footer {

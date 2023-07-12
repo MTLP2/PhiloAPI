@@ -65,6 +65,7 @@ class Cart {
       id: params.id,
       shops: {},
       currency: null,
+      tips: 0,
       sub_total: 0,
       shipping: 0,
       tax: 0,
@@ -92,6 +93,7 @@ class Cart {
     cart.shipping = 0
     cart.sub_total = 0
     cart.tax = 0
+    cart.tips = params.tips || 0
     cart.discount = 0
     cart.total = 0
     cart.totalGift = 0
@@ -101,6 +103,8 @@ class Cart {
     cart.withMarketplace = false
     cart.hasPickup = false
     cart.pickup = params.pickup
+
+    cart.total = cart.total + cart.tips
 
     cart.promo_code = params.promo_code
 
@@ -1496,6 +1500,7 @@ class Cart {
         shipping: calculate.shipping,
         tax: calculate.tax,
         tax_rate: calculate.tax_rate,
+        tips: calculate.tips,
         promo_code: calculate.promo_code,
         discount: calculate.discount,
         service_charge: calculate.service_charge,
@@ -1910,6 +1915,15 @@ class Cart {
       }
     })
 
+    data.items.push({
+      name: 'Tips',
+      quantity: 1,
+      unit_amount: {
+        currency_code: calculate.currency,
+        value: calculate.tips
+      }
+    })
+
     if (calculate.discount) {
       data.amount.breakdown.discount = {
         currency_code: calculate.currency,
@@ -1917,9 +1931,6 @@ class Cart {
       }
     }
 
-    console.log(data.items)
-
-    console.log(data.amount)
     const order: any = await PayPal.create({
       intent: 'CAPTURE',
       purchase_units: [data]
@@ -1985,6 +1996,7 @@ class Cart {
         'sub_total',
         'total',
         'shipping',
+        'order.tips',
         'order.currency',
         'order.currency_rate',
         'order.service_charge',
