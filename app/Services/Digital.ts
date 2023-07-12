@@ -5,6 +5,8 @@ import Storage from 'App/Services/Storage'
 import File from 'App/Services/File'
 import { integer } from 'aws-sdk/clients/cloudfront'
 import Song from './Song'
+import User from './User'
+import moment from 'moment'
 
 type DigitalDb = {
   id?: integer
@@ -154,6 +156,7 @@ class Digital {
     song.composer = params.composer
     song.mixer = params.mixer
     song.lyricist = params.lyricist
+    song.uuid = params.uuid
     await song.save()
 
     return song
@@ -397,12 +400,40 @@ class Digital {
       await DB('song').where('id', params.id).update({
         listenable: true
       })
-      Song.compressToMP3(params)
+      this.compressToMP3(params)
     }
     return {
       ...res,
       id: params.id
     }
+  }
+  static compressToMP3 = async (params: any) => {
+    const buffer = await Storage.get(`songs/${params.id}.wav`)
+    const check = await Storage.get(`songs/${params.uuid}.mp3`)
+    if (check) {
+      await Storage.delete(`songs/${params.uuid}.mp3`)
+    }
+    const uuid = Utils.uuid()
+    const track: any = await Song.compressSong(buffer)
+    await Storage.upload(`songs/${uuid}.mp3`, track.buffer)
+
+    await User.event({
+      type: 'track_uploaded',
+      user_id: params.user.id,
+      project_id: params.id
+    })
+    const seconds = moment.duration(track.duration).asSeconds()
+    await DB('song')
+      .where('id', params.id)
+      .update({
+        listenable: true,
+        duration: seconds,
+        duration_str: track.duration.substr(3, 5),
+        updated_at: Utils.date(),
+        uuid: uuid
+      })
+
+    return { success: true }
   }
 
   static async duplicate(params: { id: number }) {
