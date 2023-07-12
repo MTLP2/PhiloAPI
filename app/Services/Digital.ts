@@ -219,6 +219,11 @@ class Digital {
     return songs.all()
   }
 
+  static getDigitalProjectsByUser = async (params: { userId: number }) => {
+    const projects = await DB('digital').where('user_id', params.userId).orderBy('id', 'desc').all()
+    return projects
+  }
+
   static deleteDigitalTrack = async (params) => {
     await Utils.checkProjectOwner({ project_id: params.project_id, user: params.user })
 

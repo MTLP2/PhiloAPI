@@ -54,6 +54,10 @@ class DigitalController {
     return await Digital.getAll(params)
   }
 
+  getDigitalProjectsByUser({ user }) {
+    return Digital.getDigitalProjectsByUser({ userId: user.id })
+  }
+
   async getDigitalSingle({ params }) {
     try {
       const payload = await validator.validate({

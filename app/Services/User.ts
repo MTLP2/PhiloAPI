@@ -1420,11 +1420,6 @@ static extractProjectOrders = async (params) => {
 
     return true
   }
-
-  static getMyDigitalProjects = async (params: { userId: number }) => {
-    const projects = await DB('digital').where('user_id', params.userId).orderBy('id', 'desc').all()
-    return projects
-  }
 }
 
 export default User

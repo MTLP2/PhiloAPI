@@ -322,10 +322,6 @@ class UserController {
       return { error: err.message, validation: err.messages }
     }
   }
-
-  getMyDigitalProjects({ user }) {
-    return User.getMyDigitalProjects({ userId: user.id })
-  }
 }
 
 export default UserController
