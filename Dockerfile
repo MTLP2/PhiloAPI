@@ -24,7 +24,6 @@ ENV DRIVE_DISK=local
 ENV PORT=3000
 
 COPY --chown=node:node ./package*.json ./
-COPY --chown=node:node ./prisma ./prisma/
 RUN npm ci --production
 COPY --chown=node:node --from=build /home/node/app/build .
 EXPOSE $PORT
