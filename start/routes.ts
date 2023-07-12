@@ -80,7 +80,7 @@ Route.group(() => {
 Route.get('/digital/:id/songs', 'DigitalController.getSongs')
 
 Route.group(() => {
-  Route.get('/projects', 'UserController.getMyDigitalProjects')
+  Route.get('/projects', 'DigitalController.getDigitalProjectsByUser')
 })
   .prefix('user/digital')
   .middleware(['auth'])
