@@ -1155,9 +1155,9 @@ static extractProjectOrders = async (params) => {
         const order = user.orders[i]
         const ss = order.styles.split(',').filter((s) => s !== '')
 
-        user.orders[i].genres = ss.map((s) => genres[styles[s.id || s].genre_id])
-        user.orders[i].genres = [...new Set(user.orders[i].genres)]
-        user.orders[i].styles = ss.map((s) => styles[s.id || s].name)
+        user.orders[i].genres = ss.map((s) => genres[styles[s.id || s]?.genre_id])
+        user.orders[i].genres = [...new Set(user.orders[i]?.genres)]
+        user.orders[i].styles = ss.map((s) => styles[s.id || s]?.name)
 
         user.orders[i].price = user.orders[i].price / currencies[order.currency]
 
