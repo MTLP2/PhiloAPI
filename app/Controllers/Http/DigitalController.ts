@@ -116,7 +116,7 @@ class DigitalController {
         explicit_content: schema.number.optional(),
         territory_included: schema.array.optional().members(schema.string({ trim: true })),
         territory_excluded: schema.array.optional().members(schema.string({ trim: true })),
-        platforms_excluded: schema.string.optional({ trim: true }),
+        platforms_excluded: schema.array.optional().members(schema.string({ trim: true })),
         registration_year: schema.number.optional(),
         digital_rights_owner: schema.string.optional({ trim: true }),
         label_name: schema.string.optional({ trim: true }),

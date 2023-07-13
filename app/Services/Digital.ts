@@ -23,7 +23,7 @@ type DigitalDb = {
   explicit_content?: number
   territory_included?: string[]
   territory_excluded?: string[]
-  platforms_excluded?: string
+  platforms_excluded?: number[]
   registration_year?: number
   digital_rights_owner?: string
   label_name?: string
@@ -294,7 +294,7 @@ class Digital {
     item.explicit_content = payload.explicit_content || 0
     item.territory_included = payload.territory_included?.join(',') || null
     item.territory_excluded = payload.territory_excluded?.join(',') || null
-    item.platforms_excluded = payload.platforms_excluded || null
+    item.platforms_excluded = payload.platforms_excluded?.join(',') || null
     item.registration_year = payload.registration_year || null
     item.digital_rights_owner = payload.digital_rights_owner || null
     item.label_name = payload.label_name || null
@@ -333,6 +333,8 @@ class Digital {
       digital.territory_included !== '' ? digital.territory_included?.split(',') : []
     digital.territory_excluded =
       digital.territory_excluded !== '' ? digital.territory_excluded?.split(',') : []
+    digital.platforms_excluded =
+      digital.platforms_excluded !== '' ? digital.platforms_excluded?.split(',') : []
     return digital
   }
 
