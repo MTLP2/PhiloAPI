@@ -1319,6 +1319,8 @@ static toJuno = async (params) => {
 
     const transporters = {}
 
+    const tt = {}
+
     for (const item of list) {
       if (item.barcode !== '3760370265368') {
         continue
@@ -1331,6 +1333,11 @@ static toJuno = async (params) => {
         created_at: Utils.date(),
         updated_at: Utils.date()
       })
+
+      if (!tt[item.country]) {
+        tt[item.country] = 0
+      }
+      tt[item.country] += +item.quantity
 
       if (!transporters[item.country]) {
         const trans: any = await Cart.calculateShipping({
@@ -1391,6 +1398,8 @@ static toJuno = async (params) => {
       })
     }
     // console.log(projects)
+
+    console.log(tt)
 
     return list
   }
