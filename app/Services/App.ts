@@ -121,9 +121,9 @@ class App {
       } else if (hour === 4) {
         await Whiplash.setTrackingLinks()
       } else if (hour === 5) {
-        // await Elogik.syncStocks()
+        await Elogik.syncStocks()
         await Elogik.syncBoxes()
-        // await Whiplash.syncStocks()
+        await Whiplash.syncStocks()
         await Cio.syncNewsletterNoAccount()
       } else if (hour === 7) {
         await App.check5DaysLeftProjects()
@@ -139,8 +139,8 @@ class App {
       } else if (hour === 12) {
         await Invoice.reminder()
       } else if (hour === 13) {
-        // await Elogik.syncStocks()
-        // await Whiplash.syncStocks()
+        await Elogik.syncStocks()
+        await Whiplash.syncStocks()
       } else if (hour === 14) {
         await Elogik.checkBlockedOrders()
       } else if (hour === 16) {
@@ -1576,6 +1576,42 @@ class App {
       links: [
         { lang: 'en', url: '/vinyl-pressing' },
         { lang: 'fr', url: '/fr/pressage-de-vinyle' }
+      ]
+    })
+    sitemap.write({
+      url: '/pressing',
+      changefreq: 'monthly',
+      priority: 0.6,
+      links: [
+        { lang: 'en', url: '/pressing' },
+        { lang: 'fr', url: '/fr/pressing' }
+      ]
+    })
+    sitemap.write({
+      url: '/cd-pressing',
+      changefreq: 'monthly',
+      priority: 0.6,
+      links: [
+        { lang: 'en', url: '/cd-pressing' },
+        { lang: 'fr', url: '/fr/cd-pressing' }
+      ]
+    })
+    sitemap.write({
+      url: '/merch-pressing',
+      changefreq: 'monthly',
+      priority: 0.6,
+      links: [
+        { lang: 'en', url: '/merch-pressing' },
+        { lang: 'fr', url: '/fr/merch-pressing' }
+      ]
+    })
+    sitemap.write({
+      url: '/tape-pressing',
+      changefreq: 'monthly',
+      priority: 0.6,
+      links: [
+        { lang: 'en', url: '/tape-pressing' },
+        { lang: 'fr', url: '/fr/tape-pressing' }
       ]
     })
     sitemap.write({

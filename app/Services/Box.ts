@@ -1229,7 +1229,7 @@ class Box {
         errors.push({ id: box.id, type: 'vinyl_missing' })
       }
 
-      barcodes.push('BOXDIGGERS')
+      barcodes.push('BOXDIGGERSV2')
 
       if (
         !boxDispatchs[box.id] &&
@@ -1396,7 +1396,7 @@ class Box {
         continue
       }
 
-      barcodes.push('BOXDIGGERS')
+      barcodes.push('BOXDIGGERSV2')
       if (box.dispatchs === 0 && ['3_months', '6_months', '12_months'].includes(box.periodicity)) {
         barcodes.push('TOTEBAGBLANC')
       }
@@ -2387,7 +2387,7 @@ class Box {
     }
     await Box.checkStock(params.month)
 
-    barcodes.push('BOXDIGGERS')
+    barcodes.push('BOXDIGGERSV2')
     if (box.dispatchs === 0 && ['3_months', '6_months', '12_months'].includes(box.periodicity)) {
       barcodes.push('TOTEBAGBLANC')
     }

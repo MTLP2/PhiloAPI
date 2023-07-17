@@ -1763,6 +1763,7 @@ class Stats {
           cost: { total: 0, dates: { ...dates } }
         },
         shipping: { total: 0, dates: { ...dates } },
+        tips: { total: 0, dates: { ...dates } },
         fee_change: { total: 0, dates: { ...dates } },
         service_charge: { total: 0, dates: { ...dates } },
         distrib: {
@@ -1992,6 +1993,8 @@ class Stats {
         'order_shop.sub_total',
         'order_shop.tax_rate',
         'order.service_charge',
+        'order.tips',
+        'order.status',
         'order_shop.currency',
         'order_shop.currency_rate',
         'user.is_pro'
@@ -2116,6 +2119,10 @@ class Stats {
           date,
           (ods[0].service_charge * invoice.currency_rate) / (1 + ods[0].tax_rate)
         )
+        if (ods[0].status === 'confirmed' && ods[0].tips) {
+          addMarge('tips', null, date, ods[0].tips)
+        }
+
         for (const order of ods) {
           let shipping = order.shipping * invoice.currency_rate
           if (order.tax_rate) {
