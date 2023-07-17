@@ -1,10 +1,61 @@
 import Digital from 'App/Services/Digital'
 import { validator, schema, rules } from '@ioc:Adonis/Core/Validator'
 import ApiError from 'App/ApiError'
+import Utils from 'App/Utils'
+import Song from 'App/Services/Song'
 
 class DigitalController {
+  async saveTrackNew({ params, user }) {
+    params.user = user
+    await Utils.checkProjectOwner({ project_id: params.project_id, user: user })
+    if (!params.id) {
+      const track = await Digital.saveDigitalTrack(params)
+      params.id = track.id
+    }
+    if (params.uploading) {
+      return await Digital.uploadTrack(params)
+    } else {
+      return {
+        id: params.id
+      }
+    }
+  }
+
+  getSongs({ params, user }) {
+    params.user = user
+    params.project_id = params.id
+    return Digital.byDigitalProject(params)
+  }
+
+  async saveTrack({ params, user }) {
+    params.user = user
+    params.uuid = Utils.uuid()
+    await Utils.checkProjectOwner({ project_id: params.project_id, user: user })
+    const track = await Digital.saveDigitalTrack(params)
+    return track
+  }
+
+  async encodeTrack({ params }) {
+    return await Song.setInfo(params.tid)
+  }
+
+  async getArtwork({ params }) {
+    return await Digital.getArtwork(params)
+  }
+
+  async deleteTrack({ params, user }) {
+    params.user = user
+    const song = await Song.find(params.id)
+    await Utils.checkProjectOwner({ project_id: song.project_id, user: user })
+    return Digital.deleteDigitalTrack(params)
+  }
+
   async getAll({ params }) {
     return await Digital.getAll(params)
+  }
+
+  getDigitalProjectsByUser({ user }) {
+    return Digital.getDigitalProjectsByUser({ userId: user.id })
   }
 
   async getDigitalSingle({ params }) {
@@ -38,6 +89,54 @@ class DigitalController {
       })
 
       return await Digital.create(payload)
+    } catch (error) {
+      throw new ApiError(
+        error.messages ? 400 : 500,
+        JSON.stringify(error.messages) || error.message
+      )
+    }
+  }
+
+  async createOne({ params, user }) {
+    params.user_id = user.user_id
+    const payload = await validator.validate({
+      schema: schema.create({
+        artwork: schema.string.optional({ trim: true }),
+        user_id: schema.number(),
+        id: schema.number.optional(),
+        project_name: schema.string.optional({ trim: true }),
+        artist_name: schema.string.optional({ trim: true }),
+        barcode: schema.string.optional({ trim: true }),
+        catalogue_number: schema.number.optional(),
+        project_type: schema.string.optional({ trim: true }),
+        spotify_url: schema.string.optional({ trim: true }),
+        genre: schema.array.optional().members(schema.string({ trim: true })),
+        commercial_release_date: schema.string.optional({ trim: true }),
+        preview_date: schema.string.optional({ trim: true }),
+        explicit_content: schema.number.optional(),
+        territory_included: schema.array.optional().members(schema.string({ trim: true })),
+        territory_excluded: schema.array.optional().members(schema.string({ trim: true })),
+        platforms_excluded: schema.array.optional().members(schema.string({ trim: true })),
+        registration_year: schema.number.optional(),
+        digital_rights_owner: schema.string.optional({ trim: true }),
+        label_name: schema.string.optional({ trim: true }),
+        nationality_project: schema.string.optional({ trim: true })
+      }),
+      data: params
+    })
+    return await Digital.store(payload)
+  }
+
+  async getOne({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          id: schema.number.optional()
+        }),
+        data: params
+      })
+
+      return await Digital.getOne(payload)
     } catch (error) {
       throw new ApiError(
         error.messages ? 400 : 500,

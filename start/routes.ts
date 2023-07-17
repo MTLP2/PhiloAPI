@@ -64,6 +64,27 @@ Route.group(() => {
   .prefix('intercom')
   .middleware('intercom')
 
+// Digital
+
+Route.group(() => {
+  Route.group(() => {
+    Route.post('/create', 'DigitalController.createDigitalProject')
+    Route.put('/:id/tracks', 'DigitalController.saveTrack')
+    Route.post('/:id/tracks', 'DigitalController.saveTrack')
+    Route.post('/:id/tracks-new', 'DigitalController.saveTrackNew')
+    Route.delete('/:project_id/tracks/:id', 'DigitalController.deleteTrack')
+    Route.get('/:id/artwork', 'DigitalController.getArtwork')
+  }).prefix('digital')
+}).middleware(['auth'])
+
+Route.get('/digital/:id/songs', 'DigitalController.getSongs')
+
+Route.group(() => {
+  Route.get('/projects', 'DigitalController.getDigitalProjectsByUser')
+})
+  .prefix('user/digital')
+  .middleware(['auth'])
+
 Route.group(() => {
   Route.get('/emails/:id', 'AppController.previewEmail')
 })
@@ -542,7 +563,6 @@ Route.group(() => {
     Route.get('/export', 'AdminController.exportPassCulture')
   }).prefix('pass-culture')
 
-  // Digital routes
   Route.group(() => {
     Route.get('/', 'DigitalController.getAll')
     Route.post('/', 'DigitalController.createAdmin')
@@ -556,6 +576,8 @@ Route.group(() => {
     Route.delete(':did/files/:id', 'DigitalController.deleteFile')
     Route.put(':id', 'DigitalController.update')
     Route.delete(':id', 'DigitalController.delete')
+    Route.post('/new', 'DigitalController.createOne')
+    Route.get('/new/:id', 'DigitalController.getOne')
   }).prefix('digital')
 
   // Pass routes
