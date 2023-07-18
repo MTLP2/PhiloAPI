@@ -121,6 +121,7 @@ class ProjectEdit {
       params.label_picture ||
       params.label_bside_picture ||
       params.back_picture ||
+      params.back_cover_picture ||
       params.back_cover ||
       params.cover2_picture ||
       params.cover3_picture ||
@@ -142,7 +143,7 @@ class ProjectEdit {
         cover4: params.cover4_picture,
         cover5: params.cover5_picture,
         vinyl_picture: params.vinyl_picture,
-        back: params.back_picture || params.back_cover,
+        back: params.back_picture || params.back_cover || params.back_cover_picture,
         label: params.label_picture,
         label_bside: params.label_bside_picture,
         background: params.background,

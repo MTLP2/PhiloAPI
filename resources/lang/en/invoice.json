@@ -12,6 +12,8 @@
   "wording": "Name",
   "donation": "Donation",
   "shipping_costs": "Shipping costs",
+  "service_charge": "Service charge",
+  "tips": "Tip",
   "price_ht": "Montant HT",
   "tva_rate": "VAT Rate",
   "sub_total": "Sub-total",
