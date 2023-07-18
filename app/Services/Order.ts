@@ -419,30 +419,6 @@ static toJuno = async (params) => {
   static exportCaByProjectId = async (params) => {
     const idList = params.projects.split(',').map(Number)
 
-    // const result = await DB('project')
-    //   .select(
-    //     DB.raw("DATE_FORMAT(order_item.created_at, '%Y-%m') AS month"),
-    //     DB.raw('project.name AS project_name'),
-    //     DB.raw(
-    //       'ROUND(SUM(CASE WHEN country.ue = 1 THEN (order_item.price * order_item.currency_rate - (order_item.price * 0.2)) * order_item.quantity END), 3) AS ca_ue'
-    //     ),
-    //     DB.raw(
-    //       'ROUND(SUM(CASE WHEN country.ue = 0 THEN (order_item.price * order_item.currency_rate) * order_item.quantity END), 3) AS ca_hors_ue'
-    //     )
-    //   )
-    //   .join('order_item', 'order_item.project_id', 'project.id')
-    //   .join('order_shop', 'order_item.order_shop_id', 'order_shop.id')
-    //   .join('customer', 'order_shop.customer_id', 'customer.id')
-    //   .join('country', 'customer.country_id', 'country.id')
-    //   .join('vod', 'order_item.vod_id', 'vod.id')
-    //   .whereIn('project.id', idList)
-    //   .where('order_shop.is_paid', 1)
-    //   .where('vod.is_licence', 1)
-    //   .where('order_item.created_at', '>', params.start)
-    //   .groupByRaw("DATE_FORMAT(order_item.created_at, '%Y-%m'), project.id")
-    //   .orderBy('month')
-    //   .orderBy('project.id')
-    //   .all()
     const result = await DB('project')
       .select(
         DB.raw("DATE_FORMAT(order_item.created_at, '%Y-%m') AS month"),
