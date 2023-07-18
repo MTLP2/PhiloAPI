@@ -9,6 +9,7 @@ import Notification from 'App/Services/Notification'
 import Invoice from 'App/Services/Invoice'
 import Whiplash from 'App/Services/Whiplash'
 import Elogik from 'App/Services/Elogik'
+import Cart from 'App/Services/Cart'
 import Sna from 'App/Services/Sna'
 import ApiError from 'App/ApiError'
 const paypal = require('paypal-rest-sdk')
@@ -1371,6 +1372,120 @@ static toJuno = async (params) => {
     })
 
     return { success: true }
+  }
+
+  static createExternalOrders = async () => {
+    const workbook = new Excel.Workbook()
+    await workbook.xlsx.readFile('orders.xlsx')
+
+    const userId = 182080
+    const list: any[] = []
+    const worksheet = workbook.getWorksheet(1)
+    worksheet.eachRow((row) => {
+      const data = {
+        firstname: row.getCell('A').toString().split(' ')[0],
+        lastname: row.getCell('A').toString().split(' ')[1],
+        address: row.getCell('B').toString(),
+        city: row.getCell('C').toString(),
+        zipcode: row.getCell('D').toString().replaceAll('"', ''),
+        state: row.getCell('E').toString().split('-')[1],
+        country: row.getCell('E').toString().split('-')[0],
+        quantity: row.getCell('G').toString(),
+        barcode: row.getCell('H').toString(),
+        phone: row.getCell('I').toString().replaceAll('"', '')
+      }
+      list.push(data)
+    })
+
+    await DB().execute('SET FOREIGN_KEY_CHECKS = 0;')
+    await DB().execute('DELETE FROM `order` WHERE user_id = ' + userId)
+    await DB().execute('DELETE FROM order_shop WHERE user_id = ' + userId)
+
+    const transporters = {}
+
+    const tt = {}
+
+    for (const item of list) {
+      if (item.barcode !== '3760370265368') {
+        continue
+      }
+
+      const order = await DB('order').insert({
+        user_id: userId,
+        status: 'external',
+        currency: 'EUR',
+        created_at: Utils.date(),
+        updated_at: Utils.date()
+      })
+
+      if (!tt[item.country]) {
+        tt[item.country] = 0
+      }
+      tt[item.country] += +item.quantity
+
+      if (!transporters[item.country]) {
+        const trans: any = await Cart.calculateShipping({
+          quantity: 1,
+          weight: 200,
+          insert: 1,
+          currency: 'EUR',
+          country_id: item.country,
+          transporters: {
+            daudin: true,
+            whiplash: true,
+            whiplash_uk: true
+          }
+        })
+        transporters[item.country] = trans.transporter
+      }
+
+      const customer = await DB('customer').insert({
+        firstname: item.firstname,
+        lastname: item.lastname,
+        address: item.address,
+        city: item.city,
+        zip_code: item.zipcode,
+        state: item.state,
+        country_id: item.country,
+        phone: item.phone,
+        created_at: Utils.date(),
+        updated_at: Utils.date()
+      })
+      const orderShop = await DB('order_shop').insert({
+        user_id: userId,
+        step: 'confirmed',
+        type: 'vod',
+        order_id: order,
+        customer_id: customer,
+        is_paid: true,
+        is_external: true,
+        total: 0,
+        sub_total: 0,
+        shipping: 0,
+        shipping_type: 'standard',
+        transporter: transporters[item.country],
+        currency: 'EUR',
+        currency_rate: 1,
+        created_at: Utils.date(),
+        updated_at: Utils.date()
+      })
+      await DB('order_item').insert({
+        order_id: order,
+        order_shop_id: orderShop,
+        project_id: 278091,
+        quantity: item.quantity,
+        price: 0,
+        currency: 'EUR',
+        currency_rate: 1,
+        created_at: Utils.date(),
+        updated_at: Utils.date()
+      })
+    }
+    // console.log(projects)
+
+    console.log(tt)
+
+    return list
   }
 }
 

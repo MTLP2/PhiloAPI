@@ -454,6 +454,7 @@ class Admin {
       quantity_site: 0,
       quantity_site_tax: 0,
       quantity_manual: 0,
+      quantity_external: 0,
       quantity_site_no_tax: 0,
       quantity_distrib: 0,
       quantity_box: 0,
@@ -504,6 +505,7 @@ class Admin {
       .select(
         'os.id',
         'os.is_paid',
+        'os.is_external',
         'os.step',
         'oi.quantity',
         'oi.price',
@@ -534,7 +536,11 @@ class Admin {
         }
         stats.quantity_not_paid += o.quantity
       }
-      stats.quantity_site += o.quantity
+      if (o.is_external) {
+        stats.quantity_external += o.quantity
+      } else {
+        stats.quantity_site += o.quantity
+      }
       if (o.tax_rate === 0) {
         stats.quantity_site_no_tax += o.quantity
       } else {
@@ -625,7 +631,8 @@ class Admin {
     }
 
     stats.currency = project.currency
-    stats.quantity = stats.quantity_site + stats.quantity_distrib + stats.quantity_box
+    stats.quantity =
+      stats.quantity_site + stats.quantity_external + stats.quantity_distrib + stats.quantity_box
     stats.turnover =
       stats.turnover_site + stats.turnover_distrib + stats.turnover_digital + stats.turnover_box
     stats.benefit_total = stats.benefit_site + stats.benefit_distrib + stats.benefit_prod
@@ -1775,11 +1782,13 @@ class Admin {
 
     const orderShops = await DB('order_shop')
       .select('order_shop.*', 'user.name', 'payment.code as payment_code')
-      .join('user', 'user.id', 'order_shop.shop_id')
+      .leftJoin('user', 'user.id', 'order_shop.shop_id')
       .leftJoin('payment', 'payment.id', 'order_shop.shipping_payment_id')
       .where('order_id', id)
       .belongsTo('customer')
       .all()
+
+    console.log(orderShops)
 
     const orderManuals = await DB('order_manual')
       .whereIn(
