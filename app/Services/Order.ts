@@ -444,32 +444,32 @@ static toJuno = async (params) => {
       .orderBy('project.id')
       .all()
 
-    // let columns: any = []
-    // columns.push({ header: 'Month', key: 'month', width: 15 })
-    // const processedResults = {}
-    // result.map((res) => {
-    //   if (!processedResults[res.project_name]) {
-    //     processedResults[res.project_name] = []
-    //   }
-    //   processedResults[res.project_name].push({
-    //     ...res
-    //   })
-    // })
-    // for (const project in processedResults) {
-    //   processedResults[project].map((res) => {
-    //     columns.push({ header: res.project_name + ' UE', key: 'ca_ue' })
-    //     columns.push({ header: res.project_name + ' Hors UE', key: 'ca_hors_ue' })
-    //   })
-    // }
+    let columns: any = []
+    columns.push({ header: 'Month', key: 'month', width: 15 })
+    const processedResults = {}
+    result.map((res) => {
+      if (!processedResults[res.project_name]) {
+        processedResults[res.project_name] = []
+      }
+      processedResults[res.project_name].push({
+        ...res
+      })
+    })
+    for (const project in processedResults) {
+      columns.push({ header: project + ' UE', key: 'ca_ue' })
+      columns.push({ header: project + ' Hors UE', key: 'ca_hors_ue' })
+    }
+    console.log(columns)
     const file = await Utils.arrayToXlsx([
       {
         worksheetName: 'Rapport CA',
-        columns: [
-          { header: 'Month', key: 'month', width: 15 },
-          { header: 'Project Name', key: 'project_name', width: 30 },
-          { header: 'CA UE', key: 'ca_ue', width: 15 },
-          { header: 'CA hors UE', key: 'ca_hors_ue', width: 15 }
-        ],
+        // columns: [
+        //   { header: 'Month', key: 'month', width: 15 },
+        //   { header: 'Project Name', key: 'project_name', width: 30 },
+        //   { header: 'CA UE', key: 'ca_ue', width: 15 },
+        //   { header: 'CA hors UE', key: 'ca_hors_ue', width: 15 }
+        // ],
+        columns: columns,
         data: result
       }
     ])
