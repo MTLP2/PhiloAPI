@@ -1919,8 +1919,6 @@ class Admin {
     return { success: true }
   }
 
-  static caByProjectId = async (params: any) => {}
-
   static extractOrders = async (params) => {
     params.size = 0
     params.project_id = params.id
