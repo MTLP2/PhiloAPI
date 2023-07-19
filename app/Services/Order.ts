@@ -442,44 +442,36 @@ static toJuno = async (params) => {
       .where('order_item.created_at', '>', params.start)
       .groupByRaw("DATE_FORMAT(order_item.created_at, '%Y-%m'), project.id")
       .orderBy('month')
-      .orderBy('project.id')
       .all()
-
     let columns: any = []
+    const addedColumns: any[] = []
     columns.push({ header: 'Month', key: 'month', width: 15 })
     const processedResults = {}
-    result.map((res) => {
-      if (!processedResults[res.id]) {
-        processedResults[res.id] = []
+    for (let i = 0; i < result.length; i++) {
+      const res = result[i]
+      if (!processedResults[res.month]) {
+        processedResults[res.month] = {
+          month: res.month
+        }
       }
+
       const fieldUe = `ca_ue_${res.id}`
       const fieldHorsUe = `ca_hors_ue_${res.id}`
-
-      processedResults[res.id].push({
-        month: res.month,
-        project_name: res.project_name,
-        [fieldUe]: res.ca_ue,
-        [fieldHorsUe]: res.ca_hors_ue
-      })
-    })
-    for (const project in processedResults) {
-      columns.push({ header: project + ' UE', key: `ca_ue_${project}`, width: 30 })
-      columns.push({ header: project + ' Hors UE', key: `ca_hors_ue_${project}`, width: 30 })
+      processedResults[res.month][fieldUe] = res.ca_ue
+      processedResults[res.month][fieldHorsUe] = res.ca_hors_ue
+      if (!addedColumns.includes(res.project_name)) {
+        columns.push({ header: res.project_name + ' UE', key: fieldUe, width: 50 })
+        columns.push({ header: res.project_name + ' hors UE', key: fieldHorsUe, width: 50 })
+        addedColumns.push(res.project_name)
+      }
     }
-    console.log(processedResults)
-    console.log('-----------------------')
-    console.log(columns)
+
+    const obj: any[] = Object.values(processedResults)
     const file = await Utils.arrayToXlsx([
       {
         worksheetName: 'Rapport CA',
-        // columns: [
-        //   { header: 'Month', key: 'month', width: 15 },
-        //   { header: 'Project Name', key: 'project_name', width: 30 },
-        //   { header: 'CA UE', key: 'ca_ue', width: 15 },
-        //   { header: 'CA hors UE', key: 'ca_hors_ue', width: 15 }
-        // ],
         columns: columns,
-        data: result
+        data: obj
       }
     ])
     return file
