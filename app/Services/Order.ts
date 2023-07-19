@@ -422,7 +422,8 @@ static toJuno = async (params) => {
     const result = await DB('project')
       .select(
         DB.raw("DATE_FORMAT(order_item.created_at, '%Y-%m') AS month"),
-        DB.raw('project.name AS project_name'),
+        'project.name AS project_name',
+        'project.id',
         DB.raw(
           'ROUND(SUM(CASE WHEN country.ue = 1 THEN (order_item.price * order_item.currency_rate - (order_item.price * 0.2)) * order_item.quantity END), 3) AS ca_ue'
         ),
@@ -448,17 +449,25 @@ static toJuno = async (params) => {
     columns.push({ header: 'Month', key: 'month', width: 15 })
     const processedResults = {}
     result.map((res) => {
-      if (!processedResults[res.project_name]) {
-        processedResults[res.project_name] = []
+      if (!processedResults[res.id]) {
+        processedResults[res.id] = []
       }
-      processedResults[res.project_name].push({
-        ...res
+      const fieldUe = `ca_ue_${res.id}`
+      const fieldHorsUe = `ca_hors_ue_${res.id}`
+
+      processedResults[res.id].push({
+        month: res.month,
+        project_name: res.project_name,
+        [fieldUe]: res.ca_ue,
+        [fieldHorsUe]: res.ca_hors_ue
       })
     })
     for (const project in processedResults) {
-      columns.push({ header: project + ' UE', key: 'ca_ue' })
-      columns.push({ header: project + ' Hors UE', key: 'ca_hors_ue' })
+      columns.push({ header: project + ' UE', key: `ca_ue_${project}`, width: 30 })
+      columns.push({ header: project + ' Hors UE', key: `ca_hors_ue_${project}`, width: 30 })
     }
+    console.log(processedResults)
+    console.log('-----------------------')
     console.log(columns)
     const file = await Utils.arrayToXlsx([
       {
