@@ -454,6 +454,7 @@ class Admin {
       quantity_site: 0,
       quantity_site_tax: 0,
       quantity_manual: 0,
+      quantity_external: 0,
       quantity_site_no_tax: 0,
       quantity_distrib: 0,
       quantity_box: 0,
@@ -504,6 +505,7 @@ class Admin {
       .select(
         'os.id',
         'os.is_paid',
+        'os.is_external',
         'os.step',
         'oi.quantity',
         'oi.price',
@@ -534,7 +536,11 @@ class Admin {
         }
         stats.quantity_not_paid += o.quantity
       }
-      stats.quantity_site += o.quantity
+      if (o.is_external) {
+        stats.quantity_external += o.quantity
+      } else {
+        stats.quantity_site += o.quantity
+      }
       if (o.tax_rate === 0) {
         stats.quantity_site_no_tax += o.quantity
       } else {
@@ -625,7 +631,8 @@ class Admin {
     }
 
     stats.currency = project.currency
-    stats.quantity = stats.quantity_site + stats.quantity_distrib + stats.quantity_box
+    stats.quantity =
+      stats.quantity_site + stats.quantity_external + stats.quantity_distrib + stats.quantity_box
     stats.turnover =
       stats.turnover_site + stats.turnover_distrib + stats.turnover_digital + stats.turnover_box
     stats.benefit_total = stats.benefit_site + stats.benefit_distrib + stats.benefit_prod
@@ -968,6 +975,7 @@ class Admin {
     vod.shipping_delay_reason = params.shipping_delay_reason
     vod.shipping_discount = params.shipping_discount || 0
     vod.save_shipping = params.save_shipping || 0
+    vod.organic = params.organic || 0
 
     vod.historic = vod.historic ? JSON.parse(vod.historic) : []
     if (params.edit_stock) {
@@ -1775,11 +1783,13 @@ class Admin {
 
     const orderShops = await DB('order_shop')
       .select('order_shop.*', 'user.name', 'payment.code as payment_code')
-      .join('user', 'user.id', 'order_shop.shop_id')
+      .leftJoin('user', 'user.id', 'order_shop.shop_id')
       .leftJoin('payment', 'payment.id', 'order_shop.shipping_payment_id')
       .where('order_id', id)
       .belongsTo('customer')
       .all()
+
+    console.log(orderShops)
 
     const orderManuals = await DB('order_manual')
       .whereIn(
@@ -2414,7 +2424,25 @@ class Admin {
     return user
   }
 
-  static saveUser = async (params) => {
+  static saveUser = async (params: {
+    id?: number
+    name: string
+    email: string
+    emails: string
+    code_client: string
+    user_type: string
+    is_pro: number
+    is_delete: number
+    lang: string
+    about_me: string
+    confirmed: number
+    unsubscribed: number
+    balance_followup: number
+    balance_comment: number
+    country_id: number
+    styles: string
+    featured: number
+  }) => {
     const user = await DB('user').find(params.id)
 
     user.name = params.name
@@ -2432,6 +2460,7 @@ class Admin {
     user.balance_comment = params.balance_comment
     user.country_id = params.country_id || null
     user.styles = JSON.stringify(params.styles)
+    user.featured = params.featured
     user.updated_at = Utils.date()
 
     try {
@@ -4051,6 +4080,17 @@ class Admin {
   static exportRawProjects = async (params) => {
     const projects = await Admin.getProjects({ start: params.start, end: params.end, size: 0 })
 
+    const dataWithOrganic = projects.data.map((project) => {
+      let result = ''
+      if (project.organic === 0) {
+        result = ''
+      } else {
+        result = 'yes'
+      }
+
+      return { ...project, organic: result }
+    })
+
     return Utils.arrayToXlsx([
       {
         columns: [
@@ -4072,9 +4112,11 @@ class Admin {
           { key: 'date_shipping', header: 'Date Shipping', width: 15 },
           { key: 'country_id', header: 'Country ID', width: 15 },
           { key: 'origin', header: 'Origin', width: 15 },
-          { key: 'comment', header: 'Resp (comment)', width: 15 }
+          { key: 'comment', header: 'Resp (comment)', width: 15 },
+          { key: 'organic', header: 'Organic', width: 15 }
         ],
-        data: projects.data
+
+        data: dataWithOrganic
       }
     ])
   }

@@ -93,7 +93,7 @@ class Cart {
     cart.shipping = 0
     cart.sub_total = 0
     cart.tax = 0
-    cart.tips = params.tips || 0
+    cart.tips = +params.tips || 0
     cart.discount = 0
     cart.total = 0
     cart.totalGift = 0

@@ -1668,6 +1668,7 @@ class Project {
       .join('customer', 'customer.id', 'os.customer_id')
       .whereIn('project_id', ids)
       .where('is_paid', true)
+      .where('is_external', false)
       .all()
 
     const statementsPromise = DB('statement')
@@ -2167,6 +2168,7 @@ class Project {
       .where('project.is_delete', '!=', '1')
       .where('country.lang', 'en')
       .where('is_paid', true)
+      .where('is_external', false)
 
     if (params.id === 'all') {
       params.query.where('vod.user_id', params.user_id)

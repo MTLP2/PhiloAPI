@@ -55,6 +55,7 @@ class Stats {
       AND order_item.project_id = vod.project_id
       AND order_shop.step not in ('creating', 'failed', 'refused')
       AND user.id = order_shop.user_id
+      AND is_external = false
       GROUP BY DATE_FORMAT(order_shop.created_at, '${format}'), type, is_licence, project, currency, currency_rate, is_paid, is_pro
     `
     names.push('quantity')
@@ -77,6 +78,7 @@ class Stats {
       FROM \`order_shop\`
       WHERE DATE_FORMAT(order_shop.created_at, '%Y-%m-%d') BETWEEN '${params.start}' AND '${params.end}'
       AND is_paid = 1
+      AND is_external = false
       GROUP BY DATE_FORMAT(order_shop.created_at, '${format}'), type
     `
     names.push('orders')
@@ -199,6 +201,7 @@ class Stats {
       AND order_item.order_shop_id = order_shop.id
       AND project.id = order_item.project_id
       AND is_paid = 1
+      AND is_external = false
       GROUP BY DATE_FORMAT(order_item.created_at, '${format}'), project.id, project.picture, project.name, project.artist_name
       ORDER BY date DESC
     `
@@ -219,6 +222,7 @@ class Stats {
       FROM \`order_shop\` O, user U
       WHERE O.user_id = U.id
       AND is_paid = 1
+      AND is_external = false
       AND gender IS NOT NULL
       GROUP BY U.gender
       ORDER BY gender ASC
@@ -257,6 +261,7 @@ class Stats {
         END AS age_group
         FROM user U, \`order_shop\` O
         WHERE U.id = O.user_id AND is_paid = 1
+        AND is_external = false
         AND birthday IS NOT NULL
       ) as toto
       GROUP BY age_group
@@ -272,6 +277,7 @@ class Stats {
       AND OI.order_shop_id = order_shop.id
       AND DATE_FORMAT(order_shop.created_at, '%Y-%m-%d') BETWEEN '${params.start}' AND '${params.end}'
       AND order_shop.step not in ('creating', 'failed', 'refused')
+      AND is_external = false
       GROUP BY C.country_id
       ORDER BY total DESC
     `
@@ -1808,12 +1814,14 @@ class Stats {
       .join('vod', 'vod.project_id', 'oi.project_id')
       .join('project', 'project.id', 'oi.project_id')
       .leftJoin('user', 'user.id', 'os.user_id')
+      .where('is_external', false)
       .whereBetween('os.created_at', [params.start, params.end])
       .all()
 
     const sentShopPromise = DB('order_shop as os')
       .select('os.date_export', 'os.shipping', 'os.currency_rate', 'os.tax_rate')
       .where('is_paid', true)
+      .where('is_external', true)
       .whereBetween('os.date_export', [params.start, params.end])
       .all()
 
@@ -1831,6 +1839,7 @@ class Stats {
       .join('vod', 'vod.project_id', 'oi.project_id')
       .leftJoin('user', 'user.id', 'os.user_id')
       .where('is_paid', true)
+      .where('is_external', true)
       .whereBetween('os.date_export', [params.start, params.end])
       .all()
 

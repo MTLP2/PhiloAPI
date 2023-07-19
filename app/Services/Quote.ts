@@ -134,6 +134,8 @@ class Quote {
 
     const factories = {}
 
+    params.label_color = params.label || 'color'
+
     for (const f of ['sna', 'vdp']) {
       factories[f] = await Quote.calculateFactory({
         ...params,
