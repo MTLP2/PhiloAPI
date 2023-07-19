@@ -10,6 +10,8 @@ import DB from 'App/DB'
 import Utils from 'App/Utils'
 import Stats from 'App/Services/Stats'
 
+import { schema, validator } from '@ioc:Adonis/Core/Validator'
+
 class ProjectsController {
   async getProjects({ params }) {
     return {
@@ -81,8 +83,18 @@ class ProjectsController {
   }
 
   async findEdit({ params, user }) {
-    await Utils.checkProjectOwner({ project_id: params.id, user: user })
-    return ProjectEdit.find({ id: params.id, user })
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          id: schema.number()
+        }),
+        data: params
+      })
+      await Utils.checkProjectOwner({ project_id: payload.id, user: user })
+      return ProjectEdit.find({ id: payload.id, user })
+    } catch (err) {
+      return { error: err.message, validation: err.messages }
+    }
   }
 
   async saveProject({ params, user }) {
