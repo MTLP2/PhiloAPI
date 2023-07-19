@@ -975,6 +975,7 @@ class Admin {
     vod.shipping_delay_reason = params.shipping_delay_reason
     vod.shipping_discount = params.shipping_discount || 0
     vod.save_shipping = params.save_shipping || 0
+    vod.organic = params.organic || 0
 
     vod.historic = vod.historic ? JSON.parse(vod.historic) : []
     if (params.edit_stock) {
@@ -4060,6 +4061,17 @@ class Admin {
   static exportRawProjects = async (params) => {
     const projects = await Admin.getProjects({ start: params.start, end: params.end, size: 0 })
 
+    const dataWithOrganic = projects.data.map((project) => {
+      let result = ''
+      if (project.organic === 0) {
+        result = ''
+      } else {
+        result = 'yes'
+      }
+
+      return { ...project, organic: result }
+    })
+
     return Utils.arrayToXlsx([
       {
         columns: [
@@ -4081,9 +4093,11 @@ class Admin {
           { key: 'date_shipping', header: 'Date Shipping', width: 15 },
           { key: 'country_id', header: 'Country ID', width: 15 },
           { key: 'origin', header: 'Origin', width: 15 },
-          { key: 'comment', header: 'Resp (comment)', width: 15 }
+          { key: 'comment', header: 'Resp (comment)', width: 15 },
+          { key: 'organic', header: 'Organic', width: 15 }
         ],
-        data: projects.data
+
+        data: dataWithOrganic
       }
     ])
   }
