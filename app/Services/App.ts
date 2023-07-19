@@ -675,48 +675,49 @@ class App {
 
     if (n.order_manual_id) {
       const order = await DB('order_manual').where('id', n.order_manual_id).first()
+      if (order) {
+        const items = JSON.parse(order.barcodes)
 
-      const items = JSON.parse(order.barcodes)
+        const projects = await DB('vod')
+          .select(
+            'vod.barcode',
+            'p.name',
+            'p.slug',
+            'p.artist_name',
+            'p.picture',
+            'p.id as project_id'
+          )
+          .join('project as p', 'vod.project_id', 'p.id')
+          .whereIn(
+            'barcode',
+            items.map((b) => b.barcode)
+          )
+          .all()
 
-      const projects = await DB('vod')
-        .select(
-          'vod.barcode',
-          'p.name',
-          'p.slug',
-          'p.artist_name',
-          'p.picture',
-          'p.id as project_id'
-        )
-        .join('project as p', 'vod.project_id', 'p.id')
-        .whereIn(
-          'barcode',
-          items.map((b) => b.barcode)
-        )
-        .all()
-
-      for (const i in items) {
-        const p = projects.find((p) => p.barcode === items[i].barcode)
-        items[i] = {
-          ...items[i],
-          ...p
+        for (const i in items) {
+          const p = projects.find((p) => p.barcode === items[i].barcode)
+          items[i] = {
+            ...items[i],
+            ...p
+          }
         }
-      }
 
-      data.order = order
-      if (order.tracking_number) {
-        if (order.tracking_link) {
-          data.tracking_link = order.tracking_link
-        } else {
-          data.tracking_link = Utils.getTransporterLink(order)
+        data.order = order
+        if (order.tracking_number) {
+          if (order.tracking_link) {
+            data.tracking_link = order.tracking_link
+          } else {
+            data.tracking_link = Utils.getTransporterLink(order)
+          }
         }
-      }
 
-      data.order_items = items.map((item) => {
-        item.picture = `${config.app.storage_url}/projects/${
-          item.picture || item.project_id
-        }/cover.jpg`
-        return item
-      })
+        data.order_items = items.map((item) => {
+          item.picture = `${config.app.storage_url}/projects/${
+            item.picture || item.project_id
+          }/cover.jpg`
+          return item
+        })
+      }
     }
     if (n.box_dispatch_id) {
       const dispatch = await DB('box_dispatch').find(n.box_dispatch_id)
