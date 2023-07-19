@@ -69,8 +69,7 @@ class Digital {
         'product.id as product_id',
         'product.name as product_name',
         'product.type as product_type',
-        'project.picture',
-        'user.email'
+        'project.picture'
       )
       .leftJoin('product', 'product.id', 'digital.product_id')
       .leftJoin('project_product', 'project_product.product_id', 'product.id')
