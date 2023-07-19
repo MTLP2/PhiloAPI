@@ -29,6 +29,7 @@ class Box {
         'user.name as user_name',
         'c.firstname',
         'c.lastname',
+        'c.phone',
         'box_code.partner',
         'user2.email as buy_email',
         'box_dispatch.last_dispatch'
