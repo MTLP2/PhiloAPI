@@ -120,6 +120,12 @@ class User {
     })
   }
 
+  static getAllFeatured = async () => {
+    const users = await DB().from('user').where('featured', true).all()
+    console.log(users)
+    return users
+  }
+
   static follow = async (payload: { user_id: number; follower: number }) => {
     const follower = await DB()
       .from('follower')

@@ -186,6 +186,8 @@ Route.get('/catalog', 'AdminController.exportCatalog')
 Route.get('/projects-selection', 'ProjectsController.getProjectSelection')
 Route.get('/stats/top-projects', 'ProjectsController.getTopProjects')
 
+Route.get('/featured/all', 'UserController.getAllFeatured')
+
 Route.group(() => {
   Route.get('/cart', 'CartController.getCart')
   Route.post('/cart', 'CartController.saveCart')

@@ -975,6 +975,7 @@ class Admin {
     vod.shipping_delay_reason = params.shipping_delay_reason
     vod.shipping_discount = params.shipping_discount || 0
     vod.save_shipping = params.save_shipping || 0
+    vod.organic = params.organic || 0
 
     vod.historic = vod.historic ? JSON.parse(vod.historic) : []
     if (params.edit_stock) {
@@ -2425,7 +2426,25 @@ class Admin {
     return user
   }
 
-  static saveUser = async (params) => {
+  static saveUser = async (params: {
+    id?: number
+    name: string
+    email: string
+    emails: string
+    code_client: string
+    user_type: string
+    is_pro: number
+    is_delete: number
+    lang: string
+    about_me: string
+    confirmed: number
+    unsubscribed: number
+    balance_followup: number
+    balance_comment: number
+    country_id: number
+    styles: string
+    featured: number
+  }) => {
     const user = await DB('user').find(params.id)
 
     user.name = params.name
@@ -2443,6 +2462,7 @@ class Admin {
     user.balance_comment = params.balance_comment
     user.country_id = params.country_id || null
     user.styles = JSON.stringify(params.styles)
+    user.featured = params.featured
     user.updated_at = Utils.date()
 
     try {
@@ -4062,6 +4082,17 @@ class Admin {
   static exportRawProjects = async (params) => {
     const projects = await Admin.getProjects({ start: params.start, end: params.end, size: 0 })
 
+    const dataWithOrganic = projects.data.map((project) => {
+      let result = ''
+      if (project.organic === 0) {
+        result = ''
+      } else {
+        result = 'yes'
+      }
+
+      return { ...project, organic: result }
+    })
+
     return Utils.arrayToXlsx([
       {
         columns: [
@@ -4083,9 +4114,11 @@ class Admin {
           { key: 'date_shipping', header: 'Date Shipping', width: 15 },
           { key: 'country_id', header: 'Country ID', width: 15 },
           { key: 'origin', header: 'Origin', width: 15 },
-          { key: 'comment', header: 'Resp (comment)', width: 15 }
+          { key: 'comment', header: 'Resp (comment)', width: 15 },
+          { key: 'organic', header: 'Organic', width: 15 }
         ],
-        data: projects.data
+
+        data: dataWithOrganic
       }
     ])
   }
