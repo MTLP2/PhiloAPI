@@ -14,7 +14,7 @@ type DigitalDb = {
   project_name?: string
   artist_name?: string
   barcode?: string
-  catalogue_number?: number
+  catalogue_number?: string
   project_type?: string
   spotify_url?: string
   genre?: string[]
@@ -69,12 +69,13 @@ class Digital {
         'product.id as product_id',
         'product.name as product_name',
         'product.type as product_type',
-        'project.picture'
+        'project.picture',
+        'u.name as username'
       )
       .leftJoin('product', 'product.id', 'digital.product_id')
       .leftJoin('project_product', 'project_product.product_id', 'product.id')
       .leftJoin('project', 'project.id', 'project_product.project_id')
-      .leftJoin('user', 'user.id', 'digital.user_id')
+      .leftJoin('user as u', 'u.id', 'digital.user_id')
       .where('digital.id', params.id)
       .first()
 
@@ -82,7 +83,7 @@ class Digital {
     digital.territory_included = digital.territory_included?.split(',')
     digital.territory_excluded = digital.territory_excluded?.split(',')
     digital.actions = await Digital.getActions({ digitalId: params.id })
-
+    console.log(digital)
     return digital
   }
 
@@ -334,6 +335,7 @@ class Digital {
       digital.territory_excluded !== '' ? digital.territory_excluded?.split(',') : []
     digital.platforms_excluded =
       digital.platforms_excluded !== '' ? digital.platforms_excluded?.split(',') : []
+
     return digital
   }
 
