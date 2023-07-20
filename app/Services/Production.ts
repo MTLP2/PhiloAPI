@@ -1745,11 +1745,20 @@ class Production {
     const toDoActions = await DB('production_action as pa')
       .select('pa.production_id as id')
       .join('production as p', 'p.id', 'pa.production_id')
+      .join('vod', 'vod.project_id', 'p.project_id')
       .whereIn(
         'pa.production_id',
         prods2.map((prod) => prod.id)
       )
       .where('pa.for', 'artist')
+      .where((query) => {
+        query.where('vod.type', '!=', 'direct_pressing')
+        query.where('pa.type', '!=', 'delivery')
+        query.orWhere((query) => {
+          query.where('vod.type', '=', 'direct_pressing')
+          query.where('pa.type', '=', 'delivery')
+        })
+      })
       .where('pa.status', 'to_do')
       .where('pa.category', 'preprod')
       .where('pa.type', '!=', 'order_form')
