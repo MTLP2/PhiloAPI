@@ -83,7 +83,7 @@ class Digital {
     digital.territory_included = digital.territory_included?.split(',')
     digital.territory_excluded = digital.territory_excluded?.split(',')
     digital.actions = await Digital.getActions({ digitalId: params.id })
-    console.log(digital)
+
     return digital
   }
 
@@ -335,7 +335,6 @@ class Digital {
       digital.territory_excluded !== '' ? digital.territory_excluded?.split(',') : []
     digital.platforms_excluded =
       digital.platforms_excluded !== '' ? digital.platforms_excluded?.split(',') : []
-
     return digital
   }
 
