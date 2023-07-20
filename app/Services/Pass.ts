@@ -802,6 +802,7 @@ export default class Pass {
 
   // --- TESTING
   static errorNotification = async (quest: string, userId: number, err: any) => {
+    return
     await Notification.sendEmail({
       to: 'robin@diggersfactory.com',
       subject: `Err in gamification [${quest}]`,
