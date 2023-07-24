@@ -166,9 +166,9 @@ test('post user/notifications/view', async ({ client, assert }) => {
   assert.isTrue(check3 === null)
 })
 
-test('post /user/picture', async ({ client, assert }) => {})
+test('post /user/picture', async () => {})
 
-test('get /user/messages', async ({ client, assert }) => {
+test('get /user/messages', async ({ client }) => {
   const res: any = await client
     .get('/user/messages')
     .header('Authorization', `Bearer ${token}`)
@@ -220,7 +220,7 @@ test('get /user/projects', async ({ client }) => {
   res.assertStatus(200)
 })
 
-test('get user/projects/:id/orders', async ({ client, assert }) => {
+test('get user/projects/:id/orders', async ({ client }) => {
   // const res: any = await client
   //   .get('user/projects/1/orders')
   //   .header('Authorization', `Bearer ${token}`)
@@ -273,8 +273,8 @@ test('get /orders/:id/shop', async ({ client, assert }) => {
   // assert.isTrue(check === null)
 })
 
-test('put /orders/:id/customer', async ({ client, assert }) => {})
-test('delete /orders/:id', async ({ client, assert }) => {})
+test('put /orders/:id/customer', async () => {})
+test('delete /orders/:id', async () => {})
 
 test('get /boxes/:id', async ({ client, assert }) => {
   await DB('box').insert({ id: 1, user_id: userId })
@@ -285,62 +285,76 @@ test('get /boxes/:id', async ({ client, assert }) => {
   assert.isTrue(check === null)
 })
 
-test('get /boxes', async ({ client, assert }) => {
+test('get /boxes', async ({ client }) => {
   const res: any = await client.get('user/boxes').header('Authorization', `Bearer ${token}`)
   res.assertStatus(200)
 })
 
-test('put /boxes', async ({ client, assert }) => {})
-test('post /boxes/vinyl', async ({ client, assert }) => {})
-test('post /boxes/invoice', async ({ client, assert }) => {})
-test('post /boxes/payment', async ({ client, assert }) => {})
-test('post /boxes/address', async ({ client, assert }) => {})
+test('put /boxes', async () => {})
 
-test('get /card', async ({ client, assert }) => {
+test('post /boxes/vinyl', async () => {})
+test('post /boxes/invoice', async () => {})
+test('post /boxes/payment', async () => {})
+test('post /boxes/address', async () => {})
+
+test('get /card', async ({ client }) => {
   const res: any = await client.get('user/card').header('Authorization', `Bearer ${token}`)
   res.assertStatus(200)
 })
 
-test('delete /boxes/:id', async ({ client, assert }) => {})
+test('delete /boxes/:id', async () => {})
 
-test('get /boxes/:bid/reviews', async ({ client, assert }) => {
+test('get /boxes/:bid/reviews', async () => {
   // Not used
 })
 
-test('get /boxes/:bid/reviews/:uid', async ({ client, assert }) => {
+test('get /boxes/:bid/reviews/:uid', async ({ client }) => {
   const res: any = await client
     .get('user/boxes/1/reviews/1')
     .header('Authorization', `Bearer ${token}`)
   res.assertStatus(200)
 })
 
-test('get /digs', async ({ client, assert }) => {
+test('get /digs', async ({ client }) => {
   const res: any = await client.get('user/digs').header('Authorization', `Bearer ${token}`)
   res.assertStatus(200)
 })
 
-test('get /cards', async ({ client, assert }) => {
+test('get /cards', async ({ client }) => {
   const res: any = await client.get('user/cards').header('Authorization', `Bearer ${token}`)
   res.assertStatus(200)
 })
 
-test('post /cards', async ({ client, assert }) => {})
-test('post /event', async ({ client, assert }) => {})
+test('post /cards', async ({ client }) => {
+  const res: any = await client.post('user/cards').header('Authorization', `Bearer ${token}`)
+  res.assertStatus(200)
+})
 
-test('get /sponsor', async ({ client, assert }) => {
+test('post /event', async () => {})
+
+test('get /sponsor', async ({ client }) => {
   const res: any = await client.get('user/sponsor').header('Authorization', `Bearer ${token}`)
   res.assertStatus(200)
 })
 
-test('get /reviews', async ({ client, assert }) => {
+test('get /reviews', async ({ client }) => {
   const res: any = await client.get('user/reviews').header('Authorization', `Bearer ${token}`)
   res.assertStatus(200)
 })
 
-test('post /reviews', async ({ client, assert }) => {})
-test('post /reviews/stat', async ({ client, assert }) => {})
+test('post /reviews', async () => {})
 
-test('get /projects/:pid/reviews', async ({ client, assert }) => {
+test('post /reviews/stat', async ({ client }) => {
+  const res: any = await client
+    .post('user/reviews/stat')
+    .header('Authorization', `Bearer ${token}`)
+    .json({
+      type: 'test'
+    })
+  res.assertStatus(200)
+})
+
+test('get /projects/:pid/reviews', async ({ client }) => {
   const res: any = await client
     .get('user/projects/1/reviews')
     .header('Authorization', `Bearer ${token}`)
