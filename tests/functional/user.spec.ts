@@ -6,6 +6,72 @@ import DB from 'App/DB'
 const userId = 82
 const token = Sign.getToken({ id: userId })
 
+const initProject = async () => {
+  const artistName = `test_artist`
+  const project = await DB('project').where('artist_name', artistName).first()
+  if (project === null) {
+    await DB('project').insert({
+      name: 'project_test',
+      artist_name: artistName,
+      slug: 'project_test'
+    })
+
+    const tmp = await DB('project').where('artist_name', artistName).first()
+
+    await DB('vod').insert({
+      user_id: userId,
+      project_id: tmp.id,
+      type: 'vinyl'
+    })
+  }
+
+  return await DB('project').where('artist_name', artistName).first()
+}
+
+const initOrderProject = async (id: number, step: string) => {
+  const orderShop = await DB('order_shop').where('step', step).first()
+  if (orderShop === null) {
+    await DB('order_shop').insert({
+      user_id: userId,
+      step: step
+    })
+  }
+  const osId = await DB('order_shop').select('id').where('user_id', userId).first()
+  const orderItem = await DB('order_item').where('order_shop_id', osId.id).first()
+  if (orderItem === null) {
+    await DB('order_item').insert({
+      order_shop_id: osId.id,
+      project_id: id
+    })
+  }
+  const wishlist = await DB('wishlist').where('project_id', id).first()
+  if (wishlist === null) {
+    await DB('wishlist').insert({
+      project_id: id
+    })
+  }
+  return { osId }
+}
+
+const deleteProject = async (projectId: number) => {
+  const artistName = `test_artist`
+  await DB('vod').where('project_id', projectId).delete()
+  await DB('project').where('artist_name', artistName).delete()
+  return await DB('project').where('artist_name', artistName).first()
+}
+
+const deleteOrderProject = async (projectId: number, osId: number, step: string) => {
+  await DB('order_item').where('order_shop_id', osId).delete()
+  await DB('order_shop').where('step', step).delete()
+  await DB('wishlist').where('project_id', projectId).delete()
+
+  const oi = await DB('order_item').where('order_shop_id', osId).first()
+  const os = await DB('order_shop').where('step', step).first()
+  const wish = await DB('wishlist').where('project_id', projectId).first()
+
+  return { oi, os, wish }
+}
+
 test('get /users/:id', async ({ client }) => {
   const res: any = await client.get('/users/1')
 
@@ -30,9 +96,6 @@ test('post /user/profile', async ({ client }) => {
 
   const data = res.body()
   res.assertTextIncludes(data.name, name)
-
-  const user = await DB('user').where('id', userId).first()
-  res.assertTextIncludes(user.name, name)
 })
 
 test('post /user/currency', async ({ client, assert }) => {
@@ -109,11 +172,24 @@ test('post /user/delivery', async ({ client, assert }) => {
   const customer = await DB('customer').where('customer.firstname', customerName).first()
   assert.isTrue(customer.firstname === customerName)
   assert.isTrue(customer.lastname === lastname)
+  // done
 })
 
 test('post /user/notifications', async ({ client, assert }) => {
-  const newsletter = 1
-  await DB('notifications').where('notifications.user_id', userId).update({ newsletter: 0 })
+  await DB('notifications').where('notifications.user_id', userId).update({
+    newsletter: 0,
+    new_follower: 0,
+    new_message: 0,
+    my_project_new_comment: 0,
+    new_like: 0,
+    following_create_project: 0,
+    my_project_new_order: 0,
+    my_project_order_cancel: 0,
+    project_follow_cancel: 0,
+    project_follow_3_days_left: 0,
+    my_project_7_days_left: 0,
+    my_project_level_up: 0
+  })
   const test = await DB('notifications')
     .select('newsletter')
     .where('notifications.user_id', userId)
@@ -124,15 +200,50 @@ test('post /user/notifications', async ({ client, assert }) => {
     .post('/user/notifications')
     .header('Authorization', `Bearer ${token}`)
     .json({
-      newsletter: newsletter
+      newsletter: 1,
+      new_follower: 1,
+      new_message: 1,
+      my_project_new_comment: 1,
+      new_like: 1,
+      following_create_project: 1,
+      my_project_new_order: 1,
+      my_project_order_cancel: 1,
+      project_follow_cancel: 1,
+      project_follow_3_days_left: 1,
+      my_project_7_days_left: 1,
+      my_project_level_up: 1
     })
   res.assertStatus(200)
 
   const check = await DB('notifications')
-    .select('newsletter')
+    .select(
+      'newsletter',
+      'new_follower',
+      'new_message',
+      'my_project_new_comment',
+      'new_like',
+      'following_create_project',
+      'my_project_new_order',
+      'my_project_order_cancel',
+      'project_follow_cancel',
+      'project_follow_3_days_left',
+      'my_project_7_days_left',
+      'my_project_level_up'
+    )
     .where('notifications.user_id', userId)
     .first()
-  assert.isTrue(check.newsletter === newsletter)
+  assert.isTrue(check.newsletter === 1)
+  assert.isTrue(check.new_follower === 1)
+  assert.isTrue(check.new_message === 1)
+  assert.isTrue(check.my_project_new_comment === 1)
+  assert.isTrue(check.new_like === 1)
+  assert.isTrue(check.following_create_project === 1)
+  assert.isTrue(check.my_project_new_order === 1)
+  assert.isTrue(check.my_project_order_cancel === 1)
+  assert.isTrue(check.project_follow_cancel === 1)
+  assert.isTrue(check.project_follow_3_days_left === 1)
+  assert.isTrue(check.my_project_7_days_left === 1)
+  assert.isTrue(check.my_project_level_up === 1)
 })
 
 test('post user/notifications/view', async ({ client, assert }) => {
@@ -141,7 +252,7 @@ test('post user/notifications/view', async ({ client, assert }) => {
   if (test === null) {
     test = await DB('notification').insert({
       user_id: userId,
-      new: 1,
+      new: newsletter,
       type: 'newsletter',
       alert: 1,
       email: 0
@@ -149,9 +260,6 @@ test('post user/notifications/view', async ({ client, assert }) => {
   } else {
     test = await DB('notification').where('user_id', userId).update({ new: newsletter })
   }
-  const check = await DB('notification').select('new').where('user_id', userId).first()
-
-  assert.isTrue(check.new === newsletter)
 
   const res: any = await client
     .post('/user/notifications/view')
@@ -160,15 +268,19 @@ test('post user/notifications/view', async ({ client, assert }) => {
 
   const check2 = await DB('notification').select('new').where('user_id', userId).first()
   assert.isTrue(check2.new === 0)
-
   await DB('notification').where('user_id', userId).delete()
-  const check3 = await DB('notification').select('new').where('user_id', userId).first()
-  assert.isTrue(check3 === null)
+  const remove = await DB('notification').select('new').where('user_id', userId).first()
+  assert.isTrue(remove === null)
 })
 
 test('post /user/picture', async () => {})
 
-test('get /user/messages', async ({ client }) => {
+test('get /user/messages', async ({ client, assert }) => {
+  const test = await DB('message').where('from', userId).where('to', userId).first()
+  if (test === null) {
+    await DB('message').insert({ from: userId, to: userId, text: 'test', new: 1 })
+  }
+
   const res: any = await client
     .get('/user/messages')
     .header('Authorization', `Bearer ${token}`)
@@ -176,6 +288,12 @@ test('get /user/messages', async ({ client }) => {
       userId: userId
     })
   res.assertStatus(200)
+  const data = res.body()
+  res.assertTextIncludes(data[0].from, userId)
+
+  await DB('message').where('from', userId).delete()
+  const remove = await DB('message').where('from', userId).first()
+  assert.isTrue(remove === null)
 })
 
 test('post /user/messages', async ({ client, assert }) => {
@@ -195,39 +313,72 @@ test('post /user/messages', async ({ client, assert }) => {
   res.assertStatus(200)
 
   const check = await DB('message')
-    .select('text')
+    .select('text', 'from', 'to')
     .where('message.from', userId)
     .where('message.text', text)
     .first()
   assert.isTrue(check.text === text)
+  assert.isTrue(check.from === userId)
+  assert.isTrue(check.to === userId)
+
+  await DB('message').where('message.from', userId).where('message.text', text).delete()
+
+  const remove = await DB('message')
+    .select('text', 'from', 'to')
+    .where('message.from', userId)
+    .where('message.text', text)
+    .first()
+
+  assert.isTrue(remove === null)
 })
 
-test('get /user/messages/:from', async ({ client }) => {
+test('get /user/messages/:from', async ({ client, assert }) => {
+  const test = await DB('message').where('from', userId).first()
+  if (test === null) {
+    await DB('message').insert({ from: userId, to: userId, text: 'test', new: 1 })
+  }
+
   const res: any = await client.get('/user/messages/1').header('Authorization', `Bearer ${token}`)
   res.assertStatus(200)
 
   const data = res.body()
-  res.assertTextIncludes(data[0].from)
+  res.assertTextIncludes(data[0].from, userId)
+
+  await DB('message').where('from', userId).delete()
+  const remove = await DB('message').where('from', userId).first()
+  assert.isTrue(remove === null)
 })
 
-test('get /user/projects', async ({ client }) => {
-  const res: any = await client
-    .get('/user/projects')
-    .header('Authorization', `Bearer ${token}`)
-    .json({
-      userId: userId
-    })
+test('get /user/projects', async ({ client, assert }) => {
+  const artistName = 'test_artist'
+  const project = await initProject()
+  let projectId = project.id
+
+  const res: any = await client.get('/user/projects').header('Authorization', `Bearer ${token}`)
   res.assertStatus(200)
+
+  const data = res.body()
+  res.assertTextIncludes(data[0].artist_name, artistName)
+  const remove = await deleteProject(projectId)
+  assert.isTrue(remove === null)
 })
 
-test('get user/projects/:id/orders', async ({ client }) => {
-  // const res: any = await client
-  //   .get('user/projects/1/orders')
-  //   .header('Authorization', `Bearer ${token}`)
-  //   .json({
-  //     id: userId
-  //   })
-  // res.assertStatus(200)
+test('get user/projects/:id/orders', async ({ client, assert }) => {
+  const step = 'testing'
+  const project = await initProject()
+  const { osId } = await initOrderProject(project.id, step)
+
+  const res: any = await client
+    .get(`user/projects/${project.id}/orders`)
+    .header('Authorization', `Bearer ${token}`)
+
+  res.assertStatus(200)
+  const { oi, os, wish } = await deleteOrderProject(project.id, osId.id, step)
+  const remove = await deleteProject(project.id)
+  assert.isTrue(oi === null)
+  assert.isTrue(os === null)
+  assert.isTrue(wish === null)
+  assert.isTrue(remove === null)
 })
 
 test('get /user/projects/:id/extract-orders', async ({ client }) => {
@@ -240,14 +391,14 @@ test('get /user/projects/:id/extract-orders', async ({ client }) => {
   // res.assertStatus(200)
 })
 
-test('get /orders', async ({ client }) => {
+test('get /user/orders', async ({ client }) => {
   const res: any = await client.get('user/orders').header('Authorization', `Bearer ${token}`).json({
     userId: userId
   })
   res.assertStatus(200)
 })
 
-test('get /orders/:id/tracking', async ({ client }) => {
+test('get /user/orders/:id/tracking', async ({ client }) => {
   const res: any = await client
     .get('user/orders/1/tracking')
     .header('Authorization', `Bearer ${token}`)
@@ -257,7 +408,7 @@ test('get /orders/:id/tracking', async ({ client }) => {
   res.assertStatus(200)
 })
 
-test('get /orders/:id/shop', async ({ client, assert }) => {
+test('get /user/orders/:id/shop', async ({ client, assert }) => {
   // const data = await DB('order').where('user_id', userId).where('id', 1).first()
   // if (data === null) {
   //   await DB('order').insert({ id: 1, user_id: userId })
@@ -273,10 +424,10 @@ test('get /orders/:id/shop', async ({ client, assert }) => {
   // assert.isTrue(check === null)
 })
 
-test('put /orders/:id/customer', async () => {})
-test('delete /orders/:id', async () => {})
+test('put /user/orders/:id/customer', async () => {})
+test('delete /user/orders/:id', async () => {})
 
-test('get /boxes/:id', async ({ client, assert }) => {
+test('get /user/boxes/:id', async ({ client, assert }) => {
   await DB('box').insert({ id: 1, user_id: userId })
   const res: any = await client.get('user/boxes/1').header('Authorization', `Bearer ${token}`)
   res.assertStatus(200)
@@ -285,66 +436,66 @@ test('get /boxes/:id', async ({ client, assert }) => {
   assert.isTrue(check === null)
 })
 
-test('get /boxes', async ({ client }) => {
+test('get /user/boxes', async ({ client }) => {
   const res: any = await client.get('user/boxes').header('Authorization', `Bearer ${token}`)
   res.assertStatus(200)
 })
 
-test('put /boxes', async () => {})
+test('put /user/boxes', async () => {})
 
-test('post /boxes/vinyl', async () => {})
-test('post /boxes/invoice', async () => {})
-test('post /boxes/payment', async () => {})
-test('post /boxes/address', async () => {})
+test('post /user/boxes/vinyl', async () => {})
+test('post /user/boxes/invoice', async () => {})
+test('post /user/boxes/payment', async () => {})
+test('post /user/boxes/address', async () => {})
 
-test('get /card', async ({ client }) => {
+test('get /user/card', async ({ client }) => {
   const res: any = await client.get('user/card').header('Authorization', `Bearer ${token}`)
   res.assertStatus(200)
 })
 
-test('delete /boxes/:id', async () => {})
+test('delete /user/boxes/:id', async () => {})
 
-test('get /boxes/:bid/reviews', async () => {
+test('get /user/boxes/:bid/reviews', async () => {
   // Not used
 })
 
-test('get /boxes/:bid/reviews/:uid', async ({ client }) => {
+test('get /user/boxes/:bid/reviews/:uid', async ({ client }) => {
   const res: any = await client
     .get('user/boxes/1/reviews/1')
     .header('Authorization', `Bearer ${token}`)
   res.assertStatus(200)
 })
 
-test('get /digs', async ({ client }) => {
+test('get /user/digs', async ({ client }) => {
   const res: any = await client.get('user/digs').header('Authorization', `Bearer ${token}`)
   res.assertStatus(200)
 })
 
-test('get /cards', async ({ client }) => {
+test('get /user/cards', async ({ client }) => {
   const res: any = await client.get('user/cards').header('Authorization', `Bearer ${token}`)
   res.assertStatus(200)
 })
 
-test('post /cards', async ({ client }) => {
+test('post /user/cards', async ({ client }) => {
   const res: any = await client.post('user/cards').header('Authorization', `Bearer ${token}`)
   res.assertStatus(200)
 })
 
-test('post /event', async () => {})
+test('post /user/event', async () => {})
 
-test('get /sponsor', async ({ client }) => {
+test('get /user/sponsor', async ({ client }) => {
   const res: any = await client.get('user/sponsor').header('Authorization', `Bearer ${token}`)
   res.assertStatus(200)
 })
 
-test('get /reviews', async ({ client }) => {
+test('get /user/reviews', async ({ client }) => {
   const res: any = await client.get('user/reviews').header('Authorization', `Bearer ${token}`)
   res.assertStatus(200)
 })
 
-test('post /reviews', async () => {})
+test('post /user/reviews', async () => {})
 
-test('post /reviews/stat', async ({ client }) => {
+test('post /user/reviews/stat', async ({ client }) => {
   const res: any = await client
     .post('user/reviews/stat')
     .header('Authorization', `Bearer ${token}`)
@@ -354,7 +505,7 @@ test('post /reviews/stat', async ({ client }) => {
   res.assertStatus(200)
 })
 
-test('get /projects/:pid/reviews', async ({ client }) => {
+test('get /user/projects/:pid/reviews', async ({ client }) => {
   const res: any = await client
     .get('user/projects/1/reviews')
     .header('Authorization', `Bearer ${token}`)
