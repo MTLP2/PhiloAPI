@@ -126,7 +126,7 @@ class Production {
       .whereNotNull('factory')
       .groupBy('factory')
       .groupBy('date')
-      .where('date_factory', '>', moment().subtract(6, 'months').format('YYYY-MM'))
+      .where('date_factory', '>', moment().subtract(6, 'months').format('YYYY-MM-DD'))
       .all()
 
     const res = {}
