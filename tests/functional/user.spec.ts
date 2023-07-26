@@ -5,6 +5,7 @@ import DB from 'App/DB'
 
 const userId = 82
 const token = Sign.getToken({ id: userId })
+const step = 'testing'
 
 const initProject = async () => {
   const artistName = `test_artist`
@@ -28,48 +29,117 @@ const initProject = async () => {
   return await DB('project').where('artist_name', artistName).first()
 }
 
-const initOrderProject = async (id: number, step: string) => {
-  const orderShop = await DB('order_shop').where('step', step).first()
+const initOrderProject = async (projectId: number) => {
+  const orderTemp = await DB('order').where('status', step).first()
+  if (orderTemp === null) {
+    await DB('order').insert({
+      user_id: userId,
+      status: 'testing',
+      date_payment: '2021-01-01'
+    })
+  }
+  const orderId = await DB('order')
+    .select('id')
+    .where('user_id', userId)
+    .where('status', step)
+    .first()
+  const orderShop = await DB('order_shop').where('order_id', orderId.id).first()
+  const customer = await DB('customer')
+    .where('firstname', 'test')
+    .where('lastname', 'dummy')
+    .first()
+  if (customer === null) {
+    await DB('customer').insert({
+      firstname: 'test',
+      lastname: 'dummy'
+    })
+  }
+  const customerId = await DB('customer')
+    .select('id')
+    .where('firstname', 'test')
+    .where('lastname', 'dummy')
+    .first()
   if (orderShop === null) {
     await DB('order_shop').insert({
       user_id: userId,
-      step: step
+      step: step,
+      order_id: orderId.id,
+      customer_id: customerId.id,
+      is_paid: 1,
+      logistician_id: 'EK131222177555',
+      ask_cancel: 0,
+      sending: 1
     })
   }
-  const osId = await DB('order_shop').select('id').where('user_id', userId).first()
+  const osId = await DB('order_shop').select('id').where('order_id', orderId.id).first()
   const orderItem = await DB('order_item').where('order_shop_id', osId.id).first()
   if (orderItem === null) {
     await DB('order_item').insert({
       order_shop_id: osId.id,
-      project_id: id
+      project_id: projectId,
+      order_id: orderId.id
     })
   }
-  const wishlist = await DB('wishlist').where('project_id', id).first()
+
+  const wishlist = await DB('wishlist').where('project_id', projectId).first()
   if (wishlist === null) {
     await DB('wishlist').insert({
-      project_id: id
+      project_id: projectId
     })
   }
-  return { osId }
+  return { osId, orderId, customerId }
 }
 
-const deleteProject = async (projectId: number) => {
+const deleteProject = async (projectId: number, assert) => {
   const artistName = `test_artist`
   await DB('vod').where('project_id', projectId).delete()
+  const vod = await DB('vod').where('project_id', projectId).first()
   await DB('project').where('artist_name', artistName).delete()
-  return await DB('project').where('artist_name', artistName).first()
+  const remove = await DB('project').where('artist_name', artistName).first()
+
+  assert.isTrue(vod === null)
+  assert.isTrue(remove === null)
 }
 
-const deleteOrderProject = async (projectId: number, osId: number, step: string) => {
-  await DB('order_item').where('order_shop_id', osId).delete()
-  await DB('order_shop').where('step', step).delete()
-  await DB('wishlist').where('project_id', projectId).delete()
+const deleteOrderProject = async (projectId: number, osId: number, assert) => {
+  const orderItem = await DB('order_item').where('order_shop_id', osId).first()
+  if (orderItem !== null) {
+    await DB('order_item').where('order_shop_id', osId).delete()
+  }
+  const orderShop = await DB('order_shop').where('step', step).first()
+  if (orderShop !== null) {
+    await DB('order_shop').where('step', step).delete()
+  }
+  const customerBdd = await DB('customer')
+    .where('firstname', 'test')
+    .where('lastname', 'dummy')
+    .first()
+  if (customerBdd !== null) {
+    await DB('customer').where('firstname', 'test').where('lastname', 'dummy').delete()
+  }
+  const wishlist = await DB('wishlist').where('project_id', projectId).first()
+  if (wishlist !== null) {
+    await DB('wishlist').where('project_id', projectId).delete()
+  }
+  const order = await DB('order').where('user_id', userId).where('status', 'testing').first()
+  if (order !== null) {
+    await DB('order').where('user_id', userId).where('status', 'testing').delete()
+  }
 
   const oi = await DB('order_item').where('order_shop_id', osId).first()
   const os = await DB('order_shop').where('step', step).first()
   const wish = await DB('wishlist').where('project_id', projectId).first()
+  const or = await DB('order').where('user_id', userId).where('status', 'testing').first()
+  const customer = await DB('customer')
+    .where('firstname', 'test')
+    .where('lastname', 'dummy')
+    .first()
 
-  return { oi, os, wish }
+  assert.isTrue(customer === null)
+  assert.isTrue(oi === null)
+  assert.isTrue(os === null)
+  assert.isTrue(wish === null)
+  assert.isTrue(or === null)
 }
 
 test('get /users/:id', async ({ client }) => {
@@ -353,79 +423,130 @@ test('get /user/projects', async ({ client, assert }) => {
   const artistName = 'test_artist'
   const project = await initProject()
   let projectId = project.id
-
   const res: any = await client.get('/user/projects').header('Authorization', `Bearer ${token}`)
   res.assertStatus(200)
 
   const data = res.body()
   res.assertTextIncludes(data[0].artist_name, artistName)
-  const remove = await deleteProject(projectId)
-  assert.isTrue(remove === null)
+  await deleteProject(projectId, assert)
 })
 
 test('get user/projects/:id/orders', async ({ client, assert }) => {
-  const step = 'testing'
   const project = await initProject()
-  const { osId } = await initOrderProject(project.id, step)
+  const { osId } = await initOrderProject(project.id)
 
   const res: any = await client
     .get(`user/projects/${project.id}/orders`)
     .header('Authorization', `Bearer ${token}`)
 
   res.assertStatus(200)
-  const { oi, os, wish } = await deleteOrderProject(project.id, osId.id, step)
-  const remove = await deleteProject(project.id)
-  assert.isTrue(oi === null)
-  assert.isTrue(os === null)
-  assert.isTrue(wish === null)
-  assert.isTrue(remove === null)
+
+  const data = res.body()
+  res.assertTextIncludes(data[0].user_id, userId)
+  await deleteOrderProject(project.id, osId.id, assert)
+  await deleteProject(project.id, assert)
 })
 
-test('get /user/projects/:id/extract-orders', async ({ client }) => {
-  // const res: any = await client
-  //   .get('user/projects/1/extract-orders')
-  //   .header('Authorization', `Bearer ${token}`)
-  //   .json({
-  //     userId: userId
-  //   })
-  // res.assertStatus(200)
-})
-
-test('get /user/orders', async ({ client }) => {
-  const res: any = await client.get('user/orders').header('Authorization', `Bearer ${token}`).json({
-    userId: userId
-  })
-  res.assertStatus(200)
-})
-
-test('get /user/orders/:id/tracking', async ({ client }) => {
+test('get /user/projects/:id/extract-orders', async ({ client, assert }) => {
+  const project = await initProject()
+  const { osId } = await initOrderProject(project.id)
   const res: any = await client
-    .get('user/orders/1/tracking')
+    .get(`user/projects/${project.id}/extract-orders`)
     .header('Authorization', `Bearer ${token}`)
     .json({
       userId: userId
     })
   res.assertStatus(200)
+
+  await deleteOrderProject(project.id, osId.id, assert)
+  await deleteProject(project.id, assert)
+})
+
+test('get /user/orders', async ({ client, assert }) => {
+  const project = await initProject()
+  const { osId } = await initOrderProject(project.id)
+
+  const res: any = await client.get('user/orders').header('Authorization', `Bearer ${token}`)
+  res.assertStatus(200)
+
+  const data = res.body()
+  assert.isTrue(data.total > 0)
+  await deleteOrderProject(project.id, osId.id, assert)
+  await deleteProject(project.id, assert)
+})
+
+test('get /user/orders/:id/tracking', async ({ client, assert }) => {
+  // const project = await initProject()
+  // const { osId } = await initOrderProject(project.id)
+  // const res: any = await client
+  //   .get(`user/orders/${osId.id}/tracking`)
+  //   .header('Authorization', `Bearer ${token}`)
+  //   .json({})
+  // res.assertStatus(200)
+  // await deleteOrderProject(project.id, osId.id, assert)
+  // await deleteProject(project.id, assert)
+  //
+  //  Standby fetch api Whiplash
 })
 
 test('get /user/orders/:id/shop', async ({ client, assert }) => {
-  // const data = await DB('order').where('user_id', userId).where('id', 1).first()
-  // if (data === null) {
-  //   await DB('order').insert({ id: 1, user_id: userId })
-  // } else {
-  //   await DB('order').where('id', 1).update({ user_id: userId })
-  // }
-  // const test = await DB('order').where('user_id', userId).where('id', 1).first()
-  // assert.isTrue(test.user_id === userId)
-  // const res: any = await client.get('user/orders/1/shop').header('Authorization', `Bearer ${token}`)
-  // res.assertStatus(200)
-  // await DB('order').where('id', 1).delete()
-  // const check = await DB('order').where('id', 1).first()
-  // assert.isTrue(check === null)
+  const project = await initProject()
+  const { osId, orderId } = await initOrderProject(project.id)
+
+  const res: any = await client
+    .get(`user/orders/${orderId.id}/shop`)
+    .header('Authorization', `Bearer ${token}`)
+  res.assertStatus(200)
+
+  const data = res.body()
+  res.assertTextIncludes(data.user_id, userId)
+  res.assertTextIncludes(data.customer_id, orderId.customer_id)
+  await deleteOrderProject(project.id, osId.id, assert)
+  await deleteProject(project.id, assert)
 })
 
-test('put /user/orders/:id/customer', async () => {})
-test('delete /user/orders/:id', async () => {})
+test('put /user/orders/:id/customer', async ({ client, assert }) => {
+  const newFirstname = 'Diggers tests'
+  const newLastname = 'Factory tests'
+  const project = await initProject()
+  const { osId, orderId, customerId } = await initOrderProject(project.id)
+
+  const res: any = await client
+    .put(`user/orders/${orderId.id}/customer`)
+    .header('Authorization', `Bearer ${token}`)
+    .json({
+      shop_id: osId.id,
+      customer: {
+        customer_id: customerId.id,
+        firstname: newFirstname,
+        lastname: newLastname
+      }
+    })
+  res.assertStatus(200)
+  const data = await DB('customer').where('id', customerId.id).first()
+
+  assert.isTrue(data.firstname === newFirstname)
+  assert.isTrue(data.lastname === newLastname)
+  await deleteOrderProject(project.id, osId.id, assert)
+  await deleteProject(project.id, assert)
+})
+
+test('delete /user/orders/:id', async ({ client, assert }) => {
+  const project = await initProject()
+  const { osId } = await initOrderProject(project.id)
+
+  const res: any = await client
+    .delete(`user/orders/${osId.id}`)
+    .header('Authorization', `Bearer ${token}`)
+
+  res.assertStatus(200)
+
+  const data = await DB('order_shop').where('id', osId.id).first()
+  assert.isTrue(data.ask_cancel === 1)
+  assert.isTrue(data.sending === 0)
+  await deleteOrderProject(project.id, osId.id, assert)
+  await deleteProject(project.id, assert)
+})
 
 test('get /user/boxes/:id', async ({ client, assert }) => {
   await DB('box').insert({ id: 1, user_id: userId })
