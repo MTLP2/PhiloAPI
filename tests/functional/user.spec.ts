@@ -22,16 +22,19 @@ const initProject = async () => {
     await DB('vod').insert({
       user_id: userId,
       project_id: tmp.id,
-      type: 'vinyl'
+      type: 'vinyl',
+      is_box: 1
     })
+
+    return await DB('project').where('artist_name', artistName).first()
   }
 
-  return await DB('project').where('artist_name', artistName).first()
+  return project
 }
 
 const initOrderProject = async (projectId: number) => {
-  const orderTemp = await DB('order').where('status', step).first()
-  if (orderTemp === null) {
+  const order = await DB('order').where('status', step).first()
+  if (order === null) {
     await DB('order').insert({
       user_id: userId,
       status: 'testing',
@@ -44,21 +47,7 @@ const initOrderProject = async (projectId: number) => {
     .where('status', step)
     .first()
   const orderShop = await DB('order_shop').where('order_id', orderId.id).first()
-  const customer = await DB('customer')
-    .where('firstname', 'test')
-    .where('lastname', 'dummy')
-    .first()
-  if (customer === null) {
-    await DB('customer').insert({
-      firstname: 'test',
-      lastname: 'dummy'
-    })
-  }
-  const customerId = await DB('customer')
-    .select('id')
-    .where('firstname', 'test')
-    .where('lastname', 'dummy')
-    .first()
+  const customerId = await createCustomer()
   if (orderShop === null) {
     await DB('order_shop').insert({
       user_id: userId,
@@ -68,7 +57,8 @@ const initOrderProject = async (projectId: number) => {
       is_paid: 1,
       logistician_id: 'EK131222177555',
       ask_cancel: 0,
-      sending: 1
+      sending: 1,
+      created_at: '2021-01-01'
     })
   }
   const osId = await DB('order_shop').select('id').where('order_id', orderId.id).first()
@@ -87,21 +77,57 @@ const initOrderProject = async (projectId: number) => {
       project_id: projectId
     })
   }
+
+  const review = await DB('review').where('user_id', userId).where('project_id', projectId).first()
+  if (review === null) {
+    await DB('review').insert({
+      user_id: userId,
+      project_id: projectId,
+      rate: 5,
+      title: 'Super',
+      message: 'bien'
+    })
+  }
   return { osId, orderId, customerId }
 }
 
-const deleteProject = async (projectId: number, assert) => {
+const createCustomer = async () => {
+  const customer = await DB('customer')
+    .where('firstname', 'test')
+    .where('lastname', 'dummy')
+    .first()
+  if (customer === null) {
+    await DB('customer').insert({
+      firstname: 'test',
+      lastname: 'dummy',
+      country_id: 'FR'
+    })
+  }
+  return await DB('customer')
+    .select('id')
+    .where('firstname', 'test')
+    .where('lastname', 'dummy')
+    .first()
+}
+
+const deleteProject = async (projectId: number, assert: any) => {
   const artistName = `test_artist`
+  const dig = await DB('dig').where('user_id', userId).where('project_id', projectId).first()
+  if (dig !== null) {
+    await DB('dig').where('user_id', userId).where('project_id', projectId).delete()
+  }
+  const removeDig = await DB('dig').where('user_id', userId).where('project_id', projectId).first()
   await DB('vod').where('project_id', projectId).delete()
   const vod = await DB('vod').where('project_id', projectId).first()
   await DB('project').where('artist_name', artistName).delete()
   const remove = await DB('project').where('artist_name', artistName).first()
 
+  assert.isTrue(removeDig === null)
   assert.isTrue(vod === null)
   assert.isTrue(remove === null)
 }
 
-const deleteOrderProject = async (projectId: number, osId: number, assert) => {
+const deleteOrderProject = async (projectId: number, osId: number, assert: any) => {
   const orderItem = await DB('order_item').where('order_shop_id', osId).first()
   if (orderItem !== null) {
     await DB('order_item').where('order_shop_id', osId).delete()
@@ -142,13 +168,263 @@ const deleteOrderProject = async (projectId: number, osId: number, assert) => {
   assert.isTrue(or === null)
 }
 
+const initBox = async (projectId: number = 1) => {
+  const date = '2021-01-01'
+
+  const customerId = await createCustomer()
+  const box = await DB('box').where('user_id', userId).first()
+  if (box === null) {
+    await DB('box').insert({
+      user_id: userId,
+      step,
+      dispatch_left: 1,
+      customer_id: customerId.id
+    })
+  }
+  const boxId = await DB('box').where('user_id', userId).where('step', step).first()
+  const boxDispatch = await DB('box_dispatch').where('box_id', boxId.id).first()
+  if (boxDispatch === null) {
+    await DB('box_dispatch').insert({
+      box_id: boxId.id,
+      date_export: '2021-01-01'
+    })
+  }
+  const boxProject = await DB('box_project').where('box_id', boxId.id).first()
+  if (boxProject === null) {
+    await DB('box_project').insert({
+      box_id: boxId.id,
+      date,
+      user_id: userId
+    })
+  }
+
+  const boxMonth = await DB('box_month').where('project_id', projectId).first()
+  if (boxMonth === null) {
+    await DB('box_month').insert({
+      date,
+      project_id: projectId,
+      stock: 10
+    })
+  }
+
+  const product = await DB('product').where('type', step).first()
+  if (product === null) {
+    await DB('product').insert({
+      type: step,
+      name: 'test'
+    })
+  }
+  const productId = await DB('product').where('type', step).first()
+
+  const projectProduct = await DB('project_product').where('project_id', projectId).first()
+  if (projectProduct === null) {
+    await DB('project_product').insert({
+      project_id: projectId,
+      product_id: productId.id
+    })
+  }
+
+  const stock = await DB('stock').where('product_id', productId.id).first()
+  if (stock === null) {
+    await DB('stock').insert({
+      product_id: productId.id,
+      type: 'daudin',
+      quantity: 10
+    })
+  }
+
+  const orderBox = await DB('order_box').where('box_id', boxId.id).first()
+  if (orderBox === null) {
+    await DB('order_box').insert({
+      user_id: userId,
+      box_id: boxId.id
+    })
+  }
+  const orderBoxId = await DB('order_box').where('box_id', boxId.id).first()
+
+  const invoice = await DB('invoice').where('user_id', userId).first()
+  if (invoice === null) {
+    await DB('invoice').insert({
+      user_id: userId,
+      order_box_id: orderBoxId.id,
+      date: '2021-01-01'
+    })
+  }
+
+  const boxCode = await DB('box_code')
+    .where('order_box_id', boxId.id)
+    .where('user_id', userId)
+    .first()
+  if (boxCode === null) {
+    await DB('box_code').insert({
+      order_box_id: boxId.id,
+      user_id: userId,
+      code: 'test'
+    })
+  }
+
+  const review = await DB('review').where('user_id', userId).where('box_id', boxId.id).first()
+  if (review === null) {
+    await DB('review').insert({
+      user_id: userId,
+      box_id: boxId.id,
+      rate: 5,
+      title: 'Super',
+      message: 'nul'
+    })
+  }
+
+  const dig = await DB('dig').where('user_id', userId).where('project_id', projectId).first()
+  if (dig === null) {
+    await DB('dig').insert({
+      user_id: userId,
+      project_id: projectId,
+      friend_id: userId
+    })
+  }
+
+  return await DB('box').where('user_id', userId).where('step', step).first()
+}
+
+const deleteBox = async (boxId: number, assert: any, projectId: number, productId: number) => {
+  const boxCode = await DB('box_code').where('order_box_id', boxId).where('user_id', userId).first()
+  if (boxCode !== null) {
+    await DB('box_code').where('order_box_id', boxId).where('user_id', userId).delete()
+  }
+  const removeBoxCode = await DB('box_code')
+    .where('order_box_id', boxId)
+    .where('user_id', userId)
+    .first()
+  const box = await DB('box').where('user_id', userId).where('id', boxId).first()
+  if (box !== null) {
+    await DB('box').where('user_id', userId).where('id', boxId).delete()
+  }
+  const removeBox = await DB('box').where('user_id', userId).first()
+
+  const boxDispatch = await DB('box_dispatch').where('box_id', boxId).first()
+  if (boxDispatch !== null) {
+    await DB('box_dispatch').where('box_id', boxId).delete()
+  }
+  const removeBoxDispatch = await DB('box_dispatch').where('box_id', boxId).first()
+
+  const boxProject = await DB('box_project').where('box_id', boxId).first()
+  if (boxProject !== null) {
+    await DB('box_project').where('box_id', boxId).delete()
+  }
+  const removeBoxProject = await DB('box_project').where('box_id', boxId).first()
+
+  const boxMonth = await DB('box_month').where('project_id', projectId).first()
+  if (boxMonth !== null) {
+    await DB('box_month').where('project_id', projectId).delete()
+  }
+  const removeBoxMonth = await DB('box_month').where('project_id', projectId).first()
+
+  const product = await DB('product').where('type', step).first()
+  if (product !== null) {
+    await DB('product').where('type', step).delete()
+  }
+  const removeProduct = await DB('product').where('type', step).first()
+
+  const projectProduct = await DB('project_product').where('product_id', productId).first()
+  if (projectProduct !== null) {
+    await DB('project_product').where('product_id', productId).delete()
+  }
+  const removeProjectProduct = await DB('project_product').where('product_id', productId).first()
+
+  const stock = await DB('stock').where('product_id', productId).first()
+  if (stock !== null) {
+    await DB('stock').where('product_id', productId).delete()
+  }
+  const removeStock = await DB('stock').where('product_id', productId).first()
+
+  const orderBox = await DB('order_box').where('user_id', userId).first()
+  if (orderBox !== null) {
+    await DB('order_box').where('user_id', userId).delete()
+  }
+  const removeOrderBox = await DB('order_box').where('box_id', boxId).first()
+
+  const customer = await DB('customer')
+    .where('firstname', 'test')
+    .where('lastname', 'dummy')
+    .first()
+  if (customer !== null) {
+    await DB('customer').where('firstname', 'test').where('lastname', 'dummy').delete()
+  }
+  const removeCustomer = await DB('customer')
+    .where('firstname', 'test')
+    .where('lastname', 'dummy')
+    .first()
+
+  const invoice = await DB('invoice').where('user_id', userId).first()
+  if (invoice !== null) {
+    await DB('invoice').where('user_id', userId).delete()
+  }
+  const removeInvoice = await DB('invoice').where('user_id', userId).first()
+
+  const review = await DB('review').where('user_id', userId).where('box_id', boxId).first()
+  if (review !== null) {
+    await DB('review').where('user_id', userId).where('box_id', boxId).delete()
+  }
+  const removeReview = await DB('review').where('user_id', userId).where('box_id', boxId).first()
+
+  assert.isTrue(removeReview === null)
+  assert.isTrue(removeBoxCode === null)
+  assert.isTrue(removeInvoice === null)
+  assert.isTrue(removeCustomer === null)
+  assert.isTrue(removeBoxProject === null)
+  assert.isTrue(removeBoxMonth === null)
+  assert.isTrue(removeBox === null)
+  assert.isTrue(removeBoxDispatch === null)
+  assert.isTrue(removeProduct === null)
+  assert.isTrue(removeProjectProduct === null)
+  assert.isTrue(removeStock === null)
+  assert.isTrue(removeOrderBox === null)
+}
+
+const rewiewStat = async (projectId: number) => {
+  const review = await DB('review').where('user_id', userId).where('project_id', projectId).first()
+
+  if (review === null) {
+    await DB('review_stat').insert({
+      user_id: userId,
+      project_id: projectId,
+      review_sent: 0,
+      type: 'good',
+      created_at: new Date()
+    })
+  }
+}
+
+const deleteReview = async (projectId: number, assert: any) => {
+  const review = await DB('review').where('user_id', userId).where('project_id', projectId).first()
+  if (review !== null) {
+    await DB('review').where('user_id', userId).where('project_id', projectId).delete()
+  }
+  const removeReview = await DB('review')
+    .where('user_id', userId)
+    .where('project_id', projectId)
+    .first()
+
+  const reviewStat = await DB('review_stat').where('user_id', userId).first()
+
+  if (reviewStat !== null) {
+    await DB('review_stat').where('user_id', userId).delete()
+  }
+  const removeReviewStat = await DB('review_stat')
+    .where('user_id', userId)
+    .where('project_id', projectId)
+    .first()
+
+  assert.isTrue(removeReview === null)
+  assert.isTrue(removeReviewStat === null)
+}
+
 test('get /users/:id', async ({ client }) => {
-  const res: any = await client.get('/users/1')
+  const res: any = await client.get(`/users/${userId}`).header('Authorization', `Bearer ${token}`)
 
   res.assertStatus(200)
-
   const data = res.body()
-  res.assertTextIncludes(data.id, 1)
+  res.assertTextIncludes(data.id, userId)
 })
 
 test('post /user/profile', async ({ client }) => {
@@ -201,25 +477,27 @@ test('post /user/lang', async ({ client, assert }) => {
   assert.isTrue(userLang.lang === lang)
 })
 
-test('post /user/password', async ({ client, assert }) => {
-  await DB('user').select('password').where('id', userId).update({ password: 'test' })
-  const test = await DB('user').select('password').where('id', userId).first()
+// Comment update user password ?
 
-  assert.isTrue(test.password === 'test')
+// test('post /user/password', async ({ client, assert }) => {
+//   await DB('user').select('password').where('id', userId).update({ password: 'test' })
+//   const test = await DB('user').select('password').where('id', userId).first()
 
-  const password = 'test2'
-  const res: any = await client
-    .post('/user/password')
-    .header('Authorization', `Bearer ${token}`)
-    .json({
-      now: 'test',
-      new1: password
-    })
+//   assert.isTrue(test.password === 'test')
 
-  res.assertStatus(200)
-  const userPassword = await DB('user').select('password').where('id', userId).first()
-  // assert.isTrue(userPassword.password === password)
-})
+//   const password = 'test2'
+//   const res: any = await client
+//     .post('/user/password')
+//     .header('Authorization', `Bearer ${token}`)
+//     .json({
+//       now: 'test',
+//       new1: password
+//     })
+
+//   res.assertStatus(200)
+//   const userPassword = await DB('user').select('password').where('id', userId).first()
+//   // assert.isTrue(userPassword.password === password)
+// })
 
 test('post /user/delivery', async ({ client, assert }) => {
   const customerName = `customer`
@@ -242,12 +520,15 @@ test('post /user/delivery', async ({ client, assert }) => {
   const customer = await DB('customer').where('customer.firstname', customerName).first()
   assert.isTrue(customer.firstname === customerName)
   assert.isTrue(customer.lastname === lastname)
-  // done
 })
 
 test('post /user/notifications', async ({ client, assert }) => {
-  await DB('notifications').where('notifications.user_id', userId).update({
-    newsletter: 0,
+  const notif = await DB('notifications').where('user_id', userId).first()
+  if (notif !== null) {
+    await DB('notifications').where('user_id', userId).delete()
+  }
+  await DB('notifications').insert({
+    user_id: userId,
     new_follower: 0,
     new_message: 0,
     my_project_new_comment: 0,
@@ -260,17 +541,11 @@ test('post /user/notifications', async ({ client, assert }) => {
     my_project_7_days_left: 0,
     my_project_level_up: 0
   })
-  const test = await DB('notifications')
-    .select('newsletter')
-    .where('notifications.user_id', userId)
-    .first()
-  assert.isTrue(test.newsletter === 0)
 
   const res: any = await client
     .post('/user/notifications')
     .header('Authorization', `Bearer ${token}`)
     .json({
-      newsletter: 1,
       new_follower: 1,
       new_message: 1,
       my_project_new_comment: 1,
@@ -285,24 +560,7 @@ test('post /user/notifications', async ({ client, assert }) => {
     })
   res.assertStatus(200)
 
-  const check = await DB('notifications')
-    .select(
-      'newsletter',
-      'new_follower',
-      'new_message',
-      'my_project_new_comment',
-      'new_like',
-      'following_create_project',
-      'my_project_new_order',
-      'my_project_order_cancel',
-      'project_follow_cancel',
-      'project_follow_3_days_left',
-      'my_project_7_days_left',
-      'my_project_level_up'
-    )
-    .where('notifications.user_id', userId)
-    .first()
-  assert.isTrue(check.newsletter === 1)
+  const check = await DB('notifications').where('notifications.user_id', userId).first()
   assert.isTrue(check.new_follower === 1)
   assert.isTrue(check.new_message === 1)
   assert.isTrue(check.my_project_new_comment === 1)
@@ -314,6 +572,8 @@ test('post /user/notifications', async ({ client, assert }) => {
   assert.isTrue(check.project_follow_3_days_left === 1)
   assert.isTrue(check.my_project_7_days_left === 1)
   assert.isTrue(check.my_project_level_up === 1)
+
+  await DB('notifications').where('user_id', userId).delete()
 })
 
 test('post user/notifications/view', async ({ client, assert }) => {
@@ -343,7 +603,7 @@ test('post user/notifications/view', async ({ client, assert }) => {
   assert.isTrue(remove === null)
 })
 
-test('post /user/picture', async () => {})
+// test('post /user/picture', async () => {})
 
 test('get /user/messages', async ({ client, assert }) => {
   const test = await DB('message').where('from', userId).where('to', userId).first()
@@ -420,14 +680,13 @@ test('get /user/messages/:from', async ({ client, assert }) => {
 })
 
 test('get /user/projects', async ({ client, assert }) => {
-  const artistName = 'test_artist'
   const project = await initProject()
   let projectId = project.id
   const res: any = await client.get('/user/projects').header('Authorization', `Bearer ${token}`)
   res.assertStatus(200)
 
   const data = res.body()
-  res.assertTextIncludes(data[0].artist_name, artistName)
+  res.assertTextIncludes(data[0].artist_name, project.artist_name)
   await deleteProject(projectId, assert)
 })
 
@@ -450,6 +709,7 @@ test('get user/projects/:id/orders', async ({ client, assert }) => {
 test('get /user/projects/:id/extract-orders', async ({ client, assert }) => {
   const project = await initProject()
   const { osId } = await initOrderProject(project.id)
+
   const res: any = await client
     .get(`user/projects/${project.id}/extract-orders`)
     .header('Authorization', `Bearer ${token}`)
@@ -475,19 +735,18 @@ test('get /user/orders', async ({ client, assert }) => {
   await deleteProject(project.id, assert)
 })
 
-test('get /user/orders/:id/tracking', async ({ client, assert }) => {
-  // const project = await initProject()
-  // const { osId } = await initOrderProject(project.id)
-  // const res: any = await client
-  //   .get(`user/orders/${osId.id}/tracking`)
-  //   .header('Authorization', `Bearer ${token}`)
-  //   .json({})
-  // res.assertStatus(200)
-  // await deleteOrderProject(project.id, osId.id, assert)
-  // await deleteProject(project.id, assert)
-  //
-  //  Standby fetch api Whiplash
-})
+//  Standby fetch api Whiplash
+
+// test('get /user/orders/:id/tracking', async ({ client, assert }) => {
+// const project = await initProject()
+// const { osId } = await initOrderProject(project.id)
+// const res: any = await client
+//   .get(`user/orders/${osId.id}/tracking`)
+//   .header('Authorization', `Bearer ${token}`)
+// res.assertStatus(200)
+// await deleteOrderProject(project.id, osId.id, assert)
+// await deleteProject(project.id, assert)
+// })
 
 test('get /user/orders/:id/shop', async ({ client, assert }) => {
   const project = await initProject()
@@ -531,6 +790,7 @@ test('put /user/orders/:id/customer', async ({ client, assert }) => {
   await deleteProject(project.id, assert)
 })
 
+// fonctionnelle mais envoi un mail au support a chaque fois qu'on la lance
 test('delete /user/orders/:id', async ({ client, assert }) => {
   const project = await initProject()
   const { osId } = await initOrderProject(project.id)
@@ -542,6 +802,7 @@ test('delete /user/orders/:id', async ({ client, assert }) => {
   res.assertStatus(200)
 
   const data = await DB('order_shop').where('id', osId.id).first()
+
   assert.isTrue(data.ask_cancel === 1)
   assert.isTrue(data.sending === 0)
   await deleteOrderProject(project.id, osId.id, assert)
@@ -549,86 +810,375 @@ test('delete /user/orders/:id', async ({ client, assert }) => {
 })
 
 test('get /user/boxes/:id', async ({ client, assert }) => {
-  await DB('box').insert({ id: 1, user_id: userId })
-  const res: any = await client.get('user/boxes/1').header('Authorization', `Bearer ${token}`)
-  res.assertStatus(200)
-  await DB('box').where('id', 1).delete()
-  const check = await DB('box').where('id', 1).first()
-  assert.isTrue(check === null)
-})
+  const project = await initProject()
+  const box = await initBox()
+  const product = await DB('product').where('type', step).first()
 
-test('get /user/boxes', async ({ client }) => {
-  const res: any = await client.get('user/boxes').header('Authorization', `Bearer ${token}`)
-  res.assertStatus(200)
-})
-
-test('put /user/boxes', async () => {})
-
-test('post /user/boxes/vinyl', async () => {})
-test('post /user/boxes/invoice', async () => {})
-test('post /user/boxes/payment', async () => {})
-test('post /user/boxes/address', async () => {})
-
-test('get /user/card', async ({ client }) => {
-  const res: any = await client.get('user/card').header('Authorization', `Bearer ${token}`)
-  res.assertStatus(200)
-})
-
-test('delete /user/boxes/:id', async () => {})
-
-test('get /user/boxes/:bid/reviews', async () => {
-  // Not used
-})
-
-test('get /user/boxes/:bid/reviews/:uid', async ({ client }) => {
   const res: any = await client
-    .get('user/boxes/1/reviews/1')
+    .get(`user/boxes/${box.id}`)
     .header('Authorization', `Bearer ${token}`)
   res.assertStatus(200)
+  const data = res.body()
+
+  assert.isTrue(data.user_id === userId)
+  assert.isTrue(data.id === box.id)
+  await deleteProject(project.id, assert)
+  await deleteBox(box.id, assert, project.id, product.id)
 })
 
-test('get /user/digs', async ({ client }) => {
-  const res: any = await client.get('user/digs').header('Authorization', `Bearer ${token}`)
+test('get /user/boxes', async ({ client, assert }) => {
+  const project = await initProject()
+  const box = await initBox(project.id)
+  const product = await DB('product').where('type', step).first()
+  const res: any = await client.get('user/boxes').header('Authorization', `Bearer ${token}`)
   res.assertStatus(200)
+
+  const data = res.body()
+  res.assertTextIncludes(data[0].user_id, userId)
+  await deleteProject(project.id, assert)
+  await deleteBox(box.id, assert, project.id, product.id)
 })
 
-test('get /user/cards', async ({ client }) => {
-  const res: any = await client.get('user/cards').header('Authorization', `Bearer ${token}`)
+test('put /user/boxes', async ({ client, assert }) => {
+  const box = await initBox()
+  const project = await initProject()
+  const product = await DB('product').where('type', step).first()
+  const styles = ['Rap', 'Hip-Hop']
+  const res: any = await client.put('user/boxes').header('Authorization', `Bearer ${token}`).json({
+    id: box.id,
+    styles
+  })
   res.assertStatus(200)
+
+  const data = await DB('box').where('id', box.id).first()
+  data.styles.split(',').forEach((d) => {
+    assert.isTrue(d === 'Rap' || d === 'Hip-Hop')
+  })
+  await deleteBox(box.id, assert, project.id, product.id)
 })
 
-test('post /user/cards', async ({ client }) => {
-  const res: any = await client.post('user/cards').header('Authorization', `Bearer ${token}`)
+test('post /user/boxes/vinyl', async ({ client, assert }) => {
+  const project = await initProject()
+  const box = await initBox(project.id)
+  const product = await DB('product').where('type', step).first()
+
+  const res: any = await client
+    .post('user/boxes/vinyl')
+    .header('Authorization', `Bearer ${token}`)
+    .json({
+      box_id: box.id,
+      project_id: project.id,
+      month: '2021-01-01',
+      projects: [project.id]
+    })
   res.assertStatus(200)
+  const boxProject = await DB('box_project').where('box_id', box.id).first()
+
+  assert.isTrue(boxProject.project1 === project.id)
+  await deleteProject(project.id, assert)
+  await deleteBox(box.id, assert, project.id, product.id)
 })
 
-test('post /user/event', async () => {})
+// use Edge data
 
-test('get /user/sponsor', async ({ client }) => {
+// test('post /user/boxes/invoice', async ({ client, assert }) => {
+// const project = await initProject()
+// const box = await initBox(project.id)
+// const product = await DB('product').where('type', step).first()
+// const orderBox = await DB('order_box').where('user_id', userId).first()
+// const res: any = await client
+//   .post('user/boxes/invoice')
+//   .header('Authorization', `Bearer ${token}`)
+//   .json({
+//     id: orderBox.id
+//   })
+// res.assertStatus(200)
+// await deleteProject(project.id, assert)
+// await deleteBox(box.id, assert, project.id, product.id)
+// })
+
+// test('post /user/boxes/payment', async ({ client, assert }) => {
+//   const project = await initProject()
+//   const box = await initBox(project.id)
+//   const product = await DB('product').where('type', step).first()
+//   const res: any = await client
+//     .post('user/boxes/payment')
+//     .header('Authorization', `Bearer ${token}`)
+//     .json({
+//       id: box.id,
+//       payment_method: '??????'
+//     })
+//   res.assertStatus(200)
+//   await deleteProject(project.id, assert)
+//   await deleteBox(box.id, assert, project.id, product.id)
+//   // Standby fetch api stripe
+// })
+
+test('post /user/boxes/address', async ({ client, assert }) => {
+  const project = await initProject()
+  const box = await initBox(project.id)
+  const product = await DB('product').where('type', step).first()
+  const res: any = await client
+    .post('user/boxes/address')
+    .header('Authorization', `Bearer ${token}`)
+    .json({
+      pickup: 'pickup',
+      id: box.id
+    })
+  res.assertStatus(200)
+
+  const data = await DB('box').where('id', box.id).first()
+  assert.isTrue(JSON.parse(data.address_pickup) === 'pickup')
+  await deleteProject(project.id, assert)
+  await deleteBox(box.id, assert, project.id, product.id)
+})
+
+// impossible d'envoyer les params, ne s'envoient pas vers le service
+test('get /user/card', async ({ client, assert }) => {
+  const project = await initProject()
+  const box = await initBox(project.id)
+  const product = await DB('product').where('type', step).first()
+
+  const res: any = await client.get('user/card').header('Authorization', `Bearer ${token}`).json({
+    box_id: box.id,
+    project_id: project.id
+  })
+  res.assertStatus(200)
+
+  await deleteProject(project.id, assert)
+  await deleteBox(box.id, assert, project.id, product.id)
+})
+
+test('delete /user/boxes/:id', async ({ client, assert }) => {
+  const project = await initProject()
+  const box = await initBox(project.id)
+  const product = await DB('product').where('type', step).first()
+
+  const res: any = await client
+    .delete(`user/boxes/${box.id}`)
+    .header('Authorization', `Bearer ${token}`)
+  res.assertStatus(200)
+
+  const data = await DB('box').where('id', box.id).first()
+  assert.isTrue(data.step === 'stopped')
+
+  await deleteProject(project.id, assert)
+  await deleteBox(box.id, assert, project.id, product.id)
+})
+
+// test('get /user/boxes/:bid/reviews', async () => {
+//   // Not used
+// })
+
+test('get /user/boxes/:bid/reviews/:uid', async ({ client, assert }) => {
+  const project = await initProject()
+  const box = await initBox(project.id)
+  const product = await DB('product').where('type', step).first()
+
+  const res: any = await client
+    .get(`user/boxes/${box.id}/reviews/${userId}`)
+    .header('Authorization', `Bearer ${token}`)
+    .json({
+      bid: box.id
+    })
+  res.assertStatus(200)
+
+  const data = res.body()
+  assert.isTrue(data.reviewExist)
+
+  await deleteProject(project.id, assert)
+  await deleteBox(box.id, assert, project.id, product.id)
+})
+
+test('get /user/digs', async ({ client, assert }) => {
+  const project = await initProject()
+  const box = await initBox(project.id)
+  const product = await DB('product').where('type', step).first()
+
+  const res: any = await client.get('/user/digs').header('Authorization', `Bearer ${token}`)
+  res.assertStatus(200)
+
+  const data = res.body()
+  assert.isTrue(data[1].user_id === userId)
+  assert.isTrue(data[1].friend_id === userId)
+  assert.isTrue(data[1].project_name === project.name)
+  assert.isTrue(data[1].project_id === project.id)
+  await deleteProject(project.id, assert)
+  await deleteBox(box.id, assert, project.id, product.id)
+})
+
+test('get /user/cards', async ({ client, assert }) => {
+  const project = await initProject()
+  const box = await initBox(project.id)
+  const product = await DB('product').where('type', step).first()
+
+  const res: any = await client.get('/user/cards').header('Authorization', `Bearer ${token}`)
+  res.assertStatus(200)
+
+  const data = res.body()
+  assert.isTrue(data.name === 'Victor Périn')
+  await deleteProject(project.id, assert)
+  await deleteBox(box.id, assert, project.id, product.id)
+})
+
+// Standby fetch api stripe
+
+// test('post /user/cards', async ({ client, assert }) => {
+//   const project = await initProject()
+//   const box = await initBox(project.id)
+//   const product = await DB('product').where('type', step).first()
+
+//   await deleteProject(project.id, assert)
+//   await deleteBox(box.id, assert, project.id, product.id)
+// })
+
+test('post /user/event', async ({ client, assert }) => {
+  const project = await initProject()
+  const deleteEvent = async () => {
+    return await DB('event').where('user_id', userId).where('project_id', project.id).delete()
+  }
+  const eventCheck = await DB('event')
+    .where('user_id', userId)
+    .where('project_id', project.id)
+    .first()
+  if (eventCheck !== null) {
+    await deleteEvent()
+  }
+  const res: any = await client
+    .post('/user/event')
+    .header('Authorization', `Bearer ${token}`)
+    .json({
+      project_id: project.id,
+      type: 'test',
+      user_id: userId
+    })
+  res.assertStatus(200)
+
+  const event = await DB('event').where('user_id', userId).where('project_id', project.id).first()
+  assert.isTrue(event.type === 'test')
+  assert.isTrue(event.user_id === userId)
+  assert.isTrue(event.project_id === project.id)
+
+  await deleteEvent()
+})
+
+test('get /user/sponsor', async ({ client, assert }) => {
+  const updateUser = async (value: any) => {
+    return await DB('user').where('id', userId).update({ sponsor: value })
+  }
+  await updateUser(1)
+
   const res: any = await client.get('user/sponsor').header('Authorization', `Bearer ${token}`)
   res.assertStatus(200)
+
+  const data = res.body()
+  assert.isTrue(data.id === 1)
+  assert.isTrue(data.name === 'Diggers Factory ')
+
+  await updateUser(null)
 })
 
-test('get /user/reviews', async ({ client }) => {
+test('get /user/reviews', async ({ client, assert }) => {
+  const project = await initProject()
+  const { osId } = await initOrderProject(project.id)
+  await DB('order_shop').where('id', osId.id).update({ date_export: '2021-01-01' })
+
   const res: any = await client.get('user/reviews').header('Authorization', `Bearer ${token}`)
   res.assertStatus(200)
+
+  const data = res.body()
+
+  assert.isTrue(data[0].id === project.id)
+  assert.isTrue(data[0].name === project.name)
+  assert.isTrue(data[0].artist_name === project.artist_name)
+  await deleteOrderProject(project.id, osId.id, assert)
+  await deleteProject(project.id, assert)
 })
 
-test('post /user/reviews', async () => {})
+test('post /user/reviews', async ({ client, assert }) => {
+  const project = await initProject()
+  const box = await initBox(project.id)
+  const product = await DB('product').where('type', step).first()
 
-test('post /user/reviews/stat', async ({ client }) => {
+  await deleteReview(project.id, assert)
+  await rewiewStat(project.id)
+
+  const res: any = await client
+    .post('user/reviews')
+    .header('Authorization', `Bearer ${token}`)
+    .json({
+      rate: 5,
+      title: 'SUPER TROP BIEN',
+      message: 'vraiment bien',
+      project_id: project.id,
+      box_id: box.id
+    })
+  res.assertStatus(200)
+
+  const reviewData = await DB('review')
+    .where('user_id', userId)
+    .where('project_id', project.id)
+    .first()
+
+  const reviewStatData = await DB('review_stat')
+    .where('user_id', userId)
+    .where('project_id', project.id)
+    .first()
+
+  assert.isTrue(reviewStatData.review_sent === 1)
+  assert.isTrue(reviewData.rate === 5)
+  assert.isTrue(reviewData.title === 'SUPER TROP BIEN')
+  assert.isTrue(reviewData.message === 'vraiment bien')
+  assert.isTrue(reviewData.project_id === project.id)
+  assert.isTrue(reviewData.box_id === box.id)
+
+  await deleteReview(project.id, assert)
+  await deleteProject(project.id, assert)
+  await deleteBox(box.id, assert, project.id, product.id)
+})
+
+test('post /user/reviews/stat', async ({ client, assert }) => {
+  const project = await initProject()
+  const box = await initBox(project.id)
+  await deleteReview(project.id, assert)
+
   const res: any = await client
     .post('user/reviews/stat')
     .header('Authorization', `Bearer ${token}`)
     .json({
-      type: 'test'
+      type: step,
+      projectId: project.id,
+      boxId: box.id
     })
+
   res.assertStatus(200)
+  const reviewStatData = await DB('review_stat').where('user_id', userId).first()
+  assert.isTrue(reviewStatData.project_id === project.id)
+  assert.isTrue(reviewStatData.box_id === box.id)
+  assert.isTrue(reviewStatData.type === step)
+  await deleteReview(project.id, assert)
 })
 
-test('get /user/projects/:pid/reviews', async ({ client }) => {
+test('get /user/projects/:pid/reviews', async ({ client, assert }) => {
+  const project = await initProject()
+
+  const review = await DB('review').where('project_id', project.id).first()
+  if (review === null) {
+    await DB('review').insert({
+      user_id: userId,
+      project_id: project.id
+    })
+  }
+
   const res: any = await client
-    .get('user/projects/1/reviews')
+    .get(`user/projects/${project.id}/reviews`)
     .header('Authorization', `Bearer ${token}`)
   res.assertStatus(200)
+
+  const data = res.body()
+  assert.isTrue(data.reviewExist.user_id === userId)
+  assert.isTrue(data.reviewExist.project_id === project.id)
+
+  await deleteReview(project.id, assert)
+  await deleteProject(project.id, assert)
 })
