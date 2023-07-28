@@ -4172,7 +4172,6 @@ class Admin {
       .where('step', 'in_progress')
       .where('product.type', 'vinyl')
       .whereNotNull('product.barcode')
-      .where('vod.project_id', 294572)
 
     if (!params.lang) {
       params.lang === 'FR'
