@@ -2419,10 +2419,10 @@ class Cart {
   }
 
   static related = async (cart) => {
-    const projects = []
+    const projects: any = []
     const transporters = {}
 
-    for (const shop of Object.values(cart.shops)) {
+    for (const shop of Object.values(cart.shops) as any[]) {
       if (shop.type === 'shop' && shop.transporter && shop.transporter !== 'shop') {
         transporters[shop.transporter] = true
       }
@@ -2474,7 +2474,7 @@ class Cart {
         [...items, ...accessories].map((p) => p.id)
       )
       .orderBy('category', 'desc')
-      .where('step', 'in_progress')
+      .whereIn('step', ['in_progress', 'private'])
       .orderBy(DB.raw('RAND()'))
       .all()
 
