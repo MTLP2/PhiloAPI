@@ -99,7 +99,7 @@
         <td>
           <strong>{{ lang === 'fr' ? 'Devis' : 'Quote' }} N°{{ number }}</strong><br />
           <strong>{{ date }}</strong><br />
-          <strong>{{ client }}</strong>
+          <strong>{{ quote.client }}</strong>
         </td>
       </tr>
     </table>
@@ -113,15 +113,28 @@
           <th>{{ lang === 'fr' ? 'Désignation' : 'Name' }}</th>
           <th>Total</th>
         </tr>
-        @each(line in options)
+        <tr>
+          <td>{{ lang === 'fr' ? 'Quantité' : 'Quantity' }}</td>
+          <td>{{ quote.quantity }}</td>
+        </tr>
+
+        @each(line in quote.lines)
           <tr>
-            <td>{{line.name}}</td>
+            <td>{{line.label}}</td>
             <td class="value">{{line.value}}</td>
           </tr>
         @endeach
+        <tr class="total first">
+          <td class="label"><strong>{{ lang === 'fr' ? 'Sous total' : 'Sub total' }}</strong></td>
+          <td><strong>{{ quote.sub_total }} {{currency}}</strong></td>
+        </tr>
+        <tr class="total">
+          <td class="label"><strong>{{ lang === 'fr' ? 'TVA' : 'Tax' }} {{ quote.tax_rate }}%</strong></td>
+          <td><strong>{{ quote.tax }} {{currency}}</strong></td>
+        </tr>
         <tr class="total">
           <td class="label"><strong>Total</strong></td>
-          <td><strong>{{ costs.at(-1).value }} {{currency_str}}</strong></td>
+          <td><strong>{{ quote.total }} {{currency}}</strong></td>
         </tr>
       </tbody>
     </table>
