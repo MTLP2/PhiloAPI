@@ -2458,6 +2458,7 @@ class Cart {
         'p.id',
         'p.name',
         'p.artist_name',
+        'picture_project',
         'vod.price',
         'vod.currency',
         'category',
@@ -2477,6 +2478,8 @@ class Cart {
       .whereIn('step', ['in_progress', 'private'])
       .orderBy(DB.raw('RAND()'))
       .all()
+
+    console.log(res)
 
     const currencies = await Utils.getCurrenciesDb()
     for (const i in res) {
