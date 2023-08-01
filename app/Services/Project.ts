@@ -1372,7 +1372,7 @@ class Project {
     const currencies = await Utils.getCurrenciesDb()
     const ss = await Project.listStyles()
 
-    const reco = (
+    let reco = (
       await DB('project as p')
         .select(...selects)
         .join('vod as v', 'v.project_id', 'p.id')
@@ -1386,8 +1386,9 @@ class Project {
         .limit(6)
         .all()
     ).map((project) => Project.setInfos(project, currencies, null, ss))
+    reco = Utils.randomArray(reco)
 
-    const refs0 = (
+    let refs0 = (
       await DB('project as p')
         .select(...selects)
         .join('vod as v', 'v.project_id', 'p.id')
@@ -1409,6 +1410,7 @@ class Project {
         .limit(6)
         .all()
     ).map((project) => Project.setInfos(project, currencies, null, ss))
+    refs0 = Utils.randomArray(refs0)
 
     let refs1 = []
     if (styles.length > 0) {
@@ -1441,7 +1443,7 @@ class Project {
     }
 
     const refs = refs0.concat(refs1)
-    const refs2 = (
+    let refs2 = (
       await DB('project as p')
         .select(...selects)
         .join('vod as v', 'v.project_id', 'p.id')
@@ -1460,10 +1462,10 @@ class Project {
         .orderBy(DB.raw('RAND()'))
         .all()
     ).map((project) => Project.setInfos(project, currencies, null, ss))
+    refs2 = Utils.randomArray(refs2)
 
-    const allProjects = reco.concat(refs0).concat(refs1).concat(refs2)
-    const randomProjects = allProjects.sort(() => Math.random() - 0.5).slice(0, 6)
-    return randomProjects
+    const allProjects = reco.concat(refs0).concat(refs1).concat(refs2).slice(0, 6)
+    return allProjects
   }
 
   static checkDownloadCode = async ({ projectId, userId }) => {
