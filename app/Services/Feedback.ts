@@ -39,6 +39,10 @@ class Feedback {
       params.query.where('rating', '>=', 3)
     }
 
+    if (params.noFrance === 'true') {
+      params.query.where('user.country_id', '!=', 'FR')
+    }
+
     if (!params.sort) {
       params.sort = 'id'
       params.order = 'desc'
