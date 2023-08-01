@@ -98,12 +98,16 @@
         <td width="60%">
           <div class="logo">
             <img src="https://storage.diggersfactory.com/assets/images/logo_w.png" alt="Diggers Factory" />
+            <br />
+            <strong>{{ date }}</strong><br />
           </div>
         </td>
         <td>
-          <strong>{{ lang === 'fr' ? 'Devis' : 'Quote' }} N°{{ number }}</strong><br />
-          <strong>{{ date }}</strong><br />
-          <strong>{{ client }}</strong>
+          <strong>Project: {{ artist_name }} {{ name }}</strong><br />
+          {{ customer.firstname }} {{ customer.lastname }}<br />
+          {{ customer.address }} <br />
+          {{ customer.city }} {{ customer.zip_code }}, {{ customer.country_id }}<br />
+          {{ client }}, {{ customer.phone }} <br />
         </td>
       </tr>
     </table>
