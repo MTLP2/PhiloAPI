@@ -58,8 +58,6 @@ class Admin {
         'vod.count_other',
         'vod.quantity_distribution',
         'vod.is_notif',
-        'pc.cost_real',
-        'pc.name as prod_name',
         DB().raw(`
         (SELECT SUM(quantity)
         FROM order_item, \`order\`, user
@@ -83,7 +81,6 @@ class Admin {
       .leftJoin('customer', 'vod.customer_id', 'customer.id')
       .leftJoin('user as resp_prod', 'resp_prod.id', 'vod.resp_prod_id')
       .leftJoin('user as com', 'com.id', 'vod.com_id')
-      .leftJoin('production_cost as pc', 'pc.project_id', 'project.id')
       .where('project.is_delete', '!=', '1')
       .whereNotNull('vod.user_id')
 
