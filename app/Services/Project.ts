@@ -1383,10 +1383,10 @@ class Project {
           query.where('is_shop', false)
           query.orWhere('v.stock', '>', 0)
         })
-        .limit(6)
+        .limit(8)
+        .orderBy('item.name', 'desc')
         .all()
     ).map((project) => Project.setInfos(project, currencies, null, ss))
-    reco = Utils.randomArray(reco)
 
     let refs0 = (
       await DB('project as p')
@@ -1408,9 +1408,9 @@ class Project {
           query.orWhere('v.stock', '>', 0)
         })
         .limit(6)
+        .orderBy(DB.raw('RAND()'))
         .all()
     ).map((project) => Project.setInfos(project, currencies, null, ss))
-    refs0 = Utils.randomArray(refs0)
 
     let refs1 = []
     if (styles.length > 0) {
@@ -1438,11 +1438,11 @@ class Project {
       `)
           )
           .limit(6)
+          .orderBy(DB.raw('RAND()'))
           .all()
       ).map((project) => Project.setInfos(project, currencies, null, ss))
     }
 
-    const refs = refs0.concat(refs1)
     let refs2 = (
       await DB('project as p')
         .select(...selects)
@@ -1456,7 +1456,7 @@ class Project {
         .whereNotIn('p.id', params.refs)
         .whereNotIn(
           'p.id',
-          refs.map((r) => r.id)
+          refs0.map((r) => r.id)
         )
         .limit(6)
         .orderBy(DB.raw('RAND()'))
@@ -1464,7 +1464,7 @@ class Project {
     ).map((project) => Project.setInfos(project, currencies, null, ss))
     refs2 = Utils.randomArray(refs2)
 
-    const allProjects = reco.concat(refs0).concat(refs1).concat(refs2).slice(0, 6)
+    const allProjects = reco.concat(refs0).concat(refs1).concat(refs2).slice(0, 8)
     return allProjects
   }
 
