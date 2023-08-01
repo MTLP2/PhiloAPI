@@ -35,6 +35,10 @@ class Feedback {
         .where('feedback.created_at', '>=', '2022-11-01')
     }
 
+    if (params.onlyGood === 'true') {
+      params.query.where('rating', '>=', 3)
+    }
+
     if (!params.sort) {
       params.sort = 'id'
       params.order = 'desc'
