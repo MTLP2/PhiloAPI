@@ -53,18 +53,18 @@ class Vod {
       if (params.type === 'direct_pressing') {
         const html = await View.render('quote', {
           ...params,
+          total: params.costs.at(-1).value,
+          discount: Utils.round(params.costs.at(-1).value / 1.05),
+          per_unit: Utils.round(params.costs.at(-1).value / 1.05 / params.quantity),
           number: vod.project_id,
           date: Utils.date({ time: false }),
           client: params.customer.email || user.email
         })
 
         await Notification.sendEmail({
-          to: params.customer.email || user.email,
-          subject: `Vinyl Quote for ${params.customer.email || user.email}`,
-          html: html
-        })
-        await Notification.sendEmail({
-          to: 'kendale@diggersfactory.com',
+          from_address: 'kendale@diggersfactory.com',
+          from_name: 'Kendale Rice',
+          to: params.customer.email || user.email + ',kendale@diggersfactory.com',
           subject: `Vinyl Quote for ${params.customer.email || user.email}`,
           html: html
         })
