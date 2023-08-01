@@ -60,7 +60,6 @@ class Admin {
         'vod.is_notif',
         'pc.cost_real',
         'pc.name as prod_name',
-        's.quantity',
         DB().raw(`
         (SELECT SUM(quantity)
         FROM order_item, \`order\`, user
@@ -85,8 +84,6 @@ class Admin {
       .leftJoin('user as resp_prod', 'resp_prod.id', 'vod.resp_prod_id')
       .leftJoin('user as com', 'com.id', 'vod.com_id')
       .leftJoin('production_cost as pc', 'pc.project_id', 'project.id')
-      .leftJoin('stock as s', 's.project_id', 'project.id')
-      .where('s.type', 'daudin')
       .where('project.is_delete', '!=', '1')
       .whereNotNull('vod.user_id')
 
