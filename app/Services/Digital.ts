@@ -14,7 +14,7 @@ type DigitalDb = {
   project_name?: string
   artist_name?: string
   barcode?: string
-  catalogue_number?: number
+  catalogue_number?: string
   project_type?: string
   spotify_url?: string
   genre?: string[]
@@ -70,12 +70,12 @@ class Digital {
         'product.name as product_name',
         'product.type as product_type',
         'project.picture',
-        'user.email'
+        'u.name as username'
       )
       .leftJoin('product', 'product.id', 'digital.product_id')
       .leftJoin('project_product', 'project_product.product_id', 'product.id')
       .leftJoin('project', 'project.id', 'project_product.project_id')
-      .leftJoin('user', 'user.id', 'digital.user_id')
+      .leftJoin('user as u', 'u.id', 'digital.user_id')
       .where('digital.id', params.id)
       .first()
 

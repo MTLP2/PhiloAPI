@@ -107,7 +107,7 @@ class DigitalController {
         project_name: schema.string.optional({ trim: true }),
         artist_name: schema.string.optional({ trim: true }),
         barcode: schema.string.optional({ trim: true }),
-        catalogue_number: schema.number.optional(),
+        catalogue_number: schema.string.optional({ trim: true }),
         project_type: schema.string.optional({ trim: true }),
         spotify_url: schema.string.optional({ trim: true }),
         genre: schema.array.optional().members(schema.string({ trim: true })),
