@@ -14,7 +14,6 @@ const knex = require('knex')({
     dateStrings: true,
     typeCast2: function (field, next) {
       if (field.type == 'TINY' && field.length == 1) {
-        console.log(field.name)
         let value = field.string()
         if (value) return null
         else if (value === '1' || value === '0') return value == '1'

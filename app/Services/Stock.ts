@@ -65,8 +65,6 @@ class Stock {
       ids.push(...products.map((p) => p.product_id))
     }
 
-    console.log(ids)
-
     const stocks = await DB('stock').select('stock.*').whereIn('product_id', ids).all()
 
     const historic = await DB('stock_historic')
@@ -129,7 +127,6 @@ class Stock {
       }
 
       const hh = historic.filter((h) => h.created_at.substr(0, 7) === m)
-      console.log(m, hh.length)
       for (const item of hh) {
         const data = JSON.parse(item.data)
 
@@ -137,7 +134,6 @@ class Stock {
           months[m].var[item.type] = 0
         }
         if (data.new.quantity !== undefined) {
-          console.log(item.type, item.created_at, data.old.quantity)
           months[m].var[item.type] = data.old.quantity
         }
         if (!types[item.type]) {

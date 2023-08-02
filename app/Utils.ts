@@ -890,8 +890,6 @@ class Utils {
             if (regroup[word]) {
               ww = regroup[word] + '.' + word
             }
-            // console.log(w, ww)
-            // console.log(match, w)
             if (['EUR', 'USD', 'GBP', 'AUD'].includes(w)) {
               return match.replace(w, ww)
             }

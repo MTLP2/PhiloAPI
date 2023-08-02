@@ -122,7 +122,6 @@ class User {
 
   static getAllFeatured = async () => {
     const users = await DB().from('user').where('featured', true).all()
-    console.log(users)
     return users
   }
 
