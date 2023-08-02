@@ -51,6 +51,7 @@ class User {
         'facebook',
         'points',
         'twitter',
+        'instagram',
         'password',
         'soundcloud',
         'soundcloud_sub',
@@ -192,6 +193,7 @@ class User {
         'facebook',
         'points',
         'twitter',
+        'instagram',
         'soundcloud',
         DB.raw(`(
         select count(*)
@@ -337,6 +339,7 @@ class User {
         label_website: params.label_website,
         facebook: params.facebook,
         twitter: params.twitter,
+        instagram: params.instagram,
         website: params.website,
         soundcloud: params.soundcloud,
         about_me: params.about_me,
