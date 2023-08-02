@@ -110,6 +110,10 @@ class ProjectsController {
 
   async saveTrack({ params, user }) {
     params.user = user
+    const song = await DB('song').where('id', params.id).first()
+    if (song) {
+      params.project_id = song.project_id
+    }
     await Utils.checkProjectOwner({ project_id: params.project_id, user: user })
 
     const track = await ProjectEdit.saveTrack(params)
