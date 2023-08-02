@@ -1026,7 +1026,7 @@ class Cart {
       .all()
 
     let weight = params.weight
-    if (params.category === 'cd' && params.country_id === 'GB') {
+    if ((params.category === 'cd' || params.category === 'tape') && params.country_id === 'GB') {
       if (weight < 500) {
         weight = '500g'
       } else if (weight < 750) {
@@ -1039,7 +1039,6 @@ class Cart {
     } else {
       weight = Math.ceil(params.weight / 1000) + 'kg'
     }
-
     let costs: any = null
 
     for (const transporter of transporters) {
@@ -2419,10 +2418,10 @@ class Cart {
   }
 
   static related = async (cart) => {
-    const projects = []
+    const projects: any = []
     const transporters = {}
 
-    for (const shop of Object.values(cart.shops)) {
+    for (const shop of Object.values(cart.shops) as any[]) {
       if (shop.type === 'shop' && shop.transporter && shop.transporter !== 'shop') {
         transporters[shop.transporter] = true
       }
@@ -2458,6 +2457,7 @@ class Cart {
         'p.id',
         'p.name',
         'p.artist_name',
+        'picture_project',
         'vod.price',
         'vod.currency',
         'category',
@@ -2474,9 +2474,11 @@ class Cart {
         [...items, ...accessories].map((p) => p.id)
       )
       .orderBy('category', 'desc')
-      .where('step', 'in_progress')
+      .whereIn('step', ['in_progress', 'private'])
       .orderBy(DB.raw('RAND()'))
       .all()
+
+    console.log(res)
 
     const currencies = await Utils.getCurrenciesDb()
     for (const i in res) {

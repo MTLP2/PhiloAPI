@@ -180,13 +180,19 @@ class Notification {
       params.html = Notification.template(params)
     }
 
-    let conf = null
+    let conf: any = null
     if (params.type === 'newsletter') {
       conf = config.newsletter
       conf.from_name = params.from_name
       conf.from_address = params.from_address
     } else {
       conf = config.mail
+    }
+    if (params.from_address) {
+      conf.from_address = params.from_address
+    }
+    if (params.from_name) {
+      conf.from_name = params.from_name
     }
 
     if (!conf.from_name) {

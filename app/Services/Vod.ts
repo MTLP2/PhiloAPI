@@ -1,11 +1,10 @@
-import { Quote } from './../../../web/pages/project/manage2/manage-types.d'
 import DB from 'App/DB'
 import Customer from 'App/Services/Customer'
 import Notification from 'App/Services/Notification'
 import Utils from 'App/Utils'
 import config from 'Config/index'
 import User from './User'
-import Env from '@ioc:Adonis/Core/Env'
+import View from '@ioc:Adonis/Core/View'
 import fs from 'fs'
 
 class Vod {
@@ -52,22 +51,22 @@ class Vod {
       })
 
       if (params.type === 'direct_pressing') {
+        const html = await View.render('quote', {
+          ...params,
+          total: params.costs.at(-1).value,
+          discount: Utils.round(params.costs.at(-1).value / 1.05),
+          per_unit: Utils.round(params.costs.at(-1).value / 1.05 / params.quantity),
+          number: vod.project_id,
+          date: Utils.date({ time: false }),
+          client: params.customer.email || user.email
+        })
+
         await Notification.sendEmail({
-          to: 'kendale@diggersfactory.com',
-          subject: `New direct pressing : ${params.customer.email || user.email}`,
-          html: `<p>
-            <ul>
-              <li><b>Project :</b> 
-                <a href="${Env.get('APP_URL')}/sheraf/project/${vod.project_id}">
-                  ${vod.project_id}
-                </a>
-              </li>
-              <li><b>Email :</b> ${params.customer.email || user.email}</li>
-              <li><b>Quantity :</b> ${params.quantity}</li>
-              <li><b>Price :</b> ${params.quote} ${params.currency}</li>
-              <li><b>Lang :</b> ${params.lang}</li>
-            </ul>
-          </p>`
+          from_address: 'kendale@diggersfactory.com',
+          from_name: 'Kendale Rice',
+          to: params.customer.email || user.email + ',kendale@diggersfactory.com',
+          subject: `Vinyl Quote for ${params.customer.email || user.email}`,
+          html: html
         })
       }
     }

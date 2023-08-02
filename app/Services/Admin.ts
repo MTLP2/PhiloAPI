@@ -4134,6 +4134,7 @@ class Admin {
         'project.id',
         'slug',
         'artist_name',
+        'product_id',
         'product.name',
         'project.name as project_name',
         'price',
@@ -4171,7 +4172,7 @@ class Admin {
       .where('step', 'in_progress')
       .where('product.type', 'vinyl')
       .whereNotNull('product.barcode')
-      .hasMany('stock')
+
     if (!params.lang) {
       params.lang === 'FR'
     }
@@ -4180,6 +4181,22 @@ class Admin {
     }
 
     const projects = await projectsQuery.all()
+
+    const listStocks = await DB('stock')
+      .select('product_id', DB.raw('sum(quantity) as quantity'))
+      .whereIn(
+        'product_id',
+        projects.map((p) => p.product_id)
+      )
+      .where('type', '!=', 'preorder')
+      .where('is_distrib', false)
+      .groupBy('product_id')
+      .all()
+
+    const stocks = {}
+    for (const stock of listStocks) {
+      stocks[stock.product_id] = stock.quantity
+    }
 
     let csv =
       'date;id;gtin;title;condition;description;availability;price;link;image_link;brand;additional_image_link;product_type;sale_price;sale_price_effective_date;shipping;shipping_weight;custom_label_0;'
@@ -4194,15 +4211,10 @@ class Admin {
     for (const p in projects) {
       const pp = projects[p]
 
-      // console.log('pp', pp)
-
-      for (const stock of pp.stock) {
-        pp[`stock_${stock.type}`] = stock.quantity
-      }
       pp.com = pp.com ? JSON.parse(pp.com) : {}
 
       pp.stock = pp.is_shop
-        ? pp.stock_daudin + pp.stock_whiplash + pp.stock_whiplash_uk + pp.stock_diggers
+        ? stocks[pp.product_id]
         : pp.goal - pp.count - pp.count_distrib - pp.count_other
       pp.styles = pp.styles
         .split(',')

@@ -618,6 +618,10 @@ class Utils {
     return result
   }
 
+  static randomArray = (array) => {
+    return array.sort(() => Math.random() - 0.5)
+  }
+
   static genetateNumber = (min, max) => {
     return Math.floor(Math.random() * (max - min + 1) + min)
   }
