@@ -708,13 +708,15 @@ class StatementService {
       .replace(/\[/gi, '-')
       .replace(/\]/gi, '-')
 
-    const ws = workbook.addWorksheet(name)
+    const ws = workbook.addWorksheet(name, {
+      views: [{ state: 'frozen', ySplit: 1, xSplit: 1 }]
+    })
 
     let y = 1
-    ws.mergeCells(`A${y}:${Utils.columnToLetter(8)}1`)
-    ws.getCell(`A${y}`).value = `${project.artist_name} - ${project.name}`
-    ws.getCell(`A${y}`).alignment = { horizontal: 'left' }
-    ws.getCell(`A${y}`).font = { bold: true, size: 20 }
+    ws.mergeCells(`B${y}:${Utils.columnToLetter(8)}1`)
+    ws.getCell(`B${y}`).value = `${project.artist_name} - ${project.name}`
+    ws.getCell(`B${y}`).alignment = { horizontal: 'left' }
+    ws.getCell(`B${y}`).font = { bold: true, size: 20 }
 
     y++
     y++
