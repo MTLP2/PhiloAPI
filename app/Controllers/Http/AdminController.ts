@@ -288,6 +288,10 @@ class AdminController {
     return Order.exportSales(params)
   }
 
+  async exportCaByProjectId({ params }) {
+    return Order.exportCaByProjectId(params)
+  }
+
   async extractOrders({ params, user }) {
     return Admin.extractOrders(params)
   }

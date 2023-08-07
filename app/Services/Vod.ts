@@ -317,9 +317,6 @@ class Vod {
       size = 12
     }
 
-    // const costs = await Quote.calculate(params)
-    // console.log(costs)
-
     const currencies = await DB('currency').all()
     let currencyRate = 0
 
@@ -334,7 +331,6 @@ class Vod {
     params.factory = params.factory || 'sna'
     const production = await Vod.getFactoryPrice(params)
 
-    console.log(production)
     const allCosts = {}
     production.map((type) => {
       if (!allCosts[type.type]) {

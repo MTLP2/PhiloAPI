@@ -2375,7 +2375,6 @@ class Cart {
       p !== null ? config.paypal[p].client_secret : config.paypal.default.client_secret
     const mode = p !== null ? config.paypal[p].mode : config.paypal.default.mode
 
-    console.log(clientId, clientSecret)
     paypal.configure({
       mode,
       client_id: clientId,
@@ -2477,8 +2476,6 @@ class Cart {
       .whereIn('step', ['in_progress', 'private'])
       .orderBy(DB.raw('RAND()'))
       .all()
-
-    console.log(res)
 
     const currencies = await Utils.getCurrenciesDb()
     for (const i in res) {

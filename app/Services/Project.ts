@@ -729,6 +729,7 @@ class Project {
         'u.facebook as user_facebook',
         'u.soundcloud as user_soundcloud',
         'u.twitter as user_twitter',
+        'u.instagram as user_instagram',
         'u.about_me as user_about_me',
         'u.picture as user_picture',
         DB.raw(`(
@@ -781,7 +782,9 @@ class Project {
         'v.show_prod',
         'v.sizes',
         'v.is_size',
+        'count',
         'show_countdown',
+        'show_count',
         'v.bonus',
         // DB.raw('GROUP_CONCAT(ps.style_id SEPARATOR \',\') as styles'),
         DB.raw("DATE_FORMAT(end, '%Y-%m-%d %H:%i') as end"),
@@ -1010,6 +1013,7 @@ class Project {
       country_id: p.user_country_id,
       facebook: p.user_facebook,
       twitter: p.user_twitter,
+      instagram: p.user_instagram,
       soundcloud: p.user_soundcloud,
       about_me: p.user_about_me,
       followed: p.user_followed

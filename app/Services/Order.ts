@@ -416,6 +416,67 @@ static toJuno = async (params) => {
 }
 **/
 
+  static exportCaByProjectId = async (params) => {
+    const idList = params.projects.split(',').map(Number)
+
+    const result = await DB('project')
+      .select(
+        DB.raw("DATE_FORMAT(order_item.created_at, '%Y-%m') AS month"),
+        'project.name AS project_name',
+        'project.id',
+        DB.raw(
+          'ROUND(SUM(CASE WHEN country.ue = 1 THEN (order_item.price * order_item.currency_rate - (order_item.price * 0.2)) * order_item.quantity END), 3) AS ca_ue'
+        ),
+        DB.raw(
+          'ROUND(SUM(CASE WHEN country.ue = 0 THEN (order_item.price * order_item.currency_rate) * order_item.quantity END), 3) AS ca_hors_ue'
+        )
+      )
+      .join('order_item', 'order_item.project_id', 'project.id')
+      .join('order_shop', 'order_item.order_shop_id', 'order_shop.id')
+      .join('customer', 'order_shop.customer_id', 'customer.id')
+      .join('country', 'customer.country_id', 'country.id')
+      .join('vod', 'order_item.vod_id', 'vod.id')
+      .whereIn('project.id', idList)
+      .where('order_shop.is_paid', 1)
+      .where('vod.is_licence', 1)
+      .where('order_item.created_at', '>', params.start)
+      .groupByRaw("DATE_FORMAT(order_item.created_at, '%Y-%m'), project.id")
+      .orderBy('month')
+      .all()
+    let columns: any = []
+    const addedColumns: any[] = []
+    columns.push({ header: 'Month', key: 'month', width: 15 })
+    const processedResults = {}
+    for (let i = 0; i < result.length; i++) {
+      const res = result[i]
+      if (!processedResults[res.month]) {
+        processedResults[res.month] = {
+          month: res.month
+        }
+      }
+
+      const fieldUe = `ca_ue_${res.id}`
+      const fieldHorsUe = `ca_hors_ue_${res.id}`
+      processedResults[res.month][fieldUe] = res.ca_ue
+      processedResults[res.month][fieldHorsUe] = res.ca_hors_ue
+      if (!addedColumns.includes(res.project_name)) {
+        columns.push({ header: res.project_name + ' UE', key: fieldUe, width: 50 })
+        columns.push({ header: res.project_name + ' hors UE', key: fieldHorsUe, width: 50 })
+        addedColumns.push(res.project_name)
+      }
+    }
+
+    const obj: any[] = Object.values(processedResults)
+    const file = await Utils.arrayToXlsx([
+      {
+        worksheetName: 'Rapport CA',
+        columns: columns,
+        data: obj
+      }
+    ])
+    return file
+  }
+
   static exportSales = async (params) => {
     const orders = await DB('vod')
       .select(

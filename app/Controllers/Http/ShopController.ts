@@ -117,8 +117,6 @@ class ShopController {
       data: request.body()
     })
 
-    console.log(payload)
-
     return Shop.checkCode(payload.code)
   }
 

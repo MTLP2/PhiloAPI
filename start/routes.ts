@@ -374,6 +374,7 @@ Route.group(() => {
   Route.get('/order-export/refunds', 'AdminController.exportOrdersRefunds')
   Route.get('/order-export/commercial', 'AdminController.exportOrdersCommercial')
   Route.get('/sales-export', 'AdminController.exportSales')
+  Route.get('/ca-export', 'AdminController.exportCaByProjectId')
   Route.get('/reviews-export', 'AdminController.exportReviews')
   Route.post('/orders/:id', 'AdminController.saveOrderShop')
   Route.post('/orders/:id/sync', 'AdminController.syncOrder')

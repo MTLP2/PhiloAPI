@@ -50,6 +50,9 @@ class Admin {
         'customer.phone as phone',
         'customer.email as customer_email',
         'customer.country_id as customer_country',
+        'customer.phone as customer_phone',
+        'customer.firstname as customer_firstname',
+        'customer.lastname as customer_lastname',
         'resp_prod.name as resp_prod',
         'com.name as com',
         'vod.id as vod_id',
@@ -970,6 +973,7 @@ class Admin {
     vod.show_stock = params.show_stock
     vod.show_prod = params.show_prod
     vod.show_countdown = params.show_countdown
+    vod.show_count = params.show_count
     vod.scheduled_end = params.scheduled_end
     vod.is_licence = params.is_licence
     vod.shipping_delay_reason = params.shipping_delay_reason

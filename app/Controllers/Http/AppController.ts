@@ -149,7 +149,6 @@ class AppController {
       if (buffer && !exists) {
         const png = await Storage.compressImage(buffer, { type: 'png', quality: 60 })
         Storage.upload(`${item.picture}.png`, png)
-        console.log(`${item.picture}.png`)
       }
     }
 

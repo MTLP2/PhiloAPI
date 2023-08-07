@@ -180,23 +180,9 @@ class Notification {
       params.html = Notification.template(params)
     }
 
-    let conf: any = null
-    if (params.type === 'newsletter') {
-      conf = config.newsletter
-      conf.from_name = params.from_name
-      conf.from_address = params.from_address
-    } else {
-      conf = config.mail
-    }
-    if (params.from_address) {
-      conf.from_address = params.from_address
-    }
-    if (params.from_name) {
-      conf.from_name = params.from_name
-    }
-
-    if (!conf.from_name) {
-      conf.from_name = 'Diggers Factory'
+    if (!params.from_address) {
+      params.from_name = 'Diggers Factory'
+      params.from_address = 'contact@diggersfactory.com'
     }
 
     for (let to of params.to.split(',')) {
@@ -210,7 +196,7 @@ class Notification {
       }
 
       const request = new SendEmailRequest({
-        from: `${conf.from_name} <${conf.from_address}>`,
+        from: `${params.from_name} <${params.from_address}>`,
         to: to,
         identifiers: { email: to },
         subject: params.subject,
