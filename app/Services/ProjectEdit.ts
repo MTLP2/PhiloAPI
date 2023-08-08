@@ -67,6 +67,10 @@ class ProjectEdit {
       pp.slug = Utils.slugify(`${params.artist_name} - ${pp.name}`).substring(0, 255)
       pp.created_at = Utils.date()
       pp = await pp.save()
+      await DB('project_user').insert({
+        project_id: pp.id,
+        user_id: params.user.user_id
+      })
     } else {
       await Utils.checkProjectOwner({ project_id: params.id, user: params.user })
       pp = await DB('project').find(params.id)
