@@ -766,14 +766,8 @@ class StatementService {
         const cell = ws.getCell(Utils.columnToLetter(months.indexOf(month) + 2) + y)
 
         let value: number | '' = props.dates ? +props.dates[month] : ''
-        if (props.label === 'Payments' && value === 6900.13) {
-          console.log(value, props.negative)
-        }
         if (value && props.negative) {
           value = -value
-        }
-        if (props.label === 'Payments' && value === -6900.13) {
-          console.log(value)
         }
         cell.value = value
 
