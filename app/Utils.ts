@@ -1143,13 +1143,14 @@ class Utils {
     if (await Utils.isTeam(params.user.id)) {
       return true
     }
-    const vod = await DB('vod').where('project_id', params.project_id).first()
-    const wishlist = await DB('wishlist').where('project_id', params.project_id).first()
-    if (!vod && !wishlist) {
+    const pu = await DB('project_user')
+      .where('project_id', params.project_id)
+      .where('user_id', params.user.id)
+      .first()
+    if (!pu) {
       throw new ApiError(404)
     }
-    const user = vod ? vod.user_id : wishlist.user_id
-
+    const user = pu ? pu.user_id : null
     if (user !== null && user !== params.user.user_id) {
       throw new ApiError(403)
     }
