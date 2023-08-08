@@ -743,6 +743,7 @@ class StatementService {
       dates?: [key: string]
       background?: string
       total?: string | number
+      negative?: boolean
       font?: {
         bold?: boolean
         italic?: boolean
@@ -763,7 +764,19 @@ class StatementService {
       for (let m in months) {
         const month = months[m]
         const cell = ws.getCell(Utils.columnToLetter(months.indexOf(month) + 2) + y)
-        cell.value = props.dates ? props.dates[month] : ''
+
+        let value: number | '' = props.dates ? +props.dates[month] : ''
+        if (props.label === 'Payments' && value === 6900.13) {
+          console.log(value, props.negative)
+        }
+        if (value && props.negative) {
+          value = -value
+        }
+        if (props.label === 'Payments' && value === -6900.13) {
+          console.log(value)
+        }
+        cell.value = value
+
         if (props.currency) {
           cell.numFmt = `${props.currency}#,##0.00`
         }
@@ -805,25 +818,25 @@ class StatementService {
       label: 'Quantity Sold',
       dates: data.quantity.all.dates,
       background: colors.blue,
-      font: { bold: true, size: 15 }
+      font: { bold: true, size: 16 }
     })
     addLine({
       label: 'Website - Total',
       dates: data.quantity.site.dates,
-      font: { size: 15 }
+      font: { size: 13 }
     })
     if (data.quantity.box.all > 0) {
       addLine({
         label: 'Box - Total',
         dates: data.quantity.box.dates,
-        font: { size: 15 }
+        font: { size: 13 }
       })
     }
     if (data.quantity.distrib.all > 0) {
       addLine({
         label: 'Retail - Total',
         dates: data.quantity.distrib.dates,
-        font: { size: 15 }
+        font: { size: 13 }
       })
     }
 
@@ -832,7 +845,7 @@ class StatementService {
         addLine({
           label: `Retail - ${I18n.locale('en').formatMessage(`countries.${country}`)}`,
           dates: data.quantity.distrib.country[country],
-          font: { size: 12, italic: true }
+          font: { size: 13, italic: true }
         })
       }
     }
@@ -844,19 +857,20 @@ class StatementService {
       dates: data.income.all.dates,
       background: colors.blue,
       currency: currency,
-      font: { bold: true, size: 15 }
+      font: { bold: true, size: 16 }
     })
     addLine({
       label: 'Website - Total',
       dates: data.income.site.dates,
       currency: currency,
-      font: { size: 15 }
+      font: { size: 13 }
     })
     if (data.income.box.all > 0) {
       addLine({
         label: 'Box - Total',
         dates: data.income.box.dates,
-        font: { size: 15 }
+        currency: currency,
+        font: { size: 13 }
       })
     }
     if (data.income.distrib.all > 0) {
@@ -864,7 +878,7 @@ class StatementService {
         label: 'Retail - Total',
         dates: data.income.distrib.dates,
         currency: currency,
-        font: { size: 15 }
+        font: { size: 13 }
       })
     }
     if (data.income.digital.all > 0) {
@@ -872,7 +886,7 @@ class StatementService {
         label: 'Digital - Total',
         dates: data.income.digital.dates,
         currency: currency,
-        font: { size: 15 }
+        font: { size: 13 }
       })
     }
     for (const country of Object.keys(data.income.distrib.country)) {
@@ -880,7 +894,8 @@ class StatementService {
         addLine({
           label: `Retail - ${I18n.locale('en').formatMessage(`countries.${country}`)}`,
           dates: data.income.distrib.country[country],
-          font: { size: 12, italic: true }
+          currency: currency,
+          font: { size: 13, italic: true }
         })
       }
     }
@@ -891,7 +906,8 @@ class StatementService {
       background: colors.blue,
       dates: data.costs.all.dates,
       currency: currency,
-      font: { size: 15, bold: true }
+      negative: true,
+      font: { size: 16, bold: true }
     })
     const costs = [
       { label: 'Production', key: 'production' },
@@ -908,6 +924,7 @@ class StatementService {
           label: cost.label,
           dates: data.costs[cost.key].dates,
           currency: currency,
+          negative: true,
           font: { size: 14 }
         })
       }
@@ -919,21 +936,23 @@ class StatementService {
       background: colors.blue,
       dates: data.payments.all.dates,
       currency: currency,
+      // negative: true,
       font: { size: 15, bold: true }
     })
-    if (data.payments.diggers.all > 0) {
+    if (data.payments.diggers.all !== 0) {
       addLine({
-        label: 'From Diggers to artist',
+        label: 'From artist to Diggers',
         dates: data.payments.diggers.dates,
         currency: currency,
         font: { size: 14 }
       })
     }
-    if (data.payments.artist.all > 0) {
+    if (data.payments.artist.all !== 0) {
       addLine({
-        label: 'From artist to Diggers',
+        label: 'From diggers to artist',
         dates: data.payments.artist.dates,
         currency: currency,
+        negative: true,
         font: { size: 14 }
       })
     }

@@ -2077,6 +2077,7 @@ class Project {
         s.addList('distribution', 'costs', date, dist.storage, stat.project_id)
 
         s.setDate('distrib', 'quantity', date, dist.quantity)
+        s.setDate('distrib', 'quantity', date, -dist.returned)
 
         if (inDate(date)) {
           s.setCountry('distrib', 'income', dist.country_id, value, date)
@@ -2108,6 +2109,9 @@ class Project {
         s.addList('diggers', 'payments', date, payment.total, payment.project_id)
         s.setDate('diggers', 'payments', date, payment.total)
       }
+    }
+    for (const date of Object.keys(dates)) {
+      s.payments.all.dates[date] = s.payments.diggers.dates[date] - s.payments.artist.dates[date]
     }
 
     s.balance.all = s.income.all.all - s.costs.all.all
