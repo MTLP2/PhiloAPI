@@ -121,6 +121,51 @@ class User {
     })
   }
 
+  static getProjectUsers = async (id: number) => {
+    const users = await DB()
+      .select('u.*')
+      .from('user as u')
+      .join('project_user as pu', 'pu.user_id', 'u.id')
+      .where('pu.project_id', id)
+      .all()
+    return users
+  }
+
+  static saveProjectUsers = async (params) => {
+    const project = await DB('project').where('id', params.projectId).first()
+    if (!project) {
+      throw new ApiError(404)
+    }
+
+    const projectUser = await DB('project_user')
+      .where('project_id', params.projectId)
+      .where('user_id', params.userId)
+      .first()
+
+    if (!projectUser) {
+      await DB('project_user').insert({
+        project_id: params.projectId,
+        user_id: params.userId
+      })
+    }
+
+    return true
+  }
+
+  static deleteProjectUsers = async (params) => {
+    const project = await DB('project').where('id', params.projectId).first()
+    if (!project) {
+      throw new ApiError(404)
+    }
+
+    await DB('project_user')
+      .where('project_id', params.projectId)
+      .where('user_id', params.userId)
+      .delete()
+
+    return true
+  }
+
   static getAllFeatured = async () => {
     const users = await DB().from('user').where('featured', true).all()
     return users
@@ -848,7 +893,7 @@ class User {
     return false
   }
 
-  static getProjects = async (userId, params) => {
+  static getProjects = async (userId, params?) => {
     let projects = DB()
       .select(
         'p.id',
@@ -857,7 +902,7 @@ class User {
         'artist_name',
         'slug',
         'styles',
-        'user_id',
+        'pu.user_id',
         'v.created_at',
         'v.updated_at',
         'type',
@@ -869,7 +914,8 @@ class User {
       )
       .from('project as p')
       .join('vod as v', 'v.project_id', 'p.id')
-      .where('user_id', userId)
+      .join('project_user as pu', 'pu.project_id', 'p.id')
+      .where('pu.user_id', userId)
       .where('is_delete', '!=', '1')
 
     if (params && params.search) {
