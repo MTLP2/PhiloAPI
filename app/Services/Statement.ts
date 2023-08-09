@@ -709,7 +709,7 @@ class StatementService {
       .replace(/\]/gi, '-')
 
     const ws = workbook.addWorksheet(name, {
-      views: [{ state: 'frozen', ySplit: 1, xSplit: 1 }]
+      views: [{ state: 'frozen', ySplit: 1, xSplit: 1 }, { showGridLines: false }]
     })
 
     let y = 1
@@ -930,7 +930,6 @@ class StatementService {
       background: colors.blue,
       dates: data.payments.all.dates,
       currency: currency,
-      // negative: true,
       font: { size: 15, bold: true }
     })
     if (data.payments.diggers.all !== 0) {
@@ -1352,7 +1351,7 @@ class StatementService {
     send_statement?: boolean
   }) {
     let projects: any = DB()
-      .select('project.id', 'vod.barcode', 'artist_name', 'name')
+      .select('project.id', 'vod.barcode', 'currency', 'artist_name', 'name')
       .table('project')
       .join('vod', 'vod.project_id', 'project.id')
       .where('vod.user_id', params.id)
@@ -1370,20 +1369,12 @@ class StatementService {
     projects = await projects.all()
     const workbook = new Excel.Workbook()
 
-    const worksheet: any = workbook.addWorksheet('Summary')
-
-    worksheet.columns = [
-      { header: 'Barcode', key: 'barcode', width: 15 },
-      { header: 'Artist', key: 'artist_name', width: 30 },
-      { header: 'Project', key: 'name', width: 30 },
-      { header: 'Stocks', key: 'stock', width: 15 },
-      { header: 'Profits', key: 'profits', width: 15 },
-      { header: 'Costs', key: 'costs', width: 15 },
-      { header: 'Benefits', key: 'benefits', width: 15 },
-      { header: 'To pay', key: 'net', width: 15 }
-    ]
+    const month = moment().format('YYYY-MM')
+    const wsMonthly: any = workbook.addWorksheet('Summary - Monthly')
+    const wsAllTime: any = workbook.addWorksheet('Summary - All Time')
 
     let i = 1
+    const datas: any = []
     for (const project of projects) {
       const data = await this.setWorksheet2(workbook, {
         id: project.id,
@@ -1400,30 +1391,167 @@ class StatementService {
         project.stock += stock[s]
       }
 
-      worksheet.addRow({
-        ...project,
-        profits: data ? Utils.round(data.income.all.all) : 0,
-        costs: data ? Utils.round(data.costs.all.all) : 0,
-        benefits: data ? Utils.round(data.income.all.all - data.costs.all.all) : 0,
-        net: data ? Utils.round(data.outstanding.all) : 0
+      datas.push({
+        project: project,
+        data: data
       })
-      i++
     }
 
-    const n = projects.length + 1
-    for (let i = 3; i <= 6; i++) {
-      const l = Utils.columnToLetter(i)
+    const setSummary = (payload: {
+      type: string
+      title: string
+      ws: any
+      columns: any[]
+      datas: any[]
+    }) => {
+      const { ws, columns, title, datas } = payload
+      ws.views = [{ showGridLines: false }]
 
-      const f = `SUM(${l}2:${l}${n})`
-      worksheet.getCell(`${l}${n + 1}`).value = { formula: f }
+      let y = 4
+      ws.mergeCells(`B${y}:${Utils.columnToLetter(8)}1`)
+      ws.getCell(`B${y}`).value = title
+      ws.getCell(`B${y}`).alignment = { horizontal: 'left' }
+      ws.getCell(`B${y}`).font = { bold: true, size: 20 }
+
+      y++
+      y++
+
+      const colors = {
+        blue: 'd5eeff',
+        green: 'd7ffe2',
+        gray: 'DDDDDD'
+      }
+
+      let currency
+      switch (projects[0].currency) {
+        case 'EUR':
+          currency = '€'
+          break
+        case 'USD':
+          currency = '$'
+          break
+        case 'GBP':
+          currency = '£'
+          break
+        case 'AUD':
+          currency = '$A'
+          break
+      }
+
+      let c = 2
+      for (const column of columns) {
+        const cell = ws.getCell(`${Utils.columnToLetter(c)}${y}`)
+        cell.value = column.header
+        cell.font = { bold: true, size: 16 }
+        cell.alignment = { horizontal: column.alignement || 'left' }
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: colors.blue }
+        }
+        ws.getColumn(Utils.columnToLetter(c)).width = column.width
+        c++
+      }
+
+      for (const { data, project } of datas) {
+        y++
+
+        if (payload.type === 'monthly') {
+          project.quantity = data ? Utils.round(data.quantity.all.dates[month]) : 0
+          project.income = data ? Utils.round(data.income.all.dates[month]) : 0
+          project.costs = data ? Utils.round(data.costs.all.dates[month]) : 0
+          project.balance = data ? Utils.round(data.balance.dates[month]) : 0
+          project.net = data ? Utils.round(data.outstanding.dates[month]) : 0
+        } else {
+          project.quantity = data ? Utils.round(data.quantity.all.all) : 0
+          project.income = data ? Utils.round(data.income.all.all) : 0
+          project.costs = data ? Utils.round(data.costs.all.all) : 0
+          project.balance = data ? Utils.round(data.balance.all) : 0
+          project.artist_pay = data ? Utils.round(data.payments.artist.all) : 0
+          project.diggers_pay = data ? Utils.round(data.payments.diggers.all) : 0
+        }
+
+        c = 2
+        for (const column of columns) {
+          const cell = ws.getCell(`${Utils.columnToLetter(c)}${y}`)
+          cell.value = project[column.key]
+          if (column.currency) {
+            cell.numFmt = `${currency}#,##0.00`
+          }
+          cell.font = { size: 14 }
+          c++
+        }
+        i++
+      }
+      y++
+      c = 1
+      for (const column of columns) {
+        c++
+        if (!column.alignement) {
+          continue
+        }
+        const cell = ws.getCell(`${Utils.columnToLetter(c)}${y}`)
+        const f = `SUM(${Utils.columnToLetter(c)}7:${Utils.columnToLetter(c)}${
+          7 + projects.length - 1
+        })`
+        if (column.currency) {
+          cell.numFmt = `${currency}#,##0.00`
+        }
+        cell.font = { size: 16, bold: true }
+        cell.value = { formula: f }
+      }
     }
 
-    for (const cell of Utils.getCells(worksheet, 'A1:F1')) {
-      cell.font = { bold: true }
-    }
-    for (const cell of Utils.getCells(worksheet, `C${n + 1}:F${n + 1}`)) {
-      cell.font = { bold: true }
-    }
+    setSummary({
+      title: `SUMMARY - MONTHLY - ${moment().format('MMMM YYYY')}`,
+      ws: wsMonthly,
+      type: 'monthly',
+      columns: [
+        { header: 'Artist', key: 'artist_name', width: 30 },
+        { header: 'Project', key: 'name', width: 40 },
+        { header: 'Quantity sold', key: 'quantity', width: 20, alignement: 'right' },
+        { header: 'Revenues', key: 'income', width: 15, alignement: 'right', currency: true },
+        { header: 'Costs', key: 'costs', width: 15, alignement: 'right', currency: true },
+        { header: 'Stocks left', key: 'stock', width: 15, alignement: 'right' },
+        {
+          header: 'Artist has to invoice Diggers',
+          key: 'net',
+          width: 40,
+          alignement: 'right',
+          currency: true
+        }
+      ],
+      datas: datas
+    })
+
+    setSummary({
+      title: `SUMMARY - All Time`,
+      ws: wsAllTime,
+      type: 'all_time',
+      columns: [
+        { header: 'Artist', key: 'artist_name', width: 30 },
+        { header: 'Project', key: 'name', width: 40 },
+        { header: 'Quantity sold', key: 'quantity', width: 20, alignement: 'right' },
+        { header: 'Revenues', key: 'income', width: 15, alignement: 'right', currency: true },
+        { header: 'Costs', key: 'costs', width: 15, alignement: 'right', currency: true },
+        { header: 'Benefits', key: 'balance', width: 15, alignement: 'right', currency: true },
+        {
+          header: 'Paid to Artist',
+          key: 'artist_pay',
+          width: 20,
+          alignement: 'right',
+          currency: true
+        },
+        {
+          header: 'Paid from Artist',
+          key: 'diggers_pay',
+          width: 20,
+          alignement: 'right',
+          currency: true
+        }
+      ],
+      datas: datas
+    })
 
     return workbook.xlsx.writeBuffer()
   }
