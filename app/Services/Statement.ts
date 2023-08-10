@@ -1795,6 +1795,7 @@ class StatementService {
           query.orWhereIn('vod.step', ['successful', 'in_progress'])
         })
       })
+      .where('pu.statement', 1)
       .all()
 
     const res: any[] = []
