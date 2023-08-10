@@ -102,14 +102,13 @@ class ProjectsController {
     return User.getProjectUsers(params.id)
   }
 
-  async saveProjectUsers({ params, user }) {
-    params.user = user
-    await Utils.checkProjectOwner({ project_id: params.id, user: user })
-    return User.saveProjectUsers(params)
+  async editProjectUsers({ params, user }) {
+    await Utils.checkProjectOwner({ project_id: params.project_id, user: user })
+    return User.editProjectUsers(params)
   }
 
   async deleteProjectUsers({ params, user }) {
-    params.user = user
+    // params.user = user
     await Utils.checkProjectOwner({ project_id: params.id, user: user })
     return User.deleteProjectUsers(params)
   }
