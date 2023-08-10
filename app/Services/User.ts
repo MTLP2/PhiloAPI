@@ -123,7 +123,7 @@ class User {
 
   static getProjectUsers = async (id: number) => {
     const users = await DB()
-      .select('u.*')
+      .select('u.*', 'pu.project', 'pu.production', 'pu.statement', 'pu.id as pu_id')
       .from('user as u')
       .join('project_user as pu', 'pu.user_id', 'u.id')
       .where('pu.project_id', id)
@@ -131,36 +131,54 @@ class User {
     return users
   }
 
-  static saveProjectUsers = async (params) => {
-    const project = await DB('project').where('id', params.projectId).first()
+  static editProjectUsers = async (payload: {
+    id: number
+    user_id: number
+    project_id: number
+    project: boolean
+    production: boolean
+    statement: boolean
+  }) => {
+    const project = await DB('project').where('id', payload.project_id).first()
     if (!project) {
       throw new ApiError(404)
     }
-
-    const projectUser = await DB('project_user')
-      .where('project_id', params.projectId)
-      .where('user_id', params.userId)
+    let item: any = await DB('project_user')
+      .where((query) => {
+        if (payload.id) {
+          query.where('id', payload.id)
+        }
+        query.orWhere((query) => {
+          query.where('project_id', payload.project_id)
+          query.where('user_id', payload.user_id)
+        })
+      })
       .first()
 
-    if (!projectUser) {
-      await DB('project_user').insert({
-        project_id: params.projectId,
-        user_id: params.userId
-      })
+    if (!item) {
+      item = DB('project_user')
     }
+
+    item.user_id = payload.user_id
+    item.project_id = payload.project_id
+    item.project = payload.project
+    item.production = payload.production
+    item.statement = payload.statement
+
+    await item.save()
 
     return true
   }
 
-  static deleteProjectUsers = async (params) => {
-    const project = await DB('project').where('id', params.projectId).first()
+  static deleteProjectUsers = async (payload: { project_id: number; user_id: number }) => {
+    const project = await DB('project').where('id', payload.project_id).first()
     if (!project) {
       throw new ApiError(404)
     }
 
     await DB('project_user')
-      .where('project_id', params.projectId)
-      .where('user_id', params.userId)
+      .where('project_id', payload.project_id)
+      .where('user_id', payload.user_id)
       .delete()
 
     return true
