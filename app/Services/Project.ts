@@ -2247,7 +2247,7 @@ class Project {
     vod.whiplash_export = null
     vod.stock = 0
     vod.count = 0
-    vod.statement = 0
+    vod.send_statement = 0
     vod.step = 'creating'
     vod.created_at = Utils.date()
     vod.updated_at = Utils.date()
