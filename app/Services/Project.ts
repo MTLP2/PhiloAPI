@@ -299,16 +299,18 @@ class Project {
               currencies,
               currency: project.currency
             })
-            const discountDistrib = Utils.round(
-              (project.price_distribution + project.shipping_discount) * (sale.value / 100)
-            )
-            project.prices_distribution = Utils.getPrices({
-              price: Utils.round(
-                project.price_distribution + project.shipping_discount - discountDistrib
-              ),
-              currencies,
-              currency: project.currency
-            })
+            if (project.price_distribution) {
+              const discountDistrib = Utils.round(
+                (project.price_distribution + project.shipping_discount) * (sale.value / 100)
+              )
+              project.prices_distribution = Utils.getPrices({
+                price: Utils.round(
+                  project.price_distribution + project.shipping_discount - discountDistrib
+                ),
+                currencies,
+                currency: project.currency
+              })
+            }
             if (project.shipping_discount) {
               project.prices_ship_discount = project.shipping_discount
                 ? Utils.getPrices({
