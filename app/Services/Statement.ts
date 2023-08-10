@@ -708,7 +708,7 @@ class StatementService {
       .replace(/\[/gi, '-')
       .replace(/\]/gi, '-')
 
-    const ws = workbook.addWorksheet(name, {
+    const ws = workbook.addWorksheet(name.substring(0, 31), {
       views: [{ state: 'frozen', ySplit: 1, xSplit: 1 }, { showGridLines: false }]
     })
 
@@ -1350,6 +1350,9 @@ class StatementService {
     end: string
     send_statement?: boolean
   }) {
+    if (!params.end) {
+      params.end = moment().format('YYYY-MM-DD')
+    }
     let projects: any = DB()
       .select('project.id', 'vod.barcode', 'currency', 'artist_name', 'name')
       .table('project')
@@ -1369,7 +1372,7 @@ class StatementService {
     projects = await projects.all()
     const workbook = new Excel.Workbook()
 
-    const month = moment().format('YYYY-MM')
+    const month = moment(params.end).format('YYYY-MM')
     const wsMonthly: any = workbook.addWorksheet('Summary - Monthly')
     const wsAllTime: any = workbook.addWorksheet('Summary - All Time')
 
@@ -1383,6 +1386,7 @@ class StatementService {
         auto: params.auto,
         number: i
       })
+      i++
 
       const stock = await Stock.byProject({ project_id: project.id })
 
@@ -1481,7 +1485,6 @@ class StatementService {
           cell.font = { size: 14 }
           c++
         }
-        i++
       }
       y++
       c = 1
@@ -1503,7 +1506,7 @@ class StatementService {
     }
 
     setSummary({
-      title: `SUMMARY - MONTHLY - ${moment().format('MMMM YYYY')}`,
+      title: `SUMMARY - ${moment(params.end).format('MMMM YYYY')}`,
       ws: wsMonthly,
       type: 'monthly',
       columns: [
