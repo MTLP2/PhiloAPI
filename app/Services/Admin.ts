@@ -2373,6 +2373,14 @@ class Admin {
       )
       .leftJoin('customer', 'customer.id', 'user.customer_id')
 
+    if (params.search) {
+      users.where((query) => {
+        query.where('user.name', 'like', `%${params.search}%`)
+        query.orWhere('user.email', 'like', `%${params.search}%`)
+        query.orWhere('user.id', 'like', `%${params.search}%`)
+      })
+    }
+
     params.query = users
 
     if (!params.sort) {
