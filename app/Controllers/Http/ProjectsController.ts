@@ -9,6 +9,7 @@ import ApiError from 'App/ApiError'
 import DB from 'App/DB'
 import Utils from 'App/Utils'
 import Stats from 'App/Services/Stats'
+import User from 'App/Services/User'
 
 import { schema, validator } from '@ioc:Adonis/Core/Validator'
 
@@ -95,6 +96,21 @@ class ProjectsController {
     } catch (err) {
       return { error: err.message, validation: err.messages }
     }
+  }
+
+  async getProjectUsers({ params }) {
+    return User.getProjectUsers(params.id)
+  }
+
+  async editProjectUsers({ params, user }) {
+    await Utils.checkProjectOwner({ project_id: params.project_id, user: user })
+    return User.editProjectUsers(params)
+  }
+
+  async deleteProjectUsers({ params, user }) {
+    // params.user = user
+    await Utils.checkProjectOwner({ project_id: params.id, user: user })
+    return User.deleteProjectUsers(params)
   }
 
   async saveProject({ params, user }) {

@@ -121,6 +121,69 @@ class User {
     })
   }
 
+  static getProjectUsers = async (id: number) => {
+    const users = await DB()
+      .select('u.*', 'pu.project', 'pu.production', 'pu.statement', 'pu.id as pu_id')
+      .from('user as u')
+      .join('project_user as pu', 'pu.user_id', 'u.id')
+      .where('pu.project_id', id)
+      .all()
+    return users
+  }
+
+  static editProjectUsers = async (payload: {
+    id: number
+    user_id: number
+    project_id: number
+    project: boolean
+    production: boolean
+    statement: boolean
+  }) => {
+    const project = await DB('project').where('id', payload.project_id).first()
+    if (!project) {
+      throw new ApiError(404)
+    }
+    let item: any = await DB('project_user')
+      .where((query) => {
+        if (payload.id) {
+          query.where('id', payload.id)
+        }
+        query.orWhere((query) => {
+          query.where('project_id', payload.project_id)
+          query.where('user_id', payload.user_id)
+        })
+      })
+      .first()
+
+    if (!item) {
+      item = DB('project_user')
+    }
+
+    item.user_id = payload.user_id
+    item.project_id = payload.project_id
+    item.project = payload.project
+    item.production = payload.production
+    item.statement = payload.statement
+
+    await item.save()
+
+    return true
+  }
+
+  static deleteProjectUsers = async (payload: { project_id: number; user_id: number }) => {
+    const project = await DB('project').where('id', payload.project_id).first()
+    if (!project) {
+      throw new ApiError(404)
+    }
+
+    await DB('project_user')
+      .where('project_id', payload.project_id)
+      .where('user_id', payload.user_id)
+      .delete()
+
+    return true
+  }
+
   static getAllFeatured = async () => {
     const users = await DB().from('user').where('featured', true).all()
     return users
@@ -848,7 +911,7 @@ class User {
     return false
   }
 
-  static getProjects = async (userId, params) => {
+  static getProjects = async (userId, params?) => {
     let projects = DB()
       .select(
         'p.id',
@@ -857,7 +920,7 @@ class User {
         'artist_name',
         'slug',
         'styles',
-        'user_id',
+        'pu.user_id',
         'v.created_at',
         'v.updated_at',
         'type',
@@ -869,7 +932,8 @@ class User {
       )
       .from('project as p')
       .join('vod as v', 'v.project_id', 'p.id')
-      .where('user_id', userId)
+      .join('project_user as pu', 'pu.project_id', 'p.id')
+      .where('pu.user_id', userId)
       .where('is_delete', '!=', '1')
 
     if (params && params.search) {

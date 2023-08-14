@@ -1914,9 +1914,10 @@ class StatementService {
 
   static async sendStatements() {
     const projects = await DB()
-      .select('project.id', 'project.name', 'project.artist_name', 'vod.user_id', 'vod.barcode')
+      .select('project.id', 'project.name', 'project.artist_name', 'pu.user_id', 'vod.barcode')
       .from('vod')
       .join('project', 'project.id', 'vod.project_id')
+      .join('project_user as pu', 'pu.project_id', 'project.id')
       .where('send_statement', 1)
       .where((query) => {
         query.where('project.category', 'digital')
@@ -1925,6 +1926,7 @@ class StatementService {
           query.orWhereIn('vod.step', ['successful', 'in_progress'])
         })
       })
+      .where('pu.statement', 1)
       .all()
 
     const res: any[] = []

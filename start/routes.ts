@@ -552,6 +552,9 @@ Route.group(() => {
   Route.delete('/payments-artist/:id', 'AdminController.deletePaymentArtist')
   Route.get('/test-pressing/export', 'AdminController.extractTestPressing')
   Route.get('/logs', 'AdminController.getLogs')
+  Route.get('/projects/:id/users', 'ProjectsController.getProjectUsers')
+  Route.post('/projects/:project_id/users/:user_id', 'ProjectsController.editProjectUsers')
+  Route.delete('/projects/:project_id/users/:user_id', 'ProjectsController.deleteProjectUsers')
 
   Route.group(() => {
     Route.get('/:partner', 'AdminController.getShippingWeightByPartner')
