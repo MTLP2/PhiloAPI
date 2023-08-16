@@ -968,6 +968,12 @@ class Admin {
     if (params.weight !== vod.weight) {
       vod.weight_custom = true
     }
+    if (params.shipping_delay_reason === 'custom_reason') {
+      vod.custom_delay_message = JSON.stringify({
+        fr: params.custom_delay_message_fr,
+        en: params.custom_delay_message_en
+      })
+    }
     vod.weight = params.weight || null
     vod.is_notif = params.is_notif || null
     vod.show_stock = params.show_stock
