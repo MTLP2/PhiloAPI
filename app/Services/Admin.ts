@@ -1654,7 +1654,6 @@ class Admin {
         'vod.is_licence',
         'user.facebook_id',
         'user.soundcloud_id',
-        'om.id as order_manual_id',
         'feedback.rating as feedback_rating',
         'feedback.id as feedback_id',
         'oi.discount_code',
@@ -1665,7 +1664,6 @@ class Admin {
       .join('user', 'user.id', 'order.user_id')
       .join('project', 'project.id', 'oi.project_id')
       .join('vod', 'vod.project_id', 'oi.project_id')
-      .leftJoin('order_manual as om', 'om.order_shop_id', 'os.id')
       .leftJoin('customer as c', 'c.id', 'os.customer_id')
       .leftJoin('feedback', 'feedback.order_id', 'order.id')
       .where('os.step', '!=', 'creating')

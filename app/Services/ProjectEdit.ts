@@ -69,7 +69,9 @@ class ProjectEdit {
       pp = await pp.save()
       await DB('project_user').insert({
         project_id: pp.id,
-        user_id: params.user.user_id
+        user_id: params.user.user_id,
+        created_at: Utils.date(),
+        updated_at: Utils.date()
       })
     } else {
       await Utils.checkProjectOwner({ project_id: params.id, user: params.user })
