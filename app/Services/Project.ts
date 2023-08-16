@@ -722,6 +722,8 @@ class Project {
         'p.id',
         'p.name',
         'p.slug',
+        'p.artist_bio',
+        'p.artist_picture',
         'v.edition',
         'u.id as user_id',
         'u.name as user_name',
