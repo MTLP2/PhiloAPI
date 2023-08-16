@@ -6,6 +6,7 @@ import config from 'Config/index'
 import User from './User'
 import View from '@ioc:Adonis/Core/View'
 import fs from 'fs'
+import Artist from './Artist'
 
 class Vod {
   static save = async (params, pp) => {
@@ -223,13 +224,24 @@ class Vod {
     }
 
     if (params.profile_picture_data) {
-      await User.updatePicture(
-        vod.user_id,
+      // await User.updatePicture(
+      // vod.user_id,
+      // Buffer.from(
+      // params.profile_picture_data.replace(/^data:image\/(png|jpg|jpeg);base64,/, ''),
+      // 'base64'
+      // )
+      // )
+      await Artist.updateArtsitPicture(
+        vod.project_id,
         Buffer.from(
           params.profile_picture_data.replace(/^data:image\/(png|jpg|jpeg);base64,/, ''),
           'base64'
         )
       )
+    }
+
+    if (params.profile_about) {
+      Artist.updateArtistBio(vod.project_id, params.profile_about)
     }
 
     if (vod.step === 'creating' && params.type_save === 'publish') {
