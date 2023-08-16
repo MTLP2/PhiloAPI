@@ -222,16 +222,6 @@ class Vod {
         })
     }
 
-    if (params.artist_picture) {
-      await Artist.updatePicture(
-        vod.project_id,
-        Buffer.from(
-          params.artist_picture.replace(/^data:image\/(png|jpg|jpeg);base64,/, ''),
-          'base64'
-        )
-      )
-    }
-
     if (vod.step === 'creating' && params.type_save === 'publish') {
       vod.historic = vod.historic ? JSON.parse(vod.historic) : []
       if (vod.step !== 'checking') {
