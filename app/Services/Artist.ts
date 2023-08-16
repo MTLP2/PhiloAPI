@@ -4,13 +4,15 @@ import Utils from 'App/Utils'
 import sharp from 'sharp'
 
 class Artist {
-  static updateArtsitPicture = (projectId, buffer, social = '') => {
+  static updatePicture = (projectId, buffer) => {
     return new Promise(async (resolve, reject) => {
       const uid = Utils.uuid()
       const project = await DB('project').where('id', projectId).first()
       Storage.deleteFolder(
-        `profiles/${
-          project.picture !== '1' && project.picture !== '0' ? project.picture : project.id
+        `artists/${
+          project.artist_picture !== '1' && project.artist_picture !== '0'
+            ? project.artist_picture
+            : project.id
         }`
       )
 
@@ -20,27 +22,16 @@ class Artist {
         .jpeg({ quality: 100 })
         .toBuffer()
         .then((buffer) => {
-          Storage.upload(`profiles/${uid}/original.jpg`, buffer)
+          Storage.upload(`artists/${uid}/original.jpg`, buffer)
         })
         .catch((err) => reject(err))
 
-      if (social === 'soundcloud') {
-        const soundcloud = await sharp(await Storage.get('assets/images/partners/soundcloud.png'))
-          .resize({ width: 75 })
-          .toBuffer()
-        image = await image.composite([
-          {
-            input: soundcloud,
-            gravity: 'southwest'
-          }
-        ])
-      }
       image
         .resize(300, 300)
         .jpeg({ quality: 93 })
         .toBuffer()
         .then(async (buffer) => {
-          Storage.upload(`profiles/${uid}/cover.jpg`, buffer)
+          Storage.upload(`artists/${uid}/cover.jpg`, buffer)
 
           project.artist_picture = uid
           await project.save()
@@ -53,18 +44,12 @@ class Artist {
             .resize(50, 50)
             .toBuffer()
             .then((buffer) => {
-              Storage.upload(`profiles/${uid}/mini.jpg`, buffer)
+              Storage.upload(`artists/${uid}/mini.jpg`, buffer)
             })
             .catch((err) => reject(err))
         })
         .catch((err) => reject(err))
     })
-  }
-
-  static updateArtistBio = async (projectId, bio) => {
-    const project = await DB('project').where('id', projectId).first()
-    project.artist_bio = bio
-    await project.save()
   }
 }
 

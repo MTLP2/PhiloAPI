@@ -79,7 +79,6 @@ class ProjectEdit {
         throw new ApiError(404)
       }
     }
-
     pp.name = params.name
     pp.slug = Utils.slugify(`${params.artist_name} - ${pp.name}`).substring(0, 255)
     pp.artist_name = params.artist_name
@@ -96,6 +95,7 @@ class ProjectEdit {
     pp.master_id = params.master_id ? params.master_id : null
     pp.format = params.format
     pp.nb_vinyl = params.nb_vinyl
+    pp.artist_bio = params.artist_bio
     pp.updated_at = Utils.date()
     pp = await pp.save()
 

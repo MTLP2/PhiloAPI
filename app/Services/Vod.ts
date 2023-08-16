@@ -222,25 +222,14 @@ class Vod {
         })
     }
 
-    if (params.profile_picture_data) {
-      // await User.updatePicture(
-      // vod.user_id,
-      // Buffer.from(
-      // params.profile_picture_data.replace(/^data:image\/(png|jpg|jpeg);base64,/, ''),
-      // 'base64'
-      // )
-      // )
-      await Artist.updateArtsitPicture(
+    if (params.artist_picture) {
+      await Artist.updatePicture(
         vod.project_id,
         Buffer.from(
-          params.profile_picture_data.replace(/^data:image\/(png|jpg|jpeg);base64,/, ''),
+          params.artist_picture.replace(/^data:image\/(png|jpg|jpeg);base64,/, ''),
           'base64'
         )
       )
-    }
-
-    if (params.profile_about) {
-      Artist.updateArtistBio(vod.project_id, params.profile_about)
     }
 
     if (vod.step === 'creating' && params.type_save === 'publish') {
