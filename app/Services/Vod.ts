@@ -217,7 +217,8 @@ class Vod {
       await DB('user')
         .where('id', vod.user_id)
         .update({
-          name: params.profile_name || user.name
+          name: params.profile_name || user.name,
+          about_me: user.about_me
         })
     }
 
