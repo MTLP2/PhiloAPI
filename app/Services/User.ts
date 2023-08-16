@@ -1158,6 +1158,7 @@ static extractProjectOrders = async (params) => {
       )
       .whereNotNull('email')
       .where('unsubscribed', false)
+      .where('is_guest', false)
       .belongsTo('customer')
 
     if (params.id) {
