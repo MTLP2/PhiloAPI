@@ -889,7 +889,7 @@ class Admin {
       return false
     }
 
-    let notification = false
+    let notification: any = false
 
     if (wishlist.step === 'checking') {
       if (params.step === 'in_progress') {
@@ -901,7 +901,7 @@ class Admin {
     }
 
     if (notification) {
-      const data = {}
+      const data: any = {}
       data.type = notification
       data.user_id = wishlist.user_id
       data.project_id = project.id
@@ -928,7 +928,13 @@ class Admin {
     }
     const project = await DB('project').find(params.id)
 
-    if (params.user_id) {
+    if (params.user_id && vod.user_id !== params.user_id) {
+      await DB('project_user')
+        .where('user_id', vod.user_id)
+        .where('project_id', vod.project_id)
+        .update({
+          user_id: params.user_id
+        })
       vod.user_id = params.user_id
     }
 
