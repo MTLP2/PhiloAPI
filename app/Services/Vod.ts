@@ -6,7 +6,6 @@ import config from 'Config/index'
 import User from './User'
 import View from '@ioc:Adonis/Core/View'
 import fs from 'fs'
-import Artist from './Artist'
 
 class Vod {
   static save = async (params, pp) => {
