@@ -218,18 +218,8 @@ class Vod {
         .where('id', vod.user_id)
         .update({
           name: params.profile_name || user.name,
-          about_me: params.profile_about || user.about_me
+          about_me: user.about_me
         })
-    }
-
-    if (params.profile_picture_data) {
-      await User.updatePicture(
-        vod.user_id,
-        Buffer.from(
-          params.profile_picture_data.replace(/^data:image\/(png|jpg|jpeg);base64,/, ''),
-          'base64'
-        )
-      )
     }
 
     if (vod.step === 'creating' && params.type_save === 'publish') {
