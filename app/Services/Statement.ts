@@ -8,6 +8,7 @@ import Notification from 'App/Services/Notification'
 import Log from 'App/Services/Log'
 import DB from 'App/DB'
 import I18n from '@ioc:Adonis/Addons/I18n'
+import ApiError from 'App/ApiError'
 
 class StatementService {
   static async get(params: { id: number }) {
@@ -109,6 +110,7 @@ class StatementService {
     const workbook = new Excel.Workbook()
     await workbook.xlsx.load(file)
 
+    console.log(params.distributor)
     let data
     switch (params.distributor) {
       case 'PIAS':
@@ -145,6 +147,14 @@ class StatementService {
       case 'CoastToCoast':
         data = this.parseCoastToCoast(workbook)
         break
+      case 'Amplified':
+        data = this.parseAmplified(workbook)
+        break
+      case 'LoveDaRecords':
+        data = this.parseLoveDaRecords(workbook, currencies)
+        break
+      default:
+        throw new ApiError(404, 'Distributor not found')
     }
 
     data = Object.values(data)
@@ -630,6 +640,83 @@ class StatementService {
           returned: 0,
           total: total
         }
+      }
+    })
+
+    return data
+  }
+
+  static parseAmplified(workbook: any) {
+    const data = {}
+    const base = {
+      country_id: 'NL',
+      quantity: 0,
+      returned: 0,
+      total: 0
+    }
+    let worksheet = workbook.getWorksheet('DETAIL')
+    worksheet.eachRow((row) => {
+      const barcode = row.getCell('K').value
+      const quantity = row.getCell('O').value
+      const total = row.getCell('S').value
+
+      if (!data[barcode]) {
+        data[barcode] = {
+          ...base,
+          barcode: barcode
+        }
+      }
+      if (Number.isInteger(quantity) && total !== 0) {
+        data[barcode].quantity += quantity || 0
+        data[barcode].total += total
+      }
+    })
+
+    worksheet = workbook.getWorksheet('RETURNS')
+    worksheet.eachRow((row) => {
+      const barcode = row.getCell('K').value
+      const quantity = row.getCell('O').value
+      const total = row.getCell('S').value
+
+      if (!data[barcode]) {
+        data[barcode] = {
+          ...base,
+          barcode: barcode
+        }
+      }
+
+      if (Number.isInteger(quantity) && total !== 0) {
+        data[barcode].return += quantity || 0
+        data[barcode].total -= total
+      }
+    })
+
+    return data
+  }
+
+  static parseLoveDaRecords(workbook: any, currencies) {
+    const data = {}
+    const base = {
+      country_id: 'HK',
+      quantity: 0,
+      returned: 0,
+      total: 0
+    }
+    let worksheet = workbook.getWorksheet(1)
+    worksheet.eachRow((row) => {
+      const barcode = row.getCell('C').value
+      const quantity = row.getCell('K').value
+      const total = row.getCell('J').value / currencies.GBP
+
+      if (!data[barcode]) {
+        data[barcode] = {
+          ...base,
+          barcode: barcode
+        }
+      }
+      if (Number.isInteger(quantity) && total !== 0) {
+        data[barcode].quantity += quantity || 0
+        data[barcode].total += total
       }
     })
 
