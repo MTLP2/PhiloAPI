@@ -68,6 +68,7 @@ class Shop {
     bg_image?: string
     white_label?: boolean
     youtube?: string
+    group_shipment?: boolean
   }) {
     let item: ShopModel = <any>DB('shop')
 
@@ -101,6 +102,7 @@ class Shop {
     item.line_items = payload.line_items
     item.white_label = payload.white_label
     item.youtube = payload.youtube
+    item.group_shipment = payload.group_shipment
     item.updated_at = Utils.date()
 
     if (payload.logo) {
