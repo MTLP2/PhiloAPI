@@ -82,11 +82,12 @@ class ProjectEdit {
         throw new ApiError(404)
       }
     }
-    if (params.artist_picture) {
+
+    if (params.artist_picture_file) {
       await Artist.updatePicture(
         pp.id,
         Buffer.from(
-          params.artist_picture.replace(/^data:image\/(png|jpg|jpeg);base64,/, ''),
+          params.artist_picture_file.replace(/^data:image\/(png|jpg|jpeg);base64,/, ''),
           'base64'
         )
       )
