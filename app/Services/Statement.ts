@@ -656,12 +656,11 @@ class StatementService {
       returned: 0,
       total: 0
     }
-    console.log(currencies.USD)
     let worksheet = workbook.getWorksheet('DETAIL')
     worksheet.eachRow((row) => {
       const barcode = row.getCell('K').value
       const quantity = row.getCell('O').value
-      const total = row.getCell('S').value / currencies.USD
+      const total = row.getCell('U').value / currencies.USD
 
       if (!data[barcode]) {
         data[barcode] = {
@@ -707,9 +706,12 @@ class StatementService {
     }
     let worksheet = workbook.getWorksheet(1)
     worksheet.eachRow((row) => {
+      if (!row.getCell('J').value || !row.getCell('J').value.result) {
+        return
+      }
       const barcode = row.getCell('C').value
       const quantity = row.getCell('K').value
-      const total = row.getCell('J').value / currencies.HKD
+      const total = row.getCell('J').value.result / currencies.HKD
 
       if (!data[barcode]) {
         data[barcode] = {
