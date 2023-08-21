@@ -2856,7 +2856,7 @@ class Stats {
         for (const his of historic) {
           if (his.new === 'invoiced') {
             stats.invoiced[moment(his.date).format(format)]++
-            stats.turnover[moment(his.date).format(format)] += project.quote
+            stats.turnover_invoiced[moment(his.date).format(format)] += project.quote
           }
         }
       }
