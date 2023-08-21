@@ -1044,7 +1044,8 @@ class Project {
     })
   }
 
-  static getGroupShipment = async (id) => {
+  static getGroupShipment = async (id: number) => {
+    const res: any = []
     const items = await DB('item')
       .select(
         'item.project_id',
@@ -1060,12 +1061,29 @@ class Project {
         query.orWhere('item.related_id', id)
       })
       .all()
-    const res: any = []
     for (const item of items) {
       res.push(`${item.project_user_id}_${item.project_id}`)
       res.push(`${item.related_user_id}_${item.related_id}`)
     }
 
+    const projects = await DB('shop_project')
+      .select('vod.user_id', 'shop_project.project_id')
+      .join('shop', 'shop.id', 'shop_project.shop_id')
+      .join('vod', 'vod.project_id', 'shop_project.project_id')
+      .where('shop.group_shipment', true)
+      .whereIn('shop.id', (query) => {
+        query.select('shop.id')
+        query.from('shop')
+        query.join('shop_project', 'shop.id', 'shop_project.shop_id')
+        query.whereRaw(`shop_project.project_id = ${+id}`)
+      })
+      .all()
+
+    for (const project of projects) {
+      res.push(`${project.user_id}_${project.project_id}`)
+    }
+
+    console.log(res)
     return res
   }
 

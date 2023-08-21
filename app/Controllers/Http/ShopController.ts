@@ -61,6 +61,9 @@ class ShopController {
     if (payload.white_label && !(await Utils.isTeam(user.id))) {
       throw new ApiError(401)
     }
+    if (payload.group_shipment && !(await Utils.isTeam(user.id))) {
+      throw new ApiError(401)
+    }
     if (payload.id && !(await Shop.canEdit(payload.id, user.id))) {
       throw new ApiError(403)
     }
