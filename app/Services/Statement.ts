@@ -658,9 +658,12 @@ class StatementService {
     }
     let worksheet = workbook.getWorksheet('DETAIL')
     worksheet.eachRow((row) => {
+      if (!row.getCell('U').value || !row.getCell('U').value.result) {
+        return
+      }
       const barcode = row.getCell('K').value
       const quantity = row.getCell('O').value
-      const total = row.getCell('U').value / currencies.USD
+      const total = row.getCell('U').value.result / currencies.USD
 
       if (!data[barcode]) {
         data[barcode] = {
