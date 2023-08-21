@@ -2154,7 +2154,7 @@ class Project {
 
       outstanding +=
         s.income.all.dates[date] -
-        s.costs.all.dates[date] -
+        s.costs.all.dates[date] +
         s.payments.diggers.dates[date] -
         s.payments.artist.dates[date]
       s.outstanding.dates[date] = outstanding
