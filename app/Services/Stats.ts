@@ -2831,6 +2831,9 @@ class Stats {
       format = 'YYYY-MM'
     }
 
+    const currenciesDB = await Utils.getCurrenciesDb()
+    const currencies = await Utils.getCurrencies('EUR', currenciesDB)
+
     const dates = {}
 
     const now = start.clone()
@@ -2851,17 +2854,18 @@ class Stats {
       if (stats.created[date] === undefined) {
         continue
       }
+      const quote = project.quote * currencies[project.currency]
       if (project.historic) {
         const historic = JSON.parse(project.historic)
         for (const his of historic) {
           if (his.new === 'invoiced') {
             stats.invoiced[moment(his.date).format(format)]++
-            stats.turnover_invoiced[moment(his.date).format(format)] += project.quote
+            stats.turnover_invoiced[moment(his.date).format(format)] += quote
           }
         }
       }
       stats.created[date]++
-      stats.turnover[date] += project.quote
+      stats.turnover[date] += quote
     }
 
     return stats
