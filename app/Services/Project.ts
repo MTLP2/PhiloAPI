@@ -150,7 +150,11 @@ class Project {
     if (project.date_shipping) {
       project.estimated_shipping = new Date(project.date_shipping)
     } else {
-      project.estimated_shipping = new Date(project.end)
+      if (project.end) {
+        project.estimated_shipping = new Date(project.end)
+      } else {
+        project.estimated_shipping = new Date()
+      }
       project.estimated_shipping.setDate(project.estimated_shipping.getDate() + 150)
     }
 
