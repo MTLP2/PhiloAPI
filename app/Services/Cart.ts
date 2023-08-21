@@ -2451,6 +2451,30 @@ class Cart {
       .where('vod.stock', '>', 0)
       .all()
 
+    const shops = await DB('project as p')
+      .select('vod.user_id')
+      .join('vod', 'vod.project_id', 'p.id')
+      .whereIn(
+        'p.id',
+        projects.map((p) => p.id)
+      )
+      .where('step', 'in_progress')
+      .all()
+
+    const relatedProjects = await DB('project as p')
+      .select('p.id')
+      .join('vod', 'vod.project_id', 'p.id')
+      .whereIn(
+        'vod.user_id',
+        shops.map((p) => p.user_id)
+      )
+      .whereNotIn(
+        'p.id',
+        projects.map((p) => p.id)
+      )
+      .where('step', 'in_progress')
+      .all()
+
     const res = await DB('project as p')
       .select(
         'p.id',
@@ -2470,7 +2494,9 @@ class Cart {
       .join('vod', 'vod.project_id', 'p.id')
       .whereIn(
         'p.id',
-        [...items, ...accessories].map((p) => p.id)
+        relatedProjects.length > 0
+          ? [...items, ...relatedProjects].map((p) => p.id)
+          : [...items, ...accessories].map((p) => p.id)
       )
       .orderBy('category', 'desc')
       .whereIn('step', ['in_progress', 'private'])
