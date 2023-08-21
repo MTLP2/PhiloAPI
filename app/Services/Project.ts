@@ -900,6 +900,7 @@ class Project {
         'vod.price as related_price',
         'vod.prices',
         'vod.currency as related_currency',
+        'vod.picture_project',
         'vod.is_size',
         'vod.sizes',
         'vod.step',
