@@ -1245,6 +1245,10 @@ class AdminController {
   extractTestPressing({ params }) {
     return ProjectService.exportTestPressing(params)
   }
+
+  getStatsDirectPressing({ params }) {
+    return Stats.getDirectPressing(params)
+  }
 }
 
 export default AdminController
