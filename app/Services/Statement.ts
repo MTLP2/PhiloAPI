@@ -105,12 +105,11 @@ class StatementService {
 
     const currencies = await Utils.getCurrenciesApi(
       `${params.year}-${params.month}-01`,
-      'EUR,USD,GBP,AUD'
+      'EUR,USD,GBP,AUD,HKD'
     )
     const workbook = new Excel.Workbook()
     await workbook.xlsx.load(file)
 
-    console.log(params.distributor)
     let data
     switch (params.distributor) {
       case 'PIAS':
@@ -148,10 +147,13 @@ class StatementService {
         data = this.parseCoastToCoast(workbook)
         break
       case 'Amplified':
-        data = this.parseAmplified(workbook)
+        data = this.parseAmplified(workbook, currencies)
         break
       case 'LoveDaRecords':
         data = this.parseLoveDaRecords(workbook, currencies)
+        break
+      case 'Hollande':
+        data = this.parseHollande(workbook)
         break
       default:
         throw new ApiError(404, 'Distributor not found')
@@ -646,19 +648,20 @@ class StatementService {
     return data
   }
 
-  static parseAmplified(workbook: any) {
+  static parseAmplified(workbook: any, currencies) {
     const data = {}
     const base = {
-      country_id: 'NL',
+      country_id: 'US',
       quantity: 0,
       returned: 0,
       total: 0
     }
+    console.log(currencies.USD)
     let worksheet = workbook.getWorksheet('DETAIL')
     worksheet.eachRow((row) => {
       const barcode = row.getCell('K').value
       const quantity = row.getCell('O').value
-      const total = row.getCell('S').value
+      const total = row.getCell('S').value / currencies.USD
 
       if (!data[barcode]) {
         data[barcode] = {
@@ -694,7 +697,7 @@ class StatementService {
     return data
   }
 
-  static parseLoveDaRecords(workbook: any, currencies) {
+  static parseLoveDaRecords(workbook: any, currencies: any) {
     const data = {}
     const base = {
       country_id: 'HK',
@@ -706,7 +709,36 @@ class StatementService {
     worksheet.eachRow((row) => {
       const barcode = row.getCell('C').value
       const quantity = row.getCell('K').value
-      const total = row.getCell('J').value / currencies.GBP
+      const total = row.getCell('J').value / currencies.HKD
+
+      if (!data[barcode]) {
+        data[barcode] = {
+          ...base,
+          barcode: barcode
+        }
+      }
+      if (Number.isInteger(quantity) && total !== 0) {
+        data[barcode].quantity += quantity || 0
+        data[barcode].total += total
+      }
+    })
+
+    return data
+  }
+
+  static parseHollande(workbook: any) {
+    const data = {}
+    const base = {
+      country_id: 'NL',
+      quantity: 0,
+      returned: 0,
+      total: 0
+    }
+    let worksheet = workbook.getWorksheet(1)
+    worksheet.eachRow((row) => {
+      const barcode = row.getCell('B').value
+      const quantity = row.getCell('P').value
+      const total = row.getCell('S').value
 
       if (!data[barcode]) {
         data[barcode] = {
