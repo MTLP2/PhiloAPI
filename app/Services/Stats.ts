@@ -2851,18 +2851,22 @@ class Stats {
 
     for (const project of projects) {
       const date = moment(project.created_at).format(format)
-      if (stats.created[date] === undefined) {
-        continue
-      }
       const quote = project.quote * currencies[project.currency]
       if (project.historic) {
         const historic = JSON.parse(project.historic)
         for (const his of historic) {
+          const d = moment(his.date).format(format)
           if (his.new === 'invoiced') {
-            stats.invoiced[moment(his.date).format(format)]++
-            stats.turnover_invoiced[moment(his.date).format(format)] += quote
+            if (stats.invoiced[d] === undefined) {
+              continue
+            }
+            stats.invoiced[d]++
+            stats.turnover_invoiced[d] += quote
           }
         }
+      }
+      if (stats.created[date] === undefined) {
+        continue
       }
       stats.created[date]++
       stats.turnover[date] += quote
