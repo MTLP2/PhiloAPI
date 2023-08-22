@@ -2432,7 +2432,7 @@ class Cart {
       }
     }
 
-    const items = await DB('item')
+    const itemsQuery = DB('item')
       .select('item.related_id as id')
       .join('vod', 'vod.project_id', 'item.related_id')
       .whereNotNull('item.related_id')
@@ -2440,16 +2440,35 @@ class Cart {
         'item.project_id',
         projects.map((p) => p.id)
       )
-      .where('vod.stock', '>', 0)
       .all()
 
-    const accessories = await DB('project as p')
+    const relatedProjectsQuery = DB('shop_project')
+      .select('shop_project.project_id as id')
+      .join('shop', 'shop.id', 'shop_project.shop_id')
+      .join('vod', 'vod.project_id', 'shop_project.project_id')
+      .whereIn('shop.id', (query: any) => {
+        query.select('shop.id')
+        query.from('shop')
+        query.join('shop_project', 'shop.id', 'shop_project.shop_id')
+        query.whereIn(
+          'shop_project.project_id',
+          projects.map((p: { id: number }) => p.id)
+        )
+      })
+      .all()
+
+    const accessoriesQuery = DB('project as p')
       .select('p.id')
       .join('vod', 'vod.project_id', 'p.id')
       .where('category', 'accessory')
       .where('step', 'in_progress')
-      .where('vod.stock', '>', 0)
       .all()
+
+    const [items, relatedProjects, accessories] = await Promise.all([
+      itemsQuery,
+      relatedProjectsQuery,
+      accessoriesQuery
+    ])
 
     const res = await DB('project as p')
       .select(
@@ -2470,7 +2489,7 @@ class Cart {
       .join('vod', 'vod.project_id', 'p.id')
       .whereIn(
         'p.id',
-        [...items, ...accessories].map((p) => p.id)
+        [...items, ...relatedProjects, ...accessories].map((p) => p.id)
       )
       .orderBy('category', 'desc')
       .whereIn('step', ['in_progress', 'private'])

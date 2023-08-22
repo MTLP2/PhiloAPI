@@ -53,11 +53,15 @@ class ShopController {
         bg_image: schema.string.optional(),
         line_items: schema.number.optional(),
         white_label: schema.boolean.optional(),
-        youtube: schema.string.optional()
+        youtube: schema.string.optional(),
+        group_shipment: schema.boolean.optional()
       }),
       data: params
     })
     if (payload.white_label && !(await Utils.isTeam(user.id))) {
+      throw new ApiError(401)
+    }
+    if (payload.group_shipment && !(await Utils.isTeam(user.id))) {
       throw new ApiError(401)
     }
     if (payload.id && !(await Shop.canEdit(payload.id, user.id))) {

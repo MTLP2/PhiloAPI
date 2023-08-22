@@ -180,6 +180,7 @@ type ShopDb = {
   line_items?: number
   white_label?: boolean | null
   youtube?: string | null
+  group_shipment?: boolean | null
   created_at?: string | null
   updated_at?: string | null
 }

@@ -8,6 +8,7 @@ import Notification from 'App/Services/Notification'
 import Log from 'App/Services/Log'
 import DB from 'App/DB'
 import I18n from '@ioc:Adonis/Addons/I18n'
+import ApiError from 'App/ApiError'
 
 class StatementService {
   static async get(params: { id: number }) {
@@ -104,7 +105,7 @@ class StatementService {
 
     const currencies = await Utils.getCurrenciesApi(
       `${params.year}-${params.month}-01`,
-      'EUR,USD,GBP,AUD'
+      'EUR,USD,GBP,AUD,HKD'
     )
     const workbook = new Excel.Workbook()
     await workbook.xlsx.load(file)
@@ -145,6 +146,17 @@ class StatementService {
       case 'CoastToCoast':
         data = this.parseCoastToCoast(workbook)
         break
+      case 'Amplified':
+        data = this.parseAmplified(workbook, currencies)
+        break
+      case 'LoveDaRecords':
+        data = this.parseLoveDaRecords(workbook, currencies)
+        break
+      case 'Hollande':
+        data = this.parseHollande(workbook)
+        break
+      default:
+        throw new ApiError(404, 'Distributor not found')
     }
 
     data = Object.values(data)
@@ -630,6 +642,118 @@ class StatementService {
           returned: 0,
           total: total
         }
+      }
+    })
+
+    return data
+  }
+
+  static parseAmplified(workbook: any, currencies) {
+    const data = {}
+    const base = {
+      country_id: 'US',
+      quantity: 0,
+      returned: 0,
+      total: 0
+    }
+    let worksheet = workbook.getWorksheet('DETAIL')
+    worksheet.eachRow((row) => {
+      if (!row.getCell('U').value || !row.getCell('U').value.result) {
+        return
+      }
+      const barcode = row.getCell('K').value
+      const quantity = row.getCell('O').value
+      const total = row.getCell('U').value.result / currencies.USD
+
+      if (!data[barcode]) {
+        data[barcode] = {
+          ...base,
+          barcode: barcode
+        }
+      }
+      if (Number.isInteger(quantity) && total !== 0) {
+        data[barcode].quantity += quantity || 0
+        data[barcode].total += total
+      }
+    })
+
+    worksheet = workbook.getWorksheet('RETURNS')
+    worksheet.eachRow((row) => {
+      const barcode = row.getCell('K').value
+      const quantity = row.getCell('O').value
+      const total = row.getCell('S').value
+
+      if (!data[barcode]) {
+        data[barcode] = {
+          ...base,
+          barcode: barcode
+        }
+      }
+
+      if (Number.isInteger(quantity) && total !== 0) {
+        data[barcode].return += quantity || 0
+        data[barcode].total -= total
+      }
+    })
+
+    return data
+  }
+
+  static parseLoveDaRecords(workbook: any, currencies: any) {
+    const data = {}
+    const base = {
+      country_id: 'HK',
+      quantity: 0,
+      returned: 0,
+      total: 0
+    }
+    let worksheet = workbook.getWorksheet(1)
+    worksheet.eachRow((row) => {
+      if (!row.getCell('J').value || !row.getCell('J').value.result) {
+        return
+      }
+      const barcode = row.getCell('C').value
+      const quantity = row.getCell('K').value
+      const total = row.getCell('J').value.result / currencies.HKD
+
+      if (!data[barcode]) {
+        data[barcode] = {
+          ...base,
+          barcode: barcode
+        }
+      }
+      if (Number.isInteger(quantity) && total !== 0) {
+        data[barcode].quantity += quantity || 0
+        data[barcode].total += total
+      }
+    })
+
+    return data
+  }
+
+  static parseHollande(workbook: any) {
+    const data = {}
+    const base = {
+      country_id: 'NL',
+      quantity: 0,
+      returned: 0,
+      total: 0
+    }
+    let worksheet = workbook.getWorksheet(1)
+    worksheet.eachRow((row) => {
+      const barcode = row.getCell('B').value
+      const quantity = row.getCell('P').value
+      const total = row.getCell('S').value
+
+      if (!data[barcode]) {
+        data[barcode] = {
+          ...base,
+          barcode: barcode
+        }
+      }
+      if (Number.isInteger(quantity) && total !== 0) {
+        data[barcode].quantity += quantity || 0
+        data[barcode].total += total
       }
     })
 

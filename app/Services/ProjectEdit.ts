@@ -4,6 +4,7 @@ import Utils from 'App/Utils'
 import Artwork from './Artwork'
 import Song from './Song'
 import Vod from './Vod'
+import Artist from './Artist'
 
 class ProjectEdit {
   static find = async (params) => {
@@ -82,6 +83,15 @@ class ProjectEdit {
       }
     }
 
+    if (params.artist_picture_file) {
+      await Artist.updatePicture(
+        pp.id,
+        Buffer.from(
+          params.artist_picture_file.replace(/^data:image\/(png|jpg|jpeg);base64,/, ''),
+          'base64'
+        )
+      )
+    }
     pp.name = params.name
     pp.slug = Utils.slugify(`${params.artist_name} - ${pp.name}`).substring(0, 255)
     pp.artist_name = params.artist_name
@@ -98,6 +108,7 @@ class ProjectEdit {
     pp.master_id = params.master_id ? params.master_id : null
     pp.format = params.format
     pp.nb_vinyl = params.nb_vinyl
+    pp.artist_bio = params.artist_bio
     pp.updated_at = Utils.date()
     pp = await pp.save()
 

@@ -2801,6 +2801,79 @@ class Stats {
       .limit(params?.limit || 5)
       .all()
   }
+
+  static getDirectPressing: (payload: {
+    periodicity?: string
+    start?: string
+    end?: string
+  }) => Promise<{
+    created: { [key: string]: number }
+    invoiced: { [key: string]: number }
+    turnover: { [key: string]: number }
+    turnover_invoiced: { [key: string]: number }
+  }> = async (payload) => {
+    const projects = await DB('project')
+      .select('project.created_at', 'quote', 'currency', 'historic')
+      .join('vod', 'vod.project_id', 'project.id')
+      .where('type', 'direct_pressing')
+      .all()
+
+    const start = payload.start ? moment(payload.start) : moment().subtract(20, 'days')
+    const end = moment(payload.end || undefined)
+
+    let format
+    let periodicity
+    if (!payload.periodicity || payload.periodicity === 'day') {
+      periodicity = 'days'
+      format = 'YYYY-MM-DD'
+    } else {
+      periodicity = 'months'
+      format = 'YYYY-MM'
+    }
+
+    const currenciesDB = await Utils.getCurrenciesDb()
+    const currencies = await Utils.getCurrencies('EUR', currenciesDB)
+
+    const dates = {}
+
+    const now = start.clone()
+    while (now.isSameOrBefore(end)) {
+      dates[now.format(format)] = 0
+      now.add(1, periodicity)
+    }
+
+    const stats = {
+      created: { ...dates },
+      invoiced: { ...dates },
+      turnover: { ...dates },
+      turnover_invoiced: { ...dates }
+    }
+
+    for (const project of projects) {
+      const date = moment(project.created_at).format(format)
+      const quote = project.quote * currencies[project.currency]
+      if (project.historic) {
+        const historic = JSON.parse(project.historic)
+        for (const his of historic) {
+          const d = moment(his.date).format(format)
+          if (his.new === 'invoiced') {
+            if (stats.invoiced[d] === undefined) {
+              continue
+            }
+            stats.invoiced[d]++
+            stats.turnover_invoiced[d] += quote
+          }
+        }
+      }
+      if (stats.created[date] === undefined) {
+        continue
+      }
+      stats.created[date]++
+      stats.turnover[date] += quote
+    }
+
+    return stats
+  }
 }
 
 export default Stats

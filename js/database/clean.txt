@@ -1,2 +1,0 @@
-UPDATE user SET password = null;
-UPDATE box_code SET code = null;

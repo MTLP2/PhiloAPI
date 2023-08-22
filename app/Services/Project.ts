@@ -150,7 +150,11 @@ class Project {
     if (project.date_shipping) {
       project.estimated_shipping = new Date(project.date_shipping)
     } else {
-      project.estimated_shipping = new Date(project.end)
+      if (project.end) {
+        project.estimated_shipping = new Date(project.end)
+      } else {
+        project.estimated_shipping = new Date()
+      }
       project.estimated_shipping.setDate(project.estimated_shipping.getDate() + 150)
     }
 
@@ -722,6 +726,8 @@ class Project {
         'p.id',
         'p.name',
         'p.slug',
+        'p.artist_bio',
+        'p.artist_picture',
         'v.edition',
         'u.id as user_id',
         'u.name as user_name',
@@ -894,6 +900,7 @@ class Project {
         'vod.price as related_price',
         'vod.prices',
         'vod.currency as related_currency',
+        'vod.picture_project',
         'vod.is_size',
         'vod.sizes',
         'vod.step',
@@ -1038,7 +1045,8 @@ class Project {
     })
   }
 
-  static getGroupShipment = async (id) => {
+  static getGroupShipment = async (id: number) => {
+    const res: any = []
     const items = await DB('item')
       .select(
         'item.project_id',
@@ -1054,12 +1062,29 @@ class Project {
         query.orWhere('item.related_id', id)
       })
       .all()
-    const res: any = []
     for (const item of items) {
       res.push(`${item.project_user_id}_${item.project_id}`)
       res.push(`${item.related_user_id}_${item.related_id}`)
     }
 
+    const projects = await DB('shop_project')
+      .select('vod.user_id', 'shop_project.project_id')
+      .join('shop', 'shop.id', 'shop_project.shop_id')
+      .join('vod', 'vod.project_id', 'shop_project.project_id')
+      .where('shop.group_shipment', true)
+      .whereIn('shop.id', (query) => {
+        query.select('shop.id')
+        query.from('shop')
+        query.join('shop_project', 'shop.id', 'shop_project.shop_id')
+        query.whereRaw(`shop_project.project_id = ${+id}`)
+      })
+      .all()
+
+    for (const project of projects) {
+      res.push(`${project.user_id}_${project.project_id}`)
+    }
+
+    console.log(res)
     return res
   }
 
@@ -2129,7 +2154,7 @@ class Project {
 
       outstanding +=
         s.income.all.dates[date] -
-        s.costs.all.dates[date] -
+        s.costs.all.dates[date] +
         s.payments.diggers.dates[date] -
         s.payments.artist.dates[date]
       s.outstanding.dates[date] = outstanding

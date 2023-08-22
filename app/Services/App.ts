@@ -426,7 +426,7 @@ class App {
       const project = await Project.find(n.project_id, { user_id: 0 })
       if (project.id) {
         const vod = await DB('vod')
-          .select('message_order', 'shipping_delay_reason', 'custom_delay_message')
+          .select('message_order', 'shipping_delay_reason', 'shipping_delay_message')
           .where('project_id', project.id)
           .first()
         data.project = `${project.artist_name} - ${project.name}`
@@ -443,7 +443,7 @@ class App {
           // Other reason is set to not display anything
           data.shipping_delay_reason =
             vod.shipping_delay_reason === 'custom_reason'
-              ? JSON.parse(vod.custom_delay_message)[data.user.lang]
+              ? JSON.parse(vod.shipping_delay_message)[data.user.lang]
               : vod.shipping_delay_reason === 'other'
               ? null
               : I18n.locale(data.lang).formatMessage(`project.${vod.shipping_delay_reason}`)
