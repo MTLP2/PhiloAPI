@@ -5143,6 +5143,51 @@ class Admin {
 
     return true
   }
+
+  static importOrders = async (payload: { file: string }) => {
+    const file = Buffer.from(payload.file, 'base64')
+    const workbook = new Excel.Workbook()
+    await workbook.xlsx.load(file)
+
+    const worksheet = workbook.getWorksheet(1)
+
+    const barcodes: { [key: number]: boolean } = {}
+
+    const orders: any[] = []
+
+    worksheet.eachRow((row) => {
+      const data = {
+        barcode: row.getCell('A').value,
+        quantity: row.getCell('B').value,
+        firstname: row.getCell('C').value,
+        lastname: row.getCell('D').value,
+        address: row.getCell('E').value,
+        city: row.getCell('F').value,
+        state: row.getCell('G').value,
+        zip_code: row.getCell('H').value,
+        country: row.getCell('I').value
+      }
+
+      if (!data.barcode || !+data.barcode || !data.quantity || !+data.quantity) return
+
+      barcodes[data.barcode as number] = true
+      orders.push(data)
+    })
+
+    const projects = await DB('project')
+      .select('project_id', 'artist_name', 'name', 'picture', 'barcode', 'picture_project')
+      .join('vod', 'vod.project_id', 'project.id')
+      .whereIn('barcode', Object.keys(barcodes))
+      .all()
+
+    for (const d in orders) {
+      orders[d] = {
+        ...orders[d],
+        ...projects.find((p: { barcode: string }) => +p.barcode === +orders[d].barcode)
+      }
+    }
+    return orders
+  }
 }
 
 export default Admin

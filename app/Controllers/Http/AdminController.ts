@@ -1249,6 +1249,10 @@ class AdminController {
   getStatsDirectPressing({ params }) {
     return Stats.getDirectPressing(params)
   }
+
+  importOrders({ params }) {
+    return Admin.importOrders(params)
+  }
 }
 
 export default AdminController
