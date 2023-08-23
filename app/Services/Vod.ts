@@ -11,9 +11,6 @@ class Vod {
   static save = async (params, pp) => {
     let vod = await DB('vod').where('project_id', pp.id).first()
 
-    vod.quote = params.quote
-    vod.currency = params.currency
-
     if (!vod) {
       vod = await DB('vod')
 
@@ -72,6 +69,8 @@ class Vod {
       }
     }
 
+    vod.quote = params.quote
+    vod.currency = params.currency
     if (vod.user_id === null && params.user.user_id !== 0) {
       vod.user_id = params.user.user_id
     }
