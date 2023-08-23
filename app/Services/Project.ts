@@ -2450,6 +2450,59 @@ class Project {
       }
     ])
   }
+
+  static async exportDirectPressing(params: {start: string, end: string}) {
+    const projects = await DB('project')
+      .select(
+        'vod.*',
+        'project.*',
+        'user.email as user_email',
+        'customer.phone as phone',
+        'customer.email as customer_email',
+        'customer.country_id as customer_country',
+        'customer.phone as customer_phone',
+        DB.raw(`CONCAT(customer.firstname, ' ', customer.lastname) AS customer_name`),
+        'resp_prod.name as resp_prod',
+        'com.name as com',
+        'vod.comment'
+      )
+      .leftJoin('vod', 'vod.project_id', 'project.id')
+      .leftJoin('user', 'user.id', 'vod.user_id')
+      .leftJoin('customer', 'vod.customer_id', 'customer.id')
+      .leftJoin('user as resp_prod', 'resp_prod.id', 'vod.resp_prod_id')
+      .leftJoin('user as com', 'com.id', 'vod.com_id')
+      .where('project.is_delete', '!=', '1')
+      .where('project.created_at', '>=', params.start)
+      .where('project.created_at', '<=', params.end)
+      .where('vod.type', 'direct_pressing')
+      .whereNotNull('vod.user_id')
+      .all()
+
+      return Utils.arrayToXlsx([
+        {
+          worksheetName: 'Direct Pressing',
+          columns: [
+            { header: 'ID', key: 'project_id', width: 15 },
+            { header: 'Origin', key: 'origin', width: 15 },
+            { header: 'Pays', key: 'customer_country', width: 15 },
+            { header: 'Email', key: 'customer_email', width: 30 },
+            { header: 'Email User', key: 'user_email', width: 30 },
+            { header: 'Nom', key: 'customer_name', width: 30 },
+            { header: 'Téléphone', key: 'customer_phone', width: 15 },
+            { header: 'Step', key: 'step', width: 15 },
+            { header: 'Status', key: 'status', width: 15 },
+            { header: 'Nom du Projet', key: 'name', width: 15 },
+            { header: 'Quantité', key: 'stage1', width: 15 },
+            { header: 'Quote', key: 'quote', width: 15 },
+            { header: 'Resp. Prod', key: 'resp_prod.name', width: 15 },
+            { header: 'Com', key: 'com.name', width: 15 },
+            { header: 'Comment', key: 'comment', width: 40 },
+            { header: 'Date de début', key: 'created_at', width: 30 }
+          ],
+          data: projects
+        }
+      ])
+  }
 }
 
 export default Project

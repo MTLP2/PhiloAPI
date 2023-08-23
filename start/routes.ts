@@ -552,6 +552,7 @@ Route.group(() => {
   Route.get('/payments-artist/:id/download', 'AdminController.downloadPaymentArtist')
   Route.delete('/payments-artist/:id', 'AdminController.deletePaymentArtist')
   Route.get('/test-pressing/export', 'AdminController.extractTestPressing')
+  Route.get('/direct-pressing/export', 'AdminController.extractDirectPressing')
   Route.get('/logs', 'AdminController.getLogs')
   Route.get('/projects/:id/users', 'ProjectsController.getProjectUsers')
   Route.post('/projects/:project_id/users/:user_id', 'ProjectsController.editProjectUsers')
