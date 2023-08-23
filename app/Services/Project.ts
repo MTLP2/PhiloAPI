@@ -2494,8 +2494,8 @@ class Project {
             { header: 'Nom du Projet', key: 'name', width: 15 },
             { header: 'Quantité', key: 'stage1', width: 15 },
             { header: 'Quote', key: 'quote', width: 15 },
-            { header: 'Resp. Prod', key: 'resp_prod.name', width: 15 },
-            { header: 'Com', key: 'com.name', width: 15 },
+            { header: 'Resp. Prod', key: 'resp_prod', width: 15 },
+            { header: 'Com', key: 'com', width: 15 },
             { header: 'Comment', key: 'comment', width: 40 },
             { header: 'Date de début', key: 'created_at', width: 30 }
           ],
