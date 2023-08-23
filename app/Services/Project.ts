@@ -2451,7 +2451,7 @@ class Project {
     ])
   }
 
-  static async exportDirectPressing(params: {start: string, end: string}) {
+  static async exportDirectPressing(params: { start: string, end: string }) {
     const projects = await DB('project')
       .select(
         'vod.*',
