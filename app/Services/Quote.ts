@@ -1577,7 +1577,7 @@ class Quote {
       }
     }
 
-    quote.energy_cost = 0.2 * params.quantity * params.nb_vinyl
+    quote.energy_cost = 0.065 * params.quantity * params.nb_vinyl
 
     return quote
   }
