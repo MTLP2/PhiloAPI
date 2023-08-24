@@ -242,7 +242,7 @@ class Quote {
         return false
       }
       feeProd = data.fee
-    } else if (data.id) {
+    } else if (data.id && data.type !== 'direct_pressing') {
       feeProd = 20
     }
 
