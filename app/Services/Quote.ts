@@ -298,8 +298,12 @@ class Quote {
           comment: `x ${quantity}`
         })
       }
-
-      let price = line[`q${qty}`] * quantity
+      let price
+      if (!line) {
+        price = false
+      } else {
+        price = line[`q${qty}`] * quantity
+      }
       price = price * (1 + feeProd / 100)
       if (data.factory === 'vdp') {
         price = price * 0.91
