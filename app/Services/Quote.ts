@@ -1396,7 +1396,6 @@ class Quote {
     })
 
     // numbered
-    console.log(params.numbered)
     if (params.quantity < 300) {
       quote.prices.numbered.numbered = false
     } else {
