@@ -1255,7 +1255,7 @@ class AdminController {
   }
 
   importOrders({ params }) {
-    return Admin.importOrders(params)
+    return Order.importOrders(params)
   }
 }
 

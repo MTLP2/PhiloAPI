@@ -1351,6 +1351,136 @@ static toJuno = async (params) => {
     return { success: true }
   }
 
+  static importOrders = async (payload: { file: string; action: string }) => {
+    const file = Buffer.from(payload.file, 'base64')
+    const workbook = new Excel.Workbook()
+    await workbook.xlsx.load(file)
+
+    const worksheet = workbook.getWorksheet(1)
+
+    const barcodes: { [key: number]: boolean } = {}
+
+    const orders: any[] = []
+
+    worksheet.eachRow((row) => {
+      const data = {
+        barcode: row.getCell('A').value,
+        quantity: row.getCell('B').value,
+        firstname: row.getCell('C').value,
+        lastname: row.getCell('D').value,
+        phone: row.getCell('E').value,
+        address: row.getCell('F').value,
+        city: row.getCell('G').value,
+        state: row.getCell('H').value,
+        zip_code: row.getCell('I').value,
+        country: row.getCell('J').value
+      }
+
+      if (!data.barcode || !+data.barcode || !data.quantity || !+data.quantity) return
+
+      barcodes[data.barcode as number] = true
+      orders.push(data)
+    })
+
+    const projects = await DB('project')
+      .select('project_id', 'artist_name', 'name', 'picture', 'barcode', 'picture_project')
+      .join('vod', 'vod.project_id', 'project.id')
+      .whereIn('barcode', Object.keys(barcodes))
+      .all()
+
+    for (const d in orders) {
+      orders[d] = {
+        ...orders[d],
+        ...projects.find((p: { barcode: string }) => +p.barcode === +orders[d].barcode)
+      }
+    }
+
+    const userId = 182080
+    const tt = {}
+    const transporters = {}
+    let i = 0
+    if (payload.action === 'import') {
+      for (const item of orders) {
+        const order = await DB('order').insert({
+          user_id: userId,
+          status: 'external',
+          currency: 'EUR',
+          created_at: Utils.date(),
+          updated_at: Utils.date()
+        })
+
+        if (!tt[item.country]) {
+          tt[item.country] = 0
+        }
+        tt[item.country] += +item.quantity
+
+        if (!transporters[item.country]) {
+          const trans: any = await Cart.calculateShipping({
+            quantity: 1,
+            weight: 200,
+            insert: 1,
+            currency: 'EUR',
+            country_id: item.country,
+            transporters: {
+              daudin: true,
+              whiplash: true,
+              whiplash_uk: true
+            }
+          })
+          transporters[item.country] = trans.transporter
+        }
+
+        const customer = await DB('customer').insert({
+          type: 'individual',
+          firstname: item.firstname,
+          lastname: item.lastname,
+          address: item.address,
+          city: item.city,
+          zip_code: item.zip_code,
+          state: item.state,
+          country_id: item.country,
+          phone: item.phone,
+          created_at: Utils.date(),
+          updated_at: Utils.date()
+        })
+        const orderShop = await DB('order_shop').insert({
+          user_id: userId,
+          step: 'confirmed',
+          type: 'vod',
+          order_id: order,
+          customer_id: customer,
+          is_paid: true,
+          is_external: true,
+          total: 0,
+          sub_total: 0,
+          shipping: 0,
+          shipping_type: 'standard',
+          transporter: transporters[item.country],
+          currency: 'EUR',
+          currency_rate: 1,
+          created_at: Utils.date(),
+          updated_at: Utils.date()
+        })
+
+        await DB('order_item').insert({
+          order_id: order,
+          order_shop_id: orderShop,
+          project_id: item.project_id,
+          quantity: item.quantity,
+          price: 0,
+          currency: 'EUR',
+          currency_rate: 1,
+          created_at: Utils.date(),
+          updated_at: Utils.date()
+        })
+        i++
+      }
+      return { count: i, success: true }
+    }
+
+    return orders
+  }
+
   static createExternalOrders = async () => {
     const workbook = new Excel.Workbook()
     await workbook.xlsx.readFile('orders.xlsx')
