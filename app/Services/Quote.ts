@@ -136,7 +136,12 @@ class Quote {
 
     params.label_color = params.label || 'color'
 
-    for (const f of ['sna', 'sna2', 'vdp']) {
+    const ff = ['sna', 'vdp']
+    if (params.factory === 'sna2') {
+      ff.push('sna2')
+    }
+
+    for (const f of ff) {
       factories[f] = await Quote.calculateFactory({
         ...params,
         factory: f
@@ -331,6 +336,7 @@ class Quote {
       prices = quote.prices
       delete quote.prices
     }
+    console.log(quote)
 
     if (data.project) {
       if (!quote.test_pressing) {
