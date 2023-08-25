@@ -402,7 +402,7 @@ class Digital {
       await DB('song').where('id', params.id).update({
         listenable: true
       })
-      this.compressToMP3(params)
+      await this.compressToMP3(params)
     }
     return {
       ...res,
