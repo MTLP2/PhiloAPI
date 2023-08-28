@@ -47,7 +47,7 @@ class Vod {
       })
 
       if (params.type === 'direct_pressing') {
-        const html = await View.render('quote', {
+        const html = await View.render('emails.quote', {
           ...params,
           total: params.costs.at(-1).value,
           discount: Utils.round(params.costs.at(-1).value / 1.05),
