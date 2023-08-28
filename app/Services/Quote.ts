@@ -16,7 +16,7 @@ type CostPayloads = {
 class Quote {
   static async all(params) {
     params.query = DB('quote')
-      .select('quote.*', 'user.name as resp')
+      .select('quote.*', 'project.name', 'project.artist_name', 'user.name as resp')
       .leftJoin('user', 'user.id', 'quote.resp_id')
       .leftJoin('project', 'project.id', 'quote.project_id')
 
@@ -59,25 +59,10 @@ class Quote {
     quote.sub_total = params.sub_total
     quote.total = params.total
     quote.lang = params.lang
-    quote.resp_id = params.resp_id
-    quote.project_id = params.project_id
-    quote.lines = JSON.stringify(
-      params.lines
-        .filter((i) => i.label.length > 0 && i.value > 0)
-        .sort((a, b) => {
-          if (a.position > b.position) {
-            return 1
-          } else if (a.position < b.position) {
-            return -1
-          }
-        })
-        .map((item, i) => {
-          return {
-            ...item,
-            position: i + 1
-          }
-        })
-    )
+    quote.resp_id = params.resp_id || null
+    quote.project_id = params.project_id || null
+    quote.lines = JSON.stringify(params.lines)
+    console.log(params.lines)
     quote.updated_at = Utils.date()
     quote.updated_at = Utils.date()
 
@@ -86,40 +71,59 @@ class Quote {
     return quote
   }
 
-  static async download(id, toHtml = false) {
-    const quote = await Quote.find(id)
+  static async download(payload: { id: number; lang?: string; toHtml?: boolean }) {
+    payload = {
+      lang: 'en',
+      toHtml: false,
+      ...payload
+    }
+    const quote: any = await DB('quote')
+      .select(
+        'quote.*',
+        'customer.firstname',
+        'customer.lastname',
+        'customer.address',
+        'customer.zip_code',
+        'customer.city',
+        'customer.country_id',
+        'customer.email',
+        'customer.phone'
+      )
+      .where('quote.id', payload.id)
+      .leftJoin('vod', 'vod.project_id', 'quote.project_id')
+      .leftJoin('customer', 'customer.id', 'vod.customer_id')
+      .first()
 
-    const number = `${new Date().getFullYear().toString().substr(-2)}${quote.id}`
-    const name = `${quote.lang === 'fr' ? 'Devis' : 'Quote'} ${number} - ${quote.client}.pdf`
+    const name = `${payload.lang === 'fr' ? 'Devis' : 'Quote'} ${quote.client}.pdf`
+    quote.lines = JSON.parse(quote.lines)
 
-    const currency = I18n.locale(quote.lang).formatMessage(`base.${quote.currency}`)
-
-    for (const i in quote.lines) {
-      if (!isNaN(quote.lines[i].value)) {
-        quote.lines[i].value = `${Utils.round(
-          +quote.lines[i].value + +quote.lines[i].value * (quote.fee / 100),
-          0
-        )} ${currency}`
-      }
+    const address: string[] = []
+    if (quote.address) {
+      address.push(quote.address)
+    }
+    if (quote.zip_code) {
+      address.push(`${quote.zip_code}, ${quote.city}, ${quote.country_id}`)
     }
 
     const html = await View.render('quote', {
-      date: Utils.date({ time: false }),
-      fee: `1.${('0' + quote.fee).slice(-2)}`,
-      round: Utils.round,
-      quote: quote,
-      number: number,
-      lang: quote.lang,
-      currency: currency
+      ...quote,
+      client: quote.client || `${quote.firstname} ${quote.lastname}`,
+      address: address,
+      date: new Intl.DateTimeFormat(payload.lang).format(new Date(quote.created_at)),
+      t: (v: string) => I18n.locale(payload.lang as string).formatMessage(v),
+      price: (v: number) => Utils.price(v, quote.currency, payload.lang)
     })
 
-    if (toHtml) {
-      return html
+    if (payload.toHtml) {
+      return {
+        name,
+        html: html
+      }
     }
 
     const pdf = await Utils.toPdf(html)
     return {
-      name: name,
+      name,
       data: pdf
     }
   }
