@@ -1446,6 +1446,30 @@ class Utils {
       picture: 'https://ca.slack-edge.com/T0UHRUB19-U0400N4T139-5922e3df99a0-512'
     }
   ]
+
+  static price = (price, currency = 'EUR', lang = 'en') => {
+    if (isNaN(price)) {
+      return '-'
+    }
+    let p
+    if (currency) {
+      p = new Intl.NumberFormat(lang, {
+        style: 'currency',
+        currency: currency,
+        currencyDisplay: 'symbol',
+        minimumFractionDigits: 0,
+        maximunFractionDigits: 2
+      }).format(price)
+    } else {
+      p = new Intl.NumberFormat(lang).format(price)
+    }
+
+    if (lang === 'en') {
+      return p
+    } else {
+      return p.replace('$US', '$').replace('£GB', '£').replace('£GB', '£').replace('$AU', '$A')
+    }
+  }
 }
 
 export default Utils
