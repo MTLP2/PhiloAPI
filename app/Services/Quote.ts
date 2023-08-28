@@ -293,7 +293,9 @@ class Quote {
       if (line && line.type === 'F') {
         quantity = params.nb_vinyl
       } else {
-        quantity = payload.onceByCopy ? params.quantity + 5 : params.quantity * params.nb_vinyl + 5
+        quantity = payload.onceByCopy
+          ? params.quantity + 5
+          : (params.quantity + 5) * params.nb_vinyl
       }
       if (payload.type && payload.active) {
         logs.push({
@@ -336,7 +338,6 @@ class Quote {
       prices = quote.prices
       delete quote.prices
     }
-    console.log(quote)
 
     if (data.project) {
       if (!quote.test_pressing) {
@@ -1114,7 +1115,7 @@ class Quote {
       getCost({
         l: {
           '12"': 48,
-          '10"': 48,
+          '10"': 49,
           '7"': 51
         },
         type: 'type_vinyl',
@@ -1142,12 +1143,6 @@ class Quote {
         active: params.type_vinyl === 'splatter'
       }) +
       getCost({
-        l: 106,
-        type: 'type_vinyl',
-        option: 'splatter',
-        active: params.type_vinyl === 'splatter'
-      }) +
-      getCost({
         l: 107,
         type: 'type_vinyl',
         option: 'splatter',
@@ -1161,12 +1156,6 @@ class Quote {
         type: 'type_vinyl',
         option: 'marble',
         active: params.type_vinyl === 'marble'
-      }) +
-      getCost({
-        l: 106,
-        type: 'type_vinyl',
-        option: 'marble',
-        active: params.type_vinyl === 'marble'
       })
 
     quote.prices.type_vinyl.asidebside =
@@ -1176,24 +1165,16 @@ class Quote {
         type: 'type_vinyl',
         option: 'asidebside',
         active: params.type_vinyl === 'asidebside'
-      }) +
-      getCost({
-        l: 106,
-        type: 'type_vinyl',
-        option: 'asidebside',
-        active: params.type_vinyl === 'asidebside'
       })
 
     quote.prices.type_vinyl.cloudy =
       quote.prices.type_vinyl.base +
       getCost({
-        l: 85,
-        type: 'type_vinyl',
-        option: 'cloudy',
-        active: params.type_vinyl === 'cloudy'
-      }) +
-      getCost({
-        l: 106,
+        l: {
+          '12"': 85,
+          '10"': 86,
+          '7"': 88
+        },
         type: 'type_vinyl',
         option: 'cloudy',
         active: params.type_vinyl === 'cloudy'
@@ -1206,12 +1187,6 @@ class Quote {
         type: 'type_vinyl',
         option: 'colorincolor',
         active: params.type_vinyl === 'colorincolor'
-      }) +
-      getCost({
-        l: 106,
-        type: 'type_vinyl',
-        option: 'colorincolor',
-        active: params.type_vinyl === 'colorincolor'
       })
 
     quote.prices.type_vinyl.halfandhalf =
@@ -1221,14 +1196,8 @@ class Quote {
         type: 'type_vinyl',
         option: 'halfandhalf',
         active: params.type_vinyl === 'halfandhalf'
-      }) +
-      getCost({
-        l: 106,
-        type: 'type_vinyl',
-        option: 'halfandhalf',
-        active: params.type_vinyl === 'halfandhalf'
       })
-    quote.type_vinyl += quote.prices.type_vinyl[params.type_vinyl] || 0
+    quote.type_vinyl += quote.prices.type_vinyl[params.type_vinyl]
 
     quote.prices.label_color.white = getCost({
       l: 125,
@@ -1294,7 +1263,7 @@ class Quote {
       option: 'white_antistatic',
       active: params.inner_sleeve === 'white_antistatic'
     })
-    quote.inner_sleeve = quote.prices.inner_sleeve[params.inner_sleeve] || 0
+    quote.inner_sleeve = quote.prices.inner_sleeve[params.inner_sleeve]
 
     quote.prices.sleeve.pvc = getCost({
       l: {
@@ -1309,9 +1278,9 @@ class Quote {
     })
     quote.prices.sleeve.discobag = getCost({
       l: {
-        '12"': 170,
-        '10"': 171,
-        '7"': 178
+        '12"': 192,
+        '10"': 198,
+        '7"': 200
       },
       type: 'sleeve',
       option: 'discobag',
@@ -1385,7 +1354,7 @@ class Quote {
         active: params.sleeve === 'color'
       })
     }
-    quote.sleeve = quote.prices.sleeve[params.sleeve] || 0
+    quote.sleeve = quote.prices.sleeve[params.sleeve]
 
     // insert records
     quote.insert_sleeve = getCost({
@@ -1420,7 +1389,7 @@ class Quote {
       onceByCopy: true,
       active: params.numbered === 'hand_numbered'
     })
-    quote.numbered = quote.prices.numbered[params.numbered] || 0
+    quote.numbered = quote.prices.numbered[params.numbered]
 
     // shrink
     quote.prices.shrink['1'] = getCost({
@@ -1430,7 +1399,7 @@ class Quote {
       onceByCopy: true,
       active: params.shrink === 1
     })
-    quote.shrink = quote.prices.shrink[params.shrink] || 0
+    quote.shrink = quote.prices.shrink[params.shrink]
 
     quote.prices.print_finish.returned_cardboard = getCost({
       l: 335,
@@ -1439,7 +1408,7 @@ class Quote {
       onceByCopy: true,
       active: params.print_finish === 'returned_cardboard'
     })
-    quote.print_finish = quote.prices.print_finish[params.print_finish] || 0
+    quote.print_finish = quote.prices.print_finish[params.print_finish]
 
     // insert
     if (params.insert && params.insert !== 'none') {
@@ -1521,7 +1490,7 @@ class Quote {
         onceByCopy: true,
         active: params.insert === 'two_sides_printed'
       })
-    quote.insert = quote.prices.insert[params.insert] || 0
+    quote.insert = quote.prices.insert[params.insert]
 
     quote.prices.sticker.sticker =
       getCost({
@@ -1553,7 +1522,7 @@ class Quote {
         onceByCopy: true,
         active: params.sticker === 'barcode_sticker'
       })
-    quote.sticker = quote.prices.sticker[params.sticker] || 0
+    quote.sticker = quote.prices.sticker[params.sticker]
 
     // test pressing
     quote.test_pressing = 0
@@ -1574,7 +1543,7 @@ class Quote {
             active: true
           }) * 2
       }
-      if (params.nb_vinyl === 2 || params.nb_vinyl === 3) {
+      if (params.nb_vinyl === 3 || params.nb_vinyl === 4) {
         quote.test_pressing +=
           getCost({
             l: 38,
@@ -1847,7 +1816,7 @@ class Quote {
             category2: category2,
             type: row.getCell('B').toString(),
             q100: +row.getCell('C').toString(),
-            q250: +row.getCell('D').toString(),
+            q200: +row.getCell('D').toString(),
             q300: +row.getCell('D').toString(),
             q500: +row.getCell('E').toString(),
             q1000: +row.getCell('G').toString(),
