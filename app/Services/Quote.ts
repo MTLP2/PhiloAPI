@@ -141,9 +141,11 @@ class Quote {
     params.label_color = params.label || 'color'
 
     const ff = ['sna', 'vdp']
+    /**
     if (params.factory === 'sna2') {
       ff.push('sna2')
     }
+    **/
 
     for (const f of ff) {
       factories[f] = await Quote.calculateFactory({
@@ -178,7 +180,7 @@ class Quote {
     for (const p of Object.keys(prices)) {
       for (const o of Object.keys(prices[p])) {
         let cheapPrice = null
-        let cheapFactory = ''
+        let cheapFac = ''
         for (const f of Object.keys(factories)) {
           if (params.factory && f !== params.factory) {
             continue
@@ -194,7 +196,7 @@ class Quote {
 
           if (price && (!cheapPrice || price < cheapPrice)) {
             cheapPrice = price
-            cheapFactory = f
+            cheapFac = f
           }
         }
         if (cheapPrice === null) {
@@ -202,7 +204,7 @@ class Quote {
         }
         prices[p][o] = {
           value: cheapPrice - factories[params.factory || cheaperFactory].total,
-          factory: params.is_admin ? cheapFactory : null
+          factory: params.is_admin ? cheapFac : null
         }
       }
     }
@@ -217,6 +219,7 @@ class Quote {
     }
 
     if (params.is_admin) {
+      res.factory = cheaperFactory
       res.factories = factories
     }
 
@@ -228,8 +231,8 @@ class Quote {
 
     if (params.factory === 'sna') {
       f = 'SNA'
-    } else if (params.factory === 'sna2') {
-      f = 'SNA2'
+    } else if (params.factory === 'sna_old') {
+      f = 'SNA_OLD'
     } else if (params.factory === 'mpo') {
       f = 'MPO'
     } else if (params.factory === 'vdp') {
@@ -329,12 +332,12 @@ class Quote {
     let prices: any = null
 
     if (data.factory === 'sna') {
-      quote = this.calculateSna2(data, getCost)
+      quote = this.calculateSna(data, getCost)
 
       prices = quote.prices
       delete quote.prices
-    } else if (data.factory === 'sna2') {
-      quote = this.calculateSna2(data, getCost)
+    } else if (data.factory === 'sna_old') {
+      quote = this.calculateSnaOld(data, getCost)
 
       prices = quote.prices
       delete quote.prices
@@ -555,7 +558,7 @@ class Quote {
     }
   }
 
-  static calculateSna(params, getCost: (payload: CostPayloads) => number) {
+  static calculateSnaOld(params, getCost: (payload: CostPayloads) => number) {
     const quote: any = {}
     quote.prices = Quote.getPrices()
 
@@ -1069,7 +1072,7 @@ class Quote {
     return quote
   }
 
-  static calculateSna2(params, getCost: (payload: CostPayloads) => number) {
+  static calculateSna(params, getCost: (payload: CostPayloads) => number) {
     const quote: any = {}
     quote.prices = Quote.getPrices()
 
@@ -1778,7 +1781,7 @@ class Quote {
         if (rowNumber === 1) {
           return
         }
-        if (worksheet.name === 'SNA') {
+        if (worksheet.name === 'SNA_OLD') {
           const line = {
             id: rowNumber,
             label: row.getCell('A').toString(),
@@ -1804,7 +1807,7 @@ class Quote {
           } else {
             costs[worksheet.name].push(line)
           }
-        } else if (worksheet.name === 'SNA2') {
+        } else if (worksheet.name === 'SNA') {
           const line = {
             id: rowNumber,
             label: row.getCell('A').toString(),
@@ -1813,8 +1816,8 @@ class Quote {
             type: row.getCell('B').toString(),
             q100: +row.getCell('C').toString(),
             q200: +row.getCell('D').toString(),
-            q300: +row.getCell('D').toString(),
-            q500: +row.getCell('E').toString(),
+            q300: +row.getCell('E').toString(),
+            q500: +row.getCell('F').toString(),
             q1000: +row.getCell('G').toString(),
             q2000: +row.getCell('H').toString(),
             q3000: +row.getCell('I').toString(),
