@@ -1848,6 +1848,32 @@ class Box {
     return pdf.data
   }
 
+  static async checkSelection() {
+    const query = `
+      SELECT box.id, user_id, box.end
+      FROM box
+      WHERE
+        step = 'confirmed'
+        AND monthly = 1
+        AND (SELECT COUNT(*) FROM box_dispatch WHERE box_id = box.id AND is_dispatch_active = 1 AND step = 'confirmed' ) > 0
+        AND box.id NOT IN (SELECT box_id FROM notification WHERE type = 'box_notif_selection' AND date = box.end AND user_id = box.user_id)
+    `
+    const boxes = await DB().execute(query)
+    // console.log(boxes)
+    // return JSON.stringify(boxes)
+    for (const box of boxes) {
+      const data: any = {}
+      data.type = 'box_notif_selection'
+      data.user_id = box.user_id
+      data.box_id = box.id
+      data.date = box.end
+
+      await Notification.new(data)
+    }
+
+    return true
+  }
+
   static async checkDailyBox() {
     await DB('box').where('end', '<=', DB.raw('CURDATE()')).where('step', 'confirmed').update({
       step: 'finished',
