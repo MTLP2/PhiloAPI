@@ -131,10 +131,6 @@
     .address table td {
       padding: 10px 15px;
     }
-    .warning {
-      color: #999;
-      font-size: 90%;
-    }
     .sign_outer {
       text-align: right;
     }
@@ -143,6 +139,16 @@
       display: inline-block;
       width: 250px;
       height: 60px;
+    }
+    .warning {
+      font-size: 90%;
+      padding: 30px;
+    }
+    .bottom {
+      color: #999;
+      font-size: 90%;
+      text-align: center;
+
     }
   </style>
 </head>
@@ -154,9 +160,6 @@
         <td width="70%">
           <div class="logo">
             <img src="https://storage.diggersfactory.com/assets/images/logo_w.png" alt="Diggers Factory" />
-          </div>
-          <div style="margin-left: 8px;">
-            {{date}}
           </div>
         </td>
         <td>
@@ -173,7 +176,17 @@
     </table>
   </div>
   <div class="form">
-    <div class="title">{{t('order_form.quote_details')}}</div>
+    <table>
+      <tr>
+        <td>
+          <div class="title">{{t('order_form.quote_details')}} - {{date}}</div>
+        </td>
+        <td style="text-align:right">
+          <div class="title">{{t('order_form.quantity')}} : {{quantity}}</div>
+        </td>
+      </tr>
+    </table>
+    </table>
     <table>
       <thead>
         <tr>
@@ -182,9 +195,6 @@
         </tr>
       </thead>
       <tbody>
-        <td>{{t('order_form.quantity')}}</td>
-        <td class="value">{{quantity}}</td>
-      </tr>
         @each(line in lines)
           <tr>
             <td>{{line.label}}</td>
@@ -210,6 +220,18 @@
       <div class="sign">
       </div>
     </div>
+  </div>
+  <div class="warning">
+    <p>
+    @if(lang=== "fr")
+      Attention, le prix peut varier en fonction de la quantité pressée. En effet il existe une tolérance négative ou positive de 10% sur la production des vinyles. De fait, s’il y a une production de 1000 exemplaires vous pouvez recevoir entre 900 et 1100 vinyles. Le prix final de la production s’adapte en fonction. Le prix de ce devis est garanti 2 semaines.
+    @else
+      Please note that the price may vary depending on the quantity ordered. Indeed, there is a negative or positive tolerance of 10% on vinyl production. As a result, if there is a production of 1000 copies, you could receive between 900 and 1100 vinyl records. The final production price adjusts accordingly. The price of this quote is guaranteed for 2 weeks.
+    @endif
+    </p>
+  </div>
+  <div class="bottom">
+    Diggers Factory, 10 boulevard Arago, 75013, Paris, France
   </div>
 </body>
 </html>

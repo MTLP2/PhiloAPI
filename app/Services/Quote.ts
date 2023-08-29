@@ -6,10 +6,11 @@ import View from '@ioc:Adonis/Core/View'
 import I18n from '@ioc:Adonis/Addons/I18n'
 
 type CostPayloads = {
-  l: number | { '12"'?: number; '10"'?: number; '7"'?: number }
+  l: number | { '12"'?: number | boolean; '10"'?: number | boolean; '7"'?: number | boolean }
   type: string
   option: string
   onceByCopy?: boolean
+  quantity?: number
   active: boolean
 }
 
@@ -62,7 +63,6 @@ class Quote {
     quote.resp_id = params.resp_id || null
     quote.project_id = params.project_id || null
     quote.lines = JSON.stringify(params.lines)
-    console.log(params.lines)
     quote.updated_at = Utils.date()
     quote.updated_at = Utils.date()
 
@@ -104,7 +104,6 @@ class Quote {
     if (quote.zip_code) {
       address.push(`${quote.zip_code}, ${quote.city}, ${quote.country_id}`)
     }
-
     const html = await View.render('quote', {
       ...quote,
       client: quote.client || `${quote.firstname} ${quote.lastname}`,
@@ -130,6 +129,7 @@ class Quote {
 
   static async calculate(params) {
     params.costs = await this.getCosts()
+    params.quantity = +params.quantity
 
     params.is_admin = false
     if (params.user) {
@@ -294,7 +294,9 @@ class Quote {
         line = q[payload.l]
       }
       let quantity
-      if (line && line.type === 'F') {
+      if (payload.quantity) {
+        quantity = payload.quantity
+      } else if (line && line.type === 'F') {
         quantity = params.nb_vinyl
       } else {
         quantity = payload.onceByCopy
@@ -1124,7 +1126,11 @@ class Quote {
         },
         type: 'type_vinyl',
         option: 'color',
-        active: params.type_vinyl !== 'black'
+        active:
+          params.type_vinyl !== 'black' &&
+          !['cloudy', 'asidebside', 'marble', 'colorincolor', 'halfandhalf'].includes(
+            params.type_vinyl
+          )
       }) +
       getCost({
         l: 106,
@@ -1144,19 +1150,33 @@ class Quote {
         },
         type: 'type_vinyl',
         option: 'splatter',
-        active: params.type_vinyl === 'splatter'
+        active: params.type_vinyl === 'splatter' && params.splatter2 === 'none'
+      }) +
+      getCost({
+        l: {
+          '12"': 98,
+          '10"': 99,
+          '7"': false
+        },
+        type: 'type_vinyl',
+        option: 'splatter',
+        active: params.type_vinyl === 'splatter' && params.splatter2 !== 'none'
       }) +
       getCost({
         l: 107,
         type: 'type_vinyl',
         option: 'splatter',
-        active: params.type_vinyl === 'splatter' && params.splatter2 !== 'none'
+        active: params.type_vinyl === 'splatter'
       })
 
     quote.prices.type_vinyl.marble =
       quote.prices.type_vinyl.base +
       getCost({
-        l: 92,
+        l: {
+          '12"': 92,
+          '10"': 93,
+          '7"': false
+        },
         type: 'type_vinyl',
         option: 'marble',
         active: params.type_vinyl === 'marble'
@@ -1165,7 +1185,11 @@ class Quote {
     quote.prices.type_vinyl.asidebside =
       quote.prices.type_vinyl.base +
       getCost({
-        l: 54,
+        l: {
+          '12"': 54,
+          '10"': 55,
+          '7"': 57
+        },
         type: 'type_vinyl',
         option: 'asidebside',
         active: params.type_vinyl === 'asidebside'
@@ -1187,7 +1211,11 @@ class Quote {
     quote.prices.type_vinyl.colorincolor =
       quote.prices.type_vinyl.base +
       getCost({
-        l: 54,
+        l: {
+          '12"': 54,
+          '10"': 55,
+          '7"': 57
+        },
         type: 'type_vinyl',
         option: 'colorincolor',
         active: params.type_vinyl === 'colorincolor'
@@ -1196,7 +1224,11 @@ class Quote {
     quote.prices.type_vinyl.halfandhalf =
       quote.prices.type_vinyl.base +
       getCost({
-        l: 54,
+        l: {
+          '12"': 54,
+          '10"': 55,
+          '7"': 57
+        },
         type: 'type_vinyl',
         option: 'halfandhalf',
         active: params.type_vinyl === 'halfandhalf'
@@ -1282,7 +1314,7 @@ class Quote {
     })
     quote.prices.sleeve.discobag = getCost({
       l: {
-        '12"': 192,
+        '12"': 197,
         '10"': 198,
         '7"': 200
       },
@@ -1375,17 +1407,13 @@ class Quote {
     })
 
     // numbered
-    if (params.quantity < 300) {
-      quote.prices.numbered.numbered = false
-    } else {
-      quote.prices.numbered.numbered = getCost({
-        l: 302,
-        type: 'numbered',
-        option: 'numbered',
-        onceByCopy: true,
-        active: params.numbered === 'numbered'
-      })
-    }
+    quote.prices.numbered.numbered = getCost({
+      l: 302,
+      type: 'numbered',
+      option: 'numbered',
+      onceByCopy: true,
+      active: params.numbered === 'numbered'
+    })
     quote.prices.numbered.hand_numbered = getCost({
       l: 303,
       type: 'numbered',
@@ -1415,59 +1443,13 @@ class Quote {
     quote.print_finish = quote.prices.print_finish[params.print_finish]
 
     // insert
-    if (params.insert && params.insert !== 'none') {
-      quote.insert = getCost({ l: 286, type: 'insert', option: '', onceByCopy: true, active: true })
-      if (params.insert === 'two_sides_printed') {
-        quote.insert += getCost({
-          l: {
-            '12"': 204,
-            '10"': 205,
-            '7"': false
-          },
-          type: 'insert',
-          option: 'two_sides_printed',
-          onceByCopy: true,
-          active: params.insert === 'two_sides_printed'
-        })
-      } else if (params.insert === 'one_side_printed') {
-        quote.insert += getCost({
-          l: {
-            '12"': 202,
-            '10"': 203,
-            '7"': false
-          },
-          type: 'insert',
-          option: 'one_side_printed',
-          onceByCopy: true,
-          active: params.insert === 'one_side_printed'
-        })
-      } else if (params.insert === 'booklet_printed') {
-        quote.insert += getCost({
-          l: 286,
-          type: 'insert',
-          option: 'booklet_printed',
-          onceByCopy: true,
-          active: params.insert === 'booklet_printed'
-        })
-      }
-    }
-
     quote.prices.insert.base = getCost({
       l: 286,
       type: 'insert',
       option: 'base',
       onceByCopy: true,
-      active: params.insert === 'base'
+      active: params.insert !== 'none'
     })
-    quote.prices.insert.booklet_printed =
-      quote.prices.insert.base +
-      getCost({
-        l: 286,
-        type: 'insert',
-        option: 'booklet printed',
-        onceByCopy: true,
-        active: params.insert === 'booklet_printed'
-      })
     quote.prices.insert.one_side_printed =
       quote.prices.insert.base +
       getCost({
@@ -1493,6 +1475,15 @@ class Quote {
         option: 'two_sides_printed',
         onceByCopy: true,
         active: params.insert === 'two_sides_printed'
+      })
+    quote.prices.insert.booklet_printed =
+      quote.prices.insert.base +
+      getCost({
+        l: 252,
+        type: 'insert',
+        option: 'booklet printed',
+        onceByCopy: true,
+        active: params.insert === 'booklet_printed'
       })
     quote.insert = quote.prices.insert[params.insert]
 
@@ -1538,27 +1529,24 @@ class Quote {
         active: true
       })
       if (params.nb_vinyl === 1 || params.nb_vinyl === 2) {
-        quote.test_pressing +=
-          getCost({
-            l: 37,
-            type: 'test_pressing',
-            option: '',
-            onceByCopy: true,
-            active: true
-          }) * 2
+        quote.test_pressing += getCost({
+          l: 37,
+          type: 'test_pressing',
+          option: '',
+          quantity: 2,
+          active: true
+        })
       }
       if (params.nb_vinyl === 3 || params.nb_vinyl === 4) {
-        quote.test_pressing +=
-          getCost({
-            l: 38,
-            type: 'test_pressing',
-            option: '',
-            onceByCopy: true,
-            active: true
-          }) * 2
+        quote.test_pressing += getCost({
+          l: 38,
+          type: 'test_pressing',
+          option: '',
+          quantity: 2,
+          active: true
+        })
       }
     }
-
     quote.energy_cost = 0.065 * params.quantity * params.nb_vinyl
 
     return quote
