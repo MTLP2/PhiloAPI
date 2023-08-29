@@ -98,6 +98,7 @@ class DigitalController {
   }
 
   async createOne({ params, user }) {
+    console.log(params.platforms_excluded)
     params.user_id = user.user_id
     const payload = await validator.validate({
       schema: schema.create({
