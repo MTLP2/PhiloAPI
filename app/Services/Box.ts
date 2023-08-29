@@ -1859,8 +1859,6 @@ class Box {
         AND box.id NOT IN (SELECT box_id FROM notification WHERE type = 'box_notif_selection' AND date = box.end AND user_id = box.user_id)
     `
     const boxes = await DB().execute(query)
-    // console.log(boxes)
-    // return JSON.stringify(boxes)
     for (const box of boxes) {
       const data: any = {}
       data.type = 'box_notif_selection'
