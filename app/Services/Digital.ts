@@ -370,6 +370,7 @@ class Digital {
     if (!digitalSingle) throw new ApiError(404, 'Digital not found')
 
     const product = await DB('product').where('id', params.product_id).first()
+    const owner = await DB('user').where('id', params.owner).first()
 
     await digitalSingle.save({
       email: params.email,
@@ -385,6 +386,7 @@ class Digital {
       preorder: params.preorder,
       prerelease: params.prerelease,
       owner: params.owner,
+      owner_name: owner.name,
       updated_at: new Date(),
       done_date: params.step === 'uploaded' ? new Date() : null
     })
