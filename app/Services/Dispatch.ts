@@ -541,8 +541,10 @@ class Dispatch {
         continue
       }
       const path = file.path.split('.')[0].split(' ')
-      // console.log(path)
-      if (path[2] < '2022-12') {
+      if (path[0].split('/').at(-1).split('_')[1] < 103265) {
+        continue
+      }
+      if (path[2] < '2023-05') {
         continue
       }
       console.log('=>', path)
