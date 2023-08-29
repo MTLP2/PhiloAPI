@@ -923,6 +923,7 @@ class User {
         'pu.user_id',
         'v.created_at',
         'v.updated_at',
+        'v.picture_project',
         'type',
         'step',
         'count',
