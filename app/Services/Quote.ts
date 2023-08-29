@@ -329,7 +329,7 @@ class Quote {
     let prices: any = null
 
     if (data.factory === 'sna') {
-      quote = this.calculateSna(data, getCost)
+      quote = this.calculateSna2(data, getCost)
 
       prices = quote.prices
       delete quote.prices
@@ -1479,7 +1479,11 @@ class Quote {
     quote.prices.insert.booklet_printed =
       quote.prices.insert.base +
       getCost({
-        l: 252,
+        l: {
+          '12"': 252,
+          '10"': 253,
+          '7"': 262
+        },
         type: 'insert',
         option: 'booklet printed',
         onceByCopy: true,
