@@ -369,6 +369,8 @@ class Digital {
     const digitalSingle: DigitalModel = await DB('digital').find(params.id)
     if (!digitalSingle) throw new ApiError(404, 'Digital not found')
 
+    const product = await DB('product').where('id', params.product_id).first()
+
     await digitalSingle.save({
       email: params.email,
       product_id: params.product_id,
