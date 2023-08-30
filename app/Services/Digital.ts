@@ -13,7 +13,9 @@ type DigitalDb = {
   artwork?: string
   project_name?: string
   artist_name?: string
+  owner?: string
   barcode?: string
+  comment: string
   catalogue_number?: string
   project_type?: string
   spotify_url?: string
@@ -223,7 +225,11 @@ class Digital {
   }
 
   static getDigitalProjectsByUser = async (params: { userId: number }) => {
-    const projects = await DB('digital').where('user_id', params.userId).orderBy('id', 'desc').all()
+    const projects = await DB('digital')
+      .where('user_id', params.userId)
+      .orWhere('owner', params.userId)
+      .orderBy('id', 'desc')
+      .all()
     return projects
   }
 
@@ -299,6 +305,7 @@ class Digital {
     item.digital_rights_owner = payload.digital_rights_owner || null
     item.label_name = payload.label_name || null
     item.nationality_project = payload.nationality_project || null
+    item.comment = payload.comment || null
     item.updated_at = Utils.date()
 
     await item.save()
@@ -355,13 +362,30 @@ class Digital {
     distribution?: 'ci' | 'pias'
     project_type?: 'album' | 'single' | 'ep' | 'compilation'
     barcode?: string
+    product_barcode?: string
+    product_catnumber?: string
     comment?: string
     preorder?: string
+    owner?: string
     prerelease?: string
     actions: { [key: string]: any }
   }) {
     const digitalSingle: DigitalModel = await DB('digital').find(params.id)
     if (!digitalSingle) throw new ApiError(404, 'Digital not found')
+
+    if (params.product_id) {
+      const product = await DB('product').where('id', params.product_id).first()
+      await digitalSingle.save({
+        product_barcode: product.barcode,
+        product_catalogue_number: product.catnumber
+      })
+    }
+    if (params.owner) {
+      const owner = await DB('user').where('id', params.owner).first()
+      await digitalSingle.save({
+        owner_name: owner.name
+      })
+    }
 
     await digitalSingle.save({
       email: params.email,
@@ -371,10 +395,10 @@ class Digital {
       step: params.step,
       distribution: params.distribution,
       project_type: params.project_type,
-      barcode: params.barcode,
       comment: params.comment,
       preorder: params.preorder,
       prerelease: params.prerelease,
+      owner: params.owner,
       updated_at: new Date(),
       done_date: params.step === 'uploaded' ? new Date() : null
     })
