@@ -1138,9 +1138,19 @@ class Quote {
       getCost({
         l: 106,
         type: 'type_vinyl',
-        option: 'colored vinyl',
-        active: params.type_vinyl !== 'black'
+        option: 'color',
+        active:
+          params.type_vinyl !== 'black' &&
+          ['cloudy', 'asidebside', 'marble', 'colorincolor', 'halfandhalf'].includes(
+            params.type_vinyl
+          )
       })
+    getCost({
+      l: 106,
+      type: 'type_vinyl',
+      option: 'colored vinyl',
+      active: params.type_vinyl !== 'black'
+    })
     quote.prices.type_vinyl.base = quote.prices.type_vinyl.color
 
     quote.prices.type_vinyl.splatter =
