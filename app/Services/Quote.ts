@@ -80,6 +80,8 @@ class Quote {
     const quote: any = await DB('quote')
       .select(
         'quote.*',
+        'project.name',
+        'project.artist_name',
         'customer.firstname',
         'customer.lastname',
         'customer.address',
@@ -91,6 +93,7 @@ class Quote {
       )
       .where('quote.id', payload.id)
       .leftJoin('vod', 'vod.project_id', 'quote.project_id')
+      .leftJoin('project', 'vod.project_id', 'project.id')
       .leftJoin('customer', 'customer.id', 'vod.customer_id')
       .first()
 

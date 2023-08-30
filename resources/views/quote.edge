@@ -179,7 +179,12 @@
     <table>
       <tr>
         <td>
-          <div class="title">{{t('order_form.quote_details')}} - {{date}}</div>
+          <div class="title">{{t('order_form.quote_details')}} - {{date}}
+          @if(project_id)
+            <br />
+            {{artist_name}} - {{name}} - {{project_id}}
+          @endif
+        </div>
         </td>
         <td style="text-align:right">
           <div class="title">{{t('order_form.quantity')}} : {{quantity}}</div>
