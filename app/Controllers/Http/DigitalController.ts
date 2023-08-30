@@ -121,7 +121,8 @@ class DigitalController {
         digital_rights_owner: schema.string.optional({ trim: true }),
         label_name: schema.string.optional({ trim: true }),
         nationality_project: schema.string.optional({ trim: true }),
-        comment: schema.string.optional({ trim: true })
+        comment: schema.string.optional({ trim: true }),
+        email: schema.string.optional({ trim: true }, [rules.email()])
       }),
       data: params
     })

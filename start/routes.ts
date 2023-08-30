@@ -119,8 +119,6 @@ Route.group(() => {
 
   Route.get('/shops/:id', 'ShopController.find')
 
-  Route.post('/digital', 'DigitalController.create')
-
   Route.post('projects/check-code', 'ProjectsController.checkCode')
   Route.post('/projects/download', 'ProjectsController.download')
   Route.get('/projects', 'ProjectsController.getProjects')

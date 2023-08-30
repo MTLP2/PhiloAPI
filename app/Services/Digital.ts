@@ -13,6 +13,7 @@ type DigitalDb = {
   artwork?: string
   project_name?: string
   artist_name?: string
+  email?: string
   owner?: string
   barcode?: string
   comment: string
@@ -259,6 +260,7 @@ class Digital {
     project_type?: 'album' | 'single' | 'ep' | 'compilation'
     barcode?: string
     comment?: string
+    email?: string
   }) {
     const [id] = await DB('digital').insert({
       user_id: params.user_id,
@@ -285,6 +287,7 @@ class Digital {
     } else {
       item.created_at = Utils.date()
     }
+    const user = await DB('user').where('id', payload.user_id).first()
 
     item.user_id = payload.user_id
     item.barcode = payload.barcode || null
@@ -305,7 +308,10 @@ class Digital {
     item.digital_rights_owner = payload.digital_rights_owner || null
     item.label_name = payload.label_name || null
     item.nationality_project = payload.nationality_project || null
+    item.email = user.email || null
     item.comment = payload.comment || null
+    item.owner = payload.user_id || null
+    item.owner_name = user.name || null
     item.updated_at = Utils.date()
 
     await item.save()
@@ -485,7 +491,7 @@ class Digital {
   }
 
   static async delete(params: { id: number }) {
-    const digitalSingle: DigitalModel = await DB('digital').find(params.id)
+    const digitalSingle: DigitalModel = await DB('digital').where('id', params.id).first()
     if (!digitalSingle) throw new ApiError(404, 'Digital not found')
 
     await digitalSingle.save({
