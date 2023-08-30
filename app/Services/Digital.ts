@@ -491,7 +491,7 @@ class Digital {
   }
 
   static async delete(params: { id: number }) {
-    const digitalSingle: DigitalModel = await DB('digital').find(params.id)
+    const digitalSingle: DigitalModel = await DB('digital').where('id', params.id).first()
     if (!digitalSingle) throw new ApiError(404, 'Digital not found')
 
     await digitalSingle.save({
