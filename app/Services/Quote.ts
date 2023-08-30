@@ -53,6 +53,7 @@ class Quote {
     quote.factory = params.factory
     quote.quantity = params.quantity
     quote.currency = params.currency
+    quote.comment = params.comment
     quote.fee = params.fee
     quote.costs = params.costs
     quote.tax = params.tax
