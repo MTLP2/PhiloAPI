@@ -1058,16 +1058,15 @@ class Box {
       })
       .leftJoin('box_dispatch as d1', 'box.id', 'd1.box_id')
       .leftJoin('box_dispatch as d2', (query) => {
-        query
-          .on('box.id', 'd2.box_id')
-          .on('d1.created_at', '<', 'd2.created_at')
-          .orOn('d1.created_at', (query) => {
+        query.on('box.id', 'd2.box_id').andOn((query) => {
+          query.on('d1.created_at', '<', 'd2.created_at').orOn((query) => {
             query.on('d1.created_at', '=', 'd2.created_at').on('d1.id', '<', 'd2.id')
           })
+        })
       })
       .whereNull('d2.id')
-      .where('box.user_id', 'user.id')
-      .where('box.step', 'confirmed')
+      .where('box.user_id', '=', 'user.id')
+      .where('box.step', '=', 'confirmed')
       .where('box.dispatch_left', '>', 0)
       .where((query) => {
         query
@@ -1080,6 +1079,7 @@ class Box {
       .orderBy('box_project.created_at', 'asc')
       .all()
 
+    console.log('user : ', user)
     return JSON.parse(JSON.stringify(user))
   }
 
