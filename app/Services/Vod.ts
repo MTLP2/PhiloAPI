@@ -69,6 +69,9 @@ class Vod {
       }
     }
 
+    if ((await Utils.isTeam(params.user.id)) && params.fee) {
+      vod.fee = params.fee
+    }
     vod.quote = params.quote
     vod.currency = params.currency
     if (vod.user_id === null && params.user.user_id !== 0) {
