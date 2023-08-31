@@ -1061,8 +1061,9 @@ class Box {
         query
           .on('box.id', 'd2.box_id')
           .on('d1.created_at', '<', 'd2.created_at')
-          .orOn('d1.created_at', '=', 'd2.created_at')
-          .on('d1.id', '<', 'd2.id')
+          .orOn('d1.created_at', (query) => {
+            query.on('d1.created_at', '=', 'd2.created_at').on('d1.id', '<', 'd2.id')
+          })
       })
       .whereNull('d2.id')
       .where('box.user_id', 'user.id')
