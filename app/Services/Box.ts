@@ -1003,29 +1003,90 @@ class Box {
       .delete()
   }
 
+  static async getBoxToDispatch() {
+    // const user = await DB().execute(`
+    //   SELECT box.id, box.styles, box.step, box.periodicity, box.date_stop, box.type, box.end, d1.created_at as last_dispatch,
+    //     box_project.gifts, project1, project2, project3, project4, project5, project6, user.email,
+    //     box_project.created_at, user.email, user.lang, box.user_id, (SELECT count(*) FROM box_sponsor where box_id = box.id AND used IS NULL) as vinyl_gift
+    //   FROM user, box
+    //   LEFT OUTER JOIN box_project ON (box.id = box_project.box_id AND box_project.date = DATE_FORMAT(NOW(), "%Y-%m-01"))
+    //   LEFT OUTER JOIN box_dispatch d1 ON (box.id = d1.box_id)
+    //   LEFT OUTER JOIN box_dispatch d2 ON (box.id = d2.box_id AND
+    //       (d1.created_at < d2.created_at OR (d1.created_at = d2.created_at AND d1.id < d2.id)))
+    //   WHERE d2.id IS NULL
+    //     AND box.user_id = user.id
+    //     AND box.step = 'confirmed'
+    //     AND box.dispatch_left > 0
+    //     AND (d1.created_at IS NULL OR DATE_FORMAT(d1.created_at, "%Y-%m") != DATE_FORMAT(NOW(), "%Y-%m"))
+    //   ORDER BY
+    //     box.id asc,
+    //     box_project.created_at IS NOT NULL DESC,
+    //     box_project.created_at ASC
+    // `)
+
+    const user = await DB('user')
+      .select(
+        'box.id',
+        'box.styles',
+        'box.step',
+        'box.periodicity',
+        'box.date_stop',
+        'box.type',
+        'box.end',
+        'd1.created_at as last_dispatch',
+        'box_project.gifts',
+        'project1',
+        'project2',
+        'project3',
+        'project4',
+        'project5',
+        'project6',
+        'user.email',
+        'box_project.created_at',
+        'user.email',
+        'user.lang',
+        'box.user_id',
+        DB.raw(
+          '(SELECT count(*) FROM box_sponsor where box_id = box.id AND used IS NULL) as vinyl_gift'
+        )
+      )
+      .leftJoin('box', 'box.user_id', 'user.id')
+      .leftJoin('box_project', (query) => {
+        query
+          .on('box.id', 'box_project.box_id')
+          .on('box_project.date', DB.raw("DATE_FORMAT(NOW(), '%Y-%m-01')"))
+      })
+      .leftJoin('box_dispatch as d1', 'box.id', 'd1.box_id')
+      .leftJoin('box_dispatch as d2', (query) => {
+        query
+          .on('box.id', 'd2.box_id')
+          .on('d1.created_at', '<', 'd2.created_at')
+          .orOn('d1.created_at', '=', 'd2.created_at')
+          .on('d1.id', '<', 'd2.id')
+      })
+      .whereNull('d2.id')
+      .where('box.user_id', 'user.id')
+      .where('box.step', 'confirmed')
+      .where('box.dispatch_left', '>', 0)
+      .where((query) => {
+        query
+          .whereNull('d1.created_at')
+          .orWhere(DB.raw('DATE_FORMAT(d1.created_at, "%Y-%m") != DATE_FORMAT(NOW(), "%Y-%m")'))
+      })
+      .orderBy('box.id', 'asc')
+      .whereNotNull('box_project.created_at')
+      .orderBy('box_project.created_at', 'desc')
+      .orderBy('box_project.created_at', 'asc')
+      .all()
+
+    return JSON.parse(JSON.stringify(user))
+  }
+
   static async setDispatchs() {
     await Box.cleanDispatchs()
     await Box.setDispatchLeft()
 
-    const boxes = await DB().execute(`
-      SELECT box.id, box.styles, box.step, box.periodicity, box.date_stop, box.type, d1.created_at as last_dispatch,
-        box_project.gifts, project1, project2, project3, project4, project5, project6, user.email,
-        box_project.created_at, user.email, user.lang, box.user_id, (SELECT count(*) FROM box_sponsor where box_id = box.id AND used IS NULL) as vinyl_gift
-      FROM user, box
-      LEFT OUTER JOIN box_project ON (box.id = box_project.box_id AND box_project.date = DATE_FORMAT(NOW(), "%Y-%m-01"))
-      LEFT OUTER JOIN box_dispatch d1 ON (box.id = d1.box_id)
-      LEFT OUTER JOIN box_dispatch d2 ON (box.id = d2.box_id AND
-          (d1.created_at < d2.created_at OR (d1.created_at = d2.created_at AND d1.id < d2.id)))
-      WHERE d2.id IS NULL
-        AND box.user_id = user.id
-        AND box.step = 'confirmed'
-        AND box.dispatch_left > 0
-        AND (d1.created_at IS NULL OR DATE_FORMAT(d1.created_at, "%Y-%m") != DATE_FORMAT(NOW(), "%Y-%m"))
-      ORDER BY
-        box.id asc,
-        box_project.created_at IS NOT NULL DESC,
-        box_project.created_at ASC
-    `)
+    const boxes = await Box.getBoxToDispatch()
 
     console.log('boxes : ', boxes.length)
 
@@ -1849,16 +1910,8 @@ class Box {
   }
 
   static async checkSelection() {
-    const query = `
-      SELECT box.id, user_id, box.end
-      FROM box
-      WHERE
-        step = 'confirmed'
-        AND monthly = 1
-        AND (SELECT COUNT(*) FROM box_dispatch WHERE box_id = box.id AND is_dispatch_active = 1 AND step = 'confirmed' ) > 0
-        AND box.id NOT IN (SELECT box_id FROM notification WHERE type = 'box_notif_selection' AND date = box.end AND user_id = box.user_id)
-    `
-    const boxes = await DB().execute(query)
+    const boxes = await Box.getBoxToDispatch()
+
     for (const box of boxes) {
       const data: any = {}
       data.type = 'box_notif_selection'
@@ -1866,8 +1919,9 @@ class Box {
       data.box_id = box.id
       data.date = box.end
 
-      await Notification.new(data)
+      // await Notification.new(data)
     }
+    console.log(boxes[0])
 
     return true
   }
