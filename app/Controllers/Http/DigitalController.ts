@@ -7,7 +7,7 @@ import Song from 'App/Services/Song'
 class DigitalController {
   async saveTrackNew({ params, user }) {
     params.user = user
-    await Utils.checkProjectOwner({ project_id: params.project_id, user: user })
+    await Utils.checkProjectOwner({ project_id: params.project_id, user: user, type: 'digital' })
     if (!params.id) {
       const track = await Digital.saveDigitalTrack(params)
       params.id = track.id
@@ -30,7 +30,7 @@ class DigitalController {
   async saveTrack({ params, user }) {
     params.user = user
     params.uuid = Utils.uuid()
-    await Utils.checkProjectOwner({ project_id: params.project_id, user: user })
+    await Utils.checkProjectOwner({ project_id: params.project_id, user: user, type: 'digital' })
     const track = await Digital.saveDigitalTrack(params)
     return track
   }
@@ -46,7 +46,7 @@ class DigitalController {
   async deleteTrack({ params, user }) {
     params.user = user
     const song = await Song.find(params.id)
-    await Utils.checkProjectOwner({ project_id: song.project_id, user: user })
+    await Utils.checkProjectOwner({ project_id: song.project_id, user: user, type: 'digital' })
     return Digital.deleteDigitalTrack(params)
   }
 
@@ -180,7 +180,7 @@ class DigitalController {
     }
   }
 
-  async update({ params }) {
+  async update({ params, user }) {
     try {
       const payload = await validator.validate({
         schema: schema.create({
@@ -212,6 +212,7 @@ class DigitalController {
         data: params
       })
 
+      await Utils.checkProjectOwner({ project_id: payload.id, user: user, type: 'digital' })
       return await Digital.update(payload)
     } catch (error) {
       throw new ApiError(
@@ -221,8 +222,9 @@ class DigitalController {
     }
   }
 
-  async export({ params }) {
+  async export({ params, user }) {
     try {
+      await Utils.isTeam(user.id)
       const payload = await validator.validate({
         schema: schema.create({
           start: schema.string(),
@@ -242,6 +244,7 @@ class DigitalController {
 
   async duplicate({ params }) {
     try {
+      await Utils.isTeam(user.id)
       const payload = await validator.validate({
         schema: schema.create({
           id: schema.number()
@@ -260,6 +263,7 @@ class DigitalController {
 
   async delete({ params }) {
     try {
+      await Utils.isTeam(user.id)
       const payload = await validator.validate({
         schema: schema.create({
           id: schema.number()
