@@ -1143,21 +1143,19 @@ class Utils {
     if (await Utils.isTeam(params.user.id)) {
       return true
     }
-    const pu = await DB('project_user')
-      .where('project_id', params.project_id)
-      .where('user_id', params.user.id)
-      .first()
-    if (!pu) {
-      const pu2 = await DB('digital')
+    let found
+    if (params.type === 'digital') {
+      found = await DB('digital')
         .where('id', params.project_id)
         .where('user_id', params.user.id)
         .first()
-      if (!pu2) {
-        throw new ApiError(404)
-      }
+    } else {
+      found = await DB('project_user')
+        .where('project_id', params.project_id)
+        .where('user_id', params.user.id)
+        .first()
     }
-    const user = pu ? pu.user_id : null
-    if (user !== null && user !== params.user.user_id) {
+    if (!found) {
       throw new ApiError(403)
     }
 
