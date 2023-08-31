@@ -1148,7 +1148,13 @@ class Utils {
       .where('user_id', params.user.id)
       .first()
     if (!pu) {
-      throw new ApiError(404)
+      const pu2 = await DB('digital')
+        .where('id', params.project_id)
+        .where('user_id', params.user.id)
+        .first()
+      if (!pu2) {
+        throw new ApiError(404)
+      }
     }
     const user = pu ? pu.user_id : null
     if (user !== null && user !== params.user.user_id) {
