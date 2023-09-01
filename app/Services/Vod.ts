@@ -70,10 +70,8 @@ class Vod {
       }
     }
 
-    console.log(params.fee_prod)
     if ((await Utils.isTeam(params.user.id)) && params.fee_prod) {
       vod.fee_prod = params.fee_prod
-      console.log('fee prod', vod.fee_prod)
     }
     vod.quote = params.quote
     vod.currency = params.currency
