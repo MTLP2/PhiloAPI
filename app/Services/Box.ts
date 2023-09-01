@@ -1053,8 +1053,8 @@ class Box {
       .leftJoin('box', 'box.user_id', 'user.id')
       .leftJoin('box_project', (query) => {
         query
-          .on('box.id', 'box_project.box_id')
-          .on('box_project.date', DB.raw("DATE_FORMAT(NOW(), '%Y-%m-01')"))
+          .on('box.id', '=', 'box_project.box_id')
+          .on('box_project.date', '=', DB.raw('DATE_FORMAT(NOW(), "%Y-%m-01")'))
       })
       .leftJoin('box_dispatch as d1', 'box.id', 'd1.box_id')
       .leftJoin('box_dispatch as d2', (query) => {
@@ -1065,7 +1065,7 @@ class Box {
         })
       })
       .whereNull('d2.id')
-      .where('box.user_id', '=', 'user.id')
+      .where('box.user_id', '=', DB.raw('user.id'))
       .where('box.step', '=', 'confirmed')
       .where('box.dispatch_left', '>', 0)
       .where((query) => {
@@ -1074,8 +1074,7 @@ class Box {
           .orWhere(DB.raw('DATE_FORMAT(d1.created_at, "%Y-%m") != DATE_FORMAT(NOW(), "%Y-%m")'))
       })
       .orderBy('box.id', 'asc')
-      .whereNotNull('box_project.created_at')
-      .orderBy('box_project.created_at', 'desc')
+      .orderByRaw('box_project.created_at IS NOT NULL DESC')
       .orderBy('box_project.created_at', 'asc')
       .all()
 
