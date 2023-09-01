@@ -255,9 +255,9 @@ class Quote {
 
     let feeProd = 30
 
-    if (params.fee) {
+    if (params.fee_prod) {
       if (params.is_admin) {
-        feeProd = data.fee
+        feeProd = data.fee_prod
       }
     } else if (data.id && data.type !== 'direct_pressing') {
       feeProd = 20
