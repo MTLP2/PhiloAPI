@@ -757,7 +757,11 @@ class AdminController {
   }
 
   async downloadQuote({ params, response }) {
-    const quote = await Quote.download(params.id)
+    const quote = await Quote.download({
+      id: params.id,
+      lang: params.lang,
+      toHtml: params.toHtml
+    })
 
     response.implicitEnd = false
     response.header('Content-Type', 'application/pdf')

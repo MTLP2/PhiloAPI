@@ -6,17 +6,18 @@ import View from '@ioc:Adonis/Core/View'
 import I18n from '@ioc:Adonis/Addons/I18n'
 
 type CostPayloads = {
-  l: number | { '12"'?: number; '10"'?: number; '7"'?: number }
+  l: number | { '12"'?: number | boolean; '10"'?: number | boolean; '7"'?: number | boolean }
   type: string
   option: string
   onceByCopy?: boolean
+  quantity?: number
   active: boolean
 }
 
 class Quote {
   static async all(params) {
     params.query = DB('quote')
-      .select('quote.*', 'user.name as resp')
+      .select('quote.*', 'project.name', 'project.artist_name', 'user.name as resp')
       .leftJoin('user', 'user.id', 'quote.resp_id')
       .leftJoin('project', 'project.id', 'quote.project_id')
 
@@ -52,6 +53,7 @@ class Quote {
     quote.factory = params.factory
     quote.quantity = params.quantity
     quote.currency = params.currency
+    quote.comment = params.comment
     quote.fee = params.fee
     quote.costs = params.costs
     quote.tax = params.tax
@@ -59,25 +61,9 @@ class Quote {
     quote.sub_total = params.sub_total
     quote.total = params.total
     quote.lang = params.lang
-    quote.resp_id = params.resp_id
-    quote.project_id = params.project_id
-    quote.lines = JSON.stringify(
-      params.lines
-        .filter((i) => i.label.length > 0 && i.value > 0)
-        .sort((a, b) => {
-          if (a.position > b.position) {
-            return 1
-          } else if (a.position < b.position) {
-            return -1
-          }
-        })
-        .map((item, i) => {
-          return {
-            ...item,
-            position: i + 1
-          }
-        })
-    )
+    quote.resp_id = params.resp_id || null
+    quote.project_id = params.project_id || null
+    quote.lines = JSON.stringify(params.lines)
     quote.updated_at = Utils.date()
     quote.updated_at = Utils.date()
 
@@ -86,46 +72,68 @@ class Quote {
     return quote
   }
 
-  static async download(id, toHtml = false) {
-    const quote = await Quote.find(id)
-
-    const number = `${new Date().getFullYear().toString().substr(-2)}${quote.id}`
-    const name = `${quote.lang === 'fr' ? 'Devis' : 'Quote'} ${number} - ${quote.client}.pdf`
-
-    const currency = I18n.locale(quote.lang).formatMessage(`base.${quote.currency}`)
-
-    for (const i in quote.lines) {
-      if (!isNaN(quote.lines[i].value)) {
-        quote.lines[i].value = `${Utils.round(
-          +quote.lines[i].value + +quote.lines[i].value * (quote.fee / 100),
-          0
-        )} ${currency}`
-      }
+  static async download(payload: { id: number; lang?: string; toHtml?: boolean }) {
+    payload = {
+      lang: 'en',
+      toHtml: false,
+      ...payload
     }
+    const quote: any = await DB('quote')
+      .select(
+        'quote.*',
+        'project.name',
+        'project.artist_name',
+        'customer.firstname',
+        'customer.lastname',
+        'customer.address',
+        'customer.zip_code',
+        'customer.city',
+        'customer.country_id',
+        'customer.email',
+        'customer.phone'
+      )
+      .where('quote.id', payload.id)
+      .leftJoin('vod', 'vod.project_id', 'quote.project_id')
+      .leftJoin('project', 'vod.project_id', 'project.id')
+      .leftJoin('customer', 'customer.id', 'vod.customer_id')
+      .first()
 
+    const name = `${payload.lang === 'fr' ? 'Devis' : 'Quote'} ${quote.client}.pdf`
+    quote.lines = JSON.parse(quote.lines)
+
+    const address: string[] = []
+    if (quote.address) {
+      address.push(quote.address)
+    }
+    if (quote.zip_code) {
+      address.push(`${quote.zip_code}, ${quote.city}, ${quote.country_id}`)
+    }
     const html = await View.render('quote', {
-      date: Utils.date({ time: false }),
-      fee: `1.${('0' + quote.fee).slice(-2)}`,
-      round: Utils.round,
-      quote: quote,
-      number: number,
-      lang: quote.lang,
-      currency: currency
+      ...quote,
+      client: quote.client || `${quote.firstname} ${quote.lastname}`,
+      address: address,
+      date: new Intl.DateTimeFormat(payload.lang).format(new Date(quote.created_at)),
+      t: (v: string) => I18n.locale(payload.lang as string).formatMessage(v),
+      price: (v: number) => Utils.price(v, quote.currency, payload.lang)
     })
 
-    if (toHtml) {
-      return html
+    if (payload.toHtml) {
+      return {
+        name,
+        html: html
+      }
     }
 
     const pdf = await Utils.toPdf(html)
     return {
-      name: name,
+      name,
       data: pdf
     }
   }
 
   static async calculate(params) {
     params.costs = await this.getCosts()
+    params.quantity = +params.quantity
 
     params.is_admin = false
     if (params.user) {
@@ -137,9 +145,11 @@ class Quote {
     params.label_color = params.label || 'color'
 
     const ff = ['sna', 'vdp']
+    /**
     if (params.factory === 'sna2') {
       ff.push('sna2')
     }
+    **/
 
     for (const f of ff) {
       factories[f] = await Quote.calculateFactory({
@@ -174,7 +184,7 @@ class Quote {
     for (const p of Object.keys(prices)) {
       for (const o of Object.keys(prices[p])) {
         let cheapPrice = null
-        let cheapFactory = ''
+        let cheapFac = ''
         for (const f of Object.keys(factories)) {
           if (params.factory && f !== params.factory) {
             continue
@@ -190,7 +200,7 @@ class Quote {
 
           if (price && (!cheapPrice || price < cheapPrice)) {
             cheapPrice = price
-            cheapFactory = f
+            cheapFac = f
           }
         }
         if (cheapPrice === null) {
@@ -198,7 +208,7 @@ class Quote {
         }
         prices[p][o] = {
           value: cheapPrice - factories[params.factory || cheaperFactory].total,
-          factory: params.is_admin ? cheapFactory : null
+          factory: params.is_admin ? cheapFac : null
         }
       }
     }
@@ -213,6 +223,7 @@ class Quote {
     }
 
     if (params.is_admin) {
+      res.factory = cheaperFactory
       res.factories = factories
     }
 
@@ -224,8 +235,8 @@ class Quote {
 
     if (params.factory === 'sna') {
       f = 'SNA'
-    } else if (params.factory === 'sna2') {
-      f = 'SNA2'
+    } else if (params.factory === 'sna_old') {
+      f = 'SNA_OLD'
     } else if (params.factory === 'mpo') {
       f = 'MPO'
     } else if (params.factory === 'vdp') {
@@ -244,11 +255,10 @@ class Quote {
 
     let feeProd = 30
 
-    if (params.fee) {
-      if (!params.is_admin) {
-        return false
+    if (params.fee_prod) {
+      if (params.is_admin) {
+        feeProd = data.fee_prod
       }
-      feeProd = data.fee
     } else if (data.id && data.type !== 'direct_pressing') {
       feeProd = 20
     }
@@ -290,7 +300,9 @@ class Quote {
         line = q[payload.l]
       }
       let quantity
-      if (line && line.type === 'F') {
+      if (payload.quantity) {
+        quantity = payload.quantity
+      } else if (line && line.type === 'F') {
         quantity = params.nb_vinyl
       } else {
         quantity = payload.onceByCopy
@@ -327,8 +339,8 @@ class Quote {
 
       prices = quote.prices
       delete quote.prices
-    } else if (data.factory === 'sna2') {
-      quote = this.calculateSna2(data, getCost)
+    } else if (data.factory === 'sna_old') {
+      quote = this.calculateSnaOld(data, getCost)
 
       prices = quote.prices
       delete quote.prices
@@ -549,7 +561,7 @@ class Quote {
     }
   }
 
-  static calculateSna(params, getCost: (payload: CostPayloads) => number) {
+  static calculateSnaOld(params, getCost: (payload: CostPayloads) => number) {
     const quote: any = {}
     quote.prices = Quote.getPrices()
 
@@ -1063,7 +1075,7 @@ class Quote {
     return quote
   }
 
-  static calculateSna2(params, getCost: (payload: CostPayloads) => number) {
+  static calculateSna(params, getCost: (payload: CostPayloads) => number) {
     const quote: any = {}
     quote.prices = Quote.getPrices()
 
@@ -1120,14 +1132,28 @@ class Quote {
         },
         type: 'type_vinyl',
         option: 'color',
-        active: params.type_vinyl !== 'black'
+        active:
+          params.type_vinyl !== 'black' &&
+          !['cloudy', 'asidebside', 'marble', 'colorincolor', 'halfandhalf'].includes(
+            params.type_vinyl
+          )
       }) +
       getCost({
         l: 106,
         type: 'type_vinyl',
-        option: 'colored vinyl',
-        active: params.type_vinyl !== 'black'
+        option: 'color',
+        active:
+          params.type_vinyl !== 'black' &&
+          ['cloudy', 'asidebside', 'marble', 'colorincolor', 'halfandhalf'].includes(
+            params.type_vinyl
+          )
       })
+    getCost({
+      l: 106,
+      type: 'type_vinyl',
+      option: 'colored vinyl',
+      active: params.type_vinyl !== 'black'
+    })
     quote.prices.type_vinyl.base = quote.prices.type_vinyl.color
 
     quote.prices.type_vinyl.splatter =
@@ -1140,19 +1166,33 @@ class Quote {
         },
         type: 'type_vinyl',
         option: 'splatter',
-        active: params.type_vinyl === 'splatter'
+        active: params.type_vinyl === 'splatter' && params.splatter2 === 'none'
+      }) +
+      getCost({
+        l: {
+          '12"': 98,
+          '10"': 99,
+          '7"': false
+        },
+        type: 'type_vinyl',
+        option: 'splatter',
+        active: params.type_vinyl === 'splatter' && params.splatter2 !== 'none'
       }) +
       getCost({
         l: 107,
         type: 'type_vinyl',
         option: 'splatter',
-        active: params.type_vinyl === 'splatter' && params.splatter2 !== 'none'
+        active: params.type_vinyl === 'splatter'
       })
 
     quote.prices.type_vinyl.marble =
       quote.prices.type_vinyl.base +
       getCost({
-        l: 92,
+        l: {
+          '12"': 92,
+          '10"': 93,
+          '7"': false
+        },
         type: 'type_vinyl',
         option: 'marble',
         active: params.type_vinyl === 'marble'
@@ -1161,7 +1201,11 @@ class Quote {
     quote.prices.type_vinyl.asidebside =
       quote.prices.type_vinyl.base +
       getCost({
-        l: 54,
+        l: {
+          '12"': 54,
+          '10"': 55,
+          '7"': 57
+        },
         type: 'type_vinyl',
         option: 'asidebside',
         active: params.type_vinyl === 'asidebside'
@@ -1183,7 +1227,11 @@ class Quote {
     quote.prices.type_vinyl.colorincolor =
       quote.prices.type_vinyl.base +
       getCost({
-        l: 54,
+        l: {
+          '12"': 54,
+          '10"': 55,
+          '7"': 57
+        },
         type: 'type_vinyl',
         option: 'colorincolor',
         active: params.type_vinyl === 'colorincolor'
@@ -1192,7 +1240,11 @@ class Quote {
     quote.prices.type_vinyl.halfandhalf =
       quote.prices.type_vinyl.base +
       getCost({
-        l: 54,
+        l: {
+          '12"': 54,
+          '10"': 55,
+          '7"': 57
+        },
         type: 'type_vinyl',
         option: 'halfandhalf',
         active: params.type_vinyl === 'halfandhalf'
@@ -1278,7 +1330,7 @@ class Quote {
     })
     quote.prices.sleeve.discobag = getCost({
       l: {
-        '12"': 192,
+        '12"': 197,
         '10"': 198,
         '7"': 200
       },
@@ -1371,17 +1423,13 @@ class Quote {
     })
 
     // numbered
-    if (params.quantity < 300) {
-      quote.prices.numbered.numbered = false
-    } else {
-      quote.prices.numbered.numbered = getCost({
-        l: 302,
-        type: 'numbered',
-        option: 'numbered',
-        onceByCopy: true,
-        active: params.numbered === 'numbered'
-      })
-    }
+    quote.prices.numbered.numbered = getCost({
+      l: 302,
+      type: 'numbered',
+      option: 'numbered',
+      onceByCopy: true,
+      active: params.numbered === 'numbered'
+    })
     quote.prices.numbered.hand_numbered = getCost({
       l: 303,
       type: 'numbered',
@@ -1411,59 +1459,13 @@ class Quote {
     quote.print_finish = quote.prices.print_finish[params.print_finish]
 
     // insert
-    if (params.insert && params.insert !== 'none') {
-      quote.insert = getCost({ l: 286, type: 'insert', option: '', onceByCopy: true, active: true })
-      if (params.insert === 'two_sides_printed') {
-        quote.insert += getCost({
-          l: {
-            '12"': 204,
-            '10"': 205,
-            '7"': false
-          },
-          type: 'insert',
-          option: 'two_sides_printed',
-          onceByCopy: true,
-          active: params.insert === 'two_sides_printed'
-        })
-      } else if (params.insert === 'one_side_printed') {
-        quote.insert += getCost({
-          l: {
-            '12"': 202,
-            '10"': 203,
-            '7"': false
-          },
-          type: 'insert',
-          option: 'one_side_printed',
-          onceByCopy: true,
-          active: params.insert === 'one_side_printed'
-        })
-      } else if (params.insert === 'booklet_printed') {
-        quote.insert += getCost({
-          l: 286,
-          type: 'insert',
-          option: 'booklet_printed',
-          onceByCopy: true,
-          active: params.insert === 'booklet_printed'
-        })
-      }
-    }
-
     quote.prices.insert.base = getCost({
       l: 286,
       type: 'insert',
       option: 'base',
       onceByCopy: true,
-      active: params.insert === 'base'
+      active: params.insert !== 'none'
     })
-    quote.prices.insert.booklet_printed =
-      quote.prices.insert.base +
-      getCost({
-        l: 286,
-        type: 'insert',
-        option: 'booklet printed',
-        onceByCopy: true,
-        active: params.insert === 'booklet_printed'
-      })
     quote.prices.insert.one_side_printed =
       quote.prices.insert.base +
       getCost({
@@ -1489,6 +1491,19 @@ class Quote {
         option: 'two_sides_printed',
         onceByCopy: true,
         active: params.insert === 'two_sides_printed'
+      })
+    quote.prices.insert.booklet_printed =
+      quote.prices.insert.base +
+      getCost({
+        l: {
+          '12"': 252,
+          '10"': 253,
+          '7"': 262
+        },
+        type: 'insert',
+        option: 'booklet printed',
+        onceByCopy: true,
+        active: params.insert === 'booklet_printed'
       })
     quote.insert = quote.prices.insert[params.insert]
 
@@ -1534,27 +1549,24 @@ class Quote {
         active: true
       })
       if (params.nb_vinyl === 1 || params.nb_vinyl === 2) {
-        quote.test_pressing +=
-          getCost({
-            l: 37,
-            type: 'test_pressing',
-            option: '',
-            onceByCopy: true,
-            active: true
-          }) * 2
+        quote.test_pressing += getCost({
+          l: 37,
+          type: 'test_pressing',
+          option: '',
+          quantity: 2,
+          active: true
+        })
       }
       if (params.nb_vinyl === 3 || params.nb_vinyl === 4) {
-        quote.test_pressing +=
-          getCost({
-            l: 38,
-            type: 'test_pressing',
-            option: '',
-            onceByCopy: true,
-            active: true
-          }) * 2
+        quote.test_pressing += getCost({
+          l: 38,
+          type: 'test_pressing',
+          option: '',
+          quantity: 2,
+          active: true
+        })
       }
     }
-
     quote.energy_cost = 0.065 * params.quantity * params.nb_vinyl
 
     return quote
@@ -1782,7 +1794,7 @@ class Quote {
         if (rowNumber === 1) {
           return
         }
-        if (worksheet.name === 'SNA') {
+        if (worksheet.name === 'SNA_OLD') {
           const line = {
             id: rowNumber,
             label: row.getCell('A').toString(),
@@ -1808,7 +1820,7 @@ class Quote {
           } else {
             costs[worksheet.name].push(line)
           }
-        } else if (worksheet.name === 'SNA2') {
+        } else if (worksheet.name === 'SNA') {
           const line = {
             id: rowNumber,
             label: row.getCell('A').toString(),
@@ -1817,8 +1829,8 @@ class Quote {
             type: row.getCell('B').toString(),
             q100: +row.getCell('C').toString(),
             q200: +row.getCell('D').toString(),
-            q300: +row.getCell('D').toString(),
-            q500: +row.getCell('E').toString(),
+            q300: +row.getCell('E').toString(),
+            q500: +row.getCell('F').toString(),
             q1000: +row.getCell('G').toString(),
             q2000: +row.getCell('H').toString(),
             q3000: +row.getCell('I').toString(),

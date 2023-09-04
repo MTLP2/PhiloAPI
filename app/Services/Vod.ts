@@ -30,6 +30,7 @@ class Vod {
       vod.created_at = Utils.date()
 
       if (params.type === 'direct_pressing' && !params.user.user_id) {
+        vod.fee_prod = params.fee_prod || 30
         vod.user_id = 181134
       }
 
@@ -47,7 +48,7 @@ class Vod {
       })
 
       if (params.type === 'direct_pressing') {
-        const html = await View.render('quote', {
+        const html = await View.render('emails.quote', {
           ...params,
           total: params.costs.at(-1).value,
           discount: Utils.round(params.costs.at(-1).value / 1.05),
@@ -69,6 +70,9 @@ class Vod {
       }
     }
 
+    if ((await Utils.isTeam(params.user.id)) && params.fee_prod) {
+      vod.fee_prod = params.fee_prod
+    }
     vod.quote = params.quote
     vod.currency = params.currency
     if (vod.user_id === null && params.user.user_id !== 0) {

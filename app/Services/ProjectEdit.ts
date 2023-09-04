@@ -24,6 +24,9 @@ class ProjectEdit {
       .belongsTo('customer')
       .first()
 
+    if (!(await Utils.isTeam(params.user.id))) {
+      delete project.fee_prod
+    }
     delete project.fee
     delete project.fee_date
     delete project.fee_distrib
