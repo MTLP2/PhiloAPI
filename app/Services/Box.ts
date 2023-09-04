@@ -1004,26 +1004,6 @@ class Box {
   }
 
   static async getBoxToDispatch() {
-    // const user = await DB().execute(`
-    //   SELECT box.id, box.styles, box.step, box.periodicity, box.date_stop, box.type, box.end, d1.created_at as last_dispatch,
-    //     box_project.gifts, project1, project2, project3, project4, project5, project6, user.email,
-    //     box_project.created_at, user.email, user.lang, box.user_id, (SELECT count(*) FROM box_sponsor where box_id = box.id AND used IS NULL) as vinyl_gift
-    //   FROM user, box
-    //   LEFT OUTER JOIN box_project ON (box.id = box_project.box_id AND box_project.date = DATE_FORMAT(NOW(), "%Y-%m-01"))
-    //   LEFT OUTER JOIN box_dispatch d1 ON (box.id = d1.box_id)
-    //   LEFT OUTER JOIN box_dispatch d2 ON (box.id = d2.box_id AND
-    //       (d1.created_at < d2.created_at OR (d1.created_at = d2.created_at AND d1.id < d2.id)))
-    //   WHERE d2.id IS NULL
-    //     AND box.user_id = user.id
-    //     AND box.step = 'confirmed'
-    //     AND box.dispatch_left > 0
-    //     AND (d1.created_at IS NULL OR DATE_FORMAT(d1.created_at, "%Y-%m") != DATE_FORMAT(NOW(), "%Y-%m"))
-    //   ORDER BY
-    //     box.id asc,
-    //     box_project.created_at IS NOT NULL DESC,
-    //     box_project.created_at ASC
-    // `)
-
     const user = await DB('user')
       .select(
         'box.id',
