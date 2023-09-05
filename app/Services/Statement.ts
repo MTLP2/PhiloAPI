@@ -1735,6 +1735,7 @@ class StatementService {
         'vod.com_id',
         'statement_comment',
         'balance_comment',
+        'vod.follow_up_payment',
         'user.name as user',
         'vod.type',
         'step'

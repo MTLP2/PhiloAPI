@@ -1066,6 +1066,7 @@ class Admin {
       vod.send_statement = params.send_statement
       vod.storage_costs = params.storage_costs
       vod.balance_followup = params.balance_followup
+      vod.follow_up_payment = params.follow_up_payment
       vod.statement_comment = params.statement_comment || null
     }
     if (params.com) {
