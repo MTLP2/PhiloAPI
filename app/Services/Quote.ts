@@ -396,6 +396,7 @@ class Quote {
     quote.tax = Math.round(quote.total * 0.2)
     quote.total_tax = quote.total + quote.tax
     quote.quantity = params.quantity
+    quote.currency = data.currency
 
     const feeBase = 0.25
     let fee = feeBase
