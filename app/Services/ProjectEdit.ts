@@ -148,6 +148,8 @@ class ProjectEdit {
       params.cover4_picture ||
       params.cover5_picture ||
       params.vinyl_picture ||
+      params.custom_disc_picture ||
+      params.picture_project_picture ||
       params.background ||
       (vod && params.color_vinyl && vod.color_vinyl && params.color_vinyl !== vod.color_vinyl) ||
       (vod && vod.type_vinyl && params.type_vinyl !== vod.type_vinyl) ||
@@ -162,11 +164,13 @@ class ProjectEdit {
         cover3: params.cover3_picture,
         cover4: params.cover4_picture,
         cover5: params.cover5_picture,
-        vinyl_picture: params.vinyl_picture,
+        custom_disc: params.custom_disc,
+        vinyl_picture: params.vinyl_picture || params.custom_disc_picture,
         back: params.back_picture || params.back_cover || params.back_cover_picture,
         label: params.label_picture,
         label_bside: params.label_bside_picture,
         background: params.background,
+        picture_project: params.picture_project_picture,
         color: params.color_vinyl,
         sleeve: params.sleeve
       })

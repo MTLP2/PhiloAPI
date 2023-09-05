@@ -4803,7 +4803,11 @@ class Admin {
   }
 
   static removeImageFromProject = async ({ id: projectId, type }) => {
-    const project = await DB('project').find(projectId)
+    const project = await DB('project')
+      .select('project.*', 'vod.picture_project')
+      .join('vod', 'vod.project_id', 'project.id')
+      .where('project.id', projectId)
+      .first()
 
     // Type -> fileName map
     const typeToFileName = {
@@ -4813,12 +4817,14 @@ class Admin {
       cover3: { name: 'cover3', withOriginal: true },
       cover4: { name: 'cover4', withOriginal: true },
       cover5: { name: 'cover5', withOriginal: true },
+      picture_project: { name: project.picture_project },
       label: { name: 'label' },
       label_bside: { name: 'label_bside' },
       custom_disc: { name: 'disc' }
     }
 
     const files = typeToFileName[type] ?? null
+    console.log(files)
     if (!files) throw new Error('Invalid type to remove picture')
 
     // Delete files
@@ -4836,6 +4842,9 @@ class Admin {
 
         case 'label_bside':
           await DB('vod').where('project_id', projectId).update({ is_label_bside: 0 })
+          break
+        case 'picture_project':
+          await DB('vod').where('project_id', projectId).update({ picture_project: null })
           break
 
         default:

@@ -151,6 +151,24 @@ class Artwork {
         })
       }
 
+      if (params.picture_project) {
+        if (project.picture_project) {
+          await Storage.deleteImage(`projects/${project.picture}/${project.picture_project}`)
+        }
+        const file = Utils.uuid()
+        Storage.uploadImage(
+          `projects/${project.picture}/${file}`,
+          Buffer.from(
+            params.picture_project.replace(/^data:image\/(png|jpg|jpeg);base64,/, ''),
+            'base64'
+          ),
+          { type: 'png', width: 1000, quality: 100 }
+        )
+        await DB('vod').where('project_id', project.id).update({
+          picture_project: file
+        })
+      }
+
       // await Artwork.generateVinyl(uid, project)
       await Artwork.generateDisc(project)
 
