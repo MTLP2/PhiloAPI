@@ -181,7 +181,7 @@ class Artwork {
         await Artwork.generateSleeve(uid, project.sleeve, project.nb_vinyl)
       }
 
-      return { success: true }
+      return { success: true, picture: uid }
     } catch (e) {
       console.log(e)
       return {

@@ -4824,7 +4824,6 @@ class Admin {
     }
 
     const files = typeToFileName[type] ?? null
-    console.log(files)
     if (!files) throw new Error('Invalid type to remove picture')
 
     // Delete files
@@ -4853,9 +4852,9 @@ class Admin {
     }
 
     // Update project artwork
-    await Artwork.updateArtwork({ id: projectId })
+    const res = await Artwork.updateArtwork({ id: projectId })
 
-    return { success: true, type }
+    return { success: true, type, picture: res.picture }
   }
 
   static deeplTranslate = async ({ text, source_lang: sourceLang, target_lang: targetLang }) => {
