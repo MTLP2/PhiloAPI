@@ -235,11 +235,13 @@ class Song {
 
   static saveTracks = async (tracks) => {
     for (const track of tracks) {
-      await DB('song').where('id', track.id).update({
-        disc: track.disc,
-        side: track.side,
-        position: track.position
-      })
+      if (track.id) {
+        await DB('song').where('id', track.id).update({
+          disc: track.disc,
+          side: track.side,
+          position: track.position
+        })
+      }
     }
 
     return { success: true }
