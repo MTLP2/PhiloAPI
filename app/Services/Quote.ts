@@ -1517,7 +1517,7 @@ class Quote {
         active: params.sticker === 'sticker'
       }) +
       getCost({
-        l: 299,
+        l: 300,
         type: 'sticker',
         option: 'sticker',
         onceByCopy: true,
