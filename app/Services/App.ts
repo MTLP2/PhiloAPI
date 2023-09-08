@@ -1999,6 +1999,129 @@ class App {
     return text
   }
 
+  static async getOfficialCharts(payload: { country: 'FR' | 'GB' }) {
+    const date = moment().subtract(1, 'days')
+    const orders: {
+      order_shop_id: number
+      step: string
+      customer_id: number
+      project_id: number
+      quantity: number
+      price: number
+      total: number
+      currency: string
+      country_id: string
+      zip_code: string
+      barcode?: string
+      date_fr: string
+      barcodes: string
+      created_at: string
+    }[] = await DB('order_shop as os')
+      .select(
+        'os.date_export',
+        'oi.order_shop_id',
+        'os.step',
+        'v.project_id',
+        'p.artist_name',
+        'p.name',
+        'oi.price',
+        'oi.quantity',
+        'oi.total',
+        'oi.currency',
+        'c.country_id',
+        'c.zip_code',
+        'c.id as cid',
+        'v.barcode as barcodes',
+        'product.barcode',
+        'product.type'
+      )
+      .join('customer as c', 'os.customer_id', 'c.id')
+      .join('order_item as oi', 'oi.order_shop_id', 'os.id')
+      .join('project as p', 'p.id', 'oi.project_id')
+      .join('vod as v', 'v.project_id', 'p.id')
+      .join('project_product', 'project_product.project_id', 'p.id')
+      .join('product', 'product.id', 'project_product.product_id')
+      .whereIn('product.type', ['cd', 'vinyl', 'tape'])
+      .where('is_paid', true)
+      .where('c.country_id', 'like', payload.country)
+      .whereRaw(`DATE_FORMAT(os.date_export, "%Y-%m-%d") = '${date.format('YYYY-MM-DD')}'`)
+      .all()
+
+    console.log(DB.getSql())
+    const currenciesDB = await Utils.getCurrenciesDb()
+    const currencies = await Utils.getCurrencies(
+      payload.country === 'FR' ? 'EUR' : 'GBP',
+      currenciesDB
+    )
+
+    console.log(orders)
+    const zipCode = {}
+
+    for (const i in orders) {
+      const o = orders[i]
+      if (orders[i].quantity > 5) {
+        orders[i].quantity = 5
+      }
+      orders[i].total = o.price * o.quantity
+      orders[i].total = o.total / (o.barcodes ? o.barcodes.split(',').length : 1)
+      orders[i].total = Utils.round(o.total / currencies[o.currency])
+      orders[i].date_fr = date.format('DD/MM/YYYY')
+      o.price = Utils.round(orders[i].total / orders[i].quantity) * 100
+
+      if (payload.country === 'GB') {
+        o.zip_code = o.zip_code.substring(0, 2).toUpperCase().replace(/[0-9]/g, '')
+        if (!zipCode[o.zip_code]) {
+          zipCode[o.zip_code] = {}
+        }
+        if (!zipCode[o.zip_code][o.barcode]) {
+          zipCode[o.zip_code][o.barcode] = {}
+        }
+        if (!zipCode[o.zip_code][o.barcode][o.price]) {
+          zipCode[o.zip_code][o.barcode][o.price] = 0
+        }
+        zipCode[o.zip_code][o.barcode][o.price]++
+      }
+    }
+
+    console.log(zipCode)
+
+    console.log(orders)
+    if (payload.country === 'FR') {
+      const csv = Utils.arrayToCsv(
+        [
+          { name: 'date', index: 'date_fr' },
+          { name: 'postcode', index: 'zip_code' },
+          { name: 'barcode', index: 'barcode' },
+          { name: 'value', index: 'total' },
+          { name: 'quantity', index: 'quantity' },
+          { name: 'title', index: 'name' },
+          { name: 'artist_name', index: 'artist_name' }
+        ],
+        orders
+      )
+      return csv
+    } else {
+      let csv = ''
+
+      for (const [zip, barcodes] of Object.entries(zipCode) as any) {
+        csv += `0${zip.padEnd(5, ' ')}${date.format('YYMMDD')}\n`
+        let i = 0
+        for (const [barcode, prices] of Object.entries(barcodes) as any) {
+          for (const [price, quantity] of Object.entries(prices) as any) {
+            csv += `1${barcode.padEnd(13, ' ')}${quantity.toString().padStart(6, '0')}${price
+              .toString()
+              .padStart(5, '0')}\n`
+            i++
+          }
+        }
+        csv += `9${zip.padEnd(5, ' ')}${i.toString().padStart(5, '0')}\n`
+      }
+      // hmv060101.asc
+      // <retailer/text><date>.asc
+      return csv
+    }
+  }
+
   static async uploadCharts() {
     const us = await App.getLuminateCharts('US')
     const ca = await App.getLuminateCharts('CA')
@@ -2027,6 +2150,10 @@ class App {
       .catch((err) => {
         console.error(err.message)
       })
+  }
+
+  static async uploadChartsUk() {
+    const uk = await App.getOfficialCharts()
   }
 }
 
