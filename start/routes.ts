@@ -307,6 +307,8 @@ Route.group(() => {
 Route.group(() => {
   Route.get('/stats', 'AdminController.getStats')
   Route.get('/stats2', 'AdminController.getStats2')
+  Route.get('/linktree', 'AdminController.getLinktree')
+  Route.post('/linktree', 'AdminController.saveLinktree')
   Route.get('/business', 'AdminController.getBusiness')
   Route.get('/resp-prod', 'AdminController.getRespProd')
   Route.get('/stripe-balance', 'AdminController.getStripeBalance')
