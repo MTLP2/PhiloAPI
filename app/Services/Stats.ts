@@ -2628,6 +2628,55 @@ class Stats {
     return d
   }
 
+  static async getLinktree() {
+    const projects = await DB('linktree').orderBy('name').all()
+    if (!projects.length) {
+      return []
+    } else {
+      console.log(projects)
+      return projects
+    }
+  }
+
+  static async saveLinktree(params: {
+    name: string
+    links?: string[]
+    linktree_id?: number
+    url?: string
+    type?: string
+  }) {
+    const { name } = params
+    const project = await DB('linktree')
+      .where('name', name)
+      .join('linktree_link', 'linktree_link.linktree_id', 'linktree.id')
+      .first()
+
+    if (!project) {
+      const [id] = await DB('linktree').insert({
+        name: name
+      })
+      return id
+    } else {
+      await DB('linktree').where('id', project.id).update({
+        name: name
+      })
+      return project.id
+    }
+  }
+
+  static async getOneLinktree(params: { id: number }) {
+    const { id } = params
+    const project = await DB('linktree').where('id', id).first()
+    if (!project) {
+      return null
+    }
+    const links = await DB('linktree_link').where('linktree_id', id).all()
+    return {
+      ...project,
+      links
+    }
+  }
+
   static async getProjectsTurnover(params: { start?: string; end?: string }) {
     const currenciesDb = await Utils.getCurrenciesDb()
     const currencies = await Utils.getCurrencies('EUR', currenciesDb)
