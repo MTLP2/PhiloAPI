@@ -43,6 +43,14 @@ class AdminController {
     return Stats.getStats2(params)
   }
 
+  getLinktree({ params }) {
+    return Stats.getLinktree(params)
+  }
+
+  saveLinktree({ params }) {
+    return Stats.saveLinktree(params)
+  }
+
   getProjectsTurnover({ params }) {
     return Stats.getProjectsTurnover(params)
   }
