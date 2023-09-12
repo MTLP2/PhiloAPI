@@ -1655,7 +1655,6 @@ class Admin {
         'c.name',
         'c.firstname',
         'c.lastname',
-        'vod.date_shipping',
         'c.address',
         'c.zip_code',
         'c.city',
@@ -1664,11 +1663,8 @@ class Admin {
         'project.artist_name',
         'project.name as project_name',
         'project.picture',
-        'vod.is_licence',
         'user.facebook_id',
         'user.soundcloud_id',
-        'feedback.rating as feedback_rating',
-        'feedback.id as feedback_id',
         'oi.discount_code',
         DB.raw("CONCAT(c.firstname, ' ', c.lastname) AS user_infos")
       )
@@ -1676,9 +1672,7 @@ class Admin {
       .join('order', 'oi.order_id', 'order.id')
       .join('user', 'user.id', 'order.user_id')
       .join('project', 'project.id', 'oi.project_id')
-      .join('vod', 'vod.project_id', 'oi.project_id')
       .leftJoin('customer as c', 'c.id', 'os.customer_id')
-      .leftJoin('feedback', 'feedback.order_id', 'order.id')
       .where('os.step', '!=', 'creating')
 
     if (params.project_id) {
