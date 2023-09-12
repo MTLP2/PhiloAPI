@@ -1014,13 +1014,17 @@ class Cart {
         }
 
         if (!costs || !costs.standard || costs.standard > Utils.round(transporter[weight] + cost)) {
+          let standard = Utils.round(transporter[weight] + cost)
+          if (params.transporter === 'seko') {
+            standard = Utils.round(standard * 1.15)
+          }
           costs = {
             ...costs,
             transporter: params.transporter,
             partner: transporter.transporter,
             currency: transporter.currency,
-            standard: Utils.round(transporter[weight] + cost),
-            tracking: Utils.round(transporter[weight] + cost + 2)
+            standard: standard,
+            tracking: Utils.round(standard + 2)
           }
         }
       }
