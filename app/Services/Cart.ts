@@ -1166,7 +1166,6 @@ class Cart {
       transporters = params.transporters
     }
 
-    console.log(transporters)
     const shippings: any[] = []
     if (transporters.all || transporters.daudin) {
       const daudin = await Cart.calculateShippingByTransporter({
