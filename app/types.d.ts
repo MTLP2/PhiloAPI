@@ -221,7 +221,9 @@ enum Transporters {
   whiplash_uk = 'whiplash_uk',
   sna = 'sna',
   soundmerch = 'soundmerch',
-  shipehype = 'shipehype'
+  shipehype = 'shipehype',
+  rey_vinilo = 'rey_vinilo',
+  seko = 'seko'
 }
 
 const enum Currencies {

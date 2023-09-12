@@ -1017,6 +1017,12 @@ class Admin {
       if (params.transporter_sna) {
         transporters.sna = true
       }
+      if (params.transporter_seko) {
+        transporters.seko = true
+      }
+      if (params.transporter_rey_vinilo) {
+        transporters.rey_vinilo = true
+      }
       if (vod.transporters !== JSON.stringify(transporters)) {
         vod.historic.push({
           type: 'transporters',
@@ -4887,7 +4893,9 @@ class Admin {
       whiplash_uk = 'whiplash_uk',
       sna = 'sna',
       soundmerch = 'soundmerch',
-      shipehype = 'shipehype'
+      shipehype = 'shipehype',
+      seko = 'seko',
+      rey_vinilo = 'rey_vinilo'
     }
 
     // Check if current VOD has "check_address" status. Else, throw error
