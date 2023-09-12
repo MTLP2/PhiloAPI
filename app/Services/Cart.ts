@@ -2502,6 +2502,7 @@ class Cart {
         'picture_project',
         'vod.price',
         'vod.currency',
+        'vod.barcode',
         'category',
         'is_shop',
         'p.picture',
