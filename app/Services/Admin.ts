@@ -942,9 +942,11 @@ class Admin {
       await DB('project_user')
         .where('user_id', vod.user_id)
         .where('project_id', vod.project_id)
-        .update({
-          user_id: params.user_id
-        })
+        .delete()
+      await DB('project_user').insert({
+        user_id: params.user_id,
+        project_id: vod.project_id
+      })
       vod.user_id = params.user_id
     }
 
