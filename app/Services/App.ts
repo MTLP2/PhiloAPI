@@ -73,11 +73,12 @@ class App {
       if (moment().format('E') < '6') {
         await App.alertToSync()
       }
-
+      if (+moment().format('D') === 25) {
+        await Box.checkReminderSelection()
+      }
       if (+moment().format('D') === 28) {
         await Statement.setStorageCosts()
         await Statement.sendStatements()
-        await Box.checkSelection()
       }
       if (moment().endOf('month').format('YYYY-MM-DD') === moment().format('YYYY-MM-DD')) {
         await Box.setDispatchs()
