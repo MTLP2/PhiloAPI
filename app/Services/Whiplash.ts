@@ -627,11 +627,7 @@ class Whiplash {
             us !== products[item.sku].stock_whiplash ||
             uk !== products[item.sku].stock_whiplash_uk
           ) {
-            if (
-              us &&
-              (!products[item.sku].stock_whiplash ||
-                Math.abs(products[item.sku].stock_whiplash - us) > 5)
-            ) {
+            if (!products[item.sku].stock_whiplash && us > 5) {
               newStocks.push({
                 ...products[item.sku],
                 type: 'whiplash',
@@ -639,11 +635,7 @@ class Whiplash {
                 new_quantity: us
               })
             }
-            if (
-              uk &&
-              (!products[item.sku].stock_whiplash_uk ||
-                Math.abs(products[item.sku].stock_whiplash_uk - uk) > 5)
-            ) {
+            if (!products[item.sku].stock_whiplash_uk && uk > 5) {
               newStocks.push({
                 ...products[item.sku],
                 type: 'whiplash_uk',

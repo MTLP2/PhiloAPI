@@ -608,7 +608,7 @@ class Elogik {
       })
 
       if (product && qty !== product.quantity) {
-        if (!product.quantity || Math.abs(product.quantity - qty) > 5) {
+        if (!product.quantity && qty > 5) {
           newStocks.push({
             ...product,
             new_quantity: qty
@@ -624,7 +624,7 @@ class Elogik {
     }
     if (newStocks.length > 0) {
       await Notification.sendEmail({
-        to: ['bl@diggersfactory.com', 'alexis@diggersfactory.com'].join(','),
+        to: ['ismail@diggersfactory.com', 'alexis@diggersfactory.com'].join(','),
         subject: `Daudin - new stocks`,
         html: `
         ${newStocks
