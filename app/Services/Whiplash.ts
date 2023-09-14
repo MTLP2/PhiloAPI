@@ -601,6 +601,7 @@ class Whiplash {
         }
       }
     } else {
+      const newStocks: any = []
       const items: any = await Whiplash.getAllItems()
       for (const item of items) {
         if (!products[item.sku]) {
@@ -626,6 +627,30 @@ class Whiplash {
             us !== products[item.sku].stock_whiplash ||
             uk !== products[item.sku].stock_whiplash_uk
           ) {
+            if (
+              us &&
+              (!products[item.sku].stock_whiplash ||
+                Math.abs(products[item.sku].stock_whiplash - us) > 5)
+            ) {
+              newStocks.push({
+                ...products[item.sku],
+                type: 'whiplash',
+                quantity: products[item.sku].stock_whiplash,
+                new_quantity: us
+              })
+            }
+            if (
+              uk &&
+              (!products[item.sku].stock_whiplash_uk ||
+                Math.abs(products[item.sku].stock_whiplash_uk - uk) > 5)
+            ) {
+              newStocks.push({
+                ...products[item.sku],
+                type: 'whiplash_uk',
+                quantity: products[item.sku].stock_whiplash_uk,
+                new_quantity: uk
+              })
+            }
             if (us !== products[item.sku].stock_whiplash) {
               Stock.save({
                 product_id: products[item.sku].id,
@@ -644,6 +669,28 @@ class Whiplash {
             }
           }
         }
+      }
+
+      if (newStocks.length > 0) {
+        await Notification.sendEmail({
+          to: ['bl@diggersfactory.com', 'alexis@diggersfactory.com'].join(','),
+          subject: `Whiplash - new stocks`,
+          html: `
+          ${newStocks
+            .map(
+              (product) =>
+                `<ul>
+                <li><strong>Product:</strong> https://www.diggersfactory.com/sheraf/product/${product.id}</li>
+                <li><strong>Transporter:</strong> ${product.type}</li>
+                <li><strong>Barcode:</strong> ${product.barcode}</li>
+                <li><strong>Name:</strong> ${product.name}</li>
+                <li><strong>Quantity:</strong> ${product.quantity} => ${product.new_quantity}</li>
+                </ul>
+                `
+            )
+            .join('')}
+        `
+        })
       }
     }
   }
