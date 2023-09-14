@@ -363,16 +363,11 @@ class Quote {
 
     prices.mechanical_right[0] = 0
     prices.mechanical_right[1] = 100
-    quote.design = prices.mechanical_right[params.mechanical_right]
+    quote.mechanical_right = prices.mechanical_right[params.mechanical_right]
 
     prices.partner_mastering[0] = 0
     prices.partner_mastering[1] = 60 * (data.tracks?.length || 0)
-    quote.design = prices.partner_mastering[params.partner_mastering]
-
-    quote.mastering = 0
-    if (params.partner_mastering) {
-      quote.mastering = Math.round(+data.mastering_quantity * 60)
-    }
+    quote.mastering = prices.partner_mastering[params.partner_mastering]
 
     let currency = 1
     if (data.currency !== 'EUR') {
