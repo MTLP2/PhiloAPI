@@ -109,6 +109,7 @@ class Admin {
     if (filters) {
       for (const f in filters) {
         const filter = filters[f]
+        filter.value = decodeURIComponent(filter.value)
         if (filter.name === 'customer.email') {
           projects.where((query) => {
             query.where('customer.email', 'LIKE', `%${filter.value}%`)
@@ -117,8 +118,17 @@ class Admin {
           filters.splice(f, 1)
           params.filters = JSON.stringify(filters)
         }
+        if (filter.name === 'customer_name') {
+          projects.where(
+            DB.raw(`CONCAT(customer.firstname, ' ', customer.lastname) LIKE '%${filter.value}%'`),
+            null
+          )
+          filters.splice(f, 1)
+          params.filters = JSON.stringify(filters)
+        }
       }
     }
+
     const res = await Utils.getRows<any>({ ...params, query: projects })
     return res
   }
