@@ -2472,7 +2472,8 @@ class Admin {
     about_me: string
     confirmed: number
     unsubscribed: number
-    balance_followup: number
+    balance_followup: boolean
+    follow_up_payment: boolean
     balance_comment: number
     country_id: number
     styles: string
@@ -2492,6 +2493,7 @@ class Admin {
     user.confirmed = params.confirmed
     user.unsubscribed = params.unsubscribed
     user.balance_followup = params.balance_followup
+    user.follow_up_payment = params.follow_up_payment
     user.balance_comment = params.balance_comment
     user.country_id = params.country_id || null
     user.styles = JSON.stringify(params.styles)
