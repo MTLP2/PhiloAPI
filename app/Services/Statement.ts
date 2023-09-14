@@ -803,6 +803,7 @@ class StatementService {
       project_id: params.id,
       start: params.start,
       end: params.end,
+      periodicity: 'months',
       only_data: true
     })
     if (!data) {
