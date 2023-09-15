@@ -1739,6 +1739,7 @@ class StatementService {
         'vod.balance_followup',
         'vod.follow_up_payment',
         'user.name as user',
+        'user.follow_up_payment as user_follow_up_payment',
         'vod.type',
         'step'
       )
@@ -1909,7 +1910,8 @@ class StatementService {
       let i = 1
       for (const project of <any>(
         Object.values(projects).filter(
-          (p: any) => p.type !== 'direct_pressing' && !p.follow_up_payment
+          (p: any) =>
+            p.type !== 'direct_pressing' && !p.follow_up_payment && !p.user_follow_up_payment
         )
       )) {
         i++
@@ -1929,7 +1931,8 @@ class StatementService {
       worksheet2.columns = columns
       for (const project of <any>(
         Object.values(projects).filter(
-          (p: any) => p.type !== 'direct_pressing' && p.follow_up_payment
+          (p: any) =>
+            p.type !== 'direct_pressing' && (p.follow_up_payment || p.user_follow_up_payment)
         )
       )) {
         i++
@@ -1966,7 +1969,8 @@ class StatementService {
       let j = 1
       for (const project of <any>(
         Object.values(projects).filter(
-          (p: any) => p.type === 'direct_pressing' && !p.follow_up_payment
+          (p: any) =>
+            p.type === 'direct_pressing' && !p.follow_up_payment && !p.user_follow_up_payment
         )
       )) {
         j++
@@ -1987,13 +1991,14 @@ class StatementService {
       j = 1
       for (const project of <any>(
         Object.values(projects).filter(
-          (p: any) => p.type === 'direct_pressing' && !p.follow_up_payment
+          (p: any) =>
+            p.type === 'direct_pressing' && (p.follow_up_payment || p.user_follow_up_payment)
         )
       )) {
         j++
         directPayments.addRow(project)
         if (project.direct_balance !== 0) {
-          directPressing.getRow(j).fill = {
+          directPayments.getRow(j).fill = {
             type: 'pattern',
             pattern: 'solid',
             fgColor: { argb: project.direct_balance > 0 ? 'ecffe5' : 'ffe5e5' }
