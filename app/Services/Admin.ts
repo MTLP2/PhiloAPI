@@ -580,7 +580,7 @@ class Admin {
       stats.shipping += (pourcent * (o.shipping * o.currency_rate_project)) / tax
     }
 
-    if (filteredBarcodes) {
+    if (filteredBarcodes && !isNaN(project.barcode)) {
       const boxes = await DB()
         .from('box_dispatch')
         .where('barcodes', 'like', `%${project.barcode}%`)
