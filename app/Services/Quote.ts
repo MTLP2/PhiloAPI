@@ -424,7 +424,7 @@ class Quote {
     quote.profit = Utils.round(data.price * quantitySell - quote.total_tax - quote.fee)
     quote.profit_distribution = quote.profit
     quote.total_cost = Utils.round(quote.total_tax + quote.fee)
-    quote.per_vinyl = Utils.round(quote.total_cost / quantitySell)
+    quote.per_vinyl = Utils.round(quote.total_cost / params.quantity)
 
     if (params.user) {
       const user = await DB('user').where('id', params.user.id).first()
