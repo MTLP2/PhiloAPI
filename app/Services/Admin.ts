@@ -342,6 +342,9 @@ class Admin {
       is_distrib: false,
       quantity: Object.values(stocksSite).reduce((a: number, b: number) => a + (b < 0 ? 0 : b), 0)
     })
+    if (!project.is_shop && project.type === 'funding') {
+      project.stock = 'no limit'
+    }
     project.stocks.unshift({
       type: 'project',
       is_distrib: false,
