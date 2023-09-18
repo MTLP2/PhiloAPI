@@ -2403,6 +2403,12 @@ class Admin {
         query.orWhere('user.id', 'like', `%${params.search}%`)
       })
     }
+    if (params.start) {
+      users.where('user.created_at', '>=', params.start)
+    }
+    if (params.end) {
+      users.where('user.created_at', '<=', params.end)
+    }
 
     params.query = users
 
