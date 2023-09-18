@@ -242,8 +242,12 @@ class App {
           content: Buffer.from(params.file.data, 'base64')
         })
       }
+      let to = 'contact@diggersfactory.com'
+      if (params.type === 'cd' || params.type === 'merch' || params.type === 'tape') {
+        to = 'kendal@diggersfactory.com'
+      }
       await Notification.sendEmail({
-        to: 'contact@diggersfactory.com',
+        to: to,
         subject: `${params.email} : ${params.type}`,
         html: `<p>
           <ul>
