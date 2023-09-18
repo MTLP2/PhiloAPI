@@ -325,7 +325,7 @@ class Quote {
       }
       price = price * (1 + feeProd / 100)
       if (data.factory === 'vdp') {
-        price = price * 0.91
+        price = price * 0.85
       }
 
       return Math.ceil(price)
