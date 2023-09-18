@@ -465,7 +465,7 @@ class Stock {
     if (product.parent_id) {
       Stock.setParent(product.parent_id)
     }
-    Stock.setOrders({ productIds: [payload.product_id] })
+
     Stock.setStockProject({ productIds: [payload.product_id] })
 
     const filter = (item) => {
