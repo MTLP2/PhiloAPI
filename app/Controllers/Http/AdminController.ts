@@ -292,7 +292,7 @@ class AdminController {
     return Order.exportCaByProjectId(params)
   }
 
-  async extractOrders({ params, user }) {
+  async extractOrders({ params }) {
     return Admin.extractOrders(params)
   }
 

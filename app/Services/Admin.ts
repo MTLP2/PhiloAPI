@@ -1623,6 +1623,7 @@ class Admin {
   static getOrders = async (params: {
     project_id?: string
     type?: 'no_tracking' | 'no_export'
+    is_licence?: boolean
     sort?: string
     order?: 'desc' | 'asc'
     start?: string
@@ -1710,6 +1711,10 @@ class Admin {
     }
     if (params.end) {
       orders.where('os.created_at', '<=', `${params.end} 23:59`)
+    }
+    if (params.is_licence) {
+      orders.join('vod', 'project.id', 'vod.project_id')
+      orders.where('vod.is_licence', true)
     }
     if (params.type === 'no_export') {
       orders.whereNull('os.date_export')
