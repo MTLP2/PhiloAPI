@@ -2246,7 +2246,7 @@ class Project {
     return res
   }
 
-  static duplicate = async (id) => {
+  static duplicate = async (id: number) => {
     let project = await DB('project').where('id', id).first()
 
     const uid = Utils.uuid()
@@ -2297,6 +2297,14 @@ class Project {
         ...item,
         id: null,
         project_id: project.id
+      })
+    }
+
+    const users = await DB('project_user').where('project_id', id).all()
+    for (const user of users) {
+      await DB('project_user').insert({
+        project_id: project.id,
+        user_id: user.user_id
       })
     }
 
