@@ -570,6 +570,9 @@ class Whiplash {
         const warehouses: any = await Whiplash.api(
           `items/${product.whiplash_id}/warehouse_quantities`
         )
+        if (warehouses.errors) {
+          return false
+        }
 
         let us = 0
         let uk = 0
