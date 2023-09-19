@@ -33,6 +33,7 @@ import ProjectService from 'App/Services/Project'
 import Dispatch from 'App/Services/Dispatch'
 import ShippingWeight from 'App/Services/ShippingWeight'
 import Log from 'App/Services/Log'
+import Linktree from 'App/Services/Linktree'
 
 class AdminController {
   getStats({ params }) {
@@ -44,11 +45,23 @@ class AdminController {
   }
 
   getLinktree({ params }) {
-    return Stats.getLinktree(params)
+    return Linktree.findAll(params)
+  }
+
+  getOneLinktree({ params }) {
+    return Linktree.find(params)
   }
 
   saveLinktree({ params }) {
-    return Stats.saveLinktree(params)
+    return Linktree.save(params)
+  }
+
+  saveLinktreeLink({ params }) {
+    return Linktree.saveLink(params)
+  }
+
+  deleteLinktree({ params }) {
+    return Linktree.delete(params)
   }
 
   getProjectsTurnover({ params }) {
