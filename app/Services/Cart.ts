@@ -928,7 +928,17 @@ class Cart {
     return shop
   }
 
-  static calculateShippingByTransporter = async (params) => {
+  static calculateShippingByTransporter = async (params: {
+    transporter: string
+    partner: string
+    country_id: string
+    weight: number
+    quantity: number
+    insert: number
+    mode?: string
+    state?: string
+    pickup?: boolean
+  }) => {
     const transporters = await DB('shipping_weight')
       .where('partner', 'like', params.partner)
       .where('country_id', params.country_id)
@@ -1004,13 +1014,17 @@ class Cart {
         }
 
         if (!costs || !costs.standard || costs.standard > Utils.round(transporter[weight] + cost)) {
+          let standard = Utils.round(transporter[weight] + cost)
+          if (params.transporter === 'seko') {
+            standard = Utils.round(standard * 1.15)
+          }
           costs = {
             ...costs,
             transporter: params.transporter,
             partner: transporter.transporter,
             currency: transporter.currency,
-            standard: Utils.round(transporter[weight] + cost),
-            tracking: Utils.round(transporter[weight] + cost + 2)
+            standard: standard,
+            tracking: Utils.round(standard + 2)
           }
         }
       }
@@ -1186,6 +1200,26 @@ class Cart {
       })
       if (diggers) {
         shippings.push(diggers)
+      }
+    }
+    if (transporters.all || transporters.seko) {
+      const seko = await Cart.calculateShippingByTransporter({
+        ...params,
+        partner: 'seko',
+        transporter: 'seko'
+      })
+      if (seko) {
+        shippings.push(seko)
+      }
+    }
+    if (transporters.all || transporters.rey_vinilo) {
+      const reyVinilo = await Cart.calculateShippingByTransporter({
+        ...params,
+        partner: 'rey_vinilo',
+        transporter: 'rey_vinilo'
+      })
+      if (reyVinilo) {
+        shippings.push(reyVinilo)
       }
     }
     if (transporters.all || transporters.whiplash) {
@@ -2471,6 +2505,7 @@ class Cart {
         'picture_project',
         'vod.price',
         'vod.currency',
+        'vod.barcode',
         'category',
         'is_shop',
         'p.picture',

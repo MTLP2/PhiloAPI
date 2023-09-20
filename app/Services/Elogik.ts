@@ -589,7 +589,7 @@ class Elogik {
       return false
     }
     const products = await DB('product')
-      .select('product.id', 'barcode', 'stock.quantity')
+      .select('name', 'product.id', 'barcode', 'stock.quantity')
       .leftJoin('stock', (query) => {
         query.on('stock.product_id', 'product.id')
         query.on('stock.type', '=', DB.raw('?', ['daudin']))
@@ -600,6 +600,7 @@ class Elogik {
       )
       .all()
 
+    const newStocks: any = []
     for (const ref of res.articles) {
       const qty = ref.stocks[0].stockDispo || 0
       const product = products.find((p: any) => {
@@ -607,23 +608,12 @@ class Elogik {
       })
 
       if (product && qty !== product.quantity) {
-        /**
-        if (product.quantity === null && qty > 0) {
-          console.log(`==> new stock : ${product.name} = ${qty}`)
-          await Notification.sendEmail({
-            to: ['bl@diggersfactory.com'].join(','),
-            subject: `Daudin - new stock : ${product.name}`,
-            html: `<ul>
-            <li><strong>Product:</strong> https://www.diggersfactory.com/sheraf/product/${product.id}</li>
-            <li><strong>Transporter:</strong> Daudin</li>
-            <li><strong>Barcode:</strong> ${product.barcode}</li>
-            <li><strong>Name:</strong> ${product.name}</li>
-            <li><strong>Quantity:</strong> ${qty}</li>
-          </ul>`
+        if (!product.quantity && qty > 5) {
+          newStocks.push({
+            ...product,
+            new_quantity: qty
           })
-          break
         }
-        **/
         Stock.save({
           product_id: product.id,
           type: 'daudin',
@@ -631,6 +621,27 @@ class Elogik {
           quantity: qty
         })
       }
+    }
+    if (newStocks.length > 0) {
+      await Notification.sendEmail({
+        to: ['ismail@diggersfactory.com', 'alexis@diggersfactory.com'].join(','),
+        subject: `Daudin - new stocks`,
+        html: `
+        ${newStocks
+          .map(
+            (product) =>
+              `<ul>
+              <li><strong>Product:</strong> https://www.diggersfactory.com/sheraf/product/${product.id}</li>
+              <li><strong>Transporter:</strong> Daudin</li>
+              <li><strong>Barcode:</strong> ${product.barcode}</li>
+              <li><strong>Name:</strong> ${product.name}</li>
+              <li><strong>Quantity:</strong> ${product.quantity} => ${product.new_quantity}</li>
+              </ul>
+              `
+          )
+          .join('')}
+      `
+      })
     }
     return news
   }

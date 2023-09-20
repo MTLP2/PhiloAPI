@@ -803,6 +803,7 @@ class StatementService {
       project_id: params.id,
       start: params.start,
       end: params.end,
+      periodicity: 'months',
       only_data: true
     })
     if (!data) {
@@ -1735,8 +1736,10 @@ class StatementService {
         'vod.com_id',
         'statement_comment',
         'balance_comment',
+        'vod.balance_followup',
         'vod.follow_up_payment',
         'user.name as user',
+        'user.follow_up_payment as user_follow_up_payment',
         'vod.type',
         'step'
       )
@@ -1748,6 +1751,8 @@ class StatementService {
       projectsPromise.where((query) => {
         query.where('vod.balance_followup', true)
         query.orWhere('user.balance_followup', true)
+        query.orWhere('vod.follow_up_payment', true)
+        query.orWhere('user.follow_up_payment', true)
       })
     } else {
       projectsPromise.whereIn('step', ['in_progress', 'successful', 'failed'])
@@ -1758,20 +1763,29 @@ class StatementService {
     const invoicesPromise = DB('invoice')
       .select('invoice.*')
       .join('vod', 'vod.project_id', 'invoice.project_id')
-      .where('balance_followup', true)
+      .where((query) => {
+        query.where('balance_followup', true)
+        query.orWhere('follow_up_payment', true)
+      })
       .where('compatibility', true)
       .all()
 
     const costsPromise = DB('production_cost')
       .select('name', 'vod.project_id', 'cost_real', 'cost_invoiced', 'production_cost.currency')
       .join('vod', 'vod.project_id', 'production_cost.project_id')
-      .where('balance_followup', true)
+      .where((query) => {
+        query.where('balance_followup', true)
+        query.orWhere('follow_up_payment', true)
+      })
       .all()
 
     const prodsPromise = DB('production')
       .select('production.project_id', 'quantity', 'quantity_pressed')
       .join('vod', 'vod.project_id', 'production.project_id')
-      .where('balance_followup', true)
+      .where((query) => {
+        query.where('balance_followup', true)
+        query.orWhere('follow_up_payment', true)
+      })
       .all()
 
     const currenciesDb = await Utils.getCurrenciesDb()
@@ -1889,14 +1903,16 @@ class StatementService {
         { header: 'Currency', key: 'currency', width: 10 },
         { header: 'Comment', key: 'statement_comment', width: 50 }
       ]
-      const worksheet = workbook.addWorksheet('Project')
 
+      const worksheet = workbook.addWorksheet('Projects')
       worksheet.getRow(1).font = { bold: true }
       worksheet.columns = columns
-
       let i = 1
       for (const project of <any>(
-        Object.values(projects).filter((p: any) => p.type !== 'direct_pressing')
+        Object.values(projects).filter(
+          (p: any) =>
+            p.type !== 'direct_pressing' && !p.follow_up_payment && !p.user_follow_up_payment
+        )
       )) {
         i++
         worksheet.addRow(project)
@@ -1909,10 +1925,28 @@ class StatementService {
         }
       }
 
-      const directPressing = workbook.addWorksheet('Direct Pressing')
+      i = 1
+      const worksheet2 = workbook.addWorksheet('Projects - Payment')
+      worksheet2.getRow(1).font = { bold: true }
+      worksheet2.columns = columns
+      for (const project of <any>(
+        Object.values(projects).filter(
+          (p: any) =>
+            p.type !== 'direct_pressing' && (p.follow_up_payment || p.user_follow_up_payment)
+        )
+      )) {
+        i++
+        worksheet2.addRow(project)
+        if (project.balance !== 0) {
+          worksheet2.getRow(i).fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: project.balance > 0 ? 'ecffe5' : 'ffe5e5' }
+          }
+        }
+      }
 
-      directPressing.getRow(1).font = { bold: true }
-      directPressing.columns = [
+      const columnsDirectPressing = [
         { header: 'Id', key: 'id' },
         { header: 'User', key: 'user', width: 15 },
         { header: 'Artist', key: 'artist_name', width: 15 },
@@ -1929,14 +1963,42 @@ class StatementService {
         { header: 'Comment', key: 'statement_comment', width: 50 }
       ]
 
+      const directPressing = workbook.addWorksheet('Direct Pressing')
+      directPressing.getRow(1).font = { bold: true }
+      directPressing.columns = columnsDirectPressing
       let j = 1
       for (const project of <any>(
-        Object.values(projects).filter((p: any) => p.type === 'direct_pressing')
+        Object.values(projects).filter(
+          (p: any) =>
+            p.type === 'direct_pressing' && !p.follow_up_payment && !p.user_follow_up_payment
+        )
       )) {
         j++
         directPressing.addRow(project)
         if (project.direct_balance !== 0) {
           directPressing.getRow(j).fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: project.direct_balance > 0 ? 'ecffe5' : 'ffe5e5' }
+          }
+        }
+      }
+
+      const directPayments = workbook.addWorksheet('Direct Pressing - Payments')
+
+      directPayments.getRow(1).font = { bold: true }
+      directPayments.columns = columnsDirectPressing
+      j = 1
+      for (const project of <any>(
+        Object.values(projects).filter(
+          (p: any) =>
+            p.type === 'direct_pressing' && (p.follow_up_payment || p.user_follow_up_payment)
+        )
+      )) {
+        j++
+        directPayments.addRow(project)
+        if (project.direct_balance !== 0) {
+          directPayments.getRow(j).fill = {
             type: 'pattern',
             pattern: 'solid',
             fgColor: { argb: project.direct_balance > 0 ? 'ecffe5' : 'ffe5e5' }

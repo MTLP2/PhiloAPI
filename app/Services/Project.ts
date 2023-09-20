@@ -1651,6 +1651,7 @@ class Project {
     project_id?: number
     start?: string
     end?: string
+    periodicity?: string
     only_data?: boolean
   }) => {
     let projects = DB('project')
@@ -1786,12 +1787,12 @@ class Project {
     const diff = moment(params.end).diff(moment(params.start), 'days')
     let format
     let periodicity
-    if (diff < 50) {
-      periodicity = 'days'
-      format = 'YYYY-MM-DD'
-    } else {
+    if (params.periodicity === 'months' || diff > 50) {
       periodicity = 'months'
       format = 'YYYY-MM'
+    } else {
+      periodicity = 'days'
+      format = 'YYYY-MM-DD'
     }
     if (periodicity === 'months') {
       params.start = moment(params.start).startOf('month').format('YYYY-MM-DD')
@@ -2245,7 +2246,7 @@ class Project {
     return res
   }
 
-  static duplicate = async (id) => {
+  static duplicate = async (id: number) => {
     let project = await DB('project').where('id', id).first()
 
     const uid = Utils.uuid()
@@ -2296,6 +2297,14 @@ class Project {
         ...item,
         id: null,
         project_id: project.id
+      })
+    }
+
+    const users = await DB('project_user').where('project_id', id).all()
+    for (const user of users) {
+      await DB('project_user').insert({
+        project_id: project.id,
+        user_id: user.user_id
       })
     }
 

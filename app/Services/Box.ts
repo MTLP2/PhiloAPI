@@ -293,7 +293,9 @@ class Box {
         'description_en'
       )
       .join('project as p', 'p.id', 'project_id')
-      .join('stock', 'stock.project_id', 'p.id')
+      .join('project_product', 'project_product.project_id', 'p.id')
+      .join('product', 'product.id', 'project_product.product_id')
+      .join('stock', 'stock.product_id', 'product.id')
       .where('stock.type', 'daudin')
       .where('is_shop', true)
       .where('stock.quantity', '>', 0)
@@ -1742,10 +1744,11 @@ class Box {
     } else {
       for (const barcode of barcodes) {
         const vod = await DB('vod')
-          .select('stock.project_id', 'stock.quantity as stock', 'pp.product_id')
+          .select('vod.project_id', 'stock.quantity as stock', 'pp.product_id')
           .where('barcode', barcode)
-          .join('stock', 'stock.project_id', 'vod.project_id')
-          .join('project_product as pp', 'pp.project_id', 'stock.project_id')
+          .join('project_product as pp', 'pp.project_id', 'vod.project_id')
+          .join('product', 'product.id', 'pp.product_id')
+          .join('stock', 'stock.product_id', 'product.id')
           .where('stock.type', 'daudin')
           .first()
 

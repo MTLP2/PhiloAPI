@@ -109,6 +109,7 @@ class Admin {
     if (filters) {
       for (const f in filters) {
         const filter = filters[f]
+        filter.value = decodeURIComponent(filter.value)
         if (filter.name === 'customer.email') {
           projects.where((query) => {
             query.where('customer.email', 'LIKE', `%${filter.value}%`)
@@ -117,8 +118,17 @@ class Admin {
           filters.splice(f, 1)
           params.filters = JSON.stringify(filters)
         }
+        if (filter.name === 'customer_name') {
+          projects.where(
+            DB.raw(`CONCAT(customer.firstname, ' ', customer.lastname) LIKE '%${filter.value}%'`),
+            null
+          )
+          filters.splice(f, 1)
+          params.filters = JSON.stringify(filters)
+        }
       }
     }
+
     const res = await Utils.getRows<any>({ ...params, query: projects })
     return res
   }
@@ -332,6 +342,9 @@ class Admin {
       is_distrib: false,
       quantity: Object.values(stocksSite).reduce((a: number, b: number) => a + (b < 0 ? 0 : b), 0)
     })
+    if (!project.is_shop && project.type === 'funding') {
+      project.stock = 'no limit'
+    }
     project.stocks.unshift({
       type: 'project',
       is_distrib: false,
@@ -570,7 +583,7 @@ class Admin {
       stats.shipping += (pourcent * (o.shipping * o.currency_rate_project)) / tax
     }
 
-    if (filteredBarcodes) {
+    if (filteredBarcodes && !isNaN(project.barcode)) {
       const boxes = await DB()
         .from('box_dispatch')
         .where('barcodes', 'like', `%${project.barcode}%`)
@@ -932,9 +945,11 @@ class Admin {
       await DB('project_user')
         .where('user_id', vod.user_id)
         .where('project_id', vod.project_id)
-        .update({
-          user_id: params.user_id
-        })
+        .delete()
+      await DB('project_user').insert({
+        user_id: params.user_id,
+        project_id: vod.project_id
+      })
       vod.user_id = params.user_id
     }
 
@@ -1016,6 +1031,12 @@ class Admin {
       }
       if (params.transporter_sna) {
         transporters.sna = true
+      }
+      if (params.transporter_seko) {
+        transporters.seko = true
+      }
+      if (params.transporter_rey_vinilo) {
+        transporters.rey_vinilo = true
       }
       if (vod.transporters !== JSON.stringify(transporters)) {
         vod.historic.push({
@@ -1605,6 +1626,7 @@ class Admin {
   static getOrders = async (params: {
     project_id?: string
     type?: 'no_tracking' | 'no_export'
+    is_licence?: boolean
     sort?: string
     order?: 'desc' | 'asc'
     start?: string
@@ -1649,7 +1671,6 @@ class Admin {
         'c.name',
         'c.firstname',
         'c.lastname',
-        'vod.date_shipping',
         'c.address',
         'c.zip_code',
         'c.city',
@@ -1658,11 +1679,8 @@ class Admin {
         'project.artist_name',
         'project.name as project_name',
         'project.picture',
-        'vod.is_licence',
         'user.facebook_id',
         'user.soundcloud_id',
-        'feedback.rating as feedback_rating',
-        'feedback.id as feedback_id',
         'oi.discount_code',
         DB.raw("CONCAT(c.firstname, ' ', c.lastname) AS user_infos")
       )
@@ -1670,9 +1688,7 @@ class Admin {
       .join('order', 'oi.order_id', 'order.id')
       .join('user', 'user.id', 'order.user_id')
       .join('project', 'project.id', 'oi.project_id')
-      .join('vod', 'vod.project_id', 'oi.project_id')
       .leftJoin('customer as c', 'c.id', 'os.customer_id')
-      .leftJoin('feedback', 'feedback.order_id', 'order.id')
       .where('os.step', '!=', 'creating')
 
     if (params.project_id) {
@@ -1698,6 +1714,10 @@ class Admin {
     }
     if (params.end) {
       orders.where('os.created_at', '<=', `${params.end} 23:59`)
+    }
+    if (params.is_licence) {
+      orders.join('vod', 'project.id', 'vod.project_id')
+      orders.where('vod.is_licence', true)
     }
     if (params.type === 'no_export') {
       orders.whereNull('os.date_export')
@@ -2391,6 +2411,12 @@ class Admin {
         query.orWhere('user.id', 'like', `%${params.search}%`)
       })
     }
+    if (params.start) {
+      users.where('user.created_at', '>=', params.start)
+    }
+    if (params.end) {
+      users.where('user.created_at', '<=', params.end)
+    }
 
     params.query = users
 
@@ -2460,7 +2486,8 @@ class Admin {
     about_me: string
     confirmed: number
     unsubscribed: number
-    balance_followup: number
+    balance_followup: boolean
+    follow_up_payment: boolean
     balance_comment: number
     country_id: number
     styles: string
@@ -2480,6 +2507,7 @@ class Admin {
     user.confirmed = params.confirmed
     user.unsubscribed = params.unsubscribed
     user.balance_followup = params.balance_followup
+    user.follow_up_payment = params.follow_up_payment
     user.balance_comment = params.balance_comment
     user.country_id = params.country_id || null
     user.styles = JSON.stringify(params.styles)
@@ -4887,7 +4915,9 @@ class Admin {
       whiplash_uk = 'whiplash_uk',
       sna = 'sna',
       soundmerch = 'soundmerch',
-      shipehype = 'shipehype'
+      shipehype = 'shipehype',
+      seko = 'seko',
+      rey_vinilo = 'rey_vinilo'
     }
 
     // Check if current VOD has "check_address" status. Else, throw error

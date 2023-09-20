@@ -358,7 +358,11 @@ class Utils {
       }
     }
 
-    const count = await query.count()
+    const total = query
+      .getQuery()
+      .clone()
+      .count()
+      .then((res) => res[0]['count(*)'])
 
     const page = params.page && params.page > 0 ? params.page : 1
     const size = params.size && params.size > 0 ? params.size : 50
@@ -374,9 +378,10 @@ class Utils {
       query.limit(size).offset((page - 1) * size)
     }
 
+    const [data, count] = await Promise.all([query.all(), total])
     return {
-      count,
-      data: await query.all()
+      count: count,
+      data: data
     }
   }
 
