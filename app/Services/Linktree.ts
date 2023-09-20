@@ -16,9 +16,11 @@ class Linktree {
       .orderBy('linktree_link.id')
       .all()
 
+    const types = await DB('linktree_type').all()
     return {
       ...project,
-      links
+      links,
+      types
     }
   }
 
