@@ -10,9 +10,10 @@ class Linktree {
       return null
     }
     const links = await DB('linktree_link')
-      .select('linktree_link.*')
+      .select('linktree_link.*', 'linktree_type.file as icon')
       .where('linktree_id', id)
       .join('linktree', 'linktree.id', 'linktree_link.linktree_id')
+      .join('linktree_type', 'linktree_type.name', 'linktree_link.type')
       .orderBy('linktree_link.id')
       .all()
 
