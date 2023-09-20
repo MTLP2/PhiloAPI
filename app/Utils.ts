@@ -948,7 +948,7 @@ class Utils {
     return locales
   }
 
-  static getFee = (dates, date): number | null => {
+  static getFee = (dates, date): number => {
     date = date.substr(0, 10)
     if (date.length === 7) {
       date += '-01'
@@ -971,7 +971,7 @@ class Utils {
     }
     if (value === null) {
       console.log('fee missing =>', date, dates)
-      return null
+      throw `fee missing ${date}:${dates}`
     }
     return value
   }
