@@ -760,10 +760,24 @@ class StatementService {
     return data
   }
 
-  static async download(params: { id: number; number: number; start: string; end: string }) {
-    const workbook = new Excel.Workbook()
-    await this.setWorksheet(workbook, params)
-    return workbook.xlsx.writeBuffer()
+  static async download(payload: {
+    id: number
+    number: number
+    type: string
+    start: string
+    end: string
+  }) {
+    payload.start = '2021-01-01'
+    payload.end = '2021-01-31'
+    if (payload.type === 'new') {
+      const workbook = new Excel.Workbook()
+      await this.setWorksheet2(workbook, payload)
+      return workbook.xlsx.writeBuffer()
+    } else {
+      const workbook = new Excel.Workbook()
+      await this.setWorksheet(workbook, payload)
+      return workbook.xlsx.writeBuffer()
+    }
   }
 
   static async download2(params: { id: number; number: number; start?: string; end?: string }) {
@@ -2345,6 +2359,7 @@ class StatementService {
 
     const ordersPromises = DB()
       .select(
+        'oi.order_id',
         'oi.total',
         'oi.price',
         'oi.fee_change',
@@ -2379,6 +2394,13 @@ class StatementService {
       pCostsPromise,
       itemsPromises
     ])
+
+    // console.log('old =>', orders.length)
+    console.log('-----------')
+    // console.log('id =>', orders[0].order_id)
+    // console.log('id =>', orders.at(-1).order_id)
+    console.log(orders.reduce((a, b) => a + b.quantity, 0))
+    console.log('-----------')
 
     let bb: any[] = []
     if (project.barcode) {
@@ -2552,6 +2574,7 @@ class StatementService {
 
     for (const order of orders) {
       if (order.item_id && !items.find((i) => i.id === order.item_id)) {
+        console.log(order)
         continue
       }
 
