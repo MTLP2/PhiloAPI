@@ -760,7 +760,7 @@ class App {
     if (n.type === 'statement') {
       data.end = moment(n.date).subtract(1, 'months').endOf('month').format('YYYY-MM-DD')
       data.from_address = 'invoicing@diggersfactory.com'
-      const statement = <Buffer>await Statement.userDownload({
+      const statement = <Buffer>await Statement.userDownload2({
         id: n.user_id,
         end: data.end,
         auto: true
