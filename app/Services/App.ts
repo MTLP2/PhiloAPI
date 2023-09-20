@@ -116,6 +116,11 @@ class App {
     try {
       const hour = new Date().getHours()
 
+      if ([9, 12, 15, 17].includes(hour)) {
+        await Elogik.syncStocks()
+        await Whiplash.syncStocks()
+      }
+
       if (hour === 3) {
         await App.currencies()
         await App.generateSitemap()
@@ -123,9 +128,7 @@ class App {
       } else if (hour === 4) {
         await Whiplash.setTrackingLinks()
       } else if (hour === 5) {
-        await Elogik.syncStocks()
         await Elogik.syncBoxes()
-        await Whiplash.syncStocks()
         await Cio.syncNewsletterNoAccount()
       } else if (hour === 7) {
         await App.check5DaysLeftProjects()
@@ -140,9 +143,6 @@ class App {
         await Elogik.checkBlockedOrders()
       } else if (hour === 12) {
         await Invoice.reminder()
-      } else if (hour === 13) {
-        await Elogik.syncStocks()
-        await Whiplash.syncStocks()
       } else if (hour === 14) {
         await Elogik.checkBlockedOrders()
       } else if (hour === 16) {
