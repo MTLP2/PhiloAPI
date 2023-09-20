@@ -1119,16 +1119,7 @@ class Project {
         likes: likes.count
       })
 
-    // Adding pass history
-    try {
-      const passRes = await Pass.addHistory({
-        userId,
-        type: 'user_like',
-        refId: projectId
-      })
-    } catch (err) {}
-
-    return { result: 1, passRes }
+    return { success: true }
   }
 
   static wish = async (projectId, userId) => {
@@ -1686,6 +1677,7 @@ class Project {
 
     const ordersPromise = DB('order_item as oi')
       .select(
+        'os.order_id',
         'project_id',
         'quantity',
         'tips',
@@ -2012,6 +2004,10 @@ class Project {
       }
     }
 
+    let i = 0
+    let qty = 0
+    let oo: any[] = []
+    console.log('-----------')
     for (const order of orders) {
       const date = moment(order.created_at).format(format)
 
@@ -2039,10 +2035,16 @@ class Project {
       s.setDate('site', 'quantity', date, order.quantity)
 
       if (inDate(date)) {
+        oo.push(order)
         s.setCountry('site', 'income', order.country_id, value)
         s.setCountry('site', 'quantity', order.country_id, order.quantity)
       }
     }
+
+    // console.log('id =>', oo[0].order_id)
+    // console.log('id =>', oo.at(-1).order_id)
+    console.log(oo.reduce((a, b) => a + b.quantity, 0))
+    console.log('-----------')
 
     for (const [log, stock] of Object.entries(stocksSite)) {
       s.setCountry('site', 'stocks', Utils.getCountryStock(log), stock)
@@ -2091,7 +2093,9 @@ class Project {
       for (const dist of stat.distributors) {
         let value
         if (projects[stat.project_id].payback_distrib) {
-          value = projects[stat.project_id].payback_distrib * dist.quantity
+          value =
+            projects[stat.project_id].payback_distrib *
+            (dist.quantity - Math.abs(dist.returned || 0))
         } else {
           value = dist.total * feeDistrib
         }
@@ -2105,7 +2109,7 @@ class Project {
         s.addList('distribution', 'costs', date, dist.storage, stat.project_id)
 
         s.setDate('distrib', 'quantity', date, dist.quantity)
-        s.setDate('distrib', 'quantity', date, -dist.returned)
+        s.setDate('distrib', 'quantity', date, -Math.abs(dist.returned))
 
         if (inDate(date)) {
           s.setCountry('distrib', 'income', dist.country_id, value, date)
