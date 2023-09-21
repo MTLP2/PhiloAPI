@@ -2004,10 +2004,7 @@ class Project {
       }
     }
 
-    let i = 0
-    let qty = 0
     let oo: any[] = []
-    console.log('-----------')
     for (const order of orders) {
       const date = moment(order.created_at).format(format)
 
@@ -2040,11 +2037,6 @@ class Project {
         s.setCountry('site', 'quantity', order.country_id, order.quantity)
       }
     }
-
-    // console.log('id =>', oo[0].order_id)
-    // console.log('id =>', oo.at(-1).order_id)
-    console.log(oo.reduce((a, b) => a + b.quantity, 0))
-    console.log('-----------')
 
     for (const [log, stock] of Object.entries(stocksSite)) {
       s.setCountry('site', 'stocks', Utils.getCountryStock(log), stock)
