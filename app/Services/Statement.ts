@@ -767,8 +767,6 @@ class StatementService {
     start: string
     end: string
   }) {
-    payload.start = '2021-01-01'
-    payload.end = '2021-01-31'
     if (payload.type === 'new') {
       const workbook = new Excel.Workbook()
       await this.setWorksheet2(workbook, payload)
@@ -2394,13 +2392,6 @@ class StatementService {
       pCostsPromise,
       itemsPromises
     ])
-
-    // console.log('old =>', orders.length)
-    console.log('-----------')
-    // console.log('id =>', orders[0].order_id)
-    // console.log('id =>', orders.at(-1).order_id)
-    console.log(orders.reduce((a, b) => a + b.quantity, 0))
-    console.log('-----------')
 
     let bb: any[] = []
     if (project.barcode) {
