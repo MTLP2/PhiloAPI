@@ -200,6 +200,9 @@ Route.get('/stats/top-projects', 'ProjectsController.getTopProjects')
 
 Route.get('/featured/all', 'UserController.getAllFeatured')
 
+Route.get('/linktree', 'AdminController.getLinktree')
+Route.get('/linktree/:id', 'AdminController.getOneLinktree')
+
 Route.group(() => {
   Route.get('/cart', 'CartController.getCart')
   Route.post('/cart', 'CartController.saveCart')
@@ -307,6 +310,10 @@ Route.group(() => {
 Route.group(() => {
   Route.get('/stats', 'AdminController.getStats')
   Route.get('/stats2', 'AdminController.getStats2')
+  Route.post('/linktree', 'AdminController.saveLinktree')
+  Route.post('/linktree/:id', 'AdminController.saveLinktree')
+  Route.post('/linktree/:id/links', 'AdminController.saveLinktreeLink')
+  Route.delete('/linktree/:id', 'AdminController.deleteLinktree')
   Route.get('/business', 'AdminController.getBusiness')
   Route.get('/resp-prod', 'AdminController.getRespProd')
   Route.get('/stripe-balance', 'AdminController.getStripeBalance')
