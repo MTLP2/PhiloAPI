@@ -870,41 +870,102 @@ class Stock {
 
   static async getUserStock(payload: { user_id: number }) {
     const orders = await DB('vod')
-      .select('oi.quantity', 'os.transporter', 'product.name', 'product.barcode')
+      .select(
+        'oi.quantity',
+        'os.transporter',
+        'os.date_export',
+        'product.name',
+        'pp.product_id',
+        'product.barcode'
+      )
       .join('project_product as pp', 'pp.project_id', 'vod.project_id')
       .join('order_item as oi', 'oi.project_id', 'vod.project_id')
       .join('order_shop as os', 'os.id', 'oi.order_shop_id')
       .join('product', 'pp.product_id', 'product.id')
       .where('vod.user_id', payload.user_id)
       .where('is_paid', true)
-      .whereNull('os.date_export')
       .all()
 
-    const refs = {}
+    const stocksList = await DB('vod')
+      .select('stock.product_id', 'product.name', 'stock.type', 'stock.quantity', 'product.barcode')
+      .join('project_product as pp', 'pp.project_id', 'vod.project_id')
+      .join('product', 'pp.product_id', 'product.id')
+      .join('stock', 'stock.product_id', 'product.id')
+      .where('stock.type', '!=', 'preorder')
+      .where('stock.type', '!=', 'null')
+      .where('vod.user_id', payload.user_id)
+      .all()
 
+    const trans = {}
+    const stocks = {}
+    for (const stock of stocksList) {
+      if (!stocks[stock.product_id]) {
+        stocks[stock.product_id] = {
+          name: stock.name,
+          barcode: stock.barcode
+        }
+      }
+      trans[stock.type] = true
+      if (!stocks[stock.product_id][stock.type]) {
+        stocks[stock.product_id][stock.type] = 0
+      }
+      stocks[stock.product_id][stock.type] += stock.quantity
+    }
+
+    const sync = {}
+    const toSync = {}
     for (const order of orders) {
-      if (!refs[order.barcode]) {
-        refs[order.barcode] = {
+      let obj
+      if (order.date_export) {
+        obj = sync
+      } else {
+        obj = toSync
+        console.log(order)
+      }
+
+      trans[order.transporter] = true
+
+      if (!obj[order.product_id]) {
+        obj[order.product_id] = {
           name: order.name,
           barcode: order.barcode
         }
       }
-      if (!refs[order.barcode][order.transporter]) {
-        refs[order.barcode][order.transporter] = 0
+      if (!obj[order.product_id][order.transporter]) {
+        obj[order.product_id][order.transporter] = 0
       }
-      refs[order.barcode][order.transporter] += order.quantity
+      obj[order.product_id][order.transporter] += order.quantity
     }
+
+    console.log(toSync)
 
     return Utils.arrayToXlsx([
       {
+        worksheetName: 'Stock',
         columns: [
           { header: 'Name', key: 'name', width: 40 },
           { header: 'Barcode', key: 'barcode', width: 20 },
-          { header: 'Daudin', key: 'daudin', width: 10 },
-          { header: 'Whiplash', key: 'whiplash', width: 10 },
-          { header: 'Whiplash Uk', key: 'whiplash_uk', width: 10 }
+          ...Object.keys(trans).map((t) => ({ header: t, key: t, width: 10 }))
         ],
-        data: Object.values(refs)
+        data: Object.values(stocks)
+      },
+      {
+        worksheetName: 'To sync',
+        columns: [
+          { header: 'Name', key: 'name', width: 40 },
+          { header: 'Barcode', key: 'barcode', width: 20 },
+          ...Object.keys(trans).map((t) => ({ header: t, key: t, width: 10 }))
+        ],
+        data: Object.values(toSync)
+      },
+      {
+        worksheetName: 'Syncro',
+        columns: [
+          { header: 'Name', key: 'name', width: 40 },
+          { header: 'Barcode', key: 'barcode', width: 20 },
+          ...Object.keys(trans).map((t) => ({ header: t, key: t, width: 10 }))
+        ],
+        data: Object.values(sync)
       }
     ])
   }
