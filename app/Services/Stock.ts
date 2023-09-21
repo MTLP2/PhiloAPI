@@ -867,6 +867,47 @@ class Stock {
 
     return { test: 'ok' }
   }
+
+  static async getUserStock(payload: { user_id: number }) {
+    const orders = await DB('vod')
+      .select('oi.quantity', 'os.transporter', 'product.name', 'product.barcode')
+      .join('project_product as pp', 'pp.project_id', 'vod.project_id')
+      .join('order_item as oi', 'oi.project_id', 'vod.project_id')
+      .join('order_shop as os', 'os.id', 'oi.order_shop_id')
+      .join('product', 'pp.product_id', 'product.id')
+      .where('vod.user_id', payload.user_id)
+      .where('is_paid', true)
+      .whereNull('os.date_export')
+      .all()
+
+    const refs = {}
+
+    for (const order of orders) {
+      if (!refs[order.barcode]) {
+        refs[order.barcode] = {
+          name: order.name,
+          barcode: order.barcode
+        }
+      }
+      if (!refs[order.barcode][order.transporter]) {
+        refs[order.barcode][order.transporter] = 0
+      }
+      refs[order.barcode][order.transporter] += order.quantity
+    }
+
+    return Utils.arrayToXlsx([
+      {
+        columns: [
+          { header: 'Name', key: 'name', width: 40 },
+          { header: 'Barcode', key: 'barcode', width: 20 },
+          { header: 'Daudin', key: 'daudin', width: 10 },
+          { header: 'Whiplash', key: 'whiplash', width: 10 },
+          { header: 'Whiplash Uk', key: 'whiplash_uk', width: 10 }
+        ],
+        data: Object.values(refs)
+      }
+    ])
+  }
 }
 
 export default Stock

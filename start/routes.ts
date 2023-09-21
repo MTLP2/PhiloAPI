@@ -451,6 +451,7 @@ Route.group(() => {
   Route.post('/users/:id/digs', 'AdminController.addDig')
   Route.get('/users/:id/statements', 'AdminController.getUserStatements')
   Route.get('/users/:id/statements2', 'AdminController.getUserStatements2')
+  Route.get('/users/:id/stock', 'AdminController.getUserStock')
   Route.get('/users/:id/balance', 'AdminController.getUserBalance')
   Route.get('/newsletters', 'AdminController.getNewsletters')
   Route.post('/newsletters/template', 'AdminController.getNewsletterTemplate')

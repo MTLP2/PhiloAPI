@@ -1282,6 +1282,10 @@ class AdminController {
   importOrders({ params }) {
     return Order.importOrders(params)
   }
+
+  getUserStock({ params }) {
+    return Stock.getUserStock({ user_id: params.id })
+  }
 }
 
 export default AdminController
