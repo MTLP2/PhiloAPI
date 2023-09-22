@@ -894,6 +894,7 @@ class Stock {
           })
         })
       })
+      .whereNull('date_export')
       .all()
 
     const stocksList = await DB('vod')
@@ -911,8 +912,10 @@ class Stock {
     for (const stock of stocksList) {
       if (!stocks[stock.product_id]) {
         stocks[stock.product_id] = {
+          product_id: stock.product_id,
           name: stock.name,
-          barcode: stock.barcode
+          barcode: stock.barcode,
+          link: `https://www.diggersfactory.com/sheraf/product/${stock.product_id}`
         }
       }
       trans[stock.type] = true
@@ -922,63 +925,65 @@ class Stock {
       stocks[stock.product_id][stock.type] += stock.quantity
     }
 
-    const sync = {}
+    const diff = JSON.parse(JSON.stringify(stocks))
+
     const toSync = {}
     for (const order of orders) {
-      let obj
-      if (order.date_export) {
-        obj = sync
-      } else {
-        obj = toSync
-        console.log(order)
-      }
-
       trans[order.transporter] = true
 
-      if (!obj[order.product_id]) {
-        obj[order.product_id] = {
+      if (!toSync[order.product_id]) {
+        toSync[order.product_id] = {
+          product_id: order.product_id,
           name: order.name,
-          barcode: order.barcode
+          barcode: order.barcode,
+          link: `https://www.diggersfactory.com/sheraf/product/${order.product_id}`
         }
       }
-      if (!obj[order.product_id][order.transporter]) {
-        obj[order.product_id][order.transporter] = 0
+      if (!toSync[order.product_id][order.transporter]) {
+        toSync[order.product_id][order.transporter] = 0
       }
-      obj[order.product_id][order.transporter] += order.quantity
-    }
+      toSync[order.product_id][order.transporter] += order.quantity
 
-    console.log(toSync)
+      if (!diff[order.product_id][order.transporter]) {
+        diff[order.product_id][order.transporter] = 0
+      }
+      diff[order.product_id][order.transporter] -= order.quantity
+    }
 
     return Utils.arrayToXlsx([
       {
         worksheetName: 'Stock',
         columns: [
+          { header: 'link', key: 'link', width: 10 },
+          { header: 'id', key: 'product_id', width: 10 },
           { header: 'Name', key: 'name', width: 40 },
           { header: 'Barcode', key: 'barcode', width: 20 },
           ...Object.keys(trans).map((t) => ({ header: t, key: t, width: 10 }))
         ],
-        data: Object.values(stocks)
+        data: Object.values(stocks) as any
       },
       {
         worksheetName: 'To sync',
         columns: [
+          { header: 'link', key: 'link', width: 10 },
+          { header: 'id', key: 'product_id', width: 10 },
           { header: 'Name', key: 'name', width: 40 },
           { header: 'Barcode', key: 'barcode', width: 20 },
           ...Object.keys(trans).map((t) => ({ header: t, key: t, width: 10 }))
         ],
-        data: Object.values(toSync)
-      }
-      /**
+        data: Object.values(toSync) as any
+      },
       {
-        worksheetName: 'Syncro',
+        worksheetName: 'Diff',
         columns: [
+          { header: 'link', key: 'link', width: 10 },
+          { header: 'id', key: 'product_id', width: 10 },
           { header: 'Name', key: 'name', width: 40 },
           { header: 'Barcode', key: 'barcode', width: 20 },
           ...Object.keys(trans).map((t) => ({ header: t, key: t, width: 10 }))
         ],
-        data: Object.values(sync)
+        data: Object.values(diff) as any
       }
-      **/
     ])
   }
 }
