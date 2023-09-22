@@ -37,36 +37,44 @@ class MondialRelay {
 
   static checkPickupAvailable(number) {
     return new Promise((resolve, reject) => {
-      const url = 'https://api.mondialrelay.com/Web_Services.asmx?wsdl'
+      try {
+        const url = 'https://api.mondialrelay.com/Web_Services.asmx?wsdl'
 
-      soap.createClient(url, function (err, client) {
-        if (err) {
-          reject(err)
-          return
-        }
-        const privateKey = 'SKuHmWzZ'
-
-        const params = {
-          Enseigne: 'F2DIGGER',
-          Pays: 'FR',
-          NumPointRelais: number,
-          NombreResultats: 30
-        }
-
-        const security = Object.values(params).join('') + privateKey
-        params.Security = md5(security).toUpperCase()
-
-        client.WSI4_PointRelais_Recherche(params, function (err, result) {
+        soap.createClient(url, function (err, client) {
           if (err) {
             reject(err)
+            return
           }
-          if (result.WSI4_PointRelais_RechercheResult.PointsRelais) {
-            resolve(true)
-          } else {
-            resolve(false)
+          const privateKey = 'SKuHmWzZ'
+
+          const params = {
+            Enseigne: 'F2DIGGER',
+            Pays: 'FR',
+            NumPointRelais: number,
+            NombreResultats: 30
           }
+
+          const security = Object.values(params).join('') + privateKey
+          params.Security = md5(security).toUpperCase()
+
+          client.WSI4_PointRelais_Recherche(params, function (err, result) {
+            if (err) {
+              return reject(Error('mondial_relay'))
+            }
+            if (
+              result &&
+              result.WSI4_PointRelais_RechercheResult &&
+              result.WSI4_PointRelais_RechercheResult.PointsRelais
+            ) {
+              resolve(true)
+            } else {
+              resolve(false)
+            }
+          })
         })
-      })
+      } catch (err) {
+        reject(err)
+      }
     })
   }
 
