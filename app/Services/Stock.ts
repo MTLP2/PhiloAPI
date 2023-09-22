@@ -884,6 +884,16 @@ class Stock {
       .join('product', 'pp.product_id', 'product.id')
       .where('vod.user_id', payload.user_id)
       .where('is_paid', true)
+      .where((query) => {
+        query.whereRaw('product.size like oi.size')
+        query.orWhereRaw(`oi.products LIKE CONCAT('%[',product.id,']%')`)
+        query.orWhere((query) => {
+          query.whereNull('product.size')
+          query.whereNotExists((query) => {
+            query.from('product as child').whereRaw('product.id = child.parent_id')
+          })
+        })
+      })
       .all()
 
     const stocksList = await DB('vod')
@@ -957,7 +967,8 @@ class Stock {
           ...Object.keys(trans).map((t) => ({ header: t, key: t, width: 10 }))
         ],
         data: Object.values(toSync)
-      },
+      }
+      /**
       {
         worksheetName: 'Syncro',
         columns: [
@@ -967,6 +978,7 @@ class Stock {
         ],
         data: Object.values(sync)
       }
+      **/
     ])
   }
 }
