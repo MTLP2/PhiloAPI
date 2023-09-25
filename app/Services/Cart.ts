@@ -84,6 +84,16 @@ class Cart {
         if (!params.shops[idx]) {
           params.shops[idx] = {}
         }
+        for (let j in params[i]) {
+          const choosenSize = {}
+          for (let key of Object.keys(params[i][j])) {
+            const s = key.split('size_')
+            if (s.length > 1) {
+              choosenSize[s[1]] = params[i][j][key]
+            }
+          }
+          params[i][j].chosen_sizes = choosenSize
+        }
         params.shops[idx].items = params[i]
         delete params[i]
       }
@@ -1328,6 +1338,12 @@ class Cart {
     res.weight = p.quantity * (p.project.weight || Vod.calculateWeight(p.project))
     res.category = p.project.category
     res.save_shipping = p.project.save_shipping
+
+    for (const s of Object.keys(p.project.grouped_sizes)) {
+      if (!params.chosen_sizes || !params.chosen_sizes[s]) {
+        res.error = 'no_size_selected'
+      }
+    }
 
     if (p.item_id) {
       for (const i of p.project.items) {
