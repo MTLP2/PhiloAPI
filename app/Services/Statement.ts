@@ -346,30 +346,32 @@ class StatementService {
       }
     })
 
-    let digital = workbook.getWorksheet('DIG')
-    if (!digital) {
-      digital = workbook.getWorksheet('DIGI')
-    }
+    const sheets = ['DIG', 'DIGI', 'DIG 2']
 
-    digital.eachRow((row) => {
-      const barcode = row.getCell('D').value
-      if (barcode && barcode !== 'Barcode') {
-        if (!data[barcode]) {
-          data[barcode] = {
-            barcode: barcode,
-            quantity: 0,
-            returned: 0,
-            total: 0,
-            digital: 0
+    for (const sheet of sheets) {
+      const digital = workbook.getWorksheet(sheet)
+      if (digital) {
+        digital.eachRow((row) => {
+          const barcode = row.getCell('D').value
+          if (barcode && barcode !== 'Barcode') {
+            if (!data[barcode]) {
+              data[barcode] = {
+                barcode: barcode,
+                quantity: 0,
+                returned: 0,
+                total: 0,
+                digital: 0
+              }
+            }
+            if (row.getCell('O').value) {
+              data[barcode].digital = Utils.round(
+                data[barcode].digital + row.getCell('O').value.result
+              )
+            }
           }
-        }
-
-        if (row.getCell('O').value) {
-          data[barcode].digital = Utils.round(data[barcode].digital + row.getCell('O').value.result)
-        }
+        })
       }
-    })
-
+    }
     return data
   }
 
