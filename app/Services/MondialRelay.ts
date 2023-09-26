@@ -3,23 +3,29 @@ import moment from 'moment'
 import Utils from 'App/Utils'
 import DB from 'App/DB'
 import Notification from 'App/Services/Notification'
+import ApiError from 'App/ApiError'
 const soap = require('soap')
 
-class MondialRelay {
-  static track(number, lang) {
-    return new Promise((resolve, reject) => {
-      const url = 'https://api.mondialrelay.com/Web_Services.asmx?wsdl'
+/**
+const codeEnseigne = 'F2DIGGER'
+const privateKey = 'SKuHmWzZ'
+**/
+const url = 'https://api.mondialrelay.com/Web_Services.asmx?wsdl'
+const codeEnseigne = 'XXELOGIK'
+const privateKey = 'b25kQgY4'
 
+class MondialRelay {
+  static track(number: string, lang: string) {
+    return new Promise((resolve, reject) => {
       soap.createClient(url, function (err, client) {
         if (err) {
-          reject(err)
-          return
+          return reject(new ApiError(400, 'mondial_relay'))
         }
-        const privateKey = 'SKuHmWzZ'
         const params = {
-          Enseigne: 'F2DIGGER',
+          Enseigne: codeEnseigne,
           Expedition: number,
-          Langue: lang
+          Langue: lang,
+          Security: ''
         }
 
         const security = Object.values(params).join('') + privateKey
@@ -27,7 +33,7 @@ class MondialRelay {
 
         client.WSI2_TracingColisDetaille(params, function (err, result) {
           if (err) {
-            reject(err)
+            return reject(new ApiError(400, 'mondial_relay'))
           }
           resolve(result)
         })
@@ -35,62 +41,51 @@ class MondialRelay {
     })
   }
 
-  static checkPickupAvailable(number) {
+  static checkPickupAvailable(number: string) {
     return new Promise((resolve, reject) => {
-      try {
-        const url = 'https://api.mondialrelay.com/Web_Services.asmx?wsdl'
+      soap.createClient(url, function (err, client) {
+        if (err) {
+          return reject(new ApiError(400, 'mondial_relay'))
+        }
 
-        soap.createClient(url, function (err, client) {
+        const params = {
+          Enseigne: codeEnseigne,
+          Pays: 'FR',
+          NumPointRelais: number,
+          NombreResultats: 30,
+          Security: ''
+        }
+
+        const security = Object.values(params).join('') + privateKey
+        params.Security = md5(security).toUpperCase()
+
+        client.WSI4_PointRelais_Recherche(params, function (err, result) {
           if (err) {
-            reject(err)
-            return
+            return reject(new ApiError(400, 'mondial_relay'))
           }
-          const privateKey = 'SKuHmWzZ'
-
-          const params = {
-            Enseigne: 'F2DIGGER',
-            Pays: 'FR',
-            NumPointRelais: number,
-            NombreResultats: 30
+          if (
+            result &&
+            result.WSI4_PointRelais_RechercheResult &&
+            result.WSI4_PointRelais_RechercheResult.PointsRelais
+          ) {
+            resolve(true)
+          } else {
+            resolve(false)
           }
-
-          const security = Object.values(params).join('') + privateKey
-          params.Security = md5(security).toUpperCase()
-
-          client.WSI4_PointRelais_Recherche(params, function (err, result) {
-            if (err) {
-              return reject(Error('mondial_relay'))
-            }
-            if (
-              result &&
-              result.WSI4_PointRelais_RechercheResult &&
-              result.WSI4_PointRelais_RechercheResult.PointsRelais
-            ) {
-              resolve(true)
-            } else {
-              resolve(false)
-            }
-          })
         })
-      } catch (err) {
-        reject(err)
-      }
+      })
     })
   }
 
   static findPickupAround(pickup) {
     return new Promise((resolve, reject) => {
-      const url = 'https://api.mondialrelay.com/Web_Services.asmx?wsdl'
-
       soap.createClient(url, function (err, client) {
         if (err) {
-          reject(err)
-          return
+          return reject(new ApiError(400, 'mondial_relay'))
         }
-        const privateKey = 'SKuHmWzZ'
 
-        const params = {
-          Enseigne: 'F2DIGGER',
+        const params: any = {
+          Enseigne: codeEnseigne,
           Pays: 'FR'
         }
 
@@ -108,7 +103,7 @@ class MondialRelay {
 
         client.WSI4_PointRelais_Recherche(params, function (err, result) {
           if (err) {
-            reject(err)
+            return reject(new ApiError(400, 'mondial_relay'))
           }
 
           if (result.WSI4_PointRelais_RechercheResult.PointsRelais) {
@@ -229,21 +224,18 @@ class MondialRelay {
     }
   }
 
-  static getStatusOld(number) {
+  static getStatusOld(number: string) {
     return new Promise((resolve, reject) => {
-      const url = 'https://api.mondialrelay.com/Web_Services.asmx?wsdl'
-
       soap.createClient(url, function (err, client) {
         if (err) {
-          reject(err)
-          return
+          return reject(new ApiError(400, 'mondial_relay'))
         }
-        const privateKey = 'SKuHmWzZ'
 
         const params = {
-          Enseigne: 'F2DIGGER',
+          Enseigne: codeEnseigne,
           Expedition: number,
-          Langue: 'FR'
+          Langue: 'FR',
+          Security: ''
         }
 
         const security = Object.values(params).join('') + privateKey
@@ -252,7 +244,7 @@ class MondialRelay {
         client.WSI2_TracingColisDetaille(params, function (err, result) {
           try {
             if (err) {
-              reject(err)
+              return reject(err)
             }
             // 82 => Colis récupéré
             // 81 => Colis disponible
@@ -287,7 +279,7 @@ class MondialRelay {
   static getStatus(number, zipCode) {
     return Utils.request(
       `https://www.mondialrelay.fr/suivi-de-colis?codeMarque=F2&nexp=${number}`
-    ).then((res) => {
+    ).then((res: string) => {
       if (res.includes('<p>Votre colis a été livré.</p>')) {
         return 'delivered'
       } else if (res.includes('<p>Retour &#224; l&#39;exp&#233;diteur</p>')) {
