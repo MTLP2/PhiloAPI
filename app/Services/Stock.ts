@@ -922,7 +922,7 @@ class Stock {
       if (!stocks[stock.product_id][stock.type]) {
         stocks[stock.product_id][stock.type] = 0
       }
-      stocks[stock.product_id][stock.type] += stock.quantity
+      stocks[stock.product_id][stock.type] = stock.quantity
     }
 
     const diff = JSON.parse(JSON.stringify(stocks))
