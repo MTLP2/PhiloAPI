@@ -4,7 +4,6 @@ import ApiError from 'App/ApiError'
 import DB from 'App/DB'
 import PromoCode from 'App/Services/PromoCode'
 import Storage from 'App/Services/Storage'
-import Pass from 'App/Services/Pass'
 import Stock from 'App/Services/Stock'
 import Statement from 'App/Services/Statement'
 import Bid from 'App/Services/Bid'
@@ -1084,7 +1083,6 @@ class Project {
       res.push(`${project.user_id}_${project.project_id}`)
     }
 
-    console.log(res)
     return res
   }
 
