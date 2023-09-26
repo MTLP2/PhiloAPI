@@ -121,6 +121,18 @@ class ProductController {
     })
     return Product.removeProject(payload)
   }
+
+  async getProductLogisticians({ params }) {
+    const payload = await validator.validate({
+      schema: schema.create({
+        product_id: schema.number()
+      }),
+      data: {
+        product_id: params.id
+      }
+    })
+    return Product.getLogisticians(payload)
+  }
 }
 
 export default ProductController

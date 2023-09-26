@@ -2,6 +2,7 @@ import DB from 'App/DB'
 import Utils from 'App/Utils'
 import Stock from 'App/Services/Stock'
 import Whiplash from 'App/Services/Whiplash'
+import Elogik from 'App/Services/Elogik'
 
 class Product {
   static async all(payload: {
@@ -499,6 +500,16 @@ class Product {
     })
 
     return { success: true }
+  }
+
+  static getLogisticians = async (payload: { product_id: number }) => {
+    const product = await DB('product').where('id', payload.product_id).first()
+
+    // const elokiElogikg = Elogik.getStock({ barcode: product.barcode })
+
+    console.log(product)
+
+    return {}
   }
 }
 

@@ -484,6 +484,7 @@ Route.group(() => {
   Route.post('/products/:id/stocks/calcul', 'ProductController.setStockProduct')
   Route.post('/products/:id/sub-product', 'ProductController.saveSubProduct')
   Route.delete('/products/:id/sub-product', 'ProductController.removeSubProduct')
+  Route.get('/products/:id/logisticians', 'ProductController.getProductLogisticians')
   Route.post('/products', 'AdminController.updateProduct')
   Route.get('/surveys', 'AdminController.getSurveys')
   Route.get('/surveys/:id', 'AdminController.getSurvey')
