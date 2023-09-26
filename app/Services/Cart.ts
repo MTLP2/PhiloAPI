@@ -1050,7 +1050,10 @@ class Cart {
       .all()
 
     let weight = params.weight
-    if ((params.category === 'cd' || params.category === 'tape') && params.country_id === 'GB') {
+    if (
+      (params.category === 'cd' || params.category === 'tape' || params.category === 'k7') &&
+      params.country_id === 'GB'
+    ) {
       if (weight < 500) {
         weight = '500g'
       } else if (weight < 750) {
@@ -1109,6 +1112,10 @@ class Cart {
 
     if (trans === 'whiplash' && transporter[`${params.quantity}_vinyl`] < 4.65) {
       transporter[`${params.quantity}_vinyl`] = 4.65
+    }
+
+    if (params.category === 'k7' || params.category === 'tape') {
+      transporter[`${params.quantity}_vinyl`] = transporter[`${params.quantity}_vinyl`] * 0.6
     }
 
     if (params.quantity < 4) {
