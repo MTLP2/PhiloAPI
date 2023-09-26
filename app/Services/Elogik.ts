@@ -728,6 +728,55 @@ class Elogik {
 
     return html
   }
+
+  static createItem = async (payload: { id: number; name: string; barcode: number }) => {
+    const items = await Elogik.api('articles/liste', {
+      method: 'POST',
+      body: {
+        ean13: payload.barcode
+      }
+    })
+    let item
+    if (items.articles && items.articles.length === 1) {
+      item = items.articles[0]
+    } else {
+      item = await Elogik.api('articles/creer', {
+        method: 'POST',
+        body: {
+          refEcommercant: payload.id,
+          titre: payload.name,
+          EAN13: payload.barcode,
+          listeFournisseurs: [{ codeFournisseur: 'DF', refFournisseur: payload.barcode }]
+        }
+      })
+    }
+
+    if (item.error) {
+      return item
+    }
+
+    /**
+    return Elogik.api(`articles/${payload.id}/ajouter-contenu-lot`, {
+      method: 'POST',
+      body: {
+        articles: [
+          {
+            refEcommercant: payload.id,
+            quantite: 100
+          }
+        ]
+      }
+    })
+
+    console.log(item)
+    return item.refEcommercant
+    return res
+    **/
+  }
+
+  static createShipNotice = async (payload: { product_id: number }) => {
+    return true
+  }
 }
 
 export default Elogik
