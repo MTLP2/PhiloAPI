@@ -1104,16 +1104,13 @@ class Utils {
 
   static getPrices = ({
     price,
-    prices,
     currency,
     currencies
-  }: // shippingDiscount,
-  {
+  }: {
     price: number
     prices?: { EUR: number; USD: number; GBP: number; AUD: number }
     currency: Currencies
     currencies: { id: string; value: Currencies; updated_at: string }[]
-    // shippingDiscount: number
   }) => {
     const curr = Utils.getCurrencies(currency, currencies)
 
@@ -1123,10 +1120,10 @@ class Utils {
     const AUD = Math.ceil(price * curr.AUD + 0.75) - 0.01
 
     return {
-      EUR: currency === 'EUR' ? price : prices && prices.EUR > EUR ? prices.EUR : EUR,
-      USD: currency === 'USD' ? price : prices && prices.USD > USD ? prices.USD : USD,
-      GBP: currency === 'GBP' ? price : prices && prices.EUR > GBP ? prices.GBP : GBP,
-      AUD: currency === 'AUD' ? price : prices && prices.AUD > AUD ? prices.AUD : AUD
+      EUR: currency === 'EUR' ? price : EUR,
+      USD: currency === 'USD' ? price : USD,
+      GBP: currency === 'GBP' ? price : GBP,
+      AUD: currency === 'AUD' ? price : AUD
     }
   }
 
