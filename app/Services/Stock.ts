@@ -944,6 +944,9 @@ class Stock {
       }
       toSync[order.product_id][order.transporter] += order.quantity
 
+      if (!diff[order.product_id]) {
+        diff[order.product_id] = { ...toSync[order.product_id] }
+      }
       if (!diff[order.product_id][order.transporter]) {
         diff[order.product_id][order.transporter] = 0
       }
