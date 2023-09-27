@@ -74,6 +74,7 @@ class Vod {
       vod.fee_prod = params.fee_prod
     }
     vod.quote = params.quote
+    vod.factory = params.factory
     vod.currency = params.currency
     if (vod.user_id === null && params.user.user_id !== 0) {
       vod.user_id = params.user.user_id
