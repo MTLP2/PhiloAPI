@@ -222,8 +222,8 @@ class Quote {
       prices: prices
     }
 
+    res.factory = cheaperFactory
     if (params.is_admin) {
-      res.factory = cheaperFactory
       res.factories = factories
     }
 
