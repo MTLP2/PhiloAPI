@@ -1035,7 +1035,7 @@ class Utils {
   static arrayToXlsx = <T extends any[]>(
     sheets: {
       worksheetName?: string
-      columns: { header: string; key: string; width?: number }[]
+      columns: { header: string; key: string; width?: number; cast?: (v: any) => any }[]
       data: T[]
     }[]
   ) => {
@@ -1048,7 +1048,14 @@ class Utils {
       worksheet.columns = sheet.columns
       worksheet.properties.defaultColWidth = 20
 
-      for (const element of sheet.data) worksheet.addRow(element)
+      for (const element of sheet.data) {
+        for (const column of sheet.columns) {
+          if (column.cast) {
+            element[column.key] = column.cast(element[column.key])
+          }
+        }
+        worksheet.addRow(element)
+      }
       for (const cell of Utils.getCells(
         worksheet,
         `A1:${String.fromCharCode(sheet.columns.length + 64)}1`
