@@ -259,7 +259,7 @@ class Quote {
       if (params.is_admin) {
         feeProd = data.fee_prod
       }
-    } else if (data.id && data.type !== 'direct_pressing') {
+    } else if (data.type !== 'direct_pressing') {
       feeProd = 20
     }
 
@@ -323,6 +323,7 @@ class Quote {
       } else {
         price = line[`q${qty}`] * quantity
       }
+      console.log(feeProd)
       price = price * (1 + feeProd / 100)
       if (data.factory === 'vdp') {
         price = price * 0.85
