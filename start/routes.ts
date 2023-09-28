@@ -377,6 +377,7 @@ Route.group(() => {
   Route.get('/statements/stats', 'AdminController.getStatementStats')
   Route.get('/statements/:id/download', 'AdminController.downloadHistoryStatement')
   Route.get('/statements/countries', 'AdminController.getSalesByCountry')
+  Route.get('/statements/licences', 'AdminController.getSalesLicences')
   Route.post('/stocks', 'AdminController.uploadStocks')
   Route.post('/items', 'AdminController.saveProjectItem')
   Route.delete('/items/:id', 'AdminController.removeProjectItem')

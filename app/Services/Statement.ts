@@ -2113,6 +2113,150 @@ class StatementService {
     return false
   }
 
+  static async getSalesLicences() {
+    const projects = await DB()
+      .from('project')
+      .select('project.id', 'project.name', 'artist_name', 'unit_cost')
+      .join('vod', 'vod.project_id', 'project.id')
+      .where('is_licence', true)
+      .all()
+
+    const pp = {}
+    for (const project of projects) {
+      project.site = {}
+      project.retail = {}
+      project.show = false
+      pp[project.id] = project
+    }
+
+    const orders = await DB('order_item as oi')
+      .select(
+        'os.currency_rate',
+        'oi.project_id',
+        'os.tax_rate',
+        'oi.quantity',
+        'oi.price',
+        'oi.currency',
+        'oi.created_at'
+      )
+      .join('order_shop as os', 'os.id', 'oi.order_shop_id')
+      .where('os.is_paid', true)
+      .where('oi.created_at', '>=', '2023-01-01')
+      .whereIn(
+        'oi.project_id',
+        projects.map((p) => p.id)
+      )
+      .all()
+
+    for (const order of orders) {
+      const date = moment(order.created_at).format('YYYY-MM')
+
+      if (!pp[order.project_id].site[date]) {
+        pp[order.project_id].site[date] = {
+          quantity: 0,
+          turnover: 0
+        }
+      }
+      if (pp[order.project_id][`${date}_site_qty`] === undefined) {
+        pp[order.project_id][`${date}_site_qty`] = 0
+        pp[order.project_id][`${date}_site_tur`] = 0
+      }
+
+      pp[order.project_id][`${date}_site_qty`] += order.quantity
+      pp[order.project_id].site[date].quantity += order.quantity
+
+      let turnover = (order.price * order.quantity * order.currency_rate) / (1 + order.tax_rate)
+      turnover = turnover / (1 + order.tax_rate)
+
+      pp[order.project_id].show = true
+      pp[order.project_id].site[date].turnover += turnover
+      pp[order.project_id][`${date}_site_tur`] += turnover
+    }
+
+    const statements = await DB('statement')
+      .whereIn(
+        'project_id',
+        projects.map((p) => p.id)
+      )
+      .where(DB.raw("DATE_FORMAT(concat(date, '-01'), '%Y-%m-%d') >= 2023-01-01"))
+      .hasMany('statement_distributor', 'distributors')
+      .orderBy('date')
+      .all()
+
+    for (const stat of statements) {
+      if (!pp[stat.project_id].retail[stat.date]) {
+        pp[stat.project_id].retail[stat.date] = {
+          quantity: 0,
+          turnover: 0
+        }
+      }
+      if (pp[stat.project_id][`${stat.date}_retail_qty`] === undefined) {
+        pp[stat.project_id][`${stat.date}_retail_qty`] = 0
+        pp[stat.project_id][`${stat.date}_retail_tur`] = 0
+      }
+      for (const dist of stat.distributors) {
+        if (dist.quantity > 0) {
+          pp[stat.project_id].show = true
+        }
+        pp[stat.project_id].retail[stat.date].quantity += dist.quantity
+        pp[stat.project_id].retail[stat.date].turnover += dist.total
+        pp[stat.project_id][`${stat.date}_retail_qty`] = dist.quantity
+        pp[stat.project_id][`${stat.date}_retail_tur`] += dist.total
+      }
+    }
+    const start = moment('2023-01-01')
+    const end = moment()
+
+    const columns = [
+      { header: 'id', key: 'id', width: 10 },
+      { header: 'Artist', key: 'artist_name', width: 30 },
+      { header: 'Project', key: 'name', width: 30 },
+      { header: 'Unit cost', key: 'unit_cost', width: 15 }
+    ]
+
+    while (start.isSameOrBefore(end, 'month')) {
+      columns.push(
+        ...[
+          {
+            header: `${start.format('YYYY-MM')} s qty`,
+            key: `${start.format('YYYY-MM')}_site_qty`,
+            cast: (v) => (v ? Utils.round(v, 2) : ''),
+            width: 10
+          },
+          {
+            header: `${start.format('YYYY-MM')} s tur`,
+            key: `${start.format('YYYY-MM')}_site_tur`,
+            cast: (v) => (v ? Utils.round(v, 2) : ''),
+            round: true,
+            width: 10
+          },
+          {
+            header: `${start.format('YYYY-MM')} r qty`,
+            key: `${start.format('YYYY-MM')}_retail_qty`,
+            cast: (v) => (v ? Utils.round(v, 2) : ''),
+            round: true,
+            width: 10
+          },
+          {
+            header: `${start.format('YYYY-MM')} r tur`,
+            key: `${start.format('YYYY-MM')}_retail_tur`,
+            cast: (v) => (v ? Utils.round(v, 2) : ''),
+            width: 10
+          }
+        ]
+      )
+      start.add(1, 'month')
+    }
+
+    return Utils.arrayToXlsx([
+      {
+        worksheetName: 'Licenes',
+        columns: columns,
+        data: Object.values(pp).filter((p: { show: boolean }) => p.show) as any
+      }
+    ])
+  }
+
   static async sendStatements() {
     const projects = await DB()
       .select('project.id', 'project.name', 'project.artist_name', 'pu.user_id', 'vod.barcode')

@@ -276,6 +276,10 @@ class AdminController {
     return Statement.getSalesByCountry(params)
   }
 
+  getSalesLicences() {
+    return Statement.getSalesLicences()
+  }
+
   uploadStocks({ params, user }) {
     params.user_id = user.id
     return Stock.upload(params)
