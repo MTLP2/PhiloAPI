@@ -2200,7 +2200,7 @@ class StatementService {
         }
         pp[stat.project_id].retail[stat.date].quantity += dist.quantity
         pp[stat.project_id].retail[stat.date].turnover += dist.total
-        pp[stat.project_id][`${stat.date}_retail_qty`] = dist.quantity
+        pp[stat.project_id][`${stat.date}_retail_qty`] += dist.quantity
         pp[stat.project_id][`${stat.date}_retail_tur`] += dist.total
       }
     }
