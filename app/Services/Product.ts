@@ -228,6 +228,7 @@ class Product {
 
     if (item.barcode) {
       Whiplash.setProduct({ id: item.id })
+      // Elogik.createItem(item)
     }
     const projects = await DB('project_product').where('product_id', item.id).all()
     for (const project of projects) {
@@ -503,13 +504,18 @@ class Product {
   }
 
   static getLogisticians = async (payload: { product_id: number }) => {
+    return false
     const product = await DB('product').where('id', payload.product_id).first()
 
-    // const elokiElogikg = Elogik.getStock({ barcode: product.barcode })
+    const elogikPromise = Elogik.getItem({ barcode: product.barcode })
+    const whiplashPromise = Elogik.getItem({ barcode: product.barcode })
 
-    console.log(product)
+    const [elogik, whiplash] = await Promise.all([elogikPromise, whiplashPromise])
 
-    return {}
+    return {
+      elogik: elogik,
+      whiplash: whiplash
+    }
   }
 }
 
