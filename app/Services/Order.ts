@@ -134,6 +134,7 @@ class Order {
         'project.slug',
         'project.picture',
         'project.artist_name',
+        'project.category',
         'item.name as item',
         'item.picture as item_picture',
         'picture_project',
