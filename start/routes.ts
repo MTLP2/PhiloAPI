@@ -272,6 +272,7 @@ Route.group(() => {
   Route.get('/orders/:id/tracking', 'UserController.getTrackingDelivery')
   Route.get('/orders/:id/shop', 'UserController.getOrderShop')
   Route.put('/orders/:id/customer', 'UserController.updateOrderCustomer')
+  Route.get('/orders/:id/download', 'UserController.downloadOrderTracks')
   Route.delete('/orders/:id', 'UserController.cancelOrder')
   Route.get('/boxes/:id', 'UserController.getBox')
   Route.get('/boxes', 'UserController.getBoxes')

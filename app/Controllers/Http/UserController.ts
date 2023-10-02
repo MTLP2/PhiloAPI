@@ -209,6 +209,11 @@ class UserController {
     return User.cancelOrder(params)
   }
 
+  downloadOrderTracks({ user, params }) {
+    params.user_id = user ? user.id : 0
+    return User.downloadOrderTracks(params)
+  }
+
   getDigs({ user }) {
     return Dig.byUser(user.id)
   }

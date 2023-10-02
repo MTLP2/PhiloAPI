@@ -6,7 +6,7 @@ import ApiError from 'App/ApiError'
 import Customer from './Customer'
 import Order from './Order'
 import Artwork from './Artwork'
-import Project from './Project'
+import Song from './Song'
 import Box from './Box'
 import DB from 'App/DB'
 import Utils from 'App/Utils'
@@ -909,6 +909,23 @@ class User {
       }
     }
     return false
+  }
+
+  static downloadOrderTracks = async (payload: { id: number; user_id: number }) => {
+    const project = await DB('order_item as oi')
+      .select('oi.project_id')
+      .join('order_shop as os', 'os.id', 'oi.order_shop_id')
+      .where('oi.id', payload.id)
+      .where('os.user_id', payload.user_id)
+      .where('os.is_paid', true)
+      .first()
+
+    if (!project) {
+      throw new ApiError(404)
+    } else {
+      const url = await Song.downloadProject(project.project_id)
+      return { url: url }
+    }
   }
 
   static getProjects = async (userId, params?) => {
