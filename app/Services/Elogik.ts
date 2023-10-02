@@ -729,11 +729,25 @@ class Elogik {
     return html
   }
 
+  static getItem = async (payload: { barcode: number }) => {
+    const items = await Elogik.api('articles/liste', {
+      method: 'POST',
+      body: {
+        reference: payload.barcode
+      }
+    })
+    if (items.articles && items.articles.length === 1) {
+      return items.articles[0]
+    } else {
+      return null
+    }
+  }
+
   static createItem = async (payload: { id: number; name: string; barcode: number }) => {
     const items = await Elogik.api('articles/liste', {
       method: 'POST',
       body: {
-        ean13: payload.barcode
+        reference: payload.barcode
       }
     })
     let item
@@ -743,7 +757,7 @@ class Elogik {
       item = await Elogik.api('articles/creer', {
         method: 'POST',
         body: {
-          refEcommercant: payload.id,
+          refEcommercant: payload.barcode,
           titre: payload.name,
           EAN13: payload.barcode,
           listeFournisseurs: [{ codeFournisseur: 'DF', refFournisseur: payload.barcode }]
@@ -751,27 +765,11 @@ class Elogik {
       })
     }
 
-    if (item.error) {
-      return item
-    }
-
-    /**
-    return Elogik.api(`articles/${payload.id}/ajouter-contenu-lot`, {
-      method: 'POST',
-      body: {
-        articles: [
-          {
-            refEcommercant: payload.id,
-            quantite: 100
-          }
-        ]
-      }
+    await DB('product').where('id', payload.id).update({
+      ekan_i: item.id
     })
 
-    console.log(item)
-    return item.refEcommercant
-    return res
-    **/
+    return item
   }
 
   static createShipNotice = async (payload: { product_id: number }) => {
