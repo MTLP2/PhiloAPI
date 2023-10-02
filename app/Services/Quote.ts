@@ -323,7 +323,6 @@ class Quote {
       } else {
         price = line[`q${qty}`] * quantity
       }
-      console.log(feeProd)
       price = price * (1 + feeProd / 100)
       if (data.factory === 'vdp') {
         price = price * 0.85
