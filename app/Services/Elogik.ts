@@ -744,16 +744,24 @@ class Elogik {
   }
 
   static createItem = async (payload: { id: number; name: string; barcode: number }) => {
+    console.log(payload.barcode)
     const items = await Elogik.api('articles/liste', {
       method: 'POST',
       body: {
         reference: payload.barcode
       }
     })
+    console.log(items)
+
     let item
     if (items.articles && items.articles.length === 1) {
       item = items.articles[0]
+      console.log(item)
+      await DB('product').where('id', payload.id).update({
+        ekan_id: item.refEcommercant
+      })
     } else {
+      /**
       item = await Elogik.api('articles/creer', {
         method: 'POST',
         body: {
@@ -763,11 +771,8 @@ class Elogik {
           listeFournisseurs: [{ codeFournisseur: 'DF', refFournisseur: payload.barcode }]
         }
       })
+      **/
     }
-
-    await DB('product').where('id', payload.id).update({
-      ekan_i: item.id
-    })
 
     return item
   }
