@@ -875,6 +875,34 @@ class Whiplash {
         })
     }
   }
+
+  static getShipNotices = async () => {
+    return Whiplash.api(`/shipnotices`)
+  }
+
+  static createShopNotive = async (payload: {
+    sender: string
+    eta: string
+    warehouse_id: number
+    shipnotice_items: any[]
+  }) => {
+    const res = await Whiplash.api(`/items/shipnotices`, {
+      methid: 'POST',
+      body: {
+        sender: 'Diggers Factory',
+        eta: '2021-01-01',
+        warehouse_id: 4,
+        shipnotice_items: [
+          {
+            item_id: 123,
+            quantity: 1
+          }
+        ]
+      }
+    })
+
+    return res
+  }
 }
 
 export default Whiplash
