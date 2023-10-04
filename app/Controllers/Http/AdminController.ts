@@ -30,6 +30,7 @@ import MailJet from 'App/Services/MailJet'
 import Review from 'App/Services/Review'
 import ApiError from 'App/ApiError'
 import ProjectService from 'App/Services/Project'
+import Product from 'App/Services/Product'
 import Dispatch from 'App/Services/Dispatch'
 import ShippingWeight from 'App/Services/ShippingWeight'
 import Log from 'App/Services/Log'
@@ -1289,6 +1290,10 @@ class AdminController {
 
   getUserStock({ params }) {
     return Stock.getUserStock({ user_id: params.id })
+  }
+
+  getUserProducts({ params }) {
+    return Product.forUser({ user_id: params.id })
   }
 }
 

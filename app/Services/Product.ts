@@ -227,8 +227,8 @@ class Product {
     await item.save()
 
     if (item.barcode) {
-      Whiplash.setProduct({ id: item.id })
-      // Elogik.createItem(item)
+      await Whiplash.setProduct({ id: item.id })
+      await Elogik.createItem(item)
     }
     const projects = await DB('project_product').where('product_id', item.id).all()
     for (const project of projects) {
@@ -503,18 +503,122 @@ class Product {
     return { success: true }
   }
 
-  static getLogisticians = async (payload: { product_id: number }) => {
-    return false
-    const product = await DB('product').where('id', payload.product_id).first()
+  static async forUser(payload: { user_id: number }) {
+    console.log(payload)
+    const orders = await DB('vod')
+      .select(
+        'oi.quantity',
+        'os.transporter',
+        'os.date_export',
+        'product.type',
+        'product.name',
+        'pp.product_id',
+        'product.barcode'
+      )
+      .join('project_product as pp', 'pp.project_id', 'vod.project_id')
+      .join('order_item as oi', 'oi.project_id', 'vod.project_id')
+      .join('order_shop as os', 'os.id', 'oi.order_shop_id')
+      .join('product', 'pp.product_id', 'product.id')
+      .where('vod.user_id', payload.user_id)
+      .where('is_paid', true)
+      .where((query) => {
+        query.whereRaw('product.size like oi.size')
+        query.orWhereRaw(`oi.products LIKE CONCAT('%[',product.id,']%')`)
+        query.orWhere((query) => {
+          query.whereNull('product.size')
+          query.whereNotExists((query) => {
+            query.from('product as child').whereRaw('product.id = child.parent_id')
+          })
+        })
+      })
+      .whereNull('date_export')
+      .all()
 
-    const elogikPromise = Elogik.getItem({ barcode: product.barcode })
-    const whiplashPromise = Elogik.getItem({ barcode: product.barcode })
+    const stocksList = await DB('vod')
+      .select('stock.product_id', 'product.name', 'stock.type', 'stock.quantity', 'product.barcode')
+      .join('project_product as pp', 'pp.project_id', 'vod.project_id')
+      .join('product', 'pp.product_id', 'product.id')
+      .join('stock', 'stock.product_id', 'product.id')
+      .where('stock.type', '!=', 'preorder')
+      .where('stock.type', '!=', 'null')
+      .where('vod.user_id', payload.user_id)
+      .all()
 
-    const [elogik, whiplash] = await Promise.all([elogikPromise, whiplashPromise])
+    const trans = {}
+    const stocks = {}
+    for (const stock of stocksList) {
+      if (!stocks[stock.product_id]) {
+        stocks[stock.product_id] = {
+          product_id: stock.product_id,
+          type: stock.type,
+          name: stock.name,
+          barcode: stock.barcode
+        }
+      }
+      trans[stock.type] = true
+      if (!stocks[stock.product_id][stock.type]) {
+        stocks[stock.product_id][stock.type] = 0
+      }
+      stocks[stock.product_id][stock.type] = stock.quantity
+    }
+
+    const diff = JSON.parse(JSON.stringify(stocks))
+
+    const toSync = {}
+    for (const order of orders) {
+      trans[order.transporter] = true
+
+      if (!toSync[order.product_id]) {
+        toSync[order.product_id] = {
+          product_id: order.product_id,
+          type: order.type,
+          name: order.name,
+          barcode: order.barcode
+        }
+      }
+      if (!toSync[order.product_id][order.transporter]) {
+        toSync[order.product_id][order.transporter] = 0
+      }
+      toSync[order.product_id][order.transporter] += order.quantity
+
+      if (!diff[order.product_id]) {
+        diff[order.product_id] = { ...toSync[order.product_id] }
+      }
+      if (!diff[order.product_id][order.transporter]) {
+        diff[order.product_id][order.transporter] = 0
+      }
+      diff[order.product_id][order.transporter] -= order.quantity
+    }
+
+    const shipNotices = {}
+    /**
+    const notices: any = await Whiplash.getShipNotices()
+    for (const notice of notices) {
+      if (notice.shipnotice_items) {
+        for (const item of notice.shipnotice_items) {
+          const product = stocksList.find((s) => {
+            return s.barcode === item.item_originators[0].original_id
+          })
+          if (product) {
+            if (!shipNotices[product.product_id]) {
+              shipNotices[product.product_id] = {}
+            }
+            if (notice.warehouse_id === 3) {
+              shipNotices[product.product_id].whiplash_uk = item.quantity
+            } else if (notice.warehouse_id === 4) {
+              shipNotices[product.product_id].whiplash = item.quantity
+            }
+          }
+        }
+      }
+    }
+    **/
 
     return {
-      elogik: elogik,
-      whiplash: whiplash
+      toSync: Object.values(toSync),
+      stocks: Object.values(stocks),
+      diff: Object.values(diff),
+      shipNotices: shipNotices
     }
   }
 }
