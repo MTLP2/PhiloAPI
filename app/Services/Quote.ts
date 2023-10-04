@@ -83,12 +83,14 @@ class Quote {
         'quote.*',
         'project.name',
         'project.artist_name',
+        'customer.name as company',
         'customer.firstname',
         'customer.lastname',
         'customer.address',
         'customer.zip_code',
         'customer.city',
         'customer.country_id',
+        'customer.tax_intra',
         'customer.email',
         'customer.phone'
       )
@@ -108,9 +110,11 @@ class Quote {
     if (quote.zip_code) {
       address.push(`${quote.zip_code}, ${quote.city}, ${quote.country_id}`)
     }
+
+    console.log(quote.client || `${quote.firstname} ${quote.lastname}`)
     const html = await View.render('quote', {
       ...quote,
-      client: quote.client || `${quote.firstname} ${quote.lastname}`,
+      client: quote.client || quote.company || `${quote.firstname} ${quote.lastname}`,
       address: address,
       date: new Intl.DateTimeFormat(payload.lang).format(new Date(quote.created_at)),
       t: (v: string) => I18n.locale(payload.lang as string).formatMessage(v),

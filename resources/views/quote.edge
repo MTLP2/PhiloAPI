@@ -169,6 +169,9 @@
               @each(a in address)
                 {{a}}<br />
               @endeach
+              @if(tax_intra)
+                {{tax_intra}}
+              @endif
             </div>
           </div>
         </td>
