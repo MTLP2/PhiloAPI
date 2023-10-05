@@ -338,8 +338,6 @@ class Elogik {
           quantite: item.quantity
         })
       }
-      console.log(payload)
-
       let res = await Elogik.api('commandes/creer', {
         method: 'POST',
         body: payload
@@ -432,14 +430,12 @@ class Elogik {
           date_export: Utils.date(),
           sending: false
         })
-        if (dispatch.blocked || dispatch.blocked_logistician) {
-          await Notification.add({
-            type: 'my_order_in_preparation',
-            user_id: order.user_id,
-            order_id: order.order_id,
-            order_shop_id: order.id
-          })
-        }
+        await Notification.add({
+          type: 'my_order_in_preparation',
+          user_id: order.user_id,
+          order_id: order.order_id,
+          order_shop_id: order.id
+        })
       }
     }
 

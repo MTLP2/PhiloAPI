@@ -154,7 +154,15 @@ class Whiplash {
 
   static syncProject = async (params) => {
     const orders = await DB('order_shop as os')
-      .select('customer.*', 'os.id', 'oi.order_shop_id', 'os.type', 'oi.quantity')
+      .select(
+        'customer.*',
+        'os.id',
+        'oi.order_shop_id',
+        'os.type',
+        'oi.quantity',
+        'os.order_id',
+        'os.user_id'
+      )
       .join('order_item as oi', 'oi.order_shop_id', 'os.id')
       .join('customer', 'customer.id', 'os.customer_id')
       .where('oi.project_id', params.project_id)
@@ -246,6 +254,7 @@ class Whiplash {
           logistician_id: whiplash.id
         })
 
+        console.log(order.user_id)
         await Notification.add({
           type: 'my_order_in_preparation',
           user_id: order.user_id,
