@@ -5182,6 +5182,18 @@ class Admin {
 
     return true
   }
+
+  static saveShipNotice = async (payload: {
+    sender: string
+    eta: string
+    logistician: string
+    products: { id: number; name: string; quantity: number }[]
+  }) => {
+    if (payload.logistician === 'whiplash' || payload.logistician === 'whiplash_uk') {
+      return Whiplash.createShopNotive(payload)
+    }
+    return false
+  }
 }
 
 export default Admin

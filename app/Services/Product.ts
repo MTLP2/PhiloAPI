@@ -504,7 +504,6 @@ class Product {
   }
 
   static async forUser(payload: { user_id: number }) {
-    console.log(payload)
     const orders = await DB('vod')
       .select(
         'oi.quantity',
@@ -513,7 +512,9 @@ class Product {
         'product.type',
         'product.name',
         'pp.product_id',
-        'product.barcode'
+        'product.barcode',
+        'product.whiplash_id',
+        'product.ekan_id'
       )
       .join('project_product as pp', 'pp.project_id', 'vod.project_id')
       .join('order_item as oi', 'oi.project_id', 'vod.project_id')
@@ -535,7 +536,16 @@ class Product {
       .all()
 
     const stocksList = await DB('vod')
-      .select('stock.product_id', 'product.name', 'stock.type', 'stock.quantity', 'product.barcode')
+      .select(
+        'stock.product_id',
+        'product.name',
+        'product.type',
+        'stock.type as logistician',
+        'stock.quantity',
+        'product.barcode',
+        'product.whiplash_id',
+        'product.ekan_id'
+      )
       .join('project_product as pp', 'pp.project_id', 'vod.project_id')
       .join('product', 'pp.product_id', 'product.id')
       .join('stock', 'stock.product_id', 'product.id')
@@ -552,14 +562,16 @@ class Product {
           product_id: stock.product_id,
           type: stock.type,
           name: stock.name,
-          barcode: stock.barcode
+          barcode: stock.barcode,
+          whiplash_id: stock.whiplash_id,
+          ekan_id: stock.ekan_id
         }
       }
-      trans[stock.type] = true
-      if (!stocks[stock.product_id][stock.type]) {
-        stocks[stock.product_id][stock.type] = 0
+      trans[stock.logistician] = true
+      if (!stocks[stock.product_id][stock.logistician]) {
+        stocks[stock.product_id][stock.logistician] = 0
       }
-      stocks[stock.product_id][stock.type] = stock.quantity
+      stocks[stock.product_id][stock.logistician] = stock.quantity
     }
 
     const diff = JSON.parse(JSON.stringify(stocks))
@@ -573,7 +585,9 @@ class Product {
           product_id: order.product_id,
           type: order.type,
           name: order.name,
-          barcode: order.barcode
+          barcode: order.barcode,
+          whiplash_id: order.whiplash_id,
+          ekan_id: order.ekan_id
         }
       }
       if (!toSync[order.product_id][order.transporter]) {
@@ -620,6 +634,28 @@ class Product {
       diff: Object.values(diff),
       shipNotices: shipNotices
     }
+  }
+
+  static createItems = async (payload: {
+    logistician: string
+    products: {
+      id: number
+      name: string
+      barcode: number
+    }[]
+  }) => {
+    for (const product of payload.products) {
+      if (payload.logistician === 'whiplash') {
+        await Whiplash.setProduct({ id: product.id })
+      } else {
+        await Elogik.createItem({
+          id: product.id,
+          name: product.name,
+          barcode: product.barcode
+        })
+      }
+    }
+    return { success: true }
   }
 }
 

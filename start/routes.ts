@@ -479,6 +479,7 @@ Route.group(() => {
   Route.post('/categories/:id/populate', 'AdminController.populateProjectsCategory')
   Route.delete('/categories/:id/deleteAll', 'AdminController.deleteAllProjectsCategory')
   Route.delete('/categories/:id', 'AdminController.deleteCategory')
+  Route.post('/products/create-items', 'ProductController.createItems')
   Route.get('/products', 'ProductController.getProducts')
   Route.get('/products/:id', 'ProductController.getProduct')
   Route.post('/products/:id', 'ProductController.saveProduct')
@@ -581,6 +582,7 @@ Route.group(() => {
   Route.get('/projects/:id/users', 'ProjectsController.getProjectUsers')
   Route.post('/projects/:project_id/users/:user_id', 'ProjectsController.editProjectUsers')
   Route.delete('/projects/:project_id/users/:user_id', 'ProjectsController.deleteProjectUsers')
+  Route.post('/ship-notices', 'AdminController.saveShipNotice')
 
   Route.group(() => {
     Route.get('/:partner', 'AdminController.getShippingWeightByPartner')

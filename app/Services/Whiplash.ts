@@ -883,21 +883,41 @@ class Whiplash {
   static createShopNotive = async (payload: {
     sender: string
     eta: string
-    warehouse_id: number
-    shipnotice_items: any[]
+    logistician: string
+    products: any[]
   }) => {
-    const res = await Whiplash.api(`/items/shipnotices`, {
-      methid: 'POST',
-      body: {
-        sender: 'Diggers Factory',
-        eta: '2021-01-01',
-        warehouse_id: 4,
-        shipnotice_items: [
-          {
-            item_id: 123,
-            quantity: 1
+    for (const p in payload.products) {
+      let item: any = await Whiplash.api(`/items/sku/${payload.products[p].barcode}`)
+      if (item.length === 0) {
+        item = await Whiplash.api(`/items`, {
+          method: 'POST',
+          body: {
+            sku: payload.products[p].barcode,
+            title: payload.products[p].name,
+            media_mail: true
           }
-        ]
+        })
+        payload.products[p].item_id = item.id
+      } else {
+        payload.products[p].item_id = item[0].id
+      }
+      await DB('product').where('id', payload.products[p].id).update({
+        whiplash_id: payload.products[p].item_id
+      })
+    }
+
+    const res = await Whiplash.api(`/shipnotices`, {
+      method: 'POST',
+      body: {
+        sender: payload.sender,
+        eta: payload.eta,
+        warehouse_id: payload.logistician === 'whiplash' ? 3 : 4,
+        shipnotice_items: payload.products.map((p) => {
+          return {
+            item_id: p.item_id,
+            quantity: p.quantity
+          }
+        })
       }
     })
 

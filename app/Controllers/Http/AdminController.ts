@@ -1295,6 +1295,10 @@ class AdminController {
   getUserProducts({ params }) {
     return Product.forUser({ user_id: params.id })
   }
+
+  saveShipNotice({ params }) {
+    return Admin.saveShipNotice(params)
+  }
 }
 
 export default AdminController

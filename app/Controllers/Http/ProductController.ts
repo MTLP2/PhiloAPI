@@ -122,16 +122,21 @@ class ProductController {
     return Product.removeProject(payload)
   }
 
-  async getProductLogisticians({ params }) {
+  async createItems({ params }) {
     const payload = await validator.validate({
       schema: schema.create({
-        product_id: schema.number()
+        logistician: schema.string(),
+        products: schema.array().members(
+          schema.object().members({
+            id: schema.number(),
+            barcode: schema.number(),
+            name: schema.string()
+          })
+        )
       }),
-      data: {
-        product_id: params.id
-      }
+      data: params
     })
-    return Product.getLogisticians(payload)
+    return Product.createItems(payload)
   }
 }
 
