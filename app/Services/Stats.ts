@@ -1821,7 +1821,7 @@ class Stats {
     const sentShopPromise = DB('order_shop as os')
       .select('os.date_export', 'os.shipping', 'os.currency_rate', 'os.tax_rate')
       .where('is_paid', true)
-      .where('is_external', true)
+      .where('is_external', false)
       .whereBetween('os.date_export', [params.start, params.end])
       .all()
 
@@ -1839,7 +1839,7 @@ class Stats {
       .join('vod', 'vod.project_id', 'oi.project_id')
       .leftJoin('user', 'user.id', 'os.user_id')
       .where('is_paid', true)
-      .where('is_external', true)
+      .where('is_external', false)
       .whereBetween('os.date_export', [params.start, params.end])
       .all()
 
@@ -2350,6 +2350,7 @@ class Stats {
 
       let total = (s.item_total * s.currency_rate) / (1 + s.tax_rate)
 
+      // console.log(s)
       if (s.is_pro) {
         d.sent.direct_shop.dates[date] += total
       } else if (s.is_licence) {
