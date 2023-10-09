@@ -616,6 +616,9 @@ class Elogik {
           comment: 'api',
           quantity: qty
         })
+        await DB('product').where('id', product.id).update({
+          ekan_id: product.barcode
+        })
       }
     }
     if (newStocks.length > 0) {
@@ -740,8 +743,6 @@ class Elogik {
   }
 
   static createItem = async (payload: { id: number; name: string; barcode: number }) => {
-    console.log(payload)
-
     const items = await Elogik.api('articles/liste', {
       method: 'POST',
       body: {
@@ -765,7 +766,6 @@ class Elogik {
           listeFournisseurs: [{ codeFournisseur: 'DGF', refFournisseur: payload.barcode }]
         }
       })
-      console.log(item)
       await DB('product').where('id', payload.id).update({
         ekan_id: item.refEcommercant
       })

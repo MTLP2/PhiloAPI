@@ -605,7 +605,6 @@ class Product {
     }
 
     const shipNotices = {}
-    /**
     const notices: any = await Whiplash.getShipNotices()
     for (const notice of notices) {
       if (notice.shipnotice_items) {
@@ -626,7 +625,6 @@ class Product {
         }
       }
     }
-    **/
 
     return {
       toSync: Object.values(toSync),
@@ -646,7 +644,11 @@ class Product {
   }) => {
     for (const product of payload.products) {
       if (payload.logistician === 'whiplash') {
-        await Whiplash.setProduct({ id: product.id })
+        await Whiplash.createItem({
+          id: product.id,
+          title: product.name,
+          sku: product.barcode.toString()
+        })
       } else {
         await Elogik.createItem({
           id: product.id,
