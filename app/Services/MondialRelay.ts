@@ -1,113 +1,121 @@
 import md5 from 'md5'
 import moment from 'moment'
+import { XMLParser } from 'fast-xml-parser'
+import request from 'request'
 import Utils from 'App/Utils'
 import DB from 'App/DB'
 import Notification from 'App/Services/Notification'
-import ApiError from 'App/ApiError'
-const soap = require('soap')
 
-/**
+const url = 'https://api.mondialrelay.com/Web_Services.asmx?wsdl'
 const codeEnseigne = 'F2DIGGER'
 const privateKey = 'SKuHmWzZ'
-**/
-const url = 'https://api.mondialrelay.com/Web_Services.asmx?wsdl'
-const codeEnseigne = 'XXELOGIK'
-const privateKey = 'b25kQgY4'
 
 class MondialRelay {
-  static track(number: string, lang: string) {
-    return new Promise((resolve, reject) => {
-      soap.createClient(url, function (err, client) {
-        if (err) {
-          return reject(new ApiError(400, 'mondial_relay'))
-        }
-        const params = {
-          Enseigne: codeEnseigne,
-          Expedition: number,
-          Langue: lang,
-          Security: ''
-        }
-
-        const security = Object.values(params).join('') + privateKey
-        params.Security = md5(security).toUpperCase()
-
-        client.WSI2_TracingColisDetaille(params, function (err, result) {
-          if (err) {
-            return reject(new ApiError(400, 'mondial_relay'))
-          }
-          resolve(result)
-        })
-      })
-    })
-  }
-
   static checkPickupAvailable(number: string) {
-    return new Promise((resolve, reject) => {
-      soap.createClient(url, function (err, client) {
-        if (err) {
-          return reject(new ApiError(400, 'mondial_relay'))
-        }
+    return new Promise((resolve) => {
+      const params = {
+        Enseigne: codeEnseigne,
+        Pays: 'FR',
+        NumPointRelais: number,
+        NombreResultats: 30,
+        Security: ''
+      }
 
-        const params = {
-          Enseigne: codeEnseigne,
-          Pays: 'FR',
-          NumPointRelais: number,
-          NombreResultats: 30,
-          Security: ''
-        }
+      const security = Object.values(params).join('') + privateKey
+      params.Security = md5(security).toUpperCase()
 
-        const security = Object.values(params).join('') + privateKey
-        params.Security = md5(security).toUpperCase()
+      const payload = `<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:web="http://www.mondialrelay.fr/webservice/">
+        <soap:Header/>
+          <soap:Body>
+            <web:WSI4_PointRelais_Recherche>
+              <web:Enseigne>${params.Enseigne}</web:Enseigne>
+              <web:Pays>${params.Pays}</web:Pays>
+              <web:NumPointRelais>${params.NumPointRelais}</web:NumPointRelais>
+              <web:NombreResultats>${params.NombreResultats}</web:NombreResultats>
+              <web:Security>${params.Security}</web:Security>
+            </web:WSI4_PointRelais_Recherche>
+          </soap:Body>
+        </soap:Envelope>`
+      request(
+        {
+          method: 'POST',
+          url: url,
+          headers: {
+            'Content-Type': `text/xml`
+          },
+          body: payload
+        },
+        function (err, res, body) {
+          const parser = new XMLParser()
+          const xml = parser.parse(body)
 
-        client.WSI4_PointRelais_Recherche(params, function (err, result) {
-          if (err) {
-            return reject(new ApiError(400, 'mondial_relay'))
-          }
-          if (
-            result &&
-            result.WSI4_PointRelais_RechercheResult &&
-            result.WSI4_PointRelais_RechercheResult.PointsRelais
-          ) {
+          try {
+            const p =
+              xml['soap:Envelope']['soap:Body']['WSI4_PointRelais_RechercheResponse'][
+                'WSI4_PointRelais_RechercheResult'
+              ]['PointsRelais']['PointRelais_Details']
             resolve(true)
-          } else {
+          } catch (err) {
             resolve(false)
           }
-        })
-      })
+        }
+      )
     })
   }
 
   static findPickupAround(pickup) {
-    return new Promise((resolve, reject) => {
-      soap.createClient(url, function (err, client) {
-        if (err) {
-          return reject(new ApiError(400, 'mondial_relay'))
-        }
+    return new Promise((resolve) => {
+      const params: any = {
+        Enseigne: codeEnseigne,
+        Pays: 'FR'
+      }
 
-        const params: any = {
-          Enseigne: codeEnseigne,
-          Pays: 'FR'
-        }
+      if (pickup.lat) {
+        params.Latitude = pickup.lat.replace(',', '.')
+        params.Longitude = pickup.lng.replace(',', '.')
+      } else {
+        params.Ville = pickup.city
+        params.CP = pickup.zip_code
+      }
 
-        if (pickup.lat) {
-          params.Latitude = pickup.lat.replace(',', '.')
-          params.Longitude = pickup.lng.replace(',', '.')
-        } else {
-          params.Ville = pickup.city
-          params.CP = pickup.zip_code
-        }
+      params.NombreResultats = 1
+      const security = Object.values(params).join('') + privateKey
+      params.Security = md5(security).toUpperCase()
 
-        params.NombreResultats = 1
-        const security = Object.values(params).join('') + privateKey
-        params.Security = md5(security).toUpperCase()
+      const payload = `<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:web="http://www.mondialrelay.fr/webservice/">
+        <soap:Header/>
+          <soap:Body>
+            <web:WSI4_PointRelais_Recherche>
+              <web:Enseigne>${params.Enseigne}</web:Enseigne>
+              <web:Pays>${params.Pays}</web:Pays>
+              <web:Latitude>${params.Latitude || ''}</web:Latitude>
+              <web:Longitude>${params.Longitude || ''}</web:Longitude>
+              <web:Ville>${params.Ville || ''}</web:Ville>
+              <web:CP>${params.CP || ''}</web:CP>
+              <web:NombreResultats>${params.NombreResultats}</web:NombreResultats>
+              <web:Security>${params.Security}</web:Security>
+            </web:WSI4_PointRelais_Recherche>
+          </soap:Body>
+        </soap:Envelope>`
 
-        client.WSI4_PointRelais_Recherche(params, function (err, result) {
-          if (err) {
-            return reject(new ApiError(400, 'mondial_relay'))
-          }
-
-          if (result.WSI4_PointRelais_RechercheResult.PointsRelais) {
-            const p = result.WSI4_PointRelais_RechercheResult.PointsRelais.PointRelais_Details[0]
+      console.log(payload)
+      request(
+        {
+          method: 'POST',
+          url: url,
+          headers: {
+            'Content-Type': `text/xml`
+          },
+          body: payload
+        },
+        function (err, res, body) {
+          const parser = new XMLParser()
+          const xml = parser.parse(body)
+          try {
+            const p =
+              xml['soap:Envelope']['soap:Body']['WSI4_PointRelais_RechercheResponse'][
+                'WSI4_PointRelais_RechercheResult'
+              ]['PointsRelais']['PointRelais_Details']
             resolve({
               name: p.LgAdr1,
               address: p.LgAdr3,
@@ -118,12 +126,11 @@ class MondialRelay {
               lat: p.Latitude,
               lng: p.Longitude
             })
-          } else {
+          } catch (err) {
             resolve(false)
           }
-          resolve(result.WSI4_PointRelais_RechercheResult.PointsRelais)
-        })
-      })
+        }
+      )
     })
   }
 
@@ -222,58 +229,6 @@ class MondialRelay {
         })
       }
     }
-  }
-
-  static getStatusOld(number: string) {
-    return new Promise((resolve, reject) => {
-      soap.createClient(url, function (err, client) {
-        if (err) {
-          return reject(new ApiError(400, 'mondial_relay'))
-        }
-
-        const params = {
-          Enseigne: codeEnseigne,
-          Expedition: number,
-          Langue: 'FR',
-          Security: ''
-        }
-
-        const security = Object.values(params).join('') + privateKey
-        params.Security = md5(security).toUpperCase()
-
-        client.WSI2_TracingColisDetaille(params, function (err, result) {
-          try {
-            if (err) {
-              return reject(err)
-            }
-            // 82 => Colis récupéré
-            // 81 => Colis disponible
-
-            const delivered =
-              result.WSI2_TracingColisDetailleResult.Tracing.ret_WSI2_sub_TracingColisDetaille.some(
-                (s) => s.Libelle === 'COLIS LIVRÉ'
-              )
-
-            if (delivered) {
-              resolve('delivered')
-            }
-
-            const available =
-              result.WSI2_TracingColisDetailleResult.Tracing.ret_WSI2_sub_TracingColisDetaille.some(
-                (s) => s.Libelle === 'DISPONIBLE AU POINT RELAIS'
-              )
-
-            if (available) {
-              resolve('available')
-            }
-
-            resolve('in_progress')
-          } catch (err) {
-            resolve(false)
-          }
-        })
-      })
-    })
   }
 
   static getStatus(number, zipCode) {
