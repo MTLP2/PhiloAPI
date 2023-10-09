@@ -1895,7 +1895,6 @@ class Stats {
     const projectsPromise = await DB('vod')
       .select('created_at', 'is_licence', 'com_id', 'user_id', 'start')
       .whereBetween('created_at', [params.start, params.end])
-      .orWhereBetween('start', [params.start, params.end])
       .all()
 
     const usersPromise = await DB('user')
@@ -2295,14 +2294,16 @@ class Stats {
         }
       }
 
-      if (!cart[qty.order_id]) {
-        cart[qty.order_id] = {
-          total: 0,
-          quantity: 0
+      if (moment(date).isBetween(params.start, params.end)) {
+        if (!cart[qty.order_id]) {
+          cart[qty.order_id] = {
+            total: 0,
+            quantity: 0
+          }
         }
+        cart[qty.order_id].total += qty.total / currencies[qty.currency]
+        cart[qty.order_id].quantity += qty.quantity
       }
-      cart[qty.order_id].total += qty.total / currencies[qty.currency]
-      cart[qty.order_id].quantity += qty.quantity
 
       const turnover = qty.item_total / currencies[qty.currency] / (1 + qty.tax_rate)
 
