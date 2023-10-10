@@ -119,7 +119,14 @@ class Elogik {
     }
 
     const orders = await DB('order_shop as os')
-      .select('os.id', 'oi.quantity')
+      .select(
+        'os.id',
+        'os.user_id',
+        'os.order_id',
+        'os.shipping_type',
+        'os.address_pickup',
+        'oi.quantity'
+      )
       .join('order_item as oi', 'oi.order_shop_id', 'os.id')
       .where('oi.project_id', payload.id)
       .where('os.transporter', 'daudin')
@@ -140,7 +147,6 @@ class Elogik {
       if (order.shipping_type === 'pickup') {
         const pickup = JSON.parse(order.address_pickup)
         const available = await MondialRelay.checkPickupAvailable(pickup.number)
-
         if (!available) {
           const around = await MondialRelay.findPickupAround(pickup)
 
