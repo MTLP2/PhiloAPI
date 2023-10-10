@@ -97,8 +97,6 @@ class MondialRelay {
             </web:WSI4_PointRelais_Recherche>
           </soap:Body>
         </soap:Envelope>`
-
-      console.log(payload)
       request(
         {
           method: 'POST',
