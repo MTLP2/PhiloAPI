@@ -864,83 +864,160 @@ class Invoice {
       .update({
         category: 'shipping'
       })
+  }
 
-    /**
-    await DB('invoice')
-      .whereNull('currency_rate')
-      .where('currency', 'EUR')
-      .update({
-        currency_rate: 1
-      })
+  static async exportB2C(payload: { start: string; end: string }) {
+    const customer = {
+      stripe: {
+        EUR: {
+          sub_total: 0,
+          tax: 0,
+          total: 0,
+          sub_total_eur: 0,
+          tax_eur: 0,
+          total_eur: 0
+        },
+        USD: {
+          sub_total: 0,
+          tax: 0,
+          total: 0,
+          sub_total_eur: 0,
+          tax_eur: 0,
+          total_eur: 0
+        },
+        GBP: {
+          sub_total: 0,
+          tax: 0,
+          total: 0,
+          sub_total_eur: 0,
+          tax_eur: 0,
+          total_eur: 0
+        },
+        AUD: {
+          sub_total: 0,
+          tax: 0,
+          total: 0,
+          sub_total_eur: 0,
+          tax_eur: 0,
+          total_eur: 0
+        }
+      },
+      paypal: {
+        EUR: {
+          sub_total: 0,
+          tax: 0,
+          total: 0,
+          sub_total_eur: 0,
+          tax_eur: 0,
+          total_eur: 0
+        },
+        USD: {
+          sub_total: 0,
+          tax: 0,
+          total: 0,
+          sub_total_eur: 0,
+          tax_eur: 0,
+          total_eur: 0
+        },
+        GBP: {
+          sub_total: 0,
+          tax: 0,
+          total: 0,
+          sub_total_eur: 0,
+          tax_eur: 0,
+          total_eur: 0
+        },
+        AUD: {
+          sub_total: 0,
+          tax: 0,
+          total: 0,
+          sub_total_eur: 0,
+          tax_eur: 0,
+          total_eur: 0
+        }
+      }
+    }
 
     const invoices = await DB('invoice')
-      .select('id', 'date', 'currency')
-      .whereNull('currency_rate')
-      .whereNotNull('total')
-      .all()
-
-    const months = {}
-    for (const invoice of invoices) {
-      const date = moment(invoice.date).format('YYYY-MM')
-      if (!months[date]) {
-        months[date] = []
-      }
-      months[date].push(invoice)
-    }
-
-    for (const [month, list] of Object.entries(months)) {
-      const currencies = await Utils.getCurrenciesApi(`${month}-01`, 'EUR,USD,GBP,AUD')
-      // const currencies = { EUR: 1, USD: 1.20496, GBP: 0.865101, AUD: 1.550459 }
-      console.log(currencies)
-
-      for (const invoice of list) {
-        console.log(invoice.id, month, invoice.currency, currencies[invoice.currency])
-        DB('invoice')
-          .where('id', invoice.id)
-          .update({
-            currency_rate: currencies[invoice.currency]
-          })
-      }
-    }
-
-    return months
-    **/
-    /**
-    await DB('invoice')
-      .whereNull('category')
-      .where(query => {
-        query.where('name', 'like', '%shipping return%')
-          .orWhere('name', 'like', '%return box%')
-      })
-      .update({
-        category: 'shipping'
-      })
-
-    const invoices = await DB('invoice as i1')
-      .whereExists(
-        DB('invoice as i2')
-          .where('i1.code', 'i2.code')
-          .where('i1.id', '!=', 'i2.code')
-          .query()
+      .select(
+        'invoice.type',
+        'invoice.currency',
+        'invoice.sub_total',
+        'invoice.tax',
+        'invoice.total',
+        'invoice.currency_rate',
+        'order.payment_type'
       )
-      .whereNotNull('code')
-      .where('year', 22)
-      .all()
-
-    console.log(invoices)
-    const invoices = await DB('invoice')
-      .whereNull('code')
-      .where('compatibility', true)
+      .leftJoin('order', 'order.id', 'invoice.order_id')
+      .where((query) => {
+        query.whereNotNull('invoice.order_id')
+        query.orWhere('name', 'like', `Shipping return %`)
+      })
+      .whereBetween('invoice.date', [payload.start, payload.end + ' 23:59'])
       .all()
 
     for (const invoice of invoices) {
-      const year = invoice.date.substring(2, 4)
-      invoice.number = await Invoice.newNumber(invoice.type, year)
-      invoice.code = `${invoice.type[0].toUpperCase()}${year}${invoice.number}`
+      if (invoice.type === 'credit_note') {
+        invoice.sub_total = 0 - invoice.sub_total
+        invoice.tax = 0 - invoice.tax
+        invoice.total = 0 - invoice.total
+      }
 
-      break
+      if (!invoice.payment_type) {
+        invoice.payment_type = 'stripe'
+      }
+
+      customer[invoice.payment_type][invoice.currency].total += invoice.total
+      customer[invoice.payment_type][invoice.currency].tax += invoice.tax
+      customer[invoice.payment_type][invoice.currency].sub_total += invoice.sub_total
+
+      customer[invoice.payment_type][invoice.currency].total_eur +=
+        invoice.total * invoice.currency_rate
+      customer[invoice.payment_type][invoice.currency].tax_eur +=
+        invoice.tax * invoice.currency_rate
+      customer[invoice.payment_type][invoice.currency].sub_total_eur +=
+        invoice.sub_total * invoice.currency_rate
     }
-    **/
+
+    const lines: any[] = []
+    for (const [paymentType, currencies] of Object.entries(customer)) {
+      for (const [currency, value] of Object.entries(currencies)) {
+        lines.push({
+          date: `${payload.start} - ${payload.end}`,
+          name: `${paymentType} - ${currency}`,
+          payment_type: paymentType,
+          currency: currency,
+          currency_eur: 'EUR',
+          sub_total: Utils.round(value.sub_total),
+          tax: Utils.round(value.tax),
+          total: Utils.round(value.total),
+          sub_total_eur: Utils.round(value.sub_total_eur),
+          tax_eur: Utils.round(value.tax_eur),
+          total_eur: Utils.round(value.total_eur),
+          empty: ''
+        })
+      }
+    }
+
+    return Utils.arrayToXlsx([
+      {
+        columns: [
+          { key: 'date', header: 'date', width: 25 },
+          { key: 'payment_type', header: 'payment_type', width: 15 },
+          { key: 'empty', header: '', width: 5 },
+          { key: 'currency', header: 'currency', width: 12 },
+          { key: 'sub_total', header: 'sub_total', width: 12 },
+          { key: 'tax', header: 'tax', width: 12 },
+          { key: 'total', header: 'total', width: 12 },
+          { key: 'empty', header: '', width: 5 },
+          { key: 'currency_eur', header: 'eur', width: 12 },
+          { key: 'sub_total_eur', header: 'sub_total', width: 12 },
+          { key: 'tax_eur', header: 'tax', width: 12 },
+          { key: 'total_eur', header: 'total', width: 12 }
+        ],
+        data: lines
+      }
+    ])
   }
 }
 

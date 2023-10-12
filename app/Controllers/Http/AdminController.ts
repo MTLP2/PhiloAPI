@@ -832,10 +832,6 @@ class AdminController {
     return invoice.data
   }
 
-  invoicesSfc({ params }) {
-    return Invoice.exportSfc(params)
-  }
-
   invoicesCsv({ params }) {
     return Invoice.exportCsv(params)
   }
@@ -846,6 +842,10 @@ class AdminController {
 
   async zipInvoices({ params }) {
     return Invoice.zip(params)
+  }
+
+  exportB2C({ params }) {
+    return Invoice.exportB2C(params)
   }
 
   getDaudin({ params }) {
