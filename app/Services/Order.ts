@@ -1003,6 +1003,9 @@ static toJuno = async (params) => {
 
       for (const b of params.barcodes) {
         const item = await Whiplash.findItem(b.barcode)
+        if (item.error) {
+          return { error: `Whiplash not found ${b.barcode} ` }
+        }
         pp.order_items.push({
           item_id: item.id,
           quantity: b.quantity
