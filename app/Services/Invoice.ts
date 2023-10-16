@@ -406,7 +406,10 @@ class Invoice {
     })
 
     if (params.html) {
-      return html
+      return {
+        name: `${invoice.number}.pdf`,
+        data: html
+      }
     }
 
     const pdf = await Utils.toPdf(html)
@@ -453,7 +456,7 @@ class Invoice {
     return { success: true }
   }
 
-  static async export(params) {
+  static async export(payload: { start: string; end: string }) {
     const workbook = new Excel.Workbook()
 
     const datas = await DB('invoice')
@@ -480,12 +483,17 @@ class Invoice {
         'lastname',
         'country_id',
         'order.total as order_total',
+        'order.payment_type',
         'order.shipping as order_shipping'
       )
       .leftJoin('order', 'order.id', 'order_id')
       .leftJoin('customer', 'customer.id', 'customer_id')
-      .where('date', '>=', params.start)
-      .where('date', '<=', params.end)
+      .where((query) => {
+        query.whereNotNull('invoice.order_id')
+        query.orWhere('invoice.name', 'like', `Shipping return %`)
+      })
+      .where('date', '>=', payload.start)
+      .where('date', '<=', payload.end)
       .orderBy('date', 'asc')
       .where('compatibility', true)
       .all()
@@ -514,7 +522,12 @@ class Invoice {
         data.shipping = 0 - data.shipping
       }
       data.total_ht_eur = data.total_ht * data.currency_rate
+      data.tax_eur = data.tax * data.currency_rate
+      data.total_eur = data.total * data.currency_rate
 
+      if (!data.payment_type) {
+        data.payment_type = 'stripe'
+      }
       invoices.push(data)
     }
 
@@ -529,11 +542,14 @@ class Invoice {
       { header: 'Vente HT', key: 'sub_total' },
       { header: 'Transport HT', key: 'shipping' },
       { header: 'Total HT', key: 'total_ht' },
-      { header: 'Total HT EUR', key: 'total_ht_eur' },
       { header: 'TVA', key: 'tax' },
       { header: 'Total TTC', key: 'total' },
       { header: 'Pays', key: 'country' },
-      { header: 'Devise', key: 'currency' }
+      { header: 'Devise', key: 'currency' },
+      { header: 'Payment', key: 'payment_type' },
+      { header: 'Total HT EUR', key: 'total_ht_eur' },
+      { header: 'Total HT EUR', key: 'tax_eur' },
+      { header: 'Total HT EUR', key: 'total_eur' }
     ]
 
     const worksheet1 = workbook.addWorksheet('Factures')
