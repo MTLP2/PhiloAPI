@@ -926,13 +926,14 @@ class StatementService {
         cell.font = font
       }
       const cellTotal = ws.getCell(Utils.columnToLetter(months.length + 1) + y)
-      cellTotal.value = props.total
-        ? props.total
-        : props.dates
-        ? {
-            formula: `SUM(B${y}:${Utils.columnToLetter(months.length)}${y})`
-          }
-        : ''
+      cellTotal.value =
+        props.total !== undefined
+          ? props.total
+          : props.dates
+          ? {
+              formula: `SUM(B${y}:${Utils.columnToLetter(months.length)}${y})`
+            }
+          : ''
       if (props.currency) {
         cellTotal.numFmt = `${props.currency}#,##0.00`
       }
