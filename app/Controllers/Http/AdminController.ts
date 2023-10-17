@@ -1293,7 +1293,7 @@ class AdminController {
   }
 
   getUserProducts({ params }) {
-    return Product.forUser({ user_id: params.id })
+    return Product.forUser({ user_id: params.id, ship_notices: params.ship_notices })
   }
 
   saveShipNotice({ params }) {

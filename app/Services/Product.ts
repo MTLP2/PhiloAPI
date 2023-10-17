@@ -503,7 +503,7 @@ class Product {
     return { success: true }
   }
 
-  static async forUser(payload: { user_id: number }) {
+  static async forUser(payload: { user_id: number; ship_notices: boolean }) {
     const orders = await DB('vod')
       .select(
         'oi.quantity',
@@ -605,21 +605,23 @@ class Product {
     }
 
     const shipNotices = {}
-    const notices: any = await Whiplash.getShipNotices()
-    for (const notice of notices) {
-      if (notice.shipnotice_items) {
-        for (const item of notice.shipnotice_items) {
-          const product = stocksList.find((s) => {
-            return s.barcode === item.item_originators[0].original_id
-          })
-          if (product) {
-            if (!shipNotices[product.product_id]) {
-              shipNotices[product.product_id] = {}
-            }
-            if (notice.warehouse_id === 3) {
-              shipNotices[product.product_id].whiplash_uk = item.quantity
-            } else if (notice.warehouse_id === 4) {
-              shipNotices[product.product_id].whiplash = item.quantity
+    if (payload.ship_notices) {
+      const notices: any = await Whiplash.getShipNotices()
+      for (const notice of notices) {
+        if (notice.shipnotice_items) {
+          for (const item of notice.shipnotice_items) {
+            const product = stocksList.find((s) => {
+              return s.barcode === item.item_originators[0].original_id
+            })
+            if (product) {
+              if (!shipNotices[product.product_id]) {
+                shipNotices[product.product_id] = {}
+              }
+              if (notice.warehouse_id === 3) {
+                shipNotices[product.product_id].whiplash_uk = item.quantity
+              } else if (notice.warehouse_id === 4) {
+                shipNotices[product.product_id].whiplash = item.quantity
+              }
             }
           }
         }
