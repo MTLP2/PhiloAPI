@@ -1317,39 +1317,53 @@ class Quote {
     })
     quote.inner_sleeve = quote.prices.inner_sleeve[params.inner_sleeve]
 
-    quote.prices.sleeve.pvc = getCost({
-      l: {
-        '12"': 291,
-        '10"': 292,
-        '7"': 293
-      },
+    quote.prices.sleeve.base = getCost({
+      l: 280,
       type: 'sleeve',
-      option: 'pvc',
+      option: 'base',
       onceByCopy: true,
-      active: params.sleeve === 'pvc'
+      active: true
     })
-    quote.prices.sleeve.discobag = getCost({
-      l: {
-        '12"': 197,
-        '10"': 198,
-        '7"': 200
-      },
-      type: 'sleeve',
-      option: 'discobag',
-      onceByCopy: true,
-      active: params.sleeve === 'discobag'
-    })
-    quote.prices.sleeve.double_gatefold = getCost({
-      l: {
-        '12"': 183,
-        '10"': 184,
-        '7"': 186
-      },
-      type: 'sleeve',
-      option: 'double_gatefold',
-      onceByCopy: true,
-      active: params.sleeve === 'double_gatefold'
-    })
+    quote.prices.sleeve.pvc =
+      quote.prices.sleeve.base +
+      getCost({
+        l: {
+          '12"': 291,
+          '10"': 292,
+          '7"': 293
+        },
+        type: 'sleeve',
+        option: 'pvc',
+        onceByCopy: true,
+        active: params.sleeve === 'pvc'
+      })
+
+    quote.prices.sleeve.discobag =
+      quote.prices.sleeve.base +
+      getCost({
+        l: {
+          '12"': 197,
+          '10"': 198,
+          '7"': 200
+        },
+        type: 'sleeve',
+        option: 'discobag',
+        onceByCopy: true,
+        active: params.sleeve === 'discobag'
+      })
+    quote.prices.sleeve.double_gatefold =
+      quote.prices.sleeve.base +
+      getCost({
+        l: {
+          '12"': 183,
+          '10"': 184,
+          '7"': 186
+        },
+        type: 'sleeve',
+        option: 'double_gatefold',
+        onceByCopy: true,
+        active: params.sleeve === 'double_gatefold'
+      })
     if (params.nb_vinyl === 1) {
       quote.prices.sleeve.double_gatefold += getCost({
         l: 289,
@@ -1358,53 +1372,61 @@ class Quote {
         active: params.sleeve === 'double_gatefold'
       })
     }
-    quote.prices.sleeve.triple_gatefold = getCost({
-      l: {
-        '12"': 188,
-        '10"': 189,
-        '7"': 192
-      },
-      type: 'sleeve',
-      option: 'triple_gatefold',
-      onceByCopy: true,
-      active: params.sleeve === 'triple_gatefold'
-    })
+    quote.prices.sleeve.triple_gatefold =
+      quote.prices.sleeve.base +
+      getCost({
+        l: {
+          '12"': 188,
+          '10"': 189,
+          '7"': 192
+        },
+        type: 'sleeve',
+        option: 'triple_gatefold',
+        onceByCopy: true,
+        active: params.sleeve === 'triple_gatefold'
+      })
     if (params.nb_vinyl === 1) {
-      quote.prices.sleeve.color = getCost({
-        l: {
-          '12"': 163,
-          '10"': 165,
-          '7"': 175
-        },
-        type: 'sleeve',
-        option: 'color',
-        onceByCopy: true,
-        active: params.sleeve === 'color'
-      })
+      quote.prices.sleeve.color =
+        quote.prices.sleeve.base +
+        getCost({
+          l: {
+            '12"': 163,
+            '10"': 165,
+            '7"': 175
+          },
+          type: 'sleeve',
+          option: 'color',
+          onceByCopy: true,
+          active: params.sleeve === 'color'
+        })
     } else if (params.nb_vinyl === 2) {
-      quote.prices.sleeve.color = getCost({
-        l: {
-          '12"': 166,
-          '10"': 167,
-          '7"': false
-        },
-        type: 'sleeve',
-        option: 'color',
-        onceByCopy: true,
-        active: params.sleeve === 'color'
-      })
+      quote.prices.sleeve.color =
+        quote.prices.sleeve.base +
+        getCost({
+          l: {
+            '12"': 166,
+            '10"': 167,
+            '7"': false
+          },
+          type: 'sleeve',
+          option: 'color',
+          onceByCopy: true,
+          active: params.sleeve === 'color'
+        })
     } else {
-      quote.prices.sleeve.color = getCost({
-        l: {
-          '12"': 168,
-          '10"': 169,
-          '7"': false
-        },
-        type: 'sleeve',
-        option: 'color',
-        onceByCopy: true,
-        active: params.sleeve === 'color'
-      })
+      quote.prices.sleeve.color =
+        quote.prices.sleeve.base +
+        getCost({
+          l: {
+            '12"': 168,
+            '10"': 169,
+            '7"': false
+          },
+          type: 'sleeve',
+          option: 'color',
+          onceByCopy: true,
+          active: params.sleeve === 'color'
+        })
     }
     quote.sleeve = quote.prices.sleeve[params.sleeve]
 
