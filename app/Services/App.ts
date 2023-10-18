@@ -69,6 +69,7 @@ class App {
       }
       if (moment().format('E') === '2') {
         await Payment.alertDatePassed()
+        await Invoice.sendUnpaidInvoices()
       }
       if (moment().format('E') < '6') {
         await App.alertToSync()
