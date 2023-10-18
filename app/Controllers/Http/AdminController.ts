@@ -334,8 +334,6 @@ class AdminController {
     params.project_id = params.id
     params.user = user
     if (params.type === 'daudin') {
-      return Admin.syncProjectDaudin(params)
-    } else if (params.type === 'elogik') {
       return Elogik.syncProject(params)
     } else if (params.type === 'sna') {
       return Admin.syncProjectSna(params)
