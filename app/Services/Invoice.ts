@@ -511,6 +511,7 @@ class Invoice {
 
       if (data.order_id) {
         data.shipping = data.order_shipping / (1 + data.tax_rate / 100)
+        data.sub_total = data.total_ht - data.shipping
       }
 
       if (data.type === 'credit_note') {
@@ -521,8 +522,10 @@ class Invoice {
         data.price = 0 - data.price
         data.shipping = 0 - data.shipping
       }
+      data.sub_total_eur = data.sub_total * data.currency_rate
       data.total_ht_eur = data.total_ht * data.currency_rate
       data.tax_eur = data.tax * data.currency_rate
+      data.shipping_eur = data.shipping * data.currency_rate
       data.total_eur = data.total * data.currency_rate
 
       if (!data.payment_type) {
@@ -547,9 +550,11 @@ class Invoice {
       { header: 'Pays', key: 'country' },
       { header: 'Devise', key: 'currency' },
       { header: 'Payment', key: 'payment_type' },
+      { header: 'Vente HT EUR', key: 'sub_total_eur' },
+      { header: 'Transport HT EUR', key: 'shipping_eur' },
       { header: 'Total HT EUR', key: 'total_ht_eur' },
-      { header: 'Total HT EUR', key: 'tax_eur' },
-      { header: 'Total HT EUR', key: 'total_eur' }
+      { header: 'Tax EUR', key: 'tax_eur' },
+      { header: 'Total EUR', key: 'total_eur' }
     ]
 
     const worksheet1 = workbook.addWorksheet('Factures')
