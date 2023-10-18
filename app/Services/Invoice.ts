@@ -1110,7 +1110,6 @@ class Invoice {
         subject: 'Unpaid invoices',
         html: html
       })
-      break
     }
     return com
   }
