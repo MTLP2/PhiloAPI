@@ -1693,6 +1693,7 @@ class Project {
       .whereIn('project_id', ids)
       .where('is_paid', true)
       .where('is_external', false)
+      .orderBy('created_at', 'asc')
       .all()
 
     const statementsPromise = DB('statement')
