@@ -488,10 +488,6 @@ class Invoice {
       )
       .leftJoin('order', 'order.id', 'order_id')
       .leftJoin('customer', 'customer.id', 'customer_id')
-      .where((query) => {
-        query.whereNotNull('invoice.order_id')
-        query.orWhere('invoice.name', 'like', `Shipping return %`)
-      })
       .where('date', '>=', payload.start)
       .where('date', '<=', payload.end)
       .orderBy('date', 'asc')
@@ -504,7 +500,11 @@ class Invoice {
       data.number = data.code
       data.country = data.country_id
       data.customer = data.customer_name || `${data.firstname} ${data.lastname}`
-      data.nature = data.order_id || data.order_shop_id ? 'BtC' : 'BtB'
+
+      data.nature =
+        data.order_id || data.order_shop_id || data.name.indexOf('Shipping return') === 0
+          ? 'BtC'
+          : 'BtB'
       data.total_ht = data.sub_total
 
       data.shipping = 0
