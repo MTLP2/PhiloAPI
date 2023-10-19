@@ -1062,14 +1062,17 @@ class Invoice {
       if (!invoice.com_id) {
         invoice.com_id = 6140
       }
-      if (invoice.category === 'distribution') {
+      if (invoice.category === 'distribution' || invoice.com_id === 26584) {
         invoice.com_id = 26584
+        invoice.email =
+          'cyril@diggersfactory.com,guillaume@diggersfactory.com,theo@diggersfactory.com'
+        invoice.user = 'Cyril'
       }
       if (!com[invoice.com_id]) {
         com[invoice.com_id] = {
           email: invoice.email,
           user: invoice.user,
-          user_id: invoice.user_id,
+          user_id: invoice.com_id,
           items: []
         }
       }
