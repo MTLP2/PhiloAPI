@@ -143,6 +143,7 @@ class Invoice {
       invoice.date_payment = Utils.date()
     }
     invoice.status = params.status
+    invoice.client = params.client
     invoice.email = params.email
     invoice.payment_days = params.payment_days || 0
     invoice.compatibility = params.compatibility
@@ -211,6 +212,7 @@ class Invoice {
 
     invoice.name = `Order ${order.id}`
     invoice.type = 'invoice'
+    invoice.client = 'B2C'
     invoice.year = year
     invoice.user_id = order.user_id
     invoice.order_id = order.id
@@ -265,6 +267,7 @@ class Invoice {
       : `Refund ${order.id ? order.id : 'partial'}`
     invoice.type = 'credit_note'
     invoice.year = year
+    invoice.client = 'B2C'
     invoice.order_id = order.order_id || null
     invoice.order_box_id = order.order_box_id || null
     invoice.order_shop_id = order.order_shop_id || null
