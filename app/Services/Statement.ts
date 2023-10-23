@@ -650,6 +650,14 @@ class StatementService {
     return data
   }
 
+  static getColumns = (worksheet) => {
+    const columns = {}
+    worksheet.getRow(1).eachCell((cell, colNumber) => {
+      columns[cell.value] = Utils.columnToLetter(colNumber)
+    })
+    return columns
+  }
+
   static parseAmplified(workbook: any, currencies) {
     const data = {}
     const base = {
@@ -659,14 +667,16 @@ class StatementService {
       total: 0
     }
     let worksheet = workbook.getWorksheet('DETAIL')
-    worksheet.eachRow((row) => {
-      if (!row.getCell('U').value || !row.getCell('U').value.result) {
+    const cols = StatementService.getColumns(worksheet)
+
+    worksheet.eachRow((row, rowNumber) => {
+      const barcode = row.getCell(cols['UPC']).value
+      const quantity = row.getCell(cols['Qty']).value
+      const total = row.getCell(cols['Extended']).value?.result / currencies.USD
+
+      if (!barcode || rowNumber === 1) {
         return
       }
-      const barcode = row.getCell('K').value
-      const quantity = row.getCell('O').value
-      const total = row.getCell('U').value.result / currencies.USD
-
       if (!data[barcode]) {
         data[barcode] = {
           ...base,
@@ -680,11 +690,15 @@ class StatementService {
     })
 
     worksheet = workbook.getWorksheet('RETURNS')
-    worksheet.eachRow((row) => {
-      const barcode = row.getCell('K').value
-      const quantity = row.getCell('O').value
-      const total = row.getCell('S').value
+    const cols2 = StatementService.getColumns(worksheet)
+    worksheet.eachRow((row, rowNumber) => {
+      const barcode = row.getCell(cols2['UPC']).value
+      const quantity = row.getCell(cols2['Qty']).value
+      const total = row.getCell(cols2['Extended']).value
 
+      if (!barcode || rowNumber === 1) {
+        return
+      }
       if (!data[barcode]) {
         data[barcode] = {
           ...base,
@@ -693,8 +707,8 @@ class StatementService {
       }
 
       if (Number.isInteger(quantity) && total !== 0) {
-        data[barcode].return += quantity || 0
-        data[barcode].total -= total
+        data[barcode].returned += quantity || 0
+        data[barcode].total += total
       }
     })
 
@@ -2112,6 +2126,10 @@ class StatementService {
 
     if (bb.length > 0) return true
     return false
+  }
+
+  static async sendBalances(params: { start: string; end: string; type: string }) {
+    const balances = await this.getBalances(params)
   }
 
   static async getSalesLicences() {
