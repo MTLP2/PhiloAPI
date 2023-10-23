@@ -218,9 +218,9 @@ class Invoice {
     invoice.order_id = order.id
     invoice.order_box_id = order.order_box_id || null
     invoice.customer_id = order.customer_id
-    invoice.sub_total = order.sub_total
     invoice.tax_rate = order.tax_rate * 100
-    invoice.tax = order.tax
+    invoice.sub_total = order.total / (1 + order.tax_rate)
+    invoice.tax = order.total - invoice.sub_total
     invoice.total = order.total
     invoice.date = Utils.date()
     invoice.date_payment = Utils.date()
@@ -272,9 +272,9 @@ class Invoice {
     invoice.order_box_id = order.order_box_id || null
     invoice.order_shop_id = order.order_shop_id || null
     invoice.customer_id = order.customer_id
-    invoice.sub_total = order.sub_total
     invoice.tax_rate = order.tax_rate * 100
-    invoice.tax = order.tax
+    invoice.sub_total = order.total / (1 + order.tax_rate)
+    invoice.tax = order.total - invoice.sub_total
     invoice.total = order.total
     invoice.date = Utils.date()
     invoice.status = 'refunded'
