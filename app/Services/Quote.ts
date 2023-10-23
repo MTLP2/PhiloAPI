@@ -1480,6 +1480,10 @@ class Quote {
     })
     quote.print_finish = quote.prices.print_finish[params.print_finish]
 
+    if (params.sleeve === 'discobag') {
+      quote.prices.print_finish.matt_varnish = false
+      quote.prices.print_finish.returned_cardboard = false
+    }
     // insert
     quote.prices.insert.base = getCost({
       l: 286,
@@ -1726,6 +1730,10 @@ class Quote {
       active: params.print_finish === 'returned_cardboard'
     })
     quote.print_finish = quote.prices.print_finish[params.print_finish]
+    if (params.sleeve === 'discobag') {
+      quote.prices.print_finish.matt_varnish = false
+      quote.prices.print_finish.returned_cardboard = false
+    }
 
     quote.prices.insert.two_sides_printed = getCost({
       l: 66,
