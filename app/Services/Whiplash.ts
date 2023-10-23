@@ -911,7 +911,7 @@ class Whiplash {
     return item
   }
 
-  static createShopNotive = async (payload: {
+  static createShopNotice = async (payload: {
     sender: string
     eta: string
     logistician: string
@@ -931,7 +931,7 @@ class Whiplash {
       body: {
         sender: payload.sender,
         eta: payload.eta,
-        warehouse_id: payload.logistician === 'whiplash' ? 3 : 4,
+        warehouse_id: payload.logistician === 'whiplash' ? 4 : 3,
         shipnotice_items: payload.products.map((p) => {
           return {
             item_id: p.item_id,
