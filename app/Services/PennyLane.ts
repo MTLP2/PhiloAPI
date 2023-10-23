@@ -2,7 +2,7 @@ import Env from '@ioc:Adonis/Core/Env'
 import Utils from 'App/Utils'
 import DB from 'App/DB'
 import Invoice from 'App/Services/Invoice'
-import moment from 'moment'
+
 class PennyLane {
   static async execute(
     url: string,
@@ -29,25 +29,27 @@ class PennyLane {
   static async exportInvoices(payload?: { start: string; end: string }) {
     if (!payload) {
       payload = {
-        start: moment().subtract('1', 'month').startOf('month').format('YYYY-MM-DD'),
-        end: moment().subtract('1', 'month').endOf('month').format('YYYY-MM-DD')
+        // start: moment().subtract('1', 'month').startOf('month').format('YYYY-MM-DD'),
+        // end: moment().subtract('1', 'month').endOf('month').format('YYYY-MM-DD')
+        start: '2023-01-01',
+        end: '2023-01-31'
       }
     }
 
     const invoices = await DB('invoice')
       .select('id', 'type')
       .whereNull('invoice.order_id')
-      .where('name', 'not like', `Commercial invoice`)
       .where('name', 'not like', `Shipping return %`)
+      .where('name', 'not like', `Refund Box %`)
       .where('compatibility', true)
-      .where('is_sync', false)
+      // .where('is_sync', false)
       .whereBetween('invoice.date', [payload.start, payload.end + ' 23:59'])
+      .orderBy('date', 'asc')
+      // .where('id', 153622)
       .all()
     console.log(invoices.length)
-
     for (const invoice of invoices) {
       await PennyLane.exportInvoice(invoice.id)
-      break
     }
 
     return invoices
@@ -55,9 +57,9 @@ class PennyLane {
 
   static async exportInvoice(id: number) {
     const invoice = await Invoice.find(id)
+    console.log(invoice.id)
+    /**
     let customer: any = await PennyLane.execute(`customers/${invoice.user_id}`)
-
-    console.log(id)
     if (customer.error === 'Not found') {
       const params = {
         source_id: invoice.user_id ? invoice.user_id.toString() : undefined,
@@ -80,22 +82,26 @@ class PennyLane {
         }
       })
     }
-
     if (customer.message) {
       return customer
     }
-
+    **/
+    const customer = {
+      customer: {
+        source_id: 'a655cabf-03f7-47eb-8130-9cff60202ecb'
+      }
+    }
     const file = await Invoice.download({ params: { id: invoice.id, lang: 'fr' } })
 
     let planItemNumber: string | null = null
     if (invoice.customer.country_id === 'FR') {
-      planItemNumber = '706'
+      planItemNumber = '7071'
     } else if (Utils.isEuropean(invoice.customer.country_id)) {
-      planItemNumber = '70692'
+      planItemNumber = '707192'
     } else {
-      planItemNumber = '7069'
+      planItemNumber = '70719'
     }
-
+    invoice.total_eur = invoice.total * invoice.currency_rate
     const imp: any = await PennyLane.execute('customer_invoices/import', {
       method: 'POST',
       params: {
@@ -105,7 +111,7 @@ class PennyLane {
           date: invoice.date,
           deadline: invoice.date,
           invoice_number: invoice.code,
-          currency: invoice.currency,
+          currency: 'EUR',
           customer: {
             source_id: customer.customer.source_id
           },
@@ -114,7 +120,8 @@ class PennyLane {
               label: 'Total',
               quantity: 1,
               plan_item_number: planItemNumber,
-              currency_amount: invoice.type === 'credit_note' ? -invoice.total : invoice.total,
+              currency_amount:
+                invoice.type === 'credit_note' ? -invoice.total_eur : invoice.total_eur,
               unit: 'piece',
               vat_rate: invoice.tax_rate ? 'FR_200' : 'exempt'
             }
@@ -124,6 +131,7 @@ class PennyLane {
     })
 
     if (!imp.error || imp.error === 'Une facture avec le numéro fourni a déjà été créée') {
+      console.log(invoice.id, 'OK')
       await DB('invoice').where('id', invoice.id).update({
         is_sync: true
       })
