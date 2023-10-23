@@ -2128,8 +2128,14 @@ class StatementService {
     return false
   }
 
-  static async sendBalances(params: { start: string; end: string; type: string }) {
-    const balances = await this.getBalances(params)
+  static async sendBalances() {
+    const balances = await this.getBalances({
+      start: '2001-01-01',
+      end: moment().format('YYYY-MM-DD'),
+      type: 'projects'
+    })
+
+    return balances
   }
 
   static async getSalesLicences() {
