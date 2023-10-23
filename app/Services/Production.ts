@@ -2329,6 +2329,24 @@ class Production {
     await item.save()
     log.save(item)
 
+    const project = await DB('project').where('id', item.project_id).first()
+    if (item.check_status === 'incomplete' || item.check_status === 'tuiled') {
+      await Notification.sendEmail({
+        to: 'compta@diggersfactory.com',
+        subject: `${project.artist_name} ${project.name} - Problem with cost : ${item.check_status}`,
+        html: `
+        <ul>
+          <li><strong>Project:</strong> ${project.artist_name} ${project.name}</li>
+          <li><strong>Type:</strong> ${item.type}</li>
+          <li><strong>Name:</strong> ${item.name}</li>
+          <li><strong>Cost real:</strong> ${item.cost_real} ${item.currency}</li>
+          <li><strong>Cost invoiced:</strong> ${item.cost_invoiced} ${item.currency}</li>
+          <li><strong>Comment:</strong> ${item.comment}</li>
+          <li><a href="https://www.diggersfactory.com/fr/sheraf/project/${item.project_id}/costs">Link</a></li>
+        </ul>
+        `
+      })
+    }
     const resp = await DB('production')
       .where('production.id', item.production_id)
       .join('user', 'user.id', 'production.resp_id')
