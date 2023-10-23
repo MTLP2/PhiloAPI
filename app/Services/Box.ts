@@ -572,6 +572,7 @@ class Box {
             res.box_discount = res.discount
           }
         }
+        res.promo_code = promo.code
       }
     }
 
@@ -623,6 +624,7 @@ class Box {
           sub_total: box.box_sub_total,
           total: box.box_total,
           discount: box.box_discount,
+          promo_code: box.promo_code,
           currency: box.currency,
           is_gift: box.gift,
           sponsor_id: sponsor,
@@ -668,6 +670,7 @@ class Box {
           tax_rate: box.box_tax_rate,
           sub_total: box.box_sub_total,
           discount: box.box_discount,
+          promo_code: box.promo_code,
           total: box.box_total,
           currency: box.currency,
           sponsor_id: sponsor,
@@ -1508,6 +1511,7 @@ class Box {
         sub_total: box.sub_total,
         shipping: box.shipping,
         discount: box.discount,
+        promo_code: box.promo_code,
         tax: box.tax,
         tax_rate: box.tax_rate,
         total: box.total,
