@@ -5190,7 +5190,7 @@ class Admin {
     products: { id: number; name: string; quantity: number }[]
   }) => {
     if (payload.logistician === 'whiplash' || payload.logistician === 'whiplash_uk') {
-      return Whiplash.createShopNotive(payload)
+      return Whiplash.createShopNotice(payload)
     }
     return false
   }
