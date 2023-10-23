@@ -505,7 +505,9 @@ class Invoice {
       data.customer = data.customer_name || `${data.firstname} ${data.lastname}`
 
       data.nature =
-        data.order_id || data.order_shop_id || data.name.indexOf('Shipping return') === 0
+        data.order_id ||
+        data.order_shop_id ||
+        (data.name && data.name.indexOf('Shipping return') === 0)
           ? 'BtC'
           : 'BtB'
       data.total_ht = data.sub_total
