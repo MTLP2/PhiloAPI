@@ -3337,7 +3337,7 @@ class Admin {
 
     for (const item of directPressing) {
       if (!com[item.com_id]) {
-        com[item.com_id] = setDefault(item.user_id)
+        com[item.com_id] = setDefault(item.com_id)
       }
 
       if (item.type === 'invoice') {
@@ -3379,6 +3379,7 @@ class Admin {
       com[item.com_id].total += item.total / currencies[item.currency]
     }
 
+    console.log(com)
     const res = Object.values(com)
 
     res.sort((a: any, b: any) => {
