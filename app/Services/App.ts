@@ -71,6 +71,9 @@ class App {
         await Payment.alertDatePassed()
         await Invoice.sendUnpaidInvoices()
       }
+      if (moment().format('E') === '3') {
+        await Statement.sendBalances()
+      }
       if (moment().format('E') < '6') {
         await App.alertToSync()
       }
