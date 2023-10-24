@@ -21,6 +21,11 @@ class Invoice {
     if (!params.sort) {
       params.query.orderBy('invoice.id', 'desc')
     }
+    if (params.invoice_co) {
+      params.query.where((query) => {
+        query.where('compatibility', false).orWhere('invoice.name', 'like', `Commercial invoice%`)
+      })
+    }
 
     return Utils.getRows(params)
   }
@@ -160,8 +165,8 @@ class Invoice {
     invoice.lines = params.invoice_to_payment ? params.lines : JSON.stringify(params.lines)
     invoice.payment_id = params.payment_id
     invoice.comment = params.comment
-    invoice.resp_payment = params.resp_payment
-    invoice.resp_accounting = params.resp_accounting
+    invoice.resp_payment = params.resp_payment || null
+    invoice.resp_accounting = params.resp_accounting || null
     invoice.updated_at = params.created_at || Utils.date()
     invoice.updated_at = params.updated_at || Utils.date()
 
