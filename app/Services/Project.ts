@@ -1641,6 +1641,7 @@ class Project {
     start?: string
     end?: string
     periodicity?: string
+    cashable?: boolean
     only_data?: boolean
   }) => {
     let projects = DB('project')
@@ -1661,6 +1662,10 @@ class Project {
 
     if (params.user_id) {
       projects.where('user_id', params.user_id)
+      if (params.cashable) {
+        console.log('LOL')
+        projects.where('send_statement', true)
+      }
     } else {
       projects.where('project.id', params.project_id)
     }
