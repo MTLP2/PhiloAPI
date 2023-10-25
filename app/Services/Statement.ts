@@ -1792,12 +1792,14 @@ class StatementService {
         query.where('balance_followup', true)
         query.orWhere('follow_up_payment', true)
       })
+      .whereBetween('invoice.date', [params.start, params.end])
       .where('compatibility', true)
       .all()
 
     const costsPromise = DB('production_cost')
       .select('name', 'vod.project_id', 'cost_real', 'cost_invoiced', 'production_cost.currency')
       .join('vod', 'vod.project_id', 'production_cost.project_id')
+      .whereBetween('production_cost.date', [params.start, params.end])
       .where((query) => {
         query.where('balance_followup', true)
         query.orWhere('follow_up_payment', true)
@@ -1807,6 +1809,7 @@ class StatementService {
     const prodsPromise = DB('production')
       .select('production.project_id', 'quantity', 'quantity_pressed')
       .join('vod', 'vod.project_id', 'production.project_id')
+      .whereBetween('production.date_prod', [params.start, params.end])
       .where((query) => {
         query.where('balance_followup', true)
         query.orWhere('follow_up_payment', true)
@@ -2364,6 +2367,7 @@ class StatementService {
         start: moment().subtract(1, 'months').startOf('month').format('YYYY-MM-DD'),
         end: moment().subtract(1, 'months').endOf('month').format('YYYY-MM-DD')
       })
+      console.log(isActive)
 
       if (isActive) {
         res.push([project.id, `${project.artist_name} - ${project.name}`])
