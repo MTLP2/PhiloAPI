@@ -1824,8 +1824,6 @@ class Admin {
       .belongsTo('customer')
       .all()
 
-    console.log(orderShops)
-
     const orderManuals = await DB('order_manual')
       .whereIn(
         'order_shop_id',
