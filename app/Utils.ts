@@ -1310,7 +1310,6 @@ class Utils {
       'ES',
       'FI',
       'FR',
-      'GB',
       'GR',
       'HR',
       'HU',
