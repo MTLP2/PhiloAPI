@@ -941,6 +941,7 @@ class User {
         'v.created_at',
         'v.updated_at',
         'v.picture_project',
+        'v.send_statement',
         'type',
         'step',
         'count',
