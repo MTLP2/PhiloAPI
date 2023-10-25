@@ -464,6 +464,55 @@ class Invoice {
     return { success: true }
   }
 
+  static async setNumbers2() {
+    const numbers = await DB('invoice')
+      .select('type', DB.raw('max(number) as max'))
+      .groupBy('type')
+      .where('compatibility', true)
+      .all()
+
+    const numbersCo = await DB('invoice')
+      .select(DB.raw('max(number) as max'))
+      .where('compatibility', false)
+      .first()
+
+    let incI = numbers.find((n) => n.type === 'invoice').max
+    let incC = numbers.find((n) => n.type === 'credit_note').max
+    let incCo = numbersCo.max
+
+    const invoices = await DB('invoice').whereNull('code').orderBy('id', 'asc').all()
+
+    for (const invoice of invoices) {
+      let number
+      let code
+      if (invoice.compatibility) {
+        if (invoice.type === 'invoice') {
+          incI++
+          number = incI
+          code = `I${invoice.year}${incI}`
+        } else {
+          incC++
+          number = incC
+          code = `C${invoice.year}${incC}`
+        }
+      } else {
+        incCo++
+        number = incCo
+        code = `C${incCo}`
+      }
+
+      console.log(invoice.id, number, code)
+      break
+
+      await DB('invoice').where('id', invoice.id).update({
+        number: number,
+        code: code
+      })
+    }
+
+    return { success: true }
+  }
+
   static async export(payload: { start: string; end: string }) {
     const workbook = new Excel.Workbook()
 
@@ -539,7 +588,7 @@ class Invoice {
       data.total_eur = data.total * data.currency_rate
 
       if (!data.payment_type) {
-        data.payment_type = 'stripe'
+        // data.payment_type = 'stripe'
       }
       invoices.push(data)
     }
@@ -584,6 +633,7 @@ class Invoice {
     invoice.year = moment().format('YY')
     invoice.date = moment().format('YYYY-MM-DD')
     invoice.type = params.type
+    invoice.status = 'invoiced'
 
     const customer = await Customer.save({
       ...invoice.customer,
@@ -592,8 +642,6 @@ class Invoice {
     delete invoice.customer
     invoice.customer_id = customer.id
 
-    console.log(invoice.year)
-    console.log(invoice.date)
     const insert = await DB('invoice').insert(JSON.parse(JSON.stringify(invoice)))
 
     return { id: insert[0] }
@@ -886,17 +934,6 @@ class Invoice {
     return zip.generateAsync({ type: 'nodebuffer' })
   }
 
-  static async clean() {
-    await DB('invoice')
-      .whereNull('category')
-      .where((query) => {
-        query.where('name', 'like', '%shipping return%').orWhere('name', 'like', '%return box%')
-      })
-      .update({
-        category: 'shipping'
-      })
-  }
-
   static async exportB2C(payload: { start: string; end: string }) {
     const customer = {
       stripe: {
@@ -1130,6 +1167,97 @@ class Invoice {
       })
     }
     return com
+  }
+
+  static async clean() {
+    const b2b = await DB('invoice')
+      .select('invoice.*')
+      .where('date', '>', '2023-01-01')
+      .where('client', 'B2C')
+      // .join('order_shop', 'order_shop.id', 'order_shop_id')
+      .join('customer', 'customer.id', 'customer_id')
+      .where('customer.tax_intra', '!=', '')
+      .where('compatibility', true)
+      .all()
+
+    await DB('invoice')
+      .whereIn(
+        'id',
+        b2b.map((i) => i.id)
+      )
+      .update({
+        client: 'B2B'
+      })
+    console.log(b2b.length)
+
+    await DB('invoice').where('tax_rate', '>=', 0.2).where('tax_rate', '<', 0.3).update({
+      tax_rate: 20
+    })
+
+    const b2cWhitoutTax = await DB('invoice')
+      .select('invoice.*')
+      .where('date', '>', '2023-01-01')
+      .where('client', 'B2C')
+      .join('customer', 'customer.id', 'customer_id')
+      .where('tax_rate', '!=', 20)
+      .whereIn('customer.country_id', [
+        'AT',
+        'BE',
+        'BG',
+        'CY',
+        'CZ',
+        'DE',
+        'DK',
+        'EE',
+        'ES',
+        'FI',
+        'FR',
+        'GI',
+        'GR',
+        'HR',
+        'HU',
+        'IE',
+        'IT',
+        'LT',
+        'LU',
+        'LV',
+        'MT',
+        'NL',
+        'PL',
+        'PT',
+        'RO',
+        'SE',
+        'SI',
+        'SK'
+      ])
+      .all()
+
+    for (const invoice of b2cWhitoutTax) {
+      const subTotal = Utils.round(invoice.total / 1.2)
+      const tax = Utils.round(invoice.total - subTotal)
+      await DB('invoice').where('id', invoice.id).update({
+        tax_rate: 20,
+        sub_total: subTotal,
+        tax: tax
+      })
+    }
+    console.log(b2cWhitoutTax.length)
+    return b2cWhitoutTax
+
+    const sql =
+      "SELECT invoice.* FROM `invoice` WHERE (sub_total + tax) != total AND invoice.date > '2023-01-01'"
+    const invoices = await DB().execute(sql)
+
+    console.log(invoices.length)
+    for (const invoice of invoices) {
+      const subTotal = Utils.round(invoice.total / (1 + invoice.tax_rate / 100))
+      const tax = Utils.round(invoice.total - subTotal)
+      await DB('invoice').where('id', invoice.id).update({
+        sub_total: subTotal,
+        tax: tax
+      })
+    }
+    return invoices
   }
 }
 
