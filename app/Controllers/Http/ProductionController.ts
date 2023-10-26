@@ -145,9 +145,9 @@ class ProductionController {
     return Production.extract(params)
   }
 
-  async downloadInvoiceCo({ params, user }) {
+  async saveInvoiceCo({ params, user }) {
     params.user = user
-    return Production.downloadInvoiceCo(params)
+    return Production.saveInvoiceCo(params)
   }
 
   storeCosts({ params, user }) {

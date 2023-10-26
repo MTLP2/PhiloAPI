@@ -93,7 +93,45 @@ class Invoice {
     return invoice
   }
 
-  static async save(params) {
+  static async save(params: {
+    id?: number
+    user_id?: number
+    customer?: any
+    customer_id?: number
+    type?: string
+    category?: string
+    project_id?: number
+    production_id?: number
+    order_number?: string
+    name?: string
+    date?: string
+    date_payment?: string
+    status: string
+    client: string
+    email: string
+    payment_days: number
+    compatibility: boolean
+    sub_total?: number
+    margin?: number
+    tax?: number
+    tax_rate?: number
+    total?: number
+    currency?: string
+    currency_rate?: number
+    lines?: any
+    payment_id?: number
+    comment?: string
+    resp_payment?: number
+    resp_accounting?: number
+    created_at?: string
+    updated_at?: string
+    order_shop_id?: number
+    order_manual_id?: number
+    box_dispatch_id?: number
+    invoice_to_payment?: boolean
+    payment_type?: string
+    charge_id?: string
+  }) {
     let invoice: any = DB('invoice')
     let sort = false
 
@@ -431,43 +469,6 @@ class Invoice {
     const numbers = await DB('invoice')
       .select('type', DB.raw('max(number) as max'))
       .groupBy('type')
-      .all()
-
-    let incI = numbers.find((n) => n.type === 'invoice').max
-    let incC = numbers.find((n) => n.type === 'credit_note').max
-
-    const invoices = await DB('invoice')
-      .whereNull('code')
-      .where('compatibility', true)
-      .orderBy('id', 'asc')
-      .all()
-
-    for (const invoice of invoices) {
-      let number
-      let code
-      if (invoice.type === 'invoice') {
-        incI++
-        number = incI
-        code = `I${invoice.year}${incI}`
-      } else {
-        incC++
-        number = incC
-        code = `C${invoice.year}${incC}`
-      }
-
-      await DB('invoice').where('id', invoice.id).update({
-        number: number,
-        code: code
-      })
-    }
-
-    return { success: true }
-  }
-
-  static async setNumbers2() {
-    const numbers = await DB('invoice')
-      .select('type', DB.raw('max(number) as max'))
-      .groupBy('type')
       .where('compatibility', true)
       .all()
 
@@ -498,11 +499,8 @@ class Invoice {
       } else {
         incCo++
         number = incCo
-        code = `C${incCo}`
+        code = `COM${incCo}`
       }
-
-      console.log(invoice.id, number, code)
-      break
 
       await DB('invoice').where('id', invoice.id).update({
         number: number,
@@ -531,6 +529,7 @@ class Invoice {
         'invoice.currency_rate',
         'invoice.tax',
         'invoice.tax_rate',
+        'invoice.client',
         'customer_id',
         'order_id',
         'order_shop_id',
@@ -557,13 +556,6 @@ class Invoice {
       data.number = data.code
       data.country = data.country_id
       data.customer = data.customer_name || `${data.firstname} ${data.lastname}`
-
-      data.nature =
-        data.order_id ||
-        data.order_shop_id ||
-        (data.name && data.name.indexOf('Shipping return') === 0)
-          ? 'BtC'
-          : 'BtB'
       data.total_ht = data.sub_total
 
       data.shipping = 0
@@ -595,7 +587,7 @@ class Invoice {
 
     const columns = [
       { header: 'N°Facture', key: 'number' },
-      { header: 'Nature', key: 'nature' },
+      { header: 'Nature', key: 'client' },
       { header: 'Statut', key: 'status' },
       { header: 'Date', key: 'date' },
       { header: 'Nom', key: 'name' },
@@ -1173,7 +1165,7 @@ class Invoice {
     /**
     const b2b = await DB('invoice')
       .select('invoice.*')
-      .where('date', '>', '2023-01-01')
+      .where('date', '>=', '2023-01-01')
       .where('client', 'B2C')
       .join('customer', 'customer.id', 'customer_id')
       .where('customer.tax_intra', '!=', '')
@@ -1189,14 +1181,13 @@ class Invoice {
       .update({
         client: 'B2B'
       })
-    console.log(b2b.length)
 
     await DB('invoice').where('tax_rate', '>=', 0.2).where('tax_rate', '<', 0.3).update({
       tax_rate: 20
     })
     const b2cWhitoutTax = await DB('invoice')
       .select('invoice.*')
-      .where('date', '>', '2023-01-01')
+      .where('date', '>=', '2023-01-01')
       .where('client', 'B2C')
       .join('customer', 'customer.id', 'customer_id')
       .where('tax_rate', '!=', 20)
@@ -1241,8 +1232,9 @@ class Invoice {
       })
     }
     return b2cWhitoutTax
-    /**
     const sql =
+      "SELECT invoice.* FROM `invoice` WHERE sub_total != ROUND(total / 1.2, 2) AND tax_rate = 20 AND invoice.date >= '2023-01-01'"
+    const sql2 =
       "SELECT invoice.* FROM `invoice` WHERE (sub_total + tax) != total AND invoice.date > '2023-01-01'"
     const invoices = await DB().execute(sql)
 
@@ -1255,8 +1247,8 @@ class Invoice {
         tax: tax
       })
     }
-    return invoices
     **/
+    return invoices
   }
 }
 

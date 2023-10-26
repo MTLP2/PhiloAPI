@@ -4,6 +4,7 @@ import ProjectEdit from 'App/Services/ProjectEdit'
 import Notification from 'App/Services/Notification'
 import MondialRelay from 'App/Services/MondialRelay'
 import Customer from 'App/Services/Customer'
+import Invoice from 'App/Services/Invoice'
 import User from 'App/Services/User'
 import File from 'App/Services/File'
 import Log from 'App/Services/Log'
@@ -2122,6 +2123,59 @@ class Production {
     )
   }
 
+  static async saveInvoiceCo(params) {
+    const prod = await DB('production')
+      .select(
+        'production_dispatch.*',
+        'production.currency',
+        'production.final_price',
+        'production.form_price',
+        'production.quantity_pressed',
+        'project.artist_name',
+        'project.name'
+      )
+      .join('production_dispatch', 'production_dispatch.production_id', 'production.id')
+      .where('production_dispatch.id', params.dispatch_id)
+      .join('project', 'project.id', 'production.project_id')
+      .belongsTo('customer')
+      .first()
+
+    if (prod.invoice_id) {
+      return (await Invoice.download({ params: { id: prod.invoice_id, lang: 'en' } })).data
+    }
+
+    const invoice: any = {}
+    invoice.date = moment().format('YYYY-MM-DD')
+    invoice.type = 'invoice'
+    invoice.currency = 'EUR'
+    invoice.compatibility = false
+    invoice.customer = prod.customer
+    invoice.name = 'Invoice co - ' + prod.artist_name + ' - ' + prod.name
+    invoice.client = 'B2B'
+    invoice.status = 'invoiced'
+    invoice.category = 'shipping'
+    invoice.sub_total = Utils.round(params.price * prod.quantity)
+    invoice.tax = 0
+    invoice.total = invoice.sub_total
+    invoice.invoice_comment = prod.invoice_comment ? prod.invoice_comment.split('\n') : []
+    invoice.lines = [
+      {
+        name: `${prod.artist_name} - ${prod.name}`,
+        price: params.price,
+        quantity: prod.quantity,
+        total: invoice.sub_total
+      }
+    ]
+
+    console.log(invoice.customer)
+    const res = await Invoice.save(invoice)
+    await DB('production_dispatch').where('id', params.dispatch_id).update({
+      invoice_id: res.id
+    })
+    return (await Invoice.download({ params: { id: res.invoice_id, lang: 'en' } })).data
+  }
+
+  /**
   static async downloadInvoiceCo(params) {
     const prod = await DB('production')
       .select(
@@ -2144,7 +2198,7 @@ class Production {
       .where('lang', params.lang)
       .first()
 
-    const invoice = {}
+    const invoice: any = {}
 
     switch (prod.currency) {
       case 'EUR':
@@ -2210,6 +2264,7 @@ class Production {
     const pdf = await Utils.toPdf(html)
     return pdf
   }
+  **/
 
   static async packingList(params) {
     const prod = await DB('production')
