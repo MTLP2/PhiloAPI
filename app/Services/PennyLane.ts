@@ -38,14 +38,13 @@ class PennyLane {
 
     const invoices = await DB('invoice')
       .select('id', 'type')
-      .whereNull('invoice.order_id')
-      .where('name', 'not like', `Shipping return %`)
-      .where('name', 'not like', `Refund Box %`)
+      .where('client', 'B2B')
       .where('compatibility', true)
-      // .where('is_sync', false)
+      .where('is_sync', false)
       .whereBetween('invoice.date', [payload.start, payload.end + ' 23:59'])
       .orderBy('date', 'asc')
       // .where('id', 153622)
+      // .limit(20)
       .all()
     console.log(invoices.length)
     for (const invoice of invoices) {
@@ -91,8 +90,7 @@ class PennyLane {
         source_id: 'a655cabf-03f7-47eb-8130-9cff60202ecb'
       }
     }
-    const file = await Invoice.download({ params: { id: invoice.id, lang: 'fr' } })
-
+    console.log(invoice.customer.country_id)
     let planItemNumber: string | null = null
     if (invoice.customer.country_id === 'FR') {
       planItemNumber = '7071'
@@ -101,6 +99,8 @@ class PennyLane {
     } else {
       planItemNumber = '70719'
     }
+    const file = await Invoice.download({ params: { id: invoice.id, lang: 'fr' } })
+
     invoice.total_eur = invoice.total * invoice.currency_rate
     const imp: any = await PennyLane.execute('customer_invoices/import', {
       method: 'POST',
