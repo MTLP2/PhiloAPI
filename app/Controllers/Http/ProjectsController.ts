@@ -242,7 +242,7 @@ class ProjectsController {
       await Utils.checkProjectOwner({ project_id: params.project_id, user: user })
     }
 
-    params.cashable = params.cashable === 'true'
+    params.cashable = params.all !== 'true'
     return Project.getDashboard(params)
   }
 
