@@ -1653,6 +1653,7 @@ class Project {
         'vod.currency',
         'vod.fee_date',
         'vod.fee_distrib_date',
+        'vod.is_licence',
         'payback_site',
         'payback_distrib',
         'payback_box'
@@ -2100,8 +2101,10 @@ class Project {
           s.setDate('digital', 'income', date, dist.digital * feeDistrib)
         }
         // Distributor storage cost
-        s.setDate('distribution', 'costs', date, dist.storage)
-        s.addList('distribution', 'costs', date, dist.storage, stat.project_id)
+        if (!projects[stat.project_id].is_licence) {
+          s.setDate('distribution', 'costs', date, dist.storage)
+          s.addList('distribution', 'costs', date, dist.storage, stat.project_id)
+        }
 
         s.setDate('distrib', 'quantity', date, dist.quantity)
         s.setDate('distrib', 'quantity', date, -Math.abs(dist.returned))

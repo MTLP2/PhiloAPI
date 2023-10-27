@@ -2858,7 +2858,7 @@ class StatementService {
 
         let value
         if (params.payback !== false && project.payback_distrib) {
-          value = project.payback_distrib * dist.quantity
+          value = project.payback_distrib * (dist.quantity - Math.abs(dist.returned || 0))
         } else {
           value = dist.total * feeDistrib
         }
