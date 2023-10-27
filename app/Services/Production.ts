@@ -2167,12 +2167,11 @@ class Production {
       }
     ]
 
-    console.log(invoice.customer)
     const res = await Invoice.save(invoice)
     await DB('production_dispatch').where('id', params.dispatch_id).update({
       invoice_id: res.id
     })
-    return (await Invoice.download({ params: { id: res.invoice_id, lang: 'en' } })).data
+    return (await Invoice.download({ params: { id: res.id, lang: 'en' } })).data
   }
 
   /**
