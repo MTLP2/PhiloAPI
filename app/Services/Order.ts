@@ -843,9 +843,10 @@ static toJuno = async (params) => {
 
   static allManual = async (params) => {
     params.query = DB('order_manual')
-      .select('order_manual.*', 'customer.firstname', 'customer.lastname')
+      .select('order_manual.*', 'customer.firstname', 'customer.lastname', 'user.name as user_name')
       .orderBy('order_manual.id', 'desc')
       .join('customer', 'customer.id', 'order_manual.customer_id')
+      .leftJoin('user', 'user.id', 'order_manual.user_id')
       .belongsTo('customer')
 
     let filters
@@ -906,12 +907,14 @@ static toJuno = async (params) => {
 
     if (params.id) {
       item = await DB('order_manual').find(params.id)
+      if (item.date_export) {
+        return false
+      }
     } else {
       item.created_at = Utils.date()
     }
 
     item.type = params.type
-    item.step = 'in_preparation'
     item.transporter = params.transporter
     item.shipping_type = params.shipping_type
     item.address_pickup = params.address_pickup
@@ -920,134 +923,193 @@ static toJuno = async (params) => {
     item.comment = params.comment
     item.order_shop_id = params.order_shop_id || null
     item.tracking_number = params.tracking_number || null
+    item.user_id = params.user_id || null
     item.barcodes = JSON.stringify(params.barcodes)
     item.updated_at = Utils.date()
 
-    const customer = await Customer.save(params.customer)
-    item.customer_id = customer.id
+    if (!item.date_export) {
+      item.step = params.pending ? 'pending' : 'in_preparation'
+    }
 
-    if (params.email) {
+    if (params.email && !params.user_id) {
       const user = await DB('user').where('email', 'like', params.email).first()
-
       if (user) {
         item.user_id = user.id
       }
     }
 
+    if (params.user_id === 0) {
+      const cus = await Customer.save(params.customer)
+
+      const [userId] = await DB('user').insert({
+        name: params.customer.name || `${params.customer.firstname} ${params.customer.lastname}`,
+        customer_invoice_id: cus.id,
+        country_id: params.customer.country_id,
+        email: null,
+        created_at: Utils.date(),
+        updated_at: Utils.date()
+      })
+
+      item.user_id = userId
+    }
+
+    const customer = await Customer.save(params.customer)
+    item.customer_id = customer.id
+
     await item.save()
 
-    if (['sna'].includes(params.transporter)) {
-      await Sna.sync([
-        {
-          ...customer,
-          id: 'M' + item.id,
-          shipping: 15,
-          currency: 'EUR',
-          address_pickup: params.address_pickup,
-          // Add package weight
-          weight: weight + 340,
-          created_at: item.created_at,
-          email: item.email,
-          items: params.barcodes.map((b) => {
-            return {
-              barcode: b.barcode,
-              quantity: b.quantity,
-              price: prices[b.barcode]
-            }
-          })
-        }
-      ])
-    } else if (['daudin'].includes(params.transporter)) {
-      if (!item.logistician_id) {
-        const dispatch: any = await Elogik.sync([
+    if (!params.pending && !item.date_export) {
+      if (['sna'].includes(params.transporter)) {
+        await Sna.sync([
           {
             ...customer,
             id: 'M' + item.id,
-            user_id: item.user_id || 'M' + item.id,
-            sub_total: '40',
+            shipping: 15,
             currency: 'EUR',
-            shipping_type: params.shipping_type,
             address_pickup: params.address_pickup,
+            // Add package weight
+            weight: weight + 340,
             created_at: item.created_at,
             email: item.email,
             items: params.barcodes.map((b) => {
               return {
                 barcode: b.barcode,
-                quantity: b.quantity
+                quantity: b.quantity,
+                price: prices[b.barcode]
               }
             })
           }
         ])
+      } else if (['daudin'].includes(params.transporter)) {
+        if (!item.logistician_id) {
+          const dispatch: any = await Elogik.sync([
+            {
+              ...customer,
+              id: 'M' + item.id,
+              user_id: item.user_id || 'M' + item.id,
+              sub_total: '40',
+              currency: 'EUR',
+              shipping_type: params.shipping_type,
+              address_pickup: params.address_pickup,
+              created_at: item.created_at,
+              email: item.email,
+              items: params.barcodes.map((b) => {
+                return {
+                  barcode: b.barcode,
+                  quantity: b.quantity
+                }
+              })
+            }
+          ])
+          if (item.order_shop_id) {
+            await DB('order_shop').where('id', item.order_shop_id).update({
+              logistician_id: dispatch.id,
+              tracking_number: null,
+              tracking_transporter: null,
+              updated_at: Utils.date()
+            })
+          }
+        }
+      }
+      if (['whiplash', 'whiplash_uk'].includes(params.transporter) && !item.logistician_id) {
+        const pp: any = {
+          shipping_name: `${customer.firstname} ${customer.lastname}`,
+          shipping_address_1: customer.address,
+          shipping_city: customer.city,
+          shipping_state: customer.state,
+          shipping_country: customer.country_id,
+          shipping_zip: customer.zip_code,
+          shipping_phone: customer.phone,
+          shop_shipping_method_text: Whiplash.getShippingMethod(),
+          order_items: []
+        }
+
+        for (const b of params.barcodes) {
+          const item = await Whiplash.findItem(b.barcode)
+          if (item.error) {
+            return { error: `Whiplash not found ${b.barcode} ` }
+          }
+          pp.order_items.push({
+            item_id: item.id,
+            quantity: b.quantity
+          })
+        }
+
+        const order: any = await Whiplash.saveOrder(pp)
+        item.logistician_id = order.id
+        item.date_export = Utils.date()
+        await item.save()
+
         if (item.order_shop_id) {
           await DB('order_shop').where('id', item.order_shop_id).update({
-            logistician_id: dispatch.id,
+            logistician_id: order.id,
             tracking_number: null,
             tracking_transporter: null,
             updated_at: Utils.date()
           })
         }
       }
-    }
-    if (['whiplash', 'whiplash_uk'].includes(params.transporter) && !item.logistician_id) {
-      const pp: any = {
-        shipping_name: `${customer.firstname} ${customer.lastname}`,
-        shipping_address_1: customer.address,
-        shipping_city: customer.city,
-        shipping_state: customer.state,
-        shipping_country: customer.country_id,
-        shipping_zip: customer.zip_code,
-        shipping_phone: customer.phone,
-        shop_shipping_method_text: Whiplash.getShippingMethod(),
-        order_items: []
-      }
 
       for (const b of params.barcodes) {
-        const item = await Whiplash.findItem(b.barcode)
-        if (item.error) {
-          return { error: `Whiplash not found ${b.barcode} ` }
+        if (products[b.barcode]) {
+          await Stock.save({
+            product_id: products[b.barcode],
+            type: params.transporter,
+            quantity: -b.quantity,
+            diff: true,
+            comment: 'manual'
+          })
         }
-        pp.order_items.push({
-          item_id: item.id,
-          quantity: b.quantity
-        })
       }
 
-      const order: any = await Whiplash.saveOrder(pp)
-      item.logistician_id = order.id
-      item.date_export = Utils.date()
-      await item.save()
-
-      if (item.order_shop_id) {
-        await DB('order_shop').where('id', item.order_shop_id).update({
-          logistician_id: order.id,
-          tracking_number: null,
-          tracking_transporter: null,
-          updated_at: Utils.date()
+      if (item.user_id) {
+        await Notification.add({
+          type: 'my_order_in_preparation',
+          user_id: item.user_id,
+          order_manual_id: item.id
         })
       }
-    }
-
-    for (const b of params.barcodes) {
-      if (products[b.barcode]) {
-        await Stock.save({
-          product_id: products[b.barcode],
-          type: params.transporter,
-          quantity: -b.quantity,
-          diff: true,
-          comment: 'manual'
-        })
-      }
-    }
-
-    if (item.user_id) {
-      await Notification.add({
-        type: 'my_order_in_preparation',
-        user_id: item.user_id,
-        order_manual_id: item.id
-      })
     }
 
     return item
+  }
+
+  static saveManualInvoiceCo = async (item) => {
+    console.log(item)
+    /**
+    if (item.invoice_id) {
+      return (await Invoice.download({ params: { id: item.invoice_id, lang: 'en' } })).data
+    }
+
+    const invoice: any = {}
+    invoice.date = moment().format('YYYY-MM-DD')
+    invoice.type = 'invoice'
+    invoice.currency = 'EUR'
+    invoice.compatibility = false
+    invoice.customer = item.customer
+    invoice.name = 'Invoice co - ' + prod.artist_name + ' - ' + prod.name
+    invoice.client = 'B2B'
+    invoice.status = 'invoiced'
+    invoice.category = 'shipping'
+    invoice.sub_total = Utils.round(params.price * prod.quantity)
+    invoice.tax = 0
+    invoice.total = invoice.sub_total
+    invoice.invoice_comment = prod.invoice_comment ? prod.invoice_comment.split('\n') : []
+    invoice.lines = [
+      {
+        name: `${prod.artist_name} - ${prod.name}`,
+        price: params.price,
+        quantity: prod.quantity,
+        total: invoice.sub_total
+      }
+    ]
+
+    const res = await Invoice.save(invoice)
+    await DB('production_dispatch').where('id', params.dispatch_id).update({
+      invoice_id: res.id
+    })
+    return (await Invoice.download({ params: { id: res.id, lang: 'en' } })).data
+    **/
   }
 
   static deleteManual = (params) => {

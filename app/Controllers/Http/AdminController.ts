@@ -870,6 +870,10 @@ class AdminController {
     return Order.saveManual(params)
   }
 
+  saveOrderManualInvoiceCo({ params }) {
+    return Order.saveManualInvoiceCo(params)
+  }
+
   deleteOrderManual({ params }) {
     return Order.deleteManual(params)
   }
