@@ -124,17 +124,16 @@ class Cart {
     if (params.boxes) {
       for (let i = 0; i < params.boxes.length; i++) {
         cart.count++
-
         const box = await Box.calculate({
           country_id:
             params.boxes[i].gift && params.boxes[i].country_id
               ? params.boxes[i].country_id
               : params.customer.country_id,
-          currency: cart.currency,
           tax_rate: cart.tax_rate,
           promo_code: params.promo_code,
           user_id: params.user_id,
-          ...params.boxes[i]
+          ...params.boxes[i],
+          currency: cart.currency
         })
         if (box.error) {
           cart.error = box.error
@@ -1475,7 +1474,6 @@ class Cart {
 
   static createOrder = async (params) => {
     const calculate = await Cart.calculate(params)
-
     // Check if cart is empty
     if (
       calculate.count === 0 ||
