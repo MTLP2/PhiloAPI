@@ -504,6 +504,18 @@ class Product {
   }
 
   static async forUser(payload: { user_id: number; ship_notices: boolean }) {
+    const products = await DB('product')
+      .select('product.id as product_id', 'product.name', 'product.type', 'product.barcode')
+      .join('project_product', 'project_product.product_id', 'product.id')
+      .join('project_user', 'project_user.project_id', 'project_product.project_id')
+      .where('project_user.user_id', payload.user_id)
+      .all()
+
+    const pp = {}
+    for (const product of products) {
+      pp[product.product_id] = product
+    }
+
     const orders = await DB('vod')
       .select(
         'oi.quantity',
@@ -555,7 +567,7 @@ class Product {
       .all()
 
     const trans = {}
-    const stocks = {}
+    const stocks = JSON.parse(JSON.stringify(pp))
     for (const stock of stocksList) {
       if (!stocks[stock.product_id]) {
         stocks[stock.product_id] = {
@@ -576,7 +588,7 @@ class Product {
 
     const diff = JSON.parse(JSON.stringify(stocks))
 
-    const toSync = {}
+    const toSync = JSON.parse(JSON.stringify(pp))
     for (const order of orders) {
       trans[order.transporter] = true
 
@@ -604,7 +616,7 @@ class Product {
       diff[order.product_id][order.transporter] -= order.quantity
     }
 
-    const shipNotices = {}
+    const shipNotices = JSON.parse(JSON.stringify(pp))
     if (payload.ship_notices) {
       const notices: any = await Whiplash.getShipNotices()
       for (const notice of notices) {
