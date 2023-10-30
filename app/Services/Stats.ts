@@ -1910,6 +1910,7 @@ class Stats {
 
     const productionsPromise = await DB('production')
       .select('date_preprod', 'date_factory', 'factory', 'quantity', 'quantity_pressed')
+      .where('production.is_delete', false)
       .all()
 
     const productionsSentPromise = await DB('production')
@@ -1918,6 +1919,7 @@ class Stats {
       .join('vod', 'vod.project_id', 'production.project_id')
       .whereBetween('production.date_factory', [params.start, params.end])
       .where('vod.type', 'direct_pressing')
+      .where('production.is_delete', false)
       .all()
 
     const costsPromise = await DB('production_cost')
