@@ -1511,7 +1511,8 @@ class StatementService {
       .select('project.id', 'vod.barcode', 'currency', 'artist_name', 'name')
       .table('project')
       .join('vod', 'vod.project_id', 'project.id')
-      .where('vod.user_id', params.id)
+      .join('project_user as pu', 'pu.project_id', 'project.id')
+      .where('pu.user_id', params.id)
       .where('is_delete', '!=', true)
       .where((query) => {
         if (params.send_statement !== false) {
@@ -1522,7 +1523,6 @@ class StatementService {
     if (params.auto) {
       projects.where('send_statement', true)
     }
-
     projects = await projects.all()
     const workbook = new Excel.Workbook()
 
