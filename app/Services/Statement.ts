@@ -1621,12 +1621,12 @@ class StatementService {
           project.balance = data ? Utils.round(data.balance.dates[month]) : 0
           project.net = data ? Utils.round(data.outstanding.dates[month]) : 0
         } else {
-          project.quantity = data ? Utils.round(data.quantity.all.all) : 0
-          project.income = data ? Utils.round(data.income.all.all) : 0
-          project.costs = data ? Utils.round(data.costs.all.all) : 0
-          project.balance = data ? Utils.round(data.balance.all) : 0
-          project.artist_pay = data ? Utils.round(data.payments.artist.all) : 0
-          project.diggers_pay = data ? Utils.round(data.payments.diggers.all) : 0
+          project.quantity = data ? Utils.round(data.quantity.all.total) : 0
+          project.income = data ? Utils.round(data.income.all.total) : 0
+          project.costs = data ? Utils.round(data.costs.all.total) : 0
+          project.balance = data ? Utils.round(data.balance.total) : 0
+          project.artist_pay = data ? Utils.round(data.payments.artist.total) : 0
+          project.diggers_pay = data ? Utils.round(data.payments.diggers.total) : 0
         }
 
         c = 2
