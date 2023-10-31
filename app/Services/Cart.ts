@@ -166,7 +166,24 @@ class Cart {
 
     if (params.shops) {
       const items: any = []
+      console.log(params.shops)
+
       if (params.country_id) {
+      for (const k of Object.keys(params.shops)) {
+        console.log(params.shops[k])
+        params.shops[k].items = params.shops[k].items.map((i) => {
+          return {
+            ...i,
+            shipping_type: params.shops[k].shipping_type,
+            group_shipping: k
+          }
+        })
+        items.push(...params.shops[k].items)
+        delete params.shops[k]
+      }
+
+      /**
+        console.log(params)
         if (params.shops.s_1_shop) {
           params.shops.s_1_shop.items = params.shops.s_1_shop.items.map((i) => {
             return {
@@ -228,6 +245,8 @@ class Cart {
           delete params.shops.s_1_diggers
         }
       }
+      **/
+      console.log(items)
       if (items.length > 0) {
         for (const i in items) {
           const item = items[i]
@@ -240,11 +259,13 @@ class Cart {
             .join('project', 'project.id', 'vod.project_id')
             .first()
 
+          console.log('COUCOU')
           const stocks = await Stock.byProject({
             project_id: item.project_id,
             // size: item.size
             sizes: item.chosen_sizes
           })
+          console.log(stocks)
 
           for (const [key, value] of Object.entries(stocks)) {
             project[`stock_${key}`] = value
@@ -252,6 +273,7 @@ class Cart {
 
           const weight = item.quantity * (project.weight || Vod.calculateWeight(project))
 
+          console.log('LOL')
           const shipping: any = await Cart.calculateShipping({
             quantity: item.quantity,
             insert: item.quantity,
@@ -699,6 +721,19 @@ class Cart {
     if (shop.quantity === 0) {
       shop.shipping = 0
     } else {
+      console.log(shop.transporters)
+      console.log({
+        quantity: shop.quantity,
+        weight: shop.weight,
+        insert: shop.insert,
+        currency: shop.currency,
+        transporter: shop.transporter,
+        category: shop.category,
+        transporters:
+          shop.type === 'shop' ? { [shop.transporter || 'all']: true } : shop.transporters,
+        country_id: p.country_id,
+        state: p.customer.state
+      })
       const shipping: any = await Cart.calculateShipping({
         quantity: shop.quantity,
         weight: shop.weight,

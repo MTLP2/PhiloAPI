@@ -228,9 +228,7 @@ class Admin {
       .all()
 
     const projectImagesQuery = Project.getProjectImages({ projectId: id })
-
     const stockHistoricQuery = Stock.getHistoric({ project_id: id })
-    const stocksSiteQuery = Stock.byProject({ project_id: id, is_distrib: false })
     const stocksDistribQuery = Stock.byProject({ project_id: id, is_distrib: true })
 
     const itemsQuery = DB('item')
@@ -284,7 +282,7 @@ class Admin {
       codes,
       costs,
       stockHistoric,
-      stocksSite,
+      // stocksSite,
       stocksDistrib,
       items,
       orders,
@@ -297,7 +295,7 @@ class Admin {
       codesQuery,
       costsQuery,
       stockHistoricQuery,
-      stocksSiteQuery,
+      // stocksSiteQuery,
       stocksDistribQuery,
       itemsQuery,
       ordersQuery,
@@ -319,6 +317,12 @@ class Admin {
 
     project.stock_historic = stockHistoric
     project.stocks = []
+
+    const stocksSite = await Stock.byProject({
+      project_id: id,
+      is_preorder: !project.is_shop,
+      is_distrib: false
+    })
     project.stocks.push(
       ...Object.entries(stocksSite).map(([key, value]) => {
         return { type: key, quantity: value }
@@ -329,28 +333,14 @@ class Admin {
         return { type: key, quantity: value }
       })
     )
-    project.stocks.unshift({
-      type: 'distrib',
-      is_distrib: false,
-      quantity: Object.values(stocksDistrib).reduce(
-        (a: number, b: number) => a + (b < 0 ? 0 : b),
-        0
-      )
-    })
-    project.stocks.unshift({
-      type: 'site',
-      is_distrib: false,
-      quantity: Object.values(stocksSite).reduce((a: number, b: number) => a + (b < 0 ? 0 : b), 0)
-    })
     if (!project.is_shop && project.type === 'funding') {
-      project.stock = 'no limit'
+      project.stock = '∞'
     }
     project.stocks.unshift({
       type: 'project',
       is_distrib: false,
       quantity: project.stock
     })
-
     project.stock_preorder =
       project.goal -
       project.count -

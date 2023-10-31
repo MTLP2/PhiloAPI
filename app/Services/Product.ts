@@ -11,17 +11,13 @@ class Product {
     order?: string
     size?: number
     project_id?: number
+    is_preorder?: boolean
   }) {
     const query = DB('product')
       .select(
         'product.*',
         'p2.name as parent',
         'projects',
-        'stock.quantity as stock_all',
-        'stock.sales as sales_all',
-        'stock.reserved',
-        'preorder.quantity as stock_preorder',
-        'preorder.preorder as sales_preorder',
         'daudin.quantity as stock_daudin',
         'daudin.sales as sales_daudin',
         'whiplash.quantity as stock_whiplash',
@@ -43,33 +39,9 @@ class Product {
       )
       .leftJoin(
         DB('stock')
-          .select(
-            DB.raw('sum(reserved) as reserved'),
-            DB.raw('sum(sales) as sales'),
-            DB.raw('sum(quantity) as quantity'),
-            'product_id'
-          )
-          .where('is_distrib', false)
-          .where('type', '!=', 'preorder')
-          .groupBy('product_id')
-          .as('stock')
-          .query(),
-        'stock.product_id',
-        'product.id'
-      )
-      .leftJoin(
-        DB('stock')
-          .select(DB.raw('(quantity - preorder) as quantity'), 'preorder', 'product_id')
-          .where('type', 'preorder')
-          .as('preorder')
-          .query(),
-        'preorder.product_id',
-        'product.id'
-      )
-      .leftJoin(
-        DB('stock')
           .select('sales', 'quantity', 'product_id')
           .where('type', 'daudin')
+          .where('is_preorder', payload.is_preorder || false)
           .as('daudin')
           .query(),
         'daudin.product_id',
@@ -80,6 +52,7 @@ class Product {
           .select('sales', 'quantity', 'product_id')
           .where('type', 'whiplash')
           .as('whiplash')
+          .where('is_preorder', payload.is_preorder || false)
           .query(),
         'whiplash.product_id',
         'product.id'
@@ -88,6 +61,7 @@ class Product {
         DB('stock')
           .select('sales', 'quantity', 'product_id')
           .where('type', 'whiplash_uk')
+          .where('is_preorder', payload.is_preorder || false)
           .as('whiplash_uk')
           .query(),
         'whiplash_uk.product_id',
@@ -96,6 +70,7 @@ class Product {
       .leftJoin(
         DB('stock')
           .select('sales', 'quantity', 'product_id')
+          .where('is_preorder', payload.is_preorder || false)
           .where('type', 'diggers')
           .as('diggers')
           .query(),
