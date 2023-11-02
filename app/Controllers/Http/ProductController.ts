@@ -12,6 +12,7 @@ class ProductController {
           order: schema.string.optional(),
           size: schema.number.optional(),
           page: schema.number.optional(),
+          is_preorder: schema.boolean.optional(),
           project_id: schema.number.optional()
         }),
         data: params
@@ -73,7 +74,6 @@ class ProductController {
 
   async setStockProduct({ params }) {
     await Stock.syncApi({ productIds: [params.id] })
-    return Stock.setOrders({ productIds: [params.id] })
   }
 
   async saveSubProduct({ params }) {

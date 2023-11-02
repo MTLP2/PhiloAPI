@@ -545,10 +545,12 @@ class Whiplash {
       .leftJoin('stock as stock_us', (query) => {
         query.on('stock_us.product_id', 'product.id')
         query.on('stock_us.type', DB.raw('?', ['whiplash']))
+        query.on('stock_us.preorder', DB.raw('?', ['0']))
       })
       .leftJoin('stock as stock_uk', (query) => {
         query.on('stock_uk.product_id', 'product.id')
         query.on('stock_uk.type', DB.raw('?', ['whiplash_uk']))
+        query.on('stock_uk.preorder', DB.raw('?', ['0']))
       })
       .whereNotNull('barcode')
       .where((query: any) => {
@@ -599,6 +601,7 @@ class Whiplash {
               product_id: product.id,
               type: 'whiplash',
               comment: 'api',
+              preorder: false,
               quantity: us
             })
           }
@@ -607,6 +610,7 @@ class Whiplash {
               product_id: product.id,
               type: 'whiplash_uk',
               comment: 'api',
+              preorder: false,
               quantity: uk
             })
           }

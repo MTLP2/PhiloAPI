@@ -12,20 +12,20 @@ class Stock {
     project_id: number
     is_distrib?: boolean
     size?: string
+    is_preorder?: boolean
     sizes?: { [key: string]: string }
     color?: string
   }) {
     const stocks = await DB('project_product as pp')
-      .select('pp.product_id', 'stock.type', 'quantity')
+      .select('pp.product_id', 'stock.reserved', 'stock.type', 'quantity')
       .join('product', 'product.id', 'pp.product_id')
       .leftJoin('stock', 'pp.product_id', 'stock.product_id')
       .where('pp.project_id', payload.project_id)
-      .where('stock.type', '!=', 'preorder')
+      .where('stock.is_preorder', payload.is_preorder || false)
       .where((query) => {
         if (payload.is_distrib !== undefined) {
           query.where('is_distrib', payload.is_distrib)
         }
-
         if (payload.sizes) {
           query.whereNull('size').orWhereIn('pp.product_id', Object.values(payload.sizes))
         }
@@ -38,7 +38,11 @@ class Stock {
     const res = {}
     for (const t of trans) {
       for (const p of products) {
-        let qty = stocks.find((s) => s.product_id === p && s.type === t)?.quantity
+        let qty =
+          stocks.find((s) => s.product_id === p && s.type === t)?.quantity !== null
+            ? stocks.find((s) => s.product_id === p && s.type === t)?.quantity -
+              stocks.find((s) => s.product_id === p && s.type === t)?.reserved
+            : null
         if (qty === undefined) {
           res[t] = 0
         }
@@ -207,12 +211,12 @@ class Stock {
       .whereNull('product.parent_id')
       .all()
 
-    if (listProjects.lenbth === 0) {
+    if (listProjects.length === 0) {
       return false
     }
 
     const listProducts = await DB('product')
-      .select('product.id', 'stock.type', 'quantity', 'reserved', 'preorder')
+      .select('product.id', 'stock.type', 'stock.is_preorder', 'quantity', 'reserved', 'preorder')
       .join('stock', 'product.id', 'stock.product_id')
       .whereIn(
         'product_id',
@@ -226,11 +230,16 @@ class Stock {
     const trans = {}
 
     for (const product of listProducts) {
+      product.type = `${product.is_preorder ? 'preorder' : 'stock'}_${product.type}`
       if (!products[product.id]) {
         products[product.id] = {}
       }
       trans[product.type] = true
-      products[product.id][product.type] = product.quantity - product.reserved - product.preorder
+      if (product.quantity === null) {
+        products[product.id][product.type] = null
+      } else {
+        products[product.id][product.type] = product.quantity - product.reserved
+      }
     }
 
     const projects = {}
@@ -239,9 +248,14 @@ class Stock {
         projects[p.project_id] = {}
       }
       for (const t of Object.keys(trans)) {
-        if (p.is_shop && t === 'preorder') {
+        if (p.is_shop && t.startsWith('preorder')) {
           continue
-        } else if (!p.is_shop && (t !== 'preorder' || p.step === 'successful')) {
+        }
+        if (!p.is_shop && !t.startsWith('preorder')) {
+          continue
+        }
+        if (products[p.product_id][t] === null) {
+          projects[p.project_id][t] = null
           continue
         }
         if (!products[p.product_id] || !products[p.product_id][t]) {
@@ -254,150 +268,21 @@ class Stock {
         }
       }
     }
-
     for (const p of Object.keys(projects)) {
-      projects[p] = Object.values(projects[p]).reduce(
-        (prev: number, current: number) => prev + (current < 0 ? 0 : current),
-        0
-      )
+      if (!projects[p].is_shop && projects[p].preorder_preorder !== undefined) {
+        projects[p] = projects[p].preorder_preorder
+      } else {
+        projects[p] = Object.values(projects[p]).reduce(
+          (prev: number, current: number) => prev + (current < 0 ? 0 : current),
+          0
+        )
+      }
       await DB('vod').where('project_id', p).update({
         stock: projects[p]
       })
     }
 
-    return true
-  }
-
-  static async setOrders(payload?: { projectIds?: number[]; productIds?: number[] }) {
-    if (payload && !payload.productIds && payload.projectIds) {
-      const products = await DB('project_product').whereIn('project_id', payload.projectIds).all()
-      payload.productIds = products.map((p) => p.product_id)
-    }
-
-    const orders = await DB('order_shop')
-      .select(
-        'order_item.id',
-        'order_item.order_shop_id',
-        'order_item.project_id',
-        'order_shop.type',
-        'vod.stage1',
-        'order_shop.transporter',
-        'product_id',
-        'vod.count_other',
-        'order_item.size',
-        'quantity'
-      )
-      .join('order_item', 'order_item.order_shop_id', 'order_shop.id')
-      .join('project_product as pp', 'pp.project_id', 'order_item.project_id')
-      .join('product', 'product.id', 'pp.product_id')
-      .join('vod', 'vod.project_id', 'order_item.project_id')
-      .where((query) => {
-        if (payload && payload.productIds) {
-          query.whereIn('pp.product_id', payload.productIds)
-          query.orWhereIn('product.parent_id', payload.productIds)
-        }
-      })
-      .where((query) => {
-        query.where((query) => {
-          query.whereNull('order_item.size')
-          query.whereNull('product.size')
-        })
-        query.orWhere((query) => {
-          query.whereRaw('product.size like order_item.size')
-          query.orWhereRaw(`order_item.products LIKE CONCAT('%[',product.id,']%')`)
-          query.orWhere((query) => {
-            query.whereNull('product.size')
-            query.whereNotExists((query) => {
-              query.from('product as child').whereRaw('product.id = child.parent_id')
-            })
-          })
-        })
-      })
-      .where('is_paid', true)
-      .all()
-
-    const products = {}
-    const projects = {}
-    if (payload && payload.productIds) {
-      for (const id of payload.productIds) {
-        products[id] = {
-          preorder: {
-            preorder: 0,
-            sales: 0
-          }
-        }
-      }
-    }
-
-    for (const order of orders) {
-      if (!order.product_id) {
-        continue
-      }
-      if (!products[order.product_id]) {
-        products[order.product_id] = {
-          preorder_limit: order.stage1,
-          preorder: {
-            preorder: 0,
-            sales: 0
-          }
-        }
-      }
-      if (!products[order.product_id][order.transporter]) {
-        products[order.product_id][order.transporter] = {
-          preorder: 0,
-          sales: 0
-        }
-      }
-      if (order.type === 'vod') {
-        products[order.product_id]['preorder'].reserved = order.count_other
-        products[order.product_id]['preorder'].preorder += order.quantity
-        products[order.product_id]['preorder'].sales += order.quantity
-        products[order.product_id][order.transporter].preorder += order.quantity
-      }
-      products[order.product_id][order.transporter].sales += order.quantity
-
-      if (!projects[order.project_id]) {
-        projects[order.project_id] = {}
-      }
-      projects[order.project_id][order.id] = order.quantity
-    }
-
-    for (const productId of Object.keys(products)) {
-      await DB('stock').where('product_id', productId).update({ sales: 0, preorder: 0 })
-
-      for (const type of Object.keys(products[productId])) {
-        if (type === 'preorder_limit') {
-          continue
-        }
-        let stock = await DB('stock').where('product_id', productId).where('type', type).first()
-        if (!stock) {
-          stock = DB('stock')
-          stock.product_id = productId
-          stock.type = type
-        }
-        if (type === 'preorder') {
-          if (!stock.quantity && products[productId].preorder_limit) {
-            stock.quantity = products[productId].preorder_limit
-          }
-          stock.preorder = products[productId][type].preorder
-        }
-        if (!stock.reserved && products[productId][type].reserved) {
-          stock.reserved = products[productId][type].reserved
-        }
-        stock.sales = products[productId][type].sales
-        stock.updated_at = Utils.date()
-        await stock.save()
-      }
-    }
-
-    for (const projectId of Object.keys(projects)) {
-      const qty = Object.values(projects[projectId]).reduce((a: number, b: number) => a + b, 0)
-      await DB('vod').where('project_id', projectId).update({
-        count: qty
-      })
-    }
-
-    return { success: true }
+    return projects
   }
 
   static async save(payload: {
@@ -410,14 +295,11 @@ class Stock {
     diff?: boolean
     order_id?: number
     is_distrib?: boolean
+    is_preorder?: boolean
     user_id?: number
     comment?: string
   }) {
     let stock
-
-    if (payload.preorder) {
-      payload.type = 'preorder'
-    }
 
     if (payload.id) {
       stock = await DB('stock').where('id', payload.id).first()
@@ -426,12 +308,16 @@ class Stock {
       stock = await DB('stock')
         .where('product_id', payload.product_id)
         .where('type', payload.type)
+        .where('is_preorder', payload.is_preorder || false)
         .first()
     }
 
     let old = { ...stock }
 
     if (!stock) {
+      if (payload.comment === 'order') {
+        return false
+      }
       stock = DB('stock')
       stock.product_id = payload.product_id
       stock.type = payload.type
@@ -453,6 +339,7 @@ class Stock {
       }
     }
 
+    stock.is_preorder = payload.is_preorder
     stock.is_distrib = payload.is_distrib
     stock.quantity = payload.quantity
     if (payload.reserved && +payload.reserved !== null) {
@@ -527,25 +414,60 @@ class Stock {
       })
 
     for (const product of pp) {
-      const stock = await Stock.save({
-        product_id: product.product_id,
-        order_id: payload.order_id,
-        type: payload.transporter,
-        preorder: payload.preorder,
-        quantity: -payload.quantity,
-        diff: true,
-        comment: 'order'
-      })
-      if (
-        !product.is_shop &&
-        product.type === 'limited_edition' &&
-        payload.preorder &&
-        stock.quantity - stock.reserved - stock.preorder < 1
-      ) {
-        DB('vod').where('project_id', payload.project_id).update({
-          step: 'successful'
+      const stock = await DB('stock')
+        .where('product_id', product.product_id)
+        .where('is_preorder', payload.preorder)
+        .where('type', payload.transporter)
+        .first()
+
+      if (stock && (product.is_shop || stock.quantity !== null)) {
+        stock.quantity = stock.quantity - payload.quantity
+        await stock.save()
+
+        DB('stock_historic').insert({
+          product_id: product.product_id,
+          type: payload.transporter,
+          is_preorder: payload.preorder,
+          data: JSON.stringify({
+            old: { quantity: stock.quantity + payload.quantity },
+            new: { quantity: stock.quantity }
+          }),
+          comment: 'order',
+          order_id: payload.order_id
         })
       }
+
+      if (payload.preorder) {
+        const stock = await DB('stock')
+          .where('product_id', product.product_id)
+          .where('is_preorder', payload.preorder)
+          .where('type', 'preorder')
+          .first()
+
+        if (stock && stock.quantity !== null) {
+          stock.quantity = stock.quantity - payload.quantity
+          await stock.save()
+
+          DB('stock_historic').insert({
+            product_id: product.product_id,
+            type: 'preorder',
+            is_preorder: payload.preorder,
+            data: JSON.stringify({
+              old: { quantity: stock.quantity + payload.quantity },
+              new: { quantity: stock.quantity }
+            }),
+            comment: 'order',
+            order_id: payload.order_id
+          })
+        }
+      }
+    }
+
+    const rest = await Stock.setStockProject({ projectIds: [payload.project_id] })
+    if (rest[payload.project_id] < 1) {
+      DB('vod').where('project_id', payload.project_id).update({
+        step: 'successful'
+      })
     }
     return { success: true }
   }
@@ -703,9 +625,10 @@ class Stock {
             id: stock.id,
             product_id: params.product_id,
             type: stock.type,
-            quantity: stock.quantity,
+            quantity: stock.quantity === '' ? null : stock.quantity,
             reserved: stock.reserved,
             comment: 'sheraf',
+            is_preorder: stock.is_preorder,
             is_distrib: stock.is_distrib,
             user_id: params.user_id
           })
@@ -713,13 +636,14 @@ class Stock {
       }
     }
 
-    if (params.type && params.quantity) {
+    if (params.type) {
       await Stock.save({
         product_id: params.product_id,
         type: params.type,
-        quantity: params.quantity,
+        quantity: params.quantity === '' ? null : params.quantity,
         reserved: params.reserved,
         comment: 'sheraf',
+        is_preorder: params.is_preorder,
         is_distrib: params.is_distrib,
         user_id: params.user_id
       })
@@ -988,6 +912,19 @@ class Stock {
         data: Object.values(diff) as any
       }
     ])
+  }
+
+  static getTransporters = (payload: {
+    stocks: { [key: string]: number }
+    is_preorder: boolean
+  }) => {
+    const transporters: { [key: string]: boolean } = {}
+    for (const k of Object.keys(payload.stocks)) {
+      if ((payload.is_preorder && payload.stocks[k] === null) || payload.stocks[k] > 0) {
+        transporters[k] = true
+      }
+    }
+    return transporters
   }
 }
 

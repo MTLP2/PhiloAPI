@@ -58,6 +58,7 @@ class ProjectEdit {
     project.sticker = project.sticker || '0'
     project.insert = project.insert || 'none'
     project.tracks = await Song.byProject({ project_id: project.id })
+
     return project
   }
 

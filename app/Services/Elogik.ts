@@ -595,6 +595,7 @@ class Elogik {
       .leftJoin('stock', (query) => {
         query.on('stock.product_id', 'product.id')
         query.on('stock.type', '=', DB.raw('?', ['daudin']))
+        query.on('stock.preorder', '=', DB.raw('?', ['0']))
       })
       .whereIn(
         'barcode',
@@ -620,6 +621,7 @@ class Elogik {
           product_id: product.id,
           type: 'daudin',
           comment: 'api',
+          preorder: false,
           quantity: qty
         })
         await DB('product').where('id', product.id).update({

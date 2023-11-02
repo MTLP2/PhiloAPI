@@ -38,7 +38,9 @@ class Project {
       project.sold_out = project.copies_left < 1
     } else {
       project.sold_out =
-        ['limited_edition', 'test_pressing'].includes(project.type) && project.copies_left < 1
+        ['limited_edition', 'test_pressing'].includes(project.type) &&
+        project.stock !== null &&
+        project.copies_left < 1
     }
 
     project.step = project.sold_out ? 'successful' : project.step
@@ -167,6 +169,7 @@ class Project {
     } else {
       project.sold_out =
         ['limited_edition', 'test_pressing'].includes(project.type) &&
+        project.stock !== null &&
         project.copies_left < 1 &&
         project.step !== 'coming_soon'
     }

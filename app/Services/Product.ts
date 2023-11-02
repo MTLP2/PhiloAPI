@@ -11,17 +11,13 @@ class Product {
     order?: string
     size?: number
     project_id?: number
+    is_preorder?: boolean
   }) {
     const query = DB('product')
       .select(
         'product.*',
         'p2.name as parent',
         'projects',
-        'stock.quantity as stock_all',
-        'stock.sales as sales_all',
-        'stock.reserved',
-        'preorder.quantity as stock_preorder',
-        'preorder.preorder as sales_preorder',
         'daudin.quantity as stock_daudin',
         'daudin.sales as sales_daudin',
         'whiplash.quantity as stock_whiplash',
@@ -43,33 +39,9 @@ class Product {
       )
       .leftJoin(
         DB('stock')
-          .select(
-            DB.raw('sum(reserved) as reserved'),
-            DB.raw('sum(sales) as sales'),
-            DB.raw('sum(quantity) as quantity'),
-            'product_id'
-          )
-          .where('is_distrib', false)
-          .where('type', '!=', 'preorder')
-          .groupBy('product_id')
-          .as('stock')
-          .query(),
-        'stock.product_id',
-        'product.id'
-      )
-      .leftJoin(
-        DB('stock')
-          .select(DB.raw('(quantity - preorder) as quantity'), 'preorder', 'product_id')
-          .where('type', 'preorder')
-          .as('preorder')
-          .query(),
-        'preorder.product_id',
-        'product.id'
-      )
-      .leftJoin(
-        DB('stock')
           .select('sales', 'quantity', 'product_id')
           .where('type', 'daudin')
+          .where('is_preorder', payload.is_preorder || false)
           .as('daudin')
           .query(),
         'daudin.product_id',
@@ -80,6 +52,7 @@ class Product {
           .select('sales', 'quantity', 'product_id')
           .where('type', 'whiplash')
           .as('whiplash')
+          .where('is_preorder', payload.is_preorder || false)
           .query(),
         'whiplash.product_id',
         'product.id'
@@ -88,6 +61,7 @@ class Product {
         DB('stock')
           .select('sales', 'quantity', 'product_id')
           .where('type', 'whiplash_uk')
+          .where('is_preorder', payload.is_preorder || false)
           .as('whiplash_uk')
           .query(),
         'whiplash_uk.product_id',
@@ -96,6 +70,7 @@ class Product {
       .leftJoin(
         DB('stock')
           .select('sales', 'quantity', 'product_id')
+          .where('is_preorder', payload.is_preorder || false)
           .where('type', 'diggers')
           .as('diggers')
           .query(),
@@ -153,15 +128,33 @@ class Product {
 
     item.children = await DB('product').where('parent_id', payload.id).all()
     item.stocks = await DB('stock')
-      .select('*', DB.raw('quantity - preorder - reserved as available'))
+      .select(
+        'stock.id',
+        'stock.type',
+        'is_preorder',
+        'is_distrib',
+        'quantity',
+        'reserved',
+        DB.raw('quantity - reserved as available')
+      )
       .where('product_id', payload.id)
       .all()
+
+    const sales = await Product.getProductsSales({ productIds: [payload.id] })
+    for (const s in item.stocks) {
+      const stock = item.stocks[s]
+      const sale = sales[payload.id] && sales[payload.id][stock.type]
+      if (sale) {
+        item.stocks[s].sales = item.stocks[s].is_preorder ? sale.preorder || 0 : sale.sales || 0
+      }
+    }
 
     const stock = await Stock.getHistoric({ product_id: payload.id })
 
     item.stocks_historic = stock.list
     item.stocks_months = stock.months
 
+    /**
     item.stocks.unshift({
       type: 'distrib',
       is_distrib: true,
@@ -178,6 +171,7 @@ class Product {
         .map((c) => c.quantity)
         .reduce((a, c) => (a + c < 0 ? 0 : c), 0)
     })
+    **/
 
     return item
   }
@@ -672,6 +666,91 @@ class Product {
       }
     }
     return { success: true }
+  }
+
+  static async getProductsSales(payload?: { projectIds?: number[]; productIds?: number[] }) {
+    if (payload && !payload.productIds && payload.projectIds) {
+      const products = await DB('project_product').whereIn('project_id', payload.projectIds).all()
+      payload.productIds = products.map((p) => p.product_id)
+    }
+
+    const orders = await DB('order_shop')
+      .select(
+        'order_item.id',
+        'order_item.order_shop_id',
+        'order_item.project_id',
+        'order_shop.type',
+        'vod.stage1',
+        'order_shop.transporter',
+        'product_id',
+        'vod.count_other',
+        'order_item.size',
+        'quantity'
+      )
+      .join('order_item', 'order_item.order_shop_id', 'order_shop.id')
+      .join('project_product as pp', 'pp.project_id', 'order_item.project_id')
+      .join('product', 'product.id', 'pp.product_id')
+      .join('vod', 'vod.project_id', 'order_item.project_id')
+      .where((query) => {
+        if (payload && payload.productIds) {
+          query.whereIn('pp.product_id', payload.productIds)
+          query.orWhereIn('product.parent_id', payload.productIds)
+        }
+      })
+      .where((query) => {
+        query.where((query) => {
+          query.whereNull('order_item.size')
+          query.whereNull('product.size')
+        })
+        query.orWhere((query) => {
+          query.whereRaw('product.size like order_item.size')
+          query.orWhereRaw(`order_item.products LIKE CONCAT('%[',product.id,']%')`)
+          query.orWhere((query) => {
+            query.whereNull('product.size')
+            query.whereNotExists((query) => {
+              query.from('product as child').whereRaw('product.id = child.parent_id')
+            })
+          })
+        })
+      })
+      .where('is_paid', true)
+      .all()
+
+    const products: {
+      [key: number]: {
+        [key: string]: {
+          preorder: number
+          sales: number
+        }
+      }
+    } = {}
+    if (payload && payload.productIds) {
+      for (const id of payload.productIds) {
+        products[id] = {}
+      }
+    }
+
+    for (const order of orders) {
+      if (!order.product_id) {
+        continue
+      }
+      if (!products[order.product_id]) {
+        products[order.product_id] = {}
+      }
+      if (!products[order.product_id][order.transporter]) {
+        products[order.product_id][order.transporter] = {
+          preorder: 0,
+          sales: 0
+        }
+      }
+      if (order.type === 'vod') {
+        products[order.product_id][order.transporter].preorder += order.quantity
+      } else {
+        products[order.product_id][order.transporter].sales += order.quantity
+      }
+    }
+
+    return products
   }
 }
 
