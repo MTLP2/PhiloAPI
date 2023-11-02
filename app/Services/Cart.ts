@@ -166,87 +166,20 @@ class Cart {
 
     if (params.shops) {
       const items: any = []
-      console.log(params.shops)
-
       if (params.country_id) {
-      for (const k of Object.keys(params.shops)) {
-        console.log(params.shops[k])
-        params.shops[k].items = params.shops[k].items.map((i) => {
-          return {
-            ...i,
-            shipping_type: params.shops[k].shipping_type,
-            group_shipping: k
-          }
-        })
-        items.push(...params.shops[k].items)
-        delete params.shops[k]
-      }
-
-      /**
-        console.log(params)
-        if (params.shops.s_1_shop) {
-          params.shops.s_1_shop.items = params.shops.s_1_shop.items.map((i) => {
+        for (const k of Object.keys(params.shops)) {
+          params.shops[k].items = params.shops[k].items.map((i) => {
             return {
               ...i,
-              shipping_type: params.shops.s_1_shop.shipping_type
+              shipping_type: params.shops[k].shipping_type,
+              type: params.shops[k].type,
+              group_shipping: k
             }
           })
-          items.push(...params.shops.s_1_shop.items)
-          delete params.shops.s_1_shop
-        }
-        if (params.shops.s_1_whiplash) {
-          params.shops.s_1_whiplash.items = params.shops.s_1_whiplash.items.map((i) => {
-            return {
-              ...i,
-              shipping_type: params.shops.s_1_whiplash.shipping_type
-            }
-          })
-          items.push(...params.shops.s_1_whiplash.items)
-          delete params.shops.s_1_whiplash
-        }
-        if (params.shops.s_1_whiplash_uk) {
-          params.shops.s_1_whiplash_uk.items = params.shops.s_1_whiplash_uk.items.map((i) => {
-            return {
-              ...i,
-              shipping_type: params.shops.s_1_whiplash_uk.shipping_type
-            }
-          })
-          items.push(...params.shops.s_1_whiplash_uk.items)
-          delete params.shops.s_1_whiplash_uk
-        }
-        if (params.shops.s_1_daudin) {
-          params.shops.s_1_daudin.items = params.shops.s_1_daudin.items.map((i) => {
-            return {
-              ...i,
-              shipping_type: params.shops.s_1_daudin.shipping_type
-            }
-          })
-          items.push(...params.shops.s_1_daudin.items)
-          delete params.shops.s_1_daudin
-        }
-        if (params.shops.s_1_sna) {
-          params.shops.s_1_sna.items = params.shops.s_1_sna.items.map((i) => {
-            return {
-              ...i,
-              shipping_type: params.shops.s_1_sna.shipping_type
-            }
-          })
-          items.push(...params.shops.s_1_sna.items)
-          delete params.shops.s_1_sna
-        }
-        if (params.shops.s_1_diggers) {
-          params.shops.s_1_diggers.items = params.shops.s_1_diggers.items.map((i) => {
-            return {
-              ...i,
-              shipping_type: params.shops.s_1_diggers.shipping_type
-            }
-          })
-          items.push(...params.shops.s_1_diggers.items)
-          delete params.shops.s_1_diggers
+          items.push(...params.shops[k].items)
+          delete params.shops[k]
         }
       }
-      **/
-      console.log(items)
       if (items.length > 0) {
         for (const i in items) {
           const item = items[i]
@@ -259,34 +192,26 @@ class Cart {
             .join('project', 'project.id', 'vod.project_id')
             .first()
 
-          console.log('COUCOU')
           const stocks = await Stock.byProject({
             project_id: item.project_id,
+            is_preorder: item.type === 'vod',
             // size: item.size
             sizes: item.chosen_sizes
           })
-          console.log(stocks)
-
           for (const [key, value] of Object.entries(stocks)) {
             project[`stock_${key}`] = value
           }
 
           const weight = item.quantity * (project.weight || Vod.calculateWeight(project))
 
-          console.log('LOL')
           const shipping: any = await Cart.calculateShipping({
             quantity: item.quantity,
             insert: item.quantity,
             currency: project.currency,
-            transporter: project.transporter === 'diggers' ? 'diggers' : '%',
-            is_shop: 1,
+            is_shop: item.type === 'shop',
             stock: true,
+            stocks: stocks,
             weight: weight,
-            stock_daudin: project.stock_daudin,
-            stock_whiplash: project.stock_whiplash,
-            stock_whiplash_uk: project.stock_whiplash_uk,
-            stock_diggers: project.stock_diggers,
-            stock_sna: project.stock_sna,
             country_id: params.country_id,
             state: params.customer.state
           })
@@ -294,18 +219,33 @@ class Cart {
             cart.error = shipping.error
             shipping.transporter = 'shop'
           }
-          if (!params.shops[`s_1_${shipping.transporter}`]) {
-            params.shops[`s_1_${shipping.transporter}`] = {
-              ...params.shops.s_1_shop,
-              id: `1_${shipping.transporter}`,
-              is_shop: 1,
-              type: 'shop',
-              transporter: shipping.transporter,
-              shipping_type: item.shipping_type,
-              items: []
+          if (item.type === 'shop') {
+            if (!params.shops[`s_1_${shipping.transporter}`]) {
+              params.shops[`s_1_${shipping.transporter}`] = {
+                ...params.shops.s_1_shop,
+                id: `1_${shipping.transporter}`,
+                is_shop: 1,
+                type: 'shop',
+                transporter: shipping.transporter,
+                shipping_type: item.shipping_type,
+                items: []
+              }
             }
+            params.shops[`s_1_${shipping.transporter}`].items.push(item)
+          } else {
+            if (!params.shops[item.group_shipping]) {
+              params.shops[item.group_shipping] = {
+                ...params.shops.s_1_shop,
+                id: `${item.group_shipping.substring(2)}`,
+                is_shop: 0,
+                type: 'vod',
+                transporter: shipping.transporter,
+                shipping_type: item.shipping_type,
+                items: []
+              }
+            }
+            params.shops[item.group_shipping].items.push(item)
           }
-          params.shops[`s_1_${shipping.transporter}`].items.push(item)
         }
       }
 
@@ -618,6 +558,7 @@ class Cart {
     shop.discount = 0
     shop.total_ship_discount = 0
     shop.total_ship_discount_sale_diff = 0
+    shop.transporter = p.transporter
 
     shop.paypal = false
     shop.stripe = false
@@ -631,7 +572,6 @@ class Cart {
       item.currency = p.currency
       item.shipping_discount = p.shipping_discount
       const c = await Cart.calculateItem(item)
-
       if (!shop.currency) {
         shop.currency = c.currency
       }
@@ -665,11 +605,6 @@ class Cart {
         shop.total_ship_discount_sale_diff += calculatedItem.ship_discount_sale_diff
       }
       shop.items.push(calculatedItem)
-
-      if (shop.type !== 'shop') {
-        shop.transporter = calculatedItem.transporter
-        shop.transporters = calculatedItem.transporters
-      }
       if (calculatedItem.category !== 'digital') {
         shop.quantity += calculatedItem.quantity_coef
         shop.weight += calculatedItem.weight
@@ -721,126 +656,114 @@ class Cart {
     if (shop.quantity === 0) {
       shop.shipping = 0
     } else {
-      console.log(shop.transporters)
-      console.log({
-        quantity: shop.quantity,
-        weight: shop.weight,
-        insert: shop.insert,
-        currency: shop.currency,
-        transporter: shop.transporter,
-        category: shop.category,
-        transporters:
-          shop.type === 'shop' ? { [shop.transporter || 'all']: true } : shop.transporters,
-        country_id: p.country_id,
-        state: p.customer.state
-      })
-      const shipping: any = await Cart.calculateShipping({
-        quantity: shop.quantity,
-        weight: shop.weight,
-        insert: shop.insert,
-        currency: shop.currency,
-        transporter: shop.transporter,
-        category: shop.category,
-        transporters:
-          shop.type === 'shop' ? { [shop.transporter || 'all']: true } : shop.transporters,
-        country_id: p.country_id,
-        state: p.customer.state
-      })
+      if (shop.transporter) {
+        const shipping: any = await Cart.calculateShipping({
+          quantity: shop.quantity,
+          weight: shop.weight,
+          insert: shop.insert,
+          transporter: shop.transporter,
+          currency: shop.currency,
+          category: shop.category,
+          country_id: p.country_id,
+          state: p.customer.state
+        })
 
-      // Standard
-      shipping.original_standard = Utils.getShipDiscounts({
-        ship: shipping.standard,
-        taxRate: shop.tax_rate
-      })
-      shipping.standard = Utils.getShipDiscounts({
-        ship: shipping.standard,
-        shippingDiscount,
-        taxRate: shop.tax_rate
-      })
-      shipping.original_tracking = Utils.getShipDiscounts({
-        ship: shipping.tracking,
-        taxRate: shop.tax_rate
-      })
-      shipping.tracking = Utils.getShipDiscounts({
-        ship: shipping.tracking,
-        shippingDiscount,
-        taxRate: shop.tax_rate
-      })
-      shipping.original_pickup = Utils.getShipDiscounts({
-        ship: shipping.pickup,
-        taxRate: shop.tax_rate
-      })
-      shipping.pickup = Utils.getShipDiscounts({
-        ship: shipping.pickup,
-        shippingDiscount,
-        taxRate: shop.tax_rate
-      })
+        // Standard
+        shipping.original_standard = Utils.getShipDiscounts({
+          ship: shipping.standard,
+          taxRate: shop.tax_rate
+        })
+        shipping.standard = Utils.getShipDiscounts({
+          ship: shipping.standard,
+          shippingDiscount,
+          taxRate: shop.tax_rate
+        })
+        shipping.original_tracking = Utils.getShipDiscounts({
+          ship: shipping.tracking,
+          taxRate: shop.tax_rate
+        })
+        shipping.tracking = Utils.getShipDiscounts({
+          ship: shipping.tracking,
+          shippingDiscount,
+          taxRate: shop.tax_rate
+        })
+        shipping.original_pickup = Utils.getShipDiscounts({
+          ship: shipping.pickup,
+          taxRate: shop.tax_rate
+        })
+        shipping.pickup = Utils.getShipDiscounts({
+          ship: shipping.pickup,
+          shippingDiscount,
+          taxRate: shop.tax_rate
+        })
 
-      // If shipping is lower than 1 we offer the shipping costs
-      const min = 1
-      shop.shipping_standard = shipping.standard <= min ? 0 : shipping.standard
-      shop.shipping_tracking = shipping.tracking <= min ? 0 : shipping.tracking
-      shop.shipping_pickup =
-        shipping.pickup !== null && shipping.pickup <= min ? 0 : shipping.pickup
-      shop.shipping_type = p.shipping_type
-      shop.transporter = shipping.transporter
+        // If shipping is lower than 1 we offer the shipping costs
+        const min = 1
+        shop.shipping_standard = shipping.standard <= min ? 0 : shipping.standard
+        shop.shipping_tracking = shipping.tracking <= min ? 0 : shipping.tracking
+        shop.shipping_pickup =
+          shipping.pickup !== null && shipping.pickup <= min ? 0 : shipping.pickup
+        shop.shipping_type = p.shipping_type
+        shop.transporter = shipping.transporter
 
-      if (shop.save_shipping) {
-        let shipping = shop.shipping_pickup !== null ? shop.shipping_pickup : shop.shipping_standard
-        let vinyl = 0
+        if (shop.save_shipping) {
+          let shipping =
+            shop.shipping_pickup !== null ? shop.shipping_pickup : shop.shipping_standard
+          let vinyl = 0
 
-        while (shipping > 1) {
-          vinyl++
-          shipping = shipping - 3 + 1
+          while (shipping > 1) {
+            vinyl++
+            shipping = shipping - 3 + 1
+          }
+
+          shop.free_shipping = vinyl
+        }
+        if (
+          !p.shipping_type &&
+          shipping.pickup !== null &&
+          (shipping.pickup > 0 || shippingDiscount > 0)
+        ) {
+          shop.shipping = shipping.pickup
+          shop.original_shipping = shipping.original_pickup
+          shop.shipping_type = 'pickup'
+        } else if (
+          p.shipping_type === 'standard' &&
+          shipping.standard !== null &&
+          (shipping.standard > 0 || shippingDiscount > 0)
+        ) {
+          shop.shipping = shipping.standard
+          shop.original_shipping = shipping.original_standard
+        } else if (
+          p.shipping_type === 'tracking' &&
+          shipping.tracking !== null &&
+          (shipping.tracking > 0 || shippingDiscount > 0)
+        ) {
+          shop.shipping = shipping.tracking
+          shop.original_shipping = shipping.original_tracking
+        } else if (
+          p.shipping_type === 'pickup' &&
+          shipping.pickup !== null &&
+          (shipping.pickup > 0 || shippingDiscount > 0)
+        ) {
+          shop.shipping = shipping.pickup
+          shop.original_shipping = shipping.original_pickup
+        } else if (shipping.standard !== null && (shipping.standard > 0 || shippingDiscount > 0)) {
+          shop.shipping = shipping.standard
+          shop.original_shipping = shipping.original_standard
+          shop.shipping_type = 'standard'
+        } else if (shipping.tracking !== null && (shipping.tracking > 0 || shippingDiscount > 0)) {
+          shop.shipping = shipping.tracking
+          shop.original_shipping = shipping.original_tracking
+          shop.shipping_type = 'tracking'
+        } else if (shipping.pickup !== null && (shipping.pickup > 0 || shippingDiscount > 0)) {
+          shop.shipping = shipping.pickup
+          shop.original_shipping = shipping.original_pickup
+          shop.shipping_type = 'pickup'
         }
 
-        shop.free_shipping = vinyl
-      }
-      if (
-        !p.shipping_type &&
-        shipping.pickup !== null &&
-        (shipping.pickup > 0 || shippingDiscount > 0)
-      ) {
-        shop.shipping = shipping.pickup
-        shop.original_shipping = shipping.original_pickup
-        shop.shipping_type = 'pickup'
-      } else if (
-        p.shipping_type === 'standard' &&
-        shipping.standard !== null &&
-        (shipping.standard > 0 || shippingDiscount > 0)
-      ) {
-        shop.shipping = shipping.standard
-        shop.original_shipping = shipping.original_standard
-      } else if (
-        p.shipping_type === 'tracking' &&
-        shipping.tracking !== null &&
-        (shipping.tracking > 0 || shippingDiscount > 0)
-      ) {
-        shop.shipping = shipping.tracking
-        shop.original_shipping = shipping.original_tracking
-      } else if (
-        p.shipping_type === 'pickup' &&
-        shipping.pickup !== null &&
-        (shipping.pickup > 0 || shippingDiscount > 0)
-      ) {
-        shop.shipping = shipping.pickup
-        shop.original_shipping = shipping.original_pickup
-      } else if (shipping.standard !== null && (shipping.standard > 0 || shippingDiscount > 0)) {
-        shop.shipping = shipping.standard
-        shop.original_shipping = shipping.original_standard
-        shop.shipping_type = 'standard'
-      } else if (shipping.tracking !== null && (shipping.tracking > 0 || shippingDiscount > 0)) {
-        shop.shipping = shipping.tracking
-        shop.original_shipping = shipping.original_tracking
-        shop.shipping_type = 'tracking'
-      } else if (shipping.pickup !== null && (shipping.pickup > 0 || shippingDiscount > 0)) {
-        shop.shipping = shipping.pickup
-        shop.original_shipping = shipping.original_pickup
-        shop.shipping_type = 'pickup'
-      }
-
-      if (!shop.shipping && !shop.error && !shop.total_ship_discount) {
-        shop.error = 'no_shipping'
+        if (!shop.shipping && !shop.error && !shop.total_ship_discount) {
+          shop.error = 'no_shipping'
+        }
       }
     }
 
@@ -1214,13 +1137,15 @@ class Cart {
       currencies[c.id] = 1 / c.value
     }
 
-    let transporters: any = {}
-    if (params.is_shop) {
-      transporters.all = true
+    let transporters: { [key: string]: boolean }
+    if (params.transporter) {
+      transporters = { [params.transporter]: true }
     } else {
-      transporters = params.transporters
+      transporters = Stock.getTransporters({
+        is_preorder: !params.is_shop,
+        stocks: params.stocks
+      })
     }
-
     const shippings: any[] = []
     if (transporters.all || transporters.daudin) {
       const daudin = await Cart.calculateShippingByTransporter({
@@ -1309,10 +1234,10 @@ class Cart {
     let shipping
     for (const ship of shippings) {
       if (
-        params.is_shop &&
+        !params.transporter &&
+        !(!params.is_shop && params.stocks[ship.transporter] === null) &&
         params.stock &&
-        (!params[`stock_${ship.transporter}`] ||
-          params[`stock_${ship.transporter}`] < params.quantity)
+        (!params.stocks[ship.transporter] || params.stocks[ship.transporter] < params.quantity)
       ) {
         continue
       }
@@ -1436,8 +1361,6 @@ class Cart {
     res.crowdfunding = p.project.crowdfunding
     res.color_vinyl = p.project.color_vinyl
     res.nb_vinyl = p.project.nb_vinyl
-    res.transporter = p.project.transporter
-    res.transporters = JSON.parse(p.project.transporters)
     res.pa = p.project.pa
     res.st = p.project.st
     res.ship_discount_sale_diff = 0
@@ -1460,10 +1383,13 @@ class Cart {
     ) {
       res.error = 'project_not_available'
     }
-    if (p.project.type === 'limited_edition' && p.project.copies_left < 1) {
+    if (p.project.type === 'limited_edition' && p.project.is_shop && p.project.copies_left < 1) {
       res.error = 'project_not_available'
     }
-    if ((p.project.type !== 'funding' || p.project.is_shop) && p.project.copies_left < p.quantity) {
+    if (
+      ((p.project.type !== 'funding' && p.project.copies_left !== null) || p.project.is_shop) &&
+      p.project.copies_left < p.quantity
+    ) {
       res.error = 'project_insufficient_quantity'
     }
 
@@ -2021,7 +1947,6 @@ class Cart {
     if (order.status === 'CREATED') {
       return { id: order.id }
     } else {
-      console.log(order)
       await Notification.sendEmail({
         to: 'victor@diggersfactory.com',
         subject: `Paypal creation order error`,
