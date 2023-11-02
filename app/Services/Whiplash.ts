@@ -601,7 +601,7 @@ class Whiplash {
               product_id: product.id,
               type: 'whiplash',
               comment: 'api',
-              preorder: false,
+              is_preorder: false,
               quantity: us
             })
           }
@@ -610,7 +610,7 @@ class Whiplash {
               product_id: product.id,
               type: 'whiplash_uk',
               comment: 'api',
-              preorder: false,
+              is_preorder: false,
               quantity: uk
             })
           }

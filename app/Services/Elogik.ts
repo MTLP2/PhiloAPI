@@ -621,7 +621,7 @@ class Elogik {
           product_id: product.id,
           type: 'daudin',
           comment: 'api',
-          preorder: false,
+          is_preorder: false,
           quantity: qty
         })
         await DB('product').where('id', product.id).update({

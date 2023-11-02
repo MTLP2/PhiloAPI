@@ -254,7 +254,7 @@ class Stock {
         if (!p.is_shop && !t.startsWith('preorder')) {
           continue
         }
-        if (products[p.product_id][t] === null) {
+        if (products[p.product_id] && products[p.product_id][t] === null) {
           projects[p.project_id][t] = null
           continue
         }
@@ -290,7 +290,6 @@ class Stock {
     type?: string
     product_id: number
     quantity: number
-    preorder?: boolean
     reserved?: number
     diff?: boolean
     order_id?: number
@@ -329,7 +328,7 @@ class Stock {
     }
 
     if (payload.diff) {
-      if (payload.preorder) {
+      if (payload.is_preorder) {
         stock.preorder += +Math.abs(payload.quantity)
         stock.sales += +Math.abs(payload.quantity)
         payload.quantity = stock.quantity
