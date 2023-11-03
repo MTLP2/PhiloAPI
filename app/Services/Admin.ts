@@ -230,6 +230,16 @@ class Admin {
     const projectImagesQuery = Project.getProjectImages({ projectId: id })
     const stockHistoricQuery = Stock.getHistoric({ project_id: id })
     const stocksDistribQuery = Stock.byProject({ project_id: id, is_distrib: true })
+    const stocksSitePreorderQuery = Stock.byProject({
+      project_id: id,
+      is_distrib: false,
+      is_preorder: true
+    })
+    const stocksSiteQuery = Stock.byProject({
+      project_id: id,
+      is_distrib: false,
+      is_preorder: false
+    })
 
     const itemsQuery = DB('item')
       .select(
@@ -282,7 +292,8 @@ class Admin {
       codes,
       costs,
       stockHistoric,
-      // stocksSite,
+      stocksSite,
+      stocksSitePreorder,
       stocksDistrib,
       items,
       orders,
@@ -295,7 +306,8 @@ class Admin {
       codesQuery,
       costsQuery,
       stockHistoricQuery,
-      // stocksSiteQuery,
+      stocksSiteQuery,
+      stocksSitePreorderQuery,
       stocksDistribQuery,
       itemsQuery,
       ordersQuery,
@@ -318,14 +330,14 @@ class Admin {
     project.stock_historic = stockHistoric
     project.stocks = []
 
-    const stocksSite = await Stock.byProject({
-      project_id: id,
-      is_preorder: !project.is_shop,
-      is_distrib: false
-    })
     project.stocks.push(
       ...Object.entries(stocksSite).map(([key, value]) => {
-        return { type: key, quantity: value }
+        return { type: key, quantity: value, is_preorder: false }
+      })
+    )
+    project.stocks.push(
+      ...Object.entries(stocksSitePreorder).map(([key, value]) => {
+        return { type: key, quantity: value, is_preorder: true }
       })
     )
     project.stocks.push(
@@ -339,6 +351,7 @@ class Admin {
     project.stocks.unshift({
       type: 'project',
       is_distrib: false,
+      is_preorder: !project.is_shop,
       quantity: project.stock
     })
     project.stock_preorder =
