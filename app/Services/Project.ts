@@ -177,8 +177,32 @@ class Project {
     project.step = project.sold_out ? 'successful' : project.step
 
     project.hide = project.hide ? project.hide.split(',') : []
+
+    const getSizeSort = (s: string) => {
+      const size = s.toUpperCase()
+      if (size === 'XXS') {
+        return 0
+      } else if (size === 'XS') {
+        return 1
+      } else if (size === 'S') {
+        return 2
+      } else if (size === 'M') {
+        return 3
+      } else if (size === 'L') {
+        return 4
+      } else if (size === 'XL') {
+        return 5
+      } else if (size === 'XXL' || size === '2XL') {
+        return 6
+      } else if (size === 'XXL' || size === '3XL') {
+        return 7
+      }
+      return 0
+    }
+
     project.sizes = project.products.filter((p) => p.size && p.size !== 'all').map((p) => p)
     // Group sizes by parent_id or id
+
     project.grouped_sizes = project.products.reduce((acc, cur) => {
       if (!cur.size || cur.size === 'all') {
         return acc
@@ -196,6 +220,12 @@ class Project {
       })
       return acc
     }, {})
+
+    for (const p in project.grouped_sizes) {
+      project.grouped_sizes[p].sizes.sort((a, b) => {
+        return getSizeSort(a.size) - getSizeSort(b.size)
+      })
+    }
 
     if (!project.partner_distribution) {
       project.price_distribution = null
