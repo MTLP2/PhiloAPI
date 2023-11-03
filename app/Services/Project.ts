@@ -938,9 +938,7 @@ class Project {
         'vod.step',
         'vod.stock as related_stock_shop',
         'vod.shipping_discount as related_shipping_discount',
-        DB.raw(
-          'vod.goal - vod.count - vod.count_other - vod.count_distrib - vod.count_bundle as related_stock'
-        )
+        'vod.stock as related_stock'
       )
       .where('item.project_id', id)
       .where('is_active', 1)
@@ -976,7 +974,10 @@ class Project {
       if (item.step === 'in_progress') {
         if (item.is_shop && item.related_stock_shop > 0) {
           soldout = false
-        } else if (!item.is_shop && (item.related_stock > 0 || item.type === 'funding')) {
+        } else if (
+          !item.is_shop &&
+          (item.related_stock > 0 || item.related_stock === null || item.type === 'funding')
+        ) {
           soldout = false
         }
       }
