@@ -49,14 +49,20 @@ class Stock {
             ? stocks.find((s) => s.product_id === p && s.type === t)?.quantity -
               stocks.find((s) => s.product_id === p && s.type === t)?.reserved
             : null
+
         if (qty === undefined) {
           res[t] = 0
         }
-        if (res[t] === undefined || qty < res[t]) {
+        if (
+          res[t] === undefined ||
+          (qty !== null && res[t] === null) ||
+          (qty !== null && qty < res[t])
+        ) {
           res[t] = qty
         }
       }
     }
+
     if (payload.is_preorder && res.preorder !== null) {
       for (const t of trans) {
         if (res[t] === null || res.preorder < (res[t] || 0)) {
@@ -407,9 +413,8 @@ class Stock {
       .where('project_product.project_id', payload.project_id)
       .where((query) => {
         if (payload.sizes && typeof payload.sizes === 'string') {
-          query.where('size', payload.sizes).orWhere('size', 'all')
+          query.whereNull('size').orWhere('size', payload.sizes).orWhere('size', 'all')
         }
-
         if (payload.sizes && Object.keys(payload.sizes).length) {
           query
             .whereNull('size')
