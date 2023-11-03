@@ -411,7 +411,7 @@ class Box {
     switch (params.type) {
       case 'one':
         shipping = await Cart.calculateShipping({
-          transporters: { daudin: true },
+          transporter: 'daudin',
           pickup: params.shipping_type === 'pickup',
           quantity: 1,
           insert: 5,
@@ -430,7 +430,7 @@ class Box {
         break
       case 'two':
         shipping = await Cart.calculateShipping({
-          transporters: { daudin: true },
+          transporter: 'daudin',
           pickup: params.shipping_type === 'pickup',
           weight: 900,
           quantity: 2,
