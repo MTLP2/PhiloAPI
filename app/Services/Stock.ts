@@ -27,7 +27,11 @@ class Stock {
           query.where('is_distrib', payload.is_distrib)
         }
         if (payload.sizes) {
-          query.whereNull('size').orWhereIn('pp.product_id', Object.values(payload.sizes))
+          query.where((query) => {
+            query.whereNull('size').orWhereIn('pp.product_id', Object.values(payload.sizes))
+          })
+        } else {
+          query.whereNull('parent_id')
         }
       })
       .all()
@@ -35,7 +39,9 @@ class Stock {
     const trans = <string[]>[...new Set(stocks.filter((p) => p.type).map((p) => p.type))]
     const products = <string[]>[...new Set(stocks.map((p) => p.product_id))]
 
-    const res = {}
+    const res: {
+      [key: string]: number | null
+    } = {}
     for (const t of trans) {
       for (const p of products) {
         let qty =
@@ -48,6 +54,13 @@ class Stock {
         }
         if (res[t] === undefined || qty < res[t]) {
           res[t] = qty
+        }
+      }
+    }
+    if (payload.is_preorder && res.preorder !== null) {
+      for (const t of trans) {
+        if (res[t] === null || res.preorder < (res[t] || 0)) {
+          res[t] = res.preorder
         }
       }
     }
@@ -463,7 +476,7 @@ class Stock {
     }
 
     const rest = await Stock.setStockProject({ projectIds: [payload.project_id] })
-    if (rest[payload.project_id] < 1) {
+    if (rest[payload.project_id] !== null && rest[payload.project_id] < 1) {
       DB('vod').where('project_id', payload.project_id).update({
         step: 'successful'
       })

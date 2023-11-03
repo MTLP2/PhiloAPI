@@ -195,12 +195,8 @@ class Cart {
           const stocks = await Stock.byProject({
             project_id: item.project_id,
             is_preorder: item.type === 'vod',
-            // size: item.size
             sizes: item.chosen_sizes
           })
-          for (const [key, value] of Object.entries(stocks)) {
-            project[`stock_${key}`] = value
-          }
 
           const weight = item.quantity * (project.weight || Vod.calculateWeight(project))
 
@@ -245,6 +241,11 @@ class Cart {
               }
             }
             params.shops[item.group_shipping].items.push(item)
+          }
+
+          if (Object.values(stocks).every((s: number) => s !== null && s === 0)) {
+            cart.error = 'no_stock'
+            params.shops[item.group_shipping].error = 'no_stock'
           }
         }
       }
@@ -372,7 +373,7 @@ class Cart {
           cart.promo_error = cart.shops[s].promo_error
         }
 
-        if (cart.shops[s].error) {
+        if (cart.shops[s].error && !cart.error) {
           cart.error = cart.shops[s].error
         }
 
@@ -546,6 +547,7 @@ class Cart {
     shop.slug = user.slug
     shop.country_id = user.country_id
     shop.transporter = p.transporter
+    shop.error = p.error
     shop.type = p.type
     shop.items = []
 
