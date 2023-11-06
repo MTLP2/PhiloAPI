@@ -31,8 +31,8 @@ class PennyLane {
       payload = {
         // start: moment().subtract('1', 'month').startOf('month').format('YYYY-MM-DD'),
         // end: moment().subtract('1', 'month').endOf('month').format('YYYY-MM-DD')
-        start: '2023-01-01',
-        end: '2023-01-31'
+        start: '2023-02-01',
+        end: '2023-02-31'
       }
     }
 
@@ -44,9 +44,9 @@ class PennyLane {
       .whereBetween('invoice.date', [payload.start, payload.end + ' 23:59'])
       .orderBy('date', 'asc')
       // .where('id', 153622)
-      // .limit(20)
       .all()
     console.log(invoices.length)
+
     for (const invoice of invoices) {
       await PennyLane.exportInvoice(invoice.id)
     }
