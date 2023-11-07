@@ -179,7 +179,7 @@ class Project {
     project.hide = project.hide ? project.hide.split(',') : []
 
     const getSizeSort = (s: string) => {
-      const size = s.toUpperCase()
+      const size = s && s.toUpperCase()
       if (size === 'XXS') {
         return 0
       } else if (size === 'XS') {
@@ -201,25 +201,40 @@ class Project {
     }
 
     project.sizes = project.products.filter((p) => p.size && p.size !== 'all').map((p) => p)
-    // Group sizes by parent_id or id
 
-    project.grouped_sizes = project.products.reduce((acc, cur) => {
-      if (!cur.size || cur.size === 'all') {
-        return acc
+    const sizes = {}
+    for (const product of project.products) {
+      if (!product.parent_id) {
+        continue
       }
-
-      if (!acc[cur.parent_id || cur.id]) {
-        acc[cur.parent_id || cur.id] = {
-          name: cur.parent_name,
-          sizes: []
+      if (!sizes[product.parent_id]) {
+        sizes[product.parent_id] = {
+          name: product.parent_name,
+          id: product.parent_id,
+          sizes: {}
         }
       }
-      acc[cur.parent_id || cur.id].sizes.push({
-        id: cur.id,
-        size: cur.size
-      })
-      return acc
-    }, {})
+      if (project.is_shop !== product.is_preorder) {
+        if (!sizes[product.parent_id].sizes[product.size]) {
+          sizes[product.parent_id].sizes[product.size] = {
+            id: product.id,
+            size: product.size,
+            quantity: 0
+          }
+        }
+        if (!project.is_shop && product.type === 'preorder') {
+          sizes[product.parent_id].sizes[product.size].quantity = product.quantity
+        }
+        if (project.is_shop) {
+          sizes[product.parent_id].sizes[product.size].quantity += product.quantity
+        }
+      }
+    }
+    project.grouped_sizes = {}
+    for (const product of Object.values(sizes) as any) {
+      project.grouped_sizes[product.id] = product
+      project.grouped_sizes[product.id].sizes = Object.values(product.sizes)
+    }
 
     for (const p in project.grouped_sizes) {
       project.grouped_sizes[p].sizes.sort((a, b) => {
@@ -909,6 +924,9 @@ class Project {
 
     const productsPromise = DB()
       .select(
+        'stock.quantity',
+        'stock.type',
+        'stock.is_preorder',
         'product.id',
         'product.size',
         'product.parent_id',
@@ -916,6 +934,8 @@ class Project {
       )
       .from('product')
       .join('project_product', 'project_product.product_id', 'product.id')
+      .join('stock', 'stock.product_id', 'product.id')
+      .where('is_distrib', false)
       .leftJoin('product as parent_product', 'parent_product.id', 'product.parent_id')
       .where('project_product.project_id', id)
       .all()
