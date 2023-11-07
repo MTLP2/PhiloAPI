@@ -2166,9 +2166,9 @@ class Cart {
               label: project.label_name,
               transporter: shop.transporter,
               styles: project.styles.slice(0, 30),
-              picture: `${Env.get('STORAGE_URL')}/projects/${
-                project.picture || project.id
-              }/vinyl.png`,
+              picture: `${Env.get('STORAGE_URL')}/projects/${project.picture || project.id}/${
+                project.picture_project || 'vinyl'
+              }.png`,
               genres: project.genres,
               device: order.device,
               price: item.price
