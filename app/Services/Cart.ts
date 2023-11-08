@@ -243,7 +243,7 @@ class Cart {
             params.shops[item.group_shipping].items.push(item)
           }
 
-          if (Object.values(stocks).every((s: number) => s !== null && s === 0)) {
+          if (Object.values(stocks).every((s: number) => s !== null && s <= 0)) {
             cart.error = 'no_stock'
             params.shops[item.group_shipping].error = 'no_stock'
           }
