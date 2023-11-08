@@ -307,6 +307,7 @@ class User {
       .select('p.*')
       .join('vod', 'vod.project_id', 'p.id')
       .where('vod.user_id', user.id)
+      .where('is_visible', true)
       .whereIn('vod.step', ['in_progress', 'successful'])
       .all()
 
