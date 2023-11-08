@@ -45,14 +45,10 @@ class Project {
 
     project.step = project.sold_out ? 'successful' : project.step
 
-    if (project.sizes) {
-      project.sizes = Object.entries(JSON.parse(project.sizes))
-        .filter(([size, value]) => value)
-        .map(([size, value]) => size)
-      if (project.sizes.length === 0) {
-        project.sizes = null
-      }
+    if (project.barcode && project.barcode.indexOf('MERCH') > -1) {
+      project.sizes = true
     }
+    delete project.barcode
 
     if (project.sold_out && project.item_stock > 0) {
       project.copies_left = project.item_stock
@@ -261,7 +257,7 @@ class Project {
         currency: project.currency
       })
 
-      project.prices_ship_discount = project.shipping_discount
+      project.prices_ship_discount = project.shippinfing_discount
         ? Object.keys(project.prices).reduce((acc, key) => {
             acc[key] = project.prices[key] + project.shipping_discount
             return acc
@@ -441,6 +437,7 @@ class Project {
       'v.is_shop',
       'v.color_vinyl',
       'v.show_stock',
+      'v.barcode',
       'item.stock as item_stock',
       'item.price as item_price',
       'v.shipping_discount',
