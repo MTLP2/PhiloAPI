@@ -32,7 +32,7 @@ class PennyLane {
         // start: moment().subtract('1', 'month').startOf('month').format('YYYY-MM-DD'),
         // end: moment().subtract('1', 'month').endOf('month').format('YYYY-MM-DD')
         start: '2023-03-01',
-        end: '2023-03-31'
+        end: '2023-09-31'
       }
     }
 
