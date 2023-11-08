@@ -545,12 +545,12 @@ class Whiplash {
       .leftJoin('stock as stock_us', (query) => {
         query.on('stock_us.product_id', 'product.id')
         query.on('stock_us.type', DB.raw('?', ['whiplash']))
-        query.on('stock_us.preorder', DB.raw('?', ['0']))
+        query.on('stock_us.is_preorder', DB.raw('?', ['0']))
       })
       .leftJoin('stock as stock_uk', (query) => {
         query.on('stock_uk.product_id', 'product.id')
         query.on('stock_uk.type', DB.raw('?', ['whiplash_uk']))
-        query.on('stock_uk.preorder', DB.raw('?', ['0']))
+        query.on('stock_uk.is_preorder', DB.raw('?', ['0']))
       })
       .whereNotNull('barcode')
       .where((query: any) => {
@@ -659,6 +659,8 @@ class Whiplash {
                 new_quantity: uk
               })
             }
+            console.log(newStocks)
+            return
             if (us !== products[item.sku].stock_whiplash) {
               Stock.save({
                 product_id: products[item.sku].id,
@@ -679,6 +681,7 @@ class Whiplash {
         }
       }
 
+      console.log(newStocks)
       if (newStocks.length > 0) {
         await Notification.sendEmail({
           to: ['ismail@diggersfactory.com', 'alexis@diggersfactory.com'].join(','),

@@ -595,7 +595,7 @@ class Elogik {
       .leftJoin('stock', (query) => {
         query.on('stock.product_id', 'product.id')
         query.on('stock.type', '=', DB.raw('?', ['daudin']))
-        query.on('stock.preorder', '=', DB.raw('?', ['0']))
+        query.on('stock.is_preorder', '=', DB.raw('?', ['0']))
       })
       .whereIn(
         'barcode',
