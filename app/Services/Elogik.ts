@@ -774,9 +774,11 @@ class Elogik {
           listeFournisseurs: [{ codeFournisseur: 'DGF', refFournisseur: payload.barcode }]
         }
       })
-      await DB('product').where('id', payload.id).update({
-        ekan_id: item.refEcommercant
-      })
+      if (item.refEcommercant) {
+        await DB('product').where('id', payload.id).update({
+          ekan_id: item.refEcommercant
+        })
+      }
     }
 
     return item

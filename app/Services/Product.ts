@@ -220,13 +220,13 @@ class Product {
 
     await item.save()
 
-    if (item.barcode) {
-      await Whiplash.setProduct({ id: item.id })
-      await Elogik.createItem(item)
-    }
     const projects = await DB('project_product').where('product_id', item.id).all()
     for (const project of projects) {
       Product.setBarcodes({ project_id: project.project_id })
+    }
+    if (item.barcode) {
+      await Whiplash.setProduct({ id: item.id })
+      await Elogik.createItem(item)
     }
 
     return item
