@@ -557,6 +557,7 @@ class Product {
       .join('stock', 'stock.product_id', 'product.id')
       .where('stock.type', '!=', 'preorder')
       .where('stock.type', '!=', 'null')
+      .where('stock.is_preorder', false)
       .where('vod.user_id', payload.user_id)
       .all()
 
