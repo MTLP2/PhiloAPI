@@ -31,8 +31,8 @@ class PennyLane {
       payload = {
         // start: moment().subtract('1', 'month').startOf('month').format('YYYY-MM-DD'),
         // end: moment().subtract('1', 'month').endOf('month').format('YYYY-MM-DD')
-        start: '2023-03-01',
-        end: '2023-09-31'
+        start: '2023-10-01',
+        end: '2023-10-31'
       }
     }
 
@@ -57,7 +57,7 @@ class PennyLane {
   static async exportInvoice(id: number) {
     const invoice = await Invoice.find(id)
     console.log(invoice.id)
-    /**
+
     let customer: any = await PennyLane.execute(`customers/${invoice.user_id}`)
     if (customer.error === 'Not found') {
       const params = {
@@ -84,12 +84,14 @@ class PennyLane {
     if (customer.message) {
       return customer
     }
-    **/
+    /**
     const customer = {
       customer: {
         source_id: 'a655cabf-03f7-47eb-8130-9cff60202ecb'
       }
     }
+    **/
+
     console.log(invoice.customer.country_id)
     let planItemNumber: string | null = null
     if (invoice.customer.country_id === 'FR') {
@@ -129,6 +131,7 @@ class PennyLane {
         }
       }
     })
+    console.log(imp)
 
     if (!imp.error || imp.error === 'Une facture avec le numéro fourni a déjà été créée') {
       console.log(invoice.id, 'OK')
