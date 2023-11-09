@@ -1450,6 +1450,7 @@ class Project {
         .join('item', 'item.related_id', 'p.id')
         .whereIn('item.project_id', params.refs)
         .where('v.step', 'in_progress')
+        .where('is_visible', true)
         .where((query) => {
           query.where('is_shop', false)
           query.orWhere('v.stock', '>', 0)
@@ -1465,6 +1466,7 @@ class Project {
         .join('vod as v', 'v.project_id', 'p.id')
         .whereNotIn('p.id', params.refs)
         .where('v.step', 'in_progress')
+        .where('is_visible', true)
         .whereNotIn(
           'p.id',
           reco.map((r) => r.id)
@@ -1499,6 +1501,7 @@ class Project {
             query.orWhere('v.stock', '>', 0)
           })
           .where('v.step', 'in_progress')
+          .where('is_visible', true)
           // .where('v.is_shop', params.shop)
           .whereExists(
             DB.raw(`
@@ -1519,6 +1522,7 @@ class Project {
         .select(...selects)
         .join('vod as v', 'v.project_id', 'p.id')
         .where('v.step', 'in_progress')
+        .where('is_visible', true)
         .where((query) => {
           query.where('is_shop', false)
           query.orWhere('v.stock', '>', 0)
