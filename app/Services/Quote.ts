@@ -167,7 +167,7 @@ class Quote {
     for (const p of Object.keys(prices)) {
       for (const f of Object.keys(factories)) {
         if (factories[f].prices[p][params[p]] === false) {
-          disableFactories[f] = true
+          // disableFactories[f] = true
           continue
         }
       }
