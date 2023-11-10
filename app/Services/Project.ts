@@ -1718,7 +1718,7 @@ class Project {
 
     if (params.user_id) {
       projects.where('user_id', params.user_id)
-      if (!params.cashable) {
+      if (params.cashable) {
         projects.where('send_statement', true)
       }
     } else {
