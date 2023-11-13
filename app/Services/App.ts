@@ -125,7 +125,11 @@ class App {
         await Whiplash.syncStocks()
       }
 
-      if (hour === 3) {
+      if (hour === 2) {
+        await App.uploadOfficialCharts({
+          country: 'GB'
+        })
+      } else if (hour === 3) {
         await App.currencies()
         await App.generateSitemap()
         await App.exportProductReviewFeed()
@@ -2009,8 +2013,8 @@ class App {
     return text
   }
 
-  static async getOfficialCharts(payload: { country: 'FR' | 'GB' }) {
-    const date = moment().subtract(1, 'days')
+  static async getOfficialCharts(payload: { date: string; country: 'FR' | 'GB' }) {
+    const date = moment(payload.date)
     const orders: {
       order_shop_id: number
       step: string
@@ -2057,14 +2061,13 @@ class App {
       .whereRaw(`DATE_FORMAT(os.date_export, "%Y-%m-%d") = '${date.format('YYYY-MM-DD')}'`)
       .all()
 
-    console.log(DB.getSql())
     const currenciesDB = await Utils.getCurrenciesDb()
     const currencies = await Utils.getCurrencies(
       payload.country === 'FR' ? 'EUR' : 'GBP',
       currenciesDB
     )
 
-    console.log(orders)
+    console.log('orders Uk =>', orders.length)
     const zipCode = {}
 
     for (const i in orders) {
@@ -2093,11 +2096,9 @@ class App {
       }
     }
 
-    console.log(zipCode)
-
-    console.log(orders)
+    let file: string = ''
     if (payload.country === 'FR') {
-      const csv = Utils.arrayToCsv(
+      file = Utils.arrayToCsv(
         [
           { name: 'date', index: 'date_fr' },
           { name: 'postcode', index: 'zip_code' },
@@ -2109,27 +2110,60 @@ class App {
         ],
         orders
       )
-      return csv
     } else {
-      let csv = ''
-
       for (const [zip, barcodes] of Object.entries(zipCode) as any) {
-        csv += `0${zip.padEnd(5, ' ')}${date.format('YYMMDD')}\n`
+        file += `0${zip.padEnd(5, ' ')}${date.format('YYMMDD')}\n`
         let i = 0
         for (const [barcode, prices] of Object.entries(barcodes) as any) {
           for (const [price, quantity] of Object.entries(prices) as any) {
-            csv += `1${barcode.padEnd(13, ' ')}${quantity.toString().padStart(6, '0')}${price
+            file += `1${barcode.padEnd(13, ' ')}${quantity.toString().padStart(6, '0')}${price
               .toString()
               .padStart(5, '0')}\n`
             i++
           }
         }
-        csv += `9${zip.padEnd(5, ' ')}${i.toString().padStart(5, '0')}\n`
+        file += `9${zip.padEnd(5, ' ')}${i.toString().padStart(5, '0')}\n`
       }
       // hmv060101.asc
       // <retailer/text><date>.asc
-      return csv
     }
+    return file
+  }
+
+  static async uploadOfficialCharts(payload: { country: 'FR' | 'GB' }) {
+    const date = moment().subtract(1, 'days')
+    const file = await App.getOfficialCharts({
+      date: date.format('YYYY-MM-DD'),
+      country: payload.country
+    })
+
+    let client = new SftpClient()
+    let config = {
+      host: 'SFTP1.ukchart.co.uk',
+      port: 22,
+      username: 'diggers',
+      password: 'Z5DkDZwgkp',
+      algorithms: {
+        cipher: ['aes256-cbc']
+      }
+    }
+
+    client
+      .connect(config)
+      .then(() => {
+        console.log('connected to charts')
+        console.log(`DF${date.format('DDMMYY')}.asc`)
+        client.put(Buffer.from(file), `DF${date.format('DDMMYY')}.asc`)
+        setTimeout(() => {
+          console.log('close connection to charts')
+          client.end()
+        }, 10000)
+      })
+      .catch((err) => {
+        console.error(err.message)
+      })
+
+    return file
   }
 
   static async uploadCharts() {
@@ -2160,10 +2194,6 @@ class App {
       .catch((err) => {
         console.error(err.message)
       })
-  }
-
-  static async uploadChartsUk() {
-    const uk = await App.getOfficialCharts()
   }
 }
 
