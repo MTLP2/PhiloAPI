@@ -315,6 +315,7 @@ class Utils {
 
       for (const filter of filters) {
         if (filter && filter.value) {
+          filter.value = decodeURIComponent(filter.value)
           query.where((q) => {
             const values = filter.value.split(',')
             for (const value of values) {
@@ -330,26 +331,26 @@ class Utils {
                   )
                 }
                 if (decodedValue.indexOf('!=null') !== -1) {
-                  q.orWhereNotNull(column)
+                  q.whereNotNull(column)
                 } else if (decodedValue.indexOf('=null') !== -1) {
-                  q.orWhereNull(column)
+                  q.whereNull(column)
                 } else if (decodedValue.indexOf('<=') !== -1) {
                   const f = decodedValue.replace('<=', '')
-                  q.orWhere(column, '<=', f)
+                  q.where(column, '<=', f)
                 } else if (decodedValue.indexOf('>=') !== -1) {
                   const f = decodedValue.replace('>=', '')
-                  q.orWhere(column, '>=', f)
+                  q.where(column, '>=', f)
                 } else if (decodedValue.indexOf('<') !== -1) {
                   const f = decodedValue.replace('<', '')
-                  q.orWhere(column, '<', f)
+                  q.where(column, '<', f)
                 } else if (decodedValue.indexOf('>') !== -1) {
                   const f = decodedValue.replace('>', '')
-                  q.orWhere(column, '>', f)
+                  q.where(column, '>', f)
                 } else if (decodedValue.indexOf('=') !== -1) {
                   const f = decodedValue.replace('=', '')
-                  q.orWhere(column, '=', f)
+                  q.were(column, '=', f)
                 } else {
-                  q.orWhere(column, 'LIKE', `%${decodedValue}%`)
+                  q.where(column, 'LIKE', `%${decodedValue}%`)
                 }
               }
             }
