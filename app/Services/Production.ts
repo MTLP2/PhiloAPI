@@ -2471,7 +2471,6 @@ class Production {
   }
 
   static async getProjectProductions(params) {
-    console.log(params)
     const { data: productions } = await Production.all({
       project_id: params.id,
       user: { is_team: params.is_team || false }
