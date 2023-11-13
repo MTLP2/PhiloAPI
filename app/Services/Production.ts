@@ -515,14 +515,18 @@ class Production {
     item.currency = params.currency || null
     item.quote_price = params.quote_price || null
     item.quote_com = params.quote_com || null
+    item.quote_total = params.quote_total || null
     item.form_price = params.form_price || null
     item.form_com = params.form_com || null
+    item.form_total = params.form_total || null
     item.shipping_com = params.shipping_com || null
     item.shipping_estimation = params.shipping_estimation || null
+    item.shipping_total = params.shipping_total || null
     item.rest_pay_preprod = params.rest_pay_preprod || null
     item.rest_pay_prod = params.rest_pay_prod || null
     item.cost_comment = params.cost_comment || null
     item.shipping_final = params.shipping_final || null
+    item.prod_price = params.prod_price || null
     item.final_price = params.final_price || null
     item.notif = params.notif
     item.is_billing = params.is_billing
@@ -2467,9 +2471,10 @@ class Production {
   }
 
   static async getProjectProductions(params) {
+    console.log(params)
     const { data: productions } = await Production.all({
       project_id: params.id,
-      user: { is_team: false }
+      user: { is_team: params.is_team || false }
     })
     return productions
   }

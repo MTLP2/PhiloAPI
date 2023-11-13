@@ -130,7 +130,9 @@ class ProductionController {
     return Production.saveComment(params)
   }
 
-  getProjectProductions({ params }) {
+  async getProjectProductions({ params, user }) {
+    params.user = user
+    params.is_team = await await Utils.isTeam(user.id)
     return Production.getProjectProductions(params)
   }
 
