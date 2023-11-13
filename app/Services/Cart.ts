@@ -1596,7 +1596,10 @@ class Cart {
 
           const totalCurrenry = item.price * currencyRateProject
           const rest = totalCurrenry - item.price_project
-          const feeChange = item.quantity * (rest / currencyRateProject)
+          let feeChange = 0
+          if (rest > 0) {
+            feeChange = item.quantity * (rest / currencyRateProject)
+          }
 
           let chosenSizes: string | null = null
           if (item.chosen_sizes) {
