@@ -137,9 +137,9 @@ class Invoice {
 
     if (params.user_id === 0) {
       const cus = await Customer.save(params.customer)
-
       const [userId] = await DB('user').insert({
         name: params.customer.name || `${params.customer.firstname} ${params.customer.lastname}`,
+        customer_id: cus.id,
         customer_invoice_id: cus.id,
         country_id: params.customer.country_id,
         email: null,

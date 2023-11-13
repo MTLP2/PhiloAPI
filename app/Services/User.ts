@@ -217,8 +217,9 @@ class User {
 
     if (params.with_address) {
       users.select('id', 'name', 'customer_id', 'customer_invoice_id', 'slug')
-      users.belongsTo('customer')
-      users.belongsTo('customer', 'id', 'customer_invoice', 'customer_invoice_id')
+      users
+        .belongsTo('customer')
+        .belongsTo('customer', '*', 'customer_invoice', 'customer_invoice_id')
     } else {
       users.select('id', 'name', 'slug')
     }
