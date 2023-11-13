@@ -69,10 +69,9 @@ class App {
       }
       if (moment().format('E') === '2') {
         await Payment.alertDatePassed()
-        await Invoice.sendUnpaidInvoices()
+        await App.sendTeamSummaryProjects()
       }
       if (moment().format('E') === '3') {
-        await Statement.sendBalances()
       }
       if (moment().format('E') < '6') {
         await App.alertToSync()
@@ -2194,6 +2193,103 @@ class App {
       .catch((err) => {
         console.error(err.message)
       })
+  }
+
+  static async sendTeamSummaryProjects() {
+    const users = {}
+    const invoices = await Invoice.getUnpaidInvoicesByTeam()
+    const balances = await Statement.getBalancesByTeam()
+    for (const u in invoices) {
+      if (!users[u]) {
+        users[u] = {
+          ...invoices[u],
+          invoices: [],
+          balances: []
+        }
+      }
+      users[u].invoices = invoices[u].items
+    }
+    for (const u in balances) {
+      if (!users[u]) {
+        users[u] = {
+          ...balances[u],
+          invoices: [],
+          balances: []
+        }
+      }
+      users[u].balances = balances[u].projects
+    }
+
+    for (const u in users) {
+      const workbook = new Excel.Workbook()
+
+      if (balances[u]) {
+        const workBalance = workbook.addWorksheet('Balances')
+
+        workBalance.columns = [
+          { header: 'Id', key: 'id' },
+          { header: 'Artist', key: 'artist_name', width: 20 },
+          { header: 'Project', key: 'name', width: 20 },
+          { header: 'Licence', key: 'is_licence' },
+          { header: 'Type', key: 'type', width: 13 },
+          { header: 'Profits', key: 'profits', width: 13 },
+          { header: 'Invoices costs', key: 'costs_invoiced', width: 13 },
+          { header: 'Statement costs', key: 'costs_statement', width: 13 },
+          { header: 'Storage', key: 'storage', width: 13 },
+          { header: 'Pay Artist', key: 'payment_artist', width: 13 },
+          { header: 'Pay Diggers', key: 'payment_diggers', width: 13 },
+          { header: 'Balance', key: 'balance', width: 13 },
+          { header: 'Currency', key: 'currency' },
+          { header: 'Link', key: 'link', width: 20 }
+        ]
+        workBalance.addRows(
+          balances[u].projects.map((p) => {
+            return {
+              ...p,
+              link: `https://www.diggersfactory.com/sheraf/project/${p.id}`
+            }
+          })
+        )
+      }
+
+      if (invoices[u]) {
+        const workInv = workbook.addWorksheet('Invoices')
+        workInv.columns = [
+          { header: 'Date', key: 'date', width: 13 },
+          { header: 'N°Facture', key: 'number' },
+          { header: 'Status', key: 'status' },
+          { header: 'Project', key: 'project', width: 20 },
+          { header: 'Licence', key: 'is_licence' },
+          { header: 'Type', key: 'type', width: 13 },
+          { header: 'Name', key: 'name', width: 20 },
+          { header: 'Total', key: 'total' },
+          { header: 'Currency', key: 'currency' },
+          { header: 'Link', key: 'link', width: 20 }
+        ]
+        workInv.addRows(
+          invoices[u].items.map((p) => {
+            return {
+              ...p,
+              link: `https://www.diggersfactory.com/sheraf/project/${p.project_id}`
+            }
+          })
+        )
+      }
+
+      const file = await workbook.xlsx.writeBuffer()
+      await Notification.sendEmail({
+        to: users[u].email || 'alexis@diggersfactory.com',
+        subject: 'Summary projects',
+        html: `<p>Summary projects in attachment</p>`,
+        attachments: [
+          {
+            filename: 'Summary.xlsx',
+            content: file
+          }
+        ]
+      })
+    }
+    return { success: true }
   }
 }
 

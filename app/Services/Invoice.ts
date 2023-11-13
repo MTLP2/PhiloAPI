@@ -1080,13 +1080,14 @@ class Invoice {
     ])
   }
 
-  static async sendUnpaidInvoices() {
+  static async getUnpaidInvoicesByTeam() {
     const invoices = await DB('invoice')
       .select(
         'invoice.*',
         'project.name as project',
         'project.artist_name',
         'vod.com_id',
+        'vod.is_licence',
         'user.email',
         'user.name as user'
       )
@@ -1118,46 +1119,6 @@ class Invoice {
       com[invoice.com_id].items.push(invoice)
     }
 
-    for (const co of Object.values(com) as any) {
-      const html = `
-<style>
-  td {
-    padding: 2px 5px;
-    border-top: 1px solid #F0F0F0;
-  }
-  th {
-    padding: 2px 5px;
-    text-align: left;
-  }
-</style>
-<table>
-  <tr>
-    <th>Date</th>
-    <th>Project</th>
-    <th>Type</th>
-    <th>Name</th>
-    <th>Cost</th>
-    <th>Status</th>
-  </tr>
-  ${co.items
-    .map(
-      (item) => `<tr>
-<td>${item.date}</td>
-<td><a href="https://www.diggersfactory.com/sheraf/project/${item.project_id}/invoices">${item.artist_name} - ${item.project}</a></td>
-<td>${item.category}</td>
-<td>${item.name}</td>
-<td>${item.total} ${item.currency}</td>
-<td>${item.status}</td>
-</tr>`
-    )
-    .join('')}
-</table>`
-      await Notification.sendEmail({
-        to: co.email,
-        subject: 'Unpaid invoices',
-        html: html
-      })
-    }
     return com
   }
 

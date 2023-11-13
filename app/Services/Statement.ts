@@ -1756,6 +1756,7 @@ class StatementService {
         'artist_name',
         'vod.currency',
         'vod.resp_prod_id',
+        'vod.is_licence',
         'vod.com_id',
         'statement_comment',
         'user.balance_comment',
@@ -2131,7 +2132,7 @@ class StatementService {
     return false
   }
 
-  static async sendBalances() {
+  static async getBalancesByTeam() {
     const balances = (await this.getBalances({
       start: '2001-01-01',
       end: moment().format('YYYY-MM-DD'),
@@ -2141,60 +2142,16 @@ class StatementService {
 
     const users = {}
     for (const project of balances) {
-      if (!users[project.com_email]) {
-        users[project.com_email] = []
+      if (!users[project.com_id]) {
+        users[project.com_id] = {
+          com_id: project.com_id,
+          email: project.com_email,
+          projects: []
+        }
       }
-      users[project.com_email].push(project)
+      users[project.com_id].projects.push(project)
     }
 
-    for (const [email, projects] of Object.entries(users) as [string, any[]][]) {
-      const html = `
-<style>
-  td {
-    padding: 2px 5px;
-    border-top: 1px solid #F0F0F0;
-  }
-  th {
-    padding: 2px 5px;
-    text-align: left;
-  }
-</style>
-<table>
-  <tr>
-    <th>Project</th>
-    <th>Profits</th>
-    <th>Invoiced costs</th>
-    <th>Statement costs</th>
-    <th>Storage</th>
-    <th>Pay Artist</th>
-    <th>Pay Diggers</th>
-    <th>Balance</th>
-    <th>Currency</th>
-  </tr>
-  ${projects
-    .map(
-      (item) => `<tr>
-<td><a href="https://www.diggersfactory.com/sheraf/project/${item.id}/invoices">${
-        item.artist_name
-      } - ${item.name}</a></td>
-<td>${Utils.round(item.profits)}</td>
-<td>${Utils.round(item.costs_invoiced)}</td>
-<td>${Utils.round(item.costs_statement)}</td>
-<td>${Utils.round(item.storage)}</td>
-<td>${Utils.round(item.payment_artist)}</td>
-<td>${Utils.round(item.payment_diggers)}</td>
-<td>${Utils.round(item.balance)}</td>
-<td>${item.currency}</td>
-</tr>`
-    )
-    .join('')}
-</table>`
-      await Notification.sendEmail({
-        to: email,
-        subject: 'Balance projects',
-        html: html
-      })
-    }
     return users
   }
 
