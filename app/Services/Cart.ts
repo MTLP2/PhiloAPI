@@ -1139,6 +1139,12 @@ class Cart {
       currencies[c.id] = 1 / c.value
     }
 
+    if (params.country_id === 'RU') {
+      return {
+        error: 'no_shipping'
+      }
+    }
+
     let transporters: { [key: string]: boolean }
     if (params.transporter) {
       transporters = { [params.transporter]: true }
