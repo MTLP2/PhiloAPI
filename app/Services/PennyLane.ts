@@ -43,9 +43,8 @@ class PennyLane {
       .where('is_sync', false)
       .whereBetween('invoice.date', [payload.start, payload.end + ' 23:59'])
       .orderBy('date', 'asc')
-      // .where('id', 153622)
       .all()
-    console.log(invoices.length)
+    console.log('invoice => ', invoices.length)
 
     for (const invoice of invoices) {
       await PennyLane.exportInvoice(invoice.id)
@@ -56,13 +55,12 @@ class PennyLane {
 
   static async exportInvoice(id: number) {
     const invoice = await Invoice.find(id)
-    console.log(invoice.id)
 
     let customer: any = await PennyLane.execute(`customers/${invoice.user_id}`)
     if (customer.error === 'Not found') {
       const params = {
         source_id: invoice.user_id ? invoice.user_id.toString() : undefined,
-        customer_type: invoice.customer.type,
+        customer_type: !invoice.customer.name ? 'individual' : 'company',
         name: invoice.customer.name,
         first_name: invoice.customer.firstname,
         last_name: invoice.customer.lastname,
@@ -73,7 +71,6 @@ class PennyLane {
         country_alpha2: invoice.customer.country_id,
         emails: invoice.user_email ? [invoice.user_email] : []
       }
-
       customer = await PennyLane.execute('customers', {
         method: 'POST',
         params: {
@@ -81,7 +78,7 @@ class PennyLane {
         }
       })
     }
-    if (customer.message) {
+    if (customer.message || customer.error) {
       return customer
     }
     /**
@@ -91,8 +88,6 @@ class PennyLane {
       }
     }
     **/
-
-    console.log(invoice.customer.country_id)
     let planItemNumber: string | null = null
     if (invoice.customer.country_id === 'FR') {
       planItemNumber = '7071'
@@ -131,7 +126,6 @@ class PennyLane {
         }
       }
     })
-    console.log(imp)
 
     if (!imp.error || imp.error === 'Une facture avec le numéro fourni a déjà été créée') {
       console.log(invoice.id, 'OK')
