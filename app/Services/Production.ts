@@ -120,14 +120,14 @@ class Production {
     const factories = await DB('production')
       .select(
         'factory',
-        DB.raw(`date_format(date_factory, '%Y-%m') as date`),
+        DB.raw(`date_format(date_prod, '%Y-%m') as date`),
         DB.raw('sum(quantity) as quantity')
       )
-      .whereNotNull('date_factory')
+      .whereNotNull('date_prod')
       .whereNotNull('factory')
       .groupBy('factory')
       .groupBy('date')
-      .where('date_factory', '>', moment().subtract(6, 'months').format('YYYY-MM-DD'))
+      .where('date_prod', '>', moment().subtract(6, 'months').format('YYYY-MM-DD'))
       .all()
 
     const res = {}

@@ -1909,7 +1909,7 @@ class Stats {
       .all()
 
     const productionsPromise = await DB('production')
-      .select('date_preprod', 'date_factory', 'factory', 'quantity', 'quantity_pressed')
+      .select('date_prod', 'date_factory', 'factory', 'quantity', 'quantity_pressed')
       .where('production.is_delete', false)
       .all()
 
@@ -2577,7 +2577,7 @@ class Stats {
     }
 
     for (const prod of productions) {
-      const start = moment(prod.date_preprod).format(format)
+      const start = moment(prod.date_prod).format(format)
       const end = moment(prod.date_factory).format(format)
 
       if (prod.factory === 'sna' || prod.factory === 'vdp') {
