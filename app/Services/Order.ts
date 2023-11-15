@@ -881,13 +881,39 @@ static toJuno = async (params) => {
       .belongsTo('customer')
       .where('order_manual.id', params.id)
       .first()
-
     item.address_pickup = item.address_pickup ? JSON.parse(item.address_pickup) : null
     item.barcodes = item.barcodes ? JSON.parse(item.barcodes) : null
+
+    for (const b in item.barcodes) {
+      const barcode = item.barcodes[b]
+      const product = await DB('product').where('barcode', barcode.barcode).first()
+      if (product) {
+        item.barcodes[b].title = product.name
+      }
+    }
+
     return item
   }
 
-  static saveManual = async (params) => {
+  static saveManual = async (params: {
+    id?: number
+    type: string
+    transporter: string
+    shipping_type: string
+    address_pickup?: string
+    email: string
+    order_shop_id?: number
+    tracking_number?: string
+    comment?: string
+    user_id?: number
+    barcodes: {
+      barcode: string
+      quantity: number
+    }[]
+    customer: CustomerDb
+    pending?: boolean
+    force?: boolean
+  }) => {
     let item: any = DB('order_manual')
 
     const prices = {}
@@ -921,7 +947,10 @@ static toJuno = async (params) => {
 
     if (params.id) {
       item = await DB('order_manual').find(params.id)
+
       if (item.date_export) {
+        item.comment = params.comment
+        await item.save()
         return false
       }
     } else {
@@ -933,7 +962,6 @@ static toJuno = async (params) => {
     item.shipping_type = params.shipping_type
     item.address_pickup = params.address_pickup
     item.email = params.email
-    item.quantity = params.quantity
     item.comment = params.comment
     item.order_shop_id = params.order_shop_id || null
     item.tracking_number = params.tracking_number || null
@@ -1088,47 +1116,59 @@ static toJuno = async (params) => {
     return item
   }
 
-  static saveManualInvoiceCo = async (item) => {
-    console.log(item)
-    /**
-    if (item.invoice_id) {
-      return (await Invoice.download({ params: { id: item.invoice_id, lang: 'en' } })).data
-    }
+  static getOrderManualInvoiceCo = async (params: {
+    id: number
+    type?: string
+    products: {
+      barcode: number
+      quantity: number
+      title?: string
+      price: number
+    }[]
+  }) => {
+    const order = await Order.findManual({ id: params.id })
+
+    const total = params.products.reduce((acc, prod) => {
+      return acc + prod.quantity * prod.price
+    }, 0)
 
     const invoice: any = {}
     invoice.date = moment().format('YYYY-MM-DD')
     invoice.type = 'invoice'
+    invoice.rom = params.type === 'rom'
     invoice.currency = 'EUR'
     invoice.compatibility = false
-    invoice.customer = item.customer
-    invoice.name = 'Invoice co - ' + prod.artist_name + ' - ' + prod.name
+    invoice.customer = order.customer
+    invoice.name = 'Invoice co'
     invoice.client = 'B2B'
     invoice.status = 'invoiced'
     invoice.category = 'shipping'
-    invoice.sub_total = Utils.round(params.price * prod.quantity)
+    invoice.sub_total = total
     invoice.tax = 0
-    invoice.total = invoice.sub_total
-    invoice.invoice_comment = prod.invoice_comment ? prod.invoice_comment.split('\n') : []
-    invoice.lines = [
-      {
-        name: `${prod.artist_name} - ${prod.name}`,
-        price: params.price,
+    invoice.total = total
+    invoice.invoice_comment = order.comment ? order.comment.split('\n') : []
+    invoice.lines = []
+    invoice.lines = params.products.map((prod) => {
+      return {
+        name: prod.title || '',
+        price: prod.price,
         quantity: prod.quantity,
-        total: invoice.sub_total
+        total: prod.price * prod.quantity
       }
-    ]
-
-    const res = await Invoice.save(invoice)
-    await DB('production_dispatch').where('id', params.dispatch_id).update({
-      invoice_id: res.id
     })
-    return (await Invoice.download({ params: { id: res.id, lang: 'en' } })).data
-    **/
+
+    return (
+      await Invoice.download({
+        params: {
+          lang: 'en',
+          invoice: invoice
+        }
+      })
+    ).data
   }
 
-  static packingList = async (params: { id: number; type: string }) => {
+  static packingList = async (params: { id: number; type?: string }) => {
     const order = await Order.findManual({ id: params.id })
-
     const items: {
       sender: string
       title: string
@@ -1147,13 +1187,12 @@ static toJuno = async (params) => {
 
     for (const barcode of order.barcodes) {
       const product = await DB('product').where('barcode', barcode.barcode).first()
-      console.log(product)
       items.push({
         sender: 'Diggers Factory',
-        title: product.name,
+        title: product?.name,
         quantity: barcode.quantity,
         barcode: barcode.barcode,
-        catnumber: product.catnumber,
+        catnumber: product?.catnumber,
         name: order.customer.name,
         contact: order.customer.firstname + ' ' + order.customer.lastname,
         email: order.email,

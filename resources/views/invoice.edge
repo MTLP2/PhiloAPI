@@ -303,10 +303,16 @@
       {{ t('invoice.exempt_vat') }}
     @endif
   </p>
+  @if(rom)
+  <p align="right" class="medium">
+    EORI = GB914711637000<br />
+  </p>
+  @else 
   <p align="right" class="medium">Code SH = 85238090<br />
     EORI = FR81364871400018<br />
     EORI UK = GB439120509000
   </p>
+  @endif
 
   <table class="border" align="right">
     <tr class="header">
@@ -390,6 +396,12 @@
     @each(line in invoice_comment)
       {{line}}<br />
     @endeach
+  </p>
+  @endif
+  @if(rom)
+  <p align="left" class="medium">
+    Incoterm: DAP<br />
+    Made in Europe
   </p>
   @endif
 </div>

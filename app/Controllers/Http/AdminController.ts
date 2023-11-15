@@ -865,12 +865,84 @@ class AdminController {
     return Order.allManual(params)
   }
 
-  saveOrderManual({ params }) {
-    return Order.saveManual(params)
+  async findOrderManual({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          id: schema.number()
+        }),
+        data: params
+      })
+      return Order.findManual(payload)
+    } catch (err) {
+      return { error: err.message, validation: err.messages }
+    }
   }
 
-  saveOrderManualInvoiceCo({ params }) {
-    return Order.saveManualInvoiceCo(params)
+  async saveOrderManual({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          id: schema.number.optional(),
+          type: schema.string(),
+          transporter: schema.string(),
+          shipping_type: schema.string(),
+          address_pickup: schema.string.optional(),
+          email: schema.string(),
+          comment: schema.string.optional(),
+          order_shop_id: schema.number.optional(),
+          tracking_number: schema.string.optional(),
+          user_id: schema.number.optional(),
+          barcodes: schema.array().members(
+            schema.object().members({
+              barcode: schema.string(),
+              quantity: schema.number()
+            })
+          ),
+          customer: schema.object().members({
+            type: schema.string(),
+            name: schema.string.optional(),
+            firstname: schema.string(),
+            lastname: schema.string(),
+            address: schema.string(),
+            zip_code: schema.string(),
+            city: schema.string(),
+            state: schema.string.optional(),
+            country_id: schema.string(),
+            phone: schema.string.optional()
+          }),
+          pending: schema.boolean.optional(),
+          force: schema.boolean.optional()
+        }),
+        data: params
+      })
+      return Order.saveManual(payload)
+    } catch (err) {
+      return { error: err.message, validation: err.messages }
+    }
+  }
+
+  async getOrderManualInvoiceCo({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          id: schema.number(),
+          type: schema.string.optional(),
+          products: schema.array().members(
+            schema.object().members({
+              barcode: schema.number(),
+              quantity: schema.number(),
+              title: schema.string.optional(),
+              price: schema.number()
+            })
+          )
+        }),
+        data: params
+      })
+      return Order.getOrderManualInvoiceCo(payload)
+    } catch (err) {
+      return { error: err.message, validation: err.messages }
+    }
   }
 
   async orderManuelPackingList({ params }) {
@@ -878,7 +950,7 @@ class AdminController {
       const payload = await validator.validate({
         schema: schema.create({
           id: schema.number(),
-          type: schema.string()
+          type: schema.string.optional()
         }),
         data: params
       })
