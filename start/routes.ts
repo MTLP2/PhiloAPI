@@ -551,6 +551,7 @@ Route.group(() => {
   Route.get('/order-manual', 'AdminController.getOrderManual')
   Route.post('/order-manual', 'AdminController.saveOrderManual')
   Route.post('/order-manual/:id/invoice-co', 'AdminController.saveOrderManualInvoiceCo')
+  Route.get('/order-manual/:id/packing-list', 'AdminController.orderManuelPackingList')
   Route.delete('/order-manual/:id', 'AdminController.deleteOrderManual')
   Route.get('/payments', 'AdminController.getPayments')
   Route.get('/payments/:id', 'AdminController.getPayment')

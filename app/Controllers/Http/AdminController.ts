@@ -873,6 +873,21 @@ class AdminController {
     return Order.saveManualInvoiceCo(params)
   }
 
+  async orderManuelPackingList({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          id: schema.number(),
+          type: schema.string()
+        }),
+        data: params
+      })
+      return Order.packingList(payload)
+    } catch (err) {
+      return { error: err.message, validation: err.messages }
+    }
+  }
+
   deleteOrderManual({ params }) {
     return Order.deleteManual(params)
   }

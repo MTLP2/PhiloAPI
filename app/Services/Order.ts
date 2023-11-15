@@ -873,6 +873,20 @@ static toJuno = async (params) => {
     return rows
   }
 
+  static findManual = async (params: { id: number }) => {
+    const item = await DB('order_manual')
+      .select('order_manual.*', 'customer.firstname', 'customer.lastname', 'user.name as user_name')
+      .join('customer', 'customer.id', 'order_manual.customer_id')
+      .leftJoin('user', 'user.id', 'order_manual.user_id')
+      .belongsTo('customer')
+      .where('order_manual.id', params.id)
+      .first()
+
+    item.address_pickup = item.address_pickup ? JSON.parse(item.address_pickup) : null
+    item.barcodes = item.barcodes ? JSON.parse(item.barcodes) : null
+    return item
+  }
+
   static saveManual = async (params) => {
     let item: any = DB('order_manual')
 
@@ -1112,11 +1126,87 @@ static toJuno = async (params) => {
     **/
   }
 
-  static deleteManual = (params) => {
+  static packingList = async (params: { id: number; type: string }) => {
+    const order = await Order.findManual({ id: params.id })
+
+    const items: {
+      sender: string
+      title: string
+      quantity: number
+      barcode: string
+      catnumber: string
+      name: string
+      contact: string
+      email: string
+      phone: string
+      address: string
+      city: string
+      zip_code: string
+      country_id: string
+    }[] = []
+
+    for (const barcode of order.barcodes) {
+      const product = await DB('product').where('barcode', barcode.barcode).first()
+      console.log(product)
+      items.push({
+        sender: 'Diggers Factory',
+        title: product.name,
+        quantity: barcode.quantity,
+        barcode: barcode.barcode,
+        catnumber: product.catnumber,
+        name: order.customer.name,
+        contact: order.customer.firstname + ' ' + order.customer.lastname,
+        email: order.email,
+        phone: order.customer.phone,
+        address: order.customer.address,
+        city: order.customer.city,
+        zip_code: order.customer.zip_code,
+        country_id: order.customer.country_id
+      })
+    }
+
+    const workbook = new Excel.Workbook()
+    if (params.type === 'lita') {
+      await workbook.xlsx.readFile('./resources/PackingList-LITA.xlsx')
+      const worksheet = workbook.getWorksheet(1)
+
+      let rowNumber = 13
+      for (const item of items) {
+        const row = worksheet.getRow(rowNumber)
+        row.getCell('C').value = item.barcode
+        row.getCell('E').value = item.title
+        row.getCell('J').value = item.quantity
+        rowNumber++
+      }
+    } else {
+      const worksheet = workbook.addWorksheet('Packing List')
+      worksheet.columns = [
+        { header: 'Sender', key: 'sender', width: 15 },
+        { header: 'Title', key: 'title', width: 40 },
+        { header: 'Quantity', key: 'quantity' },
+        { header: 'Barcode', key: 'barcode', width: 15 },
+        { header: 'Cat number', key: 'catnumber', width: 15 },
+        { header: 'Name', key: 'name', width: 15 },
+        { header: 'Contact', key: 'contact', width: 25 },
+        { header: 'Email', key: 'email', width: 25 },
+        { header: 'Phone', key: 'phone', width: 15 },
+        { header: 'Address', key: 'address', width: 25 },
+        { header: 'Postal Code', key: 'zip_code', width: 15 },
+        { header: 'City', key: 'city', width: 15 },
+        { header: 'Country', key: 'country_id', width: 15 }
+      ]
+      worksheet.getRow(1).font = { bold: true }
+      worksheet.addRows(items)
+    }
+
+    return workbook.xlsx.writeBuffer()
+  }
+
+  static deleteManual = (params: { id: number }) => {
     return DB('order_manual').where('id', params.id).delete()
   }
 
-  static getRefunds = async (params) => {
+  static getRefunds = async (params: { id: number }) => {
     return DB('refund').where('order_id', params.id).all()
   }
 
@@ -1417,8 +1507,8 @@ static toJuno = async (params) => {
     return { success: true }
   }
 
-  static importOrders = async (payload: { file: string; action: string }) => {
-    const file = Buffer.from(payload.file, 'base64')
+  static importOrders = async (params: { file: string; action: string }) => {
+    const file = Buffer.from(params.file, 'base64')
     const workbook = new Excel.Workbook()
     await workbook.xlsx.load(file)
 
@@ -1465,7 +1555,7 @@ static toJuno = async (params) => {
     const tt = {}
     const transporters = {}
     let i = 0
-    if (payload.action === 'import') {
+    if (params.action === 'import') {
       for (const item of orders) {
         const order = await DB('order').insert({
           user_id: userId,
