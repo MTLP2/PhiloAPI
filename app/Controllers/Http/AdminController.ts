@@ -35,6 +35,7 @@ import Dispatch from 'App/Services/Dispatch'
 import ShippingWeight from 'App/Services/ShippingWeight'
 import Log from 'App/Services/Log'
 import Linktree from 'App/Services/Linktree'
+import Alerts from 'App/Services/Alerts'
 
 class AdminController {
   getStats({ params }) {
@@ -1386,6 +1387,55 @@ class AdminController {
 
   saveShipNotice({ params }) {
     return Admin.saveShipNotice(params)
+  }
+
+  async getAlerts({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          filters: schema.string.optional(),
+          sort: schema.string.optional(),
+          size: schema.number.optional()
+        }),
+        data: params
+      })
+      return Alerts.all(payload)
+    } catch (err) {
+      return { error: err.message, validation: err.messages }
+    }
+  }
+
+  async getAlert({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          id: schema.number()
+        }),
+        data: params
+      })
+      return Alerts.find(payload)
+    } catch (err) {
+      return { error: err.message, validation: err.messages }
+    }
+  }
+
+  async saveAlert({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          id: schema.number.optional(),
+          text_fr: schema.string.optional(),
+          text_en: schema.string.optional(),
+          link_fr: schema.string.optional(),
+          link_en: schema.string.optional(),
+          is_active: schema.boolean()
+        }),
+        data: params
+      })
+      return Alerts.save(payload)
+    } catch (err) {
+      return { error: err.message, validation: err.messages }
+    }
   }
 }
 

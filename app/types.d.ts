@@ -253,3 +253,14 @@ type CustomerDb = {
   phone?: string
   birthday?: string
 }
+
+type Alert = {
+  id: number
+  text_en?: string
+  text_fr?: string
+  link_en?: string
+  link_fr?: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
