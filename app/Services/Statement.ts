@@ -346,7 +346,7 @@ class StatementService {
       }
     })
 
-    const sheets = ['DIG', 'DIGI', 'DIG 2']
+    const sheets = ['DIG', 'DIGI', 'DIG 2', 'DIG ']
 
     for (const sheet of sheets) {
       const digital = workbook.getWorksheet(sheet)
