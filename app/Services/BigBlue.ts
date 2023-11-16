@@ -91,6 +91,55 @@ class BigBlue {
   }
 
   static async listOrders(params?: {}) {}
+
+  static syncOrders = async (ids: number[]) => {
+    const orders = await DB()
+      .select('customer.*', 'os.*', 'user.email')
+      .from('order_shop as os')
+      .join('customer', 'customer.id', 'os.customer_id')
+      .join('user', 'user.id', 'os.user_id')
+      .whereIn('os.id', ids)
+      // .whereNull('logistician_id')
+      // .whereNull('date_export')
+      // .where('os.transporter', 'daudin')
+      .where('is_paid', true)
+      .where('is_paused', false)
+      .orderBy('os.created_at')
+      .all()
+
+    if (orders.length === 0) {
+      return false
+    }
+
+    const items = await DB()
+      .select('product.id', 'order_shop_id', 'oi.quantity', 'product.barcode')
+      .from('order_item as oi')
+      .join('project_product', 'project_product.project_id', 'oi.project_id')
+      .join('product', 'project_product.product_id', 'product.id')
+      .where((query) => {
+        query.whereRaw('product.size like oi.size')
+        query.orWhereRaw(`oi.products LIKE CONCAT('%[',product.id,']%')`)
+        query.orWhere((query) => {
+          query.whereNull('product.size')
+          query.whereNotExists((query) => {
+            query.from('product as child').whereRaw('product.id = child.parent_id')
+          })
+        })
+      })
+      .whereIn('order_shop_id', ids)
+      .all()
+
+    for (const item of items) {
+      const idx = orders.findIndex((o: any) => o.id === item.order_shop_id)
+      orders[idx].items = orders[idx].items ? [...orders[idx].items, item] : [item]
+      if (!item.barcode) {
+        throw new Error('no_barcode')
+      }
+    }
+
+    console.log(orders)
+    return orders
+  }
 }
 
 export default BigBlue
