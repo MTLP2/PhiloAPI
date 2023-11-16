@@ -559,7 +559,6 @@ class Whiplash {
         }
       })
       .all()
-
     const products = {}
     for (const product of listProducts) {
       products[product.barcode] = product
@@ -659,8 +658,6 @@ class Whiplash {
                 new_quantity: uk
               })
             }
-            console.log(newStocks)
-            return
             if (us !== products[item.sku].stock_whiplash) {
               Stock.save({
                 product_id: products[item.sku].id,
@@ -681,7 +678,6 @@ class Whiplash {
         }
       }
 
-      console.log(newStocks)
       if (newStocks.length > 0) {
         await Notification.sendEmail({
           to: ['ismail@diggersfactory.com', 'alexis@diggersfactory.com'].join(','),
