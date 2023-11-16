@@ -2314,6 +2314,7 @@ class Project {
 
     project.id = null
     project.picture = uid
+    project.cat_number = null
     project.created_at = Utils.date()
     project.updated_at = Utils.date()
     project = JSON.parse(JSON.stringify(project))
@@ -2328,6 +2329,7 @@ class Project {
     vod.date_export_order = null
     vod.daudin_export = null
     vod.whiplash_export = null
+    vod.barcode = null
     vod.stock = 0
     vod.count = 0
     vod.send_statement = 0
