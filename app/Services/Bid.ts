@@ -10,7 +10,7 @@ import ApiError from 'App/ApiError'
 import moment from 'moment'
 
 class Bid {
-  static async find(id: number, payload: { for?: string } = {}) {
+  static async find(id: number, params: { for?: string } = {}) {
     const project = await DB('vod')
       .select('price', 'currency', 'bid_step', 'end', 'category', 'step')
       .join('project', 'project.id', 'vod.project_id')
@@ -27,7 +27,7 @@ class Bid {
       'user.name'
     ]
 
-    if (payload.for === 'sheraf') {
+    if (params.for === 'sheraf') {
       selects.push(
         ...[
           'order.user_agent',
@@ -46,7 +46,7 @@ class Bid {
       .where('project_id', id)
       .orderBy('bid.total', 'desc')
 
-    if (payload.for === 'sheraf') {
+    if (params.for === 'sheraf') {
       bids.belongsTo('customer')
     } else {
       bids.whereIn('bid.status', ['confirmed', 'capture', 'not_best_bid'])
@@ -66,7 +66,7 @@ class Bid {
     return res
   }
 
-  static async pay(payload: {
+  static async pay(params: {
     id: number
     price: number
     user_id: number
@@ -75,13 +75,13 @@ class Bid {
     customer_id?: string
     user_agent?: any
   }) {
-    const project = await Bid.find(payload.id)
+    const project = await Bid.find(params.id)
 
     if (project.finished) {
       return {
         error: 'finished'
       }
-    } else if (project.price > payload.price) {
+    } else if (project.price > params.price) {
       return {
         error: 'min_price',
         min: project.price
@@ -90,9 +90,9 @@ class Bid {
 
     const bid: any = DB('bid')
     bid.status = 'creating'
-    bid.user_id = payload.user_id
-    bid.project_id = payload.id
-    bid.total = payload.price
+    bid.user_id = params.user_id
+    bid.project_id = params.id
+    bid.total = params.price
     bid.currency = project.currency
     bid.is_paid = true
     bid.created_at = Utils.date()
@@ -113,37 +113,37 @@ class Bid {
 
     const order: any = DB('order')
     order.status = 'creating'
-    order.user_id = payload.user_id
+    order.user_id = params.user_id
     order.payment_type = 'stripe'
-    order.total = payload.price
+    order.total = params.price
     order.tax_rate = 0
     order.tax = 0
-    order.sub_total = payload.price
+    order.sub_total = params.price
     order.currency = project.currency
-    order.user_agent = JSON.stringify(payload.user_agent)
+    order.user_agent = JSON.stringify(params.user_agent)
     await order.save()
 
     bid.order_id = order.id
     await bid.save()
 
-    if (payload.card.customer) {
-      payload.customer_id = payload.card.customer
+    if (params.card.customer) {
+      params.customer_id = params.card.customer
     } else {
-      const customer = await Stripe.getCustomer(payload.user_id)
-      payload.customer_id = customer.id
+      const customer = await Stripe.getCustomer(params.user_id)
+      params.customer_id = customer.id
     }
 
     let intent
     try {
-      if (payload.card_save && payload.card.new) {
-        Stripe.paymentMethods.attach(payload.card.card, { customer: payload.customer_id })
+      if (params.card_save && params.card.new) {
+        Stripe.paymentMethods.attach(params.card.card, { customer: params.customer_id })
       }
 
       const data = {
-        amount: payload.price * 100,
+        amount: params.price * 100,
         currency: 'EUR',
-        customer: payload.customer_id,
-        payment_method: payload.card.card,
+        customer: params.customer_id,
+        payment_method: params.card.card,
         confirm: true,
         capture_method: 'manual',
         confirmation_method: 'manual'
@@ -185,10 +185,10 @@ class Bid {
     }
   }
 
-  static async payConfirm(payload: { id: number; payment_intent_id: string }) {
-    if (payload.payment_intent_id) {
-      const project = await Bid.find(payload.id)
-      const order = await DB('order').where('payment_id', payload.payment_intent_id).first()
+  static async payConfirm(params: { id: number; payment_intent_id: string }) {
+    if (params.payment_intent_id) {
+      const project = await Bid.find(params.id)
+      const order = await DB('order').where('payment_id', params.payment_intent_id).first()
 
       if (!order) {
         return false
@@ -201,12 +201,12 @@ class Bid {
       }
 
       if (project.finished) {
-        await Stripe.paymentIntents.cancel(payload.payment_intent_id)
+        await Stripe.paymentIntents.cancel(params.payment_intent_id)
         return {
           error: 'finished'
         }
       } else if (project.price > order.total) {
-        await Stripe.paymentIntents.cancel(payload.payment_intent_id)
+        await Stripe.paymentIntents.cancel(params.payment_intent_id)
         return {
           error: 'min_price',
           min: project.price
@@ -218,7 +218,7 @@ class Bid {
         await bid.save()
       } catch (err) {
         if (err.toString().includes('Duplicate') > 0) {
-          await Stripe.paymentIntents.cancel(payload.payment_intent_id)
+          await Stripe.paymentIntents.cancel(params.payment_intent_id)
           return {
             error: 'min_price',
             min: project.price + project.bid_step
@@ -230,7 +230,7 @@ class Bid {
 
       let confirm
       try {
-        confirm = await Stripe.paymentIntents.confirm(payload.payment_intent_id)
+        confirm = await Stripe.paymentIntents.confirm(params.payment_intent_id)
       } catch (e) {
         return {
           error: e.code
@@ -309,8 +309,8 @@ class Bid {
     return { success: true }
   }
 
-  static async valid(payload: { id: number }) {
-    const bid = await DB('bid').where('id', payload.id).first()
+  static async valid(params: { id: number }) {
+    const bid = await DB('bid').where('id', params.id).first()
 
     const order = await DB('order').where('id', bid.order_id).first()
 
@@ -346,10 +346,10 @@ class Bid {
     }
   }
 
-  static async cancel(payload: { id: number; user_id: number }) {
-    const bid = await DB('bid').where('id', payload.id).first()
+  static async cancel(params: { id: number; user_id: number }) {
+    const bid = await DB('bid').where('id', params.id).first()
 
-    if (payload.user_id !== bid.user_id && !(await Utils.isTeam(payload.user_id, 'boss'))) {
+    if (params.user_id !== bid.user_id && !(await Utils.isTeam(params.user_id, 'boss'))) {
       throw new ApiError(401)
     }
 
@@ -381,17 +381,17 @@ class Bid {
     return { success: true }
   }
 
-  static async editAddress(payload: { id: number; customer: CustomerDb }) {
-    const bid = await DB('bid').where('id', payload.id).first()
+  static async editAddress(params: { id: number; customer: CustomerDb }) {
+    const bid = await DB('bid').where('id', params.id).first()
 
-    const customer = await Customer.save(payload.customer)
+    const customer = await Customer.save(params.customer)
     bid.customer_id = customer.id
     bid.updated_at = Utils.date()
     await bid.save()
 
     const order = await DB('order').where('id', bid.order_id).first()
 
-    order.tax_rate = await Utils.getTaxRate(payload.customer)
+    order.tax_rate = await Utils.getTaxRate(params.customer)
     order.tax = order.total * order.tax_rate
     order.sub_total = order.total - order.tax
     await order.save()
@@ -435,7 +435,7 @@ class Bid {
   }
 
   static async simulate() {
-    const fetch = (url, payload) => {
+    const fetch = (url, params) => {
       return new Promise((resolve, reject) => {
         request(
           {
@@ -443,9 +443,9 @@ class Bid {
             url: url,
             json: true,
             headers: {
-              Authorization: `Bearer ${payload.auth}`
+              Authorization: `Bearer ${params.auth}`
             },
-            body: payload
+            body: params
           },
           function (err, res, body) {
             if (err) reject(err)

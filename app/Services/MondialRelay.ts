@@ -24,7 +24,7 @@ class MondialRelay {
       const security = Object.values(params).join('') + privateKey
       params.Security = md5(security).toUpperCase()
 
-      const payload = `<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:web="http://www.mondialrelay.fr/webservice/">
+      const body = `<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:web="http://www.mondialrelay.fr/webservice/">
         <soap:Header/>
           <soap:Body>
             <web:WSI4_PointRelais_Recherche>
@@ -43,7 +43,7 @@ class MondialRelay {
           headers: {
             'Content-Type': `text/xml`
           },
-          body: payload
+          body: body
         },
         function (err, res, body) {
           const parser = new XMLParser()
@@ -82,7 +82,7 @@ class MondialRelay {
       const security = Object.values(params).join('') + privateKey
       params.Security = md5(security).toUpperCase()
 
-      const payload = `<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:web="http://www.mondialrelay.fr/webservice/">
+      const body = `<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:web="http://www.mondialrelay.fr/webservice/">
         <soap:Header/>
           <soap:Body>
             <web:WSI4_PointRelais_Recherche>
@@ -104,7 +104,7 @@ class MondialRelay {
           headers: {
             'Content-Type': `text/xml`
           },
-          body: payload
+          body: body
         },
         function (err, res, body) {
           const parser = new XMLParser()

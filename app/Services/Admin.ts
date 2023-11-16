@@ -5186,14 +5186,14 @@ class Admin {
     return true
   }
 
-  static saveShipNotice = async (payload: {
+  static saveShipNotice = async (params: {
     sender: string
     eta: string
     logistician: string
     products: { id: number; name: string; quantity: number }[]
   }) => {
-    if (payload.logistician === 'whiplash' || payload.logistician === 'whiplash_uk') {
-      return Whiplash.createShopNotice(payload)
+    if (params.logistician === 'whiplash' || params.logistician === 'whiplash_uk') {
+      return Whiplash.createShopNotice(params)
     }
     return false
   }

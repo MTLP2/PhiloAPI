@@ -131,7 +131,7 @@ class User {
     return users
   }
 
-  static editProjectUsers = async (payload: {
+  static editProjectUsers = async (params: {
     id: number
     user_id: number
     project_id: number
@@ -139,18 +139,18 @@ class User {
     production: boolean
     statement: boolean
   }) => {
-    const project = await DB('project').where('id', payload.project_id).first()
+    const project = await DB('project').where('id', params.project_id).first()
     if (!project) {
       throw new ApiError(404)
     }
     let item: any = await DB('project_user')
       .where((query) => {
-        if (payload.id) {
-          query.where('id', payload.id)
+        if (params.id) {
+          query.where('id', params.id)
         }
         query.orWhere((query) => {
-          query.where('project_id', payload.project_id)
-          query.where('user_id', payload.user_id)
+          query.where('project_id', params.project_id)
+          query.where('user_id', params.user_id)
         })
       })
       .first()
@@ -159,26 +159,26 @@ class User {
       item = DB('project_user')
     }
 
-    item.user_id = payload.user_id
-    item.project_id = payload.project_id
-    item.project = payload.project
-    item.production = payload.production
-    item.statement = payload.statement
+    item.user_id = params.user_id
+    item.project_id = params.project_id
+    item.project = params.project
+    item.production = params.production
+    item.statement = params.statement
 
     await item.save()
 
     return true
   }
 
-  static deleteProjectUsers = async (payload: { project_id: number; user_id: number }) => {
-    const project = await DB('project').where('id', payload.project_id).first()
+  static deleteProjectUsers = async (params: { project_id: number; user_id: number }) => {
+    const project = await DB('project').where('id', params.project_id).first()
     if (!project) {
       throw new ApiError(404)
     }
 
     await DB('project_user')
-      .where('project_id', payload.project_id)
-      .where('user_id', payload.user_id)
+      .where('project_id', params.project_id)
+      .where('user_id', params.user_id)
       .delete()
 
     return true
@@ -189,22 +189,22 @@ class User {
     return users
   }
 
-  static follow = async (payload: { user_id: number; follower: number }) => {
+  static follow = async (params: { user_id: number; follower: number }) => {
     const follower = await DB()
       .from('follower')
-      .where('user_id', payload.user_id)
-      .where('follower', payload.follower)
+      .where('user_id', params.user_id)
+      .where('follower', params.follower)
       .first()
     if (follower) {
       await DB()
         .table('follower')
-        .where('follower', payload.follower)
-        .where('user_id', payload.user_id)
+        .where('follower', params.follower)
+        .where('user_id', params.user_id)
         .delete()
     } else {
       await DB('follower').insert({
-        user_id: payload.user_id,
-        follower: payload.follower,
+        user_id: params.user_id,
+        follower: params.follower,
         created_at: Utils.date(),
         updated_at: Utils.date()
       })
@@ -913,12 +913,12 @@ class User {
     return false
   }
 
-  static downloadOrderTracks = async (payload: { id: number; user_id: number }) => {
+  static downloadOrderTracks = async (params: { id: number; user_id: number }) => {
     const project = await DB('order_item as oi')
       .select('oi.project_id')
       .join('order_shop as os', 'os.id', 'oi.order_shop_id')
-      .where('oi.id', payload.id)
-      .where('os.user_id', payload.user_id)
+      .where('oi.id', params.id)
+      .where('os.user_id', params.user_id)
       .where('os.is_paid', true)
       .first()
 
@@ -1470,7 +1470,7 @@ static extractProjectOrders = async (params) => {
     return { success: true }
   }
 
-  static saveWish = async (payload: {
+  static saveWish = async (params: {
     id?: number
     user_id: number
     project_id: number
@@ -1483,24 +1483,24 @@ static extractProjectOrders = async (params) => {
       throw new ApiError(404)
     }
 
-    if (payload.id === undefined) {
+    if (params.id === undefined) {
       projectWl.created_at = Utils.date()
     } else {
-      projectWl = await DB('user_wishlist').find(payload.id)
+      projectWl = await DB('user_wishlist').find(params.id)
     }
 
-    projectWl.user_id = payload.user_id
-    projectWl.project_id = payload.project_id
+    projectWl.user_id = params.user_id
+    projectWl.project_id = params.project_id
 
     await projectWl.save()
     return true
   }
 
-  static deleteWish = async (payload: { project_id: number; user_id: number }) => {
+  static deleteWish = async (params: { project_id: number; user_id: number }) => {
     const project = await DB('user_wishlist')
       .select('user_wishlist.*')
-      .where('project_id', payload.project_id)
-      .where('user_id', payload.user_id)
+      .where('project_id', params.project_id)
+      .where('user_id', params.user_id)
       .all()
 
     if (!project) {
@@ -1508,8 +1508,8 @@ static extractProjectOrders = async (params) => {
     }
 
     await DB('user_wishlist')
-      .where('project_id', payload.project_id)
-      .where('user_id', payload.user_id)
+      .where('project_id', params.project_id)
+      .where('user_id', params.user_id)
       .delete()
 
     return true

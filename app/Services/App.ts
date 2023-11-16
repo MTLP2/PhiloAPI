@@ -2012,8 +2012,8 @@ class App {
     return text
   }
 
-  static async getOfficialCharts(payload: { date: string; country: 'FR' | 'GB' }) {
-    const date = moment(payload.date)
+  static async getOfficialCharts(params: { date: string; country: 'FR' | 'GB' }) {
+    const date = moment(params.date)
     const orders: {
       order_shop_id: number
       step: string
@@ -2056,13 +2056,13 @@ class App {
       .join('product', 'product.id', 'project_product.product_id')
       .whereIn('product.type', ['cd', 'vinyl', 'tape'])
       .where('is_paid', true)
-      .where('c.country_id', 'like', payload.country)
+      .where('c.country_id', 'like', params.country)
       .whereRaw(`DATE_FORMAT(os.date_export, "%Y-%m-%d") = '${date.format('YYYY-MM-DD')}'`)
       .all()
 
     const currenciesDB = await Utils.getCurrenciesDb()
     const currencies = await Utils.getCurrencies(
-      payload.country === 'FR' ? 'EUR' : 'GBP',
+      params.country === 'FR' ? 'EUR' : 'GBP',
       currenciesDB
     )
 
@@ -2080,7 +2080,7 @@ class App {
       orders[i].date_fr = date.format('DD/MM/YYYY')
       o.price = Utils.round(orders[i].total / orders[i].quantity) * 100
 
-      if (payload.country === 'GB') {
+      if (params.country === 'GB') {
         o.zip_code = o.zip_code.substring(0, 2).toUpperCase().replace(/[0-9]/g, '')
         if (!zipCode[o.zip_code]) {
           zipCode[o.zip_code] = {}
@@ -2096,7 +2096,7 @@ class App {
     }
 
     let file: string = ''
-    if (payload.country === 'FR') {
+    if (params.country === 'FR') {
       file = Utils.arrayToCsv(
         [
           { name: 'date', index: 'date_fr' },
@@ -2129,11 +2129,11 @@ class App {
     return file
   }
 
-  static async uploadOfficialCharts(payload: { country: 'FR' | 'GB' }) {
+  static async uploadOfficialCharts(params: { country: 'FR' | 'GB' }) {
     const date = moment().subtract(1, 'days')
     const file = await App.getOfficialCharts({
       date: date.format('YYYY-MM-DD'),
-      country: payload.country
+      country: params.country
     })
 
     let client = new SftpClient()

@@ -112,8 +112,8 @@ class Elogik {
     }
   }
 
-  static syncProject = async (payload: { id: number; quantity: number }) => {
-    const vod = await DB('vod').where('project_id', payload.id).first()
+  static syncProject = async (params: { id: number; quantity: number }) => {
+    const vod = await DB('vod').where('project_id', params.id).first()
     if (!vod) {
       return false
     }
@@ -128,7 +128,7 @@ class Elogik {
         'oi.quantity'
       )
       .join('order_item as oi', 'oi.order_shop_id', 'os.id')
-      .where('oi.project_id', payload.id)
+      .where('oi.project_id', params.id)
       .where('os.transporter', 'daudin')
       .where('os.type', 'vod')
       .whereNull('date_export')
@@ -141,7 +141,7 @@ class Elogik {
     const dispatchs: any[] = []
     let qty = 0
     for (const order of orders) {
-      if (qty >= payload.quantity) {
+      if (qty >= params.quantity) {
         break
       }
       if (order.shipping_type === 'pickup') {
@@ -323,7 +323,7 @@ class Elogik {
         email: order.email
       }
 
-      const payload = {
+      const params = {
         reference: order.id,
         referenceClient: order.user_id || null,
         codeServiceTransporteur: Elogik.getTransporter(order).id,
@@ -339,14 +339,14 @@ class Elogik {
         if (process.env.NODE_ENV !== 'production') {
           item.barcode = 3760370262046
         }
-        payload.listeArticles.push({
+        params.listeArticles.push({
           refEcommercant: item.barcode,
           quantite: item.quantity
         })
       }
       let res = await Elogik.api('commandes/creer', {
         method: 'POST',
-        body: payload
+        body: params
       })
 
       if (res.code) {
@@ -577,11 +577,11 @@ class Elogik {
     console.log('boxes sent => ', k)
   }
 
-  static syncStocks = async (payload?: { barcode?: string }) => {
+  static syncStocks = async (params?: { barcode?: string }) => {
     const res = await Elogik.api('articles/stock', {
       method: 'POST',
       body: {
-        reference: payload?.barcode,
+        reference: params?.barcode,
         length: 99999
       }
     })
@@ -736,11 +736,11 @@ class Elogik {
     return html
   }
 
-  static getItem = async (payload: { barcode: number }) => {
+  static getItem = async (params: { barcode: number }) => {
     const items = await Elogik.api('articles/liste', {
       method: 'POST',
       body: {
-        reference: payload.barcode
+        reference: params.barcode
       }
     })
     if (items.articles && items.articles.length === 1) {
@@ -750,32 +750,32 @@ class Elogik {
     }
   }
 
-  static createItem = async (payload: { id: number; name: string; barcode: number }) => {
+  static createItem = async (params: { id: number; name: string; barcode: number }) => {
     const items = await Elogik.api('articles/liste', {
       method: 'POST',
       body: {
-        reference: payload.barcode
+        reference: params.barcode
       }
     })
 
     let item
     if (items.articles && items.articles.length === 1) {
       item = items.articles[0]
-      await DB('product').where('id', payload.id).update({
+      await DB('product').where('id', params.id).update({
         ekan_id: item.refEcommercant
       })
     } else {
       item = await Elogik.api('articles/creer', {
         method: 'POST',
         body: {
-          refEcommercant: payload.barcode,
-          titre: payload.name,
-          EAN13: payload.barcode,
-          listeFournisseurs: [{ codeFournisseur: 'DGF', refFournisseur: payload.barcode }]
+          refEcommercant: params.barcode,
+          titre: params.name,
+          EAN13: params.barcode,
+          listeFournisseurs: [{ codeFournisseur: 'DGF', refFournisseur: params.barcode }]
         }
       })
       if (item.refEcommercant) {
-        await DB('product').where('id', payload.id).update({
+        await DB('product').where('id', params.id).update({
           ekan_id: item.refEcommercant
         })
       }
@@ -784,7 +784,7 @@ class Elogik {
     return item
   }
 
-  static createShipNotice = async (payload: { product_id: number }) => {
+  static createShipNotice = async (params: { product_id: number }) => {
     return true
   }
 }

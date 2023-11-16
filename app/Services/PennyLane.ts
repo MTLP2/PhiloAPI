@@ -26,9 +26,9 @@ class PennyLane {
     return PennyLane.execute('customer_invoices')
   }
 
-  static async exportInvoices(payload?: { start: string; end: string }) {
-    if (!payload) {
-      payload = {
+  static async exportInvoices(params?: { start: string; end: string }) {
+    if (!params) {
+      params = {
         // start: moment().subtract('1', 'month').startOf('month').format('YYYY-MM-DD'),
         // end: moment().subtract('1', 'month').endOf('month').format('YYYY-MM-DD')
         start: '2023-10-01',
@@ -41,7 +41,7 @@ class PennyLane {
       .where('client', 'B2B')
       .where('compatibility', true)
       .where('is_sync', false)
-      .whereBetween('invoice.date', [payload.start, payload.end + ' 23:59'])
+      .whereBetween('invoice.date', [params.start, params.end + ' 23:59'])
       .orderBy('date', 'asc')
       .all()
     console.log('invoice => ', invoices.length)

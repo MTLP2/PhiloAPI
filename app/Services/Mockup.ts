@@ -131,19 +131,19 @@ class Mockup {
     })
   }
 
-  resizeImage(payload: { url: string; w: number; h: number }) {
+  resizeImage(params: { url: string; w: number; h: number }) {
     return new Promise((resolve) => {
       const ctx = this.createContext()
-      ctx.canvas.width = payload.w
-      ctx.canvas.height = payload.h
+      ctx.canvas.width = params.w
+      ctx.canvas.height = params.h
 
       const img = new this.Image()
       img.crossOrigin = 'Anonymous'
       img.onload = () => {
-        ctx.drawImage(img, 0, 0, payload.w, payload.h)
+        ctx.drawImage(img, 0, 0, params.w, params.h)
         resolve(ctx.canvas)
       }
-      img.src = payload.url
+      img.src = params.url
     })
   }
 

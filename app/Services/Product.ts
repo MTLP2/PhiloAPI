@@ -5,7 +5,7 @@ import Whiplash from 'App/Services/Whiplash'
 import Elogik from 'App/Services/Elogik'
 
 class Product {
-  static async all(payload: {
+  static async all(params: {
     filters?: string
     sort?: string
     order?: string
@@ -41,7 +41,7 @@ class Product {
         DB('stock')
           .select('sales', 'quantity', 'product_id')
           .where('type', 'daudin')
-          .where('is_preorder', payload.is_preorder || false)
+          .where('is_preorder', params.is_preorder || false)
           .as('daudin')
           .query(),
         'daudin.product_id',
@@ -52,7 +52,7 @@ class Product {
           .select('sales', 'quantity', 'product_id')
           .where('type', 'whiplash')
           .as('whiplash')
-          .where('is_preorder', payload.is_preorder || false)
+          .where('is_preorder', params.is_preorder || false)
           .query(),
         'whiplash.product_id',
         'product.id'
@@ -61,7 +61,7 @@ class Product {
         DB('stock')
           .select('sales', 'quantity', 'product_id')
           .where('type', 'whiplash_uk')
-          .where('is_preorder', payload.is_preorder || false)
+          .where('is_preorder', params.is_preorder || false)
           .as('whiplash_uk')
           .query(),
         'whiplash_uk.product_id',
@@ -70,7 +70,7 @@ class Product {
       .leftJoin(
         DB('stock')
           .select('sales', 'quantity', 'product_id')
-          .where('is_preorder', payload.is_preorder || false)
+          .where('is_preorder', params.is_preorder || false)
           .where('type', 'diggers')
           .as('diggers')
           .query(),
@@ -78,31 +78,31 @@ class Product {
         'product.id'
       )
 
-    if (payload.project_id) {
+    if (params.project_id) {
       query.join('project_product', 'project_product.product_id', 'product.id')
-      query.where('project_id', payload.project_id)
+      query.where('project_id', params.project_id)
     }
-    if (!payload.sort) {
-      payload.sort = 'product.id'
-      payload.order = 'desc'
+    if (!params.sort) {
+      params.sort = 'product.id'
+      params.order = 'desc'
     }
 
-    const items = await Utils.getRows<any>({ ...payload, query: query })
+    const items = await Utils.getRows<any>({ ...params, query: query })
 
     return items
   }
 
-  static async find(payload: { id: number }) {
+  static async find(params: { id: number }) {
     const item = await DB('product')
       .select('product.*', 'p2.name as parent')
       .leftJoin('product as p2', 'p2.id', 'product.parent_id')
-      .where('product.id', payload.id)
+      .where('product.id', params.id)
       .first()
 
     item.projects = await DB('project')
       .select('project.id', 'product_id', 'picture', 'artist_name', 'name')
       .join('project_product', 'project_product.project_id', 'project.id')
-      .where('product_id', payload.id)
+      .where('product_id', params.id)
       .all()
 
     const projects = await DB('order_item')
@@ -126,7 +126,7 @@ class Product {
       item.projects[idx].total += project.quantity
     }
 
-    item.children = await DB('product').where('parent_id', payload.id).all()
+    item.children = await DB('product').where('parent_id', params.id).all()
     item.stocks = await DB('stock')
       .select(
         'stock.id',
@@ -137,19 +137,19 @@ class Product {
         'reserved',
         DB.raw('quantity - reserved as available')
       )
-      .where('product_id', payload.id)
+      .where('product_id', params.id)
       .all()
 
-    const sales = await Product.getProductsSales({ productIds: [payload.id] })
+    const sales = await Product.getProductsSales({ productIds: [params.id] })
     for (const s in item.stocks) {
       const stock = item.stocks[s]
-      const sale = sales[payload.id] && sales[payload.id][stock.type]
+      const sale = sales[params.id] && sales[params.id][stock.type]
       if (sale) {
         item.stocks[s].sales = item.stocks[s].is_preorder ? sale.preorder || 0 : sale.sales || 0
       }
     }
 
-    const stock = await Stock.getHistoric({ product_id: payload.id })
+    const stock = await Stock.getHistoric({ product_id: params.id })
 
     item.stocks_historic = stock.list
     item.stocks_months = stock.months
@@ -176,7 +176,7 @@ class Product {
     return item
   }
 
-  static async save(payload: {
+  static async save(params: {
     id?: number
     type?: string
     name?: string
@@ -188,10 +188,10 @@ class Product {
     color?: string
     weight?: number
   }) {
-    if (payload.barcode) {
+    if (params.barcode) {
       const alreadyExists = await DB('product')
-        .where('barcode', payload.barcode)
-        .where('id', '!=', payload.id || 0)
+        .where('barcode', params.barcode)
+        .where('id', '!=', params.id || 0)
         .first()
 
       if (alreadyExists) {
@@ -199,23 +199,23 @@ class Product {
       }
     }
     let item: any = DB('product')
-    if (payload.id) {
-      item = await DB('product').where('id', payload.id).first()
-    } else if (payload.barcode) {
-      const exists = await DB('product').where('barcode', payload.barcode).first()
+    if (params.id) {
+      item = await DB('product').where('id', params.id).first()
+    } else if (params.barcode) {
+      const exists = await DB('product').where('barcode', params.barcode).first()
       if (exists) {
         return { error: 'barcode_already_used' }
       }
     }
-    item.type = payload.type
-    item.name = payload.name
-    item.barcode = payload.barcode
-    item.catnumber = payload.catnumber
-    item.isrc = payload.isrc
-    item.parent_id = payload.parent_id
-    item.size = payload.size
-    item.color = payload.color
-    item.weight = payload.weight
+    item.type = params.type
+    item.name = params.name
+    item.barcode = params.barcode
+    item.catnumber = params.catnumber
+    item.isrc = params.isrc
+    item.parent_id = params.parent_id
+    item.size = params.size
+    item.color = params.color
+    item.weight = params.weight
     item.updated_at = Utils.date()
 
     await item.save()
@@ -232,12 +232,12 @@ class Product {
     return item
   }
 
-  static remove = async (payload: { id: number }) => {
+  static remove = async (params: { id: number }) => {
     return DB('product')
       .whereNotExists((query) => {
         query.from('project_product').whereRaw('product_id = product.id')
       })
-      .where('id', payload.id)
+      .where('id', params.id)
       .delete()
   }
 
@@ -393,37 +393,37 @@ class Product {
     return refs.length
   }
 
-  static saveSubProduct = async (payload: { id: number; product_id: number }) => {
-    await DB('product').where('id', payload.product_id).update({
-      parent_id: payload.id
+  static saveSubProduct = async (params: { id: number; product_id: number }) => {
+    await DB('product').where('id', params.product_id).update({
+      parent_id: params.id
     })
     return { success: true }
   }
 
-  static removeSubProduct = async (payload: { product_id: number }) => {
-    await DB('product').where('id', payload.product_id).update({
+  static removeSubProduct = async (params: { product_id: number }) => {
+    await DB('product').where('id', params.product_id).update({
       parent_id: null
     })
     return { success: true }
   }
 
-  static saveProject = async (payload: {
+  static saveProject = async (params: {
     project_id: number
     product_id?: number
     name?: string
     type?: string
   }) => {
-    if (!payload.product_id) {
+    if (!params.product_id) {
       const product = await Product.save({
-        type: payload.type,
-        name: payload.name
+        type: params.type,
+        name: params.name
       })
-      payload.product_id = product.id
+      params.product_id = product.id
     }
 
     const exists = await DB('project_product')
-      .where('project_id', payload.project_id)
-      .where('product_id', payload.product_id)
+      .where('project_id', params.project_id)
+      .where('product_id', params.product_id)
       .first()
 
     if (exists) {
@@ -431,51 +431,51 @@ class Product {
     }
 
     await DB('project_product').insert({
-      project_id: payload.project_id,
-      product_id: payload.product_id
+      project_id: params.project_id,
+      product_id: params.product_id
     })
 
-    const products = await DB('product').where('parent_id', payload.product_id).all()
+    const products = await DB('product').where('parent_id', params.product_id).all()
     for (const product of products) {
       await DB('project_product').insert({
-        project_id: payload.project_id,
+        project_id: params.project_id,
         product_id: product.id
       })
     }
 
-    await Product.setBarcodes({ project_id: payload.project_id })
+    await Product.setBarcodes({ project_id: params.project_id })
     await Stock.setStockProject({
-      projectIds: [payload.project_id]
+      projectIds: [params.project_id]
     })
     return { success: true }
   }
 
-  static removeProject = async (payload: { project_id: number; product_id: number }) => {
+  static removeProject = async (params: { project_id: number; product_id: number }) => {
     await DB('project_product')
-      .where('product_id', payload.product_id)
-      .where('project_id', payload.project_id)
+      .where('product_id', params.product_id)
+      .where('project_id', params.project_id)
       .delete()
 
-    const products = await DB('product').where('parent_id', payload.product_id).all()
+    const products = await DB('product').where('parent_id', params.product_id).all()
     for (const product of products) {
       await DB('project_product')
-        .where('project_id', payload.project_id)
+        .where('project_id', params.project_id)
         .where('product_id', product.id)
         .delete()
     }
 
-    await Product.setBarcodes({ project_id: payload.project_id })
+    await Product.setBarcodes({ project_id: params.project_id })
     await Stock.setStockProject({
-      projectIds: [payload.project_id]
+      projectIds: [params.project_id]
     })
     return { success: true }
   }
 
-  static setBarcodes = async (payload: { project_id: number }) => {
+  static setBarcodes = async (params: { project_id: number }) => {
     const products = await DB('project_product')
       .select('product.type', 'barcode')
       .join('product', 'product.id', 'project_product.product_id')
-      .where('project_product.project_id', payload.project_id)
+      .where('project_product.project_id', params.project_id)
       .whereNull('parent_id')
       .all()
 
@@ -490,19 +490,19 @@ class Product {
       barcodes += product.barcode
     }
 
-    await DB('vod').where('project_id', payload.project_id).update({
+    await DB('vod').where('project_id', params.project_id).update({
       barcode: barcodes
     })
 
     return { success: true }
   }
 
-  static async forUser(payload: { user_id: number; ship_notices: boolean }) {
+  static async forUser(params: { user_id: number; ship_notices: boolean }) {
     const products = await DB('product')
       .select('product.id as product_id', 'product.name', 'product.type', 'product.barcode')
       .join('project_product', 'project_product.product_id', 'product.id')
       .join('project_user', 'project_user.project_id', 'project_product.project_id')
-      .where('project_user.user_id', payload.user_id)
+      .where('project_user.user_id', params.user_id)
       .all()
 
     const pp = {}
@@ -526,7 +526,7 @@ class Product {
       .join('order_item as oi', 'oi.project_id', 'vod.project_id')
       .join('order_shop as os', 'os.id', 'oi.order_shop_id')
       .join('product', 'pp.product_id', 'product.id')
-      .where('vod.user_id', payload.user_id)
+      .where('vod.user_id', params.user_id)
       .where('is_paid', true)
       .where((query) => {
         query.whereRaw('product.size like oi.size')
@@ -558,7 +558,7 @@ class Product {
       .where('stock.type', '!=', 'preorder')
       .where('stock.type', '!=', 'null')
       .where('stock.is_preorder', false)
-      .where('vod.user_id', payload.user_id)
+      .where('vod.user_id', params.user_id)
       .all()
 
     const trans = {}
@@ -612,7 +612,7 @@ class Product {
     }
 
     const shipNotices = JSON.parse(JSON.stringify(pp))
-    if (payload.ship_notices) {
+    if (params.ship_notices) {
       const notices: any = await Whiplash.getShipNotices()
       for (const notice of notices) {
         if (notice.shipnotice_items) {
@@ -643,7 +643,7 @@ class Product {
     }
   }
 
-  static createItems = async (payload: {
+  static createItems = async (params: {
     logistician: string
     products: {
       id: number
@@ -651,8 +651,8 @@ class Product {
       barcode: number
     }[]
   }) => {
-    for (const product of payload.products) {
-      if (payload.logistician === 'whiplash') {
+    for (const product of params.products) {
+      if (params.logistician === 'whiplash') {
         await Whiplash.createItem({
           id: product.id,
           title: product.name,
@@ -669,10 +669,10 @@ class Product {
     return { success: true }
   }
 
-  static async getProductsSales(payload?: { projectIds?: number[]; productIds?: number[] }) {
-    if (payload && !payload.productIds && payload.projectIds) {
-      const products = await DB('project_product').whereIn('project_id', payload.projectIds).all()
-      payload.productIds = products.map((p) => p.product_id)
+  static async getProductsSales(params?: { projectIds?: number[]; productIds?: number[] }) {
+    if (params && !params.productIds && params.projectIds) {
+      const products = await DB('project_product').whereIn('project_id', params.projectIds).all()
+      params.productIds = products.map((p) => p.product_id)
     }
 
     const orders = await DB('order_shop')
@@ -693,9 +693,9 @@ class Product {
       .join('product', 'product.id', 'pp.product_id')
       .join('vod', 'vod.project_id', 'order_item.project_id')
       .where((query) => {
-        if (payload && payload.productIds) {
-          query.whereIn('pp.product_id', payload.productIds)
-          query.orWhereIn('product.parent_id', payload.productIds)
+        if (params && params.productIds) {
+          query.whereIn('pp.product_id', params.productIds)
+          query.orWhereIn('product.parent_id', params.productIds)
         }
       })
       .where((query) => {
@@ -725,8 +725,8 @@ class Product {
         }
       }
     } = {}
-    if (payload && payload.productIds) {
-      for (const id of payload.productIds) {
+    if (params && params.productIds) {
+      for (const id of params.productIds) {
         products[id] = {}
       }
     }

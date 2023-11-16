@@ -776,20 +776,20 @@ class StatementService {
     return data
   }
 
-  static async download(payload: {
+  static async download(params: {
     id: number
     number: number
     type: string
     start: string
     end: string
   }) {
-    if (payload.type === 'new') {
+    if (params.type === 'new') {
       const workbook = new Excel.Workbook()
-      await this.setWorksheet2(workbook, payload)
+      await this.setWorksheet2(workbook, params)
       return workbook.xlsx.writeBuffer()
     } else {
       const workbook = new Excel.Workbook()
-      await this.setWorksheet(workbook, payload)
+      await this.setWorksheet(workbook, params)
       return workbook.xlsx.writeBuffer()
     }
   }
@@ -1555,14 +1555,14 @@ class StatementService {
       })
     }
 
-    const setSummary = (payload: {
+    const setSummary = (params: {
       type: string
       title: string
       ws: any
       columns: any[]
       datas: any[]
     }) => {
-      const { ws, columns, title, datas } = payload
+      const { ws, columns, title, datas } = params
       ws.views = [{ showGridLines: false }]
 
       let y = 4
@@ -1614,7 +1614,7 @@ class StatementService {
       for (const { data, project } of datas) {
         y++
 
-        if (payload.type === 'monthly') {
+        if (params.type === 'monthly') {
           project.quantity = data ? Utils.round(data.quantity.all.dates[month]) : 0
           project.income = data ? Utils.round(data.income.all.dates[month]) : 0
           project.costs = data ? Utils.round(data.costs.all.dates[month]) : 0
@@ -2338,9 +2338,9 @@ class StatementService {
     return res.map((row: any) => row.join(',')).join('\n')
   }
 
-  static async setStorageCosts(payload: { month?: string; projectIds?: string[] } = {}) {
-    if (!payload.month) {
-      payload.month = moment().format('YYYY-MM-01')
+  static async setStorageCosts(params: { month?: string; projectIds?: string[] } = {}) {
+    if (!params.month) {
+      params.month = moment().format('YYYY-MM-01')
     }
     const projects = await DB('project')
       .select(
@@ -2371,14 +2371,14 @@ class StatementService {
       // .whereIn('project.id', [226728, 299489])
       // .whereIn('project.id', [247230])
       .where((query) => {
-        if (payload.projectIds) {
-          query.whereIn('project.id', payload.projectIds)
+        if (params.projectIds) {
+          query.whereIn('project.id', params.projectIds)
         }
       })
       .all()
 
     const change = {}
-    if (payload.month) {
+    if (params.month) {
       const historic = await DB('stock_historic')
         .select(
           'project_product.project_id',
@@ -2390,7 +2390,7 @@ class StatementService {
         .join('project_product', 'project_product.product_id', 'stock_historic.product_id')
         .where('type', '!=', 'diggers')
         .where('type', '!=', 'preorder')
-        .where('stock_historic.created_at', '>=', payload.month)
+        .where('stock_historic.created_at', '>=', params.month)
         .orderBy('stock_historic.created_at', 'desc')
         .whereIn(
           'project_product.project_id',
@@ -2412,7 +2412,7 @@ class StatementService {
       }
     }
 
-    payload.month = payload.month.substring(0, 7) + '-01'
+    params.month = params.month.substring(0, 7) + '-01'
 
     const currenciesDb = await Utils.getCurrenciesDb()
 
@@ -2429,13 +2429,13 @@ class StatementService {
       let cost = await DB('production_cost')
         .where('project_id', p.id)
         .where('type', 'storage')
-        .where('date', payload.month.substring(0, 7) + '-01')
+        .where('date', params.month.substring(0, 7) + '-01')
         .first()
 
       if (!cost) {
         cost = DB('production_cost')
         cost.project_id = p.id
-        cost.date = payload.month
+        cost.date = params.month
         cost.type = 'storage'
         cost.created_at = Utils.date()
       }

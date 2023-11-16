@@ -49,7 +49,7 @@ class Customer {
       .first()
   }
 
-  static searchAddress = async (payload: {
+  static searchAddress = async (params: {
     search: string
     lang: string
     country?: string
@@ -57,10 +57,10 @@ class Customer {
     lng?: number
   }) => {
     let url = `https://maps.googleapis.com/maps/api/place/autocomplete/json`
-    url += `?input=${payload.search}`
-    url += `&location=${payload.lat},${payload.lng}`
+    url += `?input=${params.search}`
+    url += `&location=${params.lat},${params.lng}`
     url += `&radius=10000`
-    url += `&language=${payload.lang}`
+    url += `&language=${params.lang}`
     url += `&key=${Env.get('GOOGLE_API_MAPS')}`
 
     const res = await Utils.request(url, {

@@ -91,19 +91,19 @@ class Song {
     return songs.all()
   }
 
-  static addPlay = async (payload: {
+  static addPlay = async (params: {
     song_id: number
     duration: number
     user_id?: number
     cookie_id?: string
   }) => {
-    const song = await DB('song').where('id', payload.song_id).first()
+    const song = await DB('song').where('id', params.song_id).first()
     if (song) {
       return DB('song_play').insert({
-        song_id: payload.song_id,
-        user_id: payload.user_id,
-        cookie_id: payload.cookie_id,
-        duration: payload.duration,
+        song_id: params.song_id,
+        user_id: params.user_id,
+        cookie_id: params.cookie_id,
+        duration: params.duration,
         created_at: Utils.date(),
         updated_at: Utils.date()
       })

@@ -281,46 +281,46 @@ class Digital {
     return { success: true }
   }
 
-  static async store(payload: DigitalDb) {
+  static async store(params: DigitalDb) {
     let item = <any>DB('digital')
-    if (payload.id) {
-      item = await DB('digital').find(payload.id)
+    if (params.id) {
+      item = await DB('digital').find(params.id)
       if (!item) {
         throw new ApiError(404)
       }
     } else {
       item.created_at = Utils.date()
     }
-    const user = await DB('user').where('id', payload.user_id).first()
+    const user = await DB('user').where('id', params.user_id).first()
 
-    item.user_id = payload.user_id
-    item.barcode = payload.barcode || null
-    item.project_name = payload.project_name || null
-    item.artist_name = payload.artist_name || null
-    item.barcode = payload.barcode || null
-    item.catalogue_number = payload.catalogue_number || null
-    item.project_type = payload.project_type || null
-    item.spotify_url = payload.spotify_url || null
-    item.genre = payload.genre?.join(',') || null
-    item.commercial_release_date = payload.commercial_release_date || null
-    item.preview_date = payload.preview_date || null
-    item.explicit_content = payload.explicit_content || 0
-    item.territory_included = payload.territory_included?.join(',') || null
-    item.territory_excluded = payload.territory_excluded?.join(',') || null
-    item.platforms_excluded = payload.platforms_excluded?.join(',') || null
-    item.registration_year = payload.registration_year || null
-    item.digital_rights_owner = payload.digital_rights_owner || null
-    item.label_name = payload.label_name || null
-    item.nationality_project = payload.nationality_project || null
+    item.user_id = params.user_id
+    item.barcode = params.barcode || null
+    item.project_name = params.project_name || null
+    item.artist_name = params.artist_name || null
+    item.barcode = params.barcode || null
+    item.catalogue_number = params.catalogue_number || null
+    item.project_type = params.project_type || null
+    item.spotify_url = params.spotify_url || null
+    item.genre = params.genre?.join(',') || null
+    item.commercial_release_date = params.commercial_release_date || null
+    item.preview_date = params.preview_date || null
+    item.explicit_content = params.explicit_content || 0
+    item.territory_included = params.territory_included?.join(',') || null
+    item.territory_excluded = params.territory_excluded?.join(',') || null
+    item.platforms_excluded = params.platforms_excluded?.join(',') || null
+    item.registration_year = params.registration_year || null
+    item.digital_rights_owner = params.digital_rights_owner || null
+    item.label_name = params.label_name || null
+    item.nationality_project = params.nationality_project || null
     item.email = user.email || null
-    item.comment = payload.comment || null
-    item.owner = payload.user_id || null
+    item.comment = params.comment || null
+    item.owner = params.user_id || null
     item.owner_name = user.name || null
     item.updated_at = Utils.date()
 
     await item.save()
 
-    if (payload.artwork) {
+    if (params.artwork) {
       if (item?.artwork) {
         Storage.deleteImage(`dev/artworks/${item.artwork}`)
       }
@@ -329,7 +329,7 @@ class Digital {
 
       Storage.uploadImage(
         filename,
-        Buffer.from(payload.artwork.replace(/^data:image\/(png|jpg|jpeg);base64,/, ''), 'base64'),
+        Buffer.from(params.artwork.replace(/^data:image\/(png|jpg|jpeg);base64,/, ''), 'base64'),
         {
           width: 2000,
           quality: 85

@@ -34,15 +34,15 @@ class Log {
     })
   }
 
-  static async all(payload: { type: string; id: number }) {
+  static async all(params: { type: string; id: number }) {
     const query = DB('log')
       .select('log.*', 'user.name')
       .join('user', 'user.id', 'user_id')
-      .where('log.type', payload.type)
-      .where('item_id', payload.id)
+      .where('log.type', params.type)
+      .where('item_id', params.id)
       .orderBy('log.id', 'desc')
     return Utils.getRows({
-      ...payload,
+      ...params,
       query: query
     })
   }

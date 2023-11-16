@@ -535,7 +535,7 @@ class Whiplash {
     return csv
   }
 
-  static syncStocks = async (payload?: { productIds?: number[] }) => {
+  static syncStocks = async (params?: { productIds?: number[] }) => {
     const listProducts = await DB('product')
       .select(
         'product.*',
@@ -554,8 +554,8 @@ class Whiplash {
       })
       .whereNotNull('barcode')
       .where((query: any) => {
-        if (payload && payload.productIds) {
-          query.whereIn('product.id', payload.productIds)
+        if (params && params.productIds) {
+          query.whereIn('product.id', params.productIds)
         }
       })
       .all()
@@ -565,7 +565,7 @@ class Whiplash {
       products[product.barcode] = product
     }
 
-    if (payload?.productIds) {
+    if (params?.productIds) {
       for (const product of listProducts) {
         if (product.whiplash_id === -1) {
           const item: any = await Whiplash.api(`/items/sku/${product.barcode}`)
@@ -870,12 +870,12 @@ class Whiplash {
     return iii
   }
 
-  static setProduct = async (payload?: { id?: number }) => {
+  static setProduct = async (params?: { id?: number }) => {
     const products = await DB('product')
       .whereNotNull('barcode')
       .where((query) => {
-        if (payload && payload.id) {
-          query.where('id', payload.id)
+        if (params && params.id) {
+          query.where('id', params.id)
         } else {
           query.whereNull('whiplash_id')
         }
@@ -896,15 +896,15 @@ class Whiplash {
     return Whiplash.api(`/shipnotices`)
   }
 
-  static createItem = async (payload: { id: number; sku: string; title: string }) => {
+  static createItem = async (params: { id: number; sku: string; title: string }) => {
     let item
-    let res: any = await Whiplash.api(`/items/sku/${payload.sku}`)
+    let res: any = await Whiplash.api(`/items/sku/${params.sku}`)
     if (res.length === 0) {
       item = await Whiplash.api(`/items`, {
         method: 'POST',
         body: {
-          sku: payload.sku,
-          title: payload.title,
+          sku: params.sku,
+          title: params.title,
           media_mail: true
         }
       })
@@ -912,34 +912,34 @@ class Whiplash {
     } else {
       item = res[0]
     }
-    await DB('product').where('id', payload.id).update({
+    await DB('product').where('id', params.id).update({
       whiplash_id: item.id
     })
     return item
   }
 
-  static createShopNotice = async (payload: {
+  static createShopNotice = async (params: {
     sender: string
     eta: string
     logistician: string
     products: any[]
   }) => {
-    for (const p in payload.products) {
+    for (const p in params.products) {
       const item: any = await Whiplash.createItem({
-        id: payload.products[p].id,
-        sku: payload.products[p].barcode,
-        title: payload.products[p].name
+        id: params.products[p].id,
+        sku: params.products[p].barcode,
+        title: params.products[p].name
       })
-      payload.products[p].item_id = item.id
+      params.products[p].item_id = item.id
     }
 
     const res = await Whiplash.api(`/shipnotices`, {
       method: 'POST',
       body: {
-        sender: payload.sender,
-        eta: payload.eta,
-        warehouse_id: payload.logistician === 'whiplash' ? 4 : 3,
-        shipnotice_items: payload.products.map((p) => {
+        sender: params.sender,
+        eta: params.eta,
+        warehouse_id: params.logistician === 'whiplash' ? 4 : 3,
+        shipnotice_items: params.products.map((p) => {
           return {
             item_id: p.item_id,
             quantity: p.quantity

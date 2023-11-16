@@ -21,11 +21,11 @@ class Paypal {
     return JSON.parse(access).access_token
   }
 
-  static async create(payload: any) {
+  static async create(params: any) {
     const credential = await Paypal.getCredential()
     const res: any = await Utils.request(`${base}/v2/checkout/orders`, {
       method: 'post',
-      json: payload,
+      json: params,
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${credential}`
@@ -34,9 +34,9 @@ class Paypal {
     return res
   }
 
-  static async capture(payload: { orderId: string }) {
+  static async capture(params: { orderId: string }) {
     const credential = await Paypal.getCredential()
-    const res: any = await Utils.request(`${base}/v2/checkout/orders/${payload.orderId}/capture`, {
+    const res: any = await Utils.request(`${base}/v2/checkout/orders/${params.orderId}/capture`, {
       method: 'post',
       headers: {
         'Content-Type': 'application/json',

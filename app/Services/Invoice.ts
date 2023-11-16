@@ -511,7 +511,7 @@ class Invoice {
     return { success: true }
   }
 
-  static async export(payload: { start: string; end: string }) {
+  static async export(params: { start: string; end: string }) {
     const workbook = new Excel.Workbook()
 
     const datas = await DB('invoice')
@@ -544,8 +544,8 @@ class Invoice {
       )
       .leftJoin('order', 'order.id', 'order_id')
       .leftJoin('customer', 'customer.id', 'customer_id')
-      .where('date', '>=', payload.start)
-      .where('date', '<=', payload.end)
+      .where('date', '>=', params.start)
+      .where('date', '<=', params.end)
       .orderBy('date', 'asc')
       .where('compatibility', true)
       .all()
@@ -926,7 +926,7 @@ class Invoice {
     return zip.generateAsync({ type: 'nodebuffer' })
   }
 
-  static async exportB2C(payload: { start: string; end: string }) {
+  static async exportB2C(params: { start: string; end: string }) {
     const customer = {
       stripe: {
         EUR: {
@@ -1013,7 +1013,7 @@ class Invoice {
         query.whereNotNull('invoice.order_id')
         query.orWhere('name', 'like', `Shipping return %`)
       })
-      .whereBetween('invoice.date', [payload.start, payload.end + ' 23:59'])
+      .whereBetween('invoice.date', [params.start, params.end + ' 23:59'])
       .all()
 
     for (const invoice of invoices) {
@@ -1043,7 +1043,7 @@ class Invoice {
     for (const [paymentType, currencies] of Object.entries(customer)) {
       for (const [currency, value] of Object.entries(currencies)) {
         lines.push({
-          date: `${payload.start} - ${payload.end}`,
+          date: `${params.start} - ${params.end}`,
           name: `${paymentType} - ${currency}`,
           payment_type: paymentType,
           currency: currency,

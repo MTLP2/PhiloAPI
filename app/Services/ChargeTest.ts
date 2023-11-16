@@ -2,10 +2,10 @@ import request from 'request'
 import Utils from 'App/Utils'
 
 class ChargeTest {
-  static test = async (payload: { number: number; time: number }) => {
+  static test = async (params: { number: number; time: number }) => {
     const start = new Date()
     let ok = 0
-    console.log(`🚀 Test starting => ${payload.number} times`)
+    console.log(`🚀 Test starting => ${params.number} times`)
 
     const request = async (i) => {
       const id = Utils.randomString(10, '#aA')
@@ -71,8 +71,8 @@ class ChargeTest {
       if (res.code) ok++
     }
 
-    const perSeconds = Math.ceil(payload.number / payload.time)
-    for (let s = 1; s <= payload.time; s++) {
+    const perSeconds = Math.ceil(params.number / params.time)
+    for (let s = 1; s <= params.time; s++) {
       console.log('----------> ', s)
       for (let q = 1; q <= perSeconds; q++) {
         request(s * q)
@@ -84,8 +84,8 @@ class ChargeTest {
 
     const res = {
       success: ok,
-      number: payload.number,
-      pourcent: (ok / payload.number) * 100,
+      number: params.number,
+      pourcent: (ok / params.number) * 100,
       time: Utils.round((end.getTime() - start.getTime()) / 600, 2)
     }
 
@@ -98,17 +98,17 @@ class ChargeTest {
     return new Promise((resolve) => setTimeout(resolve, ms))
   }
 
-  static fetch = (payload: { url: string; method?: string; token?: string; body?: any }) => {
+  static fetch = (params: { url: string; method?: string; token?: string; body?: any }) => {
     return new Promise((resolve, reject) => {
       request(
         {
-          method: payload.method,
-          url: payload.url,
+          method: params.method,
+          url: params.url,
           json: true,
           headers: {
-            Authorization: `Bearer ${payload.token}`
+            Authorization: `Bearer ${params.token}`
           },
-          body: payload.body
+          body: params.body
         },
         function (err, res, body) {
           if (err) {

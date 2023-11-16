@@ -2806,7 +2806,7 @@ class Stats {
       .all()
   }
 
-  static getDirectPressing: (payload: {
+  static getDirectPressing: (params: {
     periodicity?: string
     start?: string
     end?: string
@@ -2815,19 +2815,19 @@ class Stats {
     invoiced: { [key: string]: number }
     turnover: { [key: string]: number }
     turnover_invoiced: { [key: string]: number }
-  }> = async (payload) => {
+  }> = async (params) => {
     const projects = await DB('project')
       .select('project.created_at', 'quote', 'currency', 'historic')
       .join('vod', 'vod.project_id', 'project.id')
       .where('type', 'direct_pressing')
       .all()
 
-    const start = payload.start ? moment(payload.start) : moment().subtract(20, 'days')
-    const end = moment(payload.end || undefined)
+    const start = params.start ? moment(params.start) : moment().subtract(20, 'days')
+    const end = moment(params.end || undefined)
 
     let format
     let periodicity
-    if (!payload.periodicity || payload.periodicity === 'day') {
+    if (!params.periodicity || params.periodicity === 'day') {
       periodicity = 'days'
       format = 'YYYY-MM-DD'
     } else {

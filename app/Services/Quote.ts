@@ -5,7 +5,7 @@ import Excel from 'exceljs'
 import View from '@ioc:Adonis/Core/View'
 import I18n from '@ioc:Adonis/Addons/I18n'
 
-type CostPayloads = {
+type CostParams = {
   l: number | { '12"'?: number | boolean; '10"'?: number | boolean; '7"'?: number | boolean }
   type: string
   option: string
@@ -270,7 +270,7 @@ class Quote {
     data.project = data.id !== undefined
 
     const logs: any[] = []
-    const getCost = (payload: CostPayloads): number => {
+    const getCost = (payload: CostParams): number => {
       if (!payload.l) {
         logs.push({
           option: payload.type,

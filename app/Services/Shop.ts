@@ -19,7 +19,7 @@ class Shop {
     return Utils.getRows<ShopDb[]>(params)
   }
 
-  static async find(payload: {
+  static async find(params: {
     id?: number
     user_id?: number
     code?: string
@@ -28,14 +28,14 @@ class Shop {
   }) {
     let shop: any = DB('shop').select('shop.*')
 
-    if (payload.id) {
-      shop.where('shop.id', payload.id)
-    } else if (payload.code) {
-      shop.where('code', payload.code)
+    if (params.id) {
+      shop.where('shop.id', params.id)
+    } else if (params.code) {
+      shop.where('code', params.code)
     }
-    if (payload.user_id) {
+    if (params.user_id) {
       shop.join('user', 'user.shop_id', 'shop.id')
-      shop.where('user.id', payload.user_id)
+      shop.where('user.id', params.user_id)
     }
 
     shop = await shop.first()
@@ -43,10 +43,10 @@ class Shop {
     if (!shop) {
       throw new ApiError(404)
     }
-    if (payload.projects !== false) {
+    if (params.projects !== false) {
       shop.projects = await Project.findAll({
         shop_id: shop.id,
-        all_project: payload.all_project,
+        all_project: params.all_project,
         limit: 99999
       })
     }
@@ -54,7 +54,7 @@ class Shop {
     return shop
   }
 
-  static async update(payload: {
+  static async update(params: {
     id?: number
     user_id: number
     name: string
@@ -72,12 +72,12 @@ class Shop {
   }) {
     let item: ShopModel = <any>DB('shop')
 
-    const code = payload.code ? payload.code : Utils.slugify(payload.name)
+    const code = params.code ? params.code : Utils.slugify(params.name)
     const codeUsed = await DB('shop')
       .where('code', code)
       .where((query) => {
-        if (payload.id) {
-          query.where('id', '!=', payload.id)
+        if (params.id) {
+          query.where('id', '!=', params.id)
         }
       })
       .first()
@@ -86,62 +86,62 @@ class Shop {
       throw new ApiError(406, 'code_used')
     }
 
-    if (payload.id) {
-      item = await DB('shop').find(payload.id)
+    if (params.id) {
+      item = await DB('shop').find(params.id)
       if (!item) {
         throw new ApiError(404)
       }
     } else {
       item.created_at = Utils.date()
     }
-    item.name = payload.name
-    item.code = payload.code ? payload.code : Utils.slugify(payload.name)
-    item.bg_color = payload.bg_color
-    item.font_color = payload.font_color
-    item.title_color = payload.title_color
-    item.line_items = payload.line_items
-    item.white_label = payload.white_label
-    item.youtube = payload.youtube
-    item.group_shipment = payload.group_shipment
+    item.name = params.name
+    item.code = params.code ? params.code : Utils.slugify(params.name)
+    item.bg_color = params.bg_color
+    item.font_color = params.font_color
+    item.title_color = params.title_color
+    item.line_items = params.line_items
+    item.white_label = params.white_label
+    item.youtube = params.youtube
+    item.group_shipment = params.group_shipment
     item.updated_at = Utils.date()
 
-    if (payload.logo) {
+    if (params.logo) {
       if (item.logo) {
         Storage.deleteImage(item.logo)
       }
       const fileName = `shops/${Utils.uuid()}`
       item.logo = fileName
-      Storage.uploadImage(fileName, Buffer.from(payload.logo, 'base64'), {
+      Storage.uploadImage(fileName, Buffer.from(params.logo, 'base64'), {
         type: 'png',
         width: 300
       })
     }
-    if (payload.banner) {
+    if (params.banner) {
       if (item.banner) {
         Storage.deleteImage(item.banner)
       }
       const fileName = `shops/${Utils.uuid()}`
       item.banner = fileName
-      Storage.uploadImage(fileName, Buffer.from(payload.banner, 'base64'), {
+      Storage.uploadImage(fileName, Buffer.from(params.banner, 'base64'), {
         type: 'jpg',
         width: 2200
       })
     }
-    if (payload.bg_image) {
+    if (params.bg_image) {
       if (item.bg_image) {
         Storage.deleteImage(item.bg_image)
       }
       const fileName = `shops/${Utils.uuid()}`
       item.bg_image = fileName
-      Storage.uploadImage(fileName, Buffer.from(payload.bg_image, 'base64'), {
+      Storage.uploadImage(fileName, Buffer.from(params.bg_image, 'base64'), {
         type: 'png',
         width: 300
       })
     }
 
     await item.save()
-    if (!payload.id && payload.user_id) {
-      DB('user').where('id', payload.user_id).update({
+    if (!params.id && params.user_id) {
+      DB('user').where('id', params.user_id).update({
         shop_id: item.id
       })
     }
@@ -149,16 +149,16 @@ class Shop {
     return { id: item.id, success: true }
   }
 
-  static async removeImage(payload: { shop_id: number; type: string }) {
-    const item: ShopModel = await DB('shop').find(payload.shop_id)
+  static async removeImage(params: { shop_id: number; type: string }) {
+    const item: ShopModel = await DB('shop').find(params.shop_id)
 
-    if (payload.type === 'banner' && item.banner) {
+    if (params.type === 'banner' && item.banner) {
       Storage.deleteImage(item.banner)
       item.banner = null
-    } else if (payload.type === 'logo' && item.logo) {
+    } else if (params.type === 'logo' && item.logo) {
       Storage.deleteImage(item.logo)
       item.logo = null
-    } else if (payload.type === 'bg_image' && item.bg_image) {
+    } else if (params.type === 'bg_image' && item.bg_image) {
       Storage.deleteImage(item.bg_image)
       item.bg_image = null
     }
@@ -170,29 +170,29 @@ class Shop {
     return { success: true }
   }
 
-  static async addProject(payload: { shop_id: number; project_id: number }) {
+  static async addProject(params: { shop_id: number; project_id: number }) {
     const exists = await DB('shop_project')
-      .where('shop_id', payload.shop_id)
-      .where('project_id', payload.project_id)
+      .where('shop_id', params.shop_id)
+      .where('project_id', params.project_id)
       .first()
 
     if (exists) {
       return false
     } else {
       await DB('shop_project').insert({
-        shop_id: payload.shop_id,
-        project_id: payload.project_id
+        shop_id: params.shop_id,
+        project_id: params.project_id
       })
     }
 
     return { success: true }
   }
 
-  static async removeProject(payload: { shop_id: number; project_id: number }) {
+  static async removeProject(params: { shop_id: number; project_id: number }) {
     await DB('shop_project')
       .where({
-        shop_id: payload.shop_id,
-        project_id: payload.project_id
+        shop_id: params.shop_id,
+        project_id: params.project_id
       })
       .delete()
 
@@ -217,23 +217,23 @@ class Shop {
     return { shop: shop ? shop.id : null }
   }
 
-  static async changeProjectPosition(payload: {
+  static async changeProjectPosition(params: {
     shop_id: number
     project_id: number
     position: string
   }) {
     const projects = await DB('shop_project')
-      .where('shop_id', payload.shop_id)
+      .where('shop_id', params.shop_id)
       .orderBy('position', 'asc')
       .all()
 
-    const pos = projects.findIndex((p) => p.project_id === payload.project_id)
+    const pos = projects.findIndex((p) => p.project_id === params.project_id)
 
-    if (payload.position === 'up' && pos !== 0) {
+    if (params.position === 'up' && pos !== 0) {
       const moved = projects[pos - 1]
       projects[pos - 1] = projects[pos]
       projects[pos] = moved
-    } else if (payload.position === 'down' && pos !== projects.length - 1) {
+    } else if (params.position === 'down' && pos !== projects.length - 1) {
       const moved = projects[pos + 1]
       projects[pos + 1] = projects[pos]
       projects[pos] = moved
@@ -249,19 +249,19 @@ class Shop {
     return { success: true }
   }
 
-  static async setFeatured(payload: { shop_id: number; project_id: number; featured: boolean }) {
+  static async setFeatured(params: { shop_id: number; project_id: number; featured: boolean }) {
     await DB('shop_project')
-      .where('project_id', payload.project_id)
-      .where('shop_id', payload.shop_id)
+      .where('project_id', params.project_id)
+      .where('shop_id', params.shop_id)
       .update({
-        featured: payload.featured
+        featured: params.featured
       })
 
     return { success: true }
   }
 
-  static async groupShipment(payload: { shop_id: number }) {
-    const projects = await DB('shop_project').where('shop_id', payload.shop_id).all()
+  static async groupShipment(params: { shop_id: number }) {
+    const projects = await DB('shop_project').where('shop_id', params.shop_id).all()
 
     for (const project of projects) {
       await DB('item')

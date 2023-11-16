@@ -2471,7 +2471,7 @@ class Project {
       .all()
   }
 
-  static exportTestPressing = async (payload: { start: string; end: string }) => {
+  static exportTestPressing = async (params: { start: string; end: string }) => {
     const items = await DB('vod')
       .select(
         'project.id',
@@ -2485,11 +2485,11 @@ class Project {
           .whereRaw('order_item.project_id = project.id')
           .where('is_paid', true)
           .where((query) => {
-            if (payload.start) {
-              query.where('order_item.created_at', '>=', payload.start)
+            if (params.start) {
+              query.where('order_item.created_at', '>=', params.start)
             }
-            if (payload.end) {
-              query.where('order_item.created_at', '<=', payload.end)
+            if (params.end) {
+              query.where('order_item.created_at', '<=', params.end)
             }
           })
           .as('quantity')

@@ -4,21 +4,21 @@ import Env from '@ioc:Adonis/Core/Env'
 class Revolut {
   static api = (
     url: string,
-    payload?: {
+    params?: {
       method?: string
     }
   ) => {
     return new Promise((resolve, reject) => {
       request(
         {
-          method: payload?.method || 'GET',
+          method: params?.method || 'GET',
           url: `https://sandbox-b2b.revolut.com/api/1.0/${url}`,
           // url: `https://merchant.revolut.com/api/1.0/${url}`,
           json: true,
           headers: {
             Authorization: `Bearer ${Env.get('REVOLUT_SECRET')}`
           },
-          body: payload
+          body: params
         },
         function (err, res, body) {
           console.log(res.statusCode)
