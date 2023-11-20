@@ -4488,19 +4488,18 @@ class Admin {
     const shops = await DB()
       .select(
         'quantity',
-        'vod.barcode',
+        'product.type',
+        'product.name',
+        'product.barcode',
         'project.id',
-        'project.name',
-        'project.artist_name',
-        'os.transporter',
-        'item.name as item_name',
-        'item.barcode as item_barcode'
+        'os.transporter'
       )
       .from('order_item as oi')
       .join('vod', 'vod.project_id', 'oi.project_id')
       .join('project', 'project.id', 'oi.project_id')
       .join('order_shop as os', 'os.id', 'oi.order_shop_id')
-      .leftOuterJoin('item', 'item.id', 'oi.item_id')
+      .join('project_product', 'project_product.project_id', 'project.id')
+      .join('product', 'project_product.product_id', 'product.id')
       .whereNull('date_export')
       .where('os.transporter', transporter)
       .where('os.is_paid', 1)
@@ -4512,45 +4511,31 @@ class Admin {
 
     const barcodes = {}
     for (const shop of shops) {
-      const bb = (shop.item_barcode || shop.barcode).split(',')
-      for (const barcode of bb) {
-        barcodes[barcode] = {
-          barcode: false
-        }
+      barcodes[shop.barcode] = {
+        barcode: false
       }
     }
-
-    const projects = await DB()
-      .select('project_id', 'project.name', 'project.artist_name', 'barcode')
-      .from('project')
-      .join('vod', 'vod.project_id', 'project.id')
-      .whereIn('barcode', Object.keys(barcodes))
-      .all()
-
-    for (const project of projects) {
-      barcodes[project.barcode] = project
-    }
+    console.log(barcodes)
 
     const qty = {}
     for (const shop of shops) {
-      const bb = (shop.item_barcode || shop.barcode).split(',')
-      for (const barcode of bb) {
-        if (!qty[barcode]) {
-          if (barcodes[barcode].barcode) {
-            qty[barcode] = barcodes[barcode]
-          } else {
-            qty[barcode] = {
-              name: shop.item_name || shop.name,
-              artist_name: shop.artist_name
-            }
+      const barcode = shop.barcode
+      if (!qty[barcode]) {
+        if (barcodes[barcode].barcode) {
+          qty[barcode] = barcodes[barcode]
+        } else {
+          qty[barcode] = {
+            name: shop.name,
+            artist_name: shop.artist_name
           }
-          qty[barcode].barcode = barcode
-          qty[barcode].quantity = 0
         }
-        qty[barcode].quantity += shop.quantity
+        qty[barcode].barcode = barcode
+        qty[barcode].quantity = 0
       }
+      qty[barcode].quantity += shop.quantity
     }
 
+    console.log(qty)
     return Object.values(qty).sort((a, b) => {
       if (a.quantity < b.quantity) {
         return 1
