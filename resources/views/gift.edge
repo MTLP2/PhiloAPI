@@ -21,33 +21,51 @@
       background-repeat: no-repeat;
       position: relative;
     }
+    .user {
+      font-weight: bold;
+      position: absolute;
+      top: 19%;
+      font-size: 18px;
+      left: 0;
+      right: 0;
+    }
     .type {
       font-weight: bold;
       position: absolute;
-      top: 60%;
-      font-size: 23px;
+      top: 52.8%;
+      font-size: 18px;
       left: 0;
       right: 0;
     }
     .code {
       position: absolute;
-      font-size: 21px;
-      top: 64%;
+      font-size: 16px;
+      top: 54.8%;
       left: 0;
       right: 0;
     }
     img {
-      width: 550px;
+      width: 400px;
       position: absolute;
       top: 30%;
-      left: 0%;
+      left: 12%;
+    }
+    img.picture {
+      width: 300px;
+      top: 28%;
+      left: 25%;
     }
   </style>
 </head>
 
 <body>
-  <div class="card" style="background-image: url(https://storage.diggersfactory.com/assets/images/gifts/gift.jpg);">
-    <img src="{{ picture }}" />
+  <div class="card" style="background-image: url(https://storage.diggersfactory.com/assets/images/gifts/gift2023_{{ lang }}.jpg);">
+    @if(picture_project)
+      <img src="{{ picture }}" class="picture" />
+    @else
+      <img src="{{ picture }}" />
+    @endif
+    <div class="user">{{ user }}</div>
     <div class="type">{{ artist }}</div>
     <div class="code">{{ name }}</div>
   </div>

@@ -761,7 +761,11 @@ class User {
     return Review.getUserBoxReview({ userId: uid, boxId: bid })
   }
 
-  static downloadCard = async (params) => {
+  static downloadCard = async (params: {
+    user_id: number
+    box_id?: number
+    project_id?: number
+  }) => {
     const user = await DB('user').where('id', params.user_id).first()
 
     if (params.box_id) {
@@ -782,15 +786,22 @@ class User {
       }
     } else if (params.project_id) {
       const project = await DB('project')
-        .select('id', 'artist_name', 'name', 'picture')
-        .where('id', params.project_id)
+        .select('project.id', 'artist_name', 'name', 'picture', 'picture_project')
+        .join('vod', 'vod.project_id', 'project.id')
+        .where('project.id', params.project_id)
         .first()
 
       const html = await View.render('gift', {
         artist: project.artist_name,
         name: project.name,
-        picture: `${Env.get('STORAGE_URL')}/projects/${project.picture}/vinyl.png`
+        user: user.name,
+        lang: user.lang,
+        picture_project: project.picture_project,
+        picture: project.picture_project
+          ? `${Env.get('STORAGE_URL')}/projects/${project.picture}/${project.picture_project}.png`
+          : `${Env.get('STORAGE_URL')}/projects/${project.picture}/vinyl.png`
       })
+      return html
       return Utils.toPdf(html)
     }
   }
