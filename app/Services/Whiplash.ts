@@ -138,7 +138,7 @@ class Whiplash {
     }
     return Whiplash.api(`/items/sku/${sku}`).then((res: any[]) => {
       if (!res || res.length === 0) {
-        return { error: 'not_found' }
+        return { error: `not_found_${sku}` }
         // If eligible for media mail is not activited we return null
       } else if (!res[0].media_mail) {
         return { error: 'media_mail' }
