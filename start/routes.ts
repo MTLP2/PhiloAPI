@@ -322,7 +322,6 @@ Route.group(() => {
   Route.get('/alerts', 'AdminController.getAlerts')
   Route.get('/alerts/:id', 'AdminController.getAlert')
   Route.post('/alerts/:id', 'AdminController.saveAlert')
-  Route.post('/customers', 'AdminController.saveCustomer')
   Route.get('/shops', 'ShopController.all')
   Route.get('/projects', 'AdminController.getProjects')
   Route.get('/projects/export', 'AdminController.exportProjects')
