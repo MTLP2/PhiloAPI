@@ -499,7 +499,14 @@ class Product {
 
   static async forUser(params: { user_id: number; ship_notices: boolean }) {
     const products = await DB('product')
-      .select('product.id as product_id', 'product.name', 'product.type', 'product.barcode')
+      .select(
+        'product.id as product_id',
+        'product.name',
+        'product.type',
+        'product.barcode',
+        'product.whiplash_id',
+        'product.ekan_id'
+      )
       .join('project_product', 'project_product.product_id', 'product.id')
       .join('project_user', 'project_user.project_id', 'project_product.project_id')
       .where('project_user.user_id', params.user_id)
