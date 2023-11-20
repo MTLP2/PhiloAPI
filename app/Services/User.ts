@@ -801,7 +801,6 @@ class User {
           ? `${Env.get('STORAGE_URL')}/projects/${project.picture}/${project.picture_project}.png`
           : `${Env.get('STORAGE_URL')}/projects/${project.picture}/vinyl.png`
       })
-      return html
       return Utils.toPdf(html)
     }
   }
