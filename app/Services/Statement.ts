@@ -353,7 +353,7 @@ class StatementService {
       if (digital) {
         digital.eachRow((row) => {
           const barcode = row.getCell('D').value
-          if (barcode && barcode !== 'Barcode') {
+          if (barcode && typeof barcode === 'number') {
             if (!data[barcode]) {
               data[barcode] = {
                 barcode: barcode,
