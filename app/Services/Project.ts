@@ -47,6 +47,8 @@ class Project {
 
     if (project.barcode && project.barcode.indexOf('MERCH') > -1) {
       project.sizes = true
+    } else {
+      project.sizes = false
     }
     delete project.barcode
 
