@@ -3,7 +3,7 @@ import Utils from 'App/Utils'
 
 class Alerts {
   static all = (params: { filters?: string; sort?: any; size?: number }) => {
-    const query = DB('alert').orderBy('sort', 'asc')
+    const query = DB('alert')
     return Utils.getRows({
       ...params,
       query: query
