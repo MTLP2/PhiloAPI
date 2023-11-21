@@ -202,6 +202,7 @@ Route.get('/featured/all', 'UserController.getAllFeatured')
 
 Route.get('/linktree', 'AdminController.getLinktree')
 Route.get('/linktree/:id', 'AdminController.getOneLinktree')
+Route.post('linktree/:id/visit', 'AdminController.addVisitLinktree')
 
 Route.group(() => {
   Route.get('/cart', 'CartController.getCart')
