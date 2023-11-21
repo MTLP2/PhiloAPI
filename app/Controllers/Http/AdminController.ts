@@ -66,6 +66,17 @@ class AdminController {
     return Linktree.delete(params)
   }
 
+  async addVisitLinktree({ params }) {
+    const payload = await validator.validate({
+      schema: schema.create({
+        id: schema.number(),
+        link_id: schema.number.optional()
+      }),
+      data: params
+    })
+    return Linktree.addVisit(payload)
+  }
+
   getProjectsTurnover({ params }) {
     return Stats.getProjectsTurnover(params)
   }
