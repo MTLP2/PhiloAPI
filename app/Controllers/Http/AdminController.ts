@@ -1465,6 +1465,20 @@ class AdminController {
       return { error: err.message, validation: err.messages }
     }
   }
+
+  async importOderManual({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          file: schema.string()
+        }),
+        data: params
+      })
+      return Order.importManual(payload)
+    } catch (err) {
+      return { error: err.message, validation: err.messages }
+    }
+  }
 }
 
 export default AdminController

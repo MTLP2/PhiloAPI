@@ -1043,6 +1043,11 @@ static toJuno = async (params) => {
               })
             }
           ])
+          if (dispatch[0] && dispatch[0].status === 'error') {
+            return {
+              error: dispatch[0].status_detail
+            }
+          }
           if (item.order_shop_id) {
             await DB('order_shop').where('id', item.order_shop_id).update({
               logistician_id: dispatch.id,
@@ -1114,6 +1119,32 @@ static toJuno = async (params) => {
     }
 
     return item
+  }
+
+  static importManual = async (params: { file: any }) => {
+    const file = Buffer.from(params.file, 'base64')
+    const workbook = new Excel.Workbook()
+    await workbook.xlsx.load(file)
+    const worksheet = workbook.getWorksheet(1)
+    const columns: {
+      label: string
+      letter: string
+    }[] = []
+
+    let i = 1
+    do {
+      const cell = worksheet.getCell(`${Utils.columnToLetter(i)}1`)
+      if (typeof cell.text === 'string' && cell.text !== '') {
+        columns.push({
+          label: cell.text,
+          letter: Utils.columnToLetter(i)
+        })
+      } else {
+        break
+      }
+    } while (i++)
+
+    return columns
   }
 
   static getOrderManualInvoiceCo = async (params: {

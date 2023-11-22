@@ -4259,6 +4259,7 @@ class Admin {
     const currencies = await Utils.getCurrenciesDb()
 
     const sanitizeForCSV = (str: string) => {
+      if (!str) return ''
       return str.replace(/[`"]/g, '＂')
     }
 
@@ -4349,7 +4350,7 @@ class Admin {
           ? 'Médias > Musique et enregistrements audio > Disques et vinyles'
           : 'Media > Music & Sound Recordings > Records & LPs' + ';'
       csv += pp.styles.includes('Soundtrack')
-        ? `"Soundtrack > ${sanitizeForCSV(pp.name.split('-')[1].trim())}"`
+        ? `"Soundtrack > ${sanitizeForCSV(pp.name.split('-')[1]?.trim())}"`
         : '' + ';'
       csv += '\n'
     }
