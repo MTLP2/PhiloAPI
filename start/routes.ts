@@ -203,6 +203,8 @@ Route.get('/featured/all', 'UserController.getAllFeatured')
 Route.get('/linktree', 'AdminController.getLinktree')
 Route.get('/linktree/:id', 'AdminController.getOneLinktree')
 
+Route.get('/alerts', 'AppController.getAlertShow')
+
 Route.group(() => {
   Route.get('/cart', 'CartController.getCart')
   Route.post('/cart', 'CartController.saveCart')
@@ -321,7 +323,10 @@ Route.group(() => {
   Route.post('/customers', 'AdminController.saveCustomer')
   Route.get('/alerts', 'AdminController.getAlerts')
   Route.get('/alerts/:id', 'AdminController.getAlert')
+  Route.delete('/alerts/:id', 'AdminController.deleteAlert')
+  Route.post('/alerts', 'AdminController.saveAlert')
   Route.post('/alerts/:id', 'AdminController.saveAlert')
+  Route.post('/alerts/:id/toggle', 'AdminController.toggleAlert')
   Route.get('/shops', 'ShopController.all')
   Route.get('/projects', 'AdminController.getProjects')
   Route.get('/projects/export', 'AdminController.exportProjects')
