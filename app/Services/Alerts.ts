@@ -49,7 +49,6 @@ class Alerts {
     const item = await DB('alert').find(params.id)
     await item.delete()
 
-    console.log('item', item)
     return item
   }
 
