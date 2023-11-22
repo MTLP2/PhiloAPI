@@ -155,6 +155,9 @@ class StatementService {
       case 'Hollande':
         data = this.parseHollande(workbook)
         break
+      case 'Matrix':
+        data = this.parseMatrix(workbook)
+        break
       default:
         throw new ApiError(404, 'Distributor not found')
     }
@@ -632,14 +635,37 @@ class StatementService {
 
     const data = {}
     worksheet.eachRow((row) => {
-      const barcode = row.getCell('B').value
-      const quantity = row.getCell('P').value
-      const total = row.getCell('S').value
+      const barcode = row.getCell('P').value
+      const quantity = row.getCell('T').value
+      const total = row.getCell('').value
 
       if (Number.isInteger(quantity) && total !== 0) {
         data[barcode] = {
           barcode: barcode,
           country_id: 'NL',
+          quantity: quantity || 0,
+          returned: 0,
+          total: total
+        }
+      }
+    })
+
+    return data
+  }
+
+  static parseMatrix(workbook: any) {
+    const worksheet = workbook.getWorksheet(1)
+
+    const data = {}
+    worksheet.eachRow((row) => {
+      const barcode = row.getCell('B').value
+      const quantity = row.getCell('G').value
+      const total = row.getCell('L').value
+
+      if (Number.isInteger(quantity) && total !== 0) {
+        data[barcode] = {
+          barcode: barcode,
+          country_id: 'SI',
           quantity: quantity || 0,
           returned: 0,
           total: total
