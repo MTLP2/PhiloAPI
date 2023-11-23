@@ -1438,7 +1438,7 @@ class AdminController {
     }
   }
 
-  async importOderManual({ params }) {
+  async getColumnsManual({ params }) {
     try {
       const payload = await validator.validate({
         schema: schema.create({
@@ -1446,7 +1446,23 @@ class AdminController {
         }),
         data: params
       })
-      return Order.importManual(payload)
+      return Order.getColumnsManual(payload)
+    } catch (err) {
+      return { error: err.message, validation: err.messages }
+    }
+  }
+
+  async getBarcodesManual({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          file: schema.string(),
+          barcode: schema.string(),
+          quantity: schema.string()
+        }),
+        data: params
+      })
+      return Order.getBarcodesManual(payload)
     } catch (err) {
       return { error: err.message, validation: err.messages }
     }
