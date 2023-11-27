@@ -77,7 +77,11 @@ class Alerts {
 
   static async getAlertShow() {
     const item = await DB('alert').where('is_active', true).first()
-    return item
+    if (!item) {
+      return {}
+    } else {
+      return item
+    }
   }
 }
 
