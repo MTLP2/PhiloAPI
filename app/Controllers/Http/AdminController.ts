@@ -1449,7 +1449,6 @@ class AdminController {
     }
   }
 
-<<<<<<< app/Controllers/Http/AdminController.ts
   async deleteAlert({ params }) {
     try {
       const payload = await validator.validate({
