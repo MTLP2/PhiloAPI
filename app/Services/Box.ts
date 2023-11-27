@@ -503,7 +503,7 @@ class Box {
     }
     **/
 
-    if (params.promo_code) {
+    if (params.promo_code && !prices.promo) {
       let promo: any = await DB('promo_code')
         .where('code', params.promo_code.toUpperCase())
         .where('on_box', 1)
