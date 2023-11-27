@@ -98,8 +98,12 @@ class Elogik {
   }
 
   static getTransporter(order: any) {
-    // Force colissimo for HHV and Vinyl Digital
-    if (order.user_id === 6077 || order.user_id === 4017) {
+    if (order.shipping_type === 'kuehne_nagel') {
+      return { id: 132, name: 'Kuehne Nagel' }
+    } else if (order.shipping_type === 'sedrap') {
+      return { id: 38, name: 'Enlevement Sedrap' }
+      // Force colissimo for HHV and Vinyl Digital
+    } else if (order.user_id === 6077 || order.user_id === 4017) {
       return { id: 6, name: 'COL' }
     } else if (order.shipping_type === 'letter') {
       return { id: 52, name: 'LTS' }

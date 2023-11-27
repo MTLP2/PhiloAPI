@@ -917,61 +917,65 @@ static toJuno = async (params) => {
     let item: any = DB('order_manual')
 
     const products = {}
-    const errors = {}
-    if (!params.id && !params.force) {
-      const promises: (() => Promise<void>)[] = [] as any
+    if (!params.force) {
+      const errors = {}
+      if (!params.id && !params.force) {
+        const promises: (() => Promise<void>)[] = [] as any
 
-      for (const b of params.barcodes) {
-        promises.push(async () => {
-          const product = await DB('product')
-            .select('product.id', 'stock.id as stock_id', 'stock.quantity')
-            .where('barcode', b.barcode)
-            .leftJoin('stock', 'stock.product_id', 'product.id')
-            .where('stock.type', params.transporter)
-            .first()
+        for (const b of params.barcodes) {
+          promises.push(async () => {
+            const product = await DB('product')
+              .select('product.id', 'stock.id as stock_id', 'stock.quantity')
+              .where('barcode', b.barcode)
+              .leftJoin('stock', 'stock.product_id', 'product.id')
+              .where('stock.type', params.transporter)
+              .first()
 
-          if (!product) {
-            errors[b.barcode] = 'No product'
-            return
-          }
-          if (params.transporter === 'whiplash' || params.transporter === 'whiplash_uk') {
-            const items: any = await Whiplash.api(`/items/sku/${b.barcode}`)
-            if (items.length === 0) {
-              errors[b.barcode] = 'No whiplash'
+            if (!product) {
+              errors[b.barcode] = 'No product'
               return
             }
-            const warehouses: any = await Whiplash.api(`items/${items[0].id}/warehouse_quantities`)
+            products[b.barcode] = product.id
+            if (params.transporter === 'whiplash' || params.transporter === 'whiplash_uk') {
+              const items: any = await Whiplash.api(`/items/sku/${b.barcode}`)
+              if (items.length === 0) {
+                errors[b.barcode] = 'No whiplash'
+                return
+              }
+              const warehouses: any = await Whiplash.api(
+                `items/${items[0].id}/warehouse_quantities`
+              )
 
-            const qty = warehouses.find(
-              (w) => w.id === (params.transporter === 'whiplash' ? 4 : 3)
-            )?.quantity
-            if (!qty || qty < b.quantity) {
-              errors[b.barcode] = 'No stock whiplash'
-              return
+              const qty = warehouses.find(
+                (w) => w.id === (params.transporter === 'whiplash' ? 4 : 3)
+              )?.quantity
+              if (!qty || qty < b.quantity) {
+                errors[b.barcode] = 'No stock whiplash'
+                return
+              }
+            } else if (params.transporter === 'daudin') {
+              const item = await Elogik.getItem({ barcode: b.barcode })
+              if (!item) {
+                errors[b.barcode] = 'No elogik'
+                return
+              }
+              if (item.stock < b.quantity) {
+                errors[b.barcode] = 'No stock elogik'
+                return
+              }
             }
-          } else if (params.transporter === 'daudin') {
-            const item = await Elogik.getItem({ barcode: b.barcode })
-            if (!item) {
-              errors[b.barcode] = 'No elogik'
-              return
-            }
-            if (item.stock < b.quantity) {
-              errors[b.barcode] = 'No stock elogik'
-              return
-            }
-          }
-          products[b.barcode] = product.id
-        })
+          })
+        }
+        await Promise.all(
+          promises.map((p) => {
+            return p()
+          })
+        )
       }
-      await Promise.all(
-        promises.map((p) => {
-          return p()
-        })
-      )
-    }
 
-    if (Object.keys(errors).length > 0) {
-      return { errors: errors }
+      if (Object.keys(errors).length > 0) {
+        return { errors: errors }
+      }
     }
 
     if (params.id) {
