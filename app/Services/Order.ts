@@ -9,6 +9,7 @@ import Notification from 'App/Services/Notification'
 import Invoice from 'App/Services/Invoice'
 import Whiplash from 'App/Services/Whiplash'
 import Elogik from 'App/Services/Elogik'
+import BigBlue from 'App/Services/BigBlue'
 import Cart from 'App/Services/Cart'
 import Sna from 'App/Services/Sna'
 import ApiError from 'App/ApiError'
@@ -1397,6 +1398,29 @@ static toJuno = async (params) => {
           await Notification.sendEmail({
             to: 'victor@diggersfactory.com',
             subject: `Problem with Elogik : ${shop.id}`,
+            html: `<ul>
+            <li>Order Id : https://www.diggersfactory.com/sheraf/order/${shop.order_id}</li>
+            <li>Shop Id : ${shop.id}</li>
+            <li>Error: ${err}</li>
+            <li>${err.stack && err.stack.replace(/\n/g, '<br />')}</li>
+          </ul>`
+          })
+        }
+      }
+    } else if (shop.transporter === 'bigblue') {
+      await DB('order_shop').where('id', shop.id).update({
+        sending: true
+      })
+      try {
+        res = await BigBlue.syncOrders([shop.id])
+      } catch (err) {
+        if (throwError) {
+          throw err
+        } else {
+          console.log(err)
+          await Notification.sendEmail({
+            to: 'victor@diggersfactory.com',
+            subject: `Problem with BigBlue : ${shop.id}`,
             html: `<ul>
             <li>Order Id : https://www.diggersfactory.com/sheraf/order/${shop.order_id}</li>
             <li>Shop Id : ${shop.id}</li>

@@ -24,6 +24,7 @@ import Category from 'App/Services/Category'
 import Banner from 'App/Services/Banner'
 import Daudin from 'App/Services/Daudin'
 import Elogik from 'App/Services/Elogik'
+import BigBlue from 'App/Services/BigBlue'
 import Artwork from 'App/Services/Artwork'
 import Stats from 'App/Services/Stats'
 import MailJet from 'App/Services/MailJet'
@@ -346,6 +347,8 @@ class AdminController {
     params.user = user
     if (params.type === 'daudin') {
       return Elogik.syncProject(params)
+    } else if (params.type === 'bigblue') {
+      return BigBlue.syncProject(params)
     } else if (params.type === 'sna') {
       return Admin.syncProjectSna(params)
     } else if (params.type === 'whiplash') {

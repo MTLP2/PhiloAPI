@@ -3,6 +3,7 @@ import Utils from 'App/Utils'
 import Stock from 'App/Services/Stock'
 import Whiplash from 'App/Services/Whiplash'
 import Elogik from 'App/Services/Elogik'
+import BigBlue from 'App/Services/BigBlue'
 
 class Product {
   static async all(params: {
@@ -225,8 +226,15 @@ class Product {
       Product.setBarcodes({ project_id: project.project_id })
     }
     if (item.barcode) {
-      await Whiplash.setProduct({ id: item.id })
-      await Elogik.createItem(item)
+      if (!item.whiplash_id) {
+        await Whiplash.setProduct({ id: item.id })
+      }
+      if (!item.ekan_id) {
+        await Elogik.createItem(item)
+      }
+      if (!item.bigblue_id) {
+        await BigBlue.createProduct(item)
+      }
     }
 
     return item
