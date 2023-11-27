@@ -1439,7 +1439,7 @@ class AdminController {
           text_en: schema.string.optional(),
           link_fr: schema.string.optional(),
           link_en: schema.string.optional(),
-          is_active: schema.boolean()
+          is_active: schema.boolean.optional()
         }),
         data: params
       })
@@ -1449,7 +1449,36 @@ class AdminController {
     }
   }
 
-  async getColumnsManual({ params }) {
+<<<<<<< app/Controllers/Http/AdminController.ts
+  async deleteAlert({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          id: schema.number()
+        }),
+        data: params
+      })
+      return Alerts.delete(payload)
+    } catch (err) {
+      return { error: err.message, validation: err.messages }
+    }
+  }
+
+  async toggleAlert({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          id: schema.number.optional()
+        }),
+        data: params
+      })
+      return Alerts.toggle(payload)
+    } catch (err) {
+      return { error: err.message, validation: err.messages }
+    }
+  }
+
+  async importOderManual({ params }) {
     try {
       const payload = await validator.validate({
         schema: schema.create({

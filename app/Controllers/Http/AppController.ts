@@ -14,6 +14,7 @@ import Utils from 'App/Utils'
 import Payment from 'App/Services/Payment'
 import DB from 'App/DB'
 import { schema, rules } from '@ioc:Adonis/Core/Validator'
+import Alerts from 'App/Services/Alerts'
 
 class AppController {
   index() {
@@ -232,6 +233,10 @@ class AppController {
     } catch (err) {
       return { error: err.message === 'exists' ? err.message : 'invalid' }
     }
+  }
+
+  async getAlertShow() {
+    return Alerts.getAlertShow()
   }
 }
 
