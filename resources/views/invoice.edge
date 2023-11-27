@@ -90,6 +90,13 @@
     .price {
       max-width: 80px;
     }
+    .commercial {
+      font-weight: bold;
+      font-size: 150%;
+      padding: 10px;
+      margin-top: -20px;
+      white-space: nowrap;
+    }
   </style>
 </head>
 
@@ -97,25 +104,36 @@
   <div class="invoice">
   <img src="https://storage.diggersfactory.com/assets/images/logo_black.png" />
 
-  <table class="border" align="right">
-    <tr class="header">
-      <th colspan="2">{{ t(type === 'invoice' ? 'invoice.invoice' : 'invoice.credit_note') }}</th>
-    </tr>
-    @if(code)
+  <table>
     <tr>
-      <th nowrap>{{ t('invoice.number') }}</th>
-      <td nowrap>{{ code }}</td>
-    </tr>
-    @endif
-    @if(order_number)
-    <tr>
-      <th nowrap>{{ t('invoice.order_number') }}</th>
-      <td nowrap>{{ order_number }}</td>
-    </tr>
-    @endif
-    <tr>
-      <th nowrap>{{ t('invoice.date') }}</th>
-      <td nowrap>{{ date.substring(0, 10) }}</td>
+      <td>
+        @if(!compatibility)
+        <div class="commercial">{{ t('invoice.commercial') }}</div>
+        @endif
+      </td>
+      <td style="width:100%;">
+        <table class="border" align="right">
+          <tr class="header">
+            <th colspan="2">{{ t(type === 'invoice' ? 'invoice.invoice' : 'invoice.credit_note') }}</th>
+          </tr>
+          @if(code)
+          <tr>
+            <th nowrap>{{ t('invoice.number') }}</th>
+            <td nowrap>{{ code }}</td>
+          </tr>
+          @endif
+          @if(order_number)
+          <tr>
+            <th nowrap>{{ t('invoice.order_number') }}</th>
+            <td nowrap>{{ order_number }}</td>
+          </tr>
+          @endif
+          <tr>
+            <th nowrap>{{ t('invoice.date') }}</th>
+            <td nowrap>{{ date.substring(0, 10) }}</td>
+          </tr>
+        </table>      
+      </td>
     </tr>
   </table>
 

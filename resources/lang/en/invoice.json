@@ -11,6 +11,7 @@
   "quantity": "Qty",
   "wording": "Name",
   "donation": "Donation",
+  "commercial": "Commercial Invoice",
   "shipping_costs": "Shipping costs",
   "service_charge": "Service charge",
   "tips": "Tip",
