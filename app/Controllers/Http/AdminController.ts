@@ -66,6 +66,17 @@ class AdminController {
     return Linktree.delete(params)
   }
 
+  async addVisitLinktree({ params }) {
+    const payload = await validator.validate({
+      schema: schema.create({
+        id: schema.number(),
+        link_id: schema.number.optional()
+      }),
+      data: params
+    })
+    return Linktree.addVisit(payload)
+  }
+
   getProjectsTurnover({ params }) {
     return Stats.getProjectsTurnover(params)
   }
@@ -1438,6 +1449,7 @@ class AdminController {
     }
   }
 
+<<<<<<< app/Controllers/Http/AdminController.ts
   async deleteAlert({ params }) {
     try {
       const payload = await validator.validate({
@@ -1474,7 +1486,23 @@ class AdminController {
         }),
         data: params
       })
-      return Order.importManual(payload)
+      return Order.getColumnsManual(payload)
+    } catch (err) {
+      return { error: err.message, validation: err.messages }
+    }
+  }
+
+  async getBarcodesManual({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          file: schema.string(),
+          barcode: schema.string(),
+          quantity: schema.string()
+        }),
+        data: params
+      })
+      return Order.getBarcodesManual(payload)
     } catch (err) {
       return { error: err.message, validation: err.messages }
     }

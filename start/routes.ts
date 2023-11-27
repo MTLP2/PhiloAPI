@@ -202,6 +202,7 @@ Route.get('/featured/all', 'UserController.getAllFeatured')
 
 Route.get('/linktree', 'AdminController.getLinktree')
 Route.get('/linktree/:id', 'AdminController.getOneLinktree')
+Route.post('linktree/:id/visit', 'AdminController.addVisitLinktree')
 
 Route.get('/alerts', 'AppController.getAlertShow')
 
@@ -559,7 +560,8 @@ Route.group(() => {
   Route.get('/order-manual', 'AdminController.getOrderManual')
   Route.get('/order-manual/:id', 'AdminController.findOrderManual')
   Route.post('/order-manual', 'AdminController.saveOrderManual')
-  Route.post('/order-manual/import', 'AdminController.importOderManual')
+  Route.post('/order-manual/columns', 'AdminController.getColumnsManual')
+  Route.post('/order-manual/barcodes', 'AdminController.getBarcodesManual')
   Route.post('/order-manual/:id/invoice-co', 'AdminController.getOrderManualInvoiceCo')
   Route.get('/order-manual/:id/packing-list', 'AdminController.orderManuelPackingList')
   Route.delete('/order-manual/:id', 'AdminController.deleteOrderManual')

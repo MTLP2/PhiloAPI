@@ -1815,31 +1815,67 @@ class StatementService {
     const invoicesPromise = DB('invoice')
       .select('invoice.*')
       .join('vod', 'vod.project_id', 'invoice.project_id')
+      .join('user', 'user.id', 'vod.user_id')
       .where((query) => {
-        query.where('balance_followup', true)
-        query.orWhere('follow_up_payment', true)
+        query.where('vod.balance_followup', true)
+        query.orWhere('user.balance_followup', true)
+        query.orWhere('vod.follow_up_payment', true)
+        query.orWhere('user.follow_up_payment', true)
       })
-      .whereBetween('invoice.date', [params.start, params.end])
+      .where((query) => {
+        if (params.start) {
+          query.where('invoice.date', '>=', params.end)
+        }
+        if (params.end) {
+          query.where('invoice.date', '<=', params.end)
+        }
+      })
       .where('compatibility', true)
       .all()
 
     const costsPromise = DB('production_cost')
-      .select('name', 'vod.project_id', 'cost_real', 'cost_invoiced', 'production_cost.currency')
+      .select(
+        'production_cost.name',
+        'vod.project_id',
+        'cost_real',
+        'cost_invoiced',
+        'production_cost.currency'
+      )
       .join('vod', 'vod.project_id', 'production_cost.project_id')
-      .whereBetween('production_cost.date', [params.start, params.end])
+      .join('user', 'user.id', 'vod.user_id')
       .where((query) => {
-        query.where('balance_followup', true)
-        query.orWhere('follow_up_payment', true)
+        if (params.start) {
+          query.where('production_cost.date', '>=', params.end)
+        }
+        if (params.end) {
+          query.where('production_cost.date', '<=', params.end)
+        }
+      })
+      .where((query) => {
+        query.where('vod.balance_followup', true)
+        query.orWhere('user.balance_followup', true)
+        query.orWhere('vod.follow_up_payment', true)
+        query.orWhere('user.follow_up_payment', true)
       })
       .all()
 
     const prodsPromise = DB('production')
       .select('production.project_id', 'quantity', 'quantity_pressed')
       .join('vod', 'vod.project_id', 'production.project_id')
-      .whereBetween('production.date_prod', [params.start, params.end])
+      .join('user', 'user.id', 'vod.user_id')
       .where((query) => {
-        query.where('balance_followup', true)
-        query.orWhere('follow_up_payment', true)
+        if (params.start) {
+          query.where('production.date_prod', '>=', params.end)
+        }
+        if (params.end) {
+          query.where('production.date_prod', '<=', params.end)
+        }
+      })
+      .where((query) => {
+        query.where('vod.balance_followup', true)
+        query.orWhere('user.balance_followup', true)
+        query.orWhere('vod.follow_up_payment', true)
+        query.orWhere('user.follow_up_payment', true)
       })
       .all()
 

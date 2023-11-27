@@ -907,7 +907,7 @@ static toJuno = async (params) => {
     comment?: string
     user_id?: number
     barcodes: {
-      barcode: string
+      barcode: number
       quantity: number
     }[]
     customer: CustomerDb
@@ -916,33 +916,62 @@ static toJuno = async (params) => {
   }) => {
     let item: any = DB('order_manual')
 
-    const prices = {}
     const products = {}
-    let weight = 0
+    const errors = {}
     if (!params.id && !params.force) {
+      const promises: (() => Promise<void>)[] = [] as any
+
       for (const b of params.barcodes) {
-        const product = await DB('product')
-          .select('product.id', 'stock.id as stock_id', 'stock.quantity')
-          .where('barcode', b.barcode)
-          .leftJoin('stock', 'stock.product_id', 'product.id')
-          .where('stock.type', params.transporter)
-          .first()
+        promises.push(async () => {
+          const product = await DB('product')
+            .select('product.id', 'stock.id as stock_id', 'stock.quantity')
+            .where('barcode', b.barcode)
+            .leftJoin('stock', 'stock.product_id', 'product.id')
+            .where('stock.type', params.transporter)
+            .first()
 
-        if (!product) {
-          return { error: 'No product' }
-        }
-        products[b.barcode] = product.id
-
-        if (product.quantity < b.quantity) {
-          return { error: 'No quantity' }
-        }
-        if (['whiplash', 'whiplash_uk'].includes(params.transporter)) {
-          const exists = await Whiplash.findItem(b.barcode)
-          if (exists.error) {
-            return { error: exists.error }
+          if (!product) {
+            errors[b.barcode] = 'No product'
+            return
           }
-        }
+          if (params.transporter === 'whiplash' || params.transporter === 'whiplash_uk') {
+            const items: any = await Whiplash.api(`/items/sku/${b.barcode}`)
+            if (items.length === 0) {
+              errors[b.barcode] = 'No whiplash'
+              return
+            }
+            const warehouses: any = await Whiplash.api(`items/${items[0].id}/warehouse_quantities`)
+
+            const qty = warehouses.find(
+              (w) => w.id === (params.transporter === 'whiplash' ? 4 : 3)
+            )?.quantity
+            if (!qty || qty < b.quantity) {
+              errors[b.barcode] = 'No stock whiplash'
+              return
+            }
+          } else if (params.transporter === 'daudin') {
+            const item = await Elogik.getItem({ barcode: b.barcode })
+            if (!item) {
+              errors[b.barcode] = 'No elogik'
+              return
+            }
+            if (item.stock < b.quantity) {
+              errors[b.barcode] = 'No stock elogik'
+              return
+            }
+          }
+          products[b.barcode] = product.id
+        })
       }
+      await Promise.all(
+        promises.map((p) => {
+          return p()
+        })
+      )
+    }
+
+    if (Object.keys(errors).length > 0) {
+      return { errors: errors }
     }
 
     if (params.id) {
@@ -1001,28 +1030,7 @@ static toJuno = async (params) => {
     await item.save()
 
     if (!params.pending && !item.date_export) {
-      if (['sna'].includes(params.transporter)) {
-        await Sna.sync([
-          {
-            ...customer,
-            id: 'M' + item.id,
-            shipping: 15,
-            currency: 'EUR',
-            address_pickup: params.address_pickup,
-            // Add package weight
-            weight: weight + 340,
-            created_at: item.created_at,
-            email: item.email,
-            items: params.barcodes.map((b) => {
-              return {
-                barcode: b.barcode,
-                quantity: b.quantity,
-                price: prices[b.barcode]
-              }
-            })
-          }
-        ])
-      } else if (['daudin'].includes(params.transporter)) {
+      if (['daudin'].includes(params.transporter)) {
         if (!item.logistician_id) {
           const dispatch: any = await Elogik.sync([
             {
@@ -1121,7 +1129,7 @@ static toJuno = async (params) => {
     return item
   }
 
-  static importManual = async (params: { file: any }) => {
+  static getColumnsManual = async (params: { file: any }) => {
     const file = Buffer.from(params.file, 'base64')
     const workbook = new Excel.Workbook()
     await workbook.xlsx.load(file)
@@ -1145,6 +1153,28 @@ static toJuno = async (params) => {
     } while (i++)
 
     return columns
+  }
+
+  static getBarcodesManual = async (params: { file: any; barcode: string; quantity: string }) => {
+    const file = Buffer.from(params.file, 'base64')
+    const workbook = new Excel.Workbook()
+    await workbook.xlsx.load(file)
+    const worksheet = workbook.getWorksheet(1)
+    const items: {
+      barcode: string
+      quantity: string
+    }[] = []
+
+    worksheet.eachRow((row, rowNumber) => {
+      if (rowNumber > 1) {
+        items.push({
+          barcode: row.getCell(params.barcode).text,
+          quantity: row.getCell(params.quantity).text
+        })
+      }
+    })
+
+    return items
   }
 
   static getOrderManualInvoiceCo = async (params: {
