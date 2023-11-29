@@ -411,7 +411,7 @@ class Cart {
             ? moment().format('YYYY-MM-DD')
             : moment(shop.items[0].project.estimated_shipping).format('YYYY-MM-DD')
 
-        if (['daudin', 'whiplash', 'whiplash_uk'].includes(cart.shops[s].transporter)) {
+        if (['daudin', 'bigblue', 'whiplash', 'whiplash_uk'].includes(cart.shops[s].transporter)) {
           if (!cart.first_ship || cart.first_ship.date > dateShipping) {
             cart.first_ship = {
               shop_id: shop.id,
@@ -940,6 +940,8 @@ class Cart {
       let cost: any
       if (params.transporter === 'diggers') {
         cost = 0
+      } else if (params.transporter === 'bigblue') {
+        cost = transporter.packing + transporter.picking * (params.insert - 1)
       } else {
         cost = transporter.packing + transporter.picking * params.insert
       }
@@ -973,11 +975,12 @@ class Cart {
             continue
           }
         }
-
         if (transporter.transporter === 'IMX') {
           transporter[weight] = transporter[weight] * 1.1
         }
-
+        if (params.transporter === 'bigblue') {
+          transporter[weight] = transporter[weight] / 1.2
+        }
         if (transporter[weight] < 6.4) {
           transporter[weight] = 6.4
         }
@@ -1163,6 +1166,16 @@ class Cart {
       })
       if (daudin) {
         shippings.push(daudin)
+      }
+    }
+    if (transporters.all || transporters.bigblue) {
+      const bigblue = await Cart.calculateShippingByTransporter({
+        ...params,
+        partner: 'bigblue',
+        transporter: 'bigblue'
+      })
+      if (bigblue) {
+        shippings.push(bigblue)
       }
     }
     if (transporters.all || transporters.sna) {
