@@ -908,9 +908,11 @@ class AdminController {
           order_shop_id: schema.number.optional(),
           tracking_number: schema.string.optional(),
           user_id: schema.number.optional(),
+          step: schema.string.optional(),
+          force: schema.boolean.optional(),
           barcodes: schema.array().members(
             schema.object().members({
-              barcode: schema.string(),
+              barcode: schema.number(),
               quantity: schema.number()
             })
           ),
@@ -925,9 +927,7 @@ class AdminController {
             state: schema.string.optional(),
             country_id: schema.string(),
             phone: schema.string.optional()
-          }),
-          pending: schema.boolean.optional(),
-          force: schema.boolean.optional()
+          })
         }),
         data: params
       })

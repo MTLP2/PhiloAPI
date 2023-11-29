@@ -907,72 +907,68 @@ static toJuno = async (params) => {
     tracking_number?: string
     comment?: string
     user_id?: number
+    step?: string
+    force?: boolean
     barcodes: {
       barcode: number
       quantity: number
     }[]
     customer: CustomerDb
-    pending?: boolean
-    force?: boolean
   }) => {
     let item: any = DB('order_manual')
 
     const products = {}
-    if (!params.force) {
+    if (!params.force && !item.date_export) {
       const errors = {}
-      if (!params.id && !params.force) {
-        const promises: (() => Promise<void>)[] = [] as any
+      const promises: (() => Promise<void>)[] = [] as any
 
-        for (const b of params.barcodes) {
-          promises.push(async () => {
-            const product = await DB('product')
-              .select('product.id', 'stock.id as stock_id', 'stock.quantity')
-              .where('barcode', b.barcode)
-              .leftJoin('stock', 'stock.product_id', 'product.id')
-              .where('stock.type', params.transporter)
-              .first()
+      for (const b of params.barcodes) {
+        promises.push(async () => {
+          const product = await DB('product')
+            .select('product.id', 'stock.id as stock_id', 'stock.quantity')
+            .where('barcode', b.barcode)
+            .leftJoin('stock', 'stock.product_id', 'product.id')
+            .where('stock.type', params.transporter)
+            .first()
 
-            if (!product) {
-              errors[b.barcode] = 'No product'
+          if (!product) {
+            errors[b.barcode] = 'No product'
+            return
+          }
+          products[b.barcode] = product.id
+          if (params.transporter === 'whiplash' || params.transporter === 'whiplash_uk') {
+            const items: any = await Whiplash.api(`/items/sku/${b.barcode}`)
+            if (items.length === 0) {
+              errors[b.barcode] = 'No whiplash'
               return
             }
-            products[b.barcode] = product.id
-            if (params.transporter === 'whiplash' || params.transporter === 'whiplash_uk') {
-              const items: any = await Whiplash.api(`/items/sku/${b.barcode}`)
-              if (items.length === 0) {
-                errors[b.barcode] = 'No whiplash'
-                return
-              }
-              const warehouses: any = await Whiplash.api(
-                `items/${items[0].id}/warehouse_quantities`
-              )
+            const warehouses: any = await Whiplash.api(`items/${items[0].id}/warehouse_quantities`)
 
-              const qty = warehouses.find(
-                (w) => w.id === (params.transporter === 'whiplash' ? 4 : 3)
-              )?.quantity
-              if (!qty || qty < b.quantity) {
-                errors[b.barcode] = 'No stock whiplash'
-                return
-              }
-            } else if (params.transporter === 'daudin') {
-              const item = await Elogik.getItem({ barcode: b.barcode })
-              if (!item) {
-                errors[b.barcode] = 'No elogik'
-                return
-              }
-              if (item.stock < b.quantity) {
-                errors[b.barcode] = 'No stock elogik'
-                return
-              }
+            const qty = warehouses.find(
+              (w) => w.id === (params.transporter === 'whiplash' ? 4 : 3)
+            )?.quantity
+            if (!qty || qty < b.quantity) {
+              errors[b.barcode] = 'No stock whiplash'
+              return
             }
-          })
-        }
-        await Promise.all(
-          promises.map((p) => {
-            return p()
-          })
-        )
+          } else if (params.transporter === 'daudin') {
+            const item = await Elogik.getItem({ barcode: b.barcode })
+            if (!item) {
+              errors[b.barcode] = 'No elogik'
+              return
+            }
+            if (item.stock < b.quantity) {
+              errors[b.barcode] = 'No stock elogik'
+              return
+            }
+          }
+        })
       }
+      await Promise.all(
+        promises.map((p) => {
+          return p()
+        })
+      )
 
       if (Object.keys(errors).length > 0) {
         return { errors: errors }
@@ -997,15 +993,12 @@ static toJuno = async (params) => {
     item.address_pickup = params.address_pickup
     item.email = params.email
     item.comment = params.comment
+    item.step = params.step
     item.order_shop_id = params.order_shop_id || null
     item.tracking_number = params.tracking_number || null
     item.user_id = params.user_id || null
     item.barcodes = JSON.stringify(params.barcodes)
     item.updated_at = Utils.date()
-
-    if (!item.date_export) {
-      item.step = params.pending ? 'pending' : 'in_preparation'
-    }
 
     if (params.email && !params.user_id) {
       const user = await DB('user').where('email', 'like', params.email).first()
@@ -1031,10 +1024,9 @@ static toJuno = async (params) => {
 
     const customer = await Customer.save(params.customer)
     item.customer_id = customer.id
-
     await item.save()
 
-    if (!params.pending && !item.date_export) {
+    if (params.step !== 'pending' && !item.date_export) {
       if (['daudin'].includes(params.transporter)) {
         if (!item.logistician_id) {
           const dispatch: any = await Elogik.sync([
@@ -1061,6 +1053,8 @@ static toJuno = async (params) => {
               error: dispatch[0].status_detail
             }
           }
+          item.step = 'in_preparation'
+          await item.save()
           if (item.order_shop_id) {
             await DB('order_shop').where('id', item.order_shop_id).update({
               logistician_id: dispatch.id,
@@ -1096,6 +1090,7 @@ static toJuno = async (params) => {
         }
 
         const order: any = await Whiplash.saveOrder(pp)
+        item.step = 'in_preparation'
         item.logistician_id = order.id
         item.date_export = Utils.date()
         await item.save()
