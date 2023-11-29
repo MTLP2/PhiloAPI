@@ -922,7 +922,9 @@ class Cart {
       .all()
 
     let weight
-    if (params.weight < 500) {
+    if (params.weight < 250 && params.transporter === 'bigblue') {
+      weight = '250g'
+    } else if (params.weight < 500) {
       weight = '500g'
     } else if (params.weight < 750) {
       weight = '750g'
@@ -1135,7 +1137,7 @@ class Cart {
 
   static calculateShipping = async (params: any) => {
     // add packaging
-    params.weight += 340
+    params.weight += 150
     const cc = await DB('currency').all()
     const currencies = {}
     for (const c of cc) {
