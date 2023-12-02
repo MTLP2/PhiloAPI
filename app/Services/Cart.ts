@@ -1939,6 +1939,12 @@ class Cart {
         }
       }
     }
+    data.items = data.items.map((item) => {
+      return {
+        ...item,
+        name: item.name.substring(0, 127)
+      }
+    })
 
     data.items.push({
       name: 'Service charge',
@@ -1973,6 +1979,8 @@ class Cart {
     if (order.status === 'CREATED') {
       return { id: order.id }
     } else {
+      console.log(order)
+      console.log(data)
       await Notification.sendEmail({
         to: 'victor@diggersfactory.com',
         subject: `Paypal creation order error`,
