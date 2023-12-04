@@ -5,6 +5,7 @@ import Notification from 'App/Services/Notification'
 import MondialRelay from 'App/Services/MondialRelay'
 import Stock from 'App/Services/Stock'
 import Env from '@ioc:Adonis/Core/Env'
+import Excel from 'exceljs'
 
 class BigBlue {
   static async api(
@@ -388,6 +389,104 @@ class BigBlue {
     })
   }
   **/
+
+  static async parsePrices() {
+    const workbook = new Excel.Workbook()
+    await workbook.xlsx.readFile('./resources/bigblue.xlsx')
+
+    /**
+    type Price = {
+      country_id: string
+      weight: number
+      price: number
+    }
+    const prices: Price[] = {
+    }$**/
+    const getWeight = (weight: number) => {
+      return weight < 1 ? `${weight * 1000}g` : `${weight}kg`
+    }
+
+    const prices = {}
+
+    const setPrice = ({ country, weight, price }) => {
+      if (!prices[country]) {
+        prices[country] = {}
+      }
+      prices[country][weight] = price
+    }
+
+    const wFrance = workbook.getWorksheet('France')
+    prices['FR'] = {}
+    wFrance.eachRow((row, rowNumber) => {
+      if (rowNumber === 1) {
+        return
+      }
+      const weight = getWeight(+row.getCell('A').toString().replace('kg', '').trim())
+      setPrice({
+        country: 'FR',
+        weight: weight,
+        price: +row.getCell('B').toString()
+      })
+    })
+
+    const wEurope = workbook.getWorksheet('Europe')
+    wEurope.eachRow((row, rowNumber) => {
+      if (rowNumber === 1) {
+        return
+      }
+      const weight = getWeight(+row.getCell('A').toString().replace('kg', '').trim())
+      setPrice({
+        country: 'DE',
+        weight: weight,
+        price: +row.getCell('B').toString()
+      })
+      setPrice({
+        country: 'BE',
+        weight: weight,
+        price: +row.getCell('C').toString()
+      })
+      setPrice({
+        country: 'SC',
+        weight: weight,
+        price: +row.getCell('D').toString()
+      })
+      setPrice({
+        country: 'GB',
+        weight: weight,
+        price: +row.getCell('E').toString()
+      })
+    })
+
+    const wEurope2 = workbook.getWorksheet('Europe2')
+    wEurope2.eachRow((row, rowNumber) => {
+      if (rowNumber === 1) {
+        return
+      }
+      const weight = getWeight(+row.getCell('A').toString().replace('kg', '').trim())
+      setPrice({
+        country: 'DE',
+        weight: weight,
+        price: +row.getCell('B').toString()
+      })
+      setPrice({
+        country: 'BE',
+        weight: weight,
+        price: +row.getCell('C').toString()
+      })
+      setPrice({
+        country: 'SC',
+        weight: weight,
+        price: +row.getCell('D').toString()
+      })
+      setPrice({
+        country: 'GB',
+        weight: weight,
+        price: +row.getCell('E').toString()
+      })
+    })
+
+    return prices
+  }
 }
 
 export default BigBlue
