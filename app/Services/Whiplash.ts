@@ -152,7 +152,7 @@ class Whiplash {
     return 'Whiplash Cheapest Tracked'
   }
 
-  static syncProject = async (params) => {
+  static syncProject = async (params: { project_id: number; type: string, products: number[]; quantity: number }) => {{
     const orders = await DB('order_shop as os')
       .select(
         'customer.*',
@@ -176,7 +176,7 @@ class Whiplash {
       .all()
 
     const items = await DB()
-      .select('order_shop_id', 'oi.quantity', 'product.barcode')
+      .select('order_shop_id', 'product.id as product_id', 'oi.quantity', 'product.barcode')
       .from('order_item as oi')
       .join('project_product', 'project_product.project_id', 'oi.project_id')
       .join('product', 'project_product.product_id', 'product.id')
@@ -196,22 +196,28 @@ class Whiplash {
       )
       .all()
 
-    const barcodes = {}
+    const products = {}
     for (const item of items) {
+      let ok =  params.products.some((p) => {
+        return +p === +item.product_id
+      })
+      if (ok && !products[item.product_id]) {
+        products[item.product_id] = item.barcode
+      }
       const idx = orders.findIndex((o: any) => o.id === item.order_shop_id)
       orders[idx].items = orders[idx].items ? [...orders[idx].items, item] : [item]
       if (!item.barcode) {
         throw new ApiError(406, 'no_barcode')
       }
-      barcodes[item.barcode] = true
     }
 
-    for (const barcode of Object.keys(barcodes)) {
+    const barcodes = {}
+    for (const barcode of Object.values(products)) {
       const item = await Whiplash.findItem(barcode)
       if (item.error) {
         throw new ApiError(406, item.error)
       } else {
-        barcodes[barcode] = item.id
+        barcodes[barcode as string] = item.id
       }
     }
 
@@ -219,6 +225,14 @@ class Whiplash {
     for (const order of orders) {
       if (count + order.quantity > params.quantity) {
         break
+      }
+      let ok = order.items.every((item) => {
+        return params.products.some((p) => {
+          return +p === +item.product_id
+        })
+      })
+      if (!ok) {
+        continue
       }
 
       const check = await DB('order_shop').where('id', order.id).first()
