@@ -210,34 +210,36 @@ class Invoice {
 
     await invoice.save()
 
-    if (params.id) {
-      await Payment.save({
-        id: params.payment_id,
-        type: params.type,
-        customer_id: invoice.customer_id,
-        invoice_id: invoice.id,
-        name: invoice.name,
-        tax: invoice.tax,
-        tax_rate: invoice.tax_rate,
-        total: invoice.total,
-        currency: invoice.currency,
-        currency_rate: invoice.currency_rate,
-        status:
-          params.status === PaymentStatus.paid || params.status === PaymentStatus.refunded
-            ? PaymentStatus.paid
-            : PaymentStatus.unpaid,
-        payment_days: invoice.payment_days,
-        date_payment: invoice.date_payment,
-        sub_total: invoice.sub_total,
-        order_shop_id: params.order_shop_id,
-        order_manual_id: params.order_manual_id,
-        box_dispatch_id: params.box_dispatch_id,
-        invoice_to_payment: params.invoice_to_payment,
-        payment_type: params.payment_type,
-        payment_id: params.charge_id,
-        created_at: params.created_at || Utils.date(),
-        updated_at: params.updated_at || null
-      })
+    if (invoice.date_payment) {
+      const payments = await DB('payment')
+        .where('invoice_id', invoice.id)
+        .where('status', 'paid')
+        .all()
+
+      if (payments.length === 0) {
+        await Payment.save({
+          id: params.payment_id,
+          type: params.type,
+          customer_id: invoice.customer_id,
+          invoice_id: invoice.id,
+          name: invoice.name,
+          tax: invoice.tax,
+          tax_rate: invoice.tax_rate,
+          total: invoice.total,
+          currency: invoice.currency,
+          currency_rate: invoice.currency_rate,
+          status: PaymentStatus.paid,
+          payment_days: invoice.payment_days,
+          date_payment: invoice.date_payment,
+          sub_total: invoice.sub_total,
+          order_shop_id: params.order_shop_id,
+          order_manual_id: params.order_manual_id,
+          box_dispatch_id: params.box_dispatch_id,
+          invoice_to_payment: params.invoice_to_payment,
+          payment_type: params.payment_type,
+          payment_id: params.charge_id
+        })
+      }
     }
 
     return invoice
