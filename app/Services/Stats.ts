@@ -1909,7 +1909,15 @@ class Stats {
       .all()
 
     const productionsPromise = await DB('production')
-      .select('date_prod', 'date_factory', 'factory', 'quantity', 'quantity_pressed')
+      .select(
+        'date_prod',
+        'date_factory',
+        'factory',
+        'quantity',
+        'quantity_pressed',
+        'project.nb_vinyl'
+      )
+      .join('project', 'project.id', 'production.project_id')
       .where('production.is_delete', false)
       .all()
 
@@ -2582,17 +2590,17 @@ class Stats {
 
       if (prod.factory === 'sna' || prod.factory === 'vdp') {
         if (dates[start] !== undefined) {
-          d.productions[`${prod.factory}_start`].dates[start] += prod.quantity
+          d.productions[`${prod.factory}_start`].dates[start] += prod.quantity * prod.nb_vinyl
         }
         if (dates[end] !== undefined) {
-          d.productions[`${prod.factory}_end`].dates[end] += prod.quantity
+          d.productions[`${prod.factory}_end`].dates[end] += prod.quantity * prod.nb_vinyl
         }
       }
       if (dates[start] !== undefined) {
-        d.productions.total_start.dates[start] += prod.quantity
+        d.productions.total_start.dates[start] += prod.quantity * prod.nb_vinyl
       }
       if (dates[end] !== undefined) {
-        d.productions.total_end.dates[end] += prod.quantity
+        d.productions.total_end.dates[end] += prod.quantity * prod.nb_vinyl
       }
     }
 
