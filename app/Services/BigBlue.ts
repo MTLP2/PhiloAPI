@@ -408,6 +408,8 @@ class BigBlue {
 
     const prices = {}
 
+    console.log('-------')
+
     const setPrice = ({ country, weight, price }) => {
       if (!prices[country]) {
         prices[country] = {}
@@ -427,6 +429,59 @@ class BigBlue {
         weight: weight,
         price: +row.getCell('B').toString()
       })
+    })
+
+    const wEurope2 = workbook.getWorksheet('Europe2')
+    wEurope2.eachRow((row, rowNumber) => {
+      if (rowNumber === 1) {
+        return
+      }
+      const weight = getWeight(+row.getCell('A').toString().replace('kg', '').trim())
+
+      const countries = [
+        'DE',
+        'BE',
+        'ES',
+        'IT',
+        'LU',
+        'NL',
+        'AT',
+        'GB',
+        'CZ',
+        'EE',
+        'FI',
+        'HU',
+        'LV',
+        'LT',
+        'PL',
+        'SE',
+        'SK',
+        'SI',
+        'PT',
+        'IE',
+        'DK',
+        'RO',
+        'GR',
+        'BG',
+        'CH'
+      ]
+      for (const i in countries) {
+        if (countries[i] === 'CZ') {
+          console.log(
+            weight,
+            countries[i],
+            i,
+            i + 2,
+            Utils.columnToLetter(+i + 2),
+            +row.getCell(Utils.columnToLetter(+i + 2)).toString()
+          )
+        }
+        setPrice({
+          country: countries[i],
+          weight: weight,
+          price: +row.getCell(Utils.columnToLetter(+i + 2)).toString()
+        })
+      }
     })
 
     const wEurope = workbook.getWorksheet('Europe')
@@ -457,32 +512,189 @@ class BigBlue {
       })
     })
 
-    const wEurope2 = workbook.getWorksheet('Europe2')
-    wEurope2.eachRow((row, rowNumber) => {
+    const wRelais = workbook.getWorksheet('Relais')
+    wRelais.eachRow((row, rowNumber) => {
       if (rowNumber === 1) {
         return
       }
       const weight = getWeight(+row.getCell('A').toString().replace('kg', '').trim())
       setPrice({
-        country: 'DE',
+        country: 'BE',
         weight: weight,
         price: +row.getCell('B').toString()
       })
       setPrice({
-        country: 'BE',
+        country: 'LU',
         weight: weight,
         price: +row.getCell('C').toString()
       })
       setPrice({
-        country: 'SC',
+        country: 'ES',
         weight: weight,
         price: +row.getCell('D').toString()
       })
       setPrice({
-        country: 'GB',
+        country: 'NL',
         weight: weight,
         price: +row.getCell('E').toString()
       })
+      setPrice({
+        country: 'PT',
+        weight: weight,
+        price: +row.getCell('F').toString()
+      })
+    })
+
+    const zones = {
+      Zone2: ['AT', 'ES', 'IE', 'IT', 'PT', 'GB'],
+      Zone3: ['DK', 'EE', 'HU', 'LV', 'LT', 'PL', 'CZ', 'SK', 'SI', 'SE'],
+      Zone4: ['HR', 'FI', 'GR', 'IS', 'MT', 'NO', 'RO', 'TR'],
+      Zone5: ['AU', 'CA', 'CN', 'KR', 'US', 'HK', 'IN', 'IL', 'JP', 'RU', 'SG', 'TH', 'VN'],
+      Zone6: [
+        'AO',
+        'BF',
+        'BI',
+        'BJ',
+        'CD',
+        'CF',
+        'CG',
+        'CI',
+        'DJ',
+        'ET',
+        'GA',
+        'GH',
+        'GM',
+        'GN',
+        'KE',
+        'LR',
+        'MG',
+        'ML',
+        'MR',
+        'MW',
+        'MZ',
+        'NE',
+        'NG',
+        'RW',
+        'SN',
+        'SL',
+        'SO',
+        'SS',
+        'TD',
+        'TG',
+        'UG',
+        'ZM',
+        'ZW',
+        'AR',
+        'BR',
+        'CL',
+        'CO',
+        'CR',
+        'CU',
+        'DO',
+        'EC',
+        'GT',
+        'HN',
+        'JM',
+        'MX',
+        'PA',
+        'PE',
+        'PY',
+        'SV',
+        'UY',
+        'VE',
+        'BH',
+        'CY',
+        'IR',
+        'IQ',
+        'IL',
+        'JO',
+        'KW',
+        'LB',
+        'OM',
+        'PS',
+        'QA',
+        'SA',
+        'SY',
+        'TR',
+        'AE',
+        'YE',
+        'AF',
+        'BD',
+        'BT',
+        'KH',
+        'ID',
+        'KG',
+        'LA',
+        'MY',
+        'MM',
+        'NP',
+        'PK',
+        'PH',
+        'LK',
+        'TJ',
+        'TM',
+        'UZ',
+        'VN',
+        'FJ',
+        'KI',
+        'MH',
+        'FM',
+        'NR',
+        'NZ',
+        'PW',
+        'PG',
+        'SB',
+        'TO',
+        'TV',
+        'VU',
+        'WS'
+      ],
+      ZoneOM1: ['GP', 'MQ', 'RE', 'GF', 'YT', 'PM'],
+      ZoneOM2: ['NC', 'PF', 'WF', 'TF']
+    }
+
+    const wMonde = workbook.getWorksheet('Monde')
+    wMonde.eachRow((row, rowNumber) => {
+      if (rowNumber === 1) {
+        return
+      }
+      const weight = getWeight(+row.getCell('A').toString().replace('kg', '').trim())
+
+      for (const country of zones.Zone4) {
+        setPrice({
+          country: country,
+          weight: weight,
+          price: +row.getCell('B').toString()
+        })
+      }
+      for (const country of zones.Zone5) {
+        setPrice({
+          country: country,
+          weight: weight,
+          price: +row.getCell('C').toString()
+        })
+      }
+      for (const country of zones.Zone6) {
+        setPrice({
+          country: country,
+          weight: weight,
+          price: +row.getCell('D').toString()
+        })
+      }
+      for (const country of zones.ZoneOM1) {
+        setPrice({
+          country: country,
+          weight: weight,
+          price: +row.getCell('F').toString()
+        })
+      }
+      for (const country of zones.ZoneOM2) {
+        setPrice({
+          country: country,
+          weight: weight,
+          price: +row.getCell('G').toString()
+        })
+      }
     })
 
     return prices
