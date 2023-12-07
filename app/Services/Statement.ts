@@ -480,8 +480,8 @@ class StatementService {
 
     const data = {}
     worksheet.eachRow((row) => {
-      const barcode = row.getCell('C').value
-      if (barcode && barcode !== 'UPC') {
+      const barcode = row.getCell('F').value
+      if (typeof barcode === 'number') {
         if (!data[barcode]) {
           data[barcode] = {
             country_id: 'US',
@@ -491,9 +491,9 @@ class StatementService {
             total: 0
           }
         }
-        data[barcode].quantity += row.getCell('G').value
-        data[barcode].returned += -row.getCell('F').value
-        data[barcode].total += row.getCell('J').value
+        data[barcode].quantity += row.getCell('P').value
+        data[barcode].total += row.getCell('R').value
+        console.log(data)
       }
     })
 
