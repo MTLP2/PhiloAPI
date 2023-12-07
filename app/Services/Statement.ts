@@ -385,7 +385,7 @@ class StatementService {
 
     const refs = {}
     const data = {}
-    physicalSales.eachRow((row) => {
+    physicalSales?.eachRow((row) => {
       const barcode = row.getCell('I').value
       const country = row.getCell('O').value
       const idx = `${barcode}#${country}`
@@ -411,7 +411,7 @@ class StatementService {
       }
     })
 
-    lineCharge.eachRow((row) => {
+    lineCharge?.eachRow((row) => {
       const catNumber = row.getCell('A').value
       if (refs[catNumber]) {
         data[refs[catNumber]].storage += Utils.round(11.5 / currencies.GBP)
