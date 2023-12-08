@@ -226,6 +226,9 @@ class Whiplash {
       if (count + order.quantity > params.quantity) {
         break
       }
+      if (!order.items) {
+        continue
+      }
       let ok = order.items.every((item) => {
         return params.products.some((p) => {
           return +p === +item.product_id
@@ -267,8 +270,6 @@ class Whiplash {
           date_export: Utils.date(),
           logistician_id: whiplash.id
         })
-
-        console.log(order.user_id)
         await Notification.add({
           type: 'my_order_in_preparation',
           user_id: order.user_id,
