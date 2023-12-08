@@ -394,156 +394,37 @@ class BigBlue {
     const workbook = new Excel.Workbook()
     await workbook.xlsx.readFile('./resources/bigblue.xlsx')
 
-    /**
-    type Price = {
-      country_id: string
-      weight: number
-      price: number
-    }
-    const prices: Price[] = {
-    }$**/
     const getWeight = (weight: number) => {
       return weight < 1 ? `${weight * 1000}g` : `${weight}kg`
     }
 
     const prices = {}
-
-    console.log('-------')
-
-    const setPrice = ({ country, weight, price }) => {
+    const setPrice = ({ country, weight, type, price }) => {
       if (!prices[country]) {
-        prices[country] = {}
-      }
-      prices[country][weight] = price
-    }
-
-    const wFrance = workbook.getWorksheet('France')
-    prices['FR'] = {}
-    wFrance.eachRow((row, rowNumber) => {
-      if (rowNumber === 1) {
-        return
-      }
-      const weight = getWeight(+row.getCell('A').toString().replace('kg', '').trim())
-      setPrice({
-        country: 'FR',
-        weight: weight,
-        price: +row.getCell('B').toString()
-      })
-    })
-
-    const wEurope2 = workbook.getWorksheet('Europe2')
-    wEurope2.eachRow((row, rowNumber) => {
-      if (rowNumber === 1) {
-        return
-      }
-      const weight = getWeight(+row.getCell('A').toString().replace('kg', '').trim())
-
-      const countries = [
-        'DE',
-        'BE',
-        'ES',
-        'IT',
-        'LU',
-        'NL',
-        'AT',
-        'GB',
-        'CZ',
-        'EE',
-        'FI',
-        'HU',
-        'LV',
-        'LT',
-        'PL',
-        'SE',
-        'SK',
-        'SI',
-        'PT',
-        'IE',
-        'DK',
-        'RO',
-        'GR',
-        'BG',
-        'CH'
-      ]
-      for (const i in countries) {
-        if (countries[i] === 'CZ') {
-          console.log(
-            weight,
-            countries[i],
-            i,
-            i + 2,
-            Utils.columnToLetter(+i + 2),
-            +row.getCell(Utils.columnToLetter(+i + 2)).toString()
-          )
+        prices[country] = {
+          standard: {},
+          pickup: {}
         }
-        setPrice({
-          country: countries[i],
-          weight: weight,
-          price: +row.getCell(Utils.columnToLetter(+i + 2)).toString()
-        })
       }
-    })
-
-    const wEurope = workbook.getWorksheet('Europe')
-    wEurope.eachRow((row, rowNumber) => {
-      if (rowNumber === 1) {
-        return
+      prices[country][type][weight] = price
+      if (weight === '20kg') {
+        prices[country][type]['16kg'] = price
+        prices[country][type]['17kg'] = price
+        prices[country][type]['18kg'] = price
+        prices[country][type]['19kg'] = price
+        prices[country][type]['20kg'] = price
+      } else if (weight === '30kg') {
+        prices[country][type]['21kg'] = price
+        prices[country][type]['22kg'] = price
+        prices[country][type]['23kg'] = price
+        prices[country][type]['24kg'] = price
+        prices[country][type]['25kg'] = price
+        prices[country][type]['26kg'] = price
+        prices[country][type]['27kg'] = price
+        prices[country][type]['28kg'] = price
+        prices[country][type]['29kg'] = price
       }
-      const weight = getWeight(+row.getCell('A').toString().replace('kg', '').trim())
-      setPrice({
-        country: 'DE',
-        weight: weight,
-        price: +row.getCell('B').toString()
-      })
-      setPrice({
-        country: 'BE',
-        weight: weight,
-        price: +row.getCell('C').toString()
-      })
-      setPrice({
-        country: 'SC',
-        weight: weight,
-        price: +row.getCell('D').toString()
-      })
-      setPrice({
-        country: 'GB',
-        weight: weight,
-        price: +row.getCell('E').toString()
-      })
-    })
-
-    const wRelais = workbook.getWorksheet('Relais')
-    wRelais.eachRow((row, rowNumber) => {
-      if (rowNumber === 1) {
-        return
-      }
-      const weight = getWeight(+row.getCell('A').toString().replace('kg', '').trim())
-      setPrice({
-        country: 'BE',
-        weight: weight,
-        price: +row.getCell('B').toString()
-      })
-      setPrice({
-        country: 'LU',
-        weight: weight,
-        price: +row.getCell('C').toString()
-      })
-      setPrice({
-        country: 'ES',
-        weight: weight,
-        price: +row.getCell('D').toString()
-      })
-      setPrice({
-        country: 'NL',
-        weight: weight,
-        price: +row.getCell('E').toString()
-      })
-      setPrice({
-        country: 'PT',
-        weight: weight,
-        price: +row.getCell('F').toString()
-      })
-    })
+    }
 
     const zones = {
       Zone2: ['AT', 'ES', 'IE', 'IT', 'PT', 'GB'],
@@ -658,12 +539,17 @@ class BigBlue {
       if (rowNumber === 1) {
         return
       }
-      const weight = getWeight(+row.getCell('A').toString().replace('kg', '').trim())
+      const weightNumber = +row.getCell('A').toString().replace('kg', '').trim()
+      if (isNaN(weightNumber)) {
+        return
+      }
+      const weight = getWeight(weightNumber)
 
       for (const country of zones.Zone4) {
         setPrice({
           country: country,
           weight: weight,
+          type: 'standard',
           price: +row.getCell('B').toString()
         })
       }
@@ -671,6 +557,7 @@ class BigBlue {
         setPrice({
           country: country,
           weight: weight,
+          type: 'standard',
           price: +row.getCell('C').toString()
         })
       }
@@ -678,6 +565,7 @@ class BigBlue {
         setPrice({
           country: country,
           weight: weight,
+          type: 'standard',
           price: +row.getCell('D').toString()
         })
       }
@@ -685,6 +573,7 @@ class BigBlue {
         setPrice({
           country: country,
           weight: weight,
+          type: 'standard',
           price: +row.getCell('F').toString()
         })
       }
@@ -692,10 +581,198 @@ class BigBlue {
         setPrice({
           country: country,
           weight: weight,
+          type: 'standard',
           price: +row.getCell('G').toString()
         })
       }
     })
+
+    const wEurope2 = workbook.getWorksheet('Europe2')
+    wEurope2.eachRow((row, rowNumber) => {
+      if (rowNumber === 1) {
+        return
+      }
+      const weight = getWeight(+row.getCell('A').toString().replace('kg', '').trim())
+
+      const countries = [
+        'DE',
+        'BE',
+        'ES',
+        'IT',
+        'LU',
+        'NL',
+        'AT',
+        'GB',
+        'CZ',
+        'EE',
+        'FI',
+        'HU',
+        'LV',
+        'LT',
+        'PL',
+        'SE',
+        'SK',
+        'SI',
+        'PT',
+        'IE',
+        'DK',
+        'RO',
+        'GR',
+        'BG',
+        'CH'
+      ]
+      for (const i in countries) {
+        setPrice({
+          country: countries[i],
+          weight: weight,
+          type: 'standard',
+          price: +row.getCell(Utils.columnToLetter(+i + 2)).toString()
+        })
+      }
+    })
+
+    const wEurope = workbook.getWorksheet('Europe')
+    wEurope.eachRow((row, rowNumber) => {
+      if (rowNumber === 1) {
+        return
+      }
+      const weight = getWeight(+row.getCell('A').toString().replace('kg', '').trim())
+      setPrice({
+        country: 'DE',
+        weight: weight,
+        type: 'standard',
+        price: +row.getCell('B').toString()
+      })
+      setPrice({
+        country: 'BE',
+        weight: weight,
+        type: 'standard',
+        price: +row.getCell('C').toString()
+      })
+      setPrice({
+        country: 'SC',
+        weight: weight,
+        type: 'standard',
+        price: +row.getCell('D').toString()
+      })
+      setPrice({
+        country: 'GB',
+        weight: weight,
+        type: 'standard',
+        price: +row.getCell('E').toString()
+      })
+    })
+
+    const wRelais = workbook.getWorksheet('Relais')
+    wRelais.eachRow((row, rowNumber) => {
+      if (rowNumber === 1) {
+        return
+      }
+      const weight = getWeight(+row.getCell('A').toString().replace('kg', '').trim())
+      setPrice({
+        country: 'BE',
+        weight: weight,
+        type: 'pickup',
+        price: +row.getCell('B').toString()
+      })
+      setPrice({
+        country: 'LU',
+        weight: weight,
+        type: 'pickup',
+        price: +row.getCell('C').toString()
+      })
+      setPrice({
+        country: 'ES',
+        weight: weight,
+        type: 'pickup',
+        price: +row.getCell('D').toString()
+      })
+      setPrice({
+        country: 'NL',
+        weight: weight,
+        type: 'pickup',
+        price: +row.getCell('E').toString()
+      })
+      setPrice({
+        country: 'PT',
+        weight: weight,
+        type: 'pickup',
+        price: +row.getCell('F').toString()
+      })
+    })
+
+    const wFrance = workbook.getWorksheet('France')
+    wFrance.eachRow((row, rowNumber) => {
+      if (rowNumber === 1) {
+        return
+      }
+      const weight = getWeight(+row.getCell('A').toString().replace('kg', '').trim())
+      setPrice({
+        country: 'FR',
+        weight: weight,
+        type: 'standard',
+        price: +row.getCell('E').toString()
+      })
+      setPrice({
+        country: 'FR',
+        weight: weight,
+        type: 'pickup',
+        price: +row.getCell('C').toString()
+      })
+    })
+
+    await DB('shipping_weight').where('partner', 'bigblue').delete()
+
+    for (const [country, types] of Object.entries(prices) as any) {
+      for (const [type, price] of Object.entries(types) as any) {
+        if (!price['1kg']) {
+          continue
+        }
+        console.log(price)
+        await DB('shipping_weight').insert({
+          country_id: country,
+          partner: 'bigblue',
+          currency: 'EUR',
+          transporter: type === 'pickup' ? 'MDR' : 'COL',
+          packing: 0.11,
+          picking: 0.4,
+          oil: 0,
+          ['250g']: price['250g'],
+          ['500g']: price['500g'],
+          ['750g']: price['750g'],
+          ['1kg']: price['1kg'],
+          ['2kg']: price['2kg'],
+          ['3kg']: price['3kg'],
+          ['4kg']: price['4kg'],
+          ['5kg']: price['5kg'],
+          ['6kg']: price['6kg'],
+          ['7kg']: price['7kg'],
+          ['8kg']: price['8kg'],
+          ['9kg']: price['9kg'],
+          ['10kg']: price['10kg'],
+          ['11kg']: price['11kg'],
+          ['12kg']: price['12kg'],
+          ['13kg']: price['13kg'],
+          ['14kg']: price['14kg'],
+          ['15kg']: price['15kg'],
+          ['16kg']: price['16kg'],
+          ['17kg']: price['17kg'],
+          ['18kg']: price['18kg'],
+          ['19kg']: price['19kg'],
+          ['20kg']: price['20kg'],
+          ['21kg']: price['21kg'],
+          ['22kg']: price['22kg'],
+          ['23kg']: price['23kg'],
+          ['24kg']: price['24kg'],
+          ['25kg']: price['25kg'],
+          ['26kg']: price['26kg'],
+          ['27kg']: price['27kg'],
+          ['28kg']: price['28kg'],
+          ['29kg']: price['29kg'],
+          ['30kg']: price['30kg']
+        })
+      }
+    }
 
     return prices
   }
