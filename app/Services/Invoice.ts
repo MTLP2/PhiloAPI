@@ -410,7 +410,7 @@ class Invoice {
     }
     invoice.daudin = params.daudin
     invoice.number = invoice.code
-    invoice.customer.country = country.name
+    invoice.customer.country = country?.name || ''
     invoice.lines = Array.isArray(invoice.lines) ? invoice.lines : JSON.parse(invoice.lines)
     for (const i in invoice.lines) {
       invoice.lines[i].total = Utils.round(invoice.lines[i].price * invoice.lines[i].quantity)
