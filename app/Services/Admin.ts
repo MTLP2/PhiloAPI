@@ -4488,13 +4488,14 @@ class Admin {
     }
     const shops = await DB()
       .select(
-        'quantity',
+        'oi.quantity',
         'product.id as product_id',
         'product.type',
         'product.name',
         'product.barcode',
         'project.id',
-        'os.transporter'
+        'os.transporter',
+        'stock.quantity as stock'
       )
       .from('order_item as oi')
       .join('vod', 'vod.project_id', 'oi.project_id')
@@ -4502,6 +4503,11 @@ class Admin {
       .join('order_shop as os', 'os.id', 'oi.order_shop_id')
       .join('project_product', 'project_product.project_id', 'project.id')
       .join('product', 'project_product.product_id', 'product.id')
+      .leftJoin('stock', (query) => {
+        query.on('stock.product_id', 'product.id')
+        query.on('stock.type', '=', DB.raw('?', transporter))
+        query.on('stock.is_preorder', '=', DB.raw('?', ['0']))
+      })
       .where((query) => {
         query.whereRaw('product.size like oi.size')
         query.orWhereRaw(`oi.products LIKE CONCAT('%[',product.id,']%')`)
@@ -4527,6 +4533,7 @@ class Admin {
         quantity: number
         barcode: string
         name: string
+        stock: number
         artist_name: string
         type: string
       }
@@ -4536,6 +4543,7 @@ class Admin {
         products[shop.product_id] = {
           id: shop.product_id,
           quantity: 0,
+          stock: 0,
           barcode: shop.barcode,
           name: shop.name,
           artist_name: shop.artist_name,
@@ -4543,6 +4551,7 @@ class Admin {
         }
       }
       products[shop.product_id].quantity += shop.quantity
+      products[shop.product_id].stock = shop.stock
     }
 
     return Object.values(products).sort((a, b) => {
