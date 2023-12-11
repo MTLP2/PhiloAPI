@@ -9,6 +9,7 @@ import Notification from 'App/Services/Notification'
 import Order from 'App/Services/Order'
 import Payment from 'App/Services/Payment'
 import Sna from 'App/Services/Sna'
+import Cart from 'App/Services/Cart'
 import Stock from 'App/Services/Stock'
 import Storage from 'App/Services/Storage'
 import Utils from 'App/Utils'
@@ -367,6 +368,7 @@ class Dispatch {
       )
       .join('customer', 'customer_id', 'customer.id')
       .whereNotNull('shipping_cost')
+      .whereNotNull('transporter')
       .where((query) => {
         if (params.start) {
           query.where('date_export', '>=', params.start)
@@ -452,6 +454,25 @@ class Dispatch {
     }
 
     return s
+  }
+
+  static calculateShipping = (params: {
+    quantity: number
+    currency: string
+    transporter: string
+    country_id: string
+    weight: number
+    state: string
+  }) => {
+    return Cart.calculateShipping({
+      quantity: params.quantity,
+      insert: params.quantity,
+      currency: params.currency,
+      transporter: params.transporter,
+      weight: +params.weight || +params.quantity * 0.3,
+      country_id: params.country_id,
+      state: params.state
+    })
   }
 
   static parsePriceList = async () => {

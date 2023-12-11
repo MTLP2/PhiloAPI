@@ -580,6 +580,7 @@ Route.group(() => {
   Route.delete('/contests/:id', 'ContestController.remove')
   Route.post('/contests/:id/extract', 'ContestController.extract')
   Route.get('/shipping-costs', 'AdminController.getShippingCosts')
+  Route.post('/calculate-shipping', 'AdminController.calculateShipping')
   Route.get('/stocks', 'AdminController.getStocks')
   Route.get('/stocks/price', 'AdminController.exportStocksPrices')
   Route.get('/elogik/stock', 'ElogikController.getStock')

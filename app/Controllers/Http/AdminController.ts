@@ -1139,6 +1139,10 @@ class AdminController {
     return Dispatch.getCosts(params)
   }
 
+  calculateShipping({ params }) {
+    return Dispatch.calculateShipping(params)
+  }
+
   deeplTranslate({ params }) {
     return Admin.deeplTranslate(params)
   }
