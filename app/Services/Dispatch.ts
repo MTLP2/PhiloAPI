@@ -349,188 +349,38 @@ class Dispatch {
     )
   }
 
-  static getCosts = async (params) => {
-    const currenciesDb = await Utils.getCurrenciesDb()
-    const currencies = await Utils.getCurrencies('EUR', currenciesDb)
-
-    const countries = await DB('country').where('lang', 'en').all()
-
-    countries.push({
-      id: '00'
-    })
-    const costs: any = {}
-    for (const country of countries) {
-      costs[country.id] = {
-        country_id: country.id,
-        country: country.name,
-        daudin: null,
-        daudin_cost: null,
-        daudin_costs: [],
-        daudin_benefit: 0,
-        daudin_pickup: null,
-        daudin_pickup_cost: null,
-        daudin_pickup_costs: [],
-        daudin_pickup_benefit: 0,
-        sna: null,
-        sna_cost: null,
-        sna_costs: [],
-        sna_benefit: 0,
-        sna_pickup: null,
-        sna_pickup_cost: null,
-        sna_pickup_costs: [],
-        sna_pickup_benefit: 0,
-        whiplash: null,
-        whiplash_cost: null,
-        whiplash_costs: [],
-        whiplash_benefit: 0,
-        whiplash_uk: null,
-        whiplash_uk_cost: null,
-        whiplash_uk_costs: [],
-        whiplash_uk_benefit: 0
-      }
-    }
-
-    const weight = params.weight.split('-')
-    const weightDb = weight[1] === '0.75' ? '1kg' : `${weight[1]}kg`
-
-    const shippings1 = await DB('shipping_weight').all()
-    for (const ship of shippings1) {
-      let price = ship[weightDb]
-
-      if (ship.transporter === 'GLS') {
-        ship.oil = 0
-      }
-
-      price = ship.oil ? price + (ship.oil / 100) * price : price
-      if (!costs[ship.country_id]) {
-        continue
-      }
-
-      if (ship.transporter === 'MDR' && params.type === 'pickup') {
-        if (price < 4.8) {
-          price = 4.8
-        }
-        price = price + ship.picking + ship.packing
-        price = price * 1.2
-        price = Utils.round(price, 2, 0.1)
-      } else if (params.type !== 'pickup') {
-        if (costs.transporter === 'IMX') {
-          price = price * 1.1
-        }
-        if (price < 6.4) {
-          price = 6.4
-        }
-
-        price = price + ship.picking + ship.packing
-        price = price * 1.2
-        price = Utils.round(price, 2, 0.1)
-      }
-
-      if (
-        !costs[ship.country_id][`${ship.partner}`] ||
-        costs[ship.country_id][`${ship.partner}`] > price
-      ) {
-        costs[ship.country_id][`${ship.partner}`] = price
-      }
-    }
-
-    const shippings2 = await DB('shipping_vinyl').all()
-    for (const ship of shippings2) {
-      let price = Utils.round(ship.cost + ship.picking + ship.packing + ship['1_vinyl'], 2, 0.1)
-      if (!costs[ship.country_id]) {
-        continue
-      }
-
-      if (ship.transporter === 'whiplash') {
-        price = price / currencies.USD
-        if (!costs[ship.country_id].whiplash || costs[ship.country_id].whiplash > price) {
-          costs[ship.country_id].whiplash = price
-        }
-      } else if (ship.transporter === 'whiplash_uk') {
-        price = price / currencies.GBP
-        if (!costs[ship.country_id].whiplash_uk || costs[ship.country_id].whiplash_uk > price) {
-          costs[ship.country_id].whiplash_uk = price
-        }
-      }
-    }
-
-    let orders: any = DB('order_shop')
+  static getCosts = async (params: {
+    sort?: any
+    start?: string
+    end?: string
+    filters?: string
+    size?: number
+  }) => {
+    const query = DB('order_shop')
       .select(
-        'order_shop.id',
-        'order_shop.order_id',
-        'order_shop.transporter',
-        'shipping_type',
-        'shipping_mode',
-        'customer.country_id',
-        'shipping',
-        'shipping_cost',
-        'shipping_trans',
-        'shipping_weight',
-        'shipping_quantity',
-        'order_shop.currency',
-        'order_shop.currency_rate',
-        'order_shop.date_export',
-        'order_shop.created_at',
-        'vod.project_id',
-        'project.picture',
-        'project.name',
-        'project.artist_name'
+        'order_shop.*',
+        DB.raw('shipping - shipping_cost as diff'),
+        DB.raw(
+          '(SELECT sum(quantity) FROM order_item WHERE order_shop_id = order_shop.id) as quantity'
+        ),
+        'customer.country_id'
       )
-      .whereNotNull('shipping_cost')
-      .join('order_item', 'order_shop_id', 'order_shop.id')
       .join('customer', 'customer_id', 'customer.id')
-      .join('vod', 'vod.project_id', 'order_item.project_id')
-      .join('project', 'vod.project_id', 'project.id')
-      .whereBetween('date_export', [params.start, params.end])
-      .orderBy('date_export', 'desc')
+      .whereNotNull('shipping_cost')
+      .where((query) => {
+        if (params.start) {
+          query.where('date_export', '>=', params.start)
+        }
+        if (params.end) {
+          query.where('date_export', '<=', params.end)
+        }
+      })
 
-    if (params.type) {
-      orders.where('shipping_type', '>=', params.type)
-    }
-    if (params.weight) {
-      orders.where('shipping_weight', '>=', weight[0])
-      orders.where('shipping_weight', '<', weight[1])
-    }
-    if (params.quantity) {
-      orders.where('shipping_quantity', params.quantity)
+    if (!params.sort) {
+      query.orderBy('date_export', 'desc')
     }
 
-    orders = await orders.all()
-
-    for (const order of orders) {
-      if (!costs[order.country_id] || !costs[order.country_id][`${order.transporter}_costs`]) {
-        continue
-      }
-      order.shipping = order.shipping * order.currency_rate
-      if (['daudin', 'sna'].includes(order.transporter)) {
-        order.currency = 'EUR'
-      }
-      order.diff = Utils.round(order.shipping - order.shipping_cost)
-      /**
-      if (order.transporter === 'daudin' && order.shipping_type === 'pickup') {
-        costs[order.country_id].daudin_pickup_costs.push(order)
-      } else if (order.transporter === 'sna' && order.shipping_type === 'pickup') {
-        costs[order.country_id].sna_pickup_costs.push(order)
-      } else {
-        costs[order.country_id][`${order.transporter}_costs`].push(order)
-      }
-      **/
-      costs[order.country_id][`${order.transporter}_costs`].push(order)
-      if (!costs[order.country_id][`${order.transporter}_cost`]) {
-        costs[order.country_id][`${order.transporter}_cost`] = order.shipping_cost
-        costs[order.country_id][`${order.transporter}_diff`] =
-          costs[order.country_id][order.transporter] - order.shipping_cost
-      }
-      costs[order.country_id][`${order.transporter}_benefit`] +=
-        order.shipping - order.shipping_cost
-
-      costs['00'][`${order.transporter}_costs`].push(order)
-      costs['00'][`${order.transporter}_benefit`] += order.shipping - order.shipping_cost
-    }
-
-    return Object.values(costs).sort(
-      (a: any, b: any) => b.daudin_costs.length - a.daudin_costs.length
-    )
+    return Utils.getRows<any>({ ...params, query: query })
   }
 
   static setCosts = async (params: { transporter: string; force?: boolean }) => {
