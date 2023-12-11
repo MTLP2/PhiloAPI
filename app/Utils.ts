@@ -348,7 +348,7 @@ class Utils {
                   q.where(column, '>', f)
                 } else if (decodedValue.indexOf('=') !== -1) {
                   const f = decodedValue.replace('=', '')
-                  q.were(column, '=', f)
+                  q.where(column, '=', f)
                 } else {
                   q.where(column, 'LIKE', `%${decodedValue}%`)
                 }
