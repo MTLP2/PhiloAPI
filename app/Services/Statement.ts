@@ -2592,6 +2592,7 @@ class StatementService {
       .join('payment_artist', 'payment_artist.id', 'payment_artist_project.payment_id')
       .where('project_id', params.id)
       .where('is_delete', false)
+      .whereIn('is_paid', [1, -1])
       .whereBetween(DB.raw("DATE_FORMAT(payment_artist.date, '%Y-%m-%d')"), [
         params.start,
         `${params.auto ? moment().endOf('month').format('YYYY-MM-DD') : params.end} 23:59`
