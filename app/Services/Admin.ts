@@ -406,7 +406,7 @@ class Admin {
         project.trans[order.transporter].sizes[order.size] += order.quantity
       }
       project.count += order.quantity
-      if (!order.sending && !order.date_export && order.type === 'vod') {
+      if (!order.date_export && order.type === 'vod') {
         project.trans[order.transporter].to_send += order.quantity
       }
       if (order.item_id) {
