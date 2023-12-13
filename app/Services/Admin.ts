@@ -5200,6 +5200,41 @@ class Admin {
     }
     return false
   }
+
+  static getProjectsToSync = async (params: { transporter: string }) => {
+    const query = DB('project')
+      .select(
+        'project.id',
+        'project.artist_name',
+        'project.name',
+        'project.picture',
+        'vod.picture_project',
+        DB('order_item as oi')
+          .select(DB.raw('sum(quantity)'))
+          .join('order_shop as os', 'os.id', 'oi.order_shop_id')
+          .whereRaw('project_id = project.id')
+          .whereNull('os.date_export')
+          .where('is_paid', true)
+          .where('os.transporter', params.transporter)
+          .as('to_sync')
+          .query(),
+        DB('stock')
+          .select(DB.raw('sum(quantity)'))
+          .join('project_product as pp', 'stock.product_id', 'pp.product_id')
+          .whereRaw('pp.project_id = project.id')
+          .where('is_preorder', false)
+          .where('type', params.transporter)
+          .as('stock')
+          .query()
+      )
+      .join('vod', 'vod.project_id', 'project.id')
+      .having('to_sync', '>', 0)
+      .having('stock', '>', 0)
+      .orderBy('to_sync', 'desc')
+
+    const projects = await query.all()
+    return projects
+  }
 }
 
 export default Admin
