@@ -326,7 +326,7 @@ class Utils {
                   column = DB.raw(
                     `CONCAT(${column
                       .split(' ')
-                      .map((c) => `COALESCE(${c}, '')`)
+                      .map((c) => `COALESCE(TRIM(${c}), '')`)
                       .join(",' ',")})`
                   )
                 }
