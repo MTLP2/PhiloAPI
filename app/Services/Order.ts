@@ -1630,7 +1630,7 @@ static toJuno = async (params) => {
     return { success: true }
   }
 
-  static importOrders = async (params: { file: string; action: string }) => {
+  static importOrders = async (params: { file: string; action: string; user_id: number }) => {
     const file = Buffer.from(params.file, 'base64')
     const workbook = new Excel.Workbook()
     await workbook.xlsx.load(file)
@@ -1647,12 +1647,13 @@ static toJuno = async (params) => {
         quantity: row.getCell('B').value,
         firstname: row.getCell('C').value,
         lastname: row.getCell('D').value,
-        phone: row.getCell('E').value,
-        address: row.getCell('F').value,
-        city: row.getCell('G').value,
-        state: row.getCell('H').value,
-        zip_code: row.getCell('I').value,
-        country: row.getCell('J').value
+        email: (row.getCell('E').value as any)?.text || row.getCell('E').value?.toString(),
+        phone: row.getCell('F').value,
+        address: row.getCell('G').value,
+        city: row.getCell('H').value,
+        state: row.getCell('I').value,
+        zip_code: row.getCell('J').value,
+        country: row.getCell('K').value
       }
 
       if (!data.barcode || !+data.barcode || !data.quantity || !+data.quantity) return
@@ -1674,7 +1675,8 @@ static toJuno = async (params) => {
       }
     }
 
-    const userId = 182080
+    const userId = params.user_id || 182080
+
     const tt = {}
     const transporters = {}
     let i = 0
@@ -1719,6 +1721,7 @@ static toJuno = async (params) => {
           state: item.state,
           country_id: item.country,
           phone: item.phone,
+          email: item.email,
           created_at: Utils.date(),
           updated_at: Utils.date()
         })
