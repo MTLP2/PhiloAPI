@@ -196,6 +196,8 @@ class Admin {
         'user.lang as user_lang',
         'user.id as user_id',
         'user.name as user_name',
+        'artist.name as artist',
+        'label.name as label',
         'project.*',
         DB.raw(`(
         SELECT sum(quantity)
@@ -212,6 +214,8 @@ class Admin {
       .leftJoin('vod', 'vod.project_id', 'project.id')
       .leftJoin('wishlist', 'wishlist.project_id', 'project.id')
       .leftJoin('user', 'user.id', 'vod.user_id')
+      .leftJoin('user as artist', 'artist.id', 'project.artist_id')
+      .leftJoin('user as label', 'label.id', 'project.label_id')
       .where('project.id', id)
       .first()
 
@@ -943,6 +947,16 @@ class Admin {
       return false
     }
     const project = await DB('project').find(params.id)
+
+    if (params.artist_id) {
+      project.artist_id = params.artist_id
+      project.save()
+    }
+
+    if (params.label_id) {
+      project.label_id = params.label_id
+      project.save()
+    }
 
     if (params.user_id && vod.user_id !== params.user_id) {
       await DB('project_user')
