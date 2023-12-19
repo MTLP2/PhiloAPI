@@ -641,6 +641,9 @@ class App {
         .where('country.lang', 'en')
         .first()
 
+      if (orderShop.is_external) {
+        data.to = customer.email
+      }
       const items = await DB('order_item as oi')
         .select('mi.*', 'oi.*', 'p.name', 'p.slug', 'p.artist_name', 'p.picture')
         .join('project as p', 'oi.project_id', 'p.id')

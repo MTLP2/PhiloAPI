@@ -1777,6 +1777,7 @@ class Project {
       .join('payment_artist', 'payment_artist.id', 'payment_artist_project.payment_id')
       .whereIn('project_id', ids)
       .where('is_delete', false)
+      .whereIn('is_paid', [1, -1])
       .orderBy('date')
       .all()
 

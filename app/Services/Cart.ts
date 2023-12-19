@@ -1153,6 +1153,8 @@ class Cart {
     let transporters: { [key: string]: boolean }
     if (params.transporter) {
       transporters = { [params.transporter]: true }
+    } else if (params.transporters) {
+      transporters = params.transporters
     } else {
       transporters = Stock.getTransporters({
         is_preorder: !params.is_shop,

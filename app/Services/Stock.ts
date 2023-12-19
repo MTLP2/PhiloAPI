@@ -50,7 +50,7 @@ class Stock {
               stocks.find((s) => s.product_id === p && s.type === t)?.reserved
             : null
 
-        if (qty === undefined) {
+        if (qty !== null && (isNaN(qty) || qty === undefined)) {
           res[t] = 0
         }
         if (

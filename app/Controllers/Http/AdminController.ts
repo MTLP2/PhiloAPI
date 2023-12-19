@@ -1513,6 +1513,10 @@ class AdminController {
       return { error: err.message, validation: err.messages }
     }
   }
+
+  async getProjectsToSync({ params }) {
+    return Admin.getProjectsToSync(params)
+  }
 }
 
 export default AdminController

@@ -177,6 +177,9 @@ class Elogik {
       if (qty + order.quantity > params.quantity) {
         break
       }
+      if (!order.items) {
+        continue
+      }
       let ok = order.items.every((item) => {
         return params.products.some((p) => {
           return +p === +item.id
