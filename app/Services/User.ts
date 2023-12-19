@@ -131,6 +131,52 @@ class User {
     return users
   }
 
+  static search = async (payload: {
+    search: string
+    filter?: Array<string>
+    init?: boolean
+    type?: string
+    tab: string
+  }) => {
+    const { search, tab } = payload
+
+    const users = await DB()
+      .select(
+        DB.raw('MAX(u.id) as user_id'),
+        'u.name as user_name',
+        DB.raw('MAX(u.slug) as slug'),
+        DB.raw('MAX(u.picture) as picture'),
+        DB.raw('MAX(u.country_id) as country_id')
+      )
+
+      .from('user as u')
+      .where('u.is_delete', false)
+      .where('u.name', 'like', `%${search}%`)
+      .orderBy('u.name', 'asc')
+      .limit(9)
+
+    if (tab === 'artists') {
+      users.join('project as p', 'p.artist_id', 'u.id').where('type', 'artist')
+    } else if (tab === 'labels') {
+      users.join('project as p', 'p.label_id', 'u.id').where('type', 'label')
+    }
+
+    return users
+      .groupBy('u.name')
+      .all()
+      .then((res) => {
+        return res.map((user) => {
+          return {
+            id: user.user_id,
+            artist_name: user.user_name,
+            banner: user.picture,
+            slug: user.slug,
+            country: user.country_id
+          }
+        })
+      })
+  }
+
   static editProjectUsers = async (params: {
     id: number
     user_id: number
