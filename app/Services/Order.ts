@@ -1630,7 +1630,12 @@ static toJuno = async (params) => {
     return { success: true }
   }
 
-  static importOrders = async (params: { file: string; action: string; user_id: number }) => {
+  static importOrders = async (params: {
+    file: string
+    action: string
+    user_id: number
+    transporters: string[]
+  }) => {
     const file = Buffer.from(params.file, 'base64')
     const workbook = new Excel.Workbook()
     await workbook.xlsx.load(file)
@@ -1638,7 +1643,6 @@ static toJuno = async (params) => {
     const worksheet = workbook.getWorksheet(1)
 
     const barcodes: { [key: number]: boolean } = {}
-
     const orders: any[] = []
 
     worksheet.eachRow((row) => {
@@ -1653,11 +1657,27 @@ static toJuno = async (params) => {
         city: row.getCell('H').value,
         state: row.getCell('I').value,
         zip_code: row.getCell('J').value,
-        country: row.getCell('K').value
+        country: row.getCell('K').value,
+        error: false
       }
 
+      if (data.country === 'UK') {
+        data.country = 'GB'
+      }
       if (!data.barcode || !+data.barcode || !data.quantity || !+data.quantity) return
 
+      if (
+        !data.firstname ||
+        !data.lastname ||
+        !data.email ||
+        !data.country ||
+        (data.country as string).length !== 2 ||
+        !data.address ||
+        !data.city ||
+        !data.zip_code
+      ) {
+        data.error = true
+      }
       barcodes[data.barcode as number] = true
       orders.push(data)
     })
@@ -1668,17 +1688,85 @@ static toJuno = async (params) => {
       .whereIn('barcode', Object.keys(barcodes))
       .all()
 
+    const ordersExists = await DB('order_shop')
+      .select(
+        'order_item.project_id',
+        'customer.firstname',
+        'customer.lastname',
+        'customer.email',
+        'customer.address'
+      )
+      .join('order_item', 'order_item.order_shop_id', 'order_shop.id')
+      .join('customer', 'customer.id', 'order_shop.customer_id')
+      .whereIn(
+        'project_id',
+        projects.map((p) => p.project_id)
+      )
+      .where('is_external', true)
+      .all()
+
+    const tt = {}
+    let countExists = 0
+    let shipping = 0
+
     for (const d in orders) {
+      const order = orders[d]
+      if (!tt[order.country]) {
+        tt[order.country] = {}
+      }
+      if (!tt[order.country][order.quantity]) {
+        const trans: any = await Cart.calculateShipping({
+          weight: 200,
+          quantity: 1,
+          insert: order.quantity,
+          currency: 'EUR',
+          country_id: order.country,
+          stocks: params.transporters.reduce((acc, t) => {
+            acc[t] = null
+            return acc
+          }, {}),
+          transporters: params.transporters.reduce((acc, t) => {
+            acc[t] = true
+            return acc
+          }, {})
+        })
+        tt[order.country][order.quantity] = {
+          shipping: trans.standard,
+          trans: trans.transporter
+        }
+      }
+
+      const project = projects.find((p: { barcode: string }) => +p.barcode === +orders[d].barcode)
+      if (
+        ordersExists.find(
+          (o) =>
+            o.project_id === project.project_id &&
+            o.email === order.email &&
+            o.firstname === order.firstname &&
+            o.lastname === order.lastname &&
+            o.address === order.address
+        )
+      ) {
+        countExists++
+      }
+
+      if (!tt[order.country][order.quantity].shipping) {
+        orders[d].error = true
+      }
+      shipping += tt[order.country][order.quantity].shipping
       orders[d] = {
         ...orders[d],
-        ...projects.find((p: { barcode: string }) => +p.barcode === +orders[d].barcode)
+        ...project,
+        transporter: tt[order.country][order.quantity].trans
       }
+    }
+
+    if (countExists > 0) {
+      return { error: 'already_imported', count: countExists, shipping: shipping, success: false }
     }
 
     const userId = params.user_id || 182080
 
-    const tt = {}
-    const transporters = {}
     let i = 0
     if (params.action === 'import') {
       for (const item of orders) {
@@ -1686,30 +1774,11 @@ static toJuno = async (params) => {
           user_id: userId,
           status: 'external',
           currency: 'EUR',
+          total: 0,
+          sub_total: 0,
           created_at: Utils.date(),
           updated_at: Utils.date()
         })
-
-        if (!tt[item.country]) {
-          tt[item.country] = 0
-        }
-        tt[item.country] += +item.quantity
-
-        if (!transporters[item.country]) {
-          const trans: any = await Cart.calculateShipping({
-            quantity: 1,
-            weight: 200,
-            insert: 1,
-            currency: 'EUR',
-            country_id: item.country,
-            transporters: {
-              daudin: true,
-              whiplash: true,
-              whiplash_uk: true
-            }
-          })
-          transporters[item.country] = trans.transporter
-        }
 
         const customer = await DB('customer').insert({
           type: 'individual',
@@ -1737,7 +1806,7 @@ static toJuno = async (params) => {
           sub_total: 0,
           shipping: 0,
           shipping_type: 'standard',
-          transporter: transporters[item.country],
+          transporter: item.transporter,
           currency: 'EUR',
           currency_rate: 1,
           created_at: Utils.date(),
@@ -1757,10 +1826,13 @@ static toJuno = async (params) => {
         })
         i++
       }
-      return { count: i, success: true }
+      return { count: i, shipping: shipping, success: true }
     }
 
-    return orders
+    return {
+      orders: orders,
+      shipping: shipping
+    }
   }
 
   static createExternalOrders = async () => {
