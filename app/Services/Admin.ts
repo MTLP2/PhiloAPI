@@ -948,13 +948,13 @@ class Admin {
     }
     const project = await DB('project').find(params.id)
 
-    if (params.artist_id) {
-      project.artist_id = params.artist_id
-      project.save()
-    }
-
-    if (params.label_id) {
-      project.label_id = params.label_id
+    if (params.artist_id || params.label_id) {
+      if (params.artist_id) {
+        project.artist_id = params.artist_id
+      }
+      if (params.label_id) {
+        project.label_id = params.label_id
+      }
       project.save()
     }
 
