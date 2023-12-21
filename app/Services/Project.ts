@@ -616,23 +616,16 @@ class Project {
     if (params.search) {
       params.search = params.search.replace('-', ' ').replace(/'/g, '')
       projects.where(function () {
-        // if (params.need === 'all') {
         this.where(
           DB.raw(`REPLACE(CONCAT(artist_name, ' ', p.name), '-', ' ')`),
           'like',
           `%${params.search}%`
         )
-        // }
-        // if (params.need === 'all' || params.need === 'artists') {
         this.orWhere(
           DB.raw(`REPLACE(CONCAT(p.name, ' ', artist_name), '-', ' ')`),
           'like',
           `%${params.search}%`
-        )
-          // }
-          // if (params.need === 'all' || params.need === 'labels') {
-          .orWhere('label_name', 'like', `%${params.search}%`)
-        // }
+        ).orWhere('label_name', 'like', `%${params.search}%`)
       })
     }
 
