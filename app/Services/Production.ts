@@ -2144,10 +2144,6 @@ class Production {
       .belongsTo('customer')
       .first()
 
-    if (prod.invoice_id) {
-      return (await Invoice.download({ params: { id: prod.invoice_id, lang: 'en' } })).data
-    }
-
     const invoice: any = {}
     invoice.date = moment().format('YYYY-MM-DD')
     invoice.type = 'invoice'

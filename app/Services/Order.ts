@@ -1716,7 +1716,7 @@ static toJuno = async (params) => {
       }
       if (!tt[order.country][order.quantity]) {
         const trans: any = await Cart.calculateShipping({
-          weight: 200,
+          weight: order.quantity * 300,
           quantity: 1,
           insert: order.quantity,
           currency: 'EUR',
@@ -1750,7 +1750,7 @@ static toJuno = async (params) => {
         countExists++
       }
 
-      if (!tt[order.country][order.quantity].shipping) {
+      if (order.quantity > 20 || !tt[order.country][order.quantity].shipping) {
         orders[d].error = true
       }
       shipping += tt[order.country][order.quantity].shipping
