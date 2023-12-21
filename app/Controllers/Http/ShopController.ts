@@ -54,6 +54,8 @@ class ShopController {
         line_items: schema.number.optional(),
         white_label: schema.boolean.optional(),
         youtube: schema.string.optional(),
+        artist_id: schema.number.optional(),
+        label_id: schema.number.optional(),
         group_shipment: schema.boolean.optional()
       }),
       data: params
