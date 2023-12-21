@@ -142,18 +142,23 @@ class User {
 
     const users = await DB()
       .select(
-        DB.raw('MAX(u.id) as user_id'),
-        'u.name as user_name',
-        DB.raw('MAX(u.slug) as slug'),
-        DB.raw('MAX(u.picture) as picture'),
-        DB.raw('MAX(u.country_id) as country_id')
+        'u.id',
+        'u.type',
+        'u.name',
+        'u.slug',
+        'u.picture',
+        'u.country_id',
+        DB.raw('MAX(shop_artist.code) as shop_code_artist'),
+        DB.raw('MAX(shop_label.code) as shop_code_label')
       )
-
       .from('user as u')
+      .leftJoin('shop as shop_artist', 'shop_artist.artist_id', 'u.id')
+      .leftJoin('shop as shop_label', 'shop_label.label_id', 'u.id')
       .where('u.is_delete', false)
       .where('u.name', 'like', `%${search}%`)
       .orderBy('u.name', 'asc')
       .limit(9)
+      .groupBy('u.id')
 
     if (tab === 'artists') {
       users.join('project as p', 'p.artist_id', 'u.id').where('type', 'artist')
@@ -161,20 +166,8 @@ class User {
       users.join('project as p', 'p.label_id', 'u.id').where('type', 'label')
     }
 
-    return users
-      .groupBy('u.name')
-      .all()
-      .then((res) => {
-        return res.map((user) => {
-          return {
-            id: user.user_id,
-            artist_name: user.user_name,
-            banner: user.picture,
-            slug: user.slug,
-            country: user.country_id
-          }
-        })
-      })
+    const res = await users.all()
+    return res
   }
 
   static editProjectUsers = async (params: {
