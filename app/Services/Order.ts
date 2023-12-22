@@ -1646,12 +1646,16 @@ static toJuno = async (params) => {
     const orders: any[] = []
 
     worksheet.eachRow((row) => {
+      const email = (row.getCell('E').value as any)?.text
+        ? (row.getCell('E').value as any)?.text.richText[0].text.toString()
+        : row.getCell('E').value?.toString()
+
       const data = {
         barcode: row.getCell('A').value,
         quantity: row.getCell('B').value,
         firstname: row.getCell('C').value,
         lastname: row.getCell('D').value,
-        email: (row.getCell('E').value as any)?.text || row.getCell('E').value?.toString(),
+        email: email,
         phone: row.getCell('F').value,
         address: row.getCell('G').value,
         city: row.getCell('H').value,
