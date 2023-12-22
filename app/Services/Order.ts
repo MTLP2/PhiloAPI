@@ -1761,6 +1761,7 @@ static toJuno = async (params) => {
       orders[d] = {
         ...orders[d],
         ...project,
+        shipping: tt[order.country][order.quantity].shipping,
         transporter: tt[order.country][order.quantity].trans
       }
     }
