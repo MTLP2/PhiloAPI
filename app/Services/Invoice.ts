@@ -533,9 +533,9 @@ class Invoice {
         'invoice.tax',
         'invoice.tax_rate',
         'invoice.client',
-        'customer_id',
-        'order_id',
-        'order_shop_id',
+        'invoice.customer_id',
+        'invoice.order_id',
+        'invoice.order_shop_id',
         'invoice.category',
         'customer.name as customer_name',
         'firstname',
@@ -543,13 +543,15 @@ class Invoice {
         'country_id',
         'order.total as order_total',
         'order.payment_type',
-        'order.shipping as order_shipping'
+        'order.shipping as order_shipping',
+        'payment.payment_id'
       )
       .leftJoin('order', 'order.id', 'order_id')
-      .leftJoin('customer', 'customer.id', 'customer_id')
-      .where('date', '>=', params.start)
-      .where('date', '<=', params.end)
-      .orderBy('date', 'asc')
+      .leftJoin('customer', 'customer.id', 'invoice.customer_id')
+      .leftJoin('payment', 'payment.invoice_id', 'invoice.id')
+      .where('invoice.date', '>=', params.start)
+      .where('invoice.date', '<=', params.end)
+      .orderBy('invoice.date', 'asc')
       .where('compatibility', true)
       .all()
 
@@ -582,8 +584,8 @@ class Invoice {
       data.shipping_eur = data.shipping * data.currency_rate
       data.total_eur = data.total * data.currency_rate
 
-      if (!data.payment_type) {
-        // data.payment_type = 'stripe'
+      if (!data.payment_type && data.payment_id) {
+        data.payment_type = 'stripe'
       }
       invoices.push(data)
     }
