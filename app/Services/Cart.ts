@@ -1773,10 +1773,7 @@ class Cart {
           intent.customer = customer.id
         }
 
-        if (
-          (params.boxes && params.boxes.some((b) => b.monthly)) ||
-          (params.card_save && params.card.new)
-        ) {
+        if ((params.boxes && params.boxes.some((b) => b.monthly)) || params.card.save) {
           try {
             await Payment.saveCard(params.user_id, params.card.card)
             intent.payment_method = params.card.card
