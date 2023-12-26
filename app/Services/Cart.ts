@@ -56,6 +56,22 @@ class Cart {
     }
   }
 
+  static getTaxRate2 = async (customer) => {
+    const country = await DB('country').where('lang', 'en').where('id', customer.country_id).first()
+
+    if (!country) {
+      return 0
+    } else if (country.ue && customer.type === 'individual') {
+      return country.tax_rate / 100
+    } else if (country.id === 'FR') {
+      return country.tax_rate / 100
+    } else if (country.ue && !customer.tax_intra) {
+      return country.tax_rate / 100
+    } else {
+      return 0
+    }
+  }
+
   static clearCart = (userId) => {
     return DB('user').where({ id: userId }).update({ cart: null })
   }
@@ -103,6 +119,9 @@ class Cart {
     cart.shipping = 0
     cart.sub_total = 0
     cart.tax = 0
+    if (params.tips < 0) {
+      params.tips = 0
+    }
     cart.tips = +params.tips || 0
     cart.discount = 0
     cart.total = 0
