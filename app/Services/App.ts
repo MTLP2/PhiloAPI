@@ -69,9 +69,9 @@ class App {
       }
       if (moment().format('E') === '2') {
         await Payment.alertDatePassed()
-        await App.sendTeamSummaryProjects()
       }
       if (moment().format('E') === '3') {
+        await App.sendTeamSummaryProjects()
       }
       if (moment().format('E') < '6') {
         await App.alertToSync()
