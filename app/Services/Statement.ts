@@ -491,9 +491,8 @@ class StatementService {
             total: 0
           }
         }
-        data[barcode].quantity += row.getCell('P').value
-        data[barcode].total += row.getCell('R').value
-        console.log(data)
+        data[barcode].quantity += row.getCell('P').text
+        data[barcode].total += row.getCell('R').text
       }
     })
 
