@@ -548,7 +548,7 @@ class Invoice {
       )
       .leftJoin('order', 'order.id', 'order_id')
       .leftJoin('customer', 'customer.id', 'invoice.customer_id')
-      .leftJoin('payment', 'payment.invoice_id', 'invoice.id')
+      .leftJoin('payment', 'payment.id', 'invoice.payment_id')
       .where('invoice.date', '>=', params.start)
       .where('invoice.date', '<=', params.end)
       .orderBy('invoice.date', 'asc')
