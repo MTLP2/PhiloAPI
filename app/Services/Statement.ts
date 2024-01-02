@@ -99,6 +99,7 @@ class StatementService {
     year: string
     month: string
     distributor: string
+    custom_column: boolean
     type: string
   }) {
     const file = Buffer.from(params.file, 'base64')
@@ -111,55 +112,59 @@ class StatementService {
     await workbook.xlsx.load(file)
 
     let data
-    switch (params.distributor) {
-      case 'PIAS':
-        data = await this.parsePias(workbook)
-        break
-      case 'ROM':
-        data = await this.parseROM(workbook, currencies)
-        break
-      case 'Differ-Ant':
-        data = this.parseDifferant(workbook)
-        break
-      case 'LITA':
-        data = this.parseLITA(workbook)
-        break
-      case 'LITA2':
-        data = this.parseLITA2(workbook)
-        params.distributor = 'LITA'
-        break
-      case 'MGM':
-        data = this.parseMGM(workbook)
-        break
-      case 'Altafonte':
-        data = this.parseAltafonte(workbook)
-        break
-      case 'FAB':
-        data = this.parseFab(workbook)
-        break
-      case 'Arcades':
-        data = this.parseArcades(workbook)
-        break
-      case 'TerminalD':
-        data = this.parseTerminalD(workbook)
-        break
-      case 'CoastToCoast':
-        data = this.parseCoastToCoast(workbook)
-        break
-      case 'Amplified':
-        data = this.parseAmplified(workbook, currencies)
-        break
-      case 'LoveDaRecords':
-        data = this.parseLoveDaRecords(workbook, currencies)
-        break
-      case 'Hollande':
-        data = this.parseHollande(workbook)
-        break
-      case 'Matrix':
-        data = this.parseMatrix(workbook)
-        break
-      default:
-        throw new ApiError(404, 'Distributor not found')
+    if (params.custom_column) {
+      data = this.parseCustom(workbook, currencies, params)
+    } else {
+      switch (params.distributor) {
+        case 'PIAS':
+          data = await this.parsePias(workbook)
+          break
+        case 'ROM':
+          data = await this.parseROM(workbook, currencies)
+          break
+        case 'Differ-Ant':
+          data = this.parseDifferant(workbook)
+          break
+        case 'LITA':
+          data = this.parseLITA(workbook)
+          break
+        case 'LITA2':
+          data = this.parseLITA2(workbook)
+          params.distributor = 'LITA'
+          break
+        case 'MGM':
+          data = this.parseMGM(workbook)
+          break
+        case 'Altafonte':
+          data = this.parseAltafonte(workbook)
+          break
+        case 'FAB':
+          data = this.parseFab(workbook)
+          break
+        case 'Arcades':
+          data = this.parseArcades(workbook)
+          break
+        case 'TerminalD':
+          data = this.parseTerminalD(workbook)
+          break
+        case 'CoastToCoast':
+          data = this.parseCoastToCoast(workbook)
+          break
+        case 'Amplified':
+          data = this.parseAmplified(workbook, currencies)
+          break
+        case 'LoveDaRecords':
+          data = this.parseLoveDaRecords(workbook, currencies)
+          break
+        case 'Hollande':
+          data = this.parseHollande(workbook)
+          break
+        case 'Matrix':
+          data = this.parseMatrix(workbook)
+          break
+        default:
+          throw new ApiError(404, 'Distributor not found')
+      }
     }
 
     data = Object.values(data)
@@ -668,6 +673,31 @@ class StatementService {
           quantity: quantity || 0,
           returned: 0,
           total: total
+        }
+      }
+    })
+
+    return data
+  }
+
+  static parseCustom(workbook: any, currencies, params) {
+    const worksheet = workbook.getWorksheet(params.sheet_number)
+
+    const data = {}
+    worksheet.eachRow((row) => {
+      const barcode = row.getCell(params.barcode).text
+      const quantity = +row.getCell(params.quantity).text
+      const returned = params.return ? +row.getCell(params.return).text : 0
+      const total = +row.getCell(params.total).text
+
+      console.log(currencies)
+      if (barcode && Number.isInteger(quantity) && total !== 0) {
+        data[barcode] = {
+          barcode: barcode,
+          country_id: params.country_id,
+          quantity: quantity,
+          returned: returned,
+          total: total / currencies[params.currency]
         }
       }
     })
