@@ -2336,6 +2336,7 @@ class Production {
       item: item
     })
 
+    const project = await DB('vod').where('project_id', params.project_id).first()
     if (!params.is_statement) {
       item.in_statement = null
     } else if (params.in_statement && item.in_statement !== params.in_statement) {
@@ -2344,7 +2345,6 @@ class Production {
       item.is_statement !== params.is_statement ||
       item.cost_invoiced !== params.cost_invoiced
     ) {
-      const project = await DB('vod').where('project_id', params.project_id).first()
       const currencyRate = await Utils.getCurrencyComp(params.currency, project.currency)
       const value = Utils.round(params.cost_invoiced * currencyRate, 2)
 
@@ -2366,6 +2366,9 @@ class Production {
     item.cost_real = params.cost_real
     item.cost_real_ttc = params.cost_real_ttc
     item.cost_invoiced = params.cost_invoiced
+    if (params.is_statement && project.is_licence) {
+      throw new Error('Licence project cannot have cost in statement')
+    }
     item.is_statement = params.is_statement
     item.margin = params.margin
     item.comment = params.comment
@@ -2383,7 +2386,6 @@ class Production {
     await item.save()
     log.save(item)
 
-    const project = await DB('project').where('id', item.project_id).first()
     if (item.check_status === 'incomplete' || item.check_status === 'tuiled') {
       await Notification.sendEmail({
         to: 'compta@diggersfactory.com',
