@@ -2886,6 +2886,72 @@ class Stats {
 
     return stats
   }
+
+  static async getSlidingStock(params: { start?: string; end?: number }) {
+    const stocks = await DB('vod')
+      .select('vod.project_id', 'stock.type', 'stock.quantity')
+      .join('project_product', 'project_product.project_id', 'vod.project_id')
+      .join('stock', 'stock.product_id', 'project_product.product_id')
+      .where('is_preorder', false)
+      .where('is_licence', true)
+      .where('quantity', '>', 0)
+      .all()
+
+    let qty = stocks.reduce((prev, cur) => {
+      prev += cur.quantity
+      return prev
+    }, 0)
+
+    const historic = await DB('vod')
+      .select(
+        'stock_historic.id',
+        'vod.project_id',
+        'stock_historic.type',
+        'stock_historic.data',
+        'stock_historic.created_at'
+      )
+      .join('project_product', 'project_product.project_id', 'vod.project_id')
+      // .join('stock', 'stock.product_id', 'project_product.product_id')
+      .join('stock_historic', 'stock_historic.product_id', 'project_product.product_id')
+      .where('stock_historic.is_preorder', false)
+      .where('is_licence', true)
+      .where('vod.project_id', 226925)
+      .orderBy('stock_historic.created_at', 'desc')
+      .all()
+
+    console.log(historic.length)
+    const data = {}
+
+    for (const h of historic) {
+      const d = JSON.parse(h.data)
+      const date = moment(h.created_at).format('YYYY')
+      if (!data[date]) {
+        data[date] = {
+          stock: qty,
+          in: 0,
+          out: 0
+        }
+      }
+      if (d.new.quantity === null || d.old.quantity === null) {
+        continue
+      }
+      const diff = d.old.quantity - d.new.quantity
+
+      if (diff > 1000) {
+        console.log(h.id, h.project_id, date, qty, diff)
+      }
+      if (isNaN(diff)) {
+        continue
+      }
+      qty += diff
+      if (diff > 0) {
+        data[date].out += diff
+      } else {
+        data[date].in += -diff
+      }
+    }
+    return data
+  }
 }
 
 export default Stats
