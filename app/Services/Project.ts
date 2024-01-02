@@ -724,7 +724,14 @@ class Project {
       })
     }
     if (type === 'shop') {
-      projects.whereIn('v.step', ['in_progress', 'successful', 'coming_soon', 'private', 'promo'])
+      projects.whereIn('v.step', [
+        'in_progress',
+        'successful',
+        'coming_soon',
+        'private',
+        'promo',
+        'creating'
+      ])
     }
     if (userId) {
       projects.where('v.user_id', userId)
