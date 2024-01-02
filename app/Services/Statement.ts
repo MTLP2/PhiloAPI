@@ -550,9 +550,9 @@ class StatementService {
             total: 0
           }
         }
-        data[barcode].quantity += row.getCell('J').value
-        data[barcode].returned += -row.getCell('S').value
-        data[barcode].total += row.getCell('P').value
+        data[barcode].quantity += row.getCell('I').value
+        // data[barcode].returned += -row.getCell('').value
+        data[barcode].total += row.getCell('M').value
       }
     })
 
