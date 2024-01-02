@@ -1750,10 +1750,11 @@ class Admin {
         const filter = filters[i]
         if (filter) {
           if (filter.name === 'user_infos') {
-            orders.where(
-              DB.raw(`CONCAT(c.firstname, ' ', c.lastname) LIKE '%${filter.value}%'`),
-              null
-            )
+            filter.value = decodeURIComponent(filter.value)
+            orders.where((query) => {
+              query.where(DB.raw(`CONCAT(c.firstname, ' ', c.lastname) LIKE '%${filter.value}%'`))
+              query.orWhere(DB.raw(`CONCAT(c.lastname, ' ', c.firstname) LIKE '%${filter.value}%'`))
+            })
             filters.splice(i, 1)
             params.filters = JSON.stringify(filters)
           }
