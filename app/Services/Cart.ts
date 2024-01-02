@@ -46,22 +46,6 @@ class Cart {
     if (!country) {
       return 0
     } else if (country.ue && customer.type === 'individual') {
-      return 0.2
-    } else if (country.id === 'FR') {
-      return 0.2
-    } else if (country.ue && !customer.tax_intra) {
-      return 0.2
-    } else {
-      return 0
-    }
-  }
-
-  static getTaxRate2 = async (customer) => {
-    const country = await DB('country').where('lang', 'en').where('id', customer.country_id).first()
-
-    if (!country) {
-      return 0
-    } else if (country.ue && customer.type === 'individual') {
       return country.tax_rate / 100
     } else if (country.id === 'FR') {
       return country.tax_rate / 100
