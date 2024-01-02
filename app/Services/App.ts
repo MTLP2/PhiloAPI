@@ -698,7 +698,7 @@ class App {
 
         const projects = await DB('vod')
           .select(
-            'vod.barcode',
+            'product.barcode',
             'p.name',
             'p.slug',
             'p.artist_name',
@@ -706,20 +706,23 @@ class App {
             'p.id as project_id'
           )
           .join('project as p', 'vod.project_id', 'p.id')
+          .join('project_product', 'project_product.project_id', 'p.id')
+          .join('product', 'product.id', 'project_product.product_id')
           .whereIn(
-            'barcode',
+            'product.barcode',
             items.map((b) => b.barcode)
           )
           .all()
 
         for (const i in items) {
-          const p = projects.find((p) => p.barcode === items[i].barcode)
+          const p = projects.find((p) => p.barcode.toString() === items[i].barcode.toString())
           items[i] = {
             ...items[i],
             ...p
           }
         }
 
+        console.log(items)
         data.order = order
         if (order.tracking_number) {
           if (order.tracking_link) {
