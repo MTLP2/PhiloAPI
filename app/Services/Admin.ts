@@ -2202,6 +2202,7 @@ class Admin {
         await orderShop.save({
           is_paid: 0,
           ask_cancel: 0,
+          date_cancel: Utils.date(),
           step: 'canceled'
         })
 

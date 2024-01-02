@@ -743,6 +743,7 @@ static toJuno = async (params) => {
         .update({
           is_paid: 0,
           ask_cancel: 0,
+          date_cancel: Utils.date(),
           sending: 0,
           step: type === 'cancel' ? 'canceled' : 'refunded'
         })
