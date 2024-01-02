@@ -156,15 +156,18 @@ class Whiplash {
     const orders = await DB('order_shop as os')
       .select(
         'customer.*',
+        'customer.email as customer_email',
         'os.id',
         'oi.order_shop_id',
         'os.type',
         'oi.quantity',
         'os.order_id',
-        'os.user_id'
+        'os.user_id',
+        'user.email'
       )
       .join('order_item as oi', 'oi.order_shop_id', 'os.id')
       .join('customer', 'customer.id', 'os.customer_id')
+      .join('user', 'user.id', 'os.user_id')
       .where('oi.project_id', params.project_id)
       .where('os.transporter', params.type)
       .where('os.type', 'vod')
@@ -245,6 +248,7 @@ class Whiplash {
 
       if (!order.logistician_id) {
         count += order.quantity
+ 
         const data: any = {
           shipping_name: `${order.firstname} ${order.lastname}`,
           shipping_address_1: order.address,
@@ -253,7 +257,7 @@ class Whiplash {
           shipping_country: order.country_id,
           shipping_zip: order.zip_code,
           shipping_phone: order.phone,
-          email: order.email,
+          email: order.customer_email || order.email,
           shop_shipping_method_text: Whiplash.getShippingMethod(),
           shop_warehouse_id: params.type === 'whiplash_uk' ? 3 : 4,
           order_items: []

@@ -288,7 +288,7 @@ class Elogik {
 
   static syncOrders = async (ids: number[]) => {
     const orders = await DB()
-      .select('customer.*', 'os.*', 'user.email')
+      .select('customer.*', 'customer.email as customer_email', 'os.*', 'user.email')
       .from('order_shop as os')
       .join('customer', 'customer.id', 'os.customer_id')
       .join('user', 'user.id', 'os.user_id')
@@ -363,7 +363,7 @@ class Elogik {
         ville: order.city,
         codePays: order.country_id,
         telephoneMobile: order.phone?.substring(0, 19),
-        email: order.email
+        email: order.customer_email || order.email
       }
 
       const params = {
