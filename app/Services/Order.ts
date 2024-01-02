@@ -1075,6 +1075,7 @@ static toJuno = async (params) => {
           shipping_zip: customer.zip_code,
           shipping_phone: customer.phone,
           shop_shipping_method_text: Whiplash.getShippingMethod(),
+          email: item.email,
           order_items: []
         }
 
