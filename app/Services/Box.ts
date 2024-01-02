@@ -1,6 +1,7 @@
 const bwipjs = require('bwip-js')
 import JSZip from 'jszip'
 import moment from 'moment'
+import Excel from 'exceljs'
 
 import DB from 'App/DB'
 import Utils from 'App/Utils'
@@ -3275,6 +3276,53 @@ class Box {
         }
       })
     )
+  }
+
+  static async exportTurnover(params?: {}) {
+    const workbook = new Excel.Workbook()
+
+    const invoices = await DB('invoice')
+      .orWhere((query) => {
+        query.where('category', 'box')
+        query.orWhereNotNull('order_box_id')
+      })
+      .all()
+
+    const data = {}
+
+    for (const invoice of invoices) {
+      const date = invoice.date.substring(0, 7)
+      if (!data[date]) {
+        data[date] = {
+          b2b: 0,
+          b2c: 0
+        }
+      }
+      console.log(invoice.currency_rate)
+      if (invoice.order_box_id) {
+        data[date].b2c += invoice.sub_total / invoice.currency_rate
+      } else {
+        data[date].b2b += invoice.sub_total / invoice.currency_rate
+      }
+    }
+
+    const worksheet = workbook.addWorksheet('Turnover')
+
+    worksheet.columns = [
+      { header: 'Date', key: 'date', width: 30 },
+      { header: 'B2C', key: 'B2C', width: 30 },
+      { header: 'B2B', key: 'B2B', width: 30 }
+    ]
+
+    for (const date of Object.keys(data)) {
+      worksheet.addRow({
+        date: date,
+        B2C: Utils.round(data[date].b2c || 0),
+        B2B: Utils.round(data[date].b2b || 0)
+      })
+    }
+
+    return workbook.xlsx.writeBuffer()
   }
 }
 
