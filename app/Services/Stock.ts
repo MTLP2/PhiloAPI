@@ -37,15 +37,18 @@ class Stock {
     const trans = <string[]>[...new Set(stocks.filter((p) => p.type).map((p) => p.type))]
     const products = <string[]>[...new Set(stocks.map((p) => p.parent_id || p.product_id))]
 
-    console.log(products)
     const res: {
       [key: string]: number | null
     } = {}
     for (const t of trans) {
       for (const p of products) {
-        let qty = 0
+        let qty: number | null = 0
         for (const s of stocks) {
           if ((s.parent_id === p || s.product_id === p) && s.type === t) {
+            if (s.quantity === null) {
+              qty = null
+              break
+            }
             qty += s.quantity
             if (s.reserved !== null) {
               qty -= s.reserved
@@ -218,7 +221,6 @@ class Stock {
   }
 
   static async setStockProject(params?: { productIds?: number[]; projectIds?: number[] }) {
-    console.log(params)
     const listProjects = await DB('project_product as p1')
       .select('is_shop', 'vod.step', 'p1.project_id', 'product_id', 'parent_id')
       .join('vod', 'vod.project_id', 'p1.project_id')
@@ -383,11 +385,6 @@ class Stock {
     }
     stock.updated_at = Utils.date()
     await stock.save()
-
-    const product = await DB('product').where('id', stock.product_id).first()
-    if (product.parent_id) {
-      Stock.setParent(product.parent_id)
-    }
 
     Stock.setStockProject({ productIds: [params.product_id] })
 
