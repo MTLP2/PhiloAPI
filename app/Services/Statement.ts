@@ -496,8 +496,8 @@ class StatementService {
             total: 0
           }
         }
-        data[barcode].quantity += row.getCell('P').text
-        data[barcode].total += row.getCell('R').text
+        data[barcode].quantity += row.getCell('M').text
+        data[barcode].total += row.getCell('P').text
       }
     })
 
