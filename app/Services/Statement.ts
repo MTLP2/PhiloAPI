@@ -1670,18 +1670,38 @@ class StatementService {
         y++
 
         if (params.type === 'monthly') {
-          project.quantity = data ? Utils.round(data.quantity.all.dates[month]) : 0
-          project.income = data ? Utils.round(data.income.all.dates[month]) : 0
-          project.costs = data ? Utils.round(data.costs.all.dates[month]) : 0
-          project.balance = data ? Utils.round(data.balance.dates[month]) : 0
-          project.net = data ? Utils.round(data.outstanding.dates[month]) : 0
+          project.quantity =
+            data && !isNaN(data.quantity.all.dates[month])
+              ? Utils.round(data.quantity.all.dates[month])
+              : 0
+          project.income =
+            data && !isNaN(data.income.all.dates[month])
+              ? Utils.round(data.income.all.dates[month])
+              : 0
+          project.costs =
+            data && !isNaN(data.costs.all.dates[month])
+              ? Utils.round(data.costs.all.dates[month])
+              : 0
+          project.balance =
+            data && !isNaN(data.balance.dates[month]) ? Utils.round(data.balance.dates[month]) : 0
+          project.net =
+            data && !isNaN(data.outstanding.dates[month])
+              ? Utils.round(data.outstanding.dates[month])
+              : 0
         } else {
-          project.quantity = data ? Utils.round(data.quantity.all.total) : 0
-          project.income = data ? Utils.round(data.income.all.total) : 0
-          project.costs = data ? Utils.round(data.costs.all.total) : 0
-          project.balance = data ? Utils.round(data.balance.total) : 0
-          project.artist_pay = data ? Utils.round(data.payments.artist.total) : 0
-          project.diggers_pay = data ? Utils.round(data.payments.diggers.total) : 0
+          project.quantity =
+            data && !isNaN(data.quantity.all.total) ? Utils.round(data.quantity.all.total) : 0
+          project.income =
+            data && !isNaN(data.income.all.total) ? Utils.round(data.income.all.total) : 0
+          project.costs =
+            data && !isNaN(data.costs.all.total) ? Utils.round(data.costs.all.total) : 0
+          project.balance = data && !isNaN(data.balance.total) ? Utils.round(data.balance.total) : 0
+          project.artist_pay =
+            data && !isNaN(data.payments.artist.total) ? Utils.round(data.payments.artist.total) : 0
+          project.diggers_pay =
+            data && !isNaN(data.payments.diggers.total)
+              ? Utils.round(data.payments.diggers.total)
+              : 0
         }
 
         c = 2
