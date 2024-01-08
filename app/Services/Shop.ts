@@ -288,6 +288,34 @@ class Shop {
 
     return { success: true }
   }
+
+  static async addRecommendations(params: { shop_id: number; projects: number[] }) {
+    const projects = await DB('shop_project').where('shop_id', params.shop_id).all()
+
+    console.log(projects)
+    for (const project of projects) {
+      for (const reco of params.projects) {
+        const exists = await DB('item')
+          .where('project_id', project.project_id)
+          .where('related_id', reco)
+          .where('is_recommended', true)
+          .first()
+
+        if (!exists) {
+          await DB('item').insert({
+            project_id: project.project_id,
+            related_id: reco,
+            is_recommended: true,
+            is_active: false,
+            created_at: new Date(),
+            updated_at: new Date()
+          })
+        }
+      }
+    }
+
+    return { success: true }
+  }
 }
 
 export default Shop
