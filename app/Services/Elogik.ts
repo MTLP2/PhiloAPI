@@ -190,6 +190,9 @@ class Elogik {
       }
       if (order.shipping_type === 'pickup') {
         const pickup = JSON.parse(order.address_pickup)
+        if (!pickup || !pickup.number) {
+          continue
+        }
         const available = await MondialRelay.checkPickupAvailable(pickup.number)
         if (!available) {
           const around = await MondialRelay.findPickupAround(pickup)
@@ -325,9 +328,13 @@ class Elogik {
 
     for (const item of items) {
       const idx = orders.findIndex((o: any) => o.id === item.order_shop_id)
-      orders[idx].items = orders[idx].items ? [...orders[idx].items, item] : [item]
-      if (!item.barcode) {
-        throw new Error('no_barcode')
+      if (idx < 0) {
+        throw new Error(`no_items ${item.order_shop_id}`)
+      } else {
+        orders[idx].items = orders[idx].items ? [...orders[idx].items, item] : [item]
+        if (!item.barcode) {
+          throw new Error('no_barcode')
+        }
       }
     }
 
