@@ -249,7 +249,6 @@ class Box {
   }
 
   static async getStats(params: { start?: string; end?: string } = {}) {
-    return Box.getCosts(params)
     const res = {
       turnover: await Box.getTurnover(params),
       costs: await Box.getCosts(params),
@@ -3288,9 +3287,23 @@ class Box {
     )
   }
 
-  static async getTurnover(params?: {}) {
+  static async getTurnover(
+    params: {
+      start?: string
+      end?: string
+    } = {}
+  ) {
     const invoices = await DB('invoice')
-      .orWhere((query) => {
+      .where((query) => {
+        if (params.start) {
+          console.log('LOL', params.start)
+          query.where('date', '>=', params.start)
+        }
+        if (params.end) {
+          query.where('date', '<=', `${params.end} 23:59`)
+        }
+      })
+      .where((query) => {
         query.where('category', 'box')
         query.orWhereNotNull('order_box_id')
       })
@@ -3303,7 +3316,8 @@ class Box {
       if (!data[date]) {
         data[date] = {
           b2b: 0,
-          b2c: 0
+          b2c: 0,
+          total: 0
         }
       }
       if (invoice.order_box_id) {
@@ -3311,6 +3325,7 @@ class Box {
       } else {
         data[date].b2b += invoice.sub_total / invoice.currency_rate
       }
+      data[date].total = data[date].b2c + data[date].b2b
     }
 
     /**
@@ -3392,7 +3407,7 @@ class Box {
     const res = {}
     for (const dispatch of dispatchs) {
       for (const barcode of dispatch.barcodes.replace(/\t/g, '').split(',')) {
-        const date = dispatch.created_at.substring(0, 10)
+        const date = dispatch.created_at.substring(0, 7)
         if (!res[date]) {
           res[date] = 0
         }

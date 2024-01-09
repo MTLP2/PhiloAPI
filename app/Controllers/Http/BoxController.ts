@@ -52,8 +52,8 @@ class BoxController {
     return Box.exportDispatchs()
   }
 
-  getBoxesStats() {
-    return Box.getStats()
+  getBoxesStats({ params }) {
+    return Box.getStats(params)
   }
 
   getBox({ params }) {
