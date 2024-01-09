@@ -26,6 +26,7 @@ import Deepl from 'App/Services/Deepl'
 import Artwork from 'App/Services/Artwork'
 import cio from 'App/Services/CIO'
 import Env from '@ioc:Adonis/Core/Env'
+import UserService from 'App/Services/User'
 import Pass from './Pass'
 
 class Admin {
@@ -2494,6 +2495,7 @@ class Admin {
     balance_comment: number
     country_id: number
     styles: string
+    password: string
     featured: number
   }) => {
     const user = await DB('user').find(params.id)
@@ -2515,6 +2517,10 @@ class Admin {
     user.country_id = params.country_id || null
     user.styles = JSON.stringify(params.styles)
     user.featured = params.featured
+
+    if (user.password) {
+      user.password = UserService.convertPassword(params.password.toString())
+    }
     user.updated_at = Utils.date()
 
     try {
