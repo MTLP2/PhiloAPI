@@ -248,7 +248,17 @@ class Box {
     return { success: true }
   }
 
-  static async stats() {
+  static async getStats(params: { start?: string; end?: string } = {}) {
+    return Box.getCosts(params)
+    const res = {
+      turnover: await Box.getTurnover(params),
+      costs: await Box.getCosts(params),
+      quantity: await Box.getQuantity(params)
+    }
+    return res
+  }
+
+  static async getQuantity(params?: { start?: string; end?: string }) {
     const boxes = await DB('box')
       .select('box.*', 'box_code.partner', 'order_box.total as payment')
       .whereNotIn('box.step', ['creating', 'refunded'])
@@ -3278,9 +3288,7 @@ class Box {
     )
   }
 
-  static async exportTurnover(params?: {}) {
-    const workbook = new Excel.Workbook()
-
+  static async getTurnover(params?: {}) {
     const invoices = await DB('invoice')
       .orWhere((query) => {
         query.where('category', 'box')
@@ -3298,7 +3306,6 @@ class Box {
           b2c: 0
         }
       }
-      console.log(invoice.currency_rate)
       if (invoice.order_box_id) {
         data[date].b2c += invoice.sub_total / invoice.currency_rate
       } else {
@@ -3306,14 +3313,14 @@ class Box {
       }
     }
 
+    /**
+    const workbook = new Excel.Workbook()
     const worksheet = workbook.addWorksheet('Turnover')
-
     worksheet.columns = [
       { header: 'Date', key: 'date', width: 30 },
       { header: 'B2C', key: 'B2C', width: 30 },
       { header: 'B2B', key: 'B2B', width: 30 }
     ]
-
     for (const date of Object.keys(data)) {
       worksheet.addRow({
         date: date,
@@ -3321,8 +3328,78 @@ class Box {
         B2B: Utils.round(data[date].b2b || 0)
       })
     }
-
     return workbook.xlsx.writeBuffer()
+    **/
+
+    return data
+  }
+
+  static async getCosts(params: { start?: string; end?: string } = {}) {
+    const dispatchs = await DB('box_dispatch')
+      .orWhere((query) => {
+        if (params.start) {
+          query.where('created_at', '>=', params.start)
+        }
+        if (params.end) {
+          query.where('created_at', '<=', `${params.end} 23:59`)
+        }
+      })
+      .all()
+
+    const barcodes: {
+      [key: string]: null | number
+    } = {}
+    for (const dispatch of dispatchs) {
+      for (const barcode of dispatch.barcodes.replace(/\t/g, '').split(',')) {
+        barcodes[barcode] = null
+      }
+    }
+
+    const projects = await DB('vod')
+      .select(
+        'barcode',
+        'vod.project_id',
+        'is_licence',
+        'payback_box',
+        'production.quantity',
+        'production.quote_price',
+        'production.form_price'
+      )
+      .whereIn('barcode', Object.keys(barcodes))
+      .where('barcode', '!=', 'VINYL')
+      .leftJoin('production', 'production.project_id', 'vod.project_id')
+      .all()
+
+    for (const project of projects) {
+      if (project.is_licence) {
+        // const unitPrice = (project.form_price || project.quote_price) / project.quantity
+        const unitPrice = 3.5
+        barcodes[project.barcode] = project.payback_box + unitPrice
+      } else {
+        barcodes[project.barcode] = project.payback_box
+      }
+    }
+
+    const goodies = await DB('goodie')
+      .select('barcode', 'price')
+      .whereIn('barcode', Object.keys(barcodes))
+      .all()
+
+    for (const goodie of goodies) {
+      barcodes[goodie.barcode] = goodie.price
+    }
+
+    const res = {}
+    for (const dispatch of dispatchs) {
+      for (const barcode of dispatch.barcodes.replace(/\t/g, '').split(',')) {
+        const date = dispatch.created_at.substring(0, 10)
+        if (!res[date]) {
+          res[date] = 0
+        }
+        res[date] += barcodes[barcode] || 0
+      }
+    }
+    return res
   }
 }
 

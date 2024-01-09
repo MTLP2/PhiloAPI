@@ -53,7 +53,7 @@ class BoxController {
   }
 
   getBoxesStats() {
-    return Box.stats()
+    return Box.getStats()
   }
 
   getBox({ params }) {
