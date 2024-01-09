@@ -215,6 +215,7 @@ class Cart {
             state: params.customer.state
           })
           if (shipping.error === 'no_shipping' && process.env.NODE_ENV === 'production') {
+            /**
             await Notification.sendEmail({
               to: Env.get('DEBUG_EMAIL'),
               subject: `No Shipping: ${project.artist_name} - ${project.name}`,
@@ -223,6 +224,7 @@ class Cart {
                 <p>http://diggersfactory.com/sheraf/project/${project.project_id}/stocks</p>
               </div>`
             })
+            **/
           }
           console.log(shipping.error)
           if (shipping.error) {
