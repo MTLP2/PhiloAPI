@@ -3296,7 +3296,6 @@ class Box {
     const invoices = await DB('invoice')
       .where((query) => {
         if (params.start) {
-          console.log('LOL', params.start)
           query.where('date', '>=', params.start)
         }
         if (params.end) {
