@@ -2495,7 +2495,7 @@ class Admin {
     balance_comment: number
     country_id: number
     styles: string
-    password: string
+    change_password: string
     featured: number
   }) => {
     const user = await DB('user').find(params.id)
@@ -2518,8 +2518,8 @@ class Admin {
     user.styles = JSON.stringify(params.styles)
     user.featured = params.featured
 
-    if (user.password) {
-      user.password = UserService.convertPassword(params.password.toString())
+    if (params.change_password) {
+      user.password = UserService.convertPassword(params.change_password.toString())
     }
     user.updated_at = Utils.date()
 
