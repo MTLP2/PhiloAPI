@@ -1679,6 +1679,7 @@ class Admin {
         'c.zip_code',
         'c.city',
         'c.state',
+        'c.phone',
         'user.is_pro',
         'project.artist_name',
         'project.name as project_name',
@@ -1962,6 +1963,7 @@ class Admin {
     params.project_id = params.id
     const data = await Admin.getOrders(params)
 
+    console.log('LOL')
     return Utils.arrayToXlsx([
       {
         worksheetName: 'Orders',
@@ -1979,6 +1981,7 @@ class Admin {
           { header: 'Origin', key: 'origin' },
           { header: 'Email', key: 'user_email' },
           { header: 'Name', key: 'user_name' },
+          { header: 'Phone', key: 'phone' },
           { header: 'Step', key: 'step' },
           { header: 'Transporter', key: 'transporter' },
           { header: 'Date export', key: 'date_export' },
