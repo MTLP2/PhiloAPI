@@ -2165,6 +2165,7 @@ class Project {
         if (inDate(date)) {
           s.setCountry('distrib', 'income', dist.country_id, value, date)
           s.setCountry('distrib', 'quantity', dist.country_id, dist.quantity, date)
+          s.setCountry('distrib', 'quantity', dist.country_id, -Math.abs(dist.returned), date)
         }
       }
     }
