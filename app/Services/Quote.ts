@@ -1123,6 +1123,8 @@ class Quote {
     })
     if (params.format === '10"') {
       quote.prices.weight['180'] = false
+    } else if (params.format === '7"') {
+      quote.prices.weight['180'] = false
     }
     quote.type_vinyl = quote.prices.weight[params.weight]
 
@@ -1670,7 +1672,10 @@ class Quote {
       option: '180',
       active: params.weight === '180'
     })
+
     if (params.format === '10"') {
+      quote.prices.weight['180'] = false
+    } else if (params.format === '7"') {
       quote.prices.weight['180'] = false
     }
     quote.weight = this.getPrice(quote, params, 'weight')
