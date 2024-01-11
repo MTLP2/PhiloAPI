@@ -151,7 +151,7 @@ export default {
       purple2: '#ab466f',
       bronze: '#ad6845',
       grey: 'grey',
-      transparent: 'rgb(255 255 255 / 0%)',
+      transparent: '#FFFFFF00',
       transparent_green: '#10ff0047',
       transparent_yellow: '#fff70047',
       transparent_blue: '#00a1ff47',
