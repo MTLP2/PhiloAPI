@@ -26,7 +26,11 @@ class Shop {
     all_project?: boolean
     projects?: boolean
   }) {
-    let shop: any = DB('shop').select('shop.*')
+    let shop: any = DB('shop').select(
+      'shop.*',
+      'user_artist.name as artist_name',
+      'user_label.name as label_name'
+    )
 
     if (params.id) {
       shop.where('shop.id', params.id)
@@ -37,6 +41,10 @@ class Shop {
       shop.join('user', 'user.shop_id', 'shop.id')
       shop.where('user.id', params.user_id)
     }
+
+    shop
+      .leftJoin('user as user_artist', 'user_artist.id', 'shop.artist_id')
+      .leftJoin('user as user_label', 'user_label.id', 'shop.label_id')
 
     shop = await shop.first()
 
@@ -69,6 +77,8 @@ class Shop {
     white_label?: boolean
     youtube?: string
     group_shipment?: boolean
+    artist_id?: number
+    label_id?: number
   }) {
     let item: ShopModel = <any>DB('shop')
 
@@ -104,6 +114,8 @@ class Shop {
     item.youtube = params.youtube
     item.group_shipment = params.group_shipment
     item.updated_at = Utils.date()
+    item.artist_id = params.artist_id
+    item.label_id = params.label_id
 
     if (params.logo) {
       if (item.logo) {

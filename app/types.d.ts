@@ -183,6 +183,8 @@ type ShopDb = {
   group_shipment?: boolean | null
   created_at?: string | null
   updated_at?: string | null
+  artist_id?: number | null
+  label_id?: number | null
 }
 
 type ShopModel = ShopDb & Model

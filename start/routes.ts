@@ -136,6 +136,7 @@ Route.group(() => {
   Route.post('projects/check-code', 'ProjectsController.checkCode')
   Route.post('/projects/download', 'ProjectsController.download')
   Route.get('/projects', 'ProjectsController.getProjects')
+  Route.get('/search', 'appController.search')
   Route.get('/projects/all', 'ProjectsController.getAll')
   Route.get('/projects/recommandations', 'ProjectsController.recommandations')
   Route.get('/projects/recommandations-for-user', 'ProjectsController.recommandationsForUser')

@@ -13,8 +13,9 @@ import MondialRelay from 'App/Services/MondialRelay'
 import Utils from 'App/Utils'
 import Payment from 'App/Services/Payment'
 import DB from 'App/DB'
-import { schema, rules } from '@ioc:Adonis/Core/Validator'
+import { schema, validator, rules } from '@ioc:Adonis/Core/Validator'
 import Alerts from 'App/Services/Alerts'
+import Project from 'App/Services/Project'
 
 class AppController {
   index() {
@@ -42,6 +43,25 @@ class AppController {
       })
     }
     return banners
+  }
+
+  async search({ params }) {
+    const payload = await validator.validate({
+      schema: schema.create({
+        search: schema.string(),
+        filter: schema.array.optional().members(schema.string()),
+        init: schema.boolean.optional(),
+        type: schema.string.optional(),
+        tab: schema.string()
+      }),
+      data: params
+    })
+
+    if (payload.tab === 'projects') {
+      return Project.findAll(payload)
+    } else {
+      return User.search(payload)
+    }
   }
 
   async getHome({ params }) {
