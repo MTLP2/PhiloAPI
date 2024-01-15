@@ -743,6 +743,7 @@ static toJuno = async (params) => {
         .update({
           is_paid: 0,
           ask_cancel: 0,
+          date_cancel: Utils.date(),
           sending: 0,
           step: type === 'cancel' ? 'canceled' : 'refunded'
         })
@@ -1075,6 +1076,7 @@ static toJuno = async (params) => {
           shipping_zip: customer.zip_code,
           shipping_phone: customer.phone,
           shop_shipping_method_text: Whiplash.getShippingMethod(),
+          email: item.email,
           order_items: []
         }
 
@@ -1646,12 +1648,16 @@ static toJuno = async (params) => {
     const orders: any[] = []
 
     worksheet.eachRow((row) => {
+      const email = (row.getCell('E').value as any)?.text
+        ? (row.getCell('E').value as any)?.text.richText[0].text.toString()
+        : row.getCell('E').value?.toString()
+
       const data = {
         barcode: row.getCell('A').value,
         quantity: row.getCell('B').value,
         firstname: row.getCell('C').value,
         lastname: row.getCell('D').value,
-        email: (row.getCell('E').value as any)?.text || row.getCell('E').value?.toString(),
+        email: email,
         phone: row.getCell('F').value,
         address: row.getCell('G').value,
         city: row.getCell('H').value,
@@ -1757,6 +1763,7 @@ static toJuno = async (params) => {
       orders[d] = {
         ...orders[d],
         ...project,
+        shipping: tt[order.country][order.quantity].shipping,
         transporter: tt[order.country][order.quantity].trans
       }
     }

@@ -724,7 +724,14 @@ class Project {
       })
     }
     if (type === 'shop') {
-      projects.whereIn('v.step', ['in_progress', 'successful', 'coming_soon', 'private', 'promo'])
+      projects.whereIn('v.step', [
+        'in_progress',
+        'successful',
+        'coming_soon',
+        'private',
+        'promo',
+        'creating'
+      ])
     }
     if (userId) {
       projects.where('v.user_id', userId)
@@ -2158,6 +2165,7 @@ class Project {
         if (inDate(date)) {
           s.setCountry('distrib', 'income', dist.country_id, value, date)
           s.setCountry('distrib', 'quantity', dist.country_id, dist.quantity, date)
+          s.setCountry('distrib', 'quantity', dist.country_id, -Math.abs(dist.returned), date)
         }
       }
     }

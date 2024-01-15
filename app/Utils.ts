@@ -539,7 +539,7 @@ class Utils {
       let currencies
       if (!date || date === Utils.date({ time: false })) {
         const currenciesDb = await Utils.getCurrenciesDb()
-        currencies = await Utils.getCurrencies(Currencies.EUR, currenciesDb)
+        currencies = await Utils.getCurrencies('EUR', currenciesDb)
       } else {
         currencies = await Utils.getCurrenciesApi(date)
       }

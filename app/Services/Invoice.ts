@@ -533,9 +533,9 @@ class Invoice {
         'invoice.tax',
         'invoice.tax_rate',
         'invoice.client',
-        'customer_id',
-        'order_id',
-        'order_shop_id',
+        'invoice.customer_id',
+        'invoice.order_id',
+        'invoice.order_shop_id',
         'invoice.category',
         'customer.name as customer_name',
         'firstname',
@@ -543,13 +543,15 @@ class Invoice {
         'country_id',
         'order.total as order_total',
         'order.payment_type',
-        'order.shipping as order_shipping'
+        'order.shipping as order_shipping',
+        'payment.payment_id'
       )
       .leftJoin('order', 'order.id', 'order_id')
-      .leftJoin('customer', 'customer.id', 'customer_id')
-      .where('date', '>=', params.start)
-      .where('date', '<=', params.end)
-      .orderBy('date', 'asc')
+      .leftJoin('customer', 'customer.id', 'invoice.customer_id')
+      .leftJoin('payment', 'payment.id', 'invoice.payment_id')
+      .where('invoice.date', '>=', params.start)
+      .where('invoice.date', '<=', params.end)
+      .orderBy('invoice.date', 'asc')
       .where('compatibility', true)
       .all()
 
@@ -582,8 +584,8 @@ class Invoice {
       data.shipping_eur = data.shipping * data.currency_rate
       data.total_eur = data.total * data.currency_rate
 
-      if (!data.payment_type) {
-        // data.payment_type = 'stripe'
+      if (!data.payment_type && data.payment_id) {
+        data.payment_type = 'stripe'
       }
       invoices.push(data)
     }
@@ -1214,6 +1216,67 @@ class Invoice {
     }
     **/
     return invoices
+  }
+
+  static async getInvoiceClients() {
+    const workbook = new Excel.Workbook()
+    await workbook.xlsx.readFile('./clients.xlsx')
+
+    const worksheet = workbook.getWorksheet('Exportations hors UE 09-2023')
+
+    const clients: any[] = []
+    worksheet.eachRow((row, rowNumber) => {
+      const client = {
+        name: row.getCell(1).text,
+        address: row.getCell(2).text,
+        date: row.getCell(3).text,
+        invoice: row.getCell(4).text,
+        total_eur: row.getCell(5).text,
+        total: row.getCell(6).text
+      }
+      clients.push(client)
+    })
+
+    const invoices = await DB('invoice')
+      .select('invoice.code', 'customer.*')
+      .whereIn(
+        'code',
+        clients.map((c) => c.invoice)
+      )
+      .join('customer', 'customer.id', 'invoice.customer_id')
+      .all()
+
+    for (const c in clients) {
+      const invoice = invoices.find((i) => i.code === clients[c].invoice)
+      if (!invoice) {
+        continue
+      }
+
+      clients[c].address = invoice.address
+      clients[c].country_id = invoice.country_id
+      clients[c].state = invoice.state
+      clients[c].city = invoice.city
+      clients[c].zip_code = invoice.zip_code
+    }
+
+    const workbook2 = new Excel.Workbook()
+    const worksheet2 = workbook2.addWorksheet('Clients')
+    worksheet2.columns = [
+      { header: 'name', key: 'name', width: 30 },
+      { header: 'date', key: 'date', width: 20 },
+      { header: 'invoice', key: 'invoice', width: 20 },
+      { header: 'total_eur', key: 'total_eur', width: 20 },
+      { header: 'total', key: 'total', width: 20 },
+      { header: 'address', key: 'address', width: 20 },
+      { header: 'zip_code', key: 'zip_code', width: 10 },
+      { header: 'city', key: 'city', width: 20 },
+      { header: 'country_id', key: 'country_id', width: 10 },
+      { header: 'state', key: 'state', width: 20 }
+    ]
+
+    worksheet2.addRows(clients.slice(1))
+
+    return workbook2.xlsx.writeBuffer()
   }
 }
 

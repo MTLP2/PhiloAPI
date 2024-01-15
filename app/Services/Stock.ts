@@ -17,7 +17,7 @@ class Stock {
     color?: string
   }) {
     const stocks = await DB('project_product as pp')
-      .select('pp.product_id', 'stock.reserved', 'stock.type', 'quantity')
+      .select('pp.product_id', 'product.parent_id', 'stock.reserved', 'stock.type', 'quantity')
       .join('product', 'product.id', 'pp.product_id')
       .leftJoin('stock', 'pp.product_id', 'stock.product_id')
       .where('pp.project_id', params.project_id)
@@ -30,25 +30,31 @@ class Stock {
           query.where((query) => {
             query.whereNull('size').orWhereIn('pp.product_id', Object.values(params.sizes))
           })
-        } else {
-          query.whereNull('parent_id')
         }
       })
       .all()
 
     const trans = <string[]>[...new Set(stocks.filter((p) => p.type).map((p) => p.type))]
-    const products = <string[]>[...new Set(stocks.map((p) => p.product_id))]
+    const products = <string[]>[...new Set(stocks.map((p) => p.parent_id || p.product_id))]
 
     const res: {
       [key: string]: number | null
     } = {}
     for (const t of trans) {
       for (const p of products) {
-        let qty =
-          stocks.find((s) => s.product_id === p && s.type === t)?.quantity !== null
-            ? stocks.find((s) => s.product_id === p && s.type === t)?.quantity -
-              stocks.find((s) => s.product_id === p && s.type === t)?.reserved
-            : null
+        let qty: number | null = 0
+        for (const s of stocks) {
+          if ((s.parent_id === p || s.product_id === p) && s.type === t) {
+            if (s.quantity === null) {
+              qty = null
+              break
+            }
+            qty += s.quantity
+            if (s.reserved !== null) {
+              qty -= s.reserved
+            }
+          }
+        }
 
         if (qty !== null && (isNaN(qty) || qty === undefined)) {
           res[t] = 0
@@ -216,7 +222,7 @@ class Stock {
 
   static async setStockProject(params?: { productIds?: number[]; projectIds?: number[] }) {
     const listProjects = await DB('project_product as p1')
-      .select('is_shop', 'vod.step', 'p1.project_id', 'product_id')
+      .select('is_shop', 'vod.step', 'p1.project_id', 'product_id', 'parent_id')
       .join('vod', 'vod.project_id', 'p1.project_id')
       .join('product', 'product.id', 'p1.product_id')
       .whereIn('p1.project_id', (query) => {
@@ -227,7 +233,7 @@ class Stock {
           query.whereIn('p2.project_id', params.projectIds)
         }
       })
-      .whereNull('product.parent_id')
+      // .whereNull('product.parent_id')
       .all()
 
     if (listProjects.length === 0) {
@@ -235,14 +241,22 @@ class Stock {
     }
 
     const listProducts = await DB('product')
-      .select('product.id', 'stock.type', 'stock.is_preorder', 'quantity', 'reserved', 'preorder')
+      .select(
+        'product.id',
+        'product.parent_id',
+        'stock.type',
+        'stock.is_preorder',
+        'quantity',
+        'reserved',
+        'preorder'
+      )
       .join('stock', 'product.id', 'stock.product_id')
       .whereIn(
         'product_id',
         listProjects.map((p) => p.product_id)
       )
       .where('is_distrib', false)
-      .whereNull('parent_id')
+      // .whereNull('parent_id')
       .all()
 
     const products = {}
@@ -250,6 +264,7 @@ class Stock {
 
     for (const product of listProducts) {
       product.type = `${product.is_preorder ? 'preorder' : 'stock'}_${product.type}`
+      product.id = product.parent_id || product.id
       if (!products[product.id]) {
         products[product.id] = {}
       }
@@ -257,7 +272,11 @@ class Stock {
       if (product.quantity === null) {
         products[product.id][product.type] = null
       } else {
-        products[product.id][product.type] = product.quantity - product.reserved
+        if (products[product.id][product.type] && product.parent_id) {
+          products[product.id][product.type] += product.quantity - product.reserved
+        } else {
+          products[product.id][product.type] = product.quantity - product.reserved
+        }
       }
     }
 
@@ -273,6 +292,7 @@ class Stock {
         if (!p.is_shop && !t.startsWith('preorder')) {
           continue
         }
+        p.product_id = p.parent_id || p.product_id
         if (products[p.product_id] && products[p.product_id][t] === null) {
           projects[p.project_id][t] = null
           continue
@@ -365,11 +385,6 @@ class Stock {
     }
     stock.updated_at = Utils.date()
     await stock.save()
-
-    const product = await DB('product').where('id', stock.product_id).first()
-    if (product.parent_id) {
-      Stock.setParent(product.parent_id)
-    }
 
     Stock.setStockProject({ productIds: [params.product_id] })
 

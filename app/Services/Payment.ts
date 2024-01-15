@@ -192,6 +192,7 @@ class Payment {
       payment.name.toLowerCase().includes('return box')
     ) {
       invoice.category = 'shipping'
+      invoice.client = 'B2C'
     }
     invoice.status = 'paid'
     invoice.customer_id = payment.customer_id

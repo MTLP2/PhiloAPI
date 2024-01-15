@@ -46,11 +46,11 @@ class Cart {
     if (!country) {
       return 0
     } else if (country.ue && customer.type === 'individual') {
-      return 0.2
+      return country.tax_rate / 100
     } else if (country.id === 'FR') {
-      return 0.2
+      return country.tax_rate / 100
     } else if (country.ue && !customer.tax_intra) {
-      return 0.2
+      return country.tax_rate / 100
     } else {
       return 0
     }
@@ -103,6 +103,9 @@ class Cart {
     cart.shipping = 0
     cart.sub_total = 0
     cart.tax = 0
+    if (params.tips < 0) {
+      params.tips = 0
+    }
     cart.tips = +params.tips || 0
     cart.discount = 0
     cart.total = 0
@@ -187,7 +190,7 @@ class Cart {
             continue
           }
           const project = await DB('vod')
-            .select('vod.*', 'project.nb_vinyl')
+            .select('vod.*', 'project.artist_name', 'project.name', 'project.nb_vinyl')
             .where('project_id', item.project_id)
             .join('project', 'project.id', 'vod.project_id')
             .first()
@@ -211,6 +214,19 @@ class Cart {
             country_id: params.country_id,
             state: params.customer.state
           })
+          if (shipping.error === 'no_shipping' && process.env.NODE_ENV === 'production') {
+            /**
+            await Notification.sendEmail({
+              to: Env.get('DEBUG_EMAIL'),
+              subject: `No Shipping: ${project.artist_name} - ${project.name}`,
+              html: `<div>
+                <p>${params.country_id}</p>
+                <p>http://diggersfactory.com/sheraf/project/${project.project_id}/stocks</p>
+              </div>`
+            })
+            **/
+          }
+          console.log(shipping.error)
           if (shipping.error) {
             cart.error = shipping.error
             shipping.transporter = 'shop'
@@ -1754,10 +1770,7 @@ class Cart {
           intent.customer = customer.id
         }
 
-        if (
-          (params.boxes && params.boxes.some((b) => b.monthly)) ||
-          (params.card_save && params.card.new)
-        ) {
+        if ((params.boxes && params.boxes.some((b) => b.monthly)) || params.card.save) {
           try {
             await Payment.saveCard(params.user_id, params.card.card)
             intent.payment_method = params.card.card

@@ -99,6 +99,7 @@ class StatementService {
     year: string
     month: string
     distributor: string
+    custom_column: boolean
     type: string
   }) {
     const file = Buffer.from(params.file, 'base64')
@@ -111,55 +112,59 @@ class StatementService {
     await workbook.xlsx.load(file)
 
     let data
-    switch (params.distributor) {
-      case 'PIAS':
-        data = await this.parsePias(workbook)
-        break
-      case 'ROM':
-        data = await this.parseROM(workbook, currencies)
-        break
-      case 'Differ-Ant':
-        data = this.parseDifferant(workbook)
-        break
-      case 'LITA':
-        data = this.parseLITA(workbook)
-        break
-      case 'LITA2':
-        data = this.parseLITA2(workbook)
-        params.distributor = 'LITA'
-        break
-      case 'MGM':
-        data = this.parseMGM(workbook)
-        break
-      case 'Altafonte':
-        data = this.parseAltafonte(workbook)
-        break
-      case 'FAB':
-        data = this.parseFab(workbook)
-        break
-      case 'Arcades':
-        data = this.parseArcades(workbook)
-        break
-      case 'TerminalD':
-        data = this.parseTerminalD(workbook)
-        break
-      case 'CoastToCoast':
-        data = this.parseCoastToCoast(workbook)
-        break
-      case 'Amplified':
-        data = this.parseAmplified(workbook, currencies)
-        break
-      case 'LoveDaRecords':
-        data = this.parseLoveDaRecords(workbook, currencies)
-        break
-      case 'Hollande':
-        data = this.parseHollande(workbook)
-        break
-      case 'Matrix':
-        data = this.parseMatrix(workbook)
-        break
-      default:
-        throw new ApiError(404, 'Distributor not found')
+    if (params.custom_column) {
+      data = this.parseCustom(workbook, currencies, params)
+    } else {
+      switch (params.distributor) {
+        case 'PIAS':
+          data = await this.parsePias(workbook)
+          break
+        case 'ROM':
+          data = await this.parseROM(workbook, currencies)
+          break
+        case 'Differ-Ant':
+          data = this.parseDifferant(workbook)
+          break
+        case 'LITA':
+          data = this.parseLITA(workbook)
+          break
+        case 'LITA2':
+          data = this.parseLITA2(workbook)
+          params.distributor = 'LITA'
+          break
+        case 'MGM':
+          data = this.parseMGM(workbook)
+          break
+        case 'Altafonte':
+          data = this.parseAltafonte(workbook)
+          break
+        case 'FAB':
+          data = this.parseFab(workbook)
+          break
+        case 'Arcades':
+          data = this.parseArcades(workbook)
+          break
+        case 'TerminalD':
+          data = this.parseTerminalD(workbook)
+          break
+        case 'CoastToCoast':
+          data = this.parseCoastToCoast(workbook)
+          break
+        case 'Amplified':
+          data = this.parseAmplified(workbook, currencies)
+          break
+        case 'LoveDaRecords':
+          data = this.parseLoveDaRecords(workbook, currencies)
+          break
+        case 'Hollande':
+          data = this.parseHollande(workbook)
+          break
+        case 'Matrix':
+          data = this.parseMatrix(workbook)
+          break
+        default:
+          throw new ApiError(404, 'Distributor not found')
+      }
     }
 
     data = Object.values(data)
@@ -491,9 +496,8 @@ class StatementService {
             total: 0
           }
         }
-        data[barcode].quantity += row.getCell('P').value
-        data[barcode].total += row.getCell('R').value
-        console.log(data)
+        data[barcode].quantity += row.getCell('M').text
+        data[barcode].total += row.getCell('P').text
       }
     })
 
@@ -551,9 +555,9 @@ class StatementService {
             total: 0
           }
         }
-        data[barcode].quantity += row.getCell('J').value
-        data[barcode].returned += -row.getCell('S').value
-        data[barcode].total += row.getCell('P').value
+        data[barcode].quantity += row.getCell('I').value
+        // data[barcode].returned += -row.getCell('').value
+        data[barcode].total += row.getCell('M').value
       }
     })
 
@@ -591,7 +595,7 @@ class StatementService {
       const catNumber = row.getCell('A').value
       const quantity = row.getCell('D').value
       const returned = row.getCell('E').value
-      const total = row.getCell('H').result
+      const total = row.getCell('H').value
 
       if (Number.isInteger(quantity) || Number.isInteger(returned)) {
         data[catNumber] = {
@@ -669,6 +673,31 @@ class StatementService {
           quantity: quantity || 0,
           returned: 0,
           total: total
+        }
+      }
+    })
+
+    return data
+  }
+
+  static parseCustom(workbook: any, currencies, params) {
+    const worksheet = workbook.getWorksheet(params.sheet_number)
+
+    const data = {}
+    worksheet.eachRow((row) => {
+      const barcode = row.getCell(params.barcode).text
+      const quantity = +row.getCell(params.quantity).text
+      const returned = params.return ? +row.getCell(params.return).text : 0
+      const total = +row.getCell(params.total).text
+
+      console.log(currencies)
+      if (barcode && Number.isInteger(quantity) && total !== 0) {
+        data[barcode] = {
+          barcode: barcode,
+          country_id: params.country_id,
+          quantity: quantity,
+          returned: returned,
+          total: total / currencies[params.currency]
         }
       }
     })
@@ -1641,18 +1670,38 @@ class StatementService {
         y++
 
         if (params.type === 'monthly') {
-          project.quantity = data ? Utils.round(data.quantity.all.dates[month]) : 0
-          project.income = data ? Utils.round(data.income.all.dates[month]) : 0
-          project.costs = data ? Utils.round(data.costs.all.dates[month]) : 0
-          project.balance = data ? Utils.round(data.balance.dates[month]) : 0
-          project.net = data ? Utils.round(data.outstanding.dates[month]) : 0
+          project.quantity =
+            data && !isNaN(data.quantity.all.dates[month])
+              ? Utils.round(data.quantity.all.dates[month])
+              : 0
+          project.income =
+            data && !isNaN(data.income.all.dates[month])
+              ? Utils.round(data.income.all.dates[month])
+              : 0
+          project.costs =
+            data && !isNaN(data.costs.all.dates[month])
+              ? Utils.round(data.costs.all.dates[month])
+              : 0
+          project.balance =
+            data && !isNaN(data.balance.dates[month]) ? Utils.round(data.balance.dates[month]) : 0
+          project.net =
+            data && !isNaN(data.outstanding.dates[month])
+              ? Utils.round(data.outstanding.dates[month])
+              : 0
         } else {
-          project.quantity = data ? Utils.round(data.quantity.all.total) : 0
-          project.income = data ? Utils.round(data.income.all.total) : 0
-          project.costs = data ? Utils.round(data.costs.all.total) : 0
-          project.balance = data ? Utils.round(data.balance.total) : 0
-          project.artist_pay = data ? Utils.round(data.payments.artist.total) : 0
-          project.diggers_pay = data ? Utils.round(data.payments.diggers.total) : 0
+          project.quantity =
+            data && !isNaN(data.quantity.all.total) ? Utils.round(data.quantity.all.total) : 0
+          project.income =
+            data && !isNaN(data.income.all.total) ? Utils.round(data.income.all.total) : 0
+          project.costs =
+            data && !isNaN(data.costs.all.total) ? Utils.round(data.costs.all.total) : 0
+          project.balance = data && !isNaN(data.balance.total) ? Utils.round(data.balance.total) : 0
+          project.artist_pay =
+            data && !isNaN(data.payments.artist.total) ? Utils.round(data.payments.artist.total) : 0
+          project.diggers_pay =
+            data && !isNaN(data.payments.diggers.total)
+              ? Utils.round(data.payments.diggers.total)
+              : 0
         }
 
         c = 2

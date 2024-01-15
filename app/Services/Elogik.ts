@@ -190,6 +190,9 @@ class Elogik {
       }
       if (order.shipping_type === 'pickup') {
         const pickup = JSON.parse(order.address_pickup)
+        if (!pickup || !pickup.number) {
+          continue
+        }
         const available = await MondialRelay.checkPickupAvailable(pickup.number)
         if (!available) {
           const around = await MondialRelay.findPickupAround(pickup)
@@ -288,7 +291,7 @@ class Elogik {
 
   static syncOrders = async (ids: number[]) => {
     const orders = await DB()
-      .select('customer.*', 'os.*', 'user.email')
+      .select('customer.*', 'customer.email as customer_email', 'os.*', 'user.email')
       .from('order_shop as os')
       .join('customer', 'customer.id', 'os.customer_id')
       .join('user', 'user.id', 'os.user_id')
@@ -325,9 +328,13 @@ class Elogik {
 
     for (const item of items) {
       const idx = orders.findIndex((o: any) => o.id === item.order_shop_id)
-      orders[idx].items = orders[idx].items ? [...orders[idx].items, item] : [item]
-      if (!item.barcode) {
-        throw new Error('no_barcode')
+      if (idx < 0) {
+        throw new Error(`no_items ${item.order_shop_id}`)
+      } else {
+        orders[idx].items = orders[idx].items ? [...orders[idx].items, item] : [item]
+        if (!item.barcode) {
+          throw new Error('no_barcode')
+        }
       }
     }
 
@@ -339,7 +346,7 @@ class Elogik {
     const dispatchs: any[] = []
     for (const order of orders) {
       const pickup = order.address_pickup ? JSON.parse(order.address_pickup) : null
-      const address = order.address.match(/.{1,30}(\s|$)/g)
+      const address = order.address ? order.address.match(/.{1,30}(\s|$)/g) : []
 
       let check
       if (order.id[0] === 'M') {
@@ -363,7 +370,7 @@ class Elogik {
         ville: order.city,
         codePays: order.country_id,
         telephoneMobile: order.phone?.substring(0, 19),
-        email: order.email
+        email: order.customer_email || order.email
       }
 
       const params = {

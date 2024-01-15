@@ -1,3 +1,4 @@
+import { price } from '@/helpers'
 import DB from 'App/DB'
 import Utils from 'App/Utils'
 
@@ -22,6 +23,7 @@ class Goodie {
 
     item.name = params.name
     item.barcode = params.barcode
+    item.price = params.price
     item.stock = params.stock
     item.stock_base = params.stock
     item.month = params.month

@@ -26,6 +26,7 @@ import Deepl from 'App/Services/Deepl'
 import Artwork from 'App/Services/Artwork'
 import cio from 'App/Services/CIO'
 import Env from '@ioc:Adonis/Core/Env'
+import UserService from 'App/Services/User'
 import Pass from './Pass'
 
 class Admin {
@@ -1692,6 +1693,7 @@ class Admin {
         'c.zip_code',
         'c.city',
         'c.state',
+        'c.phone',
         'user.is_pro',
         'project.artist_name',
         'project.name as project_name',
@@ -1764,10 +1766,11 @@ class Admin {
         const filter = filters[i]
         if (filter) {
           if (filter.name === 'user_infos') {
-            orders.where(
-              DB.raw(`CONCAT(c.firstname, ' ', c.lastname) LIKE '%${filter.value}%'`),
-              null
-            )
+            filter.value = decodeURIComponent(filter.value)
+            orders.where((query) => {
+              query.where(DB.raw(`CONCAT(c.firstname, ' ', c.lastname) LIKE '%${filter.value}%'`))
+              query.orWhere(DB.raw(`CONCAT(c.lastname, ' ', c.firstname) LIKE '%${filter.value}%'`))
+            })
             filters.splice(i, 1)
             params.filters = JSON.stringify(filters)
           }
@@ -1974,6 +1977,7 @@ class Admin {
     params.project_id = params.id
     const data = await Admin.getOrders(params)
 
+    console.log('LOL')
     return Utils.arrayToXlsx([
       {
         worksheetName: 'Orders',
@@ -1991,6 +1995,7 @@ class Admin {
           { header: 'Origin', key: 'origin' },
           { header: 'Email', key: 'user_email' },
           { header: 'Name', key: 'user_name' },
+          { header: 'Phone', key: 'phone' },
           { header: 'Step', key: 'step' },
           { header: 'Transporter', key: 'transporter' },
           { header: 'Date export', key: 'date_export' },
@@ -2215,6 +2220,7 @@ class Admin {
         await orderShop.save({
           is_paid: 0,
           ask_cancel: 0,
+          date_cancel: Utils.date(),
           step: 'canceled'
         })
 
@@ -2506,6 +2512,7 @@ class Admin {
     balance_comment: number
     country_id: number
     styles: string
+    change_password: string
     featured: number
   }) => {
     const user = await DB('user').find(params.id)
@@ -2527,6 +2534,10 @@ class Admin {
     user.country_id = params.country_id || null
     user.styles = JSON.stringify(params.styles)
     user.featured = params.featured
+
+    if (params.change_password) {
+      user.password = UserService.convertPassword(params.change_password.toString())
+    }
     user.updated_at = Utils.date()
 
     try {
