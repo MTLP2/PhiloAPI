@@ -189,6 +189,7 @@ class Admin {
     const projectQuery = DB('project')
       .select(
         'vod.*',
+        'project.*',
         'vod.id as vod_id',
         'wishlist.id as wishlist_id',
         'wishlist.user_id as wishlist_user_id',
@@ -202,7 +203,6 @@ class Admin {
         'artist.picture as artist_picture',
         'label.name as label',
         'label.picture as label_picture',
-        'project.*',
         DB.raw(`(
         SELECT sum(quantity)
         FROM order_item, order_shop, user
