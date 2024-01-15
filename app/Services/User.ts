@@ -260,7 +260,7 @@ class User {
         .belongsTo('customer')
         .belongsTo('customer', '*', 'customer_invoice', 'customer_invoice_id')
     } else {
-      users.select('id', 'name', 'slug')
+      users.select('id', 'name', 'picture', 'slug')
     }
     if (params.id) {
       users.where('id', params.id)
@@ -506,7 +506,7 @@ class User {
     })
   }
 
-  static updatePicture = (id, buffer, social) => {
+  static updatePicture = (id, buffer, social?) => {
     return new Promise(async (resolve, reject) => {
       const uid = Utils.uuid()
       const user = await DB('user').where('id', id).first()
