@@ -460,7 +460,7 @@ Route.group(() => {
   Route.get('/users/:id', 'AdminController.getUser')
   Route.get('/users/:id/emails', 'AdminController.getUserEmails')
   Route.delete('/users/:id', 'AdminController.deleteUser')
-  Route.post('/users/:id', 'AdminController.saveUser')
+  Route.post('/users/:id?', 'AdminController.saveUser')
   Route.post('/users/:id/digs', 'AdminController.addDig')
   Route.get('/users/:id/statements', 'AdminController.getUserStatements')
   Route.get('/users/:id/statements2', 'AdminController.getUserStatements2')
