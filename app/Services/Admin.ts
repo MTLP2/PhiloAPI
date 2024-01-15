@@ -197,8 +197,11 @@ class Admin {
         'user.lang as user_lang',
         'user.id as user_id',
         'user.name as user_name',
+        'user.picture as user_picture',
         'artist.name as artist',
+        'artist.picture as artist_picture',
         'label.name as label',
+        'label.picture as label_picture',
         'project.*',
         DB.raw(`(
         SELECT sum(quantity)
@@ -2514,8 +2517,17 @@ class Admin {
     styles: string
     change_password: string
     featured: number
+    for_project: number
+    newsletter: number
+    image: string
   }) => {
-    const user = await DB('user').find(params.id)
+    let user: any = DB('user')
+    if (params.id) {
+      user = await DB('user').find(params.id)
+      if (!user) {
+        throw new ApiError(404)
+      }
+    }
 
     user.name = params.name
     user.email = params.email
@@ -2549,8 +2561,11 @@ class Admin {
         throw err
       }
     }
+    console.log(user.id)
 
-    User.syncCIOs({ id: user.id })
+    if (user.email) {
+      User.syncCIOs({ id: user.id })
+    }
 
     if (params.is_delete) {
       cio.identify(user.id, {
@@ -2560,13 +2575,26 @@ class Admin {
 
     if (params.image) {
       const buffer = Buffer.from(params.image, 'base64')
-      await User.updatePicture(params.id, buffer)
+      await User.updatePicture(user.id, buffer)
     }
 
-    await DB('notifications').where('user_id', params.id).update({
-      newsletter: params.newsletter
-    })
-    return true
+    if (params.for_project) {
+      if (params.user_type === 'artist') {
+        await DB('project').where('id', params.for_project).update({
+          artist_id: user.id
+        })
+      } else if (params.user_type === 'label') {
+        await DB('project').where('id', params.for_project).update({
+          label_id: user.id
+        })
+      }
+    }
+    if (params.newsletter !== undefined) {
+      await DB('notifications').where('user_id', user.id).update({
+        newsletter: params.newsletter
+      })
+    }
+    return { success: true }
   }
 
   static deleteUser = async (params) => {
