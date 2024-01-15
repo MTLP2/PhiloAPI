@@ -161,9 +161,9 @@ class User {
       .groupBy('u.id')
 
     if (tab === 'artists') {
-      users.join('project as p', 'p.artist_id', 'u.id').where('type', 'artist')
+      users.join('project as p', 'p.artist_id', 'u.id')
     } else if (tab === 'labels') {
-      users.join('project as p', 'p.label_id', 'u.id').where('type', 'label')
+      users.join('project as p', 'p.label_id', 'u.id')
     }
 
     const res = await users.all()
