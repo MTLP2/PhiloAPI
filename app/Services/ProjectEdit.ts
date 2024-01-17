@@ -4,7 +4,7 @@ import Utils from 'App/Utils'
 import Artwork from './Artwork'
 import Song from './Song'
 import Vod from './Vod'
-import Artist from './Artist'
+import Artists from './Artists'
 
 class ProjectEdit {
   static find = async (params) => {
@@ -88,7 +88,7 @@ class ProjectEdit {
     }
 
     if (params.artist_picture_file) {
-      await Artist.updatePicture(
+      await Artists.updatePicture(
         pp.id,
         Buffer.from(
           params.artist_picture_file.replace(/^data:image\/(png|jpg|jpeg);base64,/, ''),

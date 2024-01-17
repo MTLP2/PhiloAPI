@@ -228,22 +228,27 @@ class User {
     return users
   }
 
-  static follow = async (params: { user_id: number; follower: number }) => {
+  static follow = async (params: { auth_id: number; artist_id?: number; label_id?: number }) => {
     const follower = await DB()
       .from('follower')
-      .where('user_id', params.user_id)
-      .where('follower', params.follower)
+      .where('user_id', params.auth_id)
+      .where((query) => {
+        if (params.artist_id) {
+          query.where('artist_id', params.artist_id)
+        }
+        if (params.label_id) {
+          query.where('label_id', params.label_id)
+        }
+      })
       .first()
+
     if (follower) {
-      await DB()
-        .table('follower')
-        .where('follower', params.follower)
-        .where('user_id', params.user_id)
-        .delete()
+      await DB().table('follower').where('id', follower.id).delete()
     } else {
       await DB('follower').insert({
-        user_id: params.user_id,
-        follower: params.follower,
+        user_id: params.auth_id,
+        artist_id: params.artist_id,
+        label_id: params.label_id,
         created_at: Utils.date(),
         updated_at: Utils.date()
       })
@@ -316,12 +321,12 @@ class User {
     user.styles = user.styles ? JSON.parse(user.styles) : []
 
     user.followers = await DB('user')
-      .select('id', 'name', 'slug')
+      .select('follower.id', 'name', 'slug')
       .join('follower', 'follower.follower', 'user.id')
       .where('follower.user_id', user.id)
       .all()
     user.following = await DB('user')
-      .select('id', 'name', 'slug')
+      .select('follower.id', 'name', 'slug')
       .join('follower', 'follower.user_id', 'user.id')
       .where('follower.follower', user.id)
       .all()
