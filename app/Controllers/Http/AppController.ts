@@ -9,6 +9,8 @@ import Customer from 'App/Services/Customer'
 import Dig from 'App/Services/Dig'
 import cio from 'App/Services/CIO'
 import User from 'App/Services/User'
+import Artists from 'App/Services/Artists'
+import Labels from 'App/Services/Labels'
 import MondialRelay from 'App/Services/MondialRelay'
 import Utils from 'App/Utils'
 import Payment from 'App/Services/Payment'
@@ -59,8 +61,20 @@ class AppController {
 
     if (payload.tab === 'projects') {
       return Project.findAll(payload)
-    } else {
-      return User.search(payload)
+    } else if (payload.tab === 'artists') {
+      return Artists.all({
+        filters: { name: payload.search },
+        size: 10
+      }).then((res) => {
+        return res.data
+      })
+    } else if (payload.tab === 'labels') {
+      return Labels.all({
+        filters: { name: payload.search },
+        size: 10
+      }).then((res) => {
+        return res.data
+      })
     }
   }
 
