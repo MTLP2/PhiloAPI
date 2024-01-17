@@ -218,8 +218,8 @@ class Admin {
       .leftJoin('vod', 'vod.project_id', 'project.id')
       .leftJoin('wishlist', 'wishlist.project_id', 'project.id')
       .leftJoin('user', 'user.id', 'vod.user_id')
-      .leftJoin('user as artist', 'artist.id', 'project.artist_id')
-      .leftJoin('user as label', 'label.id', 'project.label_id')
+      .leftJoin('artist', 'artist.id', 'project.artist_id')
+      .leftJoin('label', 'label.id', 'project.label_id')
       .where('project.id', id)
       .first()
 
@@ -3261,7 +3261,7 @@ class Admin {
   static getBusiness = async (params) => {
     const admin = [1, 2, 6140]
     let query = `
-    select com_id, order_item.total, order_item.currency_rate, tax_rate
+    select com_id, order_item.total, order_item.ge, tax_rate
     from order_item, order_shop, vod
     where vod.project_id = order_item.project_id
       and order_shop.id = order_item.order_shop_id
