@@ -141,7 +141,7 @@ class Stock {
           }
         }
         for (const stock of stocks) {
-          if (stock.type !== 'preorder' && stock.quantity !== 0) {
+          if (stock.type !== 'preorder' && !stock.is_preorder && stock.quantity !== 0) {
             types[stock.type] = true
             months[m].fix[stock.type] = stock.quantity
             months[m].var[stock.type] = stock.quantity
@@ -709,6 +709,7 @@ class Stock {
       .whereNotNull('product.barcode')
       .hasMany('stock')
       .orderBy('vod.unit_cost')
+      .where('product_id', 64184)
       .all()
 
     const products = {}
@@ -740,11 +741,14 @@ class Stock {
     for (const i in refs) {
       refs[i].quantity = 0
       for (const stock of refs[i].stock) {
-        if (stock.type === 'preorder') {
+        if (stock.type === 'preorder' || stock.is_preorder) {
           continue
         }
         if (hh[stock.product_id] && hh[stock.product_id][stock.type]) {
           for (const h of hh[stock.product_id][stock.type]) {
+            if (h.type === 'preorder' || h.is_preorder) {
+              continue
+            }
             const d = JSON.parse(h.data)
             stock.quantity = d.old.quantity
           }
