@@ -53,6 +53,8 @@ class App {
 
       if (+moment().format('D') === 1) {
         await Box.checkPayments()
+      }
+      if (+moment().format('D') === 2) {
         await Admin.exportMonthlyClientsStats()
       }
 
