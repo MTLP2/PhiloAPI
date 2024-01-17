@@ -19,12 +19,13 @@ class UserController {
   async follow({ params, user }) {
     const payload = await validator.validate({
       schema: schema.create({
-        user_id: schema.number(),
-        follower: schema.number()
+        auth_id: schema.number(),
+        artist_id: schema.number.optional(),
+        label_id: schema.number.optional()
       }),
       data: {
-        user_id: user.id,
-        follower: params.id
+        ...params,
+        auth_id: user.id
       }
     })
     return User.follow(payload)
