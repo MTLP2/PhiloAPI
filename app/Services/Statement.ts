@@ -2469,6 +2469,7 @@ class StatementService {
       .join('stock', 'project_product.product_id', 'stock.product_id')
       .join('vod', 'project.id', 'vod.project_id')
       .where('stock.is_distrib', false)
+      .where('stock.is_preorder', false)
       .where('stock.type', '!=', 'diggers')
       .where('stock.type', '!=', 'preorder')
       .having('stock', '>', 0)
