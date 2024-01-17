@@ -5123,7 +5123,7 @@ class Admin {
 
   static exportMonthlyClientsStats = async () => {
     const previousMonth = moment().subtract(1, 'months').month() + 1
-    const thisYear = moment().year()
+    const thisYear = moment().subtract(1, 'months').year()
 
     const [
       uniqueUsersWithOriginQuery,
@@ -5197,6 +5197,7 @@ class Admin {
         .first()
     ])
 
+    console.log(uniqueUsersAndOrdersByMonth)
     await Notification.sendEmail({
       to: 'robin@diggersfactory.com,olivia@diggersfactory.com',
       subject: `Export clients mensuel - ${previousMonth}/${thisYear}`,
