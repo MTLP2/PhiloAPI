@@ -528,6 +528,13 @@ class Project {
       projects.orderBy('shop_project.position')
     }
 
+    if (params.artist_id) {
+      projects.where('artist_id', params.artist_id)
+    }
+    if (params.label_id) {
+      projects.where('label_id', params.label_id)
+    }
+
     if (params.supported) {
       projects.whereIn(
         'p.id',
