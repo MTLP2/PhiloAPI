@@ -266,3 +266,23 @@ type Alert = {
   created_at: string
   updated_at: string
 }
+
+type Artist = {
+  id: number
+  name: string
+  description?: string
+  country_id: string
+  picture?: string
+  created_at: string
+  updated_at: string
+}
+
+type Label = {
+  id: number
+  name: string
+  description?: string
+  country_id: string
+  picture?: string
+  created_at: string
+  updated_at: string
+}
