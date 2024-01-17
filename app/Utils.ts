@@ -302,7 +302,12 @@ class Utils {
 
     let filters
     try {
-      filters = params.filters ? JSON.parse(params.filters) : null
+      filters =
+        typeof params.filters === 'object'
+          ? params.filters
+          : params.filters
+          ? JSON.parse(params.filters)
+          : null
     } catch (e) {
       filters = []
     }
