@@ -113,7 +113,7 @@ class StatementService {
 
     let data
     if (params.custom_column) {
-      data = this.parseCustom(workbook, currencies, params)
+      data = await this.parseCustom(workbook, currencies, params)
     } else {
       switch (params.distributor) {
         case 'PIAS':
@@ -680,7 +680,7 @@ class StatementService {
     return data
   }
 
-  static parseCustom(workbook: any, currencies, params) {
+  static async parseCustom(workbook: any, currencies, params) {
     const worksheet = workbook.getWorksheet(params.sheet_number)
 
     const data = {}
@@ -690,7 +690,6 @@ class StatementService {
       const returned = params.return ? +row.getCell(params.return).text : 0
       const total = +row.getCell(params.total).text
 
-      console.log(currencies)
       if (barcode && Number.isInteger(quantity) && total !== 0) {
         data[barcode] = {
           barcode: barcode,
