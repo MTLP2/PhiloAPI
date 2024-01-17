@@ -533,7 +533,7 @@ class Utils {
     return currencyRate
   }
 
-  static getCurrencyRate = async (currency, date) => {
+  static getCurrencyRate = async (currency: string, date?: string) => {
     let currencyRate = 1
     if (currency !== 'EUR') {
       let currencies
