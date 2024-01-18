@@ -976,7 +976,6 @@ class Utils {
       }
     }
     if (value === null) {
-      console.log('fee missing =>', date, dates)
       throw `fee missing ${date}:${dates}`
     }
     return value
