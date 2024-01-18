@@ -25,7 +25,6 @@ class Labels {
     const item = await DB('label').find(params.id)
 
     item.projects = await Project.findAll({
-      type: 'all',
       label_id: item.id
     })
 

@@ -497,9 +497,7 @@ class Project {
     } else if (params.type === 'discount') {
       projects.where('v.discount', '>', '0')
     } else if (params.search || (filters && filters.some((f: any) => f.type === 'category'))) {
-      projects.where(function () {
-        this.where('v.step', 'successful').orWhere('v.step', 'in_progress')
-      })
+      projects.whereIn('v.step', ['successful', 'in_progress'])
     } else if (
       filters &&
       filters.find((f: any) => f.type === 'category' && parseInt(f.value) === 30)
@@ -530,9 +528,11 @@ class Project {
 
     if (params.artist_id) {
       projects.where('artist_id', params.artist_id)
+      projects.whereIn('v.step', ['successful', 'in_progress'])
     }
     if (params.label_id) {
       projects.where('label_id', params.label_id)
+      projects.whereIn('v.step', ['successful', 'in_progress'])
     }
 
     if (params.supported) {
@@ -697,6 +697,7 @@ class Project {
     if (!params.page) {
       params.page = 1
     }
+
     projects.limit(params.limit)
     projects.offset(params.limit * (params.page - 1))
 

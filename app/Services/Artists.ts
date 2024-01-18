@@ -27,7 +27,6 @@ class Artists {
     const item = await DB('artist').find(params.id)
 
     item.projects = await Project.findAll({
-      type: 'all',
       artist_id: item.id
     })
 
