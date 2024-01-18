@@ -1027,6 +1027,11 @@ class StatementService {
       dates: data.quantity.site.dates,
       font: { size: 13 }
     })
+    addLine({
+      label: 'Website - Refunds',
+      dates: data.quantity.site_return.dates,
+      font: { size: 13 }
+    })
     if (data.quantity.box.all > 0) {
       addLine({
         label: 'Box - Total',

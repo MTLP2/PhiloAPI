@@ -1759,6 +1759,7 @@ class Project {
         'os.tax_rate',
         'price',
         'fee_change',
+        'date_cancel',
         'customer.country_id',
         'currency_rate_project',
         'discount_artist',
@@ -1768,7 +1769,10 @@ class Project {
       .join('order_shop as os', 'os.id', 'oi.order_shop_id')
       .join('customer', 'customer.id', 'os.customer_id')
       .whereIn('project_id', ids)
-      .where('is_paid', true)
+      .where((query) => {
+        query.where('os.is_paid', true)
+        query.orWhereNotNull('os.date_cancel')
+      })
       .where('is_external', false)
       .orderBy('created_at', 'asc')
       .all()
@@ -2008,6 +2012,12 @@ class Project {
           dates: { ...dates },
           countries: {}
         },
+        site_return: {
+          all: 0,
+          total: 0,
+          dates: { ...dates },
+          countries: {}
+        },
         box: {
           all: 0,
           total: 0,
@@ -2107,8 +2117,18 @@ class Project {
       s.setDate('site', 'income', date, value + tips)
       // s.setDate('tips', 'income', date, tips)
       s.setDate('site', 'quantity', date, order.quantity)
+      if (order.date_cancel) {
+        s.setDate('site', 'income', moment(order.date_cancel).format(format), -(value + tips))
+        // s.setDate('all', 'quantity', moment(order.date_cancel).format(format), -order.quantity)
+        s.setDate(
+          'site_return',
+          'quantity',
+          moment(order.date_cancel).format(format),
+          -order.quantity
+        )
+      }
 
-      if (inDate(date)) {
+      if (inDate(date) && !order.date_cancel) {
         oo.push(order)
         s.setCountry('site', 'income', order.country_id, value)
         s.setCountry('site', 'quantity', order.country_id, order.quantity)
