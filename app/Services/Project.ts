@@ -774,10 +774,20 @@ class Project {
       .select(
         'p.id',
         'p.name',
+        'p.label_id',
+        'p.artist_id',
         'p.slug',
         'p.artist_bio',
         'p.artist_picture',
         'v.edition',
+        'artist.name as artist_name',
+        'artist.description as artist_desc',
+        'artist.picture as artist_picture',
+        'artist.country_id as artist_country',
+        'label.name as label_name',
+        'label.description as label_desc',
+        'label.picture as label_picture',
+        'label.country_id as label_country',
         'u.id as user_id',
         'u.name as user_name',
         'u.slug as user_slug',
@@ -909,6 +919,8 @@ class Project {
       .leftJoin('vod as v', 'p.id', 'v.project_id')
       .leftJoin('user as u', 'u.id', 'v.user_id')
       .leftJoin('wishlist as w', 'p.id', 'w.project_id')
+      .leftOuterJoin('label', 'p.label_id', 'label.id')
+      .leftOuterJoin('artist', 'p.artist_id', 'artist.id')
       .leftOuterJoin('customer as c', 'c.id', 'v.customer_id')
       .leftOuterJoin('currency as cu', 'cu.id', 'v.currency')
       .where('p.id', related)
