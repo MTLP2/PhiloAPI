@@ -821,6 +821,7 @@ class Elogik {
           refEcommercant: params.barcode,
           titre: params.name,
           EAN13: params.barcode,
+          codePaysOrigine: 'FR',
           listeFournisseurs: [{ codeFournisseur: 'DGF', refFournisseur: params.barcode }]
         }
       })
