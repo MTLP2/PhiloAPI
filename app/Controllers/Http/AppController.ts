@@ -51,24 +51,25 @@ class AppController {
     const payload = await validator.validate({
       schema: schema.create({
         search: schema.string(),
-        filter: schema.array.optional().members(schema.string()),
-        init: schema.boolean.optional(),
-        type: schema.string.optional(),
-        tab: schema.string()
+        type: schema.string()
       }),
       data: params
     })
 
-    if (payload.tab === 'projects') {
-      return Project.findAll(payload)
-    } else if (payload.tab === 'artists') {
+    if (payload.type === 'projects') {
+      return Project.findAll({
+        type: 'all',
+        sort: 'popularity',
+        search: payload.search
+      })
+    } else if (payload.type === 'artists') {
       return Artists.all({
         filters: { name: payload.search },
         size: 10
       }).then((res) => {
         return res.data
       })
-    } else if (payload.tab === 'labels') {
+    } else if (payload.type === 'labels') {
       return Labels.all({
         filters: { name: payload.search },
         size: 10

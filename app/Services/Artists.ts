@@ -27,6 +27,7 @@ class Artists {
     const item = await DB('artist').find(params.id)
 
     item.projects = await Project.findAll({
+      type: 'all',
       artist_id: item.id
     })
 
@@ -68,15 +69,15 @@ class Artists {
         quality: 80
       })
       await Storage.uploadImage(`pictures/${file}/mini`, picture, {
-        width: 50,
-        quality: 90
+        width: 100,
+        quality: 80
       })
       item.picture = file
       await item.save()
     }
 
     if (params.project_id) {
-      await DB('project').where('project_id', params.project_id).update({
+      await DB('project').where('id', params.project_id).update({
         artist_id: item.id,
         updated_at: Utils.date()
       })
@@ -173,6 +174,22 @@ class Artists {
     }
 
     return projects.length
+  }
+
+  static updateMinis = async () => {
+    const artists = await DB('artist').whereNotNull('picture').all()
+    let i = 0
+    for (const artist of artists) {
+      const picture = (await Storage.get(`pictures/${artist.picture}/original.jpg`)) as Buffer
+      await Artists.save({
+        id: artist.id,
+        picture: picture
+      })
+      i++
+      console.log(i)
+    }
+
+    return artists.length
   }
 
   static updatePicture = (projectId: number, buffer: Buffer) => {

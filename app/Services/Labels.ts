@@ -25,6 +25,7 @@ class Labels {
     const item = await DB('label').find(params.id)
 
     item.projects = await Project.findAll({
+      type: 'all',
       label_id: item.id
     })
 
@@ -66,15 +67,15 @@ class Labels {
         quality: 80
       })
       await Storage.uploadImage(`pictures/${file}/mini`, picture, {
-        width: 50,
-        quality: 90
+        width: 100,
+        quality: 80
       })
       item.picture = file
       await item.save()
     }
 
     if (params.project_id) {
-      await DB('project').where('project_id', params.project_id).update({
+      await DB('project').where('id', params.project_id).update({
         label_id: item.id,
         updated_at: Utils.date()
       })
