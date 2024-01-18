@@ -53,7 +53,14 @@ class Artists {
     item.country_id = params.country_id
     item.updated_at = Utils.date()
 
-    await item.save()
+    try {
+      await item.save()
+    } catch (e) {
+      if (e.toString().includes('ER_DUP_ENTRY')) {
+        return { error: 'Artist already exist' }
+      }
+      return { error: e.toString() }
+    }
 
     if (params.picture) {
       if (item.picture) {
