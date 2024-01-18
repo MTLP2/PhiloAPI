@@ -2434,7 +2434,6 @@ class StatementService {
         start: moment().subtract(1, 'months').startOf('month').format('YYYY-MM-DD'),
         end: moment().subtract(1, 'months').endOf('month').format('YYYY-MM-DD')
       })
-      console.log(isActive)
 
       if (isActive) {
         res.push([project.id, `${project.artist_name} - ${project.name}`])
@@ -2557,7 +2556,13 @@ class StatementService {
       if (!stockPrice) {
         stockPrice = [{ start: null, end: null, value: p.type === 'deposit_sales' ? 0.05 : 0.1 }]
       }
-      const price = Utils.getFee(stockPrice, moment().format('YYYY-MM-DD')) as number
+
+      let price = 0.1
+      try {
+        price = Utils.getFee(stockPrice, moment().format('YYYY-MM-DD')) as number
+      } catch (e) {
+        console.log(p.id, e)
+      }
       const unitPrice: number = p.category === 'vinyl' ? price : 0.05
 
       if (change[p.id]) {
