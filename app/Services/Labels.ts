@@ -16,6 +16,12 @@ class Labels {
         .select(DB.raw('count(id)'))
         .whereRaw('label_id = label.id')
         .as('projects')
+        .query(),
+      DB('project')
+        .select(DB.raw('sum(vod.count)'))
+        .join('vod', 'vod.project_id', 'project.id')
+        .whereRaw('label_id = label.id')
+        .as('sales')
         .query()
     )
     if (!params.sort) {

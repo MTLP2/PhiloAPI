@@ -15,11 +15,18 @@ class Artists {
     const query = DB('artist').select(
       'artist.*',
       DB('project')
-        .select(DB.raw('count(id)'))
+        .select(DB.raw('count(project.id)'))
         .whereRaw('artist_id = artist.id')
         .as('projects')
+        .query(),
+      DB('project')
+        .select(DB.raw('sum(vod.count)'))
+        .join('vod', 'vod.project_id', 'project.id')
+        .whereRaw('artist_id = artist.id')
+        .as('sales')
         .query()
     )
+
     if (!params.sort) {
       params.sort = 'id'
       params.order = 'desc'
