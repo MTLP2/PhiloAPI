@@ -12,7 +12,14 @@ class Artists {
     order?: string
     size?: number
   }) => {
-    const query = DB('artist')
+    const query = DB('artist').select(
+      'artist.*',
+      DB('project')
+        .select(DB.raw('count(id)'))
+        .whereRaw('artist_id = artist.id')
+        .as('projects')
+        .query()
+    )
     if (!params.sort) {
       params.sort = 'id'
       params.order = 'desc'

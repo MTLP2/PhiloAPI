@@ -10,7 +10,14 @@ class Labels {
     order?: string
     size?: number
   }) => {
-    const query = DB('label')
+    const query = DB('label').select(
+      'label.*',
+      DB('project')
+        .select(DB.raw('count(id)'))
+        .whereRaw('label_id = label.id')
+        .as('projects')
+        .query()
+    )
     if (!params.sort) {
       params.sort = 'id'
       params.order = 'desc'
