@@ -73,7 +73,7 @@ class ProductController {
   }
 
   async setStockProduct({ params }) {
-    await Stock.syncApi({ productIds: [params.id] })
+    return Stock.syncApi({ productIds: [params.id] })
   }
 
   async saveSubProduct({ params }) {
