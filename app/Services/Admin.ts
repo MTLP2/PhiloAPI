@@ -3261,7 +3261,7 @@ class Admin {
   static getBusiness = async (params) => {
     const admin = [1, 2, 6140]
     let query = `
-    select com_id, order_item.total, order_item.ge, tax_rate
+    select com_id, order_item.total, order_item.currency_rate, tax_rate
     from order_item, order_shop, vod
     where vod.project_id = order_item.project_id
       and order_shop.id = order_item.order_shop_id
