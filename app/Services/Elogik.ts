@@ -30,10 +30,12 @@ class Elogik {
     })
   }
 
-  static async listeCommandes() {
+  static async listeCommandes(params: { reference: string | number }) {
     const res = await Elogik.api('commandes/liste', {
       method: 'POST',
-      body: {}
+      body: {
+        reference: params.reference
+      }
     })
 
     return res.commandes
@@ -59,6 +61,13 @@ class Elogik {
       body: {
         codeServiceTransporteur: 13
       }
+    })
+  }
+
+  static async annulerCommande(params: { referenceEKAN?: string }) {
+    return Elogik.api(`commandes/${params.referenceEKAN}/annuler`, {
+      method: 'POST',
+      body: {}
     })
   }
 
