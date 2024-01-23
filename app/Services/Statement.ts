@@ -2645,6 +2645,7 @@ class StatementService {
       .select(
         'payment_artist.receiver',
         'payment_artist.currency',
+        'payment_artist_project.currency_rate',
         'payment_artist_project.total',
         DB.raw("DATE_FORMAT(payment_artist.date, '%Y-%m') as date")
       )
@@ -2981,6 +2982,9 @@ class StatementService {
     }
 
     for (const payment of payments) {
+      if (moment(payment.date) > moment('2024-01-01')) {
+        payment.total = payment.total * payment.currency_rate
+      }
       if (payment.receiver === 'artist') {
         data.payment_artist[payment.date] -= payment.total
       } else if (payment.receiver === 'diggers') {

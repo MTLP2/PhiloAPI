@@ -1794,6 +1794,7 @@ class Project {
       .select(
         'payment_artist.receiver',
         'payment_artist.currency',
+        'payment_artist_project.currency_rate',
         'payment_artist_project.total',
         'payment_artist_project.project_id',
         'payment_artist.date'
@@ -2226,6 +2227,10 @@ class Project {
 
     for (const payment of payments) {
       const date = moment(payment.date).format(format)
+
+      if (moment(payment.date) > moment('2024-01-01')) {
+        payment.total = payment.total * payment.currency_rate
+      }
       if (payment.receiver === 'artist') {
         s.addList('artist', 'payments', date, payment.total, payment.project_id)
         s.setDate('artist', 'payments', date, payment.total)

@@ -147,7 +147,7 @@ class PaymentArtist {
             p.created_at = Utils.date()
           }
           p.project_id = project.project_id
-          p.currency_rate = 1
+          p.currency_rate = await Utils.getCurrencyComp(item.currency, p.currency)
           p.total = project.total
           p.updated_at = Utils.date()
           await p.save()
