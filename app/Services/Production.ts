@@ -2367,7 +2367,14 @@ class Production {
     item.cost_real_ttc = params.cost_real_ttc
     item.cost_invoiced = params.cost_invoiced
     if (params.is_statement && project.is_licence) {
-      throw new Error('Licence project cannot have cost in statement')
+      return {
+        error: 'Licence project cannot have cost in statement'
+      }
+    }
+    if (params.is_statement && project.type === 'direct_pressing') {
+      return {
+        error: 'Direct pressing cannot have cost in statement'
+      }
     }
     item.is_statement = params.is_statement
     item.margin = params.margin
