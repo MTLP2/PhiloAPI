@@ -2952,6 +2952,58 @@ class Stats {
     }
     return data
   }
+
+  static async getAverageTurnoverProjects(params: { start?: string; end?: string }) {
+    const vod = await DB('vod')
+      .where('is_licence', false)
+      .whereIn('type', ['limited_edition', 'funding'])
+      .whereIn('step', ['successful', 'in_progress'])
+      .all()
+
+    console.log('vod', vod.length)
+    const tt = []
+    for (const v of vod) {
+      const historic = JSON.parse(v.historic)
+      if (historic) {
+        for (const h of historic) {
+          if (h.new === 'in_progress') {
+            console.log(h.date.substring(0, 10))
+            console.log(
+              h.date,
+              moment(h.date.substring(0, 10)).isBetween(params.start, params.end + ' 23:59:59'),
+              params.start,
+              params.end
+            )
+          }
+          if (
+            h.new === 'in_progress' &&
+            moment(h.date).isBetween(params.start, params.end, undefined, '[]')
+          ) {
+            console.log(h.date)
+          }
+          if (h.new === 'in_progress' && moment(h.date).isBetween(params.start, params.end)) {
+            tt.push(v.project_id)
+            console.log(v.project_id, h.date)
+          }
+        }
+      }
+    }
+
+    console.log('tt =>', tt.length)
+
+    let total = 0
+    const orders = await DB('order_item')
+      .select('order_item.total', 'order_item.currency_rate')
+      .join('order_shop', 'order_shop.id', 'order_item.order_shop_id')
+      .where('order_shop.is_paid', true)
+      .whereIn('order_item.project_id', tt)
+      .all()
+
+    for (const order of orders) {
+      total += order.total * order.currency_rate
+    }
+    return total / tt.length
+  }
 }
 
 export default Stats

@@ -139,6 +139,7 @@ class PaymentArtist {
         if (project.is_delete) {
           await DB('payment_artist_project').where('id', project.id).delete()
         } else {
+          const pp = await DB('vod').where('project_id', project.project_id).first()
           let p: any = DB('payment_artist_project')
           if (project.id) {
             p = await DB('payment_artist_project').find(project.id)
@@ -147,7 +148,8 @@ class PaymentArtist {
             p.created_at = Utils.date()
           }
           p.project_id = project.project_id
-          p.currency_rate = await Utils.getCurrencyComp(item.currency, p.currency)
+
+          p.currency_rate = await Utils.getCurrencyComp(item.currency, pp.currency)
           p.total = project.total
           p.updated_at = Utils.date()
           await p.save()
