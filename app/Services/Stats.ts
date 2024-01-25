@@ -2957,33 +2957,19 @@ class Stats {
     const vod = await DB('vod')
       .where('is_licence', false)
       .whereIn('type', ['limited_edition', 'funding'])
-      .whereIn('step', ['successful', 'in_progress'])
+      .whereIn('step', ['successful'])
       .all()
 
     console.log('vod', vod.length)
     const tt = []
+
     for (const v of vod) {
       const historic = JSON.parse(v.historic)
       if (historic) {
         for (const h of historic) {
-          if (h.new === 'in_progress') {
-            console.log(h.date.substring(0, 10))
-            console.log(
-              h.date,
-              moment(h.date.substring(0, 10)).isBetween(params.start, params.end + ' 23:59:59'),
-              params.start,
-              params.end
-            )
-          }
-          if (
-            h.new === 'in_progress' &&
-            moment(h.date).isBetween(params.start, params.end, undefined, '[]')
-          ) {
-            console.log(h.date)
-          }
           if (h.new === 'in_progress' && moment(h.date).isBetween(params.start, params.end)) {
             tt.push(v.project_id)
-            console.log(v.project_id, h.date)
+            // console.log(v.project_id, h.date)
           }
         }
       }
@@ -2993,16 +2979,77 @@ class Stats {
 
     let total = 0
     const orders = await DB('order_item')
-      .select('order_item.total', 'order_item.currency_rate')
+      .select('order_shop.tax_rate', 'order_item.total', 'order_item.currency_rate')
       .join('order_shop', 'order_shop.id', 'order_item.order_shop_id')
       .where('order_shop.is_paid', true)
       .whereIn('order_item.project_id', tt)
       .all()
 
     for (const order of orders) {
-      total += order.total * order.currency_rate
+      const tax = order.total * order.tax_rate
+      total += (order.total - tax) * order.currency_rate
     }
     return total / tt.length
+  }
+
+  static async getAveragePublish(params: { start?: string; end?: string }) {
+    const vod = await DB('vod')
+      .where('is_licence', false)
+      .whereIn('type', ['limited_edition', 'funding'])
+      .whereIn('step', ['in_progess', 'successful'])
+      .all()
+
+    let projects = 0
+    let days = 0
+    for (const v of vod) {
+      const historic = JSON.parse(v.historic)
+      if (historic) {
+        for (const h of historic) {
+          if (h.new === 'in_progress' && moment(h.date).isBetween(params.start, params.end)) {
+            projects++
+            days += moment(h.date).diff(moment(v.created_at), 'days')
+          }
+        }
+      }
+    }
+
+    return days / projects
+  }
+
+  static async getAverageProduction(params: { start?: string; end?: string }) {
+    const vod = await DB('vod')
+      .where('is_licence', false)
+      .whereIn('type', ['limited_edition', 'funding'])
+      .whereIn('step', ['successful'])
+      .all()
+
+    const prods = await DB('production')
+      .select('project_id', 'date_factory')
+      .whereIn(
+        'project_id',
+        vod.map((v) => v.project_id)
+      )
+      .all()
+
+    let projects = 0
+    let days = 0
+    for (const v of vod) {
+      const historic = JSON.parse(v.historic)
+      if (historic) {
+        for (const h of historic) {
+          if (h.new === 'in_progress' && moment(h.date).isBetween(params.start, params.end)) {
+            const prod = prods.find((p) => p.project_id === v.project_id)
+            if (prod && prod.date_factory) {
+              projects++
+              days += moment(prod.date_factory).diff(moment(v.created_at), 'days')
+            }
+          }
+        }
+      }
+    }
+
+    console.log(days, projects)
+    return days / projects
   }
 }
 
