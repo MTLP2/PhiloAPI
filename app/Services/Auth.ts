@@ -13,7 +13,7 @@ import cio from 'App/Services/CIO'
 import Pass from './Pass'
 
 class Auth {
-  static getToken = (params) => {
+  static getToken = (params: { id: number }) => {
     return jwt.sign(
       {
         id: params.id,
