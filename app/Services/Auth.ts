@@ -12,7 +12,7 @@ import ApiError from 'App/ApiError'
 import cio from 'App/Services/CIO'
 import Pass from './Pass'
 
-class Sign {
+class Auth {
   static getToken = (params) => {
     return jwt.sign(
       {
@@ -37,10 +37,10 @@ class Sign {
     const passwordHashed = res.password && res.password.replace('$2y$', '$2a$')
 
     if (process.env.NODE_ENV === 'development' && password === '123') {
-      const token = Sign.getToken(res)
+      const token = Auth.getToken(res)
       return { user_id: res.id, token }
     } else if (bcrypt.compareSync(password, passwordHashed)) {
-      const token = Sign.getToken(res)
+      const token = Auth.getToken(res)
       return { user_id: res.id, token }
     } else {
       return false
@@ -49,7 +49,7 @@ class Sign {
 
   static loginFacebook = async (facebook) => {
     if (facebook.sponsor) {
-      facebook.sponsor = await Sign.checkSponsor(facebook.sponsor)
+      facebook.sponsor = await Auth.checkSponsor(facebook.sponsor)
       if (!facebook.sponsor) {
         return { error: 'no_sponsor' }
       }
@@ -70,16 +70,16 @@ class Sign {
       }
       const response = {}
       response.user_id = user.id
-      response.token = Sign.getToken(user)
+      response.token = Auth.getToken(user)
       response.new = false
       return response
     } else {
-      const userId = await Sign.createProfile(facebook)
+      const userId = await Auth.createProfile(facebook)
       const response = {}
       response.user_id = userId
       const urlImage = `https://graph.facebook.com/${facebook.facebook_id}/picture?type=large`
       UserService.updatePictureFromUrl(userId, urlImage)
-      response.token = Sign.getToken({ id: userId })
+      response.token = Auth.getToken({ id: userId })
       response.new = true
       return response
     }
@@ -97,16 +97,16 @@ class Sign {
 
       const response = {}
       response.user_id = user.id
-      response.token = Sign.getToken(user)
+      response.token = Auth.getToken(user)
       return response
     } else {
-      const userId = await Sign.createProfile(profile)
+      const userId = await Auth.createProfile(profile)
       const response = {}
       response.user_id = userId
       if (profile.avatar_url) {
         UserService.updatePictureFromUrl(userId, profile.avatar_url, 'soundcloud')
       }
-      response.token = Sign.getToken({ id: userId })
+      response.token = Auth.getToken({ id: userId })
       return response
     }
   }
@@ -125,14 +125,14 @@ class Sign {
     }
 
     if (params.sponsor) {
-      params.sponsor = await Sign.checkSponsor(params.sponsor)
+      params.sponsor = await Auth.checkSponsor(params.sponsor)
 
       if (!params.sponsor) {
         return { error: 'no_sponsor' }
       }
     }
 
-    const userId = await Sign.createProfile(params)
+    const userId = await Auth.createProfile(params)
 
     if (params.sponsor) {
       await Dig.new({
@@ -196,10 +196,10 @@ class Sign {
   static createProfile = (params) => {
     const profile = params
     profile.confirmCode = Math.random().toString(36).substring(7)
-    return Sign.createUser(profile).then((userId) => {
+    return Auth.createUser(profile).then((userId) => {
       profile.id = userId
-      // Sign.sendConfirmEmail(profile)
-      return Sign.createNotifications(userId, params.newsletter).then(() => userId)
+      // Auth.sendConfirmEmail(profile)
+      return Auth.createNotifications(userId, params.newsletter).then(() => userId)
     })
   }
 
@@ -316,7 +316,7 @@ class Sign {
 
   static forgotPassword = async (params) => {
     /**
-    const checkRecaptcha = await Sign.checkReCaptcha(params.ip, params.captcha)
+    const checkRecaptcha = await Auth.checkReCaptcha(params.ip, params.captcha)
     if (!checkRecaptcha) {
       return { error: 'captcha' }
     }
@@ -375,4 +375,4 @@ class Sign {
     })
 }
 
-export default Sign
+export default Auth

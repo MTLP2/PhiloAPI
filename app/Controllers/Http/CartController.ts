@@ -1,5 +1,5 @@
 import Cart from 'App/Services/Cart'
-import Sign from 'App/Services/Sign'
+import Auth from 'App/Services/Auth'
 import Feedback from 'App/Services/Feedback'
 import Box from 'App/Services/Box'
 import DB from 'App/DB'
@@ -34,7 +34,7 @@ class CartController {
       } else if (exists && exists.is_guest) {
         params.user_id = exists.id
       } else {
-        params.user_id = await Sign.createProfile({
+        params.user_id = await Auth.createProfile({
           ...params,
           name: params.customer.firstname,
           is_guest: true

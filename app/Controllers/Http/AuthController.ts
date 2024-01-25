@@ -1,5 +1,5 @@
 import User from 'App/Services/User'
-import Sign from 'App/Services/Sign'
+import Auth from 'App/Services/Auth'
 import Utils from 'App/Utils'
 import ApiError from 'App/ApiError'
 import DB from 'App/DB'
@@ -9,7 +9,7 @@ const { OAuth2Client } = require('google-auth-library')
 
 class AuthController {
   async check({ user }) {
-    // const check = await Sign.checkPasswordToken(user)
+    // const check = await Auth.checkPasswordToken(user)
     User.lastVisit(user.id).then()
     return User.me(user.id)
   }
@@ -24,7 +24,7 @@ class AuthController {
     })
 
     params.email = params.email && params.email.trim()
-    const check: any = await Sign.login(params.email, params.password)
+    const check: any = await Auth.login(params.email, params.password)
     if (!check) {
       response.json(false)
     } else {
@@ -79,7 +79,7 @@ class AuthController {
       response.json({ error: 'no_email' })
       return false
     }
-    const resss: any = await Sign.loginFacebook(profilee)
+    const resss: any = await Auth.loginFacebook(profilee)
     if (resss.error) {
       response.json(resss)
       return false
@@ -99,7 +99,7 @@ class AuthController {
 
       let user = await DB('user').where('email', payload.email).first()
       if (!user) {
-        const profile = await Sign.createProfile({
+        const profile = await Auth.createProfile({
           email: payload.email,
           name: payload.name,
           currency: params.currency,
@@ -117,7 +117,7 @@ class AuthController {
 
       const res = {
         me: await User.me(user.id),
-        token: Sign.getToken({ id: user.id })
+        token: Auth.getToken({ id: user.id })
       }
 
       return res
@@ -160,7 +160,7 @@ class AuthController {
       const user = await DB('user').where('soundcloud_id', profile.id).first()
 
       if (user) {
-        const sign: any = await Sign.loginSoundcloud({
+        const sign: any = await Auth.loginSoundcloud({
           id: profile.id,
           soundcloud_id: profile.id,
           soundcloud_token: res.access_token,
@@ -195,7 +195,7 @@ class AuthController {
       })
 
       if (profile) {
-        const sign: any = await Sign.loginSoundcloud({
+        const sign: any = await Auth.loginSoundcloud({
           id: profile.id,
           soundcloud_id: profile.id,
           soundcloud_token: params.access_token,
@@ -238,12 +238,12 @@ class AuthController {
     })
 
     params.email = params.email.trim()
-    const res = await Sign.signUp(params)
+    const res = await Auth.signUp(params)
     if (res.error) {
       response.json(res)
     } else {
       const data = await User.me(res)
-      response.json({ token: Sign.getToken(data), data })
+      response.json({ token: Auth.getToken(data), data })
     }
   }
 
@@ -272,7 +272,7 @@ class AuthController {
       data: params
     })
 
-    return Sign.confirm(params)
+    return Auth.confirm(params)
   }
 
   async forgotPassword({ params }) {
@@ -283,7 +283,7 @@ class AuthController {
       data: params
     })
 
-    return Sign.forgotPassword(params)
+    return Auth.forgotPassword(params)
   }
 
   async resetPassword({ params }) {
@@ -295,7 +295,7 @@ class AuthController {
       data: params
     })
 
-    return Sign.resetPassword(params)
+    return Auth.resetPassword(params)
   }
 
   async unsubscribeNewsletter({ params }) {

@@ -1,10 +1,10 @@
 import { test } from '@japa/runner'
 
-import Sign from 'App/Services/Sign'
+import Auth from 'App/Services/Auth'
 import DB from 'App/DB'
 
 const userId = 82
-const token = Sign.getToken({ id: userId })
+const token = Auth.getToken({ id: userId })
 const step = 'testing'
 
 const initProject = async () => {

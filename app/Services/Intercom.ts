@@ -2,7 +2,7 @@ import Env from '@ioc:Adonis/Core/Env'
 
 import Production from 'App/Services/Production'
 import Utils from 'App/Utils'
-import Sign from 'App/Services/Sign'
+import Auth from 'App/Services/Auth'
 import User from 'App/Services/User'
 import Project from 'App/Services/Project'
 
@@ -1400,7 +1400,7 @@ const replyWithAccountInit = async (request, response) => {
 
 const replyWithForgotConfirmation = async (email, response, lang) => {
   // Launch email reset
-  await Sign.forgotPassword({ email })
+  await Auth.forgotPassword({ email })
 
   // Return info to Intercom
   return response.json({
