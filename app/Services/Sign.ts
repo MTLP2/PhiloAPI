@@ -23,33 +23,29 @@ class Sign {
     )
   }
 
-  static login = (email, password) =>
-    new Promise((resolve, reject) => {
-      DB()
-        .select('id', 'password')
-        .from('user as u')
-        .where('u.email', email)
-        .where('is_delete', 0)
-        .first()
-        .then(async (res) => {
-          if (!res || !res.password) {
-            resolve(false)
-          }
-          const passwordHashed = res.password && res.password.replace('$2y$', '$2a$')
+  static login = async (email: string, password: string) => {
+    const res = await DB()
+      .select('id', 'password')
+      .from('user as u')
+      .where('u.email', email)
+      .where('is_delete', 0)
+      .first()
 
-          if (process.env.NODE_ENV === 'development' && password === '123') {
-            const token = Sign.getToken(res)
-            resolve({ user_id: res.id, token })
-          } else if (bcrypt.compareSync(password, passwordHashed)) {
-            const token = Sign.getToken(res)
+    if (!res || !res.password) {
+      return false
+    }
+    const passwordHashed = res.password && res.password.replace('$2y$', '$2a$')
 
-            resolve({ user_id: res.id, token })
-          } else {
-            resolve(false)
-          }
-        })
-        .catch((err) => reject(err))
-    })
+    if (process.env.NODE_ENV === 'development' && password === '123') {
+      const token = Sign.getToken(res)
+      return { user_id: res.id, token }
+    } else if (bcrypt.compareSync(password, passwordHashed)) {
+      const token = Sign.getToken(res)
+      return { user_id: res.id, token }
+    } else {
+      return false
+    }
+  }
 
   static loginFacebook = async (facebook) => {
     if (facebook.sponsor) {
