@@ -465,7 +465,8 @@ class Quote {
         cloudy: null,
         asidebside: null,
         colorincolor: null,
-        halfandhalf: null
+        halfandhalf: null,
+        picture_disc: null
       },
       weight: {
         '140': null,
@@ -1256,6 +1257,17 @@ class Quote {
       })
     quote.type_vinyl += quote.prices.type_vinyl[params.type_vinyl]
 
+    quote.prices.type_vinyl.picture_disc = getCost({
+      l: {
+        '12"': 113,
+        '10"': 114,
+        '7"': 115
+      },
+      type: 'type_vinyl',
+      option: 'picture_disc',
+      active: params.type_vinyl === 'picture_disc'
+    })
+
     quote.prices.label_color.white = getCost({
       l: 125,
       type: 'label',
@@ -1620,6 +1632,7 @@ class Quote {
     quote.prices.type_vinyl.asidebside = false
     quote.prices.type_vinyl.colorincolor = false
     quote.prices.type_vinyl.halfandhalf = false
+    quote.prices.type_vinyl.picture_disc = false
     // quote.prices.cutting.DMM = false
     quote.prices.label_color.white = false
 
