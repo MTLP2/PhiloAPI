@@ -1,7 +1,7 @@
 import User from 'App/Services/User'
 import Dig from 'App/Services/Dig'
 import Order from 'App/Services/Order'
-import Payment from 'App/Services/Payment'
+import Payments from 'App/Services/Payments'
 import Whiplash from 'App/Services/Whiplash'
 import Box from 'App/Services/Box'
 import Review from 'App/Services/Review'
@@ -221,12 +221,12 @@ class UserController {
 
   getCards({ user, params }) {
     params.user = user
-    return Payment.getCards(params)
+    return Payments.getCards(params)
   }
 
   saveCards({ user, params }) {
     params.user = user
-    return Payment.saveCards(params)
+    return Payments.saveCards(params)
   }
 
   async getSponsor({ user }) {

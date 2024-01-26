@@ -8,7 +8,6 @@ import Order from 'App/Services/Order'
 import PromoCode from 'App/Services/PromoCode'
 import Goodie from 'App/Services/Goodie'
 import Sponsor from 'App/Services/Sponsor'
-import Payment from 'App/Services/Payment'
 import Customer from 'App/Services/Customer'
 import Quote from 'App/Services/Quote'
 import Stock from 'App/Services/Stock'
@@ -401,16 +400,6 @@ class AdminController {
 
   getWishlists({ params }) {
     return Admin.getWishlists(params)
-  }
-
-  updateAccount({ params }) {
-    params.type = 'vod'
-
-    return Payment.updateAccount(params)
-  }
-
-  deleteAccount({ params }) {
-    return Payment.deleteAccount(params)
   }
 
   getOrders({ params }) {
@@ -989,26 +978,6 @@ class AdminController {
 
   getDaudinMissingProject({ params }) {
     return Daudin.missingProjects(params)
-  }
-
-  getPayments({ params }) {
-    return Payment.all(params)
-  }
-
-  getPayment({ params }) {
-    return Payment.find(params.id)
-  }
-
-  savePayment({ params }) {
-    return Payment.save(params)
-  }
-
-  deletePayment({ params }) {
-    return Payment.delete(params)
-  }
-
-  refundPayment({ params }) {
-    return Payment.refund(params)
   }
 
   getPaymentsArtist({ params }) {

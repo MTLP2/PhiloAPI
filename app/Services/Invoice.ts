@@ -9,7 +9,7 @@ import Admin from 'App/Services/Admin'
 import ApiError from 'App/ApiError'
 import I18n from '@ioc:Adonis/Addons/I18n'
 import View from '@ioc:Adonis/Core/View'
-import Payment, { PaymentStatus } from './Payment'
+import Payments, { PaymentStatus } from './Payments'
 
 class Invoice {
   static async all(params) {
@@ -217,7 +217,7 @@ class Invoice {
         .all()
 
       if (payments.length === 0) {
-        await Payment.save({
+        await Payments.save({
           id: params.payment_id,
           type: params.type,
           customer_id: invoice.customer_id,
@@ -277,7 +277,7 @@ class Invoice {
     await invoice.save()
 
     try {
-      await Payment.save({
+      await Payments.save({
         type: 'invoice',
         customer_id: invoice.customer_id,
         invoice_id: invoice.id,
@@ -330,7 +330,7 @@ class Invoice {
     await invoice.save()
 
     try {
-      await Payment.save({
+      await Payments.save({
         type: 'credit_note',
         customer_id: invoice.customer_id,
         invoice_id: invoice.id,

@@ -1,7 +1,6 @@
 const bwipjs = require('bwip-js')
 import JSZip from 'jszip'
 import moment from 'moment'
-import Excel from 'exceljs'
 
 import DB from 'App/DB'
 import Utils from 'App/Utils'
@@ -13,7 +12,7 @@ import PromoCode from 'App/Services/PromoCode'
 import Order from 'App/Services/Order'
 import Stock from 'App/Services/Stock'
 import Cart from 'App/Services/Cart'
-import Payment from './Payment'
+import Payments from './Payments'
 import config from 'Config/index'
 import View from '@ioc:Adonis/Core/View'
 import I18n from '@ioc:Adonis/Addons/I18n'
@@ -2193,7 +2192,7 @@ class Box {
       return { success: false }
     }
 
-    await Payment.saveCard(box.user_id, params.payment_method)
+    await Payments.saveCard(box.user_id, params.payment_method)
 
     box.payment_method = params.payment_method
     box.updated_at = Utils.date()
@@ -2217,7 +2216,7 @@ class Box {
       await box.save()
     }
 
-    // await Payment.saveCard(box.user_id, params.payment_method)
+    // await Payments.saveCard(box.user_id, params.payment_method)
     // await Box.checkPayments()
 
     return { success: true }

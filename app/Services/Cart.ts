@@ -11,7 +11,7 @@ import Vod from 'App/Services/Vod'
 import Box from 'App/Services/Box'
 import Customer from 'App/Services/Customer'
 import DB from 'App/DB'
-import Payment from 'App/Services/Payment'
+import Payments from 'App/Services/Payments'
 import Invoice from 'App/Services/Invoice'
 import Stock from 'App/Services/Stock'
 import Order from 'App/Services/Order'
@@ -1766,13 +1766,13 @@ class Cart {
         if (params.card.customer) {
           intent.customer = params.card.customer
         } else {
-          const customer = await Payment.getCustomer(params.user_id)
+          const customer = await Payments.getCustomer(params.user_id)
           intent.customer = customer.id
         }
 
         if ((params.boxes && params.boxes.some((b) => b.monthly)) || params.card.save) {
           try {
-            await Payment.saveCard(params.user_id, params.card.card)
+            await Payments.saveCard(params.user_id, params.card.card)
             intent.payment_method = params.card.card
           } catch (err) {
             await DB('order').where('id', params.order.id).update({

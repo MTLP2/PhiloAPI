@@ -7,7 +7,7 @@ import DB from 'App/DB'
 import Dig from 'App/Services/Dig'
 import Notification from 'App/Services/Notification'
 import Order from 'App/Services/Order'
-import Payment from 'App/Services/Payment'
+import Payments from 'App/Services/Payments'
 import Sna from 'App/Services/Sna'
 import Cart from 'App/Services/Cart'
 import Stock from 'App/Services/Stock'
@@ -181,7 +181,7 @@ class Dispatch {
       await order.save()
 
       const subTotal = Utils.round(order.shipping / (1 + order.tax_rate))
-      const payment: any = await Payment.save({
+      const payment: any = await Payments.save({
         name: `Shipping return ${order.id}`,
         type: 'return',
         order_shop_id: order.id,

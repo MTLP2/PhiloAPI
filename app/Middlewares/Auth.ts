@@ -30,6 +30,7 @@ class Auth {
       const user = jwt.verify(token, Env.get('APP_KEY'))
       user.id = user.user_id
       ctx.user = user
+      ctx.auth = user
     } catch (e) {
       if (properties[0] === 'optional') {
         ctx.user = {

@@ -1,6 +1,6 @@
 import DB from 'App/DB'
 import ProjectEdit from 'App/Services/ProjectEdit'
-import Payment from 'App/Services/Payment'
+import Payments from 'App/Services/Payments'
 import Customer from 'App/Services/Customer'
 import ApiError from 'App/ApiError'
 import Utils from 'App/Utils'
@@ -444,7 +444,7 @@ class Marketplace {
       })
     }
   
-    const account = await Payment.updateAccount({
+    const account = await Payments.updateAccount({
       type: 'user',
       user_id: params.user_id,
       stripe_account: marketplace ? marketplace.stripe_account : null,
@@ -519,7 +519,7 @@ class Marketplace {
         params.customer.customer_id = null
       }
 
-      const account = await Payment.saveLagalEntity({
+      const account = await Payments.saveLagalEntity({
         stripe_account: marketplace ? marketplace.stripe_account : null,
         customer: params.customer,
         ip: user.ip

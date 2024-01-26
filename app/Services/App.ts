@@ -28,7 +28,7 @@ import Whiplash from './Whiplash'
 import View from '@ioc:Adonis/Core/View'
 import Excel from 'exceljs'
 import fs from 'fs'
-import Payment from './Payment'
+import Payments from './Payments'
 import Admin from './Admin'
 
 class App {
@@ -70,7 +70,7 @@ class App {
         await App.alertProjectsToShop()
       }
       if (moment().format('E') === '2') {
-        await Payment.alertDatePassed()
+        await Payments.alertDatePassed()
       }
       if (moment().format('E') === '3') {
         await App.sendTeamSummaryProjects()

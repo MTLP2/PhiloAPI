@@ -13,7 +13,6 @@ import Artists from 'App/Services/Artists'
 import Labels from 'App/Services/Labels'
 import MondialRelay from 'App/Services/MondialRelay'
 import Utils from 'App/Utils'
-import Payment from 'App/Services/Payment'
 import DB from 'App/DB'
 import { schema, validator, rules } from '@ioc:Adonis/Core/Validator'
 import Alerts from 'App/Services/Alerts'
@@ -137,19 +136,6 @@ class AppController {
 
   async previewEmail({ params }) {
     return App.previewEmail(params)
-  }
-
-  getPayment({ params }) {
-    return Payment.find(params.id)
-  }
-
-  editPaymentAddress({ params, user }) {
-    params.user = user
-    return Payment.editAddress(params)
-  }
-
-  payPayment({ params }) {
-    return Payment.pay(params)
   }
 
   searchAddress({ params }) {

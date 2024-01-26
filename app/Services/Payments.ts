@@ -3,7 +3,7 @@ import DB from 'App/DB'
 import Utils from 'App/Utils'
 import Invoice from 'App/Services/Invoice'
 import Customer from 'App/Services/Customer'
-import Order from 'App/Services/Order'
+import Orders from 'App/Services/Order'
 import ApiError from 'App/ApiError'
 import Notification from './Notification'
 import Env from '@ioc:Adonis/Core/Env'
@@ -22,16 +22,19 @@ export enum PaymentStatus {
 }
 
 class Payment {
-  static all = (params) => {
-    params.query = DB('payment').where('is_delete', false)
+  static all = (params: { filters?: string; sort?: any; size?: number }) => {
+    const query = DB('payment').where('is_delete', false)
     if (!params.sort) {
-      params.query.orderBy('id', 'desc')
+      query.orderBy('id', 'desc')
     }
-    return Utils.getRows(params)
+    return Utils.getRows({
+      ...params,
+      query: query
+    })
   }
 
-  static find = async (id) => {
-    const payment = await DB('payment').belongsTo('customer').where('code', id).first()
+  static find = async (params: { id: string }) => {
+    const payment = await DB('payment').belongsTo('customer').where('code', params.id).first()
 
     if (!payment) {
       throw new ApiError(404)
@@ -51,37 +54,39 @@ class Payment {
     return payment
   }
 
+  static get = async (params: { id: string }) => {
+    const payment = await DB('payment').where('code', params.id).first()
+    return payment
+  }
+
   static save = async (params: {
     id?: number
-    type?: string
-    customer_id: number
-    customer?: any
-    invoice_id: number
-    name?: string
-    tax?: number
-    tax_rate?: number
-    total?: number
-    currency?: string
-    status?: PaymentStatus | null
-    currency_rate?: number
-    payment_days?: number
-    sub_total?: number
+    type: string
+    name: string
+    tax_rate: number
+    tax: number
+    sub_total: number
+    total: number
+    currency: string
+    status?: string
     date?: string
+    payment_type?: string
     date_payment?: string
+    customer_id?: number
+    customer?: Customer
+    payment_id?: string
     order_shop_id?: number
+    invoice_id?: number
+    payment_days?: number
+    comment?: string
     order_manual_id?: number
     box_dispatch_id?: number
-    comment?: string
-    invoice_to_payment?: boolean
-    payment_type?: string
-    payment_id?: string
-    created_at?: string
-    updated_at?: string
   }) => {
     let payment: any = DB('payment')
     payment.created_at = Utils.date()
 
     if (!params.id) {
+      payment.created_at = Utils.date()
       payment.code = await Utils.id('payment')
     } else {
       payment = await DB('payment').find(params.id)
@@ -93,14 +98,6 @@ class Payment {
       const customer = await Customer.save(params.customer)
       payment.customer_id = customer.id
     }
-
-    // if (params.order_id) {
-    //   const { payment_id: paymentId, payment_type: paymentType } = await DB('order')
-    //     .select('payment_id', 'payment_type')
-    //     .find(params.order_id)
-    //   payment.payment_id = paymentId
-    //   payment.payment_type = paymentType
-    // }
 
     payment.status = params.status || payment.status || PaymentStatus.unpaid
     payment.date = params.date || payment.date || null
@@ -123,8 +120,7 @@ class Payment {
     payment.comment = params.comment || null
     payment.order_manual_id = params.order_manual_id || null
     payment.box_dispatch_id = params.box_dispatch_id || null
-    payment.created_at = params.created_at || Utils.date()
-    payment.updated_at = params.updated_at || payment.updated_at
+    payment.updated_at = Utils.date()
     await payment.save()
 
     // Update payment reminders statuts linked to this payment in case of status "paid"
@@ -138,7 +134,8 @@ class Payment {
     return payment
   }
 
-  static editAddress = async (params) => {
+  /**
+  static editAddress = async (params: { id: string; customer: any; address_pickup: any }) => {
     const payment = await DB('payment').where('code', params.id).first()
 
     if (!payment) {
@@ -170,6 +167,7 @@ class Payment {
 
     return { success: true }
   }
+  **/
 
   static createInvoice = async (payment) => {
     let invoice: any = {}
@@ -218,7 +216,13 @@ class Payment {
     return invoice
   }
 
-  static pay = async (params) => {
+  static pay = async (params: {
+    id: string
+    payment_intent_id?: string
+    card: { card: string; customer?: string }
+    user_id?: number
+  }) => {
+    console.log(params)
     const payment = await DB('payment').where('code', params.id).first()
 
     if (params.payment_intent_id) {
@@ -309,7 +313,7 @@ class Payment {
         .where('order_shop_id', payment.order_shop_id)
         .all()
 
-      await Order.saveManual({
+      await Orders.saveManual({
         transporter: order.transporter || 'daudin',
         type: 'return',
         auto: true,
@@ -326,7 +330,7 @@ class Payment {
     return { success: true }
   }
 
-  static delete = async (params) => {
+  static delete = async (params: { id: number; keep_invoice?: boolean }) => {
     const payment = await DB('payment').where('id', params.id).first()
 
     payment.is_delete = true
@@ -340,7 +344,7 @@ class Payment {
     return { success: true }
   }
 
-  static refund = async (params) => {
+  static refund = async (params: { id: number }) => {
     const payment = await DB('payment').find(params.id)
 
     await Order.refund({
@@ -360,6 +364,19 @@ class Payment {
       sub_total: payment.sub_total,
       tax: payment.tax,
       tax_rate: payment.tax_rate,
+      async get({ params }) {
+        const payload = await validator.validate({
+          schema: schema.create({
+            id: schema.string()
+          }),
+          data: {
+            ...params
+          }
+        })
+    
+        return Payments.get(payload)
+      }
+    
       total: payment.total
     })
 
@@ -438,7 +455,6 @@ class Payment {
 
     return Payment.getCards(params)
   }
-
   static saveCard = async (userId, token) => {
     const customer = await Payment.getCustomer(userId)
     return stripe.paymentMethods.attach(token, { customer: customer.id })

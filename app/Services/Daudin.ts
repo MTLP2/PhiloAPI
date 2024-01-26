@@ -6,7 +6,7 @@ import DB from 'App/DB'
 import Dig from 'App/Services/Dig'
 import Invoice from 'App/Services/Invoice'
 import Notification from 'App/Services/Notification'
-import Payment from './Payment'
+import Payments from './Payments'
 import Storage from 'App/Services/Storage'
 import Utils from 'App/Utils'
 
@@ -1113,7 +1113,7 @@ class Daudin {
         await order.save()
 
         const subTotal = Utils.round(order.shipping / (1 + order.tax_rate))
-        const payment: any = await Payment.save({
+        const payment: any = await Payments.save({
           name: `Shipping return ${order.id}`,
           type: 'return',
           order_shop_id: order.id,

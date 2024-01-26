@@ -9,7 +9,6 @@ import Dig from 'App/Services/Dig'
 import Utils from 'App/Utils'
 import User from 'App/Services/User'
 import Box from 'App/Services/Box'
-import Payment from 'App/Services/Payment'
 import Whiplash from 'App/Services/Whiplash'
 import Invoice from 'App/Services/Invoice'
 import Project from 'App/Services/Project'
@@ -1624,18 +1623,6 @@ class Admin {
     return true
   }
 
-  static reverseStripe = (params) => {
-    return Payment.reverse(params)
-  }
-
-  static transferStripe = (params) => {
-    return Payment.transfer(params)
-  }
-
-  static payoutStripe = (params) => {
-    return Payment.payout(params)
-  }
-
   static deleteProject = async (id) => {
     return DB('project').where('id', id).update({
       discogs_id: null,
@@ -2351,26 +2338,6 @@ class Admin {
       no_export: noExport,
       payments_whitout_type: paymentsWihoutType
     }
-  }
-
-  static shippingPayment = async (params) => {
-    const payment = await Payment.save({
-      name: params.name,
-      sub_total: params.sub_total,
-      order_shop_id: params.id,
-      tax: params.tax,
-      tax_rate: params.tax_rate,
-      total: params.total,
-      currency: params.currency,
-      customer: params.customer
-    })
-
-    await DB('order_shop').where('id', params.id).update({
-      shipping_payment_id: payment.id,
-      updated_at: Utils.date()
-    })
-
-    return { payment_id: payment.id }
   }
 
   static getUsers = async (params) => {
@@ -3997,35 +3964,6 @@ class Admin {
       created_at: Utils.date(),
       updated_at: Utils.date()
     })
-  }
-
-  static getStripeBalance = async () => {
-    const projects = await DB('vod')
-      .select('project.id', 'name', 'stripe')
-      .join('project', 'project.id', 'vod.project_id')
-      .where('stripe', '!=', '1')
-      .whereNotNull('stripe')
-      .all()
-
-    const res = {
-      eur: 0,
-      usd: 0,
-      gbp: 0
-    }
-
-    await Promise.all(
-      projects.map(async (p, pp) => {
-        if (p.stripe !== '1') {
-          const acc = await Payment.getBalance(p.stripe)
-          const ava = acc.available[0]
-          projects[pp].amount = ava.amount / 100
-          projects[pp].currency = ava.currency
-          res[ava.currency] += ava.amount
-        }
-      })
-    )
-
-    return projects.filter((p) => p.amount !== 0)
   }
 
   static getEmails = async (params) => {
