@@ -6,6 +6,7 @@ import Customer from 'App/Services/Customer'
 import Orders from 'App/Services/Order'
 import ApiError from 'App/ApiError'
 import Notification from './Notification'
+import Revolut from 'App/Services/Revolut'
 import Env from '@ioc:Adonis/Core/Env'
 
 const stripe = require('stripe')(config.stripe.client_secret)
@@ -44,8 +45,20 @@ class Payment {
   }
 
   static get = async (params: { id: string }) => {
-    const payment = await DB('payment').where('code', params.id).first()
-    return payment
+    const item = await DB('payment').where('code', params.id).first()
+
+    if (item.payment_type === 'revolut' && !item.date_payment) {
+      const order = await Revolut.getOrder(item.payment_id)
+      if (order.state === 'completed') {
+        await Payment.confirmPay({
+          id: item.id,
+          payment_id: order.id
+        })
+        return await Payment.get(params)
+      }
+      item.payment_token = order.token
+    }
+    return item
   }
 
   static save = async (params: {
@@ -110,6 +123,14 @@ class Payment {
     payment.order_manual_id = params.order_manual_id || null
     payment.box_dispatch_id = params.box_dispatch_id || null
     payment.updated_at = Utils.date()
+
+    if (params.payment_type === 'revolut' && !params.payment_id) {
+      const revolut = await Revolut.createOrder({
+        amount: payment.total,
+        currency: payment.currency
+      })
+      payment.payment_id = revolut.id
+    }
     await payment.save()
 
     // Update payment reminders statuts linked to this payment in case of status "paid"
@@ -289,14 +310,13 @@ class Payment {
     }
   }
 
-  static confirmPay = async (params: { id: number; payment_type: string; payment_id: number }) => {
+  static confirmPay = async (params: { id: number; payment_id: number; payment_type?: string }) => {
     const payment = await DB('payment').where('id', params.id).first()
     payment.payment_id = params.payment_id
     payment.error = ''
     payment.status = 'confirmed'
     payment.date_payment = Utils.date()
     payment.updated_at = Utils.date()
-    payment.payment_type = params.payment_type
     await payment.save()
 
     await Payment.createInvoice(payment)
