@@ -2468,7 +2468,7 @@ class Admin {
     id?: number
     name: string
     email: string
-    emails: string
+    notif_emails: string
     code_client: string
     user_type: string
     is_pro: number
@@ -2498,7 +2498,7 @@ class Admin {
 
     user.name = params.name
     user.email = params.email
-    user.emails = params.emails
+    user.emails = params.notif_emails
     user.code_client = params.code_client
     user.type = params.user_type
     user.is_pro = params.is_pro
