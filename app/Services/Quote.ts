@@ -190,9 +190,11 @@ class Quote {
         let cheapPrice = null
         let cheapFac = ''
         for (const f of Object.keys(factories)) {
+          /**
           if (params.factory && f !== params.factory) {
             continue
           }
+          **/
           if (disableFactories[f]) {
             continue
           }
