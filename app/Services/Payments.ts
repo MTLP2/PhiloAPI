@@ -10,17 +10,6 @@ import Env from '@ioc:Adonis/Core/Env'
 
 const stripe = require('stripe')(config.stripe.client_secret)
 
-export enum PaymentStatus {
-  unpaid = 'unpaid',
-  paid = 'paid',
-  confirmed = 'confirmed',
-  failed = 'failed',
-  refund = 'refund',
-  refunded = 'refunded',
-  creating = 'creating',
-  created = 'created'
-}
-
 class Payment {
   static all = (params: { filters?: string; sort?: any; size?: number }) => {
     const query = DB('payment').where('is_delete', false)
@@ -99,7 +88,7 @@ class Payment {
       payment.customer_id = customer.id
     }
 
-    payment.status = params.status || payment.status || PaymentStatus.unpaid
+    payment.status = params.status || payment.status || 'unpaid'
     payment.date = params.date || payment.date || null
     payment.date_payment = params.date_payment || null
     payment.type = params.type
@@ -222,16 +211,28 @@ class Payment {
     card: { card: string; customer?: string }
     user_id?: number
   }) => {
-    console.log(params)
     const payment = await DB('payment').where('code', params.id).first()
 
     if (params.payment_intent_id) {
       const confirm = await stripe.paymentIntents.confirm(params.payment_intent_id)
       if (confirm.status === 'succeeded') {
-        return Payment.confirmPay(payment, confirm)
+        return Payment.confirmPay({
+          id: payment.id,
+          payment_type: 'stripe',
+          payment_id: confirm.id
+        })
       }
     }
-    const intent = {
+    const intent: {
+      amount: number
+      currency: string
+      metadata: { payment_id: number }
+      confirm: boolean
+      description: string
+      confirmation_method: string
+      customer?: string | null
+      payment_method?: string
+    } = {
       amount: Math.round(payment.total * 100),
       currency: payment.currency,
       metadata: {
@@ -246,7 +247,9 @@ class Payment {
       intent.customer = params.card.customer
     } else if (params.user_id) {
       const customer = await Payment.getCustomer(params.user_id)
-      intent.customer = customer.id
+      if (customer) {
+        intent.customer = customer.id
+      }
     }
     intent.payment_method = params.card.card
 
@@ -274,7 +277,11 @@ class Payment {
         client_secret: charge.client_secret
       }
     } else if (charge.status === 'succeeded') {
-      return Payment.confirmPay(payment, charge)
+      return Payment.confirmPay({
+        id: payment.id,
+        payment_type: 'stripe',
+        payment_id: charge.id
+      })
     } else {
       return {
         error: charge.status
@@ -282,13 +289,14 @@ class Payment {
     }
   }
 
-  static confirmPay = async (payment, charge) => {
-    payment.payment_id = charge.id
+  static confirmPay = async (params: { id: number; payment_type: string; payment_id: number }) => {
+    const payment = await DB('payment').where('id', params.id).first()
+    payment.payment_id = params.payment_id
     payment.error = ''
     payment.status = 'confirmed'
     payment.date_payment = Utils.date()
     payment.updated_at = Utils.date()
-    payment.payment_type = 'stripe'
+    payment.payment_type = params.payment_type
     await payment.save()
 
     await Payment.createInvoice(payment)
@@ -316,7 +324,6 @@ class Payment {
       await Orders.saveManual({
         transporter: order.transporter || 'daudin',
         type: 'return',
-        auto: true,
         order_shop_id: payment.order_shop_id,
         shipping_type: order.shipping_type === 'pickup' ? 'pickup' : 'standard',
         address_pickup: order.address_pickup,
@@ -347,7 +354,7 @@ class Payment {
   static refund = async (params: { id: number }) => {
     const payment = await DB('payment').find(params.id)
 
-    await Order.refund({
+    await Orders.refund({
       payment_type: 'stripe',
       payment_id: payment.payment_id,
       currency: payment.currency,
@@ -364,19 +371,6 @@ class Payment {
       sub_total: payment.sub_total,
       tax: payment.tax,
       tax_rate: payment.tax_rate,
-      async get({ params }) {
-        const payload = await validator.validate({
-          schema: schema.create({
-            id: schema.string()
-          }),
-          data: {
-            ...params
-          }
-        })
-    
-        return Payments.get(payload)
-      }
-    
       total: payment.total
     })
 
@@ -390,7 +384,7 @@ class Payment {
       user.stripe_customer = 'cus_KJiRI5dzm4Ll1C'
     }
 
-    let customer = null
+    let customer
     if (user.stripe_customer) {
       customer = await stripe.customers.retrieve(user.stripe_customer)
     } else {

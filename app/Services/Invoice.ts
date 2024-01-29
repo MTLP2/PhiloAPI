@@ -9,7 +9,7 @@ import Admin from 'App/Services/Admin'
 import ApiError from 'App/ApiError'
 import I18n from '@ioc:Adonis/Addons/I18n'
 import View from '@ioc:Adonis/Core/View'
-import Payments, { PaymentStatus } from './Payments'
+import Payments from './Payments'
 
 class Invoice {
   static async all(params) {
@@ -228,7 +228,7 @@ class Invoice {
           total: invoice.total,
           currency: invoice.currency,
           currency_rate: invoice.currency_rate,
-          status: PaymentStatus.paid,
+          status: 'paid',
           payment_days: invoice.payment_days,
           date_payment: invoice.date_payment,
           sub_total: invoice.sub_total,
@@ -287,7 +287,7 @@ class Invoice {
         total: invoice.total,
         currency: invoice.currency,
         currency_rate: invoice.currency_rate,
-        status: PaymentStatus.paid,
+        status: 'paid',
         payment_days: invoice.payment_days,
         date_payment: invoice.date_payment,
         sub_total: invoice.sub_total,
@@ -340,7 +340,7 @@ class Invoice {
         total: invoice.total,
         currency: invoice.currency,
         currency_rate: invoice.currency_rate,
-        status: PaymentStatus.paid,
+        status: 'paid',
         payment_days: invoice.payment_days,
         date_payment: invoice.date_payment,
         sub_total: invoice.sub_total,
