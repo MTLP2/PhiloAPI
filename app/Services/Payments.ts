@@ -226,6 +226,54 @@ class Payment {
     return invoice
   }
 
+  static intent = async (params: { payment_id: string; user_id?: number }) => {
+    const payment = await DB('payment').where('id', params.payment_id).first()
+
+    if (payment.date_payment) {
+      return { error: 'already_paid' }
+    }
+    if (payment.payment_id) {
+      const paymentIntent = await stripe.paymentIntents.retrieve(payment.payment_id)
+      if (paymentIntent.status === 'succeeded') {
+        return Payment.confirmPay({
+          id: payment.id,
+          payment_type: 'stripe',
+          payment_id: paymentIntent.id
+        })
+      }
+      return paymentIntent
+    }
+
+    const user = await DB('user')
+      .where('id', params.user_id)
+      .select('id', 'email', 'stripe_customer')
+      .first()
+
+    if (!user.stripe_customer) {
+      const res = await stripe.customers.create({
+        email: user.email
+      })
+      user.stripe_customer = res.id
+      await user.save()
+    }
+
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: payment.total * 100,
+      currency: payment.currency,
+      // customer: user.stripe_customer,
+      // setup_future_usage: 'off_session',
+      automatic_payment_methods: {
+        enabled: true
+      }
+    })
+
+    payment.payment_id = paymentIntent.id
+    payment.updated_at = Utils.date()
+    await payment.save()
+
+    return paymentIntent
+  }
+
   static pay = async (params: {
     id: string
     payment_intent_id?: string

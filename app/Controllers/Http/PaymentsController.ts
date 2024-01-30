@@ -140,6 +140,21 @@ class PaymentsController {
 
     return Payments.pay(payload)
   }
+
+  async intent({ params, auth }) {
+    const payload = await validator.validate({
+      schema: schema.create({
+        payment_id: schema.string(),
+        user_id: schema.number()
+      }),
+      data: {
+        payment_id: params.id,
+        user_id: auth.user_id
+      }
+    })
+
+    return Payments.intent(payload)
+  }
 }
 
 export default PaymentsController

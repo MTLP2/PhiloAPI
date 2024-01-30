@@ -124,6 +124,7 @@ Route.group(() => {
 
   Route.get('/payments/:id', 'PaymentsController.get')
   Route.post('/payments/:id/pay', 'PaymentsController.pay')
+  Route.post('/payments/:id/intent', 'PaymentsController.intent')
   // Route.put('/payments/:id/address', 'AppController.editPaymentAddress')
 
   Route.post('/comments', 'CommentsController.save')
