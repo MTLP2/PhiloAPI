@@ -32,6 +32,7 @@ class Production {
     if (params.user.is_team) {
       selects = [
         'production.*',
+        DB.raw('(production.quantity * project.nb_vinyl) as quantity_disc'),
         'project.artist_name',
         'project.name as project',
         'vod.barcode',
