@@ -1715,7 +1715,7 @@ class Cart {
     return order
   }
 
-  static create = async (params: { user_id: number; payment_type: string }) => {
+  static create = async (params: { user_id: number; payment_type: string; calculate: any }) => {
     const order = await Cart.createOrder(params)
     if (params.payment_type === 'stripe') {
       return Cart.createStripePayment({
@@ -1723,11 +1723,19 @@ class Cart {
         order_id: order.id,
         calculate: params.calculate
       })
+    } else if (params.payment_type === 'paypal') {
+      return Cart.createPaypalPayment({
+        user_id: params.user_id,
+        order_id: order.id,
+        calculate: params.calculate
+      })
     }
   }
 
-  static confirm = async (params: { id: number }) => {
+  static confirm = async (params: { id: number; paypal_order_id?: string }) => {
+    console.log('params', params)
     const order = await DB('order').where('id', params.id).first()
+    console.log(order.payment_type)
     if (order.payment_type === 'stripe') {
       const paymentIntent = await stripe.paymentIntents.retrieve(order.payment_id)
       if (paymentIntent.status === 'succeeded') {
@@ -1744,10 +1752,21 @@ class Cart {
             net_currency: txn.currency
           })
 
-        return Cart.validPayment(params.id)
+        return Cart.validPayment({
+          order_id: params.id
+        })
       } else {
         return { success: false }
       }
+    } else if (order.payment_type === 'paypal') {
+      console.log('ookkkk', {
+        order_id: params.id,
+        paypal_order_id: params.paypal_order_id as string
+      })
+      return Cart.capturePaypalPayment({
+        order_id: params.id,
+        paypal_order_id: params.paypal_order_id as string
+      })
     }
   }
 
@@ -1799,25 +1818,47 @@ class Cart {
     }
   }
 
-  static confirmStripePayment = async (params) => {
-    let confirm
-    try {
-      confirm = await stripe.paymentIntents.confirm(params.payment_intent_id)
-      if (confirm.status === 'succeeded') {
-        params.order = await DB('order').find(params.order_id)
-        return Cart.validStripePayment(params, confirm)
+  static capturePaypalPayment = async (params: { order_id: any; paypal_order_id: string }) => {
+    const capture: any = await PayPal.capture({
+      orderId: params.paypal_order_id
+    })
+    if (capture.status === 'COMPLETED') {
+      const payment = capture.purchase_units[0].payments.captures[0]
+      const net = payment.seller_receivable_breakdown
+      await DB('order')
+        .where('id', params.order_id)
+        .update({
+          payment_id: params.paypal_order_id,
+          transaction_id: payment.id,
+          fee_bank: net && net.paypal_fee.value,
+          net_total: net && net.net_amount.value,
+          net_currency: net && net.net_amount.currency_code
+        })
+      if (payment.status !== 'COMPLETED') {
+        await Notification.sendEmail({
+          to: 'victor@diggersfactory.com',
+          subject: `Paypal order not completed`,
+          html: `<p>Order: https://www.diggersfactory.com/sheraf/order/${params.order.id}</p>`
+        })
+        return Cart.validPayment({
+          order_id: params.order_id,
+          paused: true
+        })
+      } else {
+        return Cart.validPayment({
+          order_id: params.order_id
+        })
       }
-    } catch (err) {
+    } else {
       await DB('order').where('id', params.order_id).update({
         status: 'failed',
-        paying: null,
-        error: err.code
+        paying: null
       })
       await DB('order_box').where('order_id', params.order_id).update({
         step: 'failed'
       })
       return {
-        error: err.code
+        error: 'payment_ko'
       }
     }
   }
@@ -1918,7 +1959,7 @@ class Cart {
     })
 
     if (order.status === 'CREATED') {
-      return { id: order.id }
+      return { id: order.id, order_id: params.order_id }
     } else {
       console.log(order)
       console.log(data)
@@ -1931,47 +1972,7 @@ class Cart {
     }
   }
 
-  static capturePaypalPayment = async (params) => {
-    const capture: any = await PayPal.capture({
-      orderId: params.orderId
-    })
-    if (capture.status === 'COMPLETED') {
-      const payment = capture.purchase_units[0].payments.captures[0]
-      const net = payment.seller_receivable_breakdown
-      await DB('order')
-        .where('id', params.order.id)
-        .update({
-          payment_id: params.orderId,
-          transaction_id: payment.id,
-          fee_bank: net && net.paypal_fee.value,
-          net_total: net && net.net_amount.value,
-          net_currency: net && net.net_amount.currency_code
-        })
-      if (payment.status !== 'COMPLETED') {
-        await Notification.sendEmail({
-          to: 'victor@diggersfactory.com',
-          subject: `Paypal order not completed`,
-          html: `<p>Order: https://www.diggersfactory.com/sheraf/order/${params.order.id}</p>`
-        })
-        return Cart.validPayment(params.order.id, payment.id, 'paused')
-      } else {
-        return Cart.validPayment(params.order.id)
-      }
-    } else {
-      await DB('order').where('id', params.order.id).update({
-        status: 'failed',
-        paying: null
-      })
-      await DB('order_box').where('order_id', params.order.id).update({
-        step: 'failed'
-      })
-      return {
-        error: 'payment_ko'
-      }
-    }
-  }
-
-  static validPayment = async (orderId: number) => {
+  static validPayment = async (params: { order_id: number; paused?: boolean }) => {
     const order = await DB()
       .select(
         'order.id',
@@ -1994,7 +1995,7 @@ class Cart {
       )
       .from('order')
       .join('user', 'user.id', 'order.user_id')
-      .where('order.id', orderId)
+      .where('order.id', params.order_id)
       .first()
 
     if (order.user_agent) {
@@ -2002,7 +2003,7 @@ class Cart {
       order.device = userAgent.device.type || 'desktop'
     }
 
-    await DB('order').where('id', orderId).update({
+    await DB('order').where('id', params.order_id).update({
       date_payment: Utils.date(),
       status: 'confirmed'
     })
@@ -2018,7 +2019,7 @@ class Cart {
     const shops = await DB()
       .select('*')
       .from('order_shop AS os')
-      .where('os.order_id', orderId)
+      .where('os.order_id', params.order_id)
       .all()
 
     if (user.is_guest) {
@@ -2030,7 +2031,7 @@ class Cart {
     const n = {
       type: 'my_order_confirmed',
       user_id: order.user_id,
-      order_id: orderId,
+      order_id: params.order_id,
       alert: 0
     }
     await Notification.add(n)
@@ -2060,7 +2061,7 @@ class Cart {
           .update({
             is_paid: 1,
             step: 'confirmed',
-            is_paused: status === 'paused' ? 1 : 0
+            is_paused: params.paused ? 1 : 0
           })
       }
 
@@ -2083,7 +2084,7 @@ class Cart {
           .where('order_shop_id', shop.id)
           .all()
 
-        if (shop.type === 'shop' && status === 'confirmed') {
+        if (shop.type === 'shop' && !params.paused) {
           try {
             Order.sync({ id: shop.id })
           } catch (e) {
@@ -2234,15 +2235,15 @@ class Cart {
       .join('project', 'order_item.project_id', 'project.id')
       .join('vod', 'vod.project_id', 'project.id')
       .leftJoin('item', 'item.id', 'order_item.item_id')
-      .where('order.id', orderId)
+      .where('order.id', params.order_id)
       .all()
 
     await Box.confirmBox({
-      order_id: orderId
+      order_id: params.order_id
     })
 
     const orderBox = await DB('order_box')
-      .where('order_id', orderId)
+      .where('order_id', params.order_id)
       .select('order_box.*', 'box.price', 'box.currency', 'box.type', 'box.periodicity')
       .leftJoin('box', 'box.id', 'order_box.box_id')
       .first()
@@ -2304,7 +2305,7 @@ class Cart {
     }
 
     return {
-      code: 'payment_ok',
+      success: true,
       order: order,
       items: items,
       boxes: boxes,
