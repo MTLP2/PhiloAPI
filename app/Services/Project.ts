@@ -701,13 +701,17 @@ class Project {
     projects.limit(params.limit)
     projects.offset(params.limit * (params.page - 1))
 
+    console.log(projects.toString())
+
     const styles = await Project.listStyles()
     const sales = await PromoCode.getSales({ vod: true })
     const currencies = await Utils.getCurrenciesDb()
 
+    projects.offset(params.limit * (params.page - 1))
     projects.orderBy('id', 'desc')
 
     return projects.all().then((res) => {
+      console.log(res)
       return res.map((project) => Project.setInfos(project, currencies, sales, styles))
     })
   }

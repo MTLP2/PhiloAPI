@@ -63,7 +63,7 @@ class Payment {
 
   static save = async (params: {
     id?: number
-    type: string
+    type?: string
     name: string
     tax_rate: number
     tax: number
@@ -96,7 +96,7 @@ class Payment {
 
     if (params.customer_id) {
       payment.customer_id = params.customer_id
-    } else {
+    } else if (params.customer) {
       const customer = await Customer.save(params.customer)
       payment.customer_id = customer.id
     }
@@ -115,7 +115,6 @@ class Payment {
     payment.total = params.total
     payment.currency = params.currency
     payment.currency_rate = await Utils.getCurrency(params.currency)
-    payment.date_payment = params.date_payment || null
     payment.updated_at = Utils.date()
     payment.invoice_id = params.invoice_id || null
     payment.payment_days = params.payment_days || null

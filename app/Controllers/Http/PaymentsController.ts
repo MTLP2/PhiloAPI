@@ -48,15 +48,22 @@ class PaymentsController {
     const payload = await validator.validate({
       schema: schema.create({
         id: schema.number.optional(),
-        type: schema.string(),
+        type: schema.string.optional(),
         name: schema.string(),
         payment_type: schema.string.optional(),
         currency: schema.string(),
-        tax_rate: schema.number(),
-        tax: schema.number(),
-        sub_total: schema.number(),
+        tax_rate: schema.number.optional(),
+        tax: schema.number.optional(),
+        sub_total: schema.number.optional(),
         total: schema.number(),
-        customer: schema.object().members({
+        invoice_id: schema.number.optional(),
+        box_dispatch_id: schema.number.optional(),
+        order_manual_id: schema.number.optional(),
+        payment_days: schema.number.optional(),
+        date_payment: schema.string.optional(),
+        date: schema.string.optional(),
+        comment: schema.string.optional(),
+        customer: schema.object.optional().members({
           id: schema.number.optional(),
           type: schema.string.optional(),
           name: schema.string.optional(),
