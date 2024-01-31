@@ -64,7 +64,7 @@ class Payment {
 
   static save = async (params: {
     id?: number
-    type: string
+    type?: string
     name: string
     tax_rate: number
     tax: number
@@ -97,7 +97,7 @@ class Payment {
 
     if (params.customer_id) {
       payment.customer_id = params.customer_id
-    } else {
+    } else if (params.customer) {
       const customer = await Customer.save(params.customer)
       payment.customer_id = customer.id
     }
@@ -116,7 +116,6 @@ class Payment {
     payment.total = params.total
     payment.currency = params.currency
     payment.currency_rate = await Utils.getCurrency(params.currency)
-    payment.date_payment = params.date_payment || null
     payment.updated_at = Utils.date()
     payment.invoice_id = params.invoice_id || null
     payment.payment_days = params.payment_days || null
@@ -518,9 +517,40 @@ class Payment {
 
     return Payment.getCards(params)
   }
+
   static saveCard = async (userId, token) => {
     const customer = await Payment.getCustomer(userId)
     return stripe.paymentMethods.attach(token, { customer: customer.id })
+  }
+
+  static shippingPayment = async (params: {
+    id: number
+    name: string
+    sub_total: number
+    tax: number
+    tax_rate: number
+    total: number
+    currency: string
+    customer: Customer
+  }) => {
+    const payment = await Payment.save({
+      type: 'shipping',
+      name: params.name,
+      sub_total: params.sub_total,
+      order_shop_id: params.id,
+      tax: params.tax,
+      tax_rate: params.tax_rate,
+      total: params.total,
+      currency: params.currency,
+      customer: params.customer
+    })
+
+    await DB('order_shop').where('id', params.id).update({
+      shipping_payment_id: payment.id,
+      updated_at: Utils.date()
+    })
+
+    return { payment_id: payment.id }
   }
 
   static alertDatePassed = async () => {
