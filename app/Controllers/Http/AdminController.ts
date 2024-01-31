@@ -455,10 +455,6 @@ class AdminController {
     return Admin.cancelOrderShop(params.id, 'cancel')
   }
 
-  shippingPayment({ params }) {
-    return Admin.shippingPayment(params)
-  }
-
   countOrdersError({ params }) {
     return Admin.countOrdersErrors()
   }

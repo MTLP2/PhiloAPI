@@ -155,6 +155,35 @@ class PaymentsController {
 
     return Payments.intent(payload)
   }
+
+  async shippingPayment({ params }) {
+    const payload = await validator.validate({
+      schema: schema.create({
+        id: schema.number(),
+        name: schema.string(),
+        sub_total: schema.number(),
+        tax: schema.number(),
+        tax_rate: schema.number(),
+        total: schema.number(),
+        currency: schema.string(),
+        customer: schema.object().members({
+          id: schema.number(),
+          type: schema.string(),
+          name: schema.string.optional(),
+          firstname: schema.string(),
+          lastname: schema.string(),
+          address: schema.string(),
+          state: schema.string.optional(),
+          city: schema.string(),
+          zip_code: schema.string(),
+          country_id: schema.string(),
+          phone: schema.string.optional()
+        })
+      }),
+      data: params
+    })
+    return Payments.shippingPayment(payload)
+  }
 }
 
 export default PaymentsController

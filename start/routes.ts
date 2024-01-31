@@ -427,7 +427,7 @@ Route.group(() => {
   Route.get('/orders/:osid/check-rest/:pid', 'AdminController.checkProjectRest')
   Route.post('/orders/:id/credit-note', 'AdminController.orderCreditNote')
   // Route.get('/reviews/:id', 'AdminController.getReview')
-  Route.post('/orders/:id/shipping-payment', 'AdminController.shippingPayment')
+  Route.post('/orders/:id/shipping-payment', 'PaymentsController.shippingPayment')
   Route.post('/orders/:id/pickup-change', 'AdminController.pickupMustChange')
   Route.delete('/orders/:id/refund', 'AdminController.refundOrderShop')
   Route.delete('/orders/:id', 'AdminController.cancelOrderShop')
