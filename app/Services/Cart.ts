@@ -20,6 +20,7 @@ import cio from 'App/Services/CIO'
 import I18n from '@ioc:Adonis/Addons/I18n'
 import moment from 'moment'
 import Pass from './Pass'
+import Stripe from 'stripe'
 
 const stripe = require('stripe')(config.stripe.client_secret)
 
@@ -1714,135 +1715,89 @@ class Cart {
     return order
   }
 
-  static pay = async (params) => {
-    params.order = await Cart.createOrder(params)
-    if (params.order.code === 'payment_ok' || params.order.error === 'duplicate') {
-      return params.order
+  static create = async (params: { user_id: number; payment_type: string }) => {
+    const order = await Cart.createOrder(params)
+    if (params.payment_type === 'stripe') {
+      return Cart.createStripePayment({
+        user_id: params.user_id,
+        order_id: order.id,
+        calculate: params.calculate
+      })
     }
-    if (params.calculate.total === 0) {
-      return Cart.validPayment(params.order.id)
-    } else if (params.payment_type === 'stripe') {
-      return Cart.createStripePayment(params)
-    } else if (params.payment_type === 'paypal') {
-      if (params.orderId) {
-        return Cart.capturePaypalPayment(params)
+  }
+
+  static confirm = async (params: { id: number }) => {
+    const order = await DB('order').where('id', params.id).first()
+    if (order.payment_type === 'stripe') {
+      const paymentIntent = await stripe.paymentIntents.retrieve(order.payment_id)
+      if (paymentIntent.status === 'succeeded') {
+        const txn = await stripe.balanceTransactions.retrieve(
+          paymentIntent.charges.data[0].balance_transaction
+        )
+
+        await DB('order')
+          .where('id', params.id)
+          .update({
+            transaction_id: paymentIntent.charges.data[0].balance_transaction,
+            fee_bank: txn.fee / 100,
+            net_total: txn.net / 100,
+            net_currency: txn.currency
+          })
+
+        return Cart.validPayment(params.id)
       } else {
-        return Cart.createPaypalPayment(params)
+        return { success: false }
       }
     }
   }
 
-  static createStripePayment = (params) =>
-    new Promise(async (resolve, reject) => {
-      try {
-        const metadata = {
-          order_id: params.order.id
-        }
+  static createStripePayment = async (params: {
+    user_id: number
+    order_id: number
+    calculate: any
+  }) => {
+    const metadata = {
+      order_id: params.order_id
+    }
 
-        Object.keys(params.calculate.shops).map((s) => {
-          params.calculate.shops[s].items.map((item, i) => {
-            const name = `${item.name} - ${item.artist_name}`
-            metadata[i] = `${item.quantity} x ${name} - ${item.total} ${item.currency}`
-          })
-        })
-
-        const intent: any = {
-          amount: Math.round(params.calculate.total * 100),
-          currency: params.calculate.currency,
-          transfer_group: `{ORDER_${params.order.id}}`,
-          metadata: metadata,
-          confirm: true,
-          confirmation_method: 'manual'
-        }
-
-        if (
-          params.calculate.boxes &&
-          params.calculate.boxes.some((v) => v.periodicity === 'monthly')
-        ) {
-          intent.setup_future_usage = 'off_session'
-          params.card_save = true
-        }
-
-        if (params.card.customer) {
-          intent.customer = params.card.customer
-        } else {
-          const customer = await Payments.getCustomer(params.user_id)
-          intent.customer = customer.id
-        }
-
-        if ((params.boxes && params.boxes.some((b) => b.monthly)) || params.card.save) {
-          try {
-            await Payments.saveCard(params.user_id, params.card.card)
-            intent.payment_method = params.card.card
-          } catch (err) {
-            await DB('order').where('id', params.order.id).update({
-              status: 'failed',
-              paying: null,
-              payment_id: err.requestId,
-              error: err.code
-            })
-            await DB('order_box').where('order_id', params.order.id).update({
-              step: 'failed'
-            })
-            resolve({
-              error: 'payment_ko',
-              type: err
-            })
-            return false
-          }
-        } else if (params.card.type === 'customer') {
-          intent.payment_method = params.card.card
-        } else {
-          intent.payment_method = params.card.card
-        }
-
-        stripe.paymentIntents.create(intent, async (err, charge) => {
-          try {
-            if (err) {
-              console.log(err)
-              await DB('order')
-                .where('id', params.order.id)
-                .update({
-                  status: 'failed',
-                  paying: null,
-                  payment_id: err.payment_intent ? err.payment_intent.id : null,
-                  error: err.code
-                })
-              await DB('order_box').where('order_id', params.order.id).update({
-                step: 'failed'
-              })
-              resolve({
-                error: 'payment_ko',
-                type: err
-              })
-
-              return false
-            }
-
-            if (charge.status === 'requires_action') {
-              await DB('order').where('id', params.order.id).update({
-                payment_id: charge.id,
-                paying: null,
-                status: 'requires_action'
-              })
-              resolve({
-                status: charge.status,
-                client_secret: charge.client_secret,
-                order_id: params.order.id
-              })
-              return false
-            }
-
-            resolve(Cart.validStripePayment(params, charge))
-            return true
-          } catch (e) {
-            reject(e)
-          }
-        })
-      } catch (e) {
-        reject(e)
+    let itemIdx = 0
+    for (const shopId of Object.keys(params.calculate.shops)) {
+      for (const item of params.calculate.shops[shopId].items) {
+        const name = `${item.name} - ${item.artist_name}`
+        metadata[itemIdx] = `${item.quantity} x ${name} - ${item.total} ${item.currency}`
+        itemIdx++
       }
+    }
+
+    const intent: any = {
+      amount: Math.round(params.calculate.total * 100),
+      currency: params.calculate.currency,
+      transfer_group: `{ORDER_${params.order_id}}`,
+      metadata: metadata
+      // confirm: true,
+      // confirmation_method: 'manual'
+    }
+
+    if (params.calculate.boxes && params.calculate.boxes.some((v) => v.periodicity === 'monthly')) {
+      intent.setup_future_usage = 'off_session'
+    }
+
+    const customer = await Payments.getCustomer(params.user_id)
+    intent.customer = customer.id
+
+    const paymentIntent: Stripe.PaymentIntent = await stripe.paymentIntents.create(intent)
+
+    console.log(params)
+    await DB('order').where('id', params.order_id).update({
+      paying: true,
+      payment_id: paymentIntent.id
     })
+
+    return {
+      client_secret: paymentIntent.client_secret,
+      order_id: params.order_id
+    }
+  }
 
   static confirmStripePayment = async (params) => {
     let confirm
@@ -1864,36 +1819,6 @@ class Cart {
       return {
         error: err.code
       }
-    }
-  }
-
-  static validStripePayment = async (params, charge) => {
-    const txn = await stripe.balanceTransactions.retrieve(
-      charge.charges.data[0].balance_transaction
-    )
-
-    await DB('order')
-      .where('id', params.order.id)
-      .update({
-        transaction_id: charge.charges.data[0].balance_transaction,
-        fee_bank: txn.fee / 100,
-        net_total: txn.net / 100,
-        net_currency: txn.currency,
-        payment_id: charge.id
-      })
-
-    return Cart.validPayment(params.order.id)
-  }
-
-  static getCardParams = (params) => {
-    const expireDate = params.card_expiry_date.split('/')
-
-    return {
-      type: params.card_type,
-      number: params.card_number.replace(/ /g, ''),
-      expire_month: expireDate[0],
-      expire_year: expireDate[1],
-      cvv2: params.card_cvv
     }
   }
 
@@ -2046,7 +1971,7 @@ class Cart {
     }
   }
 
-  static validPayment = async (orderId, transactionId?, status = 'confirmed') => {
+  static validPayment = async (orderId: number) => {
     const order = await DB()
       .select(
         'order.id',
@@ -2079,8 +2004,7 @@ class Cart {
 
     await DB('order').where('id', orderId).update({
       date_payment: Utils.date(),
-      transaction_id: transactionId,
-      status: status
+      status: 'confirmed'
     })
 
     const user = await DB()
@@ -2223,14 +2147,6 @@ class Cart {
             }
           })
 
-          if (project.category === 'illustration') {
-            await Notification.sendEmail({
-              to: config.emails.illustration,
-              subject: `${shop.id} : Nouvelle commande illustration`,
-              html: `<p>OrderShopId : https://www.diggersfactory.com/sheraf/order/${shop.order_id}</p>`
-            })
-          }
-
           await Dig.new({
             type: 'purchase',
             user_id: user.id,
@@ -2285,36 +2201,6 @@ class Cart {
             quantity: item.quantity,
             transporter: shop.transporter
           })
-          await Project.forceLike(project.id, user.id)
-
-          // Gamification
-          const passTypeList = ['first_order', 'order_5', 'order_10', 'order_15', 'order_20']
-          if (project.type_project === 'test_pressing') {
-            passTypeList.push('test_pressing')
-          }
-
-          // Quantity related quests
-          try {
-            const resOrders = await Pass.addHistory({
-              userId: user.id,
-              type: passTypeList,
-              times: item.quantity
-            })
-            // console.log('res of gamification orders', resOrders)
-          } catch (err) {
-            await Pass.errorNotification('orders', user.id, err)
-          }
-
-          // Genres quest
-          try {
-            const resGenres = await Pass.addGenreHistory({
-              userId: user.id,
-              genreList: project.genres
-            })
-            // console.log('res of gamification genres', resGenres)
-          } catch (err) {
-            await Pass.errorNotification('genres', user.id, err)
-          }
         }
       }
     }
@@ -2425,53 +2311,6 @@ class Cart {
       shops: shops,
       orders: orders
     }
-  }
-
-  static configurePaypal = (p) => {
-    const clientId = p !== null ? config.paypal[p].client_id : config.paypal.default.client_id
-    const clientSecret =
-      p !== null ? config.paypal[p].client_secret : config.paypal.default.client_secret
-    const mode = p !== null ? config.paypal[p].mode : config.paypal.default.mode
-
-    paypal.configure({
-      mode,
-      client_id: clientId,
-      client_secret: clientSecret
-    })
-  }
-
-  static convertOrders = async () => {
-    const orders = await DB('order').all()
-    Promise.all(
-      orders.map(async (order) => {
-        if (order.project_id) {
-          await DB('order_item').insert({
-            order_id: order.id,
-            project_id: order.project_id,
-            vod_id: order.vod_id,
-            user_id: order.user_id,
-            step: order.step,
-            place: order.place,
-            stage: order.stage,
-            price: order.price,
-            quantity: order.quantity,
-            tips: order.tips,
-            currency: order.currency,
-            sub_total: order.sub_total,
-            shipping: order.shipping,
-            tax: order.tax,
-            tax_rate: order.tax_rate,
-            total: order.total,
-            is_paid: order.is_paid,
-            is_cancel: order.is_cancel,
-            ask_cancel: order.ask_cancel,
-            created_at: order.created_at,
-            updated_at: order.updated_at
-          })
-        }
-      })
-    )
-    return null
   }
 
   static related = async (cart) => {

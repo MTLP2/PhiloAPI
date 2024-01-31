@@ -8,6 +8,7 @@ import ApiError from 'App/ApiError'
 import Notification from './Notification'
 import Revolut from 'App/Services/Revolut'
 import Env from '@ioc:Adonis/Core/Env'
+import Stripe from 'stripe'
 
 const stripe = require('stripe')(config.stripe.client_secret)
 
@@ -445,14 +446,14 @@ class Payment {
     return { success: true }
   }
 
-  static getCustomer = async (userId) => {
+  static getCustomer = async (userId: number) => {
     const user = await DB('user').select('id', 'email', 'stripe_customer').find(userId)
 
     if (process.env.NODE_ENV !== 'production') {
       user.stripe_customer = 'cus_KJiRI5dzm4Ll1C'
     }
 
-    let customer
+    let customer: Stripe.Customer
     if (user.stripe_customer) {
       customer = await stripe.customers.retrieve(user.stripe_customer)
     } else {
