@@ -227,7 +227,6 @@ class Cart {
             })
             **/
           }
-          console.log(shipping.error)
           if (shipping.error) {
             cart.error = shipping.error
             shipping.transporter = 'shop'
@@ -1881,8 +1880,6 @@ class Cart {
     if (order.status === 'CREATED') {
       return { id: order.id, order_id: params.order_id }
     } else {
-      console.log(order)
-      console.log(data)
       await Notification.sendEmail({
         to: 'victor@diggersfactory.com',
         subject: `Paypal creation order error`,
@@ -1913,7 +1910,6 @@ class Cart {
       const txn = await stripe.balanceTransactions.retrieve(
         paymentIntent.charges.data[0].balance_transaction
       )
-      console.log(paymentIntent)
       await DB('order')
         .where('id', params.order_id)
         .update({
