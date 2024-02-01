@@ -1558,13 +1558,12 @@ class Cart {
         updated_at: Utils.date()
       })
     } catch (err) {
-      if (err.toString().includes('Duplicate') > 0) {
-        return {
-          error: 'duplicate'
-        }
-      } else {
-        throw err
-      }
+      return DB('order')
+        .where('cart_id', params.cart_id)
+        .where('user_id', params.user_id)
+        .where('paying', true)
+        .where('status', 'creating')
+        .first()
     }
 
     order.shops = []
@@ -1719,10 +1718,10 @@ class Cart {
   }) => {
     const order = await Cart.createOrder(params)
     if (order.exists) {
-      return order.exists
-    }
-    if (order.error === 'duplicate') {
-      return order
+      return {
+        error: 'payment_already_done',
+        order: order.exists
+      }
     }
 
     if (params.payment_type === 'stripe') {
