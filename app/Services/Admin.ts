@@ -3416,33 +3416,32 @@ class Admin {
     return res
   }
 
-  static getRespProd = async (params) => {
+  static getRespProd = async (params: { start?: string; end?: string } = {}) => {
     if (!params.start) {
       params.start = '1999-01-01'
     }
     if (!params.end) {
       params.end = '3000-01-01'
     }
-    const query = `
-    select resp_prod_id, status, count(*) as total
-    from vod
-    where resp_prod_id is not null and resp_prod_id != 0
-    and vod.start between '${params.start}' and '${params.end} 23:59'
-    group by resp_prod_id, status
-  `
-    const items = await DB().execute(query)
+    const prods = await DB('production')
+      .whereBetween('date_preprod', [params.start, params.end])
+      .all()
 
     const resps = {}
 
-    for (const item of items) {
-      if (!resps[item.resp_prod_id]) {
-        resps[item.resp_prod_id] = {
-          id: item.resp_prod_id,
+    for (const prod of prods) {
+      if (!resps[prod.resp_id]) {
+        resps[prod.resp_id] = {
+          id: prod.resp_id,
+          preprod: 0,
+          delivered: 0,
+          prod: 0,
+          postprod: 0,
           total: 0
         }
       }
-      resps[item.resp_prod_id][item.status || 'no_status'] = item.total
-      resps[item.resp_prod_id].total += item.total
+      resps[prod.resp_id][prod.step]++
+      resps[prod.resp_id].total++
     }
     return resps
   }
