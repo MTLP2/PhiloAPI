@@ -1556,13 +1556,11 @@ class Box {
         confirm: true,
         off_session: true,
         customer: box.stripe_customer,
-        payment_method: box.payment_method,
+        // payment_method: box.payment_method,
         description: `Box N°${box.id}-${orderBox.id}`
       }
       if (process.env.NODE_ENV !== 'production') {
         intent.customer = 'cus_KJiRI5dzm4Ll1C'
-        intent.payment_method = 'pm_card_us'
-        // intent.payment_method = 'pm_card_chargeDeclined'
       }
 
       try {

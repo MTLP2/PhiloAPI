@@ -259,12 +259,7 @@ class Payment {
 
     const paymentIntent = await stripe.paymentIntents.create({
       amount: payment.total * 100,
-      currency: payment.currency,
-      // customer: user.stripe_customer,
-      // setup_future_usage: 'off_session',
-      automatic_payment_methods: {
-        enabled: true
-      }
+      currency: payment.currency
     })
 
     payment.payment_id = paymentIntent.id
@@ -272,90 +267,6 @@ class Payment {
     await payment.save()
 
     return paymentIntent
-  }
-
-  static pay = async (params: {
-    id: string
-    payment_intent_id?: string
-    card: { card: string; customer?: string }
-    user_id?: number
-  }) => {
-    const payment = await DB('payment').where('code', params.id).first()
-
-    if (params.payment_intent_id) {
-      const confirm = await stripe.paymentIntents.confirm(params.payment_intent_id)
-      if (confirm.status === 'succeeded') {
-        return Payment.confirmPay({
-          id: payment.id,
-          payment_type: 'stripe',
-          payment_id: confirm.id
-        })
-      }
-    }
-    const intent: {
-      amount: number
-      currency: string
-      metadata: { payment_id: number }
-      confirm: boolean
-      description: string
-      confirmation_method: string
-      customer?: string | null
-      payment_method?: string
-    } = {
-      amount: Math.round(payment.total * 100),
-      currency: payment.currency,
-      metadata: {
-        payment_id: payment.id
-      },
-      confirm: true,
-      description: `Payment ${payment.id}`,
-      confirmation_method: 'manual'
-    }
-
-    if (params.card.customer) {
-      intent.customer = params.card.customer
-    } else if (params.user_id) {
-      const customer = await Payment.getCustomer(params.user_id)
-      if (customer) {
-        intent.customer = customer.id
-      }
-    }
-    intent.payment_method = params.card.card
-
-    let charge
-    try {
-      charge = await stripe.paymentIntents.create(intent)
-    } catch (err) {
-      payment.error = err.code
-      payment.status = 'failed'
-      payment.updated_at = Utils.date()
-      await payment.save()
-
-      return {
-        error: err.code
-      }
-    }
-    if (charge.status === 'requires_source_action' || charge.status === 'requires_action') {
-      payment.payment_id = charge.id
-      payment.status = 'requires_source_action'
-      payment.updated_at = Utils.date()
-      await payment.save()
-
-      return {
-        status: 'requires_source_action',
-        client_secret: charge.client_secret
-      }
-    } else if (charge.status === 'succeeded') {
-      return Payment.confirmPay({
-        id: payment.id,
-        payment_type: 'stripe',
-        payment_id: charge.id
-      })
-    } else {
-      return {
-        error: charge.status
-      }
-    }
   }
 
   static confirmPay = async (params: { id: number; payment_id: number; payment_type?: string }) => {

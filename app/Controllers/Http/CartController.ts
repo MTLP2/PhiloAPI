@@ -51,6 +51,7 @@ class CartController {
       return { error: 'no_account' }
     }
 
+    params.cart_id = params.id
     return Cart.create(params)
   }
 

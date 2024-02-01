@@ -1497,11 +1497,7 @@ class Cart {
 
     if (exists) {
       return {
-        code: 'payment_ok',
-        order: exists,
-        orders: [],
-        items: [],
-        boxes: []
+        exists: exists
       }
     }
 
@@ -1715,8 +1711,20 @@ class Cart {
     return order
   }
 
-  static create = async (params: { user_id: number; payment_type: string; calculate: any }) => {
+  static create = async (params: {
+    cart_id: string
+    user_id: number
+    payment_type: string
+    calculate: any
+  }) => {
     const order = await Cart.createOrder(params)
+    if (order.exists) {
+      return order.exists
+    }
+    if (order.error === 'duplicate') {
+      return order
+    }
+
     if (params.payment_type === 'stripe') {
       return Cart.createStripePayment({
         user_id: params.user_id,
@@ -1728,44 +1736,6 @@ class Cart {
         user_id: params.user_id,
         order_id: order.id,
         calculate: params.calculate
-      })
-    }
-  }
-
-  static confirm = async (params: { id: number; paypal_order_id?: string }) => {
-    console.log('params', params)
-    const order = await DB('order').where('id', params.id).first()
-    console.log(order.payment_type)
-    if (order.payment_type === 'stripe') {
-      const paymentIntent = await stripe.paymentIntents.retrieve(order.payment_id)
-      if (paymentIntent.status === 'succeeded') {
-        const txn = await stripe.balanceTransactions.retrieve(
-          paymentIntent.charges.data[0].balance_transaction
-        )
-
-        await DB('order')
-          .where('id', params.id)
-          .update({
-            transaction_id: paymentIntent.charges.data[0].balance_transaction,
-            fee_bank: txn.fee / 100,
-            net_total: txn.net / 100,
-            net_currency: txn.currency
-          })
-
-        return Cart.validPayment({
-          order_id: params.id
-        })
-      } else {
-        return { success: false }
-      }
-    } else if (order.payment_type === 'paypal') {
-      console.log('ookkkk', {
-        order_id: params.id,
-        paypal_order_id: params.paypal_order_id as string
-      })
-      return Cart.capturePaypalPayment({
-        order_id: params.id,
-        paypal_order_id: params.paypal_order_id as string
       })
     }
   }
@@ -1793,20 +1763,16 @@ class Cart {
       currency: params.calculate.currency,
       transfer_group: `{ORDER_${params.order_id}}`,
       metadata: metadata
-      // confirm: true,
-      // confirmation_method: 'manual'
     }
 
     if (params.calculate.boxes && params.calculate.boxes.some((v) => v.periodicity === 'monthly')) {
       intent.setup_future_usage = 'off_session'
     }
-
     const customer = await Payments.getCustomer(params.user_id)
     intent.customer = customer.id
 
     const paymentIntent: Stripe.PaymentIntent = await stripe.paymentIntents.create(intent)
 
-    console.log(params)
     await DB('order').where('id', params.order_id).update({
       paying: true,
       payment_id: paymentIntent.id
@@ -1815,51 +1781,6 @@ class Cart {
     return {
       client_secret: paymentIntent.client_secret,
       order_id: params.order_id
-    }
-  }
-
-  static capturePaypalPayment = async (params: { order_id: any; paypal_order_id: string }) => {
-    const capture: any = await PayPal.capture({
-      orderId: params.paypal_order_id
-    })
-    if (capture.status === 'COMPLETED') {
-      const payment = capture.purchase_units[0].payments.captures[0]
-      const net = payment.seller_receivable_breakdown
-      await DB('order')
-        .where('id', params.order_id)
-        .update({
-          payment_id: params.paypal_order_id,
-          transaction_id: payment.id,
-          fee_bank: net && net.paypal_fee.value,
-          net_total: net && net.net_amount.value,
-          net_currency: net && net.net_amount.currency_code
-        })
-      if (payment.status !== 'COMPLETED') {
-        await Notification.sendEmail({
-          to: 'victor@diggersfactory.com',
-          subject: `Paypal order not completed`,
-          html: `<p>Order: https://www.diggersfactory.com/sheraf/order/${params.order.id}</p>`
-        })
-        return Cart.validPayment({
-          order_id: params.order_id,
-          paused: true
-        })
-      } else {
-        return Cart.validPayment({
-          order_id: params.order_id
-        })
-      }
-    } else {
-      await DB('order').where('id', params.order_id).update({
-        status: 'failed',
-        paying: null
-      })
-      await DB('order_box').where('order_id', params.order_id).update({
-        step: 'failed'
-      })
-      return {
-        error: 'payment_ko'
-      }
     }
   }
 
@@ -1969,6 +1890,98 @@ class Cart {
         html: `${JSON.stringify(data)}`
       })
       return { error: 'paypal_creation_error' }
+    }
+  }
+
+  static confirm = async (params: { id: number; paypal_order_id?: string }) => {
+    const order = await DB('order').where('id', params.id).first()
+    if (order.payment_type === 'stripe') {
+      return Cart.confirmStripePayment({
+        order_id: order.id,
+        payment_id: order.payment_id
+      })
+    } else if (order.payment_type === 'paypal') {
+      return Cart.capturePaypalPayment({
+        order_id: params.id,
+        paypal_order_id: params.paypal_order_id as string
+      })
+    }
+  }
+
+  static confirmStripePayment = async (params: { order_id: number; payment_id: number }) => {
+    const paymentIntent = await stripe.paymentIntents.retrieve(params.payment_id)
+    if (paymentIntent.status === 'succeeded') {
+      const txn = await stripe.balanceTransactions.retrieve(
+        paymentIntent.charges.data[0].balance_transaction
+      )
+      console.log(paymentIntent)
+      await DB('order')
+        .where('id', params.order_id)
+        .update({
+          transaction_id: paymentIntent.charges.data[0].balance_transaction,
+          fee_bank: txn.fee / 100,
+          net_total: txn.net / 100,
+          net_currency: txn.currency
+        })
+
+      return Cart.validPayment({
+        order_id: params.order_id
+      })
+    } else if (paymentIntent.last_payment_error) {
+      await DB('order').where('id', params.order_id).update({
+        status: 'failed',
+        error: paymentIntent.last_payment_error.code,
+        paying: null
+      })
+      await DB('order_box').where('order_id', params.order_id).update({
+        step: 'failed'
+      })
+      return { success: false }
+    } else {
+      return { success: false }
+    }
+  }
+
+  static capturePaypalPayment = async (params: { order_id: any; paypal_order_id: string }) => {
+    const capture: any = await PayPal.capture({
+      orderId: params.paypal_order_id
+    })
+    if (capture.status === 'COMPLETED') {
+      const payment = capture.purchase_units[0].payments.captures[0]
+      const net = payment.seller_receivable_breakdown
+      await DB('order')
+        .where('id', params.order_id)
+        .update({
+          payment_id: params.paypal_order_id,
+          transaction_id: payment.id,
+          fee_bank: net && net.paypal_fee.value,
+          net_total: net && net.net_amount.value,
+          net_currency: net && net.net_amount.currency_code
+        })
+      if (payment.status !== 'COMPLETED') {
+        await Notification.sendEmail({
+          to: 'victor@diggersfactory.com',
+          subject: `Paypal order not completed`,
+          html: `<p>Order: https://www.diggersfactory.com/sheraf/order/${params.order.id}</p>`
+        })
+        return Cart.validPayment({
+          order_id: params.order_id,
+          paused: true
+        })
+      } else {
+        return Cart.validPayment({
+          order_id: params.order_id
+        })
+      }
+    } else {
+      await DB('order').where('id', params.order_id).update({
+        status: 'failed',
+        paying: null
+      })
+      await DB('order_box').where('order_id', params.order_id).update({
+        step: 'failed'
+      })
+      return { success: false }
     }
   }
 
