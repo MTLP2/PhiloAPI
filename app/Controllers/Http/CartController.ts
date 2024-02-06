@@ -19,7 +19,12 @@ class CartController {
     return Cart.clearCart(user.id)
   }
 
-  async pay({ params, user, request }) {
+  calculate({ params, user }) {
+    params.user_id = user.id
+    return Cart.calculate(params)
+  }
+
+  async create({ params, user, request }) {
     const ua = parser(request.header('user-agent'))
     params.user_agent = {
       browser: ua.browser,
@@ -46,26 +51,17 @@ class CartController {
       return { error: 'no_account' }
     }
 
-    return Cart.pay(params)
+    params.cart_id = params.id
+    return Cart.create(params)
   }
 
   confirm({ params, user }) {
     params.user_id = user.id
-    return Cart.confirmStripePayment(params)
-  }
-
-  calculate({ params, user }) {
-    params.user_id = user.id
-    return Cart.calculate(params)
+    return Cart.confirm(params)
   }
 
   related({ params, user }) {
     return Cart.related(params)
-  }
-
-  execute({ params, user }) {
-    params.user_id = user.id
-    return Cart.execute(params)
   }
 
   async saveFeedback({ params, user }) {
