@@ -1763,7 +1763,7 @@ class Cart {
       metadata: metadata
     }
 
-    if (params.calculate.boxes && params.calculate.boxes.some((v) => v.periodicity === 'monthly')) {
+    if (params.calculate.boxes && params.calculate.boxes.length > 0) {
       intent.setup_future_usage = 'off_session'
     }
     const customer = await Payments.getCustomer(params.user_id)
