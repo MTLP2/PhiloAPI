@@ -1550,13 +1550,17 @@ class Box {
         updated_at: Utils.date()
       })
 
+      const cards = await stripe.paymentMethods.list({
+        customer: box.stripe_customer,
+        type: 'card'
+      })
       const intent = {
         amount: Math.round(box.total * 100),
         currency: box.currency,
         confirm: true,
         off_session: true,
         customer: box.stripe_customer,
-        // payment_method: box.payment_method,
+        payment_method: cards.data[0].id,
         description: `Box N°${box.id}-${orderBox.id}`
       }
       if (process.env.NODE_ENV !== 'production') {
