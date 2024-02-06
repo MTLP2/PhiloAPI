@@ -134,6 +134,7 @@ class Product {
         'stock.type',
         'is_preorder',
         'is_distrib',
+        'alert',
         'quantity',
         'reserved',
         DB.raw('quantity - reserved as available')

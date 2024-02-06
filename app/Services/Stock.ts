@@ -334,6 +334,7 @@ class Stock {
     order_id?: number
     is_distrib?: boolean
     is_preorder?: boolean
+    alert?: number
     user_id?: number
     comment?: string
   }) {
@@ -380,6 +381,7 @@ class Stock {
     stock.is_preorder = params.is_preorder
     stock.is_distrib = params.is_distrib
     stock.quantity = params.quantity
+    stock.alert = params.alert || null
     if (params.reserved && +params.reserved !== null) {
       stock.reserved = params.reserved
     }
@@ -659,6 +661,7 @@ class Stock {
             type: stock.type,
             quantity: stock.quantity === '' ? null : stock.quantity,
             reserved: stock.reserved,
+            alert: stock.alert,
             comment: 'sheraf',
             is_preorder: stock.is_preorder,
             is_distrib: stock.is_distrib,
@@ -674,6 +677,7 @@ class Stock {
         type: params.type,
         quantity: params.quantity === '' ? null : params.quantity,
         reserved: params.reserved,
+        alert: params.alert,
         comment: 'sheraf',
         is_preorder: params.is_preorder,
         is_distrib: params.is_distrib,
