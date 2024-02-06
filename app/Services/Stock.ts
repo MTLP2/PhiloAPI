@@ -424,7 +424,7 @@ class Stock {
     transporter: string
   }) {
     const pp = await DB('project_product')
-      .select('project_product.product_id', 'vod.is_shop', 'vod.type')
+      .select('project_product.product_id', 'vod.is_shop', 'vod.type', 'product.name')
       .join('product', 'product.id', 'project_product.product_id')
       .join('vod', 'vod.project_id', 'project_product.project_id')
       .where('project_product.project_id', params.project_id)
@@ -454,6 +454,24 @@ class Stock {
         .where('type', params.transporter)
         .first()
 
+      if (
+        stock.alert &&
+        stock.alert < stock.quantity &&
+        stock.alert >= stock.quantity - params.quantity
+      ) {
+        await Notification.sendEmail({
+          to: 'victor@diggersfactory.com,alexis@diggersfactory.com,bl@diggersfactory.com,cyril@diggersfactory.com',
+          subject: `Alert Stock : ${product.name}`,
+          html: `<ul>
+          <li><strong>Name:</strong> ${product.name}</li>
+          <li><strong>Type:</strong> ${stock.type}</li>
+          <li><strong>Preorder:</strong> ${params.preorder ? 'Yes' : 'No'}</li>
+          <li><strong>Alert:</strong> ${stock.alert}</li>
+          <li><strong>New stock:</strong> ${stock.quantity - params.quantity}</li>
+          <li>http://www.diggersfactory.com/sheraf/product/${product.product_id}</li>
+          </ul>`
+        })
+      }
       if (stock && (product.is_shop || stock.quantity !== null)) {
         stock.quantity = stock.quantity - params.quantity
         await stock.save()
