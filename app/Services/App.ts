@@ -66,7 +66,6 @@ class App {
         await Order.exportOrdersExportedWithoutTracking(moment().format('E') === '1' ? 3 : 2)
       }
       if (moment().format('E') === '1') {
-        await App.alertStock()
         await App.alertProjectsToShop()
       }
       if (moment().format('E') === '2') {
@@ -1377,117 +1376,6 @@ class App {
     })
 
     return projects
-  }
-
-  static alertStock = async () => {
-    let projects = await DB('project')
-      .select(
-        'project.name',
-        'project.id',
-        'project.artist_name',
-        'stock.type',
-        'stock.quantity',
-        'goal',
-        'count',
-        'is_shop',
-        'vod.project_id',
-        'alert_stock'
-      )
-      .join('vod', 'vod.project_id', 'project.id')
-      .leftJoin('project_product', 'project_product.project_id', 'project.id')
-      .leftJoin('stock', 'stock.product_id', 'project_product.product_id')
-      .where('alert_stock', '>', 0)
-      .all()
-
-    let html = `
-    <style>
-      td {
-        padding: 2px 5px;
-        border-top: 1px solid #F0F0F0;
-      }
-      th {
-        padding: 2px 8px;
-      }
-      .red td {
-        color: red;
-      }
-      .total {
-        font-weight: bold;
-      }
-    </style>
-    <table>
-      <thead>
-      <tr>
-        <th>Id</th>
-        <th>Artist</th>
-        <th>Name</th>
-        <th>Alert</th>
-        <th>Stock Daudin</th>
-        <th>Stock Whiplash</th>
-        <th>Stock Whiplash Uk</th>
-        <th>Stock Total</th>
-        <th>Diff</th>
-      </tr>
-    </thead>
-    <tbody>`
-
-    const pp = {}
-    for (const project of projects) {
-      if (!pp[project.id]) {
-        pp[project.id] = {
-          ...project
-        }
-      }
-      pp[project.id][`stock_${project.type}`] = project.quantity
-    }
-
-    projects = Object.values(pp)
-
-    for (const project of projects) {
-      project.stock_daudin = project.stock_daudin || 0
-      project.stock_whiplash = project.stock_whiplash || 0
-      project.stock_whiplash_uk = project.stock_whiplash_uk || 0
-      project.stock_diggers = project.stock_diggers || 0
-      if (project.is_shop) {
-        project.stock_daudin = project.stock_daudin < 0 ? 0 : project.stock_daudin
-        project.stock_whiplash = project.stock_whiplash < 0 ? 0 : project.stock_whiplash
-        project.stock_whiplash_uk = project.stock_whiplash_uk < 0 ? 0 : project.stock_whiplash_uk
-        project.copies_left =
-          project.stock_daudin +
-          project.stock_whiplash +
-          project.stock_whiplash_uk +
-          project.stock_diggers
-      } else {
-        project.copies_left = project.goal - project.count
-      }
-      project.diff = project.copies_left - project.alert_stock
-    }
-
-    projects = projects.sort((a, b) => (a.diff > b.diff ? 1 : -1))
-    for (const project of projects) {
-      html += `<tr class="${project.diff < 0 && 'red'}">`
-      html += `<td><a href="${Env.get('APP_URL')}/sheraf/project/${project.project_id}">${
-        project.project_id
-      }</a></td>`
-      html += `<td>${project.artist_name}</td>`
-      html += `<td>${project.name}</td>`
-      html += `<td>${project.alert_stock}</td>`
-      html += `<td>${project.stock_daudin}</td>`
-      html += `<td>${project.stock_whiplash}</td>`
-      html += `<td>${project.stock_whiplash_uk}</td>`
-      html += `<td>${project.copies_left}</td>`
-      html += `<td>${project.diff}</td>`
-      html += '</tr>'
-    }
-    html += '</tbody></table>'
-
-    await Notification.sendEmail({
-      to: 'alexis@diggersfactory.com,cyril@diggersfactory.com,ismail@diggersfactory.com,guillaume@diggersfactory.com,victor@diggersfactory.com,olivia@diggersfactory.com,jean-baptiste@diggersfactory.com',
-      subject: 'Etat des stocks',
-      html: juice(html)
-    })
-
-    return { success: true }
   }
 
   static renameIcons = () => {
