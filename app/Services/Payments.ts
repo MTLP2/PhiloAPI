@@ -244,17 +244,19 @@ class Payment {
       return paymentIntent
     }
 
-    const user = await DB('user')
-      .where('id', params.user_id)
-      .select('id', 'email', 'stripe_customer')
-      .first()
+    if (params.user_id) {
+      const user = await DB('user')
+        .where('id', params.user_id)
+        .select('id', 'email', 'stripe_customer')
+        .first()
 
-    if (!user.stripe_customer) {
-      const res = await stripe.customers.create({
-        email: user.email
-      })
-      user.stripe_customer = res.id
-      await user.save()
+      if (!user.stripe_customer) {
+        const res = await stripe.customers.create({
+          email: user.email
+        })
+        user.stripe_customer = res.id
+        await user.save()
+      }
     }
 
     const paymentIntent = await stripe.paymentIntents.create({

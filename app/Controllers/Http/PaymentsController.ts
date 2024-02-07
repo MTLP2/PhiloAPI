@@ -152,11 +152,11 @@ class PaymentsController {
     const payload = await validator.validate({
       schema: schema.create({
         payment_id: schema.string(),
-        user_id: schema.number()
+        user_id: schema.number.optional()
       }),
       data: {
         payment_id: params.id,
-        user_id: auth.user_id
+        user_id: auth?.user_id
       }
     })
 
