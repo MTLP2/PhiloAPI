@@ -37,6 +37,10 @@ class Labels {
   static async find(params: { id: number }) {
     const item = await DB('label').find(params.id)
 
+    if (!item) {
+      return { error: 'not_found' }
+    }
+
     item.projects = await Project.findAll({
       label_id: item.id
     })

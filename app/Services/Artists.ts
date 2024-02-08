@@ -40,6 +40,10 @@ class Artists {
   static async find(params: { id: number }) {
     const item = await DB('artist').find(params.id)
 
+    if (!item) {
+      return { error: 'not_found' }
+    }
+
     item.projects = await Project.findAll({
       artist_id: item.id
     })
