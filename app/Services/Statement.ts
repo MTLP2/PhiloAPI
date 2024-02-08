@@ -2273,7 +2273,7 @@ class StatementService {
   static async getSalesLicences() {
     const projects = await DB()
       .from('project')
-      .select('project.id', 'project.name', 'artist_name', 'unit_cost')
+      .select('project.id', 'project.name', 'vod.barcode', 'artist_name', 'unit_cost')
       .join('vod', 'vod.project_id', 'project.id')
       .where('is_licence', true)
       .all()
@@ -2368,6 +2368,7 @@ class StatementService {
       { header: 'id', key: 'id', width: 10 },
       { header: 'Artist', key: 'artist_name', width: 30 },
       { header: 'Project', key: 'name', width: 30 },
+      { header: 'Barcode', key: 'barcode', width: 15 },
       { header: 'Unit cost', key: 'unit_cost', width: 15 }
     ]
 
