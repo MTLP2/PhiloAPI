@@ -1430,7 +1430,7 @@ class App {
       { header: 'Id', key: 'id', width: 15 },
       { header: 'Artiste', key: 'artist_name', width: 30 },
       { header: 'Projet', key: 'name', width: 30 },
-      { header: 'Barcode', key: 'barcode', width: 15 },
+      { header: 'Barcode', key: 'barcode', width: 18 },
       { header: 'Alert', key: 'alert_stock', width: 12 },
       { header: 'Stock', key: 'stock', width: 12 },
       { header: 'Daudin', key: 'stock_daudin', width: 12 },
