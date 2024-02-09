@@ -428,6 +428,7 @@ class Project {
       'v.color_vinyl',
       'v.show_stock',
       'v.barcode',
+      'p.video',
       'item.stock as item_stock',
       'item.price as item_price',
       'v.shipping_discount',
