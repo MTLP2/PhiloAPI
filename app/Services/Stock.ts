@@ -455,6 +455,7 @@ class Stock {
         .first()
 
       if (
+        stock &&
         stock.alert &&
         stock.alert < stock.quantity &&
         stock.alert >= stock.quantity - params.quantity
