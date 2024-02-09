@@ -1386,6 +1386,7 @@ class App {
         'project.id',
         'project.artist_name',
         'stock.type',
+        'vod.barcode',
         'stock.quantity',
         'goal',
         'count',
@@ -1400,90 +1401,64 @@ class App {
       .where('alert_stock', '>', 0)
       .all()
 
-    let html = `
-    <style>
-      td {
-        padding: 2px 5px;
-        border-top: 1px solid #F0F0F0;
-      }
-      th {
-        padding: 2px 8px;
-      }
-      .red td {
-        color: red;
-      }
-      .total {
-        font-weight: bold;
-      }
-    </style>
-    <table>
-      <thead>
-      <tr>
-        <th>Id</th>
-        <th>Artist</th>
-        <th>Name</th>
-        <th>Alert</th>
-        <th>Daudin</th>
-        <th>Whiplash</th>
-        <th>WhiUk</th>
-        <th>Total</th>
-      </tr>
-    </thead>
-    <tbody>`
-
     const pp = {}
     for (const project of projects) {
       if (!pp[project.id]) {
         pp[project.id] = {
-          ...project
+          ...project,
+          stock: 0
         }
       }
       pp[project.id][`stock_${project.type}`] = project.quantity
+      pp[project.id].stock += project.quantity
     }
 
     projects = Object.values(pp)
 
-    for (const project of projects) {
-      project.stock_daudin = project.stock_daudin || 0
-      project.stock_whiplash = project.stock_whiplash || 0
-      project.stock_whiplash_uk = project.stock_whiplash_uk || 0
-      project.stock_diggers = project.stock_diggers || 0
-      if (project.is_shop) {
-        project.stock_daudin = project.stock_daudin < 0 ? 0 : project.stock_daudin
-        project.stock_whiplash = project.stock_whiplash < 0 ? 0 : project.stock_whiplash
-        project.stock_whiplash_uk = project.stock_whiplash_uk < 0 ? 0 : project.stock_whiplash_uk
-        project.copies_left =
-          project.stock_daudin +
-          project.stock_whiplash +
-          project.stock_whiplash_uk +
-          project.stock_diggers
-      } else {
-        project.copies_left = project.goal - project.count
-      }
-      project.diff = project.copies_left - project.alert_stock
+    const workbook = new Excel.Workbook()
+
+    const styles = await DB('style').all()
+
+    const ss = {}
+    for (const s of styles) {
+      ss[s.id] = s.name
     }
 
-    projects = projects.sort((a, b) => (a.diff > b.diff ? 1 : -1))
-    for (const project of projects) {
-      html += `<tr class="${project.diff < 0 && 'red'}">`
-      html += `<td><a href="${Env.get('APP_URL')}/sheraf/project/${project.project_id}">${
-        project.project_id
-      }</a></td>`
-      html += `<td>${project.artist_name}</td>`
-      html += `<td>${project.name}</td>`
-      html += `<td>${project.alert_stock}</td>`
-      html += `<td>${project.stock_daudin}</td>`
-      html += `<td>${project.stock_whiplash}</td>`
-      html += `<td>${project.stock_whiplash_uk}</td>`
-      html += `<td>${project.copies_left}</td>`
-      html += '</tr>'
-    }
-    html += '</tbody></table>'
+    const worksheet = workbook.addWorksheet('Stocks')
+
+    worksheet.columns = [
+      { header: 'Id', key: 'id', width: 15 },
+      { header: 'Artiste', key: 'artist_name', width: 30 },
+      { header: 'Projet', key: 'name', width: 30 },
+      { header: 'Barcode', key: 'barcode', width: 15 },
+      { header: 'Alert', key: 'alert_stock', width: 12 },
+      { header: 'Stock', key: 'stock', width: 12 },
+      { header: 'Daudin', key: 'stock_daudin', width: 12 },
+      { header: 'Whiplash', key: 'stock_whiplash', width: 12 },
+      { header: 'Whiplash Uk', key: 'stock_whiplash_uk', width: 12 },
+      { header: 'PIAS', key: 'stock_pias', width: 12 },
+      { header: 'ROM', key: 'stock_rom', width: 12 },
+      { header: 'Lita', key: 'stock_lita', width: 12 },
+      { header: 'Amped', key: 'stock_amped', width: 12 },
+      { header: 'MGM', key: 'stock_mgm', width: 12 },
+      { header: 'Altafonte', key: 'stock_altafonte', width: 12 },
+      { header: 'Fnac', key: 'stock_fnac', width: 12 }
+    ]
+
+    worksheet.addRows(projects)
+
+    const file = await workbook.xlsx.writeBuffer()
 
     await Notification.sendEmail({
       to: 'alexis@diggersfactory.com,cyril@diggersfactory.com,ismail@diggersfactory.com,guillaume@diggersfactory.com,victor@diggersfactory.com,olivia@diggersfactory.com,jean-baptiste@diggersfactory.com',
       subject: 'Etat des stocks',
-      html: juice(html)
+      html: 'Fichier en pièce jointe',
+      attachments: [
+        {
+          filename: 'stocks.xlsx',
+          content: file
+        }
+      ]
     })
 
     return { success: true }
