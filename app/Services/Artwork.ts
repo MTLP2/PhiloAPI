@@ -635,6 +635,22 @@ class Artwork {
     return buffer
   }
 
+  static async updateVideo(params: { project: any; video: Buffer }) {
+    const { project } = params
+    if (!project.picture) {
+      project.picture = Utils.uuid()
+    }
+    if (project.video) {
+      Storage.delete(`projects/${project.picture}/${project.video}.mp4`)
+    }
+    project.video = Utils.uuid()
+    Storage.upload(`projects/${project.picture}/${project.video}.mp4`, params.video)
+
+    await project.save()
+
+    return { sucess: true }
+  }
+
   static async cropMobile(params) {
     const dim = await sharp(params.banner).metadata()
 

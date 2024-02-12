@@ -873,6 +873,7 @@ class Project {
         'quantity_distribution',
         'v.currency',
         'p.picture',
+        'p.video',
         'p.banner',
         'cu.value as currencyRate',
         'v.partner_transport',

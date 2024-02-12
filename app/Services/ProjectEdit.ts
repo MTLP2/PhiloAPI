@@ -137,6 +137,13 @@ class ProjectEdit {
       params.splatter2 = null
     }
 
+    if (params.video_file) {
+      Artwork.updateVideo({
+        project: pp,
+        video: Buffer.from(params.video_file.replace(/^data:video\/(mp4);base64,/, ''), 'base64')
+      })
+    }
+
     if (
       params.cover_picture ||
       params.label_picture ||
