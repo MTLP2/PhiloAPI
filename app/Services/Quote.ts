@@ -266,7 +266,7 @@ class Quote {
         feeProd = data.fee_prod
       }
     } else if (data.type !== 'direct_pressing') {
-      feeProd = 20
+      feeProd = 25
     }
 
     data.project = data.id !== undefined
@@ -329,6 +329,9 @@ class Quote {
       } else {
         price = line[`q${qty}`] * quantity
       }
+      if (payload.type === 'shrink') {
+        console.log(payload.type, line, price)
+      }
       price = price * (1 + feeProd / 100)
       if (data.factory === 'vdp') {
         price = price * 0.85
@@ -342,11 +345,6 @@ class Quote {
 
     if (data.factory === 'sna') {
       quote = this.calculateSna(data, getCost)
-
-      prices = quote.prices
-      delete quote.prices
-    } else if (data.factory === 'sna_old') {
-      quote = this.calculateSnaOld(data, getCost)
 
       prices = quote.prices
       delete quote.prices
