@@ -4844,7 +4844,8 @@ class Admin {
       picture_project: { name: project.picture_project },
       label: { name: 'label' },
       label_bside: { name: 'label_bside' },
-      custom_disc: { name: 'disc' }
+      custom_disc: { name: 'disc' },
+      video_file: { name: project.video + '.mp4' }
     }
 
     const files = typeToFileName[type] ?? null
@@ -4862,14 +4863,15 @@ class Admin {
         case 'custom_disc':
           await DB('vod').where('project_id', projectId).update({ url_vinyl: null })
           break
-
         case 'label_bside':
           await DB('vod').where('project_id', projectId).update({ is_label_bside: 0 })
           break
         case 'picture_project':
           await DB('vod').where('project_id', projectId).update({ picture_project: null })
           break
-
+        case 'video_file':
+          await DB('project').where('id', projectId).update({ video: null })
+          break
         default:
           break
       }
