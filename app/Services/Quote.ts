@@ -111,7 +111,6 @@ class Quote {
       address.push(`${quote.zip_code}, ${quote.city}, ${quote.country_id}`)
     }
 
-    console.log(quote.client || `${quote.firstname} ${quote.lastname}`)
     const html = await View.render('quote', {
       ...quote,
       client: quote.client || quote.company || `${quote.firstname} ${quote.lastname}`,
@@ -328,9 +327,6 @@ class Quote {
         price = false
       } else {
         price = line[`q${qty}`] * quantity
-      }
-      if (payload.type === 'shrink') {
-        console.log(payload.type, line, price)
       }
       price = price * (1 + feeProd / 100)
       if (data.factory === 'vdp') {
