@@ -355,10 +355,12 @@ class Invoice {
   }
 
   static async remove(id) {
+    /**
     const invoice = await Invoice.find(id)
     await DB('invoice').where('id', id).delete()
 
     await Invoice.sort(invoice.year)
+    **/
     return true
   }
 
