@@ -360,6 +360,7 @@ class Dispatch {
     const qq = DB('order_shop')
       .select(
         'order_shop.id',
+        'order_shop.order_id',
         'order_shop.transporter',
         'order_shop.date_export',
         'order_shop.shipping_type',
