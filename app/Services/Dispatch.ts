@@ -359,7 +359,14 @@ class Dispatch {
   }) => {
     const qq = DB('order_shop')
       .select(
-        'order_shop.*',
+        'order_shop.id',
+        'order_shop.transporter',
+        'order_shop.date_export',
+        'order_shop.shipping_type',
+        'order_shop.shipping_weight',
+        'order_shop.shipping_cost',
+        'order_shop.shipping',
+        'order_shop.currency',
         DB.raw('shipping - shipping_cost as diff'),
         DB.raw(
           '(SELECT sum(quantity) FROM order_item WHERE order_shop_id = order_shop.id) as quantity'
