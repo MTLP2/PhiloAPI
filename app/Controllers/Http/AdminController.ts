@@ -1104,6 +1104,10 @@ class AdminController {
     return Dispatch.getCosts(params)
   }
 
+  extractShippingCosts({ params }) {
+    return Dispatch.extractCosts(params)
+  }
+
   calculateShipping({ params }) {
     return Dispatch.calculateShipping(params)
   }

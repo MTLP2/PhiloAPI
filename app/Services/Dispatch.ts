@@ -357,7 +357,7 @@ class Dispatch {
     filters?: string
     size?: number
   }) => {
-    const query = DB('order_shop')
+    const qq = DB('order_shop')
       .select(
         'order_shop.*',
         DB.raw('shipping - shipping_cost as diff'),
@@ -377,12 +377,44 @@ class Dispatch {
           query.where('date_export', '<=', params.end)
         }
       })
+      .as('dispatch')
+      .query()
 
+    const query = DB().from(qq)
     if (!params.sort) {
       query.orderBy('date_export', 'desc')
     }
 
     return Utils.getRows<any>({ ...params, query: query })
+  }
+
+  static extractCosts = async (params: {
+    sort?: any
+    start?: string
+    end?: string
+    filters?: string
+    size?: number
+  }) => {
+    params.size = 9999999
+    const data = await Dispatch.getCosts(params)
+
+    const workbook = new Excel.Workbook()
+    const worksheet = workbook.addWorksheet('Shippings')
+    worksheet.columns = [
+      { header: 'id', key: 'id', width: 10 },
+      { header: 'country_id', key: 'country_id', width: 10 },
+      { header: 'transporter', key: 'transporter', width: 20 },
+      { header: 'type', key: 'shipping_type', width: 10 },
+      { header: 'quantity', key: 'quantity', width: 10 },
+      { header: 'weight', key: 'shipping_weight', width: 10 },
+      { header: 'shipping', key: 'shipping', width: 10 },
+      { header: 'cost', key: 'shipping_cost', width: 10 },
+      { header: 'diff', key: 'diff', width: 10 },
+      { header: 'date', key: 'date_export', width: 20 }
+    ]
+
+    worksheet.addRows(data.data)
+    return workbook.xlsx.writeBuffer()
   }
 
   static setCosts = async (params: { transporter: string; force?: boolean }) => {
