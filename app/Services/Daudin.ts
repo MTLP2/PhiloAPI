@@ -1243,7 +1243,6 @@ class Daudin {
     }
 
     const oils = await DB('shipping_oil').where('date', date).all()
-
     worksheet.eachRow((row) => {
       if (!row.getCell('G').value) {
         return
@@ -1334,6 +1333,9 @@ class Daudin {
         order.shipping_mode = dispatch.mode
         order.shipping_quantity = dispatch.quantity
         order.shipping_weight = dispatch.weight
+        if (order.tax_rate > 1) {
+          order.tax_rate = order.tax_rate / 100
+        }
         order.shipping_cost = (dispatch.cost + dispatch.cost * order.tax_rate) / order.currency_rate
         marge += (order.shipping - order.shipping_cost) * order.currency_rate
         await order.save()
