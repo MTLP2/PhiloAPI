@@ -110,10 +110,10 @@ export default {
 
   emails: {
     commercial:
-      'benjamin@diggersfactory.com,manon@diggersfactory.com,iannis@diggersfactory.com,alexandre.k@diggersfactory.com,lena@diggersfactory.com',
+      'benjamin@diggersfactory.com,manon@diggersfactory.com,iannis@diggersfactory.com,etienne@diggersfactory.com',
     marketing: 'olivia@diggersfactory.com',
     distribution: 'cyril@diggersfactory.com,guillaume@diggersfactory.com,theo@diggersfactory.com',
-    send_vinyl: 'manon@diggersfactory.com,lea@diggersfactory.com,alexandre.k@diggersfactory.com',
+    send_vinyl: 'manon@diggersfactory.com,lea@diggersfactory.com,etienne@diggersfactory.com',
     illustration: 'nina@diggersfactory.com',
     compatibility: 'alexis@diggersfactory.com,lyes@diggersfactory.com'
   },
