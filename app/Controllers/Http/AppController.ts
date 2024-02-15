@@ -3,7 +3,7 @@ import Press from 'App/Services/Press'
 import Storage from 'App/Services/Storage'
 import Blog from 'App/Services/Blog'
 import Category from 'App/Services/Category'
-import Banner from 'App/Services/Banner'
+import Banners from 'App/Services/Banners'
 import Quote from 'App/Services/Quote'
 import Customer from 'App/Services/Customer'
 import Dig from 'App/Services/Dig'
@@ -36,7 +36,7 @@ class AppController {
   }
 
   async getBanners({ params }) {
-    const banners: any = await Banner.getHome({ lang: params.lang })
+    const banners: any = await Banners.getHome({ lang: params.lang })
     if (params.banner !== '1') {
       banners.unshift({
         link: '/vinyl-shop',
@@ -82,7 +82,7 @@ class AppController {
     if (!params.lang) {
       params.lang = 'en'
     }
-    const banners: any = Banner.getHome({ lang: params.lang })
+    const banners: any = Banners.getHome({ lang: params.lang })
     const categories = Category.getHome()
 
     const articles = params.all ? Blog.all({ lang: params.lang, limit: 3 }) : null
