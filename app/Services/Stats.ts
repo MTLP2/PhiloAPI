@@ -1813,6 +1813,17 @@ class Stats {
       .join('order_item as oi', 'oi.order_shop_id', 'os.id')
       .join('vod', 'vod.project_id', 'oi.project_id')
       .join('project', 'project.id', 'oi.project_id')
+      .join('order', 'order.id', 'os.order_id')
+      .whereNotIn('order.status', [
+        'creating',
+        'failed',
+        'card_declined',
+        'requires_action',
+        'requires_source_action',
+        'external',
+        'pending',
+        'card_declined'
+      ])
       .leftJoin('user', 'user.id', 'os.user_id')
       .where('is_external', false)
       .whereBetween('os.created_at', [params.start, params.end])
