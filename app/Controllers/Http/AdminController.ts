@@ -666,6 +666,10 @@ class AdminController {
     return Admin.getPropects(params)
   }
 
+  getPropectsExtract({ params }) {
+    return Admin.getPropectsExtract(params)
+  }
+
   newProspect({ params, user }) {
     params.user_id = user.id
     return Admin.newProspect(params)

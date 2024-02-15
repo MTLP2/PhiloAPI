@@ -517,6 +517,7 @@ Route.group(() => {
   Route.post('/listing/:id', 'AdminController.saveListing')
   Route.delete('/listing/:id', 'AdminController.deleteListing')
   Route.get('/propects', 'AdminController.getPropects')
+  Route.get('/propects/extract', 'AdminController.getPropectsExtract')
   Route.post('/propects', 'AdminController.newProspect')
   Route.put('/propects', 'AdminController.updateProspect')
   Route.delete('/propects/:id', 'AdminController.deleteProspect')

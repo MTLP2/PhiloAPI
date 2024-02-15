@@ -3557,6 +3557,31 @@ class Admin {
     return Utils.getRows(params)
   }
 
+  static getPropectsExtract = async (params) => {
+    params.size = 999999
+    const items = await Admin.getPropects(params)
+
+    const workbook = new Excel.Workbook()
+
+    const worksheet = workbook.addWorksheet('Prospects')
+
+    worksheet.columns = [
+      { header: 'Artist', key: 'artist', width: 20 },
+      { header: 'Label', key: 'label', width: 20 },
+      { header: 'Emails', key: 'emails', width: 20 },
+      { header: 'Contact', key: 'contact', width: 20 },
+      { header: 'Genre', key: 'genre', width: 20 },
+      { header: 'Country', key: 'country', width: 20 },
+      { header: 'User', key: 'user_name', width: 20 },
+      { header: 'Date', key: 'date', width: 20 },
+      { header: 'Comment', key: 'comment', width: 20 }
+    ]
+
+    worksheet.addRows(items.data)
+
+    return workbook.xlsx.writeBuffer()
+  }
+
   static newProspect = async (params) => {
     await DB('prospect').insert({
       date: Utils.date(),
