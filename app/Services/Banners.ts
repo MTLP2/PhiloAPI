@@ -87,7 +87,7 @@ class Banners {
       const fileName = `home/${file}`
       Storage.uploadImage(fileName, Buffer.from(params.picture, 'base64'), {
         width: 2000,
-        quality: 85
+        quality: 95
       })
       item.picture = file
     }
