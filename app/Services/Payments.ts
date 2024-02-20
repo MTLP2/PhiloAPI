@@ -260,7 +260,7 @@ class Payment {
     }
 
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: payment.total * 100,
+      amount: Utils.round(payment.total * 100),
       currency: payment.currency
     })
 
