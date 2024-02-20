@@ -881,6 +881,68 @@ class Dispatch {
 
     return prices
   }
+
+  static getPrices = async (params?: { transporter?: string }) => {
+    const workbook = new Excel.Workbook()
+    await workbook.xlsx.readFile('./resources/shippings/daudin_2023.xlsx')
+
+    const prices: any = []
+    const standard = workbook.getWorksheet("2023 IMX'Pack Sign Europe")
+
+    standard.eachRow((row, rowNumber) => {
+      if (rowNumber < 14 || rowNumber > 257) {
+        return
+      }
+      const price: any = {}
+      price.country_id = row.getCell('C').toString()
+      price.mode = 'standard'
+      price.prices = {
+        '1kg': row.getCell('K').toString(),
+        '2kg': row.getCell('L').toString(),
+        '3kg': row.getCell('M').toString(),
+        '4kg': row.getCell('N').toString(),
+        '5kg': row.getCell('O').toString(),
+        '6kg': row.getCell('P').toString(),
+        '7kg': row.getCell('Q').toString(),
+        '8kg': row.getCell('R').toString(),
+        '9kg': row.getCell('S').toString(),
+        '10kg': row.getCell('T').toString(),
+        '11kg': row.getCell('U').toString(),
+        '12kg': row.getCell('V').toString(),
+        '13kg': row.getCell('W').toString(),
+        '14kg': row.getCell('X').toString(),
+        '15kg': row.getCell('Y').toString(),
+        '16kg': row.getCell('Z').toString(),
+        '17kg': row.getCell('AA').toString(),
+        '18kg': row.getCell('AB').toString(),
+        '19kg': row.getCell('AC').toString(),
+        '20kg': row.getCell('AD').toString(),
+        '21kg': row.getCell('AE').toString(),
+        '22kg': row.getCell('AF').toString(),
+        '23kg': row.getCell('AG').toString(),
+        '24kg': row.getCell('AH').toString(),
+        '25kg': row.getCell('AI').toString(),
+        '26kg': row.getCell('AJ').toString(),
+        '27kg': row.getCell('AK').toString(),
+        '28kg': row.getCell('AL').toString(),
+        '29kg': row.getCell('AM').toString(),
+        '30kg': row.getCell('AN').toString()
+      }
+      if (price.country_id.length === 2) {
+        prices.push(price)
+      }
+    })
+
+    return prices
+  }
+
+  static compareCosts = async (params?: { transporter: string }) => {
+    const prices = await Dispatch.getPrices({
+      transporter: params?.transporter
+    })
+
+    return prices
+  }
 }
 
 export default Dispatch
