@@ -732,7 +732,6 @@ class Stock {
       .whereNotNull('product.barcode')
       .hasMany('stock')
       .orderBy('vod.unit_cost')
-      .where('product_id', 64184)
       .all()
 
     const products = {}
