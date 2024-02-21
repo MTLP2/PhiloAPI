@@ -979,29 +979,15 @@ class Cart {
           transporter[weight] = 4.8
         }
         costs.pickup = Utils.round(transporter[weight] + cost)
-      } else if (transporter.transporter === 'LTS') {
-        if (!costs) {
-          costs = {}
-        }
-        costs.letter = Utils.round(transporter[weight] + cost)
       } else if (
         transporter[weight] &&
         (!costs || !costs.standard || costs.standard > transporter[weight])
       ) {
-        if (params.weight >= 2000) {
-          if (transporter.transporter !== 'COL') {
-            continue
-          }
-        }
-        if (transporter.transporter === 'IMX') {
-          transporter[weight] = transporter[weight] * 1.1
-        }
         if (params.transporter === 'bigblue') {
           transporter[weight] = transporter[weight] / 1.2
         }
-        if (transporter[weight] < 6.4) {
-          transporter[weight] = 6.4
-        }
+
+        transporter[weight] = Utils.round(transporter[weight] + 0.5)
 
         if (!costs || !costs.standard || costs.standard > Utils.round(transporter[weight] + cost)) {
           let standard = Utils.round(transporter[weight] + cost)

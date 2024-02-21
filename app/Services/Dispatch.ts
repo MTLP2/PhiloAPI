@@ -882,66 +882,227 @@ class Dispatch {
     return prices
   }
 
-  static getPrices = async (params?: { transporter?: string }) => {
+  static setDaudinPrices2023 = async () => {
     const workbook = new Excel.Workbook()
     await workbook.xlsx.readFile('./resources/shippings/daudin_2023.xlsx')
 
-    const prices: any = []
-    const standard = workbook.getWorksheet("2023 IMX'Pack Sign Europe")
+    const prices: any = {}
+    let price: any = {}
 
-    standard.eachRow((row, rowNumber) => {
-      if (rowNumber < 14 || rowNumber > 257) {
+    const imx = workbook.getWorksheet("2023 IMX'Pack Sign Europe")
+    imx.eachRow((row, rowNumber) => {
+      if (rowNumber < 9 || rowNumber > 38) {
         return
       }
-      const price: any = {}
-      price.country_id = row.getCell('C').toString()
-      price.mode = 'standard'
-      price.prices = {
-        '1kg': row.getCell('K').toString(),
-        '2kg': row.getCell('L').toString(),
-        '3kg': row.getCell('M').toString(),
-        '4kg': row.getCell('N').toString(),
-        '5kg': row.getCell('O').toString(),
-        '6kg': row.getCell('P').toString(),
-        '7kg': row.getCell('Q').toString(),
-        '8kg': row.getCell('R').toString(),
-        '9kg': row.getCell('S').toString(),
-        '10kg': row.getCell('T').toString(),
-        '11kg': row.getCell('U').toString(),
-        '12kg': row.getCell('V').toString(),
-        '13kg': row.getCell('W').toString(),
-        '14kg': row.getCell('X').toString(),
-        '15kg': row.getCell('Y').toString(),
-        '16kg': row.getCell('Z').toString(),
-        '17kg': row.getCell('AA').toString(),
-        '18kg': row.getCell('AB').toString(),
-        '19kg': row.getCell('AC').toString(),
-        '20kg': row.getCell('AD').toString(),
-        '21kg': row.getCell('AE').toString(),
-        '22kg': row.getCell('AF').toString(),
-        '23kg': row.getCell('AG').toString(),
-        '24kg': row.getCell('AH').toString(),
-        '25kg': row.getCell('AI').toString(),
-        '26kg': row.getCell('AJ').toString(),
-        '27kg': row.getCell('AK').toString(),
-        '28kg': row.getCell('AL').toString(),
-        '29kg': row.getCell('AM').toString(),
-        '30kg': row.getCell('AN').toString()
+      price = {}
+      price.country_id = row.getCell('C').text
+      price.mode = 'IMX'
+      price.oil = 7
+      price.prices = {}
+      for (let i = 0; i <= 30; i++) {
+        const weight = i + 0
+        const column = Utils.columnToLetter(6 + i)
+        if (weight === 0) {
+          price.prices[`500g`] = row.getCell(column).text
+        } else {
+          price.prices[`${weight}kg`] = row.getCell(column).text
+        }
       }
-      if (price.country_id.length === 2) {
-        prices.push(price)
+      prices[`${price.country_id}_IMX Pack Sign`] = { ...price }
+    })
+
+    const imx2 = workbook.getWorksheet("2023 IMX'Pack Sign Monde")
+    imx2.eachRow((row, rowNumber) => {
+      if (rowNumber < 9 || rowNumber > 217) {
+        return
       }
+      price = {}
+      price.oil = 7
+      price.country_id = row.getCell('C').text
+      price.mode = 'IMX'
+      price.prices = {}
+      for (let i = 0; i <= 30; i++) {
+        const weight = i + 0
+        const column = Utils.columnToLetter(5 + i)
+        if (weight === 0) {
+          price.prices[`500g`] = row.getCell(column).text
+        } else {
+          price.prices[`${weight}kg`] = row.getCell(column).text
+        }
+      }
+      prices[`${price.country_id}_IMX Pack Sign`] = { ...price }
     })
 
     return prices
   }
 
-  static compareCosts = async (params?: { transporter: string }) => {
-    const prices = await Dispatch.getPrices({
-      transporter: params?.transporter
-    })
+  static setDaudinPrices2024 = async () => {
+    const workbook = new Excel.Workbook()
+    await workbook.xlsx.readFile('./resources/shippings/daudin_2024.xlsx')
+
+    const prices: any = {}
+    let price: any = {}
+
+    // await DB('shipping_weight').where('partner', 'daudin').delete()
+
+    const dpd = workbook.getWorksheet('DPD Predict BTOC 2024')
+    price.country_id = 'FR'
+    price.mode = 'DPD'
+    price.prices = {}
+    price.security = 0.85
+    price.oil = 16.06
+    price.prices[`500g`] = 5.74
+    for (let i = 0; i < 30; i++) {
+      const weight = i + 1
+      price.prices[`${weight}kg`] = dpd.getCell(`B${i + 5}`).text
+    }
+    prices[`FR_DPD predict`] = { ...price }
+
+    const mdr = workbook.getWorksheet('MONDIAL RELAY 2024')
+    price = {}
+    price.country_id = 'FR'
+    price.mode = 'MDR'
+    price.prices = {}
+    price.security = 0.15
+    price.oil = 10.5
+    price.prices[`500g`] = mdr.getCell(`B7`).text
+    for (let i = 0; i < 30; i++) {
+      const weight = i + 1
+      price.prices[`${weight}kg`] = mdr.getCell(`B${i + 9}`).text
+    }
+    prices[`FR_Mondial Relay Point Relais`] = { ...price }
 
     return prices
+  }
+
+  static compareCosts = async (params?: { transporter: string }) => {
+    await DB('shipping_weight').where('partner', 'daudin').delete()
+
+    const prices = {
+      ...(await Dispatch.setDaudinPrices2023()),
+      ...(await Dispatch.setDaudinPrices2024())
+    }
+
+    for (const price of Object.values(prices) as any) {
+      if (!price.prices['1kg']) {
+        continue
+      }
+      console.log(price.security)
+      await DB('shipping_weight').insert({
+        'partner': 'daudin',
+        'country_id': price.country_id,
+        'transporter': price.mode,
+        'currency': 'EUR',
+        'packing': (price.security || 0) + 1.16 || 1.4,
+        'picking': price.packing || 0.38,
+        'oil': price.oil || 0,
+        '500g': price.prices['500g'],
+        '750g': price.prices['1kg'],
+        '1kg': price.prices['1kg'],
+        '2kg': price.prices['2kg'],
+        '3kg': price.prices['3kg'],
+        '4kg': price.prices['4kg'],
+        '5kg': price.prices['5kg'],
+        '6kg': price.prices['6kg'],
+        '7kg': price.prices['7kg'],
+        '8kg': price.prices['8kg'],
+        '9kg': price.prices['9kg'],
+        '10kg': price.prices['10kg'],
+        '11kg': price.prices['11kg'],
+        '12kg': price.prices['12kg'],
+        '13kg': price.prices['13kg'],
+        '14kg': price.prices['14kg'],
+        '15kg': price.prices['15kg'],
+        '16kg': price.prices['16kg'],
+        '17kg': price.prices['17kg'],
+        '18kg': price.prices['18kg'],
+        '19kg': price.prices['19kg'],
+        '20kg': price.prices['20kg'],
+        '21kg': price.prices['21kg'],
+        '22kg': price.prices['22kg'],
+        '23kg': price.prices['23kg'],
+        '24kg': price.prices['24kg'],
+        '25kg': price.prices['25kg'],
+        '26kg': price.prices['26kg'],
+        '27kg': price.prices['27kg'],
+        '28kg': price.prices['28kg'],
+        '29kg': price.prices['29kg'],
+        '30kg': price.prices['30kg']
+      })
+    }
+
+    return prices
+
+    const countries = await DB('country').where('lang', 'fr').all()
+    const cc = {}
+    for (const country of countries) {
+      cc[Utils.slugify(country.name)] = country.id
+    }
+
+    const getWeightString = (weight: number) => {
+      if (weight < 0.5) {
+        return `500g`
+      }
+      return `${Math.ceil(weight)}kg`
+    }
+
+    const workbook = new Excel.Workbook()
+    await workbook.xlsx.readFile('../shippings/daudin/DGF DETAIL 2023-05.xlsx')
+    const costs: any[] = []
+
+    const expe = workbook.getWorksheet('Expéditions')
+
+    let diff = 0
+    expe.eachRow((row, rowNumber) => {
+      const cost: any = {
+        id: row.getCell('A').text,
+        order_id: row.getCell('B').text,
+        date: row.getCell('E').text,
+        country_id: cc[Utils.slugify(row.getCell('O').text)],
+        mode: row.getCell('G').text,
+        weight: row.getCell('U').text,
+        weight_str: getWeightString(+row.getCell('U').text),
+        cost: row.getCell('V').text
+      }
+      if (row.getCell('O').text === 'REPUBLIQUE DE COREE') {
+        cost.country_id = 'KR'
+      }
+      if (!cost.country_id) {
+        console.log('=>', row.getCell('O').text)
+      }
+      cost.price = Utils.round(
+        prices[`${cost.country_id}_${cost.mode}`]?.prices[cost.weight_str],
+        2
+      )
+      cost.diff = Utils.round(cost.cost - cost.price)
+
+      if (!isNaN(cost.diff)) {
+        diff += cost.diff
+      }
+
+      if (cost.weight && cost.diff > 0 && !isNaN(+cost.weight)) {
+        costs.push(cost)
+      }
+    })
+
+    const work = new Excel.Workbook()
+    const worksheet = work.addWorksheet('Diff')
+
+    worksheet.columns = [
+      { key: 'id', header: 'Id', width: 20 },
+      { key: 'order_id', header: 'Order', width: 10 },
+      { key: 'country_id', header: 'Country', width: 15 },
+      { key: 'date', header: 'Date', width: 20 },
+      { key: 'weight', header: 'Weight', width: 15 },
+      { key: 'weight_str', header: 'Weight', width: 15 },
+      { key: 'cost', header: 'Facturé', width: 15 },
+      { key: 'price', header: 'Grille', width: 15 },
+      { key: 'diff', header: 'Diff', width: 15 }
+    ]
+    console.log('diff => ', diff)
+
+    worksheet.addRows(costs)
+    return work.xlsx.writeBuffer()
   }
 }
 
