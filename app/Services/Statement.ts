@@ -345,6 +345,7 @@ class StatementService {
             cat_number: catNumber,
             quantity: 0,
             returned: 0,
+            digital: 0,
             total: 0
           }
         }
@@ -354,7 +355,7 @@ class StatementService {
       }
     })
 
-    const sheets = ['DIG', 'DIGI', 'DIG 2', 'DIG ']
+    const sheets = ['DIG', 'DIGI', 'DIGI1', 'DIGI2', 'DIG 2', 'DIG ']
 
     for (const sheet of sheets) {
       const digital = workbook.getWorksheet(sheet)
