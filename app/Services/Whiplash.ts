@@ -608,7 +608,7 @@ class Whiplash {
         for (const warehouse of warehouses) {
           if (warehouse.id === 3) {
             uk = warehouse.sellable_quantity
-          } else if (warehouse.id === 4) {
+          } else if (warehouse.id === 4 || warehouse.id === 66) {
             us = warehouse.sellable_quantity
           }
         }
@@ -652,7 +652,7 @@ class Whiplash {
           for (const warehouse of warehouses) {
             if (warehouse.id === 3) {
               uk = warehouse.sellable_quantity
-            } else if (warehouse.id === 4) {
+            } else if (warehouse.id === 4 || warehouse.id === 66) {
               us = warehouse.sellable_quantity
             }
           }
@@ -757,7 +757,7 @@ class Whiplash {
           continue
         }
 
-        if (+dispatch.warehouse_id === 3 || +dispatch.warehouse_id === 4) {
+        if (+dispatch.warehouse_id === 3 || +dispatch.warehouse_id === 4 || +dispatch.warehouse_id === 66) {
           const orderShop = await DB('order_shop').where('id', shop.id).first()
           orderShop.shipping_trans = -dispatch['Carrier Fees'] * currencies[shop.currency]
           orderShop.shipping_cost = -dispatch.total * currencies[shop.currency]
