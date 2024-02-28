@@ -2086,7 +2086,46 @@ class Box {
       .join('stock', 'stock.product_id', 'project_product.product_id')
       .where('stock.type', 'daudin')
       .orderBy('box_month.date', 'desc')
-      .limit(100)
+
+    let filters: any = []
+    if (params.filters) {
+      try {
+        filters = JSON.parse(params.filters)
+      } catch {}
+    }
+    
+    if (params.filters) {
+      params.genres = []
+
+      for (const filter of filters) {
+        filter.value = filter.value.toString().replace(/[^a-zA-Z0-9 ]/g, '')
+        console.log('filter', filter)
+         if (filter.type === 'genre') {
+          params.genres.push(filter.value)
+      }
+      params.genres = params.genres.join(',')
+
+    if (params.genres || params.styles) {
+      projects.where(function () {
+        if (params.genres) {
+          params.genres.split(',').map((genre) => {
+            if (genre && !isNaN(genre)) {
+              this.orWhereExists(
+                DB.raw(`
+                SELECT style.id
+                FROM project_style, style
+                WHERE p.id = project_id
+                  AND style.id = project_style.style_id
+                  AND genre_id = ${parseInt(genre)}
+              `)
+              )
+            }
+          })
+        }
+      })
+    }
+
+    projects.limit(100)
 
     if (!params.all) {
       projects.where('date', '<=', moment().format('YYYY-MM-DD'))
