@@ -956,9 +956,7 @@ class Cart {
       }
 
       let cost: any
-      if (params.transporter === 'diggers') {
-        cost = 0
-      } else if (params.transporter === 'bigblue') {
+      if (params.transporter === 'bigblue') {
         cost = transporter.packing + transporter.picking * (params.insert - 1)
       } else {
         cost = transporter.packing + transporter.picking * params.insert
@@ -1197,7 +1195,7 @@ class Cart {
     if (transporters.all || transporters.diggers) {
       const diggers = await Cart.calculateShippingByTransporter({
         ...params,
-        mode: 'COL',
+        mode: 'DPD',
         partner: 'daudin',
         transporter: 'diggers'
       })
