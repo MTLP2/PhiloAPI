@@ -39,6 +39,7 @@ class Production {
         'vod.type',
         'project.picture',
         'project.country_id',
+        'project.cat_number',
         'user.name as user',
         'vod.com_id',
         'com.name as com_name'
@@ -2054,6 +2055,7 @@ class Production {
         { name: 'Quantity', index: 'quantity' },
         { name: 'Qty Disc', index: 'quantity_disc' },
         { name: 'Barcode', index: 'barcode' },
+        { name: 'Cat number', index: 'cat_number' },
         { name: 'Preprod', index: 'date_preprod' },
         { name: 'Prod', index: 'date_prod' },
         { name: 'Postprod', index: 'date_postprod' },
