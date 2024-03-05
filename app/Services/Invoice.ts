@@ -539,6 +539,7 @@ class Invoice {
         'invoice.order_id',
         'invoice.order_shop_id',
         'invoice.category',
+        'invoice.comment',
         'customer.name as customer_name',
         'firstname',
         'lastname',
@@ -613,7 +614,8 @@ class Invoice {
       { header: 'Transport HT EUR', key: 'shipping_eur' },
       { header: 'Total HT EUR', key: 'total_ht_eur' },
       { header: 'Tax EUR', key: 'tax_eur' },
-      { header: 'Total EUR', key: 'total_eur' }
+      { header: 'Total EUR', key: 'total_eur' },
+      { header: 'Comment', key: 'comment', width: 40 }
     ]
 
     const worksheet1 = workbook.addWorksheet('Factures')
