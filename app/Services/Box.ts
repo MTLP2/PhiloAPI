@@ -2093,31 +2093,34 @@ class Box {
         filters = JSON.parse(params.filters)
       } catch {}
     }
-    
+
     if (params.filters) {
       params.genres = []
 
       for (const filter of filters) {
         filter.value = filter.value.toString().replace(/[^a-zA-Z0-9 ]/g, '')
-        console.log('filter', filter)
-         if (filter.type === 'genre') {
-          params.genres.push(filter.value)
-      }
-      params.genres = params.genres.join(',')
 
-    if (params.genres || params.styles) {
+        if (filter.type === 'genre') {
+          params.genres.push(filter.value)
+        }
+      }
+
+      params.genres = params.genres.join(',')
+    }
+
+    if (params.genres) {
       projects.where(function () {
         if (params.genres) {
           params.genres.split(',').map((genre) => {
             if (genre && !isNaN(genre)) {
               this.orWhereExists(
                 DB.raw(`
-                SELECT style.id
-                FROM project_style, style
-                WHERE p.id = project_id
-                  AND style.id = project_style.style_id
-                  AND genre_id = ${parseInt(genre)}
-              `)
+              SELECT style.id
+              FROM project_style, style
+              WHERE p.id = project_id
+                AND style.id = project_style.style_id
+                AND genre_id = ${parseInt(genre)}
+            `)
               )
             }
           })
@@ -2126,13 +2129,13 @@ class Box {
     }
 
     projects.limit(100)
+    // .limit(100)
 
     if (!params.all) {
       projects.where('date', '<=', moment().format('YYYY-MM-DD'))
     }
 
     projects = await projects.all()
-
     const months: any = {}
     for (const project of projects) {
       if (!months[project.date]) {
@@ -2165,6 +2168,7 @@ class Box {
       .orderBy(DB.raw('RAND()'))
       .all()
 
+    // console.log('months', months)
     return months
   }
 
