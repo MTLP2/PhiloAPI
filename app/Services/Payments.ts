@@ -237,6 +237,7 @@ class Payment {
       if (paymentIntent.status === 'succeeded') {
         return Payment.confirmPay({
           id: payment.id,
+          user_id: params.user_id,
           payment_type: 'stripe',
           payment_id: paymentIntent.id
         })
@@ -244,6 +245,7 @@ class Payment {
       return paymentIntent
     }
 
+    /**
     if (params.user_id) {
       const user = await DB('user')
         .where('id', params.user_id)
@@ -258,6 +260,7 @@ class Payment {
         await user.save()
       }
     }
+    **/
 
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Utils.round(payment.total * 100),
@@ -271,11 +274,17 @@ class Payment {
     return paymentIntent
   }
 
-  static confirmPay = async (params: { id: number; payment_id: number; payment_type?: string }) => {
+  static confirmPay = async (params: {
+    id: number
+    payment_id: number
+    user_id?: number
+    payment_type?: string
+  }) => {
     const payment = await DB('payment').where('id', params.id).first()
     payment.payment_id = params.payment_id
     payment.error = ''
     payment.status = 'confirmed'
+    payment.user_id = params.user_id
     payment.date_payment = Utils.date()
     payment.updated_at = Utils.date()
     await payment.save()
