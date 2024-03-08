@@ -1967,7 +1967,6 @@ class Admin {
     params.project_id = params.id
     const data = await Admin.getOrders(params)
 
-    console.log('LOL')
     return Utils.arrayToXlsx([
       {
         worksheetName: 'Orders',
