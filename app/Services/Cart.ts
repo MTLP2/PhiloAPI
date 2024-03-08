@@ -661,7 +661,8 @@ class Cart {
 
     // Calculate shipping displayed to customer by doing shipping - total of shipping  of shop
     // Except for pro user (then discount to 0)
-    const userIsPro = await Utils.isProUser(p.user_id)
+    // const userIsPro = await Utils.isProUser(p.user_id)
+    const userIsPro = false
 
     const shippingDiscount: number = userIsPro
       ? 0
@@ -1446,7 +1447,7 @@ class Cart {
     if (res.price_distrib) {
       res.total_distrib = Utils.round(p.quantity * res.price_distrib + p.tips)
     }
-    if (res.shipping_discount && !userIsPro) {
+    if (res.shipping_discount) {
       res.total_ship_discount = Utils.round(
         p.quantity * (res.shipping_discount ? res.price_ship_discount : res.price) +
           p.tips -
