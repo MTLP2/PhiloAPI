@@ -327,14 +327,6 @@ class Payment {
     }
 
     if (payment.invoice_id) {
-      console.log(
-        DB('vod')
-          .select('user.email', 'vod.resp_prod_id')
-          .join('invoice', 'invoice.project_id', 'vod.project_id')
-          .join('user', 'user.id', 'vod.resp_prod_id')
-          .where('invoice.id', payment.invoice_id)
-          .toString()
-      )
       const resp = await DB('vod')
         .select('user.email', 'vod.resp_prod_id')
         .join('invoice', 'invoice.project_id', 'vod.project_id')
