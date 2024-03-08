@@ -122,11 +122,6 @@ Route.group(() => {
   Route.get('/songs', 'SongsController.all')
   Route.post('/songs/stats', 'SongsController.addPlay')
 
-  Route.get('/payments/:id', 'PaymentsController.get')
-  Route.post('/payments/:id/pay', 'PaymentsController.pay')
-  Route.post('/payments/:id/intent', 'PaymentsController.intent')
-  // Route.put('/payments/:id/address', 'AppController.editPaymentAddress')
-
   Route.post('/comments', 'CommentsController.save')
 
   Route.get('/blog', 'BlogController.all')
@@ -222,6 +217,11 @@ Route.group(() => {
   Route.post('/projects/call-me', 'ProjectsController.callMe')
 
   Route.post('/contests', 'ContestController.join')
+
+  Route.get('/payments/:id', 'PaymentsController.get')
+  Route.post('/payments/:id/pay', 'PaymentsController.pay')
+  Route.post('/payments/:id/intent', 'PaymentsController.intent')
+  // Route.put('/payments/:id/address', 'AppController.editPaymentAddress')
 
   Route.get('/productions', 'ProductionController.all')
   Route.post('/productions', 'ProductionController.create')
