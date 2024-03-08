@@ -9,6 +9,7 @@ import Admin from 'App/Services/Admin'
 import ApiError from 'App/ApiError'
 import I18n from '@ioc:Adonis/Addons/I18n'
 import View from '@ioc:Adonis/Core/View'
+import Log from 'App/Services/Log'
 import Payments from './Payments'
 
 class Invoice {
@@ -96,6 +97,7 @@ class Invoice {
   static async save(params: {
     id?: number
     user_id?: number
+    auth_id?: number
     customer?: any
     customer_id?: number
     type?: string
@@ -158,6 +160,12 @@ class Invoice {
       invoice.created_at = Utils.date()
     }
 
+    const log = new Log({
+      type: 'invoice',
+      user_id: params.auth_id as number,
+      item: invoice
+    })
+
     if (params.customer) {
       const customer = await Customer.save(params.customer)
       invoice.customer_id = customer.id
@@ -210,6 +218,7 @@ class Invoice {
 
     await invoice.save()
 
+    log.save(invoice)
     if (invoice.date_payment) {
       const payments = await DB('payment')
         .where('invoice_id', invoice.id)

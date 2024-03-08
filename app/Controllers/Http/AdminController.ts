@@ -820,7 +820,8 @@ class AdminController {
     return Invoice.remove(params.id)
   }
 
-  saveInvoice({ params }) {
+  saveInvoice({ params, user }) {
+    params.auth_id = user.id
     return Invoice.save(params)
   }
 
