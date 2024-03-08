@@ -289,7 +289,9 @@ class Payment {
     payment.updated_at = Utils.date()
     await payment.save()
 
-    await Payment.createInvoice(payment)
+    if (!payment.invoice_id) {
+      await Payment.createInvoice(payment)
+    }
 
     if (payment.order_shop_id) {
       const order = await DB('order_shop')
@@ -324,6 +326,31 @@ class Payment {
       })
     }
 
+    if (payment.invoice_id) {
+      console.log(
+        DB('vod')
+          .select('user.email', 'vod.resp_prod_id')
+          .join('invoice', 'invoice.project_id', 'vod.project_id')
+          .join('user', 'user.id', 'vod.resp_prod_id')
+          .where('invoice.id', payment.invoice_id)
+          .toString()
+      )
+      const resp = await DB('vod')
+        .select('user.email', 'vod.resp_prod_id')
+        .join('invoice', 'invoice.project_id', 'vod.project_id')
+        .join('user', 'user.id', 'vod.resp_prod_id')
+        .where('invoice.id', payment.invoice_id)
+        .first()
+
+      if (resp) {
+        await Notification.sendEmail({
+          to: resp.email,
+          subject: `Paiement de ${payment.total} ${payment.currency}`,
+          text: `https://www.diggersfactory.com/sheraf/invoice/${payment.invoice_id}`
+        })
+      }
+    }
+
     await Notification.add({
       type: 'payment_confirmed',
       payment_id: payment.id,
@@ -335,14 +362,9 @@ class Payment {
 
   static delete = async (params: { id: number; keep_invoice?: boolean }) => {
     const payment = await DB('payment').where('id', params.id).first()
-
     payment.is_delete = true
     payment.updated_at = Utils.date()
     await payment.save()
-
-    if (!params.keep_invoice) {
-      await DB('invoice').where('id', payment.invoice_id).delete()
-    }
 
     return { success: true }
   }
