@@ -1809,7 +1809,7 @@ class Cart {
           quantity: item.quantity,
           unit_amount: {
             currency_code: calculate.currency,
-            value: +item.price
+            value: +(item.price_ship_discount || item.price)
           }
         })
 
@@ -1857,6 +1857,7 @@ class Cart {
       }
     }
 
+    console.log(data.items, data)
     const order: any = await PayPal.create({
       intent: 'CAPTURE',
       purchase_units: [data]
