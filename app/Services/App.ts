@@ -613,6 +613,18 @@ class App {
     }
     if (n.payment_id) {
       data.payment = await DB('payment').where('id', n.payment_id).first()
+
+      if (data.payment.invoice_id) {
+        const pdf: any = await Invoice.download({
+          params: { id: data.payment.invoice_id, lang: data.lang }
+        })
+        data.attachments = [
+          {
+            filename: `Invoice.pdf`,
+            content: pdf.data
+          }
+        ]
+      }
     }
     if (n.order_box_id) {
       data.boxGift = await DB('box_code')
@@ -854,12 +866,16 @@ class App {
     }
 
     if (!test) {
+      await Notification.email(data)
+      send = 2
+      /**
       if (process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'staging') {
         send = 3
       } else {
         await Notification.email(data)
         send = 2
       }
+      **/
       n.email = send
       await n.save()
       return true

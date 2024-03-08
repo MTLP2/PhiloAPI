@@ -324,6 +324,12 @@ class Payment {
       })
     }
 
+    await Notification.add({
+      type: 'payment_confirmed',
+      payment_id: payment.id,
+      user_id: params.user_id as number
+    })
+
     return { success: true }
   }
 

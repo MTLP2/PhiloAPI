@@ -12,7 +12,31 @@ const { APIClient, SendEmailRequest, RegionEU } = require('customerio-node')
 const api = new APIClient(Env.get('CIO_APP_KEY'), { region: RegionEU })
 
 class Notification {
-  static add = async (params) => {
+  static add = async (params: {
+    type: string
+    user_id: number | string
+    project_id?: number | string
+    project_name?: string
+    person_id?: number | string
+    person_name?: string
+    vod_id?: number | string
+    order_id?: number | string
+    order_shop_id?: number | string
+    order_manual_id?: number | string
+    box_id?: number | string
+    bid_id?: number | string
+    prod_id?: number | string
+    file_id?: number | string
+    order_box_id?: number | string
+    box_dispatch_id?: number | string
+    payment_id?: number | string
+    review_id?: number | string
+    invoice_id?: number | string
+    date?: string
+    alert?: 0 | 1
+    email?: 0 | 1
+    data?: any
+  }) => {
     const exist = await Notification.exist(params)
     if (!exist) {
       return Notification.new(params)
