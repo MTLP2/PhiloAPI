@@ -259,7 +259,7 @@ class Project {
         currency: project.currency
       })
 
-      project.prices_ship_discount = project.shippinfing_discount
+      project.prices_ship_discount = project.shipping_discount
         ? Object.keys(project.prices).reduce((acc, key) => {
             acc[key] = project.prices[key] + project.shipping_discount
             return acc
