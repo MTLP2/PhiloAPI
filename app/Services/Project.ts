@@ -622,7 +622,7 @@ class Project {
       projects.join('like', 'p.id', 'like.project_id').where('like.user_id', params.liked)
     }
     if (params.search) {
-      params.search = params.search.replace('-', ' ').replace(/'/g, '')
+      params.search = params.search.replace('-', ' ')
       projects.where(function () {
         this.where(
           DB.raw(`REPLACE(CONCAT(artist_name, ' ', p.name), '-', ' ')`),
