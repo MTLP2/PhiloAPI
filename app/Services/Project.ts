@@ -2350,6 +2350,28 @@ class Project {
     return res
   }
 
+  static exportOrders = async (params) => {
+    const orders = await Project.getOrdersForTable(params)
+
+    return Utils.arrayToXlsx([
+      {
+        worksheetName: 'Orders',
+        columns: [
+          { header: 'Project', key: 'project_name' },
+          { header: 'User', key: 'user' },
+          { header: 'Country', key: 'country_id' },
+          { header: 'Date', key: 'created_at' },
+          { header: 'Qty', key: 'quantity', width: 10 },
+          { header: 'Total', key: 'total', width: 10 },
+          { header: 'Tax', key: 'tax', width: 10 },
+          { header: 'Fee', key: 'fee', width: 10 },
+          { header: 'Net', key: 'net', width: 10 }
+        ],
+        data: orders.data as any[]
+      }
+    ])
+  }
+
   static duplicate = async (id: number) => {
     let project = await DB('project').where('id', id).first()
 

@@ -257,6 +257,17 @@ class ProjectsController {
     return Project.getOrdersForTable(params)
   }
 
+  async exportOrders({ params, user }) {
+    params.user = user
+    if (params.id !== 'all') {
+      await Utils.checkProjectOwner({ project_id: params.id, user: user })
+    }
+    if (params.user_id && +params.user_id !== user.id && !(await Utils.isTeam(user.id))) {
+      throw new ApiError(403)
+    }
+    return Project.exportOrders(params)
+  }
+
   async downloadStatement({ params, user }) {
     params.user = user
     if (params.id !== 'all') {
