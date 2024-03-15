@@ -253,8 +253,7 @@ class Quote {
     }
     const factory: any = Object.values(params.costs[f])
     const curUsd = await Utils.getCurrencyComp('USD', 'EUR')
-    console.log(curUsd)
-    console.log(params.costs.precision)
+
     const q: any = {}
     for (const f of factory) {
       q[f.id] = f
@@ -748,7 +747,6 @@ class Quote {
         option: 'halfandhalf',
         active: params.type_vinyl === 'halfandhalf'
       })
-    quote.type_vinyl += quote.prices.type_vinyl[params.type_vinyl]
 
     quote.prices.type_vinyl.picture_disc = getCost({
       l: {
@@ -760,6 +758,7 @@ class Quote {
       option: 'picture_disc',
       active: params.type_vinyl === 'picture_disc'
     })
+    quote.type_vinyl += quote.prices.type_vinyl[params.type_vinyl]
 
     quote.prices.label_color.white = getCost({
       l: 125,
