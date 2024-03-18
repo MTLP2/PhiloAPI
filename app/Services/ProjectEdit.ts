@@ -57,7 +57,7 @@ class ProjectEdit {
     project.weight = project.vinyl_weight ? project.vinyl_weight.toString() : '140'
     project.sticker = project.sticker || '0'
     project.insert = project.insert || 'none'
-    project.tracks = await Song.byProject({ project_id: project.id })
+    project.tracks = await Song.byProject({ project_id: project.id, disabled: true })
 
     return project
   }
