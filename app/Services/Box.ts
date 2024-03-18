@@ -2129,7 +2129,6 @@ class Box {
     }
 
     projects.limit(100)
-    // .limit(100)
 
     if (!params.all) {
       projects.where('date', '<=', moment().format('YYYY-MM-DD'))
@@ -2168,7 +2167,6 @@ class Box {
       .orderBy(DB.raw('RAND()'))
       .all()
 
-    // console.log('months', months)
     return months
   }
 
