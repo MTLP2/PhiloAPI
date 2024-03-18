@@ -47,7 +47,12 @@ class PennyLane {
     console.log('invoice => ', invoices.length)
 
     for (const invoice of invoices) {
-      await PennyLane.exportInvoice(invoice.id)
+      try {
+        await PennyLane.exportInvoice(invoice.id)
+      } catch (e) {
+        console.log('error =>', invoice.id)
+        console.log(e)
+      }
     }
 
     return invoices
@@ -127,7 +132,12 @@ class PennyLane {
       }
     })
 
-    if (!imp.error || imp.error === 'Une facture avec le numéro fourni a déjà été créée') {
+    // console.log(invoice)
+    if (
+      !imp.error ||
+      imp.error === 'Une facture avec le numéro fourni a déjà été créée' ||
+      imp.error.indexOf('Le numéro de facture est déjà utilisé par une autre facture') !== -1
+    ) {
       console.log(invoice.id, 'OK')
       await DB('invoice').where('id', invoice.id).update({
         is_sync: true

@@ -122,11 +122,6 @@ Route.group(() => {
   Route.get('/songs', 'SongsController.all')
   Route.post('/songs/stats', 'SongsController.addPlay')
 
-  Route.get('/payments/:id', 'PaymentsController.get')
-  Route.post('/payments/:id/pay', 'PaymentsController.pay')
-  Route.post('/payments/:id/intent', 'PaymentsController.intent')
-  // Route.put('/payments/:id/address', 'AppController.editPaymentAddress')
-
   Route.post('/comments', 'CommentsController.save')
 
   Route.get('/blog', 'BlogController.all')
@@ -150,6 +145,7 @@ Route.group(() => {
   Route.get('/projects/:id/edit', 'ProjectsController.findEdit')
   Route.get('/projects/:id/stats', 'ProjectsController.getStats')
   Route.get('/projects/:id/orders', 'ProjectsController.getOrders')
+  Route.get('/projects/:id/orders/export', 'ProjectsController.exportOrders')
   Route.get('/projects/:id/statement', 'ProjectsController.downloadStatement')
   Route.post('/projects', 'ProjectsController.saveProject')
   Route.post('/projects/:id/artwork', 'ProjectsController.updateArtwork')
@@ -222,6 +218,11 @@ Route.group(() => {
   Route.post('/projects/call-me', 'ProjectsController.callMe')
 
   Route.post('/contests', 'ContestController.join')
+
+  Route.get('/payments/:id', 'PaymentsController.get')
+  Route.post('/payments/:id/pay', 'PaymentsController.pay')
+  Route.post('/payments/:id/intent', 'PaymentsController.intent')
+  // Route.put('/payments/:id/address', 'AppController.editPaymentAddress')
 
   Route.get('/productions', 'ProductionController.all')
   Route.post('/productions', 'ProductionController.create')
@@ -517,6 +518,7 @@ Route.group(() => {
   Route.post('/listing/:id', 'AdminController.saveListing')
   Route.delete('/listing/:id', 'AdminController.deleteListing')
   Route.get('/propects', 'AdminController.getPropects')
+  Route.get('/propects/extract', 'AdminController.getPropectsExtract')
   Route.post('/propects', 'AdminController.newProspect')
   Route.put('/propects', 'AdminController.updateProspect')
   Route.delete('/propects/:id', 'AdminController.deleteProspect')
@@ -590,6 +592,7 @@ Route.group(() => {
   Route.delete('/contests/:id', 'ContestController.remove')
   Route.post('/contests/:id/extract', 'ContestController.extract')
   Route.get('/shipping-costs', 'AdminController.getShippingCosts')
+  Route.get('/shipping-costs/extract', 'AdminController.extractShippingCosts')
   Route.post('/calculate-shipping', 'AdminController.calculateShipping')
   Route.get('/stocks', 'AdminController.getStocks')
   Route.get('/stocks/price', 'AdminController.exportStocksPrices')

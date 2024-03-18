@@ -1,7 +1,7 @@
 import Env from '@ioc:Adonis/Core/Env'
 import DB2 from './DB2'
 
-const knex = require('knex')({
+export const knex = require('knex')({
   client: 'mysql',
   connection: {
     host: Env.get('DB_HOST', 'localhost'),
@@ -186,7 +186,9 @@ const DB = (tablee?, idd?) => {
     },
 
     from(arg) {
-      p.table = arg.split(' as ')[0]
+      if (typeof arg === 'string') {
+        p.table = arg.split(' as ')[0]
+      }
       p.query.from(arg)
       return db
     },

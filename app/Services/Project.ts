@@ -259,7 +259,7 @@ class Project {
         currency: project.currency
       })
 
-      project.prices_ship_discount = project.shippinfing_discount
+      project.prices_ship_discount = project.shipping_discount
         ? Object.keys(project.prices).reduce((acc, key) => {
             acc[key] = project.prices[key] + project.shipping_discount
             return acc
@@ -622,7 +622,7 @@ class Project {
       projects.join('like', 'p.id', 'like.project_id').where('like.user_id', params.liked)
     }
     if (params.search) {
-      params.search = params.search.replace('-', ' ').replace(/'/g, '')
+      params.search = params.search.replace('-', ' ')
       projects.where(function () {
         this.where(
           DB.raw(`REPLACE(CONCAT(artist_name, ' ', p.name), '-', ' ')`),
@@ -2348,6 +2348,28 @@ class Project {
     }
 
     return res
+  }
+
+  static exportOrders = async (params) => {
+    const orders = await Project.getOrdersForTable(params)
+
+    return Utils.arrayToXlsx([
+      {
+        worksheetName: 'Orders',
+        columns: [
+          { header: 'Project', key: 'project_name' },
+          { header: 'User', key: 'user' },
+          { header: 'Country', key: 'country_id' },
+          { header: 'Date', key: 'created_at' },
+          { header: 'Qty', key: 'quantity', width: 10 },
+          { header: 'Total', key: 'total', width: 10 },
+          { header: 'Tax', key: 'tax', width: 10 },
+          { header: 'Fee', key: 'fee', width: 10 },
+          { header: 'Net', key: 'net', width: 10 }
+        ],
+        data: orders.data as any[]
+      }
+    ])
   }
 
   static duplicate = async (id: number) => {

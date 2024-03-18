@@ -237,6 +237,7 @@ class Payment {
       if (paymentIntent.status === 'succeeded') {
         return Payment.confirmPay({
           id: payment.id,
+          user_id: params.user_id,
           payment_type: 'stripe',
           payment_id: paymentIntent.id
         })
@@ -244,6 +245,7 @@ class Payment {
       return paymentIntent
     }
 
+    /**
     if (params.user_id) {
       const user = await DB('user')
         .where('id', params.user_id)
@@ -258,9 +260,10 @@ class Payment {
         await user.save()
       }
     }
+    **/
 
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: payment.total * 100,
+      amount: Utils.round(payment.total * 100),
       currency: payment.currency
     })
 
@@ -271,16 +274,24 @@ class Payment {
     return paymentIntent
   }
 
-  static confirmPay = async (params: { id: number; payment_id: number; payment_type?: string }) => {
+  static confirmPay = async (params: {
+    id: number
+    payment_id: number
+    user_id?: number
+    payment_type?: string
+  }) => {
     const payment = await DB('payment').where('id', params.id).first()
     payment.payment_id = params.payment_id
     payment.error = ''
     payment.status = 'confirmed'
+    payment.user_id = params.user_id
     payment.date_payment = Utils.date()
     payment.updated_at = Utils.date()
     await payment.save()
 
-    await Payment.createInvoice(payment)
+    if (!payment.invoice_id) {
+      await Payment.createInvoice(payment)
+    }
 
     if (payment.order_shop_id) {
       const order = await DB('order_shop')
@@ -315,19 +326,37 @@ class Payment {
       })
     }
 
+    if (payment.invoice_id) {
+      const resp = await DB('vod')
+        .select('user.email', 'vod.resp_prod_id')
+        .join('invoice', 'invoice.project_id', 'vod.project_id')
+        .join('user', 'user.id', 'vod.resp_prod_id')
+        .where('invoice.id', payment.invoice_id)
+        .first()
+
+      if (resp) {
+        await Notification.sendEmail({
+          to: resp.email,
+          subject: `Paiement de ${payment.total} ${payment.currency}`,
+          text: `https://www.diggersfactory.com/sheraf/invoice/${payment.invoice_id}`
+        })
+      }
+    }
+
+    await Notification.add({
+      type: 'payment_confirmed',
+      payment_id: payment.id,
+      user_id: params.user_id as number
+    })
+
     return { success: true }
   }
 
   static delete = async (params: { id: number; keep_invoice?: boolean }) => {
     const payment = await DB('payment').where('id', params.id).first()
-
     payment.is_delete = true
     payment.updated_at = Utils.date()
     await payment.save()
-
-    if (!params.keep_invoice) {
-      await DB('invoice').where('id', payment.invoice_id).delete()
-    }
 
     return { success: true }
   }

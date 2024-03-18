@@ -661,7 +661,8 @@ class Cart {
 
     // Calculate shipping displayed to customer by doing shipping - total of shipping  of shop
     // Except for pro user (then discount to 0)
-    const userIsPro = await Utils.isProUser(p.user_id)
+    // const userIsPro = await Utils.isProUser(p.user_id)
+    const userIsPro = false
 
     const shippingDiscount: number = userIsPro
       ? 0
@@ -956,9 +957,7 @@ class Cart {
       }
 
       let cost: any
-      if (params.transporter === 'diggers') {
-        cost = 0
-      } else if (params.transporter === 'bigblue') {
+      if (params.transporter === 'bigblue') {
         cost = transporter.packing + transporter.picking * (params.insert - 1)
       } else {
         cost = transporter.packing + transporter.picking * params.insert
@@ -979,29 +978,15 @@ class Cart {
           transporter[weight] = 4.8
         }
         costs.pickup = Utils.round(transporter[weight] + cost)
-      } else if (transporter.transporter === 'LTS') {
-        if (!costs) {
-          costs = {}
-        }
-        costs.letter = Utils.round(transporter[weight] + cost)
       } else if (
         transporter[weight] &&
         (!costs || !costs.standard || costs.standard > transporter[weight])
       ) {
-        if (params.weight >= 2000) {
-          if (transporter.transporter !== 'COL') {
-            continue
-          }
-        }
-        if (transporter.transporter === 'IMX') {
-          transporter[weight] = transporter[weight] * 1.1
-        }
         if (params.transporter === 'bigblue') {
           transporter[weight] = transporter[weight] / 1.2
         }
-        if (transporter[weight] < 6.4) {
-          transporter[weight] = 6.4
-        }
+
+        transporter[weight] = Utils.round(transporter[weight] + 0.5)
 
         if (!costs || !costs.standard || costs.standard > Utils.round(transporter[weight] + cost)) {
           let standard = Utils.round(transporter[weight] + cost)
@@ -1211,7 +1196,7 @@ class Cart {
     if (transporters.all || transporters.diggers) {
       const diggers = await Cart.calculateShippingByTransporter({
         ...params,
-        mode: 'COL',
+        mode: 'DPD',
         partner: 'daudin',
         transporter: 'diggers'
       })
@@ -1462,7 +1447,7 @@ class Cart {
     if (res.price_distrib) {
       res.total_distrib = Utils.round(p.quantity * res.price_distrib + p.tips)
     }
-    if (res.shipping_discount && !userIsPro) {
+    if (res.shipping_discount) {
       res.total_ship_discount = Utils.round(
         p.quantity * (res.shipping_discount ? res.price_ship_discount : res.price) +
           p.tips -
@@ -1824,7 +1809,7 @@ class Cart {
           quantity: item.quantity,
           unit_amount: {
             currency_code: calculate.currency,
-            value: +item.price
+            value: +(item.price_ship_discount || item.price)
           }
         })
 
@@ -1872,6 +1857,7 @@ class Cart {
       }
     }
 
+    console.log(data.items, data)
     const order: any = await PayPal.create({
       intent: 'CAPTURE',
       purchase_units: [data]

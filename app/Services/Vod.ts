@@ -16,8 +16,8 @@ class Vod {
 
       vod.fee = 25
       vod.fee_date = JSON.stringify([{ start: null, end: null, value: 25 }])
-      vod.fee_distrib = 25
-      vod.fee_distrib_date = JSON.stringify([{ start: null, end: null, value: 25 }])
+      vod.fee_distrib = 26
+      vod.fee_distrib_date = JSON.stringify([{ start: null, end: null, value: 26 }])
       vod.stock_price = JSON.stringify([{ start: null, end: null, value: 0.1 }])
 
       vod.type = params.type

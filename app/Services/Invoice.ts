@@ -9,6 +9,7 @@ import Admin from 'App/Services/Admin'
 import ApiError from 'App/ApiError'
 import I18n from '@ioc:Adonis/Addons/I18n'
 import View from '@ioc:Adonis/Core/View'
+import Log from 'App/Services/Log'
 import Payments from './Payments'
 
 class Invoice {
@@ -96,6 +97,7 @@ class Invoice {
   static async save(params: {
     id?: number
     user_id?: number
+    auth_id?: number
     customer?: any
     customer_id?: number
     type?: string
@@ -158,6 +160,12 @@ class Invoice {
       invoice.created_at = Utils.date()
     }
 
+    const log = new Log({
+      type: 'invoice',
+      user_id: params.auth_id as number,
+      item: invoice
+    })
+
     if (params.customer) {
       const customer = await Customer.save(params.customer)
       invoice.customer_id = customer.id
@@ -210,6 +218,7 @@ class Invoice {
 
     await invoice.save()
 
+    log.save(invoice)
     if (invoice.date_payment) {
       const payments = await DB('payment')
         .where('invoice_id', invoice.id)
@@ -355,10 +364,12 @@ class Invoice {
   }
 
   static async remove(id) {
+    /**
     const invoice = await Invoice.find(id)
     await DB('invoice').where('id', id).delete()
 
     await Invoice.sort(invoice.year)
+    **/
     return true
   }
 
@@ -537,6 +548,7 @@ class Invoice {
         'invoice.order_id',
         'invoice.order_shop_id',
         'invoice.category',
+        'invoice.comment',
         'customer.name as customer_name',
         'firstname',
         'lastname',
@@ -611,7 +623,8 @@ class Invoice {
       { header: 'Transport HT EUR', key: 'shipping_eur' },
       { header: 'Total HT EUR', key: 'total_ht_eur' },
       { header: 'Tax EUR', key: 'tax_eur' },
-      { header: 'Total EUR', key: 'total_eur' }
+      { header: 'Total EUR', key: 'total_eur' },
+      { header: 'Comment', key: 'comment', width: 40 }
     ]
 
     const worksheet1 = workbook.addWorksheet('Factures')

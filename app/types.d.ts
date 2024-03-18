@@ -286,3 +286,25 @@ type Label = {
   created_at: string
   updated_at: string
 }
+
+type Banner = {
+  id: number
+  title: string
+  sub_title: string
+  description: string
+  button: string
+  button_sub: string
+  position: string
+  lang: string
+  sort: number
+  color: string
+  show_cover: boolean
+  is_visible: boolean
+  link: string
+  picture: string
+  picture_mobile: string
+  mobile: string
+  cropped: string
+  created_at: string
+  updated_at: string
+}

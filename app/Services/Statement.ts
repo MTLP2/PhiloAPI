@@ -345,6 +345,7 @@ class StatementService {
             cat_number: catNumber,
             quantity: 0,
             returned: 0,
+            digital: 0,
             total: 0
           }
         }
@@ -354,7 +355,7 @@ class StatementService {
       }
     })
 
-    const sheets = ['DIG', 'DIGI', 'DIG 2', 'DIG ']
+    const sheets = ['DIG', 'DIGI', 'DIGI1', 'DIGI2', 'DIG 2', 'DIG ']
 
     for (const sheet of sheets) {
       const digital = workbook.getWorksheet(sheet)
@@ -3045,6 +3046,9 @@ class StatementService {
         'statement.date',
         'statement.project_id',
         'vod.barcode',
+        'project.nb_vinyl',
+        'project.format',
+        'project.cat_number',
         'project.name',
         'project.artist_name',
         'dist.name as dist',
@@ -3080,6 +3084,9 @@ class StatementService {
           id: ref.project_id,
           barcode: ref.barcode,
           project: `${ref.artist_name} - ${ref.name}`,
+          cat_number: ref.cat_number,
+          nb_vinyl: ref.nb_vinyl,
+          format: ref.format,
           quantity: 0
         }
       }
@@ -3111,6 +3118,9 @@ class StatementService {
       const columns = [
         { header: 'Project', key: 'project', width: 50 },
         { header: 'Barcode', key: 'barcode', width: 15 },
+        { header: 'Cat number', key: 'cat_number', width: 15 },
+        { header: 'Nb vinyl', key: 'nb_vinyl', width: 10 },
+        { header: 'Format', key: 'format', width: 10 },
         { header: 'Quantity', key: 'quantity' }
       ]
 

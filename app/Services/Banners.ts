@@ -3,31 +3,61 @@ import Utils from 'App/Utils'
 import Storage from 'App/Services/Storage'
 import sharp from 'sharp'
 
-class Banner {
-  static async all(params) {
-    params.query = DB('banner').orderBy('sort', 'asc')
-    return Utils.getRows(params)
+class Banners {
+  static async all(params: {
+    filters?: string | object
+    sort?: string
+    order?: string
+    size?: number
+  }) {
+    const query = DB('banner')
+
+    if (!params.sort) {
+      params.sort = 'id'
+      params.order = 'desc'
+    }
+
+    return Utils.getRows({
+      ...params,
+      query: query
+    })
   }
 
-  static async find(params) {
+  static async find(params: { id: number }) {
     const item = await DB('banner').find(params.id)
     return item
   }
 
-  static async getHome(params) {
-    let items = DB('banner')
+  static async getHome(params: { lang: string }) {
+    const items = await DB('banner')
       .where('is_visible', true)
       .where('lang', params.lang)
       .orderBy('sort', 'asc')
       .orderBy(DB.raw('RAND()'))
-
-    items = await items.all()
+      .all()
 
     return items
   }
 
-  static async save(params) {
-    let item = DB('banner')
+  static async save(params: {
+    id?: number
+    title: string
+    sub_title: string
+    description: string
+    picture: string | null
+    picture_mobile: string | null
+    cropped: string
+    button: string
+    button_sub: string
+    color: string
+    sort: number
+    position: string
+    show_cover: boolean
+    lang: string
+    is_visible: boolean
+    link: string
+  }) {
+    let item: Banner & Model = DB('banner') as any
 
     if (params.id) {
       item = await DB('banner').find(params.id)
@@ -41,6 +71,8 @@ class Banner {
     item.button = params.button
     item.button_sub = params.button_sub
     item.position = params.position
+    item.color = params.color
+    item.show_cover = params.show_cover
     item.lang = params.lang
     item.is_visible = params.is_visible
     item.cropped = params.cropped
@@ -55,7 +87,7 @@ class Banner {
       const fileName = `home/${file}`
       Storage.uploadImage(fileName, Buffer.from(params.picture, 'base64'), {
         width: 2000,
-        quality: 85
+        quality: 95
       })
       item.picture = file
     }
@@ -84,11 +116,12 @@ class Banner {
 
         const { area } = JSON.parse(params.cropped)
 
-        const cropInfo = {}
-        cropInfo.top = Math.round((area.y / 100) * meta.height)
-        cropInfo.left = Math.round((area.x / 100) * meta.width)
-        cropInfo.width = Math.round((area.width / 100) * meta.width)
-        cropInfo.height = Math.round((area.height / 100) * meta.height)
+        const cropInfo = {
+          top: Math.round((area.y / 100) * meta.height),
+          left: Math.round((area.x / 100) * meta.width),
+          width: Math.round((area.width / 100) * meta.width),
+          height: Math.round((area.height / 100) * meta.height)
+        }
 
         const imgBuffer = await image.extract(cropInfo).jpeg().toBuffer()
 
@@ -104,7 +137,7 @@ class Banner {
     return item
   }
 
-  static async delete(params) {
+  static async delete(params: { id: number }) {
     const item = await DB('banner').find(params.id)
     if (!item) {
       return { success: false }
@@ -128,4 +161,4 @@ class Banner {
   }
 }
 
-export default Banner
+export default Banners

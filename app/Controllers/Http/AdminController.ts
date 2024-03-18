@@ -20,7 +20,7 @@ import Statement from 'App/Services/Statement'
 import Feedback from 'App/Services/Feedback'
 import Storage from 'App/Services/Storage'
 import Category from 'App/Services/Category'
-import Banner from 'App/Services/Banner'
+import Banners from 'App/Services/Banners'
 import Daudin from 'App/Services/Daudin'
 import Elogik from 'App/Services/Elogik'
 import BigBlue from 'App/Services/BigBlue'
@@ -602,19 +602,19 @@ class AdminController {
   }
 
   getBanners({ params }) {
-    return Banner.all(params)
+    return Banners.all(params)
   }
 
   getBanner({ params }) {
-    return Banner.find(params)
+    return Banners.find(params)
   }
 
   saveBanner({ params }) {
-    return Banner.save(params)
+    return Banners.save(params)
   }
 
   deleteBanner({ params }) {
-    return Banner.delete(params)
+    return Banners.delete(params)
   }
 
   getSurveys({ params }) {
@@ -664,6 +664,10 @@ class AdminController {
 
   getPropects({ params }) {
     return Admin.getPropects(params)
+  }
+
+  getPropectsExtract({ params }) {
+    return Admin.getPropectsExtract(params)
   }
 
   newProspect({ params, user }) {
@@ -816,7 +820,8 @@ class AdminController {
     return Invoice.remove(params.id)
   }
 
-  saveInvoice({ params }) {
+  saveInvoice({ params, user }) {
+    params.auth_id = user.id
     return Invoice.save(params)
   }
 
@@ -1102,6 +1107,10 @@ class AdminController {
 
   getShippingCosts({ params }) {
     return Dispatch.getCosts(params)
+  }
+
+  extractShippingCosts({ params }) {
+    return Dispatch.extractCosts(params)
   }
 
   calculateShipping({ params }) {
