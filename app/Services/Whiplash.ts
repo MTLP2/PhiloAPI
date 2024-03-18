@@ -153,6 +153,12 @@ class Whiplash {
   }
 
   static syncProject = async (params: { project_id: number; type: string, products: number[]; quantity: number }) => {{
+    const nbProducts = await DB('product')
+      .join('project_product', 'project_product.product_id', 'product.id')
+      .where('project_product.project_id', params.project_id)
+      .whereNull('parent_id')
+      .all()
+
     const orders = await DB('order_shop as os')
       .select(
         'customer.*',
@@ -230,6 +236,9 @@ class Whiplash {
         break
       }
       if (!order.items) {
+        continue
+      }
+      if (order.items.length !== nbProducts.length) {
         continue
       }
       let ok = order.items.every((item) => {

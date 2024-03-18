@@ -86,6 +86,12 @@ class BigBlue {
       return false
     }
 
+    const nbProducts = await DB('product')
+      .join('project_product', 'project_product.product_id', 'product.id')
+      .where('project_product.project_id', params.id)
+      .whereNull('parent_id')
+      .all()
+
     const orders = await DB('order_shop as os')
       .select(
         'os.id',
@@ -106,12 +112,48 @@ class BigBlue {
       .orderBy('os.created_at')
       .all()
 
+    const items = await DB()
+      .select('product.id', 'order_shop_id', 'oi.quantity', 'product.barcode')
+      .from('order_item as oi')
+      .join('project_product', 'project_product.project_id', 'oi.project_id')
+      .join('product', 'project_product.product_id', 'product.id')
+      .where((query) => {
+        query.whereRaw('product.size like oi.size')
+        query.orWhereRaw(`oi.products LIKE CONCAT('%[',product.id,']%')`)
+        query.orWhere((query) => {
+          query.whereNull('product.size')
+          query.whereNotExists((query) => {
+            query.from('product as child').whereRaw('product.id = child.parent_id')
+          })
+        })
+      })
+      .whereIn(
+        'order_shop_id',
+        orders.map((o) => o.id)
+      )
+      .all()
+
+    for (const item of items) {
+      const idx = orders.findIndex((o: any) => o.id === item.order_shop_id)
+      orders[idx].items = orders[idx].items ? [...orders[idx].items, item] : [item]
+      if (!item.barcode) {
+        throw new Error('no_barcode')
+      }
+    }
+
     const dispatchs: any[] = []
     let qty = 0
     for (const order of orders) {
       if (qty >= params.quantity) {
         break
       }
+      if (!order.items) {
+        continue
+      }
+      if (order.items.length !== nbProducts.length) {
+        continue
+      }
+
       if (order.shipping_type === 'pickup') {
         const pickup = JSON.parse(order.address_pickup)
         const available = await MondialRelay.checkPickupAvailable(pickup.number)
