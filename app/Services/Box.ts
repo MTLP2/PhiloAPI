@@ -2113,15 +2113,13 @@ class Box {
         if (params.genres) {
           params.genres.split(',').map((genre) => {
             if (genre && !isNaN(genre)) {
-              this.orWhereExists(
-                DB.raw(`
-              SELECT style.id
-              FROM project_style, style
-              WHERE p.id = project_id
-                AND style.id = project_style.style_id
-                AND genre_id = ${parseInt(genre)}
-            `)
-              )
+              this.orWhereExists(function () {
+                this.select('style.id')
+                  .from('project_style')
+                  .join('style', 'style.id', 'project_style.style_id')
+                  .whereRaw('p.id = project_style.project_id')
+                  .where('style.genre_id', parseInt(genre))
+              })
             }
           })
         }
