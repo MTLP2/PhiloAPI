@@ -702,7 +702,8 @@ class Elogik {
         to: [
           'ismail@diggersfactory.com',
           'alexis@diggersfactory.com',
-          'thomas@diggersfactory.com'
+          'thomas@diggersfactory.com',
+          'victor.b@diggersfactory.com'
         ].join(','),
         subject: `Daudin - new stocks`,
         html: `

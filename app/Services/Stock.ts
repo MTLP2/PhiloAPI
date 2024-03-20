@@ -461,7 +461,7 @@ class Stock {
         stock.alert >= stock.quantity - params.quantity
       ) {
         await Notification.sendEmail({
-          to: 'victor@diggersfactory.com,alexis@diggersfactory.com,bl@diggersfactory.com,cyril@diggersfactory.com',
+          to: 'victor@diggersfactory.com,alexis@diggersfactory.com,bl@diggersfactory.com,thomas@diggersfactory.com',
           subject: `Alert Stock : ${product.name}`,
           html: `<ul>
           <li><strong>Name:</strong> ${product.name}</li>

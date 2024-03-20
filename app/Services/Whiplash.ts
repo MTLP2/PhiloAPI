@@ -708,8 +708,12 @@ class Whiplash {
 
       if (newStocks.length > 0) {
         await Notification.sendEmail({
-          to: ['ismail@diggersfactory.com', 'alexis@diggersfactory.com',
-          'thomas@diggersfactory.com'].join(','),
+          to: [
+            'ismail@diggersfactory.com',
+            'alexis@diggersfactory.com',
+            'victor.b@diggersfactory.com',
+            'thomas@diggersfactory.com'
+        ].join(','),
           subject: `Whiplash - new stocks`,
           html: `
           ${newStocks
