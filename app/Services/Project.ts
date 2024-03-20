@@ -2362,6 +2362,7 @@ class Project {
           { header: 'Country', key: 'country_id' },
           { header: 'Date', key: 'created_at' },
           { header: 'Qty', key: 'quantity', width: 10 },
+          { header: 'Currency', key: 'currency', width: 10 },
           { header: 'Total', key: 'total', width: 10 },
           { header: 'Tax', key: 'tax', width: 10 },
           { header: 'Fee', key: 'fee', width: 10 },

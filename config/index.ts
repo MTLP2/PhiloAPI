@@ -155,7 +155,7 @@ export default {
       transparent_green: '#10ff0047',
       transparent_yellow: '#fff70047',
       transparent_blue: '#00a1ff47',
-      transparent_red: '#ff000047',
+      transparent_red: '#cc0000eb',
       transparent_purple: '#7900ff47'
     }
   }

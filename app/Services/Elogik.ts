@@ -131,6 +131,12 @@ class Elogik {
       return false
     }
 
+    const nbProducts = await DB('product')
+      .join('project_product', 'project_product.product_id', 'product.id')
+      .where('project_product.project_id', params.id)
+      .whereNull('parent_id')
+      .all()
+
     const orders = await DB('order_shop as os')
       .select(
         'os.id',
@@ -187,6 +193,9 @@ class Elogik {
         break
       }
       if (!order.items) {
+        continue
+      }
+      if (order.items.length !== nbProducts.length) {
         continue
       }
       let ok = order.items.every((item) => {

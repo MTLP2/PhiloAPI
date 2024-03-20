@@ -355,32 +355,32 @@ class StatementService {
       }
     })
 
-    const sheets = ['DIG', 'DIGI', 'DIGI1', 'DIGI2', 'DIG 2', 'DIG ']
-
-    for (const sheet of sheets) {
-      const digital = workbook.getWorksheet(sheet)
-      if (digital) {
-        digital.eachRow((row) => {
-          const barcode = row.getCell('D').value
-          if (barcode && typeof barcode === 'number') {
-            if (!data[barcode]) {
-              data[barcode] = {
-                barcode: barcode,
-                quantity: 0,
-                returned: 0,
-                total: 0,
-                digital: 0
+    workbook.eachSheet(function (worksheet) {
+      if (worksheet.name.includes('DIG')) {
+        if (worksheet) {
+          worksheet.eachRow((row) => {
+            if (!row.getCell('D').value) {
+              return
+            }
+            const barcode = row.getCell('D').text
+            if (barcode && !isNaN(barcode)) {
+              if (!data[barcode]) {
+                data[barcode] = {
+                  barcode: barcode,
+                  quantity: 0,
+                  returned: 0,
+                  total: 0,
+                  digital: 0
+                }
+              }
+              if (row.getCell('O').value) {
+                data[barcode].digital = Utils.round(data[barcode].digital + +row.getCell('O').text)
               }
             }
-            if (row.getCell('O').value) {
-              data[barcode].digital = Utils.round(
-                data[barcode].digital + row.getCell('O').value.result
-              )
-            }
-          }
-        })
+          })
+        }
       }
-    }
+    })
     return data
   }
 

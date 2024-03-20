@@ -87,7 +87,7 @@ class Whiplash {
       shipping_phone: customer.phone,
       email: shop.email,
       shop_shipping_method_text: Whiplash.getShippingMethod(),
-      shop_warehouse_id: shop.transporter === 'whiplash_uk' ? 3 : 4,
+      shop_warehouse_id: shop.transporter === 'whiplash_uk' ? 3 : 66,
       order_items: []
     }
 
@@ -153,6 +153,12 @@ class Whiplash {
   }
 
   static syncProject = async (params: { project_id: number; type: string, products: number[]; quantity: number }) => {{
+    const nbProducts = await DB('product')
+      .join('project_product', 'project_product.product_id', 'product.id')
+      .where('project_product.project_id', params.project_id)
+      .whereNull('parent_id')
+      .all()
+
     const orders = await DB('order_shop as os')
       .select(
         'customer.*',
@@ -232,6 +238,9 @@ class Whiplash {
       if (!order.items) {
         continue
       }
+      if (order.items.length !== nbProducts.length) {
+        continue
+      }
       let ok = order.items.every((item) => {
         return params.products.some((p) => {
           return +p === +item.product_id
@@ -259,7 +268,7 @@ class Whiplash {
           shipping_phone: order.phone,
           email: order.customer_email || order.email,
           shop_shipping_method_text: Whiplash.getShippingMethod(),
-          shop_warehouse_id: params.type === 'whiplash_uk' ? 3 : 4,
+          shop_warehouse_id: params.type === 'whiplash_uk' ? 3 : 66,
           order_items: []
         }
         for (const item of order.items) {
@@ -372,12 +381,12 @@ class Whiplash {
 
             if (shop.user_id) {
               /**
-          await Notification.add({
-            type: 'my_order_sent',
-            user_id: shop.user_id,
-            order_manual_id: shop.order_manual_id
-          })
-          **/
+              await Notification.add({
+                type: 'my_order_sent',
+                user_id: shop.user_id,
+                order_manual_id: shop.order_manual_id
+              })
+              **/
             }
           } else {
             const cost: any = {
@@ -954,7 +963,7 @@ class Whiplash {
       body: {
         sender: params.sender,
         eta: params.eta,
-        warehouse_id: params.logistician === 'whiplash' ? 4 : 3,
+        warehouse_id: params.logistician === 'whiplash' ? 66 : 3,
         shipnotice_items: params.products.map((p) => {
           return {
             item_id: p.item_id,
