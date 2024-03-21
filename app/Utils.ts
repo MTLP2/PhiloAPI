@@ -524,6 +524,12 @@ class Utils {
         updated_at: Utils.date()
       })
     }
+    if (isFloat(data.rates.PHP)) {
+      await DB('currency').where('id', 'PHP').update({
+        value: data.rates.PHP,
+        updated_at: Utils.date()
+      })
+    }
 
     return true
   }
@@ -566,33 +572,39 @@ class Utils {
     base: string,
     currencies: { id: string; value: Currencies; updated_at: string }[]
   ) => {
-    /**
-    if (!currencies) {
-      currencies = await DB('currency').all()
-    }
-    **/
     const res: any = {}
     for (const currency of currencies) {
       res[currency.id] = currency.value
     }
 
     if (base !== 'EUR') {
+      res.EUR = 1 / res[base]
+      res.USD = res.USD * res.EUR
+      res.GBP = res.GBP * res.EUR
+      res.AUD = res.AUD * res.EUR
+      res.PHP = res.PHP * res.EUR
+      res[base] = 1
+      /**
       if (base === 'USD') {
         res.EUR = 1 / res.USD
         res.GBP = res.GBP * res.EUR
         res.AUD = res.AUD * res.EUR
+        res.PHP = res.PHP * res.EUR
         res.USD = 1
       } else if (base === 'GBP') {
         res.EUR = 1 / res.GBP
         res.USD = res.USD * res.EUR
         res.AUD = res.AUD * res.EUR
+        res.PHP = res.PHP * res.EUR
         res.GBP = 1
       } else if (base === 'AUD') {
         res.EUR = 1 / res.AUD
         res.USD = res.USD * res.EUR
         res.GBP = res.GBP * res.EUR
+        res.PHP = res.PHP * res.EUR
         res.AUD = 1
       }
+      **/
     }
 
     return res as {
@@ -600,6 +612,7 @@ class Utils {
       USD: number
       GBP: number
       AUD: number
+      PHP: number
     }
   }
 
@@ -607,7 +620,11 @@ class Utils {
     return DB('currency').all()
   }
 
-  static getCurrenciesApi = async (date = 'latest', symbols = 'EUR,USD,GBP,AUD', base = 'EUR') => {
+  static getCurrenciesApi = async (
+    date = 'latest',
+    symbols = 'EUR,USD,GBP,AUD,PHP',
+    base = 'EUR'
+  ) => {
     return Utils.request(
       `http://data.fixer.io/api/${date}?access_key=${config.fixer.api_key}&symbols=${symbols}&base=${base}`,
       {
@@ -901,7 +918,7 @@ class Utils {
             if (regroup[word]) {
               ww = regroup[word] + '.' + word
             }
-            if (['EUR', 'USD', 'GBP', 'AUD'].includes(w)) {
+            if (['EUR', 'USD', 'GBP', 'AUD', 'PHP'].includes(w)) {
               return match.replace(w, ww)
             }
             return match.replace(w, ww).toLowerCase()
@@ -1120,7 +1137,7 @@ class Utils {
     currencies
   }: {
     price: number
-    prices?: { EUR: number; USD: number; GBP: number; AUD: number }
+    prices?: { EUR: number; USD: number; GBP: number; AUD: number; PHP: number }
     currency: Currencies
     currencies: { id: string; value: Currencies; updated_at: string }[]
   }) => {
@@ -1130,12 +1147,14 @@ class Utils {
     const USD = Math.ceil(price * curr.USD + 0.55) - 0.01
     const GBP = Math.ceil(price * curr.GBP + 0.45) - 0.01
     const AUD = Math.ceil(price * curr.AUD + 0.75) - 0.01
+    const PHP = Math.ceil(price * curr.PHP + 50) - 0.01
 
     return {
       EUR: currency === 'EUR' ? price : EUR,
       USD: currency === 'USD' ? price : USD,
       GBP: currency === 'GBP' ? price : GBP,
-      AUD: currency === 'AUD' ? price : AUD
+      AUD: currency === 'AUD' ? price : AUD,
+      PHP: currency === 'PHP' ? price : PHP
     }
   }
 

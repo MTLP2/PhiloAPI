@@ -232,7 +232,8 @@ const enum Currencies {
   EUR = 'EUR',
   USD = 'USD',
   GBP = 'GBP',
-  AUD = 'AUD'
+  AUD = 'AUD',
+  PHP = 'PHP'
 }
 
 const enum ShippingPartners {

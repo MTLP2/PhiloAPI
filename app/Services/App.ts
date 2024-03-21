@@ -310,6 +310,12 @@ class App {
         updated_at: Utils.date()
       })
     }
+    if (isFloat(data.PHP)) {
+      await DB('currency').where('id', 'PHP').update({
+        value: data.PHP,
+        updated_at: Utils.date()
+      })
+    }
 
     return true
   }
