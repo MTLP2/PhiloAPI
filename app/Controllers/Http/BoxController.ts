@@ -1,8 +1,14 @@
 import Box from 'App/Services/Box'
 import { validator, schema } from '@ioc:Adonis/Core/Validator'
 class BoxController {
-  getLastBoxes({ params }) {
-    return Box.getLastBoxes(params)
+  async getLastBoxes({ params }) {
+    const payload = await validator.validate({
+      schema: schema.create({
+        filters: schema.string.optional()
+      }),
+      data: params
+    })
+    return Box.getLastBoxes(payload)
   }
 
   getBoxesPrices() {
