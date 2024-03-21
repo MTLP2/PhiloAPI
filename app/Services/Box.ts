@@ -2072,6 +2072,7 @@ class Box {
   }
 
   static async getLastBoxes(params) {
+    const styles = await Project.listStyles()
     let projects: any = DB('box_month')
       .select(
         'box_month.*',
@@ -2132,7 +2133,9 @@ class Box {
       projects.where('date', '<=', moment().format('YYYY-MM-DD'))
     }
 
-    projects = await projects.all()
+    projects = await projects.all().then((res) => {
+      return res.map((project) => Project.setInfos(project, null, null, styles))
+    })
     const months: any = {}
     for (const project of projects) {
       if (!months[project.date]) {
@@ -2141,9 +2144,10 @@ class Box {
       if (project.stock_daudin < project.stock) {
         project.stock = project.stock_daudin
       }
-      months[project.date].push(Project.setInfos(project))
+      months[project.date].push(project)
       Utils.shuffle(months[project.date])
     }
+
     months.selection = await DB('vod')
       .select(
         'p.id',
@@ -2151,6 +2155,7 @@ class Box {
         'name',
         'picture',
         'stock.quantity as stock',
+        'styles',
         'description_fr',
         'description_en'
       )
@@ -2164,6 +2169,9 @@ class Box {
       .where('is_delete', false)
       .orderBy(DB.raw('RAND()'))
       .all()
+      .then((res) => {
+        return res.map((project) => Project.setInfos(project, null, null, styles))
+      })
 
     return months
   }
