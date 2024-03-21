@@ -1857,7 +1857,6 @@ class Cart {
       }
     }
 
-    console.log(data.items, data)
     const order: any = await PayPal.create({
       intent: 'CAPTURE',
       purchase_units: [data]
@@ -1943,7 +1942,7 @@ class Cart {
         await Notification.sendEmail({
           to: 'victor@diggersfactory.com',
           subject: `Paypal order not completed`,
-          html: `<p>Order: https://www.diggersfactory.com/sheraf/order/${params.order.id}</p>`
+          html: `<p>Order: https://www.diggersfactory.com/sheraf/order/${params.order_id}</p>`
         })
         return Cart.validPayment({
           order_id: params.order_id,
