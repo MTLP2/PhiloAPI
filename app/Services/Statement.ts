@@ -1584,6 +1584,10 @@ class StatementService {
       projects.where('send_statement', true)
     }
     projects = await projects.all()
+
+    if (!projects[0]) {
+      return []
+    }
     const workbook = new Excel.Workbook()
 
     const month = moment(params.end).format('YYYY-MM')
