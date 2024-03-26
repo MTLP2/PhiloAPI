@@ -80,9 +80,9 @@ class App {
       }
       if (+moment().format('D') === 25) {
         await Box.checkReminderSelection()
+        await Statement.setStorageCosts()
       }
       if (+moment().format('D') === 28) {
-        await Statement.setStorageCosts()
         await Statement.sendStatements()
       }
       if (moment().endOf('month').format('YYYY-MM-DD') === moment().format('YYYY-MM-DD')) {
