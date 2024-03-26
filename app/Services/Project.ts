@@ -240,9 +240,7 @@ class Project {
       })
     }
 
-    if (!project.partner_distribution) {
-      project.price_distribution = null
-    } else if (project.price_distribution) {
+    if (project.price_distribution) {
       project.prices_distribution = Utils.getPrices({
         price: project.price_distribution,
         currencies,
