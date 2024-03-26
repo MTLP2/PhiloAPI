@@ -576,7 +576,7 @@ class Project {
       if (categories.length > 0) {
         projects.join('category_project', 'category_project.project_id', 'p.id')
         projects.whereIn('category_id', categories)
-        // params.sort = 'add'
+        projects.orderBy('category_project.position', 'ASC')
       }
       params.genres = params.genres.join(',')
     }
@@ -698,6 +698,8 @@ class Project {
     if (!params.page) {
       params.page = 1
     }
+
+    console.log(projects.toString())
 
     projects.limit(params.limit)
     projects.offset(params.limit * (params.page - 1))
