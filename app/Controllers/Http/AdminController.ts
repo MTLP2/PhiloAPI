@@ -1039,6 +1039,10 @@ class AdminController {
     return Statement.userDownload2(params)
   }
 
+  exportUserPojects({ params }) {
+    return Admin.exportUserPojects(params)
+  }
+
   getUserBalance({ params }) {
     return Statement.userBalance(params)
   }

@@ -475,6 +475,7 @@ Route.group(() => {
   Route.post('/users/:id/digs', 'AdminController.addDig')
   Route.get('/users/:id/statements', 'AdminController.getUserStatements')
   Route.get('/users/:id/statements2', 'AdminController.getUserStatements2')
+  Route.get('/users/:id/projects', 'AdminController.exportUserPojects')
   Route.get('/users/:id/stock', 'AdminController.getUserStock')
   Route.get('/users/:id/products', 'AdminController.getUserProducts')
   Route.get('/users/:id/balance', 'AdminController.getUserBalance')

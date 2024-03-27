@@ -2588,6 +2588,65 @@ class Admin {
     return true
   }
 
+  static exportUserPojects = async (params: { id: number }) => {
+    const items = await DB('project as p')
+      .select(
+        'p.id',
+        'p.artist_name',
+        'p.name',
+        'p.label_name',
+        'p.format',
+        'p.nb_vinyl',
+        'vod.barcode',
+        'p.cat_number'
+      )
+      .join('vod', 'vod.project_id', 'p.id')
+      .where('vod.user_id', params.id)
+      .all()
+
+    const stocks = await DB('stock')
+      .select('project_product.project_id', 'quantity')
+      .join('project_product', 'project_product.product_id', 'stock.product_id')
+      .whereIn(
+        'project_product.project_id',
+        items.map((item) => item.id)
+      )
+      .where('is_distrib', false)
+      .where('is_preorder', false)
+      .all()
+
+    console.log(stocks)
+    const workbook = new Excel.Workbook()
+
+    const worksheet = workbook.addWorksheet('Prospects')
+
+    worksheet.columns = [
+      { header: 'Id', key: 'id', width: 30 },
+      { header: 'Artist', key: 'artist_name', width: 30 },
+      { header: 'Name', key: 'name', width: 30 },
+      { header: 'Label', key: 'label_name', width: 20 },
+      { header: 'format', key: 'format', width: 15 },
+      { header: 'nb_vinyl', key: 'nb_vinyl', width: 10 },
+      { header: 'barcode', key: 'barcode', width: 15 },
+      { header: 'cat_number', key: 'cat_number', width: 15 },
+      { header: 'stock', key: 'stock', width: 15 },
+      { header: 'link', key: 'link', width: 20 }
+    ]
+
+    const rows = items.map((item) => ({
+      ...item,
+      link: `https://www.diggersfactory.com/vinyl/${item.id}`,
+      stock: stocks.filter((s) => s.project_id === item.id)
+        ? stocks.filter((s) => s.project_id === item.id).reduce((acc, s) => acc + s.quantity, 0)
+        : 0
+    }))
+
+    console.log(rows)
+    worksheet.addRows(rows)
+
+    return workbook.xlsx.writeBuffer()
+  }
+
   static getUserEmails = async (params) => {
     const profile: any = await Utils.request('https://beta-api-eu.customer.io/v1/api/customers', {
       qs: {
