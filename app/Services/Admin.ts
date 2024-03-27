@@ -905,6 +905,12 @@ class Admin {
     return { success: true }
   }
 
+  static generateProjectImages = async (params: { id: number }) => {
+    return Artwork.updateArtwork({
+      id: params.id
+    })
+  }
+
   static saveWishlist = async (params) => {
     const wishlist = await DB('wishlist').where('id', params.wishlist_id).first()
     const project = await DB('project').find(wishlist.project_id)

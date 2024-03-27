@@ -317,6 +317,10 @@ class AdminController {
     return Admin.deleteProjectImage(params)
   }
 
+  generateProjectImages({ params }) {
+    return Admin.generateProjectImages(params)
+  }
+
   deleteProject({ params }) {
     return Admin.deleteProject(params.id)
   }
