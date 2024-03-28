@@ -251,7 +251,8 @@ class Notification {
         EUR: '€',
         USD: '$',
         GBP: '£',
-        AUD: '$A'
+        AUD: '$A',
+        PHP: '₱'
       }
 
       params.items = `
