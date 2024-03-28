@@ -246,6 +246,11 @@ class Notification {
     if (!params.user) {
       params.user = {}
     }
+
+    const preorder = params.order_items.some((i) => {
+      return i.is_shop === 0
+    })
+
     try {
       const cur = {
         EUR: '€',
@@ -416,6 +421,16 @@ class Notification {
           </td>
         </tr>
       </table>
+        ${
+          preorder
+            ? lang === 'fr'
+              ? `<p style="font-size:12px;">Pou rappel, vous venez d'effectuer un achat en précommande. Cela signifie que vos produits seront expédiés une fois la production terminée. Vous pouvez trouver la date de livraison estimée directement sur la page du projet. Merci d'avance pour votre patience ! Si vous avez des questions, n'hésitez pas à contacter notre service client.
+        </p>`
+              : `<p style="font-size:12px;">Just a reminder, your recent purchase is on pre-order. This means your records will be shipped once production is complete. You can find the estimated delivery date on the project page. Thank you for your patience, and we hope you enjoy your records! If you have any questions, feel free to reach out to our customer support team.
+        </p>`
+            : ''
+        }
+      
       ${
         params.address
           ? `<br />
