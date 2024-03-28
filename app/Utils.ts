@@ -1354,6 +1354,10 @@ class Utils {
     return countryId ? europeanCountryIdList.includes(countryId) : false
   }
 
+  static sleep = (ms: number) => {
+    return new Promise((resolve) => setTimeout(resolve, ms))
+  }
+
   static getTeam = [
     {
       id: 0,
