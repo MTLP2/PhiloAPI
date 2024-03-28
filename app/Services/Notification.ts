@@ -247,9 +247,11 @@ class Notification {
       params.user = {}
     }
 
-    const preorder = params.order_items.some((i) => {
-      return i.is_shop === 0
-    })
+    const preorder =
+      params.order_items &&
+      params.order_items.some((i) => {
+        return i.is_shop === 0
+      })
 
     try {
       const cur = {
