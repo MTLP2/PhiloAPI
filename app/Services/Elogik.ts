@@ -646,67 +646,77 @@ class Elogik {
   }
 
   static syncStocks = async (params?: { barcode?: string }) => {
-    const res = await Elogik.api('articles/stock', {
-      method: 'POST',
-      body: {
-        reference: params?.barcode,
-        length: 99999
-      }
-    })
     const news: any[] = []
-
-    if (!res.articles) {
-      return false
-    }
-    const products = await DB('product')
-      .select('name', 'product.id', 'barcode', 'stock.quantity')
-      .leftJoin('stock', (query) => {
-        query.on('stock.product_id', 'product.id')
-        query.on('stock.type', '=', DB.raw('?', ['daudin']))
-        query.on('stock.is_preorder', '=', DB.raw('?', ['0']))
-      })
-      .whereIn(
-        'barcode',
-        res.articles.map((r) => r.refEcommercant)
-      )
-      .all()
-
-    const newStocks: any = []
-    for (const ref of res.articles) {
-      const qty = ref.stocks[0].stockDispo || 0
-      const product = products.find((p: any) => {
-        return p.barcode === ref.refEcommercant
+    let total = 0
+    let offset = 0
+    const length = 100
+    do {
+      const res = await Elogik.api('articles/stock', {
+        method: 'POST',
+        body: {
+          reference: params?.barcode,
+          length: length,
+          offset: offset
+        }
       })
 
-      if (product && qty !== product.quantity) {
-        if (!product.quantity && qty > 5) {
-          newStocks.push({
-            ...product,
-            new_quantity: qty
+      if (res.total) {
+        total = res.total
+      }
+
+      if (!res.articles) {
+        break
+      }
+
+      const products = await DB('product')
+        .select('name', 'product.id', 'barcode', 'stock.quantity')
+        .leftJoin('stock', (query) => {
+          query.on('stock.product_id', 'product.id')
+          query.on('stock.type', '=', DB.raw('?', ['daudin']))
+          query.on('stock.is_preorder', '=', DB.raw('?', ['0']))
+        })
+        .whereIn(
+          'barcode',
+          res.articles.map((r) => r.refEcommercant)
+        )
+        .all()
+
+      const newStocks: any = []
+      for (const ref of res.articles) {
+        const qty = ref.stocks[0].stockDispo || 0
+        const product = products.find((p: any) => {
+          return p.barcode === ref.refEcommercant
+        })
+
+        if (product && qty !== product.quantity) {
+          if (!product.quantity && qty > 5) {
+            newStocks.push({
+              ...product,
+              new_quantity: qty
+            })
+          }
+          Stock.save({
+            product_id: product.id,
+            type: 'daudin',
+            comment: 'api',
+            is_preorder: false,
+            quantity: qty
+          })
+          await DB('product').where('id', product.id).update({
+            ekan_id: product.barcode
           })
         }
-        Stock.save({
-          product_id: product.id,
-          type: 'daudin',
-          comment: 'api',
-          is_preorder: false,
-          quantity: qty
-        })
-        await DB('product').where('id', product.id).update({
-          ekan_id: product.barcode
-        })
       }
-    }
-    if (newStocks.length > 0) {
-      await Notification.sendEmail({
-        to: [
-          'ismail@diggersfactory.com',
-          'alexis@diggersfactory.com',
-          'thomas@diggersfactory.com',
-          'victor.b@diggersfactory.com'
-        ].join(','),
-        subject: `Daudin - new stocks`,
-        html: `
+      if (newStocks.length > 0) {
+        await Notification.sendEmail({
+          to: [
+            'ismail@diggersfactory.com',
+            'alexis@diggersfactory.com',
+            'thomas@diggersfactory.com',
+            'victor.b@diggersfactory.com'
+          ].join(','),
+          subject: `Daudin - new stocks`,
+          html: `
         ${newStocks
           .map(
             (product) =>
@@ -721,8 +731,12 @@ class Elogik {
           )
           .join('')}
       `
-      })
-    }
+        })
+      }
+
+      offset = offset + length
+    } while (offset < total)
+
     return news
   }
 
