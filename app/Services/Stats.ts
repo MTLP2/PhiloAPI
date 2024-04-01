@@ -2169,7 +2169,7 @@ class Stats {
             if (invoice.order_shop_id && item.order_shop_id !== invoice.order_shop_id) {
               continue
             }
-            let total = item.total / (1 + order.tax_rate)
+            let total = (item.total * order.currency_rate) / (1 + order.tax_rate)
             let marge
             if (item.payback_site) {
               marge = total - item.payback_site * item.quantity
