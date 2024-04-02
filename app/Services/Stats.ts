@@ -2149,7 +2149,12 @@ class Stats {
           (ods[0].service_charge * invoice.currency_rate) / (1 + ods[0].tax_rate)
         )
         if (ods[0].status === 'confirmed' && ods[0].tips) {
-          addMarge('tips', null, date, ods[0].tips)
+          addMarge(
+            'tips',
+            null,
+            date,
+            (ods[0].tips * invoice.currency_rate) / (1 + ods[0].tax_rate)
+          )
         }
 
         for (const order of ods) {
