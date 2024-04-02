@@ -58,6 +58,8 @@ class App {
         await Admin.exportMonthlyClientsStats()
       }
 
+      await Vod.checkCampaignStart()
+
       if (
         moment().format('E') === '1' ||
         moment().format('E') === '3' ||
@@ -162,7 +164,6 @@ class App {
 
       await Elogik.setTrackingLinks()
       await Storage.cleanTmp('storage')
-      await Vod.checkCampaignStart(hour)
 
       cron.status = 'complete'
       cron.end = new Date()

@@ -6,6 +6,7 @@ import config from 'Config/index'
 import User from './User'
 import View from '@ioc:Adonis/Core/View'
 import fs from 'fs'
+import moment from 'moment'
 
 class Vod {
   static save = async (params, pp) => {
@@ -955,17 +956,13 @@ class Vod {
     return res
   }
 
-  static checkCampaignStart = async (hour) => {
+  static checkCampaignStart = async () => {
     const vodToStart = await DB('vod')
       .where('step', 'coming_soon')
-      // where day is today
-      .whereRaw('DATE(`start`) = CURDATE()')
-      // where hour is hourly hour
-      .whereRaw(`HOUR(\`start\`) = ${hour}`)
+      .whereRaw(`start <= '${moment().format('YYYY-MM-DD HH:mm')}'`)
       .all()
 
     for (const vod of vodToStart) {
-      // Update each vod to step 'in_progress'
       await DB('vod').where('id', vod.id).update({
         step: 'in_progress'
       })
