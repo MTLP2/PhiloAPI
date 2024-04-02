@@ -843,13 +843,14 @@ static toJuno = async (params) => {
     })
   }
 
-  static allManual = async (params) => {
-    params.query = DB('order_manual')
+  static allManual = async (params: { filters: string; page: number; size: number }) => {
+    const query = DB('order_manual')
       .select('order_manual.*', 'customer.firstname', 'customer.lastname', 'user.name as user_name')
       .orderBy('order_manual.id', 'desc')
       .join('customer', 'customer.id', 'order_manual.customer_id')
       .leftJoin('user', 'user.id', 'order_manual.user_id')
       .belongsTo('customer')
+      .hasMany('order_manual_item', 'items', 'order_manual_id')
 
     let filters
     try {
@@ -860,13 +861,18 @@ static toJuno = async (params) => {
 
     for (const i in filters) {
       if (filters[i] && filters[i].name === 'customer') {
-        params.query.whereRaw(`concat(firstname, ' ', lastname) like '%${filters[i].value}%'`)
+        query.whereRaw(`concat(firstname, ' ', lastname) like '%${filters[i].value}%'`)
         filters.splice(i, 1)
-        params.filters = JSON.stringify(filters)
+        filters = JSON.stringify(filters)
       }
     }
 
-    const rows = await Utils.getRows(params)
+    const rows: any = await Utils.getRows({
+      ...params,
+      filters: filters,
+      query: query
+    })
+
     for (const i in rows.data) {
       rows.data[i].address_pickup = rows.data[i].address_pickup
         ? JSON.parse(rows.data[i].address_pickup)
@@ -882,17 +888,9 @@ static toJuno = async (params) => {
       .leftJoin('user', 'user.id', 'order_manual.user_id')
       .belongsTo('customer')
       .where('order_manual.id', params.id)
+      .hasMany('order_manual_item', 'items', 'order_manual_id')
       .first()
     item.address_pickup = item.address_pickup ? JSON.parse(item.address_pickup) : null
-    item.barcodes = item.barcodes ? JSON.parse(item.barcodes) : null
-
-    for (const b in item.barcodes) {
-      const barcode = item.barcodes[b]
-      const product = await DB('product').where('barcode', barcode.barcode).first()
-      if (product) {
-        item.barcodes[b].title = product.name
-      }
-    }
 
     return item
   }
@@ -910,7 +908,7 @@ static toJuno = async (params) => {
     user_id?: number
     step?: string
     force?: boolean
-    barcodes: {
+    items: {
       barcode: number
       quantity: number
     }[]
@@ -918,29 +916,43 @@ static toJuno = async (params) => {
   }) => {
     let item: any = DB('order_manual')
 
+    if (params.id) {
+      item = await DB('order_manual').find(params.id)
+      if (item.date_export) {
+        if (params.comment) {
+          item.comment = params.comment
+          await item.save()
+        }
+        return false
+      }
+    } else {
+      item.created_at = Utils.date()
+    }
+
     const products = {}
+
     if (!params.force && !item.date_export) {
       const errors = {}
       const promises: (() => Promise<void>)[] = [] as any
 
-      for (const b of params.barcodes) {
+      for (const item of params.items) {
         promises.push(async () => {
           const product = await DB('product')
             .select('product.id', 'stock.id as stock_id', 'stock.quantity')
-            .where('barcode', b.barcode)
+            .where('barcode', item.barcode)
             .leftJoin('stock', 'stock.product_id', 'product.id')
             .where('stock.type', params.transporter)
             .first()
 
           if (!product) {
-            errors[b.barcode] = 'No product'
+            errors[item.barcode] = 'No product'
             return
           }
-          products[b.barcode] = product.id
+          products[item.barcode] = product.id
           if (params.transporter === 'whiplash' || params.transporter === 'whiplash_uk') {
-            const items: any = await Whiplash.api(`/items/sku/${b.barcode}`)
+            const items: any = await Whiplash.api(`/items/sku/${item.barcode}`)
             if (items.length === 0) {
-              errors[b.barcode] = 'No whiplash'
+              errors[item.barcode] = 'No whiplash'
               return
             }
             const warehouses: any = await Whiplash.api(`items/${items[0].id}/warehouse_quantities`)
@@ -948,18 +960,18 @@ static toJuno = async (params) => {
             const qty = warehouses.find(
               (w) => w.id === (params.transporter === 'whiplash' ? 4 : 3)
             )?.quantity
-            if (!qty || qty < b.quantity) {
-              errors[b.barcode] = 'No stock whiplash'
+            if (!qty || qty < item.quantity) {
+              errors[item.barcode] = 'No stock whiplash'
               return
             }
           } else if (params.transporter === 'daudin') {
-            const item = await Elogik.getItem({ barcode: b.barcode })
-            if (!item) {
-              errors[b.barcode] = 'No elogik'
+            const it = await Elogik.getItem({ barcode: item.barcode })
+            if (!it) {
+              errors[item.barcode] = 'No elogik'
               return
             }
-            if (item.stock < b.quantity) {
-              errors[b.barcode] = 'No stock elogik'
+            if (it.stock < item.quantity) {
+              errors[item.barcode] = 'No stock elogik'
               return
             }
           }
@@ -976,18 +988,6 @@ static toJuno = async (params) => {
       }
     }
 
-    if (params.id) {
-      item = await DB('order_manual').find(params.id)
-
-      if (item.date_export) {
-        item.comment = params.comment
-        await item.save()
-        return false
-      }
-    } else {
-      item.created_at = Utils.date()
-    }
-
     item.type = params.type
     item.transporter = params.transporter
     item.shipping_type = params.shipping_type
@@ -998,7 +998,6 @@ static toJuno = async (params) => {
     item.order_shop_id = params.order_shop_id || null
     item.tracking_number = params.tracking_number || null
     item.user_id = params.user_id || null
-    item.barcodes = JSON.stringify(params.barcodes)
     item.updated_at = Utils.date()
 
     if (params.email && !params.user_id) {
@@ -1027,6 +1026,16 @@ static toJuno = async (params) => {
     item.customer_id = customer.id
     await item.save()
 
+    await DB('order_manual_item').where('order_manual_id', item.id).delete()
+    for (const it of params.items) {
+      await DB('order_manual_item').insert({
+        order_manual_id: item.id,
+        product_id: products[it.barcode],
+        barcode: it.barcode,
+        quantity: it.quantity
+      })
+    }
+
     if (params.step !== 'pending' && !item.date_export) {
       if (['daudin'].includes(params.transporter)) {
         if (!item.logistician_id) {
@@ -1041,7 +1050,7 @@ static toJuno = async (params) => {
               address_pickup: params.address_pickup,
               created_at: item.created_at,
               email: item.email,
-              items: params.barcodes.map((b) => {
+              items: params.items.map((b) => {
                 return {
                   barcode: b.barcode,
                   quantity: b.quantity
@@ -1080,7 +1089,7 @@ static toJuno = async (params) => {
           order_items: []
         }
 
-        for (const b of params.barcodes) {
+        for (const b of params.items) {
           const item = await Whiplash.findItem(b.barcode)
           if (item.error) {
             return { error: `Whiplash not found ${b.barcode} ` }
@@ -1107,7 +1116,7 @@ static toJuno = async (params) => {
         }
       }
 
-      for (const b of params.barcodes) {
+      for (const b of params.items) {
         if (products[b.barcode]) {
           await Stock.save({
             product_id: products[b.barcode],
@@ -1248,13 +1257,13 @@ static toJuno = async (params) => {
       country_id: string
     }[] = []
 
-    for (const barcode of order.barcodes) {
-      const product = await DB('product').where('barcode', barcode.barcode).first()
+    for (const item of order.items) {
+      const product = await DB('product').where('barcode', item.barcode).first()
       items.push({
         sender: 'Diggers Factory',
         title: product?.name,
-        quantity: barcode.quantity,
-        barcode: barcode.barcode,
+        quantity: item.quantity,
+        barcode: item.barcode,
         catnumber: product?.catnumber,
         name: order.customer.name,
         contact: order.customer.firstname + ' ' + order.customer.lastname,

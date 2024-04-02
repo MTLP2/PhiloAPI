@@ -904,7 +904,7 @@ class AdminController {
           user_id: schema.number.optional(),
           step: schema.string.optional(),
           force: schema.boolean.optional(),
-          barcodes: schema.array().members(
+          items: schema.array().members(
             schema.object().members({
               barcode: schema.number(),
               quantity: schema.number()
