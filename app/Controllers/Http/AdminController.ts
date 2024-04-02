@@ -426,6 +426,11 @@ class AdminController {
     return Admin.saveOrderShop(params)
   }
 
+  changeOrderUser({ params, auth }) {
+    params.auth_id = auth.id
+    return Order.changeUser(params)
+  }
+
   syncOrder({ params }) {
     return Order.sync(params, true)
   }

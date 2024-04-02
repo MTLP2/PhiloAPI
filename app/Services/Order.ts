@@ -1166,6 +1166,27 @@ static toJuno = async (params) => {
     return columns
   }
 
+  static changeUser = async (params: { order_id: number; user_id: number; auth_id: number }) => {
+    const order = await DB('order').where('id', params.order_id).first()
+    await DB('order').where('id', params.order_id).update({
+      user_id: params.user_id
+    })
+    await DB('order_shop').where('order_id', params.order_id).update({
+      user_id: params.user_id
+    })
+    await DB('log').insert({
+      type: 'order_user',
+      item_id: params.order_id,
+      user_id: params.auth_id,
+      data: JSON.stringify({
+        order_id: params.order_id,
+        old_user_id: order.user_id,
+        user_id: params.user_id
+      })
+    })
+    return { success: true }
+  }
+
   static getBarcodesManual = async (params: { file: any; barcode: string; quantity: string }) => {
     const file = Buffer.from(params.file, 'base64')
     const workbook = new Excel.Workbook()

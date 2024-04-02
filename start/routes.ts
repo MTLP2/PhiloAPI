@@ -424,6 +424,7 @@ Route.group(() => {
   Route.post('/orders/:id', 'AdminController.saveOrderShop')
   Route.post('/orders/:id/sync', 'AdminController.syncOrder')
   Route.post('/orders/:id/items', 'AdminController.saveOrderItem')
+  Route.post('/orders/:id/user', 'AdminController.changeOrderUser')
   Route.get('/orders/:id/download', 'AdminController.downloadOrder')
   Route.post('/orders/:id/refund', 'AdminController.refundOrder')
   Route.get('/orders/:osid/check-rest/:pid', 'AdminController.checkProjectRest')
