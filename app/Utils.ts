@@ -631,7 +631,13 @@ class Utils {
         json: true
       }
     ).then((res: any) => {
-      return res.rates
+      if (res.error) {
+        return {
+          error: res.error.type
+        }
+      } else {
+        return res.rates
+      }
     })
   }
 
