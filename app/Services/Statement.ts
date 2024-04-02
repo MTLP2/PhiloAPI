@@ -215,8 +215,6 @@ class StatementService {
       data[d].storage = Utils.round(data[d].storage)
     }
 
-    console.log(currencies)
-
     if (params.type === 'save') {
       const inserts: any[] = []
       for (const ref of data) {
@@ -242,7 +240,6 @@ class StatementService {
               await stat.save()
             }
 
-            console.log(ref)
             ref.total = ref.total ? Utils.round(ref.total * currencies[ref.project.currency]) : 0
             ref.digital = ref.digital
               ? Utils.round(ref.digital * currencies[ref.project.currency])
