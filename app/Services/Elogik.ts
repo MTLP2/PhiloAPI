@@ -649,7 +649,7 @@ class Elogik {
     const news: any[] = []
     let total = 0
     let offset = 0
-    const length = 100
+    const length = 500
     do {
       const res = await Elogik.api('articles/stock', {
         method: 'POST',
