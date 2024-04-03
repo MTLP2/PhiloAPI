@@ -74,9 +74,7 @@ class Project {
     }
     project.price_discounts = {}
 
-    if (!project.partner_distribution) {
-      project.price_distribution = null
-    } else if (project.price_distribution) {
+    if (project.price_distribution) {
       project.prices_distribution = Utils.getPrices({
         price: project.price_distribution + project.shipping_discount,
         currencies,
@@ -1097,11 +1095,13 @@ class Project {
       followed: p.user_followed
     }
 
+    console.log('=>s', p.price_distribution)
     // Adding project images if any
     if (projectImages.length) {
       p.project_images = projectImages
     }
 
+    console.log('=>', p.price_distribution)
     return p
   }
 

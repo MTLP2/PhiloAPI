@@ -1432,7 +1432,7 @@ class Cart {
         res.price_discount = p.project.prices_distribution[res.currency]
         res.discount = 0
       }
-      if (userIsPro && p.project.partner_distribution && p.project.prices_distribution) {
+      if (userIsPro && p.project.prices_distribution) {
         res.price = p.project.prices_distribution[params.currency]
       }
     }
