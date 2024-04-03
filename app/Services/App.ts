@@ -713,10 +713,11 @@ class App {
     }
 
     if (n.order_manual_id) {
-      const order = await DB('order_manual').where('id', n.order_manual_id).first()
+      const order = await DB('order_manual')
+        .where('id', n.order_manual_id)
+        .hasMany('order_manual_item', 'items', 'order_manual_id')
+        .first()
       if (order) {
-        const items = JSON.parse(order.barcodes)
-
         const projects = await DB('vod')
           .select(
             'product.barcode',
@@ -731,19 +732,18 @@ class App {
           .join('product', 'product.id', 'project_product.product_id')
           .whereIn(
             'product.barcode',
-            items.map((b) => b.barcode)
+            order.items.map((b) => b.barcode)
           )
           .all()
 
-        for (const i in items) {
-          const p = projects.find((p) => p.barcode.toString() === items[i].barcode.toString())
-          items[i] = {
-            ...items[i],
+        for (const i in order.items) {
+          const p = projects.find((p) => p.barcode.toString() === order.items[i].barcode.toString())
+          order.items[i] = {
+            ...order.items[i],
             ...p
           }
         }
 
-        console.log(items)
         data.order = order
         if (order.tracking_number) {
           if (order.tracking_link) {
@@ -753,7 +753,7 @@ class App {
           }
         }
 
-        data.order_items = items.map((item) => {
+        data.order_items = order.items.map((item) => {
           item.picture = `${config.app.storage_url}/projects/${
             item.picture || item.project_id
           }/cover.jpg`
