@@ -59,8 +59,6 @@ class App {
         await Admin.exportMonthlyClientsStats()
       }
 
-      await Vod.checkCampaignStart()
-
       if (
         moment().format('E') === '1' ||
         moment().format('E') === '3' ||
@@ -166,7 +164,7 @@ class App {
           await Charts.uploadCharts()
         }
       }
-
+      await Vod.checkCampaignStart()
       await Elogik.setTrackingLinks()
       await Storage.cleanTmp('storage')
 
