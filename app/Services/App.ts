@@ -15,6 +15,7 @@ import Charts from 'App/Services/Charts'
 import Statement from 'App/Services/Statement'
 import Production from 'App/Services/Production'
 import Elogik from 'App/Services/Elogik'
+import BigBlue from 'App/Services/BigBlue'
 import Storage from 'App/Services/Storage'
 import MondialRelay from 'App/Services/MondialRelay'
 import Review from 'App/Services/Review'
@@ -125,6 +126,7 @@ class App {
 
       if ([9, 12, 15, 17].includes(hour)) {
         await Elogik.syncStocks()
+        await BigBlue.syncStocks()
         await Whiplash.syncStocks()
       }
 

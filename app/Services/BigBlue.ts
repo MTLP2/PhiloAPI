@@ -65,17 +65,39 @@ class BigBlue {
     }
   }
 
-  static syncStocks = async (params: { barcode: string }) => {
+  static syncStocks = async (params: { barcode?: string } = {}) => {
     let product
     if (params?.barcode) {
       product = await DB('product').where('barcode', params.barcode).first()
     }
+    const listProducts = await DB('product')
+      .select('id', 'bigblue_id')
+      .whereNotNull('bigblue_id')
+      .all()
+    const products = {}
+    for (const product of listProducts) {
+      products[product.bigblue_id] = product.id
+    }
+
     const res: any = await this.api('ListInventories', {
       method: 'POST',
       params: {
         product: product ? product.bigblue_id : ''
       }
     })
+
+    for (const stock of res.inventories) {
+      if (!products[stock.product]) {
+        continue
+      }
+      Stock.save({
+        product_id: products[stock.product],
+        type: 'bigblue',
+        comment: 'api',
+        is_preorder: false,
+        quantity: stock.available
+      })
+    }
 
     return res
   }
