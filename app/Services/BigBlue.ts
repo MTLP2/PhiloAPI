@@ -65,10 +65,10 @@ class BigBlue {
     }
   }
 
-  static syncStocks = async (params: { barcode?: string } = {}) => {
+  static syncStocks = async (params: { productIds?: number[] } = {}) => {
     let product
-    if (params?.barcode) {
-      product = await DB('product').where('barcode', params.barcode).first()
+    if (params?.productIds) {
+      product = await DB('product').whereIn('id', params.productIds).first()
     }
     const listProducts = await DB('product')
       .select('id', 'bigblue_id')

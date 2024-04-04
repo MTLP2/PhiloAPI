@@ -2,6 +2,7 @@ import DB from 'App/DB'
 import Utils from 'App/Utils'
 import Elogik from 'App/Services/Elogik'
 import Whiplash from 'App/Services/Whiplash'
+import BigBlue from 'App/Services/BigBlue'
 import Notification from 'App/Services/Notification'
 import Excel from 'exceljs'
 import moment from 'moment'
@@ -212,6 +213,7 @@ class Stock {
       products.map((product) =>
         Promise.all([
           Whiplash.syncStocks({ productIds: products.map((p) => p.id) }),
+          BigBlue.syncStocks({ productIds: products.map((p) => p.id) }),
           Elogik.syncStocks({ barcode: product.barcode })
         ])
       )
