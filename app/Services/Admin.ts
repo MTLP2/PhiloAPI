@@ -1207,7 +1207,10 @@ class Admin {
         date: Utils.date()
       })
     }
-    if (vod.status !== params.status) {
+    if (vod.step !== params.step) {
+      if (params.step === 'in_progress' && !vod.start) {
+        vod.start = Utils.date()
+      }
       vod.historic.push({
         type: 'status',
         user_id: params.user.id,
