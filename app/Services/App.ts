@@ -164,7 +164,6 @@ class App {
           await Charts.uploadCharts()
         }
       }
-      await Vod.checkCampaignStart()
       await Elogik.setTrackingLinks()
       await Storage.cleanTmp('storage')
 
@@ -202,6 +201,7 @@ class App {
       await Project.deleteDownload()
       await MondialRelay.checkSent()
       await MondialRelay.checkDelivered()
+      await Vod.checkCampaignStart()
       await User.syncCIOs()
       await User.syncEvents()
       await Vod.checkCampaignEnd(new Date().getHours(), new Date().getMinutes())
