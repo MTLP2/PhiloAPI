@@ -310,8 +310,9 @@ class BigBlue {
           external_id: order.id.toString(),
           language: 'fr',
           currency: 'EUR',
-          shipping_method: order.shipping_type === 'pickup' ? 'Relais Pickup' : 'Standard',
+          shipping_method: order.shipping_type === 'pickup' ? 'pickup' : 'standard',
           shipping_price: order.shipping.toString(),
+          pickup_point: order.shipping_type === 'pickup' ? pickup.number : null,
           shipping_address: {
             first_name: order.firstname,
             last_name: order.lastname,
@@ -392,68 +393,6 @@ class BigBlue {
 
     return dispatchs
   }
-
-  /**
-  static async createOrder(params?: {}) {
-    const data = {
-      order: {
-        external_id: '123',
-        language: 'fr',
-        currency: 'EUR',
-        shipping_address: {
-          first_name: 'First',
-          last_name: 'Last',
-          company: 'Client Company',
-          phone: '0666010203',
-          email: 'client@domain.com',
-          line1: '111 Random Street',
-          city: 'Paris',
-          postal: '75001',
-          state: 'Ile de france',
-          country: 'FR'
-        },
-        line_items: [
-          {
-            product: 'DIGG-000000-0001',
-            quantity: 2,
-            unit_price: '12.99',
-            unit_tax: '1.09',
-            discount: '2.50'
-          }
-        ],
-        shipping_price: '3.99',
-        shipping_tax: '1.09',
-        additional_tax: '0.65',
-        additional_discount: '1.26',
-        shipping_method: 'Express delivery',
-        billing_address: {
-          first_name: 'First',
-          last_name: 'Last',
-          company: 'Client Company',
-          email: 'client@domain.com',
-          line1: 'First line of billing address',
-          line2: 'Second line of billing address',
-          city: 'Toulouse',
-          postal: '31000',
-          state: 'Languedoc-Roussillon-Midi-Pyrénées',
-          country: 'FR'
-        },
-        pickup_point: {
-          id: '12345678',
-          display_name: 'Name of the pickup point',
-          postal: '75000',
-          state: 'Ile de france',
-          country: 'FR',
-          carrier_service: 'Colissimo'
-        }
-      }
-    }
-    return this.api('CreateOrder', {
-      method: 'POST',
-      params: data
-    })
-  }
-  **/
 
   static async parsePrices() {
     const workbook = new Excel.Workbook()
