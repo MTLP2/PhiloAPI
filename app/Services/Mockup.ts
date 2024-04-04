@@ -194,7 +194,6 @@ class Mockup {
         ctx.globalAlpha = 1
 
         if (params.picture) {
-          ctx.globalCompositeOperation = 'source-in'
           await this.drawImage({
             ctx: ctx,
             url: params.picture,
