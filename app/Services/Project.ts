@@ -572,8 +572,11 @@ class Project {
       if (categories.length > 0) {
         projects.join('category_project', 'category_project.project_id', 'p.id')
         projects.whereIn('category_id', categories)
-        projects.orderBy('category_project.position', 'ASC')
-        projects.orderByRaw('RAND()')
+
+        if (!params.sort) {
+          projects.orderBy('category_project.position', 'ASC')
+          projects.orderBy('v.start', 'DESC')
+        }
       }
       params.genres = params.genres.join(',')
     }
