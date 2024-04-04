@@ -2450,7 +2450,7 @@ class StatementService {
       })
 
       if (isActive) {
-        res.push([project.id, `${project.artist_name} - ${project.name}`])
+        res.push(project)
         await Notification.add({
           user_id: project.user_id,
           date: moment().format('YYYY-MM-DD'),
@@ -2458,7 +2458,24 @@ class StatementService {
         })
       }
     }
-    return res.map((row: any) => row.join(',')).join('\n')
+
+    await Notification.sendEmail({
+      to: 'victor@diggersfactory.com,alexis@diggersfactory.com',
+      subject: `${res.length} projects for statement on ${moment().format('YYYY-MM')}`,
+      html: `<table>
+      ${res
+        .map(
+          (project) =>
+            `<tr>
+          <td>${project.id}</td>
+          <td>${project.artist_name}</td>
+          <td>${project.name}</td>
+        </tr>`
+        )
+        .join('')}
+    </table>`
+    })
+    return res
   }
 
   static async setStorageCosts(params: { month?: string; projectIds?: string[] } = {}) {
