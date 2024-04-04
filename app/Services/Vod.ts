@@ -957,10 +957,7 @@ class Vod {
   }
 
   static checkCampaignStart = async () => {
-    const vodToStart = await DB('vod')
-      .where('step', 'coming_soon')
-      .whereRaw(`start <= '${moment().format('YYYY-MM-DD HH:mm')}'`)
-      .all()
+    const vodToStart = await DB('vod').where('step', 'coming_soon').whereRaw(`start <= NOW()`).all()
 
     for (const vod of vodToStart) {
       await DB('vod').where('id', vod.id).update({
