@@ -288,6 +288,7 @@ class BigBlue {
           external_id: order.id.toString(),
           language: 'fr',
           currency: 'EUR',
+          shipping_method: order.shipping_type === 'pickup' ? 'Relais Pickup' : 'Standard',
           shipping_price: order.shipping.toString(),
           shipping_address: {
             first_name: order.firstname,
