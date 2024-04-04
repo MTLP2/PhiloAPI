@@ -1095,13 +1095,11 @@ class Project {
       followed: p.user_followed
     }
 
-    console.log('=>s', p.price_distribution)
     // Adding project images if any
     if (projectImages.length) {
       p.project_images = projectImages
     }
 
-    console.log('=>', p.price_distribution)
     return p
   }
 
