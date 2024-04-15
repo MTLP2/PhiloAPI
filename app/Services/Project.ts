@@ -2342,7 +2342,6 @@ class Project {
 
       o.total -= o.fee_change
 
-      console.log(o.tax_rate, 1 + o.tax_rate)
       res.data[oo].tax = Utils.round(o.tax_rate ? o.total - o.total / (1 + o.tax_rate) : 0)
       res.data[oo].fee = Utils.round((1 - fee) * (o.total - res.data[oo].tax))
       res.data[oo].net = Utils.round(o.total - res.data[oo].tax - res.data[oo].fee)
