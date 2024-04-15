@@ -772,7 +772,9 @@ class Whiplash {
 
         if (+dispatch.warehouse_id === 3 || +dispatch.warehouse_id === 4 || +dispatch.warehouse_id === 66) {
           const orderShop = await DB('order_shop').where('id', shop.id).first()
-          orderShop.shipping_trans = -dispatch['Carrier Fees'] * currencies[shop.currency]
+
+          const carrierFees = dispatch['Carrier Fees'] || dispatch['carrier fees']
+          orderShop.shipping_trans = -carrierFees * currencies[shop.currency]
           orderShop.shipping_cost = -dispatch.total * currencies[shop.currency]
           orderShop.shipping_quantity = +dispatch.merch_count
           await orderShop.save()
