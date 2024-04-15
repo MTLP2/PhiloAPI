@@ -1226,7 +1226,7 @@ class Daudin {
           columns.quantity = cell._column.letter
         } else if (cell.value === 'Taxe Gazoil') {
           columns.oil = cell._column.letter
-        } else if (cell.value === 'Taxe Surete') {
+        } else if (cell.value === 'Taxe Surete' || cell.value === 'Taxe Sureté') {
           columns.security = cell._column.letter
         }
       })
