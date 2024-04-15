@@ -434,14 +434,14 @@ class Dispatch {
       }
       const path = file.path.split('.')[0].split(' ')
 
-      /**
       if (path[0].split('/').at(-1).split('_')[1] < 108132) {
         continue
       }
-      **/
-      if (path[2] < '2023-12') {
+      /**
+      if (path[2] < '2024-02') {
         continue
       }
+      **/
       console.log('=>', path)
 
       const date = path[path.length - 1]
