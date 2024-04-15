@@ -297,8 +297,7 @@ class BigBlue {
         continue
       }
 
-      for (const o in order.items) 
-        order.items[o].product = order.items[o].bigblue_id
+      for (const o in order.items) {
         if (process.env.NODE_ENV !== 'production') {
           order.items[o].product = 'DIGG-000000-0001'
         } else {
