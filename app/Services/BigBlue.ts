@@ -297,7 +297,8 @@ class BigBlue {
         continue
       }
 
-      for (const o in order.items) {
+      for (const o in order.items) 
+        order.items[o].product = order.items[o].bigblue_id
         if (process.env.NODE_ENV !== 'production') {
           order.items[o].product = 'DIGG-000000-0001'
         } else {
@@ -305,6 +306,7 @@ class BigBlue {
         }
       }
 
+      const address = Utils.splitSentence(order.address, 35)
       const data = {
         order: {
           external_id: order.id.toString(),
@@ -312,14 +314,24 @@ class BigBlue {
           currency: 'EUR',
           shipping_method: order.shipping_type === 'pickup' ? 'pickup' : 'standard',
           shipping_price: order.shipping.toString(),
-          pickup_point: order.shipping_type === 'pickup' ? pickup.number : null,
+          pickup_point:
+            order.shipping_type === 'pickup'
+              ? {
+                  id: pickup.number,
+                  display_name: pickup.name,
+                  postal: pickup.zip_coe,
+                  country: pickup.country_id,
+                  carrier_service: 'Mondial Relay'
+                }
+              : null,
           shipping_address: {
             first_name: order.firstname,
             last_name: order.lastname,
             company: order.name,
             phone: order.phone,
             email: order.email,
-            line1: order.address,
+            line1: address[0],
+            line2: address[1] || '',
             city: order.city,
             postal: order.zip_code,
             state: order.state,
