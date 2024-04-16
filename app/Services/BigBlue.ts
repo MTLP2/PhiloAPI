@@ -86,17 +86,19 @@ class BigBlue {
       }
     })
 
-    for (const stock of res.inventories) {
-      if (!products[stock.product]) {
-        continue
+    if (res.inventories) {
+      for (const stock of res.inventories) {
+        if (!products[stock.product]) {
+          continue
+        }
+        Stock.save({
+          product_id: products[stock.product],
+          type: 'bigblue',
+          comment: 'api',
+          is_preorder: false,
+          quantity: stock.available
+        })
       }
-      Stock.save({
-        product_id: products[stock.product],
-        type: 'bigblue',
-        comment: 'api',
-        is_preorder: false,
-        quantity: stock.available
-      })
     }
 
     return res
@@ -403,6 +405,43 @@ class BigBlue {
     }
 
     return dispatchs
+  }
+
+  static async setTrackingLinks() {
+    const orders = await DB('order_shop')
+      .where('transporter', 'bigblue')
+      .whereNotNull('logistician_id')
+      .whereNull('tracking_number')
+      .orderBy('step_check', 'asc')
+      .orderBy('date_export', 'asc')
+      .all()
+
+    console.log('orders => ', orders.length)
+
+    const res: any = await this.api('ListOrders', {
+      method: 'POST',
+      params: {}
+    })
+
+    for (const order of res.orders) {
+      if (order.tracking_number) {
+        const orderShop = await DB('order_shop').where('id', order.external_id).first()
+        if (!orderShop || orderShop.tracking_link) {
+          continue
+        }
+        orderShop.step = order.status.code === 'DELIVERED' ? 'delivered' : 'sent'
+        orderShop.tracking_number = order.tracking_number
+        orderShop.tracking_link = order.tracking_url
+        await orderShop.save()
+
+        await Notification.add({
+          type: 'my_order_sent',
+          user_id: orderShop.user_id,
+          order_id: orderShop.order_id,
+          order_shop_id: orderShop.id
+        })
+      }
+    }
   }
 
   static async parsePrices() {

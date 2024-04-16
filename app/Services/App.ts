@@ -141,6 +141,7 @@ class App {
         await App.exportProductReviewFeed()
       } else if (hour === 4) {
         await Whiplash.setTrackingLinks()
+        await BigBlue.setTrackingLinks()
       } else if (hour === 5) {
         await Elogik.syncBoxes()
         await Cio.syncNewsletterNoAccount()
@@ -164,6 +165,7 @@ class App {
           await Charts.uploadCharts()
         }
       }
+
       await Elogik.setTrackingLinks()
       await Storage.cleanTmp('storage')
 
