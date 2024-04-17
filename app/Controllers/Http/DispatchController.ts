@@ -1,5 +1,6 @@
 import Api from 'App/Services/Api'
 import Dispatch from 'App/Services/Dispatch'
+import { schema, validator } from '@ioc:Adonis/Core/Validator'
 
 class DispatchController {
   async update({ params, request, transporter }) {
@@ -58,27 +59,26 @@ class DispatchController {
     return api.response(res)
   }
 
-  async updateStocks({ params, request, transporter }) {
-    const api = new Api(request)
+  async updateStocks({ params, request }) {
+    try {
+      console.log(params)
+      const payload = await validator.validate({
+        schema: schema.create({
+          inventories: schema.array().members(
+            schema.object().members({
+              warehouse: schema.string(),
+              product: schema.string()
+            })
+          )
+        }),
+        data: request.body()
+      })
+      console.log(payload)
 
-    if (!params.data) {
-      throw api.error(400, '`data` is missing')
+      return Dispatch.changeStock(payload)
+    } catch (err) {
+      return { error: err.message, validation: err.messages }
     }
-    if (!Array.isArray(params.data)) {
-      throw api.error(400, '`data` is not a array')
-    }
-
-    const res = {}
-    for (const stock of params.data) {
-      stock.transporter = transporter
-      try {
-        res[stock.barcode] = await Dispatch.changeStock(stock)
-      } catch (err) {
-        res[stock.barcode] = { error: err.message }
-      }
-    }
-
-    return api.response(res)
   }
 
   compareShippingOrder({ params }) {

@@ -657,4 +657,4 @@ Route.group(() => {
   Route.post('/dispatchs', 'DispatchController.batch')
   Route.post('/stock', 'DispatchController.updateStock')
   Route.post('/stocks', 'DispatchController.updateStocks')
-}).middleware(['api'])
+})
