@@ -830,6 +830,39 @@ class BigBlue {
 
     return prices
   }
+
+  static async setCost(buffer: string, date: string) {
+    const lines: any = Utils.csvToArray(buffer)
+
+    const currencies = await Utils.getCurrenciesApi(date + '-01', 'EUR,USD,GBP,AUD', 'EUR')
+
+    let marge = 0
+    let i = 0
+
+    const orders = {}
+    for (const line of lines) {
+      if (!orders[line.ID]) {
+        orders[line.ID] = 0
+      }
+      orders[line.ID] += +line.Price
+    }
+    for (const [id, price] of Object.entries(orders) as any) {
+      const order = await DB('order_shop').where('logistician_id', id).first()
+      if (!order) {
+        continue
+      }
+      order.shipping_cost = price * currencies[order.currency]
+      marge += order.shipping - order.shipping_cost
+      await order.save()
+      i++
+    }
+
+    console.log('marge => ', marge)
+    return {
+      dispatchs: i,
+      marge: marge
+    }
+  }
 }
 
 export default BigBlue

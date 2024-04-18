@@ -1122,6 +1122,19 @@ class AdminController {
     return Dispatch.getCosts(params)
   }
 
+  async importShippingInvoice({ params }) {
+    const payload = await validator.validate({
+      schema: schema.create({
+        logistician: schema.string(),
+        year: schema.string(),
+        month: schema.string(),
+        invoice: schema.string()
+      }),
+      data: params
+    })
+    return Dispatch.importInvoice(payload)
+  }
+
   extractShippingCosts({ params }) {
     return Dispatch.extractCosts(params)
   }

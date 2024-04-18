@@ -8,7 +8,7 @@ import Dig from 'App/Services/Dig'
 import Notification from 'App/Services/Notification'
 import Order from 'App/Services/Order'
 import Payments from 'App/Services/Payments'
-import Sna from 'App/Services/Sna'
+import BigBlue from 'App/Services/BigBlue'
 import Cart from 'App/Services/Cart'
 import Stock from 'App/Services/Stock'
 import Storage from 'App/Services/Storage'
@@ -461,19 +461,16 @@ class Dispatch {
     buffer: Buffer,
     force: boolean = false
   ) => {
-    let dispatchs: number = 0
-
-    let dis
+    let res
     if (transporter === 'daudin') {
-      dis = await Daudin.setCost(date, buffer, force)
-    } else if (transporter === 'sna') {
-      dis = await Sna.setCost(buffer, force)
+      res = await Daudin.setCost(date, buffer, force)
+    } else if (transporter === 'bigblue') {
+      res = await BigBlue.setCost(buffer, date, force)
     } else if (transporter === 'whiplash') {
-      dis = await Whiplash.setCost(buffer, force)
+      res = await Whiplash.setCost(buffer, force)
     }
-    dispatchs += dis
 
-    return dispatchs
+    return res
   }
 
   static getShippingRevenues = async (params) => {
@@ -973,6 +970,19 @@ class Dispatch {
     prices[`FR_Mondial Relay Point Relais`] = { ...price }
 
     return prices
+  }
+
+  static importInvoice = async (params: {
+    logistician: string
+    year: string
+    month: string
+    invoice: string
+  }) => {
+    const buffer = Buffer.from(params.invoice, 'base64')
+    const date = `${params.year}-${params.month}`
+    const res = await Dispatch.setCost(params.logistician, date, buffer, true)
+    console.log(res)
+    return res
   }
 
   static compareCosts = async (params?: { transporter: string }) => {

@@ -596,6 +596,7 @@ Route.group(() => {
   Route.post('/contests/:id/extract', 'ContestController.extract')
   Route.get('/shipping-costs', 'AdminController.getShippingCosts')
   Route.get('/shipping-costs/extract', 'AdminController.extractShippingCosts')
+  Route.post('/shipping-invoice', 'AdminController.importShippingInvoice')
   Route.post('/calculate-shipping', 'AdminController.calculateShipping')
   Route.get('/stocks', 'AdminController.getStocks')
   Route.get('/stocks/price', 'AdminController.exportStocksPrices')

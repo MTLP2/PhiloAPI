@@ -799,7 +799,10 @@ class Whiplash {
     }
 
     console.log('marge => ', marge)
-    return dispatchs.length
+    return {
+      dispatchs: dispatchs.length,
+      marge
+    }
   }
 
   static parseShippings = async () => {
