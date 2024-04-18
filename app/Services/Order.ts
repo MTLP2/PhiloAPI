@@ -1243,7 +1243,7 @@ static toJuno = async (params) => {
     invoice.lines = []
     invoice.lines = params.products.map((prod) => {
       return {
-        name: prod.title || '',
+        name: prod.title || prod.barcode || '',
         price: prod.price,
         quantity: prod.quantity,
         total: prod.price * prod.quantity
