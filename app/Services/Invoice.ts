@@ -478,6 +478,44 @@ class Invoice {
     }
   }
 
+  static async checkIncorrectInvoices() {
+    const invoices = await DB('invoice')
+      .whereRaw('FLOOR(sub_total) != FLOOR(total / (1 + (tax_rate / 100)))')
+      .orderBy('id', 'desc')
+      .where('invoice.date', '>=', '2024-04-01')
+      .all()
+
+    await Notification.sendEmail({
+      to: 'box@diggersfactory.com,victor@diggersfactory.com',
+      subject: 'Factures incorrect',
+      html: `
+        <p>${invoices.length} factures incorrect.</p>
+        <table>
+          <tr>
+            <th>Numéro</th>
+            <th>Sub total</th>
+            <th>Tax rate</th>
+            <th>Total</th>
+          </tr>
+          ${invoices
+            .map(
+              (invoice) =>
+                `<tr>
+              <td>https://www.diggersfactory.com/sheraf/invoice/${invoice.id}</td>
+              <td>${invoice.sub_total}</td>
+              <td>${invoice.tax_rate}</td>
+              <td>${invoice.total}</td>
+              </tr>`
+            )
+            .join('')}
+        </table>
+      `
+    })
+    console.log(invoices.length)
+
+    return invoices
+  }
+
   static async setNumbers() {
     const numbers = await DB('invoice')
       .select('type', DB.raw('max(number) as max'))
