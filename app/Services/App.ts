@@ -158,6 +158,7 @@ class App {
         await Elogik.checkBlockedOrders()
       } else if (hour === 12) {
         await Invoice.reminder()
+        await Invoice.checkIncorrectInvoices()
       } else if (hour === 14) {
         await Elogik.checkBlockedOrders()
       } else if (hour === 16) {
