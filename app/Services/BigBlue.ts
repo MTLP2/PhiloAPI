@@ -322,7 +322,7 @@ class BigBlue {
                   display_name: pickup.name,
                   postal: pickup.zip_coe,
                   country: pickup.country_id,
-                  carrier_service: 'Mondial Relay'
+                  carrier_service: 'mondialrelay-relaisl'
                 }
               : null,
           shipping_address: {
