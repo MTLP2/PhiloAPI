@@ -1646,6 +1646,10 @@ class Quote {
     // Frais supplementaire + échentillon diggers
     quote.test_pressing = 40
 
+    if (params.quantity === 100) {
+      quote.test_pressing += 90
+    }
+
     return quote
   }
 
