@@ -752,7 +752,7 @@ class StatementService {
     worksheet.eachRow((row, rowNumber) => {
       const barcode = row.getCell(cols2['UPC']).value
       const quantity = row.getCell(cols2['Qty']).value
-      const total = row.getCell(cols2['Extended']).value
+      const total = row.getCell(cols2['Extended']).text / currencies.USD
 
       if (!barcode || rowNumber === 1) {
         return
