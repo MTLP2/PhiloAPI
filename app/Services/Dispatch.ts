@@ -493,6 +493,93 @@ class Dispatch {
     return s
   }
 
+  static uploadShippingPrices = async (params: { file: string }) => {
+    const workbook = new Excel.Workbook()
+    const file = Buffer.from(params.file, 'base64')
+    await workbook.xlsx.load(file)
+    const worksheet = workbook.getWorksheet(1)
+
+    let columns: any = {}
+    const row = worksheet.getRow(1)
+
+    row.eachCell(function (cell) {
+      columns[cell.value] = cell._column.letter
+    })
+
+    const prices = []
+    worksheet.eachRow((row, rowNumber) => {
+      if (rowNumber < 2) {
+        return
+      }
+      const price: any = {}
+      for (const [key, value] of Object.entries(columns)) {
+        const vv = row.getCell(value).text
+        price[key] = vv === 'NULL' ? null : !isNaN(vv) ? Utils.round(vv) : vv
+      }
+      prices.push(price)
+    })
+
+    for (const price of prices) {
+      let item: any = await DB('shipping_weight')
+        .where('country_id', price.country_id)
+        .where('state', price.state)
+        .where('partner', price.partner)
+        .first()
+
+      if (!item) {
+        item = DB('shipping_weight')
+      }
+      if (params.id) {
+        item = await DB('article').find(params.id)
+      } else {
+      }
+
+      item.country_id = price.country_id
+      item.state = price.state
+      item.partner = price.partner
+      item.oil = price.oil
+      item.marge = price.marge
+      item.packing = price.packing
+      item.picking = price.picking
+      item['250g'] = price['250g']
+      item['500g'] = price['500g']
+      item['750g'] = price['750g']
+      item['1kg'] = price['1kg']
+      item['2kg'] = price['2kg']
+      item['3kg'] = price['3kg']
+      item['4kg'] = price['4kg']
+      item['5kg'] = price['5kg']
+      item['6kg'] = price['6kg']
+      item['7kg'] = price['7kg']
+      item['8kg'] = price['8kg']
+      item['9kg'] = price['9kg']
+      item['10kg'] = price['10kg']
+      item['11kg'] = price['11kg']
+      item['12kg'] = price['12kg']
+      item['13kg'] = price['13kg']
+      item['14kg'] = price['14kg']
+      item['15kg'] = price['15kg']
+      item['16kg'] = price['16kg']
+      item['17kg'] = price['17kg']
+      item['18kg'] = price['18kg']
+      item['19kg'] = price['19kg']
+      item['20kg'] = price['20kg']
+      item['21kg'] = price['21kg']
+      item['22kg'] = price['22kg']
+      item['23kg'] = price['23kg']
+      item['24kg'] = price['24kg']
+      item['25kg'] = price['25kg']
+      item['26kg'] = price['26kg']
+      item['27kg'] = price['27kg']
+      item['28kg'] = price['28kg']
+      item['29kg'] = price['29kg']
+      item['30kg'] = price['30kg']
+
+      await item.save()
+    }
+    return prices
+  }
+
   static calculateShipping = (params: {
     quantity: number
     currency: string

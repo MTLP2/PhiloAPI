@@ -590,6 +590,7 @@ Route.group(() => {
   Route.delete('/goodies/:id', 'AdminController.deleteGoodie')
   Route.post('/shipping-compare', 'DispatchController.compareShippingOrder')
   Route.get('/shipping-revenues', 'DispatchnController.getShippingRevenues')
+  Route.post('/shipping-price', 'DispatchController.uploadShippingPrices')
   Route.get('/contests', 'ContestController.all')
   Route.post('/contests', 'ContestController.save')
   Route.delete('/contests/:id', 'ContestController.remove')

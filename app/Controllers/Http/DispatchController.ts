@@ -88,6 +88,16 @@ class DispatchController {
   getShippingRevenues({ params }) {
     return Dispatch.getShippingRevenues(params)
   }
+
+  async uploadShippingPrices({ request }) {
+    const payload = await validator.validate({
+      schema: schema.create({
+        file: schema.string()
+      }),
+      data: request.body()
+    })
+    return Dispatch.uploadShippingPrices(payload)
+  }
 }
 
 export default DispatchController
