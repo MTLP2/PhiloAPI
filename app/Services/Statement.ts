@@ -599,7 +599,7 @@ class StatementService {
       const catNumber = row.getCell('A').value
       const quantity = row.getCell('D').value
       const returned = row.getCell('E').value
-      const total = row.getCell('H').result
+      const total = row.getCell('H').text
 
       if (Number.isInteger(quantity) || Number.isInteger(returned)) {
         data[catNumber] = {
