@@ -1304,7 +1304,11 @@ class Cart {
       if (ship.transporter === 'whiplash') {
         ship.standard2 += 1.5
       }
-      if (!shipping || ship.no_tracking < shipping.standard || ship.standard2 < shipping.standard) {
+      if (
+        !shipping ||
+        (ship.no_trackin > 0 && ship.no_tracking < shipping.standard) ||
+        ship.standard2 < shipping.standard
+      ) {
         shipping = ship
       }
     }
