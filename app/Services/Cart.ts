@@ -442,8 +442,10 @@ class Cart {
     )
 
     cart.service_charge = Utils.round(cart.total * 0.06)
-    if (cart.service_charge > 20) {
-      cart.service_charge = 20
+
+    const curr = await Utils.getCurrencyComp('EUR', cart.currency)
+    if (cart.service_charge > 20 * curr) {
+      cart.service_charge = 20 * curr
     }
     cart.total = Utils.round(cart.total + cart.service_charge)
   }
@@ -1779,7 +1781,10 @@ class Cart {
     }
 
     const intent: any = {
-      amount: Math.round(params.calculate.total * 100),
+      amount:
+        params.calculate.currency === 'KRW'
+          ? Math.round(params.calculate.total)
+          : Math.round(params.calculate.total * 100),
       currency: params.calculate.currency,
       transfer_group: `{ORDER_${params.order_id}}`,
       metadata: metadata

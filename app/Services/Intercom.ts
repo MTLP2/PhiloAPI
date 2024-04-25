@@ -184,6 +184,8 @@ const translate: (key: string, lang?: 'FR' | 'EN', payload?: string) => string |
     EUR: ' €',
     USD: '$',
     AUD: '$A',
+    PHP: '₱',
+    KRW: '₩',
     GBP: '£',
 
     // Order -> Status / Step

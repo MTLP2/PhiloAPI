@@ -834,7 +834,7 @@ class BigBlue {
   static async setCost(buffer: string, date: string) {
     const lines: any = Utils.csvToArray(buffer)
 
-    const currencies = await Utils.getCurrenciesApi(date + '-01', 'EUR,USD,GBP,AUD', 'EUR')
+    const currencies = await Utils.getCurrenciesApi(date + '-01', 'EUR,USD,GBP,AUD,KRW', 'EUR')
 
     let marge = 0
     let i = 0

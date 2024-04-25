@@ -530,6 +530,12 @@ class Utils {
         updated_at: Utils.date()
       })
     }
+    if (isFloat(data.rates.KRW)) {
+      await DB('currency').where('id', 'KRW').update({
+        value: data.rates.KRW,
+        updated_at: Utils.date()
+      })
+    }
 
     return true
   }
@@ -583,28 +589,8 @@ class Utils {
       res.GBP = res.GBP * res.EUR
       res.AUD = res.AUD * res.EUR
       res.PHP = res.PHP * res.EUR
+      res.KRW = res.KRW * res.EUR
       res[base] = 1
-      /**
-      if (base === 'USD') {
-        res.EUR = 1 / res.USD
-        res.GBP = res.GBP * res.EUR
-        res.AUD = res.AUD * res.EUR
-        res.PHP = res.PHP * res.EUR
-        res.USD = 1
-      } else if (base === 'GBP') {
-        res.EUR = 1 / res.GBP
-        res.USD = res.USD * res.EUR
-        res.AUD = res.AUD * res.EUR
-        res.PHP = res.PHP * res.EUR
-        res.GBP = 1
-      } else if (base === 'AUD') {
-        res.EUR = 1 / res.AUD
-        res.USD = res.USD * res.EUR
-        res.GBP = res.GBP * res.EUR
-        res.PHP = res.PHP * res.EUR
-        res.AUD = 1
-      }
-      **/
     }
 
     return res as {
@@ -613,6 +599,7 @@ class Utils {
       GBP: number
       AUD: number
       PHP: number
+      KRW: number
     }
   }
 
@@ -622,7 +609,7 @@ class Utils {
 
   static getCurrenciesApi = async (
     date = 'latest',
-    symbols = 'EUR,USD,GBP,AUD,PHP',
+    symbols = 'EUR,USD,GBP,AUD,PHP,KRW',
     base = 'EUR'
   ) => {
     return Utils.request(
@@ -949,7 +936,7 @@ class Utils {
             if (regroup[word]) {
               ww = regroup[word] + '.' + word
             }
-            if (['EUR', 'USD', 'GBP', 'AUD', 'PHP'].includes(w)) {
+            if (['EUR', 'USD', 'GBP', 'AUD', 'PHP', 'KRW'].includes(w)) {
               return match.replace(w, ww)
             }
             return match.replace(w, ww).toLowerCase()
@@ -1168,7 +1155,7 @@ class Utils {
     currencies
   }: {
     price: number
-    prices?: { EUR: number; USD: number; GBP: number; AUD: number; PHP: number }
+    prices?: { EUR: number; USD: number; GBP: number; AUD: number; PHP: number; KRW: number }
     currency: Currencies
     currencies: { id: string; value: Currencies; updated_at: string }[]
   }) => {
@@ -1178,14 +1165,16 @@ class Utils {
     const USD = Math.ceil(price * curr.USD + 0.55) - 0.01
     const GBP = Math.ceil(price * curr.GBP + 0.45) - 0.01
     const AUD = Math.ceil(price * curr.AUD + 0.75) - 0.01
-    const PHP = Math.ceil(price * curr.PHP + 50) - 0.01
+    const PHP = Math.ceil(price * curr.PHP + 50)
+    const KRW = Math.ceil(Math.ceil((price * curr.KRW + 750) / 100) * 100) - 1
 
     return {
       EUR: currency === 'EUR' ? price : EUR,
       USD: currency === 'USD' ? price : USD,
       GBP: currency === 'GBP' ? price : GBP,
       AUD: currency === 'AUD' ? price : AUD,
-      PHP: currency === 'PHP' ? price : PHP
+      PHP: currency === 'PHP' ? price : PHP,
+      KRW: currency === 'KRW' ? price : KRW
     }
   }
 

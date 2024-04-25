@@ -323,6 +323,12 @@ class App {
         updated_at: Utils.date()
       })
     }
+    if (isFloat(data.KRW)) {
+      await DB('currency').where('id', 'KRW').update({
+        value: data.KRW,
+        updated_at: Utils.date()
+      })
+    }
 
     return true
   }

@@ -1539,13 +1539,15 @@ static toJuno = async (params) => {
         EUR: 0,
         USD: 0,
         GBP: 0,
-        AUD: 0
+        AUD: 0,
+        KRW: 0
       },
       paypal: {
         EUR: 0,
         USD: 0,
         GBP: 0,
-        AUD: 0
+        AUD: 0,
+        KRW: 0
       }
     }
 
@@ -1559,14 +1561,16 @@ static toJuno = async (params) => {
         EUR: Utils.round(payments.stripe.EUR),
         USD: Utils.round(payments.stripe.USD),
         GBP: Utils.round(payments.stripe.GBP),
-        AUD: Utils.round(payments.stripe.AUD)
+        AUD: Utils.round(payments.stripe.AUD),
+        KRW: Utils.round(payments.stripe.KRW)
       },
       {
         type: 'Paypal',
         EUR: Utils.round(payments.paypal.EUR),
         USD: Utils.round(payments.paypal.USD),
         GBP: Utils.round(payments.paypal.GBP),
-        AUD: Utils.round(payments.paypal.AUD)
+        AUD: Utils.round(payments.paypal.AUD),
+        KRW: Utils.round(payments.paypal.KRW)
       }
     ]
 
@@ -1576,7 +1580,8 @@ static toJuno = async (params) => {
         { name: 'EUR', index: 'EUR' },
         { name: 'USD', index: 'USD' },
         { name: 'GBP', index: 'GBP' },
-        { name: 'AUD', index: 'AUD' }
+        { name: 'AUD', index: 'AUD' },
+        { name: 'KRW', index: 'KRW' }
       ],
       rows
     )

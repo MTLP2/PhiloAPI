@@ -259,6 +259,7 @@ class Notification {
         USD: '$',
         GBP: '£',
         AUD: '$A',
+        KRW: '₩',
         PHP: '₱'
       }
 
