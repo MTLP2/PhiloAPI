@@ -1017,7 +1017,7 @@ class Cart {
             partner: transporter.transporter,
             currency: transporter.currency,
             standard: standard,
-            tracking: Utils.round(standard + 2)
+            tracking: Utils.round(standard * 1.15)
           }
         }
       }
@@ -1070,11 +1070,14 @@ class Cart {
         transporter[weight] &&
         (!costs || !costs.standard || costs.standard > transporter[weight])
       ) {
+        if (params.country_id !== 'GB') {
+          transporter[weight] = transporter[weight] * 1.1
+        }
         if (transporter.type === 'no_tracking') {
           costs.no_tracking = Utils.round(transporter[weight] + cost)
         } else {
           costs.standard = Utils.round(transporter[weight] + cost)
-          costs.tracking = Utils.round(transporter[weight] + cost + 2)
+          costs.tracking = Utils.round((transporter[weight] + cost) * 1.15)
         }
       }
     }
@@ -1118,7 +1121,7 @@ class Cart {
       partner: '',
       currency: transporter.currency,
       standard: cost,
-      tracking: Utils.round(cost + 2)
+      tracking: Utils.round(cost * 1.15)
     }
 
     /**
@@ -1154,7 +1157,7 @@ class Cart {
       partner: '',
       currency: transporter.currency,
       standard: cost,
-      tracking: Utils.round(cost + 2)
+      tracking: Utils.round(cost * 1.15)
     }
     return costs
   }
