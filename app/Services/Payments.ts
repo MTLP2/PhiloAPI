@@ -263,7 +263,8 @@ class Payment {
     **/
 
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Utils.round(payment.total * 100),
+      amount:
+        payment.currency === 'KRW' ? Math.round(payment.total) : Math.round(payment.total * 100),
       currency: payment.currency
     })
 

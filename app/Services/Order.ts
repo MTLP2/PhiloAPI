@@ -818,7 +818,7 @@ static toJuno = async (params) => {
       }
       const refund = await stripe.refunds.create({
         charge: order.payment_id,
-        amount: Math.round(order.total * 100)
+        amount: order.currency === 'KRW' ? Math.round(order.total) : Math.round(order.total * 100)
       })
       return refund
     }
