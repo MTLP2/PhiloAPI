@@ -139,9 +139,9 @@ class App {
         await App.currencies()
         await App.generateSitemap()
         await App.exportProductReviewFeed()
+        await BigBlue.setTrackingLinks()
       } else if (hour === 4) {
         await Whiplash.setTrackingLinks()
-        await BigBlue.setTrackingLinks()
       } else if (hour === 5) {
         await Elogik.syncBoxes()
         await Cio.syncNewsletterNoAccount()
@@ -159,6 +159,7 @@ class App {
       } else if (hour === 12) {
         await Invoice.reminder()
         await Invoice.checkIncorrectInvoices()
+        await BigBlue.setTrackingLinks()
       } else if (hour === 14) {
         await Elogik.checkBlockedOrders()
       } else if (hour === 16) {
