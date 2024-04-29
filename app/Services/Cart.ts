@@ -1899,7 +1899,6 @@ class Cart {
       }
     }
 
-    console.log(data.items)
     const order: any = await PayPal.create({
       intent: 'CAPTURE',
       purchase_units: [data]
