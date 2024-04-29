@@ -445,7 +445,7 @@ class Cart {
 
     const curr = await Utils.getCurrencyComp('EUR', cart.currency)
     if (cart.service_charge > 20 * curr) {
-      cart.service_charge = 20 * curr
+      cart.service_charge = Utils.round(20 * curr)
     }
     cart.total = Utils.round(cart.total + cart.service_charge)
   }
@@ -1899,6 +1899,7 @@ class Cart {
       }
     }
 
+    console.log(data.items)
     const order: any = await PayPal.create({
       intent: 'CAPTURE',
       purchase_units: [data]
