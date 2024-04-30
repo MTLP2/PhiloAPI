@@ -4,6 +4,54 @@ import SftpClient from 'ssh2-sftp-client'
 import moment from 'moment'
 
 class Charts {
+  static getOrders = async (params: {
+    country_id: string
+    date?: string
+    date_start?: string
+    date_end?: string
+  }) => {
+    return DB('order_shop as os')
+      .select(
+        'os.id as oshop_id',
+        'os.step',
+        'oi.id as oi_id',
+        'c.id as customer_id',
+        'p.id as project_id',
+        'oi.quantity',
+        'oi.total',
+        'oi.price',
+        'oi.currency',
+        'c.country_id',
+        'c.zip_code',
+        'p.name as project_name',
+        'p.artist_name as artist_name',
+        'product.name as name',
+        'product.barcode',
+        'os.date_export'
+      )
+      .join('customer as c', 'os.customer_id', 'c.id')
+      .join('order_item as oi', 'oi.order_shop_id', 'os.id')
+      .join('project as p', 'p.id', 'oi.project_id')
+      .join('vod as v', 'v.project_id', 'p.id')
+      .join('project_product', 'project_product.project_id', 'p.id')
+      .join('product', 'product.id', 'project_product.product_id')
+      .whereIn('product.type', ['vinyl', 'cd', 'tape'])
+      .whereNotNull('os.date_export')
+      .where('is_paid', true)
+      .where('oi.total', '>', 3.49)
+      .where('c.country_id', params.country_id)
+      .where((query) => {
+        if (params.date) {
+          query.whereRaw(`DATE_FORMAT(os.date_export, "%Y-%m-%d") = '${params.date}'`)
+        } else if (params.date_start && params.date_end) {
+          query.whereRaw(
+            `DATE(os.date_export) BETWEEN '${params.date_start}' AND '${params.date_end}'`
+          )
+        }
+      })
+      .all()
+  }
+
   // Get Luminate Charts (US & CA shipped only)
   static async getLuminateCharts(countryId: 'CA' | 'US') {
     // Local helpers
@@ -43,43 +91,11 @@ class Charts {
       return zipCode
     }
 
-    const orders: {
-      oshop_id: number
-      step: string
-      oi_id: number
-      customer_id: number
-      project_id: number
-      quantity: number
-      country_id: string
-      zip_code: string
-      barcode?: string
-      created_at: string
-    }[] = await DB('order_shop as os')
-      .select(
-        'os.id as oshop_id',
-        'os.step',
-        'oi.id as oi_id',
-        'c.id as customer_id',
-        'p.id as project_id',
-        'oi.quantity',
-        'c.country_id',
-        'c.zip_code',
-        'v.barcode',
-        'os.created_at'
-      )
-      .leftJoin('refund as r', 'r.order_shop_id', 'os.id')
-      .join('customer as c', 'os.customer_id', 'c.id')
-      .join('order_item as oi', 'oi.order_shop_id', 'os.id')
-      .join('project as p', 'p.id', 'oi.project_id')
-      .join('vod as v', 'v.project_id', 'p.id')
-      .whereIn('os.step', ['sent', 'returned'])
-      .whereNotNull('os.date_export')
-      .where('oi.total', '>', 3.49)
-      .where('c.country_id', countryId)
-      .whereRaw(
-        'DATE(os.created_at) BETWEEN DATE_SUB(CURDATE(), INTERVAL 8 DAY) AND DATE_SUB(CURDATE(), INTERVAL 0 DAY)'
-      )
-      .all()
+    const orders = await Charts.getOrders({
+      country_id: countryId,
+      date_start: moment().subtract(8, 'days').format('YYYY-MM-DD'),
+      date_end: moment().subtract(1, 'days').format('YYYY-MM-DD')
+    })
 
     const barcodes: { barcode: string; project_id: number; type: string }[] = await DB(
       'project_product as pp'
@@ -157,53 +173,73 @@ class Charts {
     return text
   }
 
-  static async getOfficialCharts(params: { date: string; country: 'FR' | 'GB' }) {
-    const date = moment(params.date)
-    const orders: {
-      order_shop_id: number
-      step: string
-      customer_id: number
-      project_id: number
-      quantity: number
-      price: number
-      total: number
-      currency: string
-      country_id: string
-      zip_code: string
-      barcode?: string
-      date_fr: string
-      barcodes: string
-      created_at: string
-    }[] = await DB('order_shop as os')
-      .select(
-        'os.date_export',
-        'oi.order_shop_id',
-        'os.step',
-        'v.project_id',
-        'p.artist_name',
-        'p.name',
-        'oi.price',
-        'oi.quantity',
-        'oi.total',
-        'oi.currency',
-        'c.country_id',
-        'c.zip_code',
-        'c.id as cid',
-        'v.barcode as barcodes',
-        'product.barcode',
-        'product.type'
-      )
-      .join('customer as c', 'os.customer_id', 'c.id')
-      .join('order_item as oi', 'oi.order_shop_id', 'os.id')
-      .join('project as p', 'p.id', 'oi.project_id')
-      .join('vod as v', 'v.project_id', 'p.id')
-      .join('project_product', 'project_product.project_id', 'p.id')
-      .join('product', 'product.id', 'project_product.product_id')
-      .whereIn('product.type', ['cd', 'vinyl', 'tape'])
-      .where('is_paid', true)
-      .where('c.country_id', 'like', params.country)
-      .whereRaw(`DATE_FORMAT(os.date_export, "%Y-%m-%d") = '${date.format('YYYY-MM-DD')}'`)
-      .all()
+  static async getChartsGfk(params: { country_id: string }) {
+    const orders = await Charts.getOrders({
+      country_id: params.country_id,
+      date: moment().subtract(1, 'days').format('YYYY-MM-DD')
+    })
+
+    const columns = [
+      'Retailer Name',
+      'Shop ID',
+      'Date Of Sale',
+      'Time Of Sale',
+      'Units',
+      'Sale Price',
+      'EAN-Code',
+      'Instore Code',
+      'Product Group',
+      'Productname',
+      'Productname 1',
+      'Productname 2',
+      'Productname 3',
+      'Artistname',
+      'Artistname 1',
+      'Artistname 2',
+      'Artistname 3',
+      'Labelname',
+      'Labelname 1',
+      'Labelname 2',
+      'Labelname 3',
+      'Licensorname',
+      'Licensorname 1',
+      'Licensorname 2',
+      'Licensorname 3',
+      'release_date',
+      'post_code',
+      'Transaction ID'
+    ]
+
+    let txt = columns.map((c) => `"${c}"`).join('	') + '\n'
+
+    for (const order of orders) {
+      order['Retailer Name'] = 'Diggers Factory'
+      order['Shop ID'] = '1'
+      order['Date Of Sale'] = moment(order.created_at).format('YYYYMMDD')
+      order['Time Of Sale'] = moment(order.created_at).format('HHmmss')
+      order['Units'] = order.quantity
+      order['Sale Price'] = order.price
+      order['EAN-Code'] = order.barcode
+      order['Product Group'] = 'music'
+      order['Productname'] = order.name
+      order['Artistname'] = order.artist_name
+      order['release_date'] = moment(order.created_at).format('YYYYMMDD')
+      order['post_code'] = order.zip_code
+      order['Transaction ID'] = order.oi_id
+
+      let line = columns.map((c) => `"${order[c] || ''}"`).join('	') + '\n'
+      txt += line
+    }
+
+    return txt
+  }
+
+  static async getOfficialCharts(params: { country: 'FR' | 'GB' }) {
+    const date = moment().subtract(1, 'days')
+    const orders = await Charts.getOrders({
+      country_id: params.country,
+      date: date.format('YYYY-MM-DD')
+    })
 
     const currenciesDB = await Utils.getCurrenciesDb()
     const currencies = await Utils.getCurrencies(
@@ -275,9 +311,8 @@ class Charts {
   }
 
   static async uploadOfficialCharts(params: { country: 'FR' | 'GB' }) {
-    const date = moment().subtract(1, 'days')
     const file = await Charts.getOfficialCharts({
-      date: date.format('YYYY-MM-DD'),
+      date: moment().subtract(1, 'days').format('YYYY-MM-DD'),
       country: params.country
     })
 
@@ -336,6 +371,50 @@ class Charts {
         console.log('connected to charts')
         client.put(Buffer.from(us), '40301864.txt')
         client.put(Buffer.from(ca), 'C4001864.txt')
+
+        setTimeout(() => {
+          console.log('close connection to charts')
+          client.end()
+        }, 20000)
+      })
+      // .finally(() => client.end())
+      .catch((err) => {
+        console.error(err.message)
+      })
+  }
+
+  static async uploadChartsGfk() {
+    const date = moment().subtract(1, 'days').format('YYYYMMDD')
+
+    const countries = {
+      ES: null,
+      DE: null,
+      NL: null
+    }
+
+    for (const country of Object.keys(countries)) {
+      countries[country] = await Charts.getChartsGfk({
+        country_id: country
+      })
+    }
+
+    let client = new SftpClient()
+    let config = {
+      host: 'ftp.gfk-e.com',
+      port: 22,
+      username: 'FR_DiggFact',
+      password: '1p13f7k8TffS'
+    }
+
+    const partner = 'partner'
+    client
+      .connect(config)
+      .then(() => {
+        console.log('connected to charts')
+
+        for (const country of Object.keys(countries)) {
+          client.put(Buffer.from(countries[country]), `${partner}_${country}_${date}.txt`)
+        }
 
         setTimeout(() => {
           console.log('close connection to charts')
