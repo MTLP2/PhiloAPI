@@ -300,6 +300,9 @@ class Production {
         'vod.currency as vod_currency',
         'vod.type as vod_type',
         'user.customer_invoice_id as billing_customer',
+        'project.name as project_name',
+        'project.artist_name as project_artist',
+        'project.picture as project_picture',
         'project.category as project_category'
       )
       .join('vod', 'vod.project_id', 'production.project_id')
