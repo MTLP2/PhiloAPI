@@ -99,7 +99,7 @@ class Cart {
         delete params[i]
       }
     })
--
+
     cart.currency = params.currency || 'EUR'
     cart.shipping = 0
     cart.sub_total = 0
@@ -401,6 +401,7 @@ class Cart {
           cart.noStripe = true
         }
 
+        console.log(cart.currency, cart.shops[s].currency)
         let cur = 1
         if (cart.currency !== cart.shops[s].currency) {
           cur = await Utils.getCurrencyComp(cart.shops[s].currency, cart.currency)
