@@ -520,14 +520,14 @@ class Dispatch {
     })
 
     for (const price of prices) {
-      let item: any = await DB('shipping_weight')
+      let item: any = await DB('shipping_weight_new')
         .where('country_id', price.country_id)
         .where('state', price.state)
         .where('partner', price.partner)
         .first()
 
       if (!item) {
-        item = DB('shipping_weight')
+        item = DB('shipping_weight_new')
         item.created_at = Utils.date()
       }
       if (params.id) {

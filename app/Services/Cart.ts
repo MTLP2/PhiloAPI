@@ -1028,6 +1028,129 @@ class Cart {
     return costs
   }
 
+  static calculateShippingByTransporterNew = async (params: {
+    transporter: string
+    partner: string
+    country_id: string
+    weight: number
+    quantity: number
+    insert: number
+    mode?: string
+    state?: string
+    pickup?: boolean
+  }) => {
+    const transporters = await DB('shipping_weight_new')
+      .where('partner', 'like', params.partner)
+      .where('country_id', params.country_id)
+      .where((query) => {
+        if (params.mode) {
+          query.where('transporter', 'like', params.mode)
+        }
+        if (params.partner === 'shipehype' && params.state) {
+          query.where('state', 'like', params.state)
+        }
+      })
+      .all()
+
+    let weight
+    if (params.weight < 250 && params.transporter === 'bigblue') {
+      weight = '250g'
+    } else if (params.weight < 500) {
+      weight = '500g'
+    } else if (params.weight < 750) {
+      weight = '750g'
+    } else {
+      weight = Math.ceil(params.weight / 1000) + 'kg'
+    }
+
+    let costs: any = null
+
+    for (const transporter of transporters) {
+      if (params.quantity > 1) {
+        transporter.picking = 1
+      }
+
+      let cost: any
+      if (params.transporter === 'bigblue') {
+        cost = transporter.packing + transporter.picking * (params.insert - 1)
+      } else {
+        cost = transporter.packing + transporter.picking * params.insert
+      }
+
+      if (transporter.oil) {
+        transporter[weight] = transporter[weight] + (transporter.oil / 100) * transporter[weight]
+      }
+
+      if (transporter.security) {
+        transporter[weight] =
+          transporter[weight] + (transporter.security / 100) * transporter[weight]
+      }
+
+      if (transporter.marge) {
+        transporter[weight] = transporter[weight] + (transporter.marge / 100) * transporter[weight]
+      }
+
+      if (transporter.transporter === 'MDR') {
+        if (params.pickup === false) {
+          continue
+        }
+        if (!costs) {
+          costs = {}
+        }
+        if (transporter[weight] < 4.8) {
+          transporter[weight] = 4.8
+        }
+        costs.pickup = Utils.round(transporter[weight] + cost)
+      } else if (
+        transporter[weight] &&
+        (!costs || !costs.standard || costs.standard > transporter[weight])
+      ) {
+        if (params.transporter === 'bigblue') {
+          transporter[weight] = transporter[weight] / 1.2
+        }
+
+        transporter[weight] = Utils.round(transporter[weight] + 0.5)
+
+        if (!costs || !costs.standard || costs.standard > Utils.round(transporter[weight] + cost)) {
+          let standard = Utils.round(transporter[weight] + cost)
+
+          const costs: any = {
+            transporter: params.transporter,
+            partner: params.partner,
+            currency:
+              transporter.transporter === 'whiplash'
+                ? 'USD'
+                : transporter.tranporter === 'whiplash_uk'
+                ? 'GBP'
+                : 'EUR',
+            no_tracking: null,
+            standard: null,
+            tracking: null
+          }
+          if (transporter.transporter === 'whiplash_uk' && params.country_id !== 'GB') {
+            transporter[weight] = transporter[weight] * 1.1
+          }
+          if (transporter.type === 'no_tracking') {
+            costs.no_tracking = Utils.round(transporter[weight] + cost)
+          } else {
+            costs.standard = Utils.round(transporter[weight] + cost)
+            costs.tracking = Utils.round((transporter[weight] + cost) * 1.15)
+          }
+          costs = {
+            ...costs,
+            transporter: params.transporter,
+            partner: transporter.transporter,
+            currency: transporter.currency,
+            standard: standard,
+            tracking: Utils.round(standard * 1.15)
+          }
+        }
+      }
+    }
+
+    return costs
+  }
+
   static calculateShippingWhiplashUk = async (params) => {
     const transporters = await DB('shipping_weight')
       .where('partner', 'whiplash_uk')
