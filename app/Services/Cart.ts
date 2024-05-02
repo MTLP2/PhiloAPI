@@ -99,7 +99,7 @@ class Cart {
         delete params[i]
       }
     })
-
+-
     cart.currency = params.currency || 'EUR'
     cart.shipping = 0
     cart.sub_total = 0
@@ -215,6 +215,7 @@ class Cart {
             country_id: params.country_id,
             state: params.customer.state
           })
+          console.log('=>', shipping)
           if (shipping.error === 'no_shipping' && process.env.NODE_ENV === 'production') {
             /**
             await Notification.sendEmail({
@@ -689,6 +690,7 @@ class Cart {
           state: p.customer.state
         })
 
+        console.log('shippings ===', shipping)
         // Standard
         shipping.original_standard = Utils.getShipDiscounts({
           ship: shipping.standard,
@@ -1112,22 +1114,15 @@ class Cart {
         transporter[weight] = Utils.round(transporter[weight] + 0.5)
 
         if (!costs || !costs.standard || costs.standard > Utils.round(transporter[weight] + cost)) {
-          let standard = Utils.round(transporter[weight] + cost)
-
           const costs: any = {
             transporter: params.transporter,
             partner: params.partner,
-            currency:
-              transporter.transporter === 'whiplash'
-                ? 'USD'
-                : transporter.tranporter === 'whiplash_uk'
-                ? 'GBP'
-                : 'EUR',
+            currency: transporter.currency,
             no_tracking: null,
             standard: null,
             tracking: null
           }
-          if (transporter.transporter === 'whiplash_uk' && params.country_id !== 'GB') {
+          if (transporter.partner === 'whiplash_uk' && params.country_id !== 'GB') {
             transporter[weight] = transporter[weight] * 1.1
           }
           if (transporter.type === 'no_tracking') {
@@ -1136,16 +1131,13 @@ class Cart {
             costs.standard = Utils.round(transporter[weight] + cost)
             costs.tracking = Utils.round((transporter[weight] + cost) * 1.15)
           }
-          costs = {
-            ...costs,
-            transporter: params.transporter,
-            partner: transporter.transporter,
-            currency: transporter.currency,
-            standard: standard,
-            tracking: Utils.round(standard * 1.15)
-          }
+          return costs
         }
       }
+    }
+
+    if (!costs.standard && !costs.no_tracking) {
+      return null
     }
 
     return costs
@@ -1207,6 +1199,9 @@ class Cart {
       }
     }
 
+    if (!costs.standard && !costs.no_tracking) {
+      return null
+    }
     return costs
   }
 
