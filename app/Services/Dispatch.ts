@@ -528,6 +528,7 @@ class Dispatch {
 
       if (!item) {
         item = DB('shipping_weight')
+        item.created_at = Utils.date()
       }
       if (params.id) {
         item = await DB('article').find(params.id)
@@ -537,8 +538,9 @@ class Dispatch {
       item.country_id = price.country_id
       item.state = price.state
       item.partner = price.partner
-      item.oil = price.oil
-      item.marge = price.marge
+      item.oil = price.oil || null
+      item.security = price.security || null
+      item.marge = price.marge || null
       item.packing = price.packing
       item.picking = price.picking
       item['250g'] = price['250g']
@@ -574,7 +576,8 @@ class Dispatch {
       item['28kg'] = price['28kg']
       item['29kg'] = price['29kg']
       item['30kg'] = price['30kg']
-
+      item.updated_at = Utils.date()
+      console.log(item)
       await item.save()
     }
     return prices
