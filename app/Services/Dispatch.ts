@@ -506,6 +506,8 @@ class Dispatch {
       columns[cell.value] = cell._column.letter
     })
 
+    await DB().execute('truncate table shipping_weight_new')
+
     const prices = []
     worksheet.eachRow((row, rowNumber) => {
       if (rowNumber < 2) {
@@ -524,6 +526,7 @@ class Dispatch {
         .where('country_id', price.country_id)
         .where('state', price.state)
         .where('partner', price.partner)
+        .where('transporter', price.transporter)
         .first()
 
       if (!item) {
@@ -538,6 +541,8 @@ class Dispatch {
       item.country_id = price.country_id
       item.state = price.state
       item.partner = price.partner
+      item.currency = price.currency
+      item.transporter = price.transporter
       item.oil = price.oil || null
       item.security = price.security || null
       item.marge = price.marge || null
@@ -577,7 +582,6 @@ class Dispatch {
       item['29kg'] = price['29kg']
       item['30kg'] = price['30kg']
       item.updated_at = Utils.date()
-      console.log(item)
       await item.save()
     }
     return prices
