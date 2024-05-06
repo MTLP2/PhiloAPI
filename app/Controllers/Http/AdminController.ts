@@ -1326,6 +1326,8 @@ class AdminController {
         'packing': schema.number.nullableAndOptional(),
         'picking': schema.number.nullableAndOptional(),
         'oil': schema.number.nullableAndOptional(),
+        'security': schema.number.nullableAndOptional(),
+        'marge': schema.number.nullableAndOptional(),
         '500g': schema.number.nullableAndOptional(),
         '750g': schema.number.nullableAndOptional(),
         '1kg': schema.number.nullableAndOptional(),
