@@ -1905,6 +1905,7 @@ class Cart {
           ? Math.round(params.calculate.total)
           : Math.round(params.calculate.total * 100),
       currency: params.calculate.currency,
+      payment_method_types: ['card'],
       transfer_group: `{ORDER_${params.order_id}}`,
       metadata: metadata
     }
