@@ -7,7 +7,7 @@ import DB from 'App/DB'
 import Notification from 'App/Services/Notification'
 
 const url = 'https://api.mondialrelay.com/Web_Services.asmx?wsdl'
-const codeEnseigne = 'F2DIGGER'
+const codeEnseigne = 'XXELOGIK'
 const privateKey = 'SKuHmWzZ'
 
 class MondialRelay {
@@ -49,6 +49,7 @@ class MondialRelay {
           const parser = new XMLParser()
           const xml = parser.parse(body)
 
+          console.log(body)
           try {
             const p =
               xml['soap:Envelope']['soap:Body']['WSI4_PointRelais_RechercheResponse'][
