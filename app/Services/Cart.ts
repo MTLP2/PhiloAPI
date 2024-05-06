@@ -215,7 +215,6 @@ class Cart {
             country_id: params.country_id,
             state: params.customer.state
           })
-          console.log('=>', shipping)
           if (shipping.error === 'no_shipping' && process.env.NODE_ENV === 'production') {
             /**
             await Notification.sendEmail({
@@ -401,7 +400,6 @@ class Cart {
           cart.noStripe = true
         }
 
-        console.log(cart.currency, cart.shops[s].currency)
         let cur = 1
         if (cart.currency !== cart.shops[s].currency) {
           cur = await Utils.getCurrencyComp(cart.shops[s].currency, cart.currency)
@@ -691,7 +689,6 @@ class Cart {
           state: p.customer.state
         })
 
-        console.log('shippings ===', shipping)
         // Standard
         shipping.original_standard = Utils.getShipDiscounts({
           ship: shipping.standard,
@@ -1066,12 +1063,22 @@ class Cart {
       weight = Math.ceil(params.weight / 1000) + 'kg'
     }
 
-    let costs: any = null
+    const costs: any = {
+      transporter: params.transporter,
+      partner: params.partner,
+      currency: null,
+      picking: null,
+      no_tracking: null,
+      standard: null,
+      tracking: null
+    }
 
     for (const transporter of transporters) {
       if (params.quantity > 1) {
         transporter.picking = 1
       }
+
+      costs.currency = transporter.currency
 
       let cost: any
       if (params.transporter === 'bigblue') {
@@ -1083,12 +1090,10 @@ class Cart {
       if (transporter.oil) {
         transporter[weight] = transporter[weight] + (transporter.oil / 100) * transporter[weight]
       }
-
       if (transporter.security) {
         transporter[weight] =
           transporter[weight] + (transporter.security / 100) * transporter[weight]
       }
-
       if (transporter.marge) {
         transporter[weight] = transporter[weight] + (transporter.marge / 100) * transporter[weight]
       }
@@ -1096,9 +1101,6 @@ class Cart {
       if (transporter.transporter === 'MDR') {
         if (params.pickup === false) {
           continue
-        }
-        if (!costs) {
-          costs = {}
         }
         if (transporter[weight] < 4.8) {
           transporter[weight] = 4.8
@@ -1111,18 +1113,9 @@ class Cart {
         if (params.transporter === 'bigblue') {
           transporter[weight] = transporter[weight] / 1.2
         }
-
         transporter[weight] = Utils.round(transporter[weight] + 0.5)
 
         if (!costs || !costs.standard || costs.standard > Utils.round(transporter[weight] + cost)) {
-          const costs: any = {
-            transporter: params.transporter,
-            partner: params.partner,
-            currency: transporter.currency,
-            no_tracking: null,
-            standard: null,
-            tracking: null
-          }
           if (transporter.partner === 'whiplash_uk' && params.country_id !== 'GB') {
             transporter[weight] = transporter[weight] * 1.1
           }
@@ -1132,12 +1125,11 @@ class Cart {
             costs.standard = Utils.round(transporter[weight] + cost)
             costs.tracking = Utils.round((transporter[weight] + cost) * 1.15)
           }
-          return costs
         }
       }
     }
 
-    if (!costs.standard && !costs.no_tracking) {
+    if (!costs.pickup && !costs.standard && !costs.no_tracking) {
       return null
     }
 
@@ -1311,7 +1303,7 @@ class Cart {
     }
     const shippings: any[] = []
     if (transporters.all || transporters.daudin) {
-      const daudin = await Cart.calculateShippingByTransporter({
+      const daudin = await Cart.calculateShippingByTransporterNew({
         ...params,
         partner: 'daudin',
         transporter: 'daudin'
@@ -1321,7 +1313,7 @@ class Cart {
       }
     }
     if (transporters.all || transporters.bigblue) {
-      const bigblue = await Cart.calculateShippingByTransporter({
+      const bigblue = await Cart.calculateShippingByTransporterNew({
         ...params,
         partner: 'bigblue',
         transporter: 'bigblue'
@@ -1331,7 +1323,7 @@ class Cart {
       }
     }
     if (transporters.all || transporters.sna) {
-      const trans = await Cart.calculateShippingByTransporter({
+      const trans = await Cart.calculateShippingByTransporterNew({
         ...params,
         partner: 'daudin',
         transporter: 'sna'
@@ -1341,7 +1333,7 @@ class Cart {
       }
     }
     if (transporters.all || transporters.diggers) {
-      const diggers = await Cart.calculateShippingByTransporter({
+      const diggers = await Cart.calculateShippingByTransporterNew({
         ...params,
         mode: 'DPD',
         partner: 'daudin',
@@ -1352,7 +1344,7 @@ class Cart {
       }
     }
     if (transporters.all || transporters.seko) {
-      const seko = await Cart.calculateShippingByTransporter({
+      const seko = await Cart.calculateShippingByTransporterNew({
         ...params,
         partner: 'seko',
         transporter: 'seko'
@@ -1362,7 +1354,7 @@ class Cart {
       }
     }
     if (transporters.all || transporters.rey_vinilo) {
-      const reyVinilo = await Cart.calculateShippingByTransporter({
+      const reyVinilo = await Cart.calculateShippingByTransporterNew({
         ...params,
         partner: 'rey_vinilo',
         transporter: 'rey_vinilo'
@@ -1372,19 +1364,29 @@ class Cart {
       }
     }
     if (transporters.all || transporters.whiplash) {
-      const whiplash = await Cart.calculateShippingWhiplash(params, 'whiplash')
+      const whiplash = await Cart.calculateShippingByTransporterNew({
+        ...params,
+        partner: 'whiplash',
+        transporter: 'whiplash'
+      })
+      // const whiplash = await Cart.calculateShippingWhiplash(params, 'whiplash')
       if (whiplash) {
         shippings.push(whiplash)
       }
     }
     if (transporters.all || transporters.whiplash_uk) {
-      const whiplashUk = await Cart.calculateShippingWhiplashUk(params)
+      const whiplashUk = await Cart.calculateShippingByTransporterNew({
+        ...params,
+        partner: 'whiplash_uk',
+        transporter: 'whiplash_uk'
+      })
+      // const whiplashUk = await Cart.calculateShippingWhiplashUk(params)
       if (whiplashUk) {
         shippings.push(whiplashUk)
       }
     }
     if (transporters.shipehype) {
-      const ships = await Cart.calculateShippingByTransporter({
+      const ships = await Cart.calculateShippingByTransporterNew({
         ...params,
         partner: 'shipehype',
         transporter: 'shipehype'
