@@ -213,7 +213,8 @@ class Cart {
             stocks: stocks,
             weight: weight,
             country_id: params.country_id,
-            state: params.customer.state
+            state: params.customer.state,
+            new_price: params.new_price
           })
           if (shipping.error === 'no_shipping' && process.env.NODE_ENV === 'production') {
             /**
@@ -376,6 +377,7 @@ class Cart {
         shop.promo_code = cart.promo_code
         shop.customer = params.customer
         shop.currency = params.currency
+        shop.new_price = params.new_price
 
         cart.shops[s] = await Cart.calculateShop(shop)
 
@@ -686,7 +688,8 @@ class Cart {
           currency: shop.currency,
           category: shop.category,
           country_id: p.country_id,
-          state: p.customer.state
+          state: p.customer.state,
+          new_price: p.new_price
         })
 
         // Standard
@@ -1038,8 +1041,18 @@ class Cart {
     mode?: string
     state?: string
     pickup?: boolean
+    new_price?: boolean
   }) => {
-    const transporters = await DB('shipping_weight_new')
+    if (params.new_price !== true) {
+      if (params.transporter === 'whiplash') {
+        return Cart.calculateShippingWhiplash(params, 'whiplash')
+      } else if (params.transporter === 'whiplash_uk') {
+        return Cart.calculateShippingWhiplashUk(params)
+      } else {
+        return Cart.calculateShippingByTransporter(params)
+      }
+    }
+    const transporters = await DB('shipping_weight')
       .where('partner', 'like', params.partner)
       .where('country_id', params.country_id)
       .where((query) => {
