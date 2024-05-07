@@ -25,6 +25,9 @@ class Charts {
         'c.zip_code',
         'p.name as project_name',
         'p.artist_name as artist_name',
+        'artist.name as artist',
+        'label.name as label',
+        'p.label_name',
         'product.name as name',
         'product.barcode',
         'os.date_export'
@@ -35,6 +38,8 @@ class Charts {
       .join('vod as v', 'v.project_id', 'p.id')
       .join('project_product', 'project_product.project_id', 'p.id')
       .join('product', 'product.id', 'project_product.product_id')
+      .leftJoin('label', 'label.id', 'p.label_id')
+      .leftJoin('artist', 'artist.id', 'p.artist_id')
       .whereIn('product.type', ['vinyl', 'cd', 'tape'])
       .whereNotNull('os.date_export')
       .where('is_paid', true)
@@ -218,11 +223,12 @@ class Charts {
       order['Date Of Sale'] = moment(order.created_at).format('YYYYMMDD')
       order['Time Of Sale'] = moment(order.created_at).format('HHmmss')
       order['Units'] = order.quantity
-      order['Sale Price'] = order.price
+      order['Sale Price'] = order.price.toString().replace('.', ',')
       order['EAN-Code'] = order.barcode
       order['Product Group'] = 'music'
-      order['Productname'] = order.name
-      order['Artistname'] = order.artist_name
+      order['Productname'] = order.name.split(' - ')[1]
+      order['Artistname'] = order.artist || order.artist_name
+      order['Labelname'] = order.label || order.label_name
       order['release_date'] = moment(order.created_at).format('YYYYMMDD')
       order['post_code'] = order.zip_code
       order['Transaction ID'] = order.oi_id
@@ -259,6 +265,7 @@ class Charts {
       orders[i].total = o.total / (o.barcodes ? o.barcodes.split(',').length : 1)
       orders[i].total = Utils.round(o.total / currencies[o.currency])
       orders[i].date_fr = date.format('DD/MM/YYYY')
+      orders[i].artist_name = o.artist || o.artist_name
       o.price = Utils.round(orders[i].total / orders[i].quantity) * 100
 
       if (params.country === 'GB') {
