@@ -2278,6 +2278,7 @@ class Box {
   }
 
   static async selectVinyl(params) {
+    params.month = moment().format('YYYY-MM-01')
     const box = await DB('box')
       .select('box.*', 'user.email', 'user.lang')
       .join('user', 'user.id', 'box.user_id')
