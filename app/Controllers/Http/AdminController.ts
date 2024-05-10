@@ -1304,14 +1304,8 @@ class AdminController {
     }
   }
 
-  async getShippingWeightByPartner({ params }) {
-    const payload = await validator.validate({
-      schema: schema.create({
-        partner: schema.enum(['daudin', 'shipehype', 'whiplash_uk'] as const)
-      }),
-      data: params
-    })
-    return ShippingWeight.allByPartner({ partner: payload.partner, params })
+  async getShippingWeight({ params }) {
+    return ShippingWeight.all(params)
   }
 
   async updateShippingWeight({ params, user }) {

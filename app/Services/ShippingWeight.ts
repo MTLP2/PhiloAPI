@@ -2,14 +2,8 @@ import DB from 'App/DB'
 import Utils from 'App/Utils'
 
 class ShippingWeight {
-  static async allByPartner({
-    partner,
-    params
-  }: {
-    partner: 'daudin' | 'whiplash_uk' | 'shipehype'
-    params: ShippingWeightDB & { order?: string; sort?: string; filters: string; userId: number }
-  }) {
-    let query = DB('shipping_weight').where('partner', partner)
+  static async all(params: { order?: string; sort?: string; filters: string; userId: number }) {
+    let query = DB('shipping_weight')
 
     const order = params.order === 'false' ? 'desc' : params.order
     query = query.orderBy(params.sort || 'id', params.order || 'asc')
@@ -27,7 +21,6 @@ class ShippingWeight {
             'customer.country_id'
           )
           .join('customer', 'customer.id', 'order_shop.customer_id')
-          .where('transporter', partner)
           .where('country_id', row.country_id)
           .where('state', row.state)
           .orderBy('id', 'desc')
