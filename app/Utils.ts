@@ -211,11 +211,11 @@ class Utils {
     return JSON.parse(unescape(decodeURIComponent(data)))
   }
 
-  static hashId = (id) => {
+  static hashId = (id: number) => {
     return hashids.encode(id)
   }
 
-  static unhashId = (id) => {
+  static unhashId = (id: string) => {
     try {
       return hashids.decode(id)[0]
     } catch (err) {
