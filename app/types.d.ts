@@ -1,39 +1,94 @@
-type Model = {
-  save(params?: any): Promise<boolean>
-  delete(): Promise<boolean>
+import { Generated, ColumnType } from 'kysely'
+
+export type Timestamp = ColumnType<Date, Date | string, Date | string>
+type Boolean = 0 | 1 | true | false | '0' | '1'
+
+type Alert = {
+  id: Generated<number>
+  text_en?: string
+  text_fr?: string
+  link_en?: string
+  link_fr?: string
+  is_active: Boolean
+  created_at: Generated<Timestamp | null>
+  updated_at: Generated<Timestamp | null>
 }
 
-type TinyIntBool = 0 | 1
+type Artist = {
+  id: Generated<number>
+  name: string
+  description?: string
+  country_id: string
+  picture?: string
+  created_at: Generated<Timestamp | null>
+  updated_at: Generated<Timestamp | null>
+}
 
-type BadgeDb = {
-  id: number
+type Badge = {
+  id: Generated<number>
   description_fr: string
   description_en: string
   title_en: string
   title_fr: string
-  is_active: TinyIntBool
+  is_active: Boolean
   image: string
-  created_at: string
-  updated_at: string
+  created_at: Generated<Timestamp | null>
+  updated_at: Generated<Timestamp | null>
 }
 
-type BadgeModel = BadgeDb & Model
+type Banner = {
+  id: Generated<number>
+  title: string
+  sub_title: string
+  description: string
+  button: string
+  button_sub: string
+  position: string
+  lang: string
+  sort: number
+  color: string
+  show_cover: Boolean
+  is_visible: Boolean
+  link: string
+  picture: string
+  picture_mobile: string
+  mobile: string
+  cropped: string
+  created_at: Generated<Timestamp | null>
+  updated_at: Generated<Timestamp | null>
+}
 
-type ChatDb = {
-  id: number
+type Chat = {
+  id: Generated<number>
   user_id: number
   cookie_id: string
   destination: string
-  is_diggers: boolean
+  is_diggers: Boolean
   text: string
   seen: number
-  created_at: string
-  updated_at: string
+  created_at: Generated<Timestamp | null>
+  updated_at: Generated<Timestamp | null>
 }
 
-type ChatModel = ChatDb & Model
+type Customer = {
+  id: Generated<number>
+  type?: string
+  name?: string
+  firstname?: string
+  lastname?: string
+  address?: string
+  state?: string
+  city?: string
+  zip_code?: string
+  country_id?: string
+  phone?: string
+  birthday?: string
+  created_at: Generated<Timestamp | null>
+  updated_at: Generated<Timestamp | null>
+}
 
-type DigitalDB = {
+type Digital = {
+  id: Generated<number>
   artist_name?: string
   barcode?: string
   checklist?: string
@@ -43,7 +98,7 @@ type DigitalDB = {
   done_date?: string
   email: string
   id: number
-  is_delete: TinyIntBool
+  is_delete: Boolean
   preorder?: string
   prerelease?: string
   product_id?: number
@@ -58,71 +113,49 @@ type DigitalDB = {
     | 'refused'
     | 'in_process'
     | 'uploaded'
+  created_at: Generated<Timestamp | null>
+  updated_at: Generated<Timestamp | null>
 }
 
-type DigitalModel = DigitalDB & Model
-
-type DigitalActionDB = {
-  id: number
+type DigitalAction = {
+  id: Generated<number>
   type: string
-  created_at: string
+  created_at: Generated<Timestamp | null>
+  updated_at: Generated<Timestamp | null>
 }
-
-type DigitalActionModel = DigitalActionDB & Model
 
 type DigitalTodo = {
-  id: number
+  id: Generated<number>
   action_id: number
   digital_id: number
   is_completed: TinyIntBool
-  created_at: string
-  updated_at?: string
+  created_at: Generated<Timestamp | null>
+  updated_at: Generated<Timestamp | null>
 }
 
-type DigitalTodoModel = DigitalTodo & Model
-
-type FeedbackDB = {
-  id: number
+type Feedback = {
+  id: Generated<number>
   user_id: number
   order_id: number
   rating: number
   comment: string
   is_contacted: TinyIntBool
-  created_at: string
-  updated_at: string
+  created_at: Generated<Timestamp | null>
+  updated_at: Generated<Timestamp | null>
 }
 
-type FeedbackModel = FeedbackDB & Model
-
-type GiftDb = {
-  id: number
-  name_fr: string
-  name_en: string
-  level_id: number
-  image: string
-  is_active: TinyIntBool
-  is_preium: TinyIntBool
-  created_at: string
-  updated_at: string
+type Label = {
+  id: Generated<number>
+  name: string
+  description?: string
+  country_id: string
+  picture?: string
+  created_at: Generated<Timestamp | null>
+  updated_at: Generated<Timestamp | null>
 }
 
-type GiftModel = GiftDb & Model
-
-type LevelDb = {
-  id: number
-  points: number
-  level: number
-  data: string
-  created_at: string
-  updated_at: string
-  passes?: number
-  ratio?: number
-}
-
-type LevelModel = LevelDb & Model
-
-type ShippingWeightDB = {
-  'id': number
+type ShippingWeight = {
+  'id': Generated<number>
   'country_id': string
   'state'?: string | null
   'partner': 'whiplash_uk' | 'shipehype' | 'daudin'
@@ -163,12 +196,12 @@ type ShippingWeightDB = {
   '28kg'?: number | null
   '29kg'?: number | null
   '30kg'?: number | null
+  'created_at': Generated<Timestamp | null>
+  'updated_at': Generated<Timestamp | null>
 }
 
-type ShippingWeightModel = ShippingWeightDB & Model
-
-type ShopDb = {
-  id: number
+type Shop = {
+  id: Generated<number>
   code?: string | null
   name?: string | null
   bg_color?: string | null
@@ -178,54 +211,15 @@ type ShopDb = {
   banner?: string | null
   bg_image?: string | null
   line_items?: number
-  white_label?: boolean | null
+  white_label?: Boolean | null
   youtube?: string | null
-  group_shipment?: boolean | null
+  group_shipment?: Boolean | null
   created_at?: string | null
   updated_at?: string | null
   artist_id?: number | null
   label_id?: number | null
-}
-
-type ShopModel = ShopDb & Model
-
-type QuestDb = {
-  id: number
-  points: number
-  type: string
-  is_active: TinyIntBool
-  is_infinite: TinyIntBool
-  title_fr: string
-  title_en: string
-  description_fr: string
-  description_en: string
-  user_repeated: number
-  count_repeatable: number
-  prev_quest?: QuestDb | null
-}
-
-type QuestModel = QuestDb & Model
-
-// ENUMS
-
-enum InvoiceStatus {
-  invoiced = 'invoiced',
-  paid = 'paid',
-  refunded = 'refunded',
-  prepaid = 'prepaid',
-  '404' = '404'
-}
-
-enum Transporters {
-  daudin = 'daudin',
-  diggers = 'diggers',
-  whiplash = 'whiplash',
-  whiplash_uk = 'whiplash_uk',
-  sna = 'sna',
-  soundmerch = 'soundmerch',
-  shipehype = 'shipehype',
-  rey_vinilo = 'rey_vinilo',
-  seko = 'seko'
+  created_at: Generated<Timestamp | null>
+  updated_at: Generated<Timestamp | null>
 }
 
 const enum Currencies {
@@ -237,76 +231,18 @@ const enum Currencies {
   KRW = 'KRW'
 }
 
-const enum ShippingPartners {
-  daudin = 'daudin',
-  whiplash_uk = 'whiplash_uk',
-  shipehype = 'shipehype'
-}
-
-type CustomerDb = {
-  id?: number
-  type?: string
-  name?: string
-  firstname?: string
-  lastname?: string
-  address?: string
-  state?: string
-  city?: string
-  zip_code?: string
-  country_id?: string
-  phone?: string
-  birthday?: string
-}
-
-type Alert = {
-  id: number
-  text_en?: string
-  text_fr?: string
-  link_en?: string
-  link_fr?: string
-  is_active: boolean
-  created_at: string
-  updated_at: string
-}
-
-type Artist = {
-  id: number
-  name: string
-  description?: string
-  country_id: string
-  picture?: string
-  created_at: string
-  updated_at: string
-}
-
-type Label = {
-  id: number
-  name: string
-  description?: string
-  country_id: string
-  picture?: string
-  created_at: string
-  updated_at: string
-}
-
-type Banner = {
-  id: number
-  title: string
-  sub_title: string
-  description: string
-  button: string
-  button_sub: string
-  position: string
-  lang: string
-  sort: number
-  color: string
-  show_cover: boolean
-  is_visible: boolean
-  link: string
-  picture: string
-  picture_mobile: string
-  mobile: string
-  cropped: string
-  created_at: string
-  updated_at: string
+export type DB = {
+  alert: Alert
+  artist: Artist
+  badge: Badge
+  banner: Banner
+  chat: Chat
+  customer: Customer
+  digital: Digital
+  digital_action: DigitalAction
+  digital_todo: DigitalTodo
+  feedback: Feedback
+  label: Label
+  shipping_weight: ShippingWeight
+  shop: Shop
 }
