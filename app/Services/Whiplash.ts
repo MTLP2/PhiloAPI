@@ -741,9 +741,9 @@ class Whiplash {
     let currencies
 
     if (+lines[0].warehouse_id === 3) {
-      currencies = await Utils.getCurrenciesApi(date, 'EUR,USD,GBP,AUD,KRW', 'GBP')
+      currencies = await Utils.getCurrenciesApi(date, 'EUR,USD,GBP,AUD,PHP,KRW', 'GBP')
     } else {
-      currencies = await Utils.getCurrenciesApi(date, 'EUR,USD,GBP,AUD,KRW', 'USD')
+      currencies = await Utils.getCurrenciesApi(date, 'EUR,USD,GBP,AUD,PHP,KRW', 'USD')
     }
 
     let shops = DB('order_shop').whereIn(
@@ -774,6 +774,9 @@ class Whiplash {
           const orderShop = await DB('order_shop').where('id', shop.id).first()
 
           const carrierFees = dispatch['Carrier Fees'] || dispatch['carrier fees']
+          if (carrierFees > 0) {
+            continue
+          }
           orderShop.shipping_trans = -carrierFees * currencies[shop.currency]
           orderShop.shipping_cost = -dispatch.total * currencies[shop.currency]
           orderShop.shipping_quantity = +dispatch.merch_count
