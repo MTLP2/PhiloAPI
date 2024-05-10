@@ -391,6 +391,47 @@ class Utils {
     }
   }
 
+  static getRows2: (params: {
+    query: any
+    count?: string
+    filters?: string | object
+    page?: number
+    size?: number
+    sort?: string
+    order?: string
+  }) => Promise<{
+    count: number
+    data: any[]
+  }> = async (params) => {
+    let { query } = params
+
+    const total = query
+      .clearSelect()
+      .select(({ fn }) => [fn.count((params.count || 'id') as any).as('count')])
+      .executeTakeFirst()
+      .then((res) => res?.count)
+
+    const page = params.page && params.page > 0 ? params.page : 1
+    const size = params.size && params.size > 0 ? params.size : 50
+
+    if (params.sort && params.sort !== 'false') {
+      const sorts = params.sort.split(' ')
+      for (const sort of sorts) {
+        query.orderBy(sort, params.order)
+      }
+    }
+
+    if (params.size !== 0) {
+      query.limit(size).offset((page - 1) * size)
+    }
+
+    const [data, count] = await Promise.all([query.execute(), total])
+    return {
+      count: count,
+      data: data
+    }
+  }
+
   static removeAccents = (s) => {
     return _.deburr(s)
   }

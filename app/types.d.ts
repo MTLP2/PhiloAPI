@@ -1,6 +1,6 @@
 import { Generated, ColumnType } from 'kysely'
 
-export type Timestamp = ColumnType<Date, Date | string, Date | string>
+export type Timestamp = Date | string
 type Boolean = 0 | 1 | true | false | '0' | '1'
 
 type Alert = {
@@ -10,8 +10,8 @@ type Alert = {
   link_en?: string
   link_fr?: string
   is_active: Boolean
-  created_at: Generated<Timestamp | null>
-  updated_at: Generated<Timestamp | null>
+  created_at: Timestamp
+  updated_at: Timestamp
 }
 
 type Artist = {
@@ -20,8 +20,8 @@ type Artist = {
   description?: string
   country_id: string
   picture?: string
-  created_at: Generated<Timestamp | null>
-  updated_at: Generated<Timestamp | null>
+  created_at: Timestamp
+  updated_at: Timestamp
 }
 
 type Badge = {
@@ -32,8 +32,8 @@ type Badge = {
   title_fr: string
   is_active: Boolean
   image: string
-  created_at: Generated<Timestamp | null>
-  updated_at: Generated<Timestamp | null>
+  created_at: Timestamp
+  updated_at: Timestamp
 }
 
 type Banner = {
@@ -54,8 +54,8 @@ type Banner = {
   picture_mobile: string
   mobile: string
   cropped: string
-  created_at: Generated<Timestamp | null>
-  updated_at: Generated<Timestamp | null>
+  created_at: Timestamp
+  updated_at: Timestamp
 }
 
 type Chat = {
@@ -66,8 +66,8 @@ type Chat = {
   is_diggers: Boolean
   text: string
   seen: number
-  created_at: Generated<Timestamp | null>
-  updated_at: Generated<Timestamp | null>
+  created_at: Timestamp
+  updated_at: Timestamp
 }
 
 type Customer = {
@@ -83,8 +83,10 @@ type Customer = {
   country_id?: string
   phone?: string
   birthday?: string
-  created_at: Generated<Timestamp | null>
-  updated_at: Generated<Timestamp | null>
+  lng?: number
+  lat?: number
+  created_at: Timestamp
+  updated_at: Timestamp
 }
 
 type Digital = {
@@ -113,15 +115,15 @@ type Digital = {
     | 'refused'
     | 'in_process'
     | 'uploaded'
-  created_at: Generated<Timestamp | null>
-  updated_at: Generated<Timestamp | null>
+  created_at: Timestamp
+  updated_at: Timestamp
 }
 
 type DigitalAction = {
   id: Generated<number>
   type: string
-  created_at: Generated<Timestamp | null>
-  updated_at: Generated<Timestamp | null>
+  created_at: Timestamp
+  updated_at: Timestamp
 }
 
 type DigitalTodo = {
@@ -129,8 +131,8 @@ type DigitalTodo = {
   action_id: number
   digital_id: number
   is_completed: TinyIntBool
-  created_at: Generated<Timestamp | null>
-  updated_at: Generated<Timestamp | null>
+  created_at: Timestamp
+  updated_at: Timestamp
 }
 
 type Feedback = {
@@ -140,8 +142,8 @@ type Feedback = {
   rating: number
   comment: string
   is_contacted: TinyIntBool
-  created_at: Generated<Timestamp | null>
-  updated_at: Generated<Timestamp | null>
+  created_at: Timestamp
+  updated_at: Timestamp
 }
 
 type Label = {
@@ -150,8 +152,8 @@ type Label = {
   description?: string
   country_id: string
   picture?: string
-  created_at: Generated<Timestamp | null>
-  updated_at: Generated<Timestamp | null>
+  created_at: Timestamp
+  updated_at: Timestamp
 }
 
 type ShippingWeight = {
@@ -196,8 +198,8 @@ type ShippingWeight = {
   '28kg'?: number | null
   '29kg'?: number | null
   '30kg'?: number | null
-  'created_at': Generated<Timestamp | null>
-  'updated_at': Generated<Timestamp | null>
+  'created_at': Timestamp
+  'updated_at': Timestamp
 }
 
 type Shop = {
@@ -218,8 +220,15 @@ type Shop = {
   updated_at?: string | null
   artist_id?: number | null
   label_id?: number | null
-  created_at: Generated<Timestamp | null>
-  updated_at: Generated<Timestamp | null>
+  created_at: Timestamp
+  updated_at: Timestamp
+}
+
+type User = {
+  id: Generated<number>
+  name: string
+  created_at: Timestamp
+  updated_at: Timestamp
 }
 
 const enum Currencies {
@@ -245,4 +254,5 @@ export type DB = {
   label: Label
   shipping_weight: ShippingWeight
   shop: Shop
+  user: User
 }

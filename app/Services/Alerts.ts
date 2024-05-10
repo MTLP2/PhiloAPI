@@ -1,17 +1,26 @@
-import DB from 'App/DB'
+import { db, model } from 'App/db3'
 import Utils from 'App/Utils'
 
 class Alerts {
-  static all = (params: { filters?: string; sort?: any; size?: number }) => {
-    const query = DB('alert')
-    return Utils.getRows({
-      ...params,
-      query: query
+  static all = async (
+    params: {
+      filters?: string
+      sort?: string
+      order?: string
+      size?: number
+    } = {}
+  ) => {
+    return Utils.getRows2({
+      query: db.selectFrom('alert').selectAll(),
+      filters: params.filters,
+      sort: params.sort,
+      order: params.order,
+      size: params.size
     })
   }
 
   static async find(params: { id: number }) {
-    const item = await DB('alert').find(params.id)
+    const item = await model('alert').find(params.id)
     return item
   }
 
@@ -23,12 +32,10 @@ class Alerts {
     link_fr?: string
     is_active?: boolean
   }) {
-    let item: Alert & Model = DB('alert') as any
+    let item = model('alert')
 
     if (params.id) {
-      item = await DB('alert').find(params.id)
-    } else {
-      item.created_at = Utils.date()
+      item = await model('alert').find(params.id)
     }
     item.text_en = params.text_en
     item.text_fr = params.text_fr
@@ -38,50 +45,35 @@ class Alerts {
     if (params.is_active) {
       item.is_active = params.is_active
     }
-    item.updated_at = Utils.date()
 
     await item.save()
-
     return item
   }
 
   static async delete(params: { id: number }) {
-    const item = await DB('alert').find(params.id)
-    await item.delete()
-
-    return item
+    return model('alert').delete(params.id)
   }
 
-  static async toggle(params: { id: number | undefined }) {
-    const item = await DB('alert').where('is_active', true).first()
-    const newAlert = await DB('alert').find(params.id)
-
-    if (item) {
-      item.is_active = false
-      await item.save()
-    }
-
-    if (params.id) {
-      if (newAlert.is_active) {
-        newAlert.is_active = false
-      } else {
-        newAlert.is_active = true
-      }
-      await newAlert.save()
-
-      return newAlert
+  static async toggle(params: { id: number }) {
+    const alert = await model('alert').find(params.id)
+    if (alert.is_active) {
+      alert.is_active = false
+      alert.save()
     } else {
-      return null
+      await db.updateTable('alert').set({ is_active: false }).execute()
+      alert.is_active = true
+      alert.save()
     }
+
+    return { success: true }
   }
 
   static async getAlertShow() {
-    const item = await DB('alert').where('is_active', true).first()
-    if (!item) {
-      return {}
-    } else {
-      return item
-    }
+    return db
+      .selectFrom('alert')
+      .select(['text_en', 'text_fr', 'link_en', 'link_fr'])
+      .where('is_active', 'is', true)
+      .executeTakeFirst()
   }
 }
 
