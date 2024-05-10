@@ -25,6 +25,7 @@ class Charts {
         'c.zip_code',
         'p.name as project_name',
         'p.artist_name as artist_name',
+        'v.is_licence',
         'artist.name as artist',
         'label.name as label',
         'p.label_name',
@@ -61,7 +62,8 @@ class Charts {
     return orders.map((o) => {
       o.title = o.name.split(' - ')[1]
       o.artist = o.artist || o.artist_name
-      o.label = o.label || o.label_name
+      o.label = o.label || o.label_name || o.artist
+      o.licensor = o.is_licence ? 'Diggers Factory' : o.label
       return o
     })
   }
@@ -238,6 +240,7 @@ class Charts {
       order['Productname'] = order.title
       order['Artistname'] = order.artist
       order['Labelname'] = order.label
+      order['Licensorname'] = order.licensor
       order['release_date'] = moment(order.date_export).format('YYYYMMDD')
       order['post_code'] = order.zip_code
       order['Transaction ID'] = order.oi_id
