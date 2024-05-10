@@ -325,6 +325,7 @@ class Production {
 
     const list = Production.listActions()
 
+    item.uuid = Utils.hashId(item.id)
     item.preprod = {}
     item.prod = {}
     item.postprod = {}

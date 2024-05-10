@@ -10,7 +10,7 @@ class Charts {
     date_start?: string
     date_end?: string
   }) => {
-    return DB('order_shop as os')
+    const orders = await DB('order_shop as os')
       .select(
         'os.id as oshop_id',
         'os.step',
@@ -30,7 +30,8 @@ class Charts {
         'p.label_name',
         'product.name as name',
         'product.barcode',
-        'os.date_export'
+        'os.date_export',
+        'invoice.code as invoice'
       )
       .join('customer as c', 'os.customer_id', 'c.id')
       .join('order_item as oi', 'oi.order_shop_id', 'os.id')
@@ -40,6 +41,7 @@ class Charts {
       .join('product', 'product.id', 'project_product.product_id')
       .leftJoin('label', 'label.id', 'p.label_id')
       .leftJoin('artist', 'artist.id', 'p.artist_id')
+      .leftJoin('invoice', 'invoice.order_id', 'os.order_id')
       .whereIn('product.type', ['vinyl', 'cd', 'tape'])
       .whereNotNull('os.date_export')
       .where('is_paid', true)
@@ -55,6 +57,13 @@ class Charts {
         }
       })
       .all()
+
+    return orders.map((o) => {
+      o.title = o.name.split(' - ')[1]
+      o.artist = o.artist || o.artist_name
+      o.label = o.label || o.label_name
+      return o
+    })
   }
 
   // Get Luminate Charts (US & CA shipped only)
@@ -220,16 +229,16 @@ class Charts {
     for (const order of orders) {
       order['Retailer Name'] = 'Diggers Factory'
       order['Shop ID'] = '1'
-      order['Date Of Sale'] = moment(order.created_at).format('YYYYMMDD')
-      order['Time Of Sale'] = moment(order.created_at).format('HHmmss')
+      order['Date Of Sale'] = moment(order.date_export).format('YYYYMMDD')
+      order['Time Of Sale'] = moment(order.date_export).format('HHmmss')
       order['Units'] = order.quantity
       order['Sale Price'] = order.price.toString().replace('.', ',')
       order['EAN-Code'] = order.barcode
       order['Product Group'] = 'music'
-      order['Productname'] = order.name.split(' - ')[1]
-      order['Artistname'] = order.artist || order.artist_name
-      order['Labelname'] = order.label || order.label_name
-      order['release_date'] = moment(order.created_at).format('YYYYMMDD')
+      order['Productname'] = order.title
+      order['Artistname'] = order.artist
+      order['Labelname'] = order.label
+      order['release_date'] = moment(order.date_export).format('YYYYMMDD')
       order['post_code'] = order.zip_code
       order['Transaction ID'] = order.oi_id
 
