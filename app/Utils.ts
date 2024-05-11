@@ -494,7 +494,6 @@ class Utils {
       query = query.limit(size).offset((page - 1) * size)
     }
 
-    console.log(query.compile())
     const [data, count] = await Promise.all([query.execute(), total])
     return {
       count: count,
