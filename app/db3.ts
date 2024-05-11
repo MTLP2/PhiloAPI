@@ -45,6 +45,8 @@ type Model<T extends keyof DB & string> = DB[T] & {
 
 export const model = <T extends keyof DB & string>(table: T): Model<T> => {
   let data = {} as DB[T]
+  let changed = {} as DB[T]
+
   const methods = {
     values: () => {
       return data
@@ -62,30 +64,35 @@ export const model = <T extends keyof DB & string>(table: T): Model<T> => {
       return proxyInstance as any
     },
     save: async () => {
+      if (data.id && Object.keys(changed).length === 0) {
+        return proxyInstance as any
+      }
+      changed.updated_at = Utils.date()
+      data.updated_at = Utils.date()
       if (data.id) {
-        data.updated_at = Utils.date()
         await db
           .updateTable(table)
-          .set(data as any)
+          .set(changed as any)
           .where('id', '=', data.id as any)
           .execute()
       } else {
         data.created_at = Utils.date()
-        data.updated_at = Utils.date()
-        const [{ insertId }] = await db
+        changed.created_at = Utils.date()
+        const { insertId } = await db
           .insertInto(table)
-          .values(data as any)
-          .execute()
+          .values(changed as any)
+          .executeTakeFirst()
         data.id = insertId as any
       }
+      changed = {} as DB[T]
       return proxyInstance as any
       // return methods.find(data.id as any)
     },
     delete: async (id: number) => {
-      const [{ numDeletedRows }] = await db
+      const { numDeletedRows } = await db
         .deleteFrom(table)
         .where('id', '=', id as any)
-        .execute()
+        .executeTakeFirst()
       return numDeletedRows > 0
     }
   }
@@ -100,7 +107,10 @@ export const model = <T extends keyof DB & string>(table: T): Model<T> => {
       return methods[name]
     },
     set(target, name: string, value: any) {
-      data[name] = value
+      if (data[name] !== value) {
+        changed[name] = value
+        data[name] = value
+      }
       return true
     }
   })
