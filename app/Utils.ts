@@ -405,6 +405,75 @@ class Utils {
   }> = async (params) => {
     let { query } = params
 
+    let filters
+    try {
+      filters =
+        typeof params.filters === 'object'
+          ? params.filters
+          : params.filters
+          ? JSON.parse(params.filters)
+          : null
+    } catch (e) {
+      filters = []
+    }
+
+    if (filters) {
+      // Turn object filters into array to avoid non-iterable error
+      if (!Array.isArray(filters)) {
+        filters = Object.keys(filters).map((key) => ({ name: key, value: filters[key] }))
+      }
+
+      for (const filter of filters) {
+        if (filter && filter.value) {
+          filter.value = decodeURIComponent(filter.value)
+          query = query.where(({ eb, and }) => {
+            const conds: any[] = []
+
+            const values = filter.value.split(',')
+            for (const value of values) {
+              if (value) {
+                const decodedValue = decodeURIComponent(value)
+                let column = filter.name
+                let cond
+                if (filter.name && filter.name.includes(' ')) {
+                  column = DB.raw(
+                    `CONCAT(${column
+                      .split(' ')
+                      .map((c) => `COALESCE(TRIM(${c}), '')`)
+                      .join(",' ',")})`
+                  )
+                }
+                if (decodedValue.indexOf('!=null') !== -1) {
+                  cond = eb(column, 'is not', null)
+                } else if (decodedValue.indexOf('=null') !== -1) {
+                  cond = eb(column, 'is', null)
+                } else if (decodedValue.indexOf('<=') !== -1) {
+                  const f = decodedValue.replace('<=', '')
+                  cond = eb(column, '<=', f)
+                } else if (decodedValue.indexOf('>=') !== -1) {
+                  const f = decodedValue.replace('>=', '')
+                  cond = eb(column, '>=', f)
+                } else if (decodedValue.indexOf('<') !== -1) {
+                  const f = decodedValue.replace('<', '')
+                  cond = eb(column, '<', f)
+                } else if (decodedValue.indexOf('>') !== -1) {
+                  const f = decodedValue.replace('>', '')
+                  cond = eb(column, '>', f)
+                } else if (decodedValue.indexOf('=') !== -1) {
+                  const f = decodedValue.replace('=', '')
+                  cond = eb(column, '=', f)
+                } else {
+                  cond = eb(column, 'like', `%${decodedValue}%`)
+                }
+                conds.push(cond)
+              }
+            }
+            return and(conds)
+          })
+        }
+      }
+    }
+
     const total = query
       .clearSelect()
       .select(({ fn }) => [fn.count((params.count || 'id') as any).as('count')])
@@ -417,14 +486,15 @@ class Utils {
     if (params.sort && params.sort !== 'false') {
       const sorts = params.sort.split(' ')
       for (const sort of sorts) {
-        query.orderBy(sort, params.order)
+        query = query.orderBy(sort, params.order?.toLowerCase())
       }
     }
 
     if (params.size !== 0) {
-      query.limit(size).offset((page - 1) * size)
+      query = query.limit(size).offset((page - 1) * size)
     }
 
+    console.log(query.compile())
     const [data, count] = await Promise.all([query.execute(), total])
     return {
       count: count,

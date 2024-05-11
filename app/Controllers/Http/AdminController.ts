@@ -1409,7 +1409,9 @@ class AdminController {
         schema: schema.create({
           filters: schema.string.optional(),
           sort: schema.string.optional(),
-          size: schema.number.optional()
+          order: schema.string.optional(),
+          size: schema.number.optional(),
+          page: schema.number.optional()
         }),
         data: params
       })

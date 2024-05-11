@@ -8,6 +8,7 @@ class Alerts {
       sort?: string
       order?: string
       size?: number
+      page?: number
     } = {}
   ) => {
     return Utils.getRows2({
@@ -15,7 +16,8 @@ class Alerts {
       filters: params.filters,
       sort: params.sort,
       order: params.order,
-      size: params.size
+      size: params.size,
+      page: params.page
     })
   }
 
