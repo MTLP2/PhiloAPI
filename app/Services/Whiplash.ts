@@ -86,7 +86,7 @@ class Whiplash {
       shipping_zip: customer.zip_code,
       shipping_phone: customer.phone,
       email: shop.email,
-      shop_shipping_method_text: Whiplash.getShippingMethod(),
+      shop_shipping_method_text: Whiplash.getShippingMethod(shop),
       shop_warehouse_id: shop.transporter === 'whiplash_uk' ? 3 : 66,
       order_items: []
     }
@@ -148,8 +148,14 @@ class Whiplash {
     })
   }
 
-  static getShippingMethod = () => {
-    return 'Whiplash Cheapest Tracked'
+  static getShippingMethod = (params: {
+    shipping_type: string
+  }) => {
+    if (params.shipping_type === 'no_tracking') {
+      return 'no_tracking'
+    } else {
+      return 'tracking'
+    }
   }
 
   static syncProject = async (params: { project_id: number; type: string, products: number[]; quantity: number }) => {{
@@ -164,6 +170,7 @@ class Whiplash {
         'customer.*',
         'customer.email as customer_email',
         'os.id',
+        'os.shipping_type',
         'oi.order_shop_id',
         'os.type',
         'oi.quantity',
@@ -267,7 +274,9 @@ class Whiplash {
           shipping_zip: order.zip_code,
           shipping_phone: order.phone,
           email: order.customer_email || order.email,
-          shop_shipping_method_text: Whiplash.getShippingMethod(),
+          shop_shipping_method_text: Whiplash.getShippingMethod({
+            shipping_type: order.shipping_type
+          }),
           shop_warehouse_id: params.type === 'whiplash_uk' ? 3 : 66,
           order_items: []
         }
@@ -553,7 +562,9 @@ class Whiplash {
       csv += `"${order.state}",`
       csv += `"${order.zip_code}",`
       csv += `"${order.country_id}",`
-      csv += `"${Whiplash.getShippingMethod()}",`
+      csv += `"${Whiplash.getShippingMethod({
+        shipping_type: order.shipping_type
+      })}",`
       csv += `"${order.phone}",`
       csv += `"${order.email}",`
       csv += `"${project.barcode}",`
