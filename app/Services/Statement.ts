@@ -2372,9 +2372,10 @@ class StatementService {
         if (dist.quantity > 0) {
           pp[stat.project_id].show = true
         }
-        pp[stat.project_id].retail[stat.date].quantity += dist.quantity
+        const returned = dist.returned ? Math.abs(dist.returned) : 0
+        pp[stat.project_id].retail[stat.date].quantity += dist.quantity - returned
         pp[stat.project_id].retail[stat.date].turnover += dist.total
-        pp[stat.project_id][`${stat.date}_retail_qty`] += dist.quantity
+        pp[stat.project_id][`${stat.date}_retail_qty`] += dist.quantity - returned
         pp[stat.project_id][`${stat.date}_retail_tur`] += dist.total
       }
     }
