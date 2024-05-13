@@ -987,7 +987,7 @@ class Cart {
       costs.currency = transporter.currency
 
       let cost: any
-      if (params.transporter === 'bigblue') {
+      if (['whiplash', 'whiplash_uk', 'bigblue'].includes(params.transporter)) {
         cost = transporter.packing + transporter.picking * (params.insert - 1)
       } else {
         cost = transporter.packing + transporter.picking * params.insert
@@ -1019,7 +1019,7 @@ class Cart {
         (!costs || !costs.standard || costs.standard > transporter[weight])
       ) {
         if (!costs || !costs.standard || costs.standard > Utils.round(transporter[weight])) {
-          if (transporter.type === 'no_tracking') {
+          if (transporter.type === 'no_tracking' || transporter.transporter === 'no_tracking') {
             costs.no_tracking = Utils.round(transporter[weight])
           } else {
             costs.standard = Utils.round(transporter[weight])
