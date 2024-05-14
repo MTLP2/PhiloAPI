@@ -725,8 +725,10 @@ class Cart {
 
         // If shipping is lower than 1 we offer the shipping costs
         const min = 1
-        shop.shipping_standard = shipping.standard <= min ? 0 : shipping.standard
-        shop.shipping_tracking = shipping.tracking <= min ? 0 : shipping.tracking
+        shop.shipping_standard =
+          shipping.standard !== null && shipping.standard <= min ? 0 : shipping.standard
+        shop.shipping_tracking =
+          shipping.tracking !== null && shipping.tracking <= min ? 0 : shipping.tracking
         shop.shipping_no_tracking =
           shipping.no_tracking !== null && shipping.no_tracking <= min ? 0 : shipping.no_tracking
         shop.shipping_pickup =
@@ -746,6 +748,12 @@ class Cart {
 
           shop.free_shipping = vinyl
         }
+
+        /**        if (!p.shipping_type && shipping.no_tracking) {
+          p.shipping_type = 'no_tracking'
+        }
+        **/
+
         if (
           !p.shipping_type &&
           shipping.pickup !== null &&
@@ -1316,14 +1324,19 @@ class Cart {
         return { error: 'no_shipping' }
       }
 
-      ship.standard = ship.standard * (await Utils.getCurrency(ship.currency))
-      ship.tracking = ship.tracking * (await Utils.getCurrency(ship.currency))
+      ship.standard =
+        ship.standard !== null ? ship.standard * (await Utils.getCurrency(ship.currency)) : null
+      ship.tracking =
+        ship.tracking !== null ? ship.tracking * (await Utils.getCurrency(ship.currency)) : null
       ship.no_tracking = ship.no_tracking
         ? ship.no_tracking * (await Utils.getCurrency(ship.currency))
         : null
 
       ship.standard2 = ship.standard
 
+      if (!ship.standard) {
+        continue
+      }
       if (
         !shipping ||
         (ship.no_tracking > 0 && ship.no_tracking < shipping.standard) ||
@@ -1342,11 +1355,18 @@ class Cart {
     }
 
     const res: any = {}
-    res.no_tracking = shipping.no_tracking
-      ? Utils.round(shipping.no_tracking / currencies[params.currency], 2)
-      : null
-    res.standard = Utils.round(shipping.standard / currencies[params.currency], 2)
-    res.tracking = Utils.round(shipping.tracking / currencies[params.currency], 2)
+    res.no_tracking =
+      shipping.no_tracking !== null
+        ? Utils.round(shipping.no_tracking / currencies[params.currency], 2)
+        : null
+    res.standard =
+      shipping.standard !== null
+        ? Utils.round(shipping.standard / currencies[params.currency], 2)
+        : null
+    res.tracking =
+      shipping.tracking !== null
+        ? Utils.round(shipping.tracking / currencies[params.currency], 2)
+        : null
     res.pickup = shipping.pickup
       ? Utils.round(shipping.pickup / currencies[params.currency], 2)
       : null
@@ -1355,7 +1375,6 @@ class Cart {
       : null
     res.transporter = shipping.transporter
 
-    console.log(res)
     return res as {
       standard: number
       tracking: number
