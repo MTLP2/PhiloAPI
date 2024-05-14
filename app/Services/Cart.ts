@@ -1327,7 +1327,7 @@ class Cart {
       if (
         !shipping ||
         (ship.no_tracking > 0 && ship.no_tracking < shipping.standard) ||
-        ship.standard2 < shipping.standard
+        (ship.standard2 > 0 && ship.standard2 < shipping.standard)
       ) {
         shipping = ship
       }
@@ -1355,6 +1355,7 @@ class Cart {
       : null
     res.transporter = shipping.transporter
 
+    console.log(res)
     return res as {
       standard: number
       tracking: number
