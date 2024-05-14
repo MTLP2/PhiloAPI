@@ -980,10 +980,6 @@ class Cart {
     }
 
     for (const transporter of transporters) {
-      if (params.quantity > 1) {
-        transporter.picking = 1
-      }
-
       costs.currency = transporter.currency
 
       let cost: any
