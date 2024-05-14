@@ -71,6 +71,7 @@ class App {
         await App.alertStock()
       }
       if (moment().format('E') === '2') {
+        await Charts.uploadChartsGfk()
         await Payments.alertDatePassed()
       }
       if (moment().format('E') === '3') {
