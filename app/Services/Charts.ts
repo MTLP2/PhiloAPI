@@ -2,6 +2,7 @@ import DB from 'App/DB'
 import Utils from 'App/Utils'
 import SftpClient from 'ssh2-sftp-client'
 import moment from 'moment'
+const { XMLBuilder } = require('fast-xml-parser')
 
 class Charts {
   static getOrders = async (params: {
@@ -444,6 +445,103 @@ class Charts {
       .catch((err) => {
         console.error(err.message)
       })
+  }
+
+  static async getChartsAria() {
+    const start = moment().subtract(30, 'days').format('YYYY-MM-DD')
+    const end = moment().subtract(1, 'days').format('YYYY-MM-DD')
+
+    const orders = await Charts.getOrders({
+      country_id: 'AU',
+      date_start: start,
+      date_end: end
+    })
+
+    const barcodes = {}
+    for (const o of orders) {
+      if (!barcodes[o.barcode]) {
+        barcodes[o.barcode] = {
+          barcode: o.barcode,
+          title: o.title,
+          artist: o.artist,
+          label: o.label,
+          customers: 0,
+          quantity: 0
+        }
+      }
+      barcodes[o.barcode].customers++
+      barcodes[o.barcode].quantity += o.quantity
+    }
+
+    const data = {
+      Provider: {
+        Name: 'Diggers Factory',
+        FromDate: start,
+        ToDate: end,
+        Region: {
+          Name: 'Australia',
+          BundleSales: {
+            BundleSale: Object.values(barcodes).map((o: any) => {
+              return {
+                CatalogueNumber: o.barcode,
+                Title: o.title,
+                Artist: o.artist,
+                Customers: o.customers,
+                Sales: o.quantity,
+                Retailer: '',
+                RecordCompany: '',
+                RecordLabel: o.label,
+                RecordingType: '',
+                FormatType: '',
+                MediumType: ''
+              }
+            })
+          }
+        }
+      }
+    }
+
+    const builder = new XMLBuilder({
+      arrayNodeName: 'Provider'
+    })
+    const output = builder.build(data)
+
+    return output
+  }
+
+  static async uploadChartsAria() {
+    const charts = await Charts.getChartsAria()
+
+    /**
+    let client = new SftpClient()
+    let config = {
+      host: 'ftp.gfk-e.com',
+      port: 22,
+      username: 'FR_DiggFact',
+      password: '1p13f7k8TffS'
+    }
+
+    const partner = 'partner'
+    client
+      .connect(config)
+      .then(() => {
+        console.log('connected to charts')
+
+        for (const country of Object.keys(countries)) {
+          client.put(Buffer.from(countries[country]), `${partner}_${country}_${date}.txt`)
+        }
+
+        setTimeout(() => {
+          console.log('close connection to charts')
+          client.end()
+        }, 20000)
+      })
+      // .finally(() => client.end())
+      .catch((err) => {
+        console.error(err.message)
+      })
+  }
+  **/
   }
 }
 
