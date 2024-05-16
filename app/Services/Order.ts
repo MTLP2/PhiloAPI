@@ -1075,6 +1075,45 @@ static toJuno = async (params) => {
           }
         }
       }
+      if (['bigblue'].includes(params.transporter)) {
+        if (!item.logistician_id) {
+          console.log(params)
+          const dispatch: any = await BigBlue.sync([
+            {
+              ...customer,
+              id: 'M' + item.id,
+              user_id: item.user_id || 'M' + item.id,
+              sub_total: '40',
+              currency: 'EUR',
+              shipping_type: params.shipping_type,
+              address_pickup: params.address_pickup,
+              created_at: item.created_at,
+              email: item.email,
+              items: params.items.map((b) => {
+                return {
+                  barcode: b.barcode,
+                  quantity: b.quantity
+                }
+              })
+            }
+          ])
+          if (dispatch[0] && dispatch[0].status === 'error') {
+            return {
+              error: dispatch[0].status_detail
+            }
+          }
+          item.step = 'in_preparation'
+          await item.save()
+          if (item.order_shop_id) {
+            await DB('order_shop').where('id', item.order_shop_id).update({
+              logistician_id: dispatch.id,
+              tracking_number: null,
+              tracking_transporter: null,
+              updated_at: Utils.date()
+            })
+          }
+        }
+      }
       if (['whiplash', 'whiplash_uk'].includes(params.transporter) && !item.logistician_id) {
         const pp: any = {
           shipping_name: `${customer.firstname} ${customer.lastname}`,
