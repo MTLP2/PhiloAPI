@@ -1003,6 +1003,9 @@ class Cart {
       if (transporter.security) {
         transporter[weight] = transporter[weight] + transporter.security
       }
+      if (!transporter[weight]) {
+        continue
+      }
 
       transporter[weight] = transporter[weight] + cost
 
