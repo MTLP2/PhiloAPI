@@ -23,6 +23,7 @@ class Charts {
         'oi.price',
         'oi.currency',
         'c.country_id',
+        'c.state',
         'c.zip_code',
         'p.name as project_name',
         'p.artist_name as artist_name',
@@ -475,25 +476,22 @@ class Charts {
 
     const data = {
       Provider: {
-        Name: 'Diggers Factory',
-        FromDate: start,
-        ToDate: end,
-        Region: {
-          Name: 'Australia',
+        '__Name': 'Diggers Factory',
+        '__FromDate': start,
+        '__ToDate': end,
+        '__xmlns': 'urn:aria-raps:etl-dsp-sales:1.0',
+        '__xmlns:xsi': 'http://www.w3.org/2001/XMLSchema-instance',
+        'Region': {
+          __Name: 'Australia',
           BundleSales: {
             BundleSale: Object.values(barcodes).map((o: any) => {
               return {
-                CatalogueNumber: o.barcode,
-                Title: o.title,
-                Artist: o.artist,
-                Customers: o.customers,
-                Sales: o.quantity,
-                Retailer: '',
-                RecordCompany: '',
-                RecordLabel: o.label,
-                RecordingType: '',
-                FormatType: '',
-                MediumType: ''
+                __CatalogueNumber: o.barcode,
+                __Title: o.title,
+                __Artist: o.artist,
+                __Customers: o.customers,
+                __Sales: o.quantity,
+                __RecordLabel: o.label
               }
             })
           }
@@ -501,12 +499,18 @@ class Charts {
       }
     }
 
-    const builder = new XMLBuilder({
-      arrayNodeName: 'Provider'
-    })
+    const options = {
+      arrayNodeName: 'Provider',
+      ignoreAttributes: false,
+      attributeNamePrefix: '__',
+      format: true
+    }
+
+    const builder = new XMLBuilder(options)
     const output = builder.build(data)
 
-    return output
+    // <SalesOrStreamingProviderName>_YYYYMMDDnn.xml
+    return `<?xml version="1.0" encoding="UTF-8" ?>\r${output}`
   }
 
   static async uploadChartsAria() {
