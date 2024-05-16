@@ -314,7 +314,7 @@ class BigBlue {
           language: 'fr',
           currency: 'EUR',
           shipping_method: order.shipping_type === 'pickup' ? 'pickup' : 'standard',
-          shipping_price: order.shipping.toString(),
+          shipping_price: order.shipping ? order.shipping.toString() : '1',
           pickup_point:
             order.shipping_type === 'pickup'
               ? {
@@ -342,7 +342,7 @@ class BigBlue {
             return {
               product: item.product,
               quantity: item.quantity,
-              unit_price: item.price.toString(),
+              unit_price: item.price ? item.price.toString() : '1',
               unit_tax: '0'
             }
           })
