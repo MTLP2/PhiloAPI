@@ -1208,6 +1208,76 @@ class Dispatch {
     worksheet.addRows(costs)
     return work.xlsx.writeBuffer()
   }
+
+  static extractPrices = async () => {
+    const prices = {}
+    const countries = ['FR', 'US', 'DE', 'CA', 'KR', 'NL', 'BE', 'GB', 'PH', 'ES', 'JP']
+    const transporter = ['daudin', 'bigblue', 'whiplash', 'whiplash_uk']
+
+    const columns = ['country']
+    for (const country of countries) {
+      for (const t of transporter) {
+        const shipping: any = await Cart.calculateShipping({
+          quantity: 1,
+          weight: 236,
+          insert: 1,
+          transporters: { [t]: true },
+          stocks: { daudin: null, preorder: null, whiplash: null, whiplash_uk: null },
+          is_shop: false,
+          currency: 'EUR',
+          category: 'vinyl',
+          country_id: country,
+          state: 'Ile-de-France'
+        })
+        if (!prices[country]) {
+          prices[country] = {}
+        }
+        if (!prices[country][t]) {
+          prices[country][t] = {}
+        }
+        if (shipping.no_tracking) {
+          if (columns.find((c) => c === `${t}_no_tracking`) === undefined) {
+            columns.push(`${t}_no_tracking`)
+          }
+          prices[country][`${t}_no_tracking`] = shipping.no_tracking
+        }
+        if (shipping.standard) {
+          if (columns.find((c) => c === `${t}`) === undefined) {
+            columns.push(`${t}`)
+          }
+          prices[country][t] = shipping.standard
+        }
+        if (shipping.pickup) {
+          if (columns.find((c) => c === `${t}_pickup`) === undefined) {
+            columns.push(`${t}_pickup`)
+          }
+          prices[country][`${t}_pickup`] = shipping.pickup
+        }
+      }
+    }
+
+    const data = []
+    for (const [country, trans] of Object.entries(prices)) {
+      const da = {
+        country: country
+      }
+      for (const [t, price] of Object.entries(trans)) {
+        da[t] = price
+      }
+      data.push(da)
+    }
+
+    console.log(data)
+    return Utils.arrayToXlsx([
+      {
+        worksheetName: 'Shipping',
+        columns: columns.map((c) => {
+          return { header: c, key: c }
+        }),
+        data: data
+      }
+    ])
+  }
 }
 
 export default Dispatch
