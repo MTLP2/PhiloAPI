@@ -333,12 +333,13 @@ class Whiplash {
         )
       )
       .whereNotNull('logistician_id')
-      .whereNull('tracking_number')
+      .whereIn('step', ['confirmed', 'in_preparation'])
       .whereIn('transporter', ['whiplash', 'whiplash_uk'])
       .join('customer', 'customer.id', 'order_shop.customer_id')
-      .orderBy('id', 'asc')
+      .orderBy('date_export', 'asc')
       .where('is_paid', 1)
       .where('is_paused', false)
+      .where('date_export', '>', '2022-01-01')
       .all()
 
     shops = shops.concat(
@@ -380,7 +381,7 @@ class Whiplash {
           packings[shop.quantity] = shop.quantity
         }
 
-        if (order.tracking.length > 0) {
+        if (order.status_name && (order.status_name.toLowerCase() === 'shipped' || order.status_name.toLowerCase() === 'delivered')) {
           if (shop.type === 'manual') {
             await DB('order_manual').where('id', shop.id).update({
               step: 'sent',
@@ -432,7 +433,6 @@ class Whiplash {
         }
       })
     ).then(async () => {
-      console.log(costs)
       if (costs.length === 0) {
         return { success: false }
       }
@@ -498,7 +498,16 @@ class Whiplash {
         subject: 'Diff shipping whiplash',
         html: juice(html)
       })
+    }).catch((e) => {
+      Notification.sendEmail({
+        to: 'victor@diggersfactory.com',
+        subject: 'Problem set tracking whiplash',
+        html: e.toString()
+      })
+      return { success: false }
     })
+
+    return shops
 
     return { success: true }
   }
