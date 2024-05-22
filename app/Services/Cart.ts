@@ -966,6 +966,19 @@ class Cart {
       })
       .all()
 
+    // add packaging
+    if (params.transporter === 'daudin') {
+      params.weight += 225
+    } else if (params.transporter === 'bigblue') {
+      params.weight += 185
+    } else if (params.transporter === 'whiplash') {
+      params.weight += 340
+    } else if (params.transporter === 'whiplash_uk') {
+      params.weight += 160
+    } else {
+      params.weight += 225
+    }
+
     let weight
     if (params.weight < 250 && params.transporter === 'bigblue') {
       weight = '250g'
@@ -1183,8 +1196,6 @@ class Cart {
   }
 
   static calculateShipping = async (params: any) => {
-    // add packaging
-    params.weight += 150
     const cc = await DB('currency').all()
     const currencies = {}
     for (const c of cc) {
