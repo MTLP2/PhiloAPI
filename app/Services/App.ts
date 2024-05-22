@@ -71,7 +71,6 @@ class App {
         await App.alertStock()
       }
       if (moment().format('E') === '2') {
-        await Charts.uploadChartsGfk()
         await Payments.alertDatePassed()
       }
       if (moment().format('E') === '3') {
@@ -136,6 +135,7 @@ class App {
         await Charts.uploadOfficialCharts({
           country: 'FR'
         })
+        await Charts.uploadChartsGfk()
       } else if (hour === 3) {
         await App.currencies()
         await App.generateSitemap()
