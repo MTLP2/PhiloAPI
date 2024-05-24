@@ -1,6 +1,5 @@
 import DB from 'App/DB'
 import Utils from 'App/Utils'
-import Invoice from 'App/Services/Invoice'
 import Notification from 'App/Services/Notification'
 import MondialRelay from 'App/Services/MondialRelay'
 import Stock from 'App/Services/Stock'
@@ -35,22 +34,40 @@ class BigBlue {
     })
   }
 
-  static async createProduct(params: { id: number; name: string; barcode: string }) {
+  static getTariffNumber(type: string) {
+    switch (type) {
+      case 'cd':
+      case 'vinyl':
+      case 'tape':
+        return '8523809000'
+      case 't-shirt':
+        return '6109100010'
+      case 'hoodie':
+        return '6110209100'
+      case 'cap':
+        return '6505009090'
+      default:
+        return ''
+    }
+  }
+
+  static async createProduct(params: { id: number; name: string; type: string; barcode: string }) {
     const id = String(params.id).padStart(10, '0')
     const bigId = `DIGG-${id.substring(0, 6)}-${id.substring(6, 10)}`
+
     const res: any = await this.api('CreateProduct', {
       method: 'POST',
       params: {
         product: {
           id: bigId,
-          name: params.name,
+          name: !params.barcode ? params.name : `${params.name} - ${params.barcode}`,
           barcode: params.barcode,
           origin_country: 'FR',
           value: {
             amount: '9.99',
             currency: 'EUR'
           },
-          tariff_number: '0901.21'
+          tariff_number: BigBlue.getTariffNumber(params.type)
         }
       }
     })
@@ -349,7 +366,6 @@ class BigBlue {
           })
         }
       }
-      console.log(data.order)
       let res: any = await this.api('CreateOrder', {
         method: 'POST',
         params: data
