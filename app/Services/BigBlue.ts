@@ -307,7 +307,8 @@ class BigBlue {
         }
       }
 
-      const address = Utils.splitSentence(order.address, 35)
+      const address = Utils.wrapText(order.address, ',', 35)
+
       const data = {
         order: {
           external_id: order.id.toString(),
