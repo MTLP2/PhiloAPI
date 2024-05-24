@@ -764,29 +764,29 @@ class Utils {
       .join('')
   }
 
-  static splitSentence = (sentence: string, nChar: number) => {
-    const chars = sentence.split('')
-    let charCount = 0
-    let groupCount = 0
-    const characterGroups = chars.reduce(
-      (groups, char) => {
-        // if we don't have enough characters or we still have a word to process add the character to the group
-        if (charCount < nChar || char !== ' ') groups[groupCount].push(char)
-        else {
-          // we have reached the max. number of character and we also are at the end of word
-          // => we need to create a new group
-          groups.push([])
-          // increase group count so we now add characters to a new group
-          groupCount++
-          // reset character count
-          charCount = 0
+  static wrapText(text: string, delimiter: string, length: number) {
+    const words = text.split(delimiter)
+    const lines: string[] = []
+    let line = ''
+    for (const word of words) {
+      if (line.length + word.length < length) {
+        line += word + delimiter
+      } else {
+        if (line.at(-1) === delimiter) {
+          line = line.slice(0, -1)
         }
-        charCount++
-        return groups
-      },
-      [[]]
-    )
-    return characterGroups.map((group) => group.join(''))
+        lines.push(line)
+        line = word
+      }
+    }
+    if (line[0] === ' ') {
+      line = line.slice(1)
+    }
+    if (line.at(-1) === delimiter) {
+      line = line.slice(0, -1)
+    }
+    lines.push(line)
+    return lines
   }
 
   static convertTranslate = () => {
