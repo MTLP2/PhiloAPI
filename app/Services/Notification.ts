@@ -171,7 +171,7 @@ class Notification {
         days_left: params.days_left,
         order: params.order,
         invoice: params.invoice,
-        tracking_link: params.tracking_link,
+        tracking_link: params.tracking_link || false,
         order_items: params.order_items,
         order_refused_items: params.order_refused_items,
         refused_vinyl: params.refused_vinyl,
@@ -179,9 +179,9 @@ class Notification {
         comment: params.comment,
         address: params.address
       }
+
       p.subject = _.template(p.subject)(data)
       data.subject = p.subject
-
       p.html = _.template(p.html)(data)
     }
     p.type = 'newsletter'
@@ -247,6 +247,7 @@ class Notification {
       params.user = {}
     }
 
+    params.tracking_link = params.tracking_link || false
     const preorder =
       params.order_items &&
       params.order_items.some((i) => {
