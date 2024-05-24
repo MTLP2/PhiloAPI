@@ -63,6 +63,9 @@ class Charts {
 
     return orders.map((o) => {
       o.title = o.name.split(' - ')[1]
+      if (!o.title) {
+        o.title = o.name
+      }
       o.artist = o.artist || o.artist_name
       o.label = o.label || o.label_name || o.artist
       o.licensor = o.is_licence ? 'Diggers Factory' : o.label
@@ -449,8 +452,8 @@ class Charts {
   }
 
   static async getChartsAria() {
-    const start = moment().subtract(30, 'days').format('YYYY-MM-DD')
-    const end = moment().subtract(1, 'days').format('YYYY-MM-DD')
+    const start = moment().subtract(1, 'weeks').day(5).format('YYYY-MM-DD')
+    const end = moment().day(4).format('YYYY-MM-DD')
 
     const orders = await Charts.getOrders({
       country_id: 'AU',
@@ -486,12 +489,12 @@ class Charts {
           BundleSales: {
             BundleSale: Object.values(barcodes).map((o: any) => {
               return {
-                __CatalogueNumber: o.barcode,
-                __Title: o.title,
-                __Artist: o.artist,
-                __Customers: o.customers,
-                __Sales: o.quantity,
-                __RecordLabel: o.label
+                __APN: o.barcode.trim(),
+                __Title: o.title.trim(),
+                __Artist: o.artist.trim(),
+                __Customers: o.customers.toString().trim(),
+                __Sales: o.quantity.toString().trim(),
+                __RecordLabel: o.label.trim()
               }
             })
           }
