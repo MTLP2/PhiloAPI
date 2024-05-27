@@ -470,6 +470,15 @@ class Production {
 
     const item = await DB('production').where('id', params.id).first()
 
+    if (item.step === 'prod') {
+      const project = await DB('vod').where('project_id', item.project_id).first()
+      if (project.is_distrib === 1) {
+        console.log('send email')
+        // const p = {}
+
+        // Notification.sendEmail(p)
+      }
+    }
     if (!item.date_prod && params.date_prod) {
       Production.addNotif({ id: item.id, type: 'in_prod' })
     }
