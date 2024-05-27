@@ -129,13 +129,16 @@ class App {
       }
 
       if (hour === 2) {
+        if (moment().format('E') === '5') {
+          // await Charts.uploadChartsAria()
+          await Charts.uploadChartsGfk()
+        }
         await Charts.uploadOfficialCharts({
           country: 'GB'
         })
         await Charts.uploadOfficialCharts({
           country: 'FR'
         })
-        await Charts.uploadChartsGfk()
       } else if (hour === 3) {
         await App.currencies()
         await App.generateSitemap()
@@ -887,16 +890,12 @@ class App {
     }
 
     if (!test) {
-      await Notification.email(data)
-      send = 2
-      /**
       if (process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'staging') {
         send = 3
       } else {
         await Notification.email(data)
         send = 2
       }
-      **/
       n.email = send
       await n.save()
       return true

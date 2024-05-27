@@ -195,9 +195,13 @@ class Charts {
   }
 
   static async getChartsGfk(params: { country_id: string }) {
+    const start = moment().subtract(1, 'weeks').day(5).format('YYYY-MM-DD')
+    const end = moment().day(4).format('YYYY-MM-DD')
+
     const orders = await Charts.getOrders({
       country_id: params.country_id,
-      date: moment().subtract(1, 'days').format('YYYY-MM-DD')
+      date_start: start,
+      date_end: end
     })
 
     const columns = [
