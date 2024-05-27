@@ -2218,7 +2218,7 @@ class Project {
       const date = moment(cost.date).format(format)
 
       if (cost.type === 'storage') {
-        if (projects[cost.project_id].storage_costs) {
+        if (projects[cost.project_id].storage_costs && !projects[cost.project_id].is_licence) {
           s.setDate(cost.type, 'costs', date, cost.in_statement)
           s.addList(cost.type, 'costs', date, cost.in_statement, cost.project_id)
         }
