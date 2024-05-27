@@ -38,6 +38,7 @@ class Production {
         'vod.barcode',
         'vod.type',
         'vod.is_licence',
+        'vod.is_distrib',
         'project.picture',
         'project.country_id',
         'project.cat_number',
