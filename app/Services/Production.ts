@@ -470,15 +470,6 @@ class Production {
 
     const item = await DB('production').where('id', params.id).first()
 
-    if (item.step === 'prod') {
-      const project = await DB('vod').where('project_id', item.project_id).first()
-      if (project.is_distrib === 1) {
-        console.log('send email')
-        // const p = {}
-
-        // Notification.sendEmail(p)
-      }
-    }
     if (!item.date_prod && params.date_prod) {
       Production.addNotif({ id: item.id, type: 'in_prod' })
     }
@@ -500,8 +491,26 @@ class Production {
 
       await Production.addNotif({ id: item.id, type: 'in_dispatchs' })
     }
-
     if (item.step !== params.step) {
+      if (params.step === 'prod') {
+        const project = await DB('vod')
+          .select('vod.is_distrib', 'project.name', 'project.id')
+          .where('project_id', item.project_id)
+          .join('project', 'project.id', 'vod.project_id')
+          .first()
+        if (project.is_distrib === 1) {
+          await Notification.sendEmail({
+            to: 'retail@diggersfacory.com',
+            subject: `Project ${project.name} is in production`,
+            html: `<ul>
+            <li>Id : ${params.id}</li>
+            <li>Project: ${project.name}</li>
+            <li>Link: <a href="https://www.diggersfactory.com/sheraf/project/${project.id}/prod?prod=${params.id}">Here</a></li>
+            </ul>`
+          })
+        }
+      }
+
       Production.notif({
         production_id: params.id,
         user_id: params.user.id,
