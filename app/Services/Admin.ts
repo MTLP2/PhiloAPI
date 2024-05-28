@@ -1032,6 +1032,7 @@ class Admin {
     vod.show_count = params.show_count
     vod.scheduled_end = params.scheduled_end
     vod.is_licence = params.is_licence
+    vod.is_distrib = params.is_distrib
     vod.shipping_delay_reason = params.shipping_delay_reason
     vod.shipping_discount = params.shipping_discount
     vod.save_shipping = params.save_shipping
