@@ -482,12 +482,14 @@ class Product {
 
   static setBarcodes = async (params: { project_id: number }) => {
     const products = await DB('project_product')
-      .select('product.type', 'barcode')
+      .select('product.type', 'product.weight', 'barcode')
       .join('product', 'product.id', 'project_product.product_id')
       .where('project_product.project_id', params.project_id)
       .whereNull('parent_id')
       .all()
 
+    let disableWeight = false
+    let weight = 0
     let barcodes = ''
     for (const product of products) {
       if (!product.barcode && product.type) {
@@ -496,12 +498,22 @@ class Product {
       if (barcodes) {
         barcodes += ','
       }
+      if (!product.weight) {
+        disableWeight = true
+      } else {
+        weight += product.weight
+      }
       barcodes += product.barcode
     }
 
-    await DB('vod').where('project_id', params.project_id).update({
+    const data = {
       barcode: barcodes
-    })
+    }
+    if (!disableWeight) {
+      data['weight'] = weight
+    }
+    console.log(params.project_id, data)
+    await DB('vod').where('project_id', params.project_id).update(data)
 
     return { success: true }
   }
