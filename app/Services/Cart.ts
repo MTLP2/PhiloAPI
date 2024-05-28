@@ -1835,7 +1835,9 @@ class Cart {
           ? Math.round(params.calculate.total)
           : Math.round(params.calculate.total * 100),
       currency: params.calculate.currency,
-      payment_method_types: ['card'],
+      payment_method_types: ['EUR', 'GBP'].includes(params.calculate.currency)
+        ? ['card', 'klarna']
+        : ['card'],
       transfer_group: `{ORDER_${params.order_id}}`,
       metadata: metadata
     }
