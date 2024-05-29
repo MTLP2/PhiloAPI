@@ -242,8 +242,6 @@
       <th>{{ t('invoice.ean13') }}</th>
       <th>{{ t('invoice.wording') }}</th>
       <th class="price">{{ t('invoice.quantity') }}</th>
-      <th class="price">{{ t('invoice.price_brut') }}</th>
-      <th class="price">{{ t('invoice.discount_rate') }}</th>
       <th class="price">{{ t('invoice.price_unit') }}</th>
       <th class="price">{{ t('invoice.amount') }}</th>
     </tr>
@@ -262,8 +260,6 @@
           <td>{{line.ean13}}</td>
           <td>{{line.name}}</td>
           <td class="nowrap">{{line.quantity}}</td>
-          <td class="nowrap">{{line.price_brut}} {{currency}}</td>
-          <td class="nowrap">{{line.discount_rate}} %</td>
           <td class="nowrap">{{line.price_unit}} {{currency}}</td>
           <td class="nowrap">{{line.amount}} {{currency}}</td>
       </tr>
