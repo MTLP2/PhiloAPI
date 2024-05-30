@@ -1938,6 +1938,18 @@ class Admin {
     order.comment = params.comment
     order.user_contacted = params.user_contacted
     order.updated_at = Utils.date()
+    if (params.item_id) {
+      const item = await DB('order_item')
+        .where('id', params.item_id)
+        .where('order_id', params.id)
+        .first()
+
+      if (item) {
+        item.size = params.size
+        item.updated_at = Utils.date()
+        await item.save()
+      }
+    }
 
     await order.save()
     return order
@@ -1945,7 +1957,6 @@ class Admin {
 
   static saveOrderShop = async (params) => {
     const shop = await DB('order_shop').find(params.id)
-
     const customer = await Customer.save(params.customer)
     shop.customer_id = customer.id
 
