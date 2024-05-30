@@ -469,7 +469,7 @@ class Charts {
     for (const o of orders) {
       if (!barcodes[o.barcode]) {
         barcodes[o.barcode] = {
-          barcode: o.barcode,
+          barcode: o.barcode.padStart(14, '0'),
           title: o.title,
           artist: o.artist,
           label: o.label,
