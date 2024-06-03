@@ -512,7 +512,6 @@ class Product {
     if (!disableWeight) {
       data['weight'] = weight
     }
-    console.log(params.project_id, data)
     await DB('vod').where('project_id', params.project_id).update(data)
 
     return { success: true }
