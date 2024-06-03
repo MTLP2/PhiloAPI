@@ -1737,7 +1737,18 @@ class Project {
       .where('is_delete', '!=', '1')
 
     if (params.user_id) {
-      projects.where('user_id', params.user_id)
+      projects.where((query) => {
+        query
+          .where('user_id', params.user_id)
+          .orWhereExists(
+            DB('project_user')
+              .select(DB.raw('1'))
+              .whereRaw('project_id = project.id')
+              .where('user_id', params.user_id)
+              .query()
+          )
+      })
+
       if (params.cashable) {
         projects.where('send_statement', true)
       }
@@ -2274,7 +2285,17 @@ class Project {
       .join('vod', 'vod.project_id', 'project.id')
 
     if (params.id === 'all') {
-      pp.where('user_id', params.user_id)
+      pp.where((query) => {
+        query
+          .where('user_id', params.user_id)
+          .orWhereExists(
+            DB('project_user')
+              .select(DB.raw('1'))
+              .whereRaw('project_id = project.id')
+              .where('user_id', params.user_id)
+              .query()
+          )
+      })
     } else {
       pp.where('project.id', params.id)
     }
@@ -2313,7 +2334,17 @@ class Project {
       .where('is_external', false)
 
     if (params.id === 'all') {
-      params.query.where('vod.user_id', params.user_id)
+      params.query.where((query) => {
+        query
+          .where('vod.user_id', params.user_id)
+          .orWhereExists(
+            DB('project_user')
+              .select(DB.raw('1'))
+              .whereRaw('project_id = project.id')
+              .where('user_id', params.user_id)
+              .query()
+          )
+      })
     } else if (params.ids) {
       params.query.whereIn('order_item.project_id', params.ids)
     } else {
