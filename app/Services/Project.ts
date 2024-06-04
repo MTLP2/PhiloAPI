@@ -1006,7 +1006,6 @@ class Project {
       return { error: 404 }
     }
 
-    console.log(products)
     project.products = products
     project.items = items.map((item) => {
       let soldout = true
