@@ -45,7 +45,7 @@ class Project {
 
     project.step = project.sold_out ? 'successful' : project.step
 
-    if (project.barcode && project.barcode.indexOf('MERCH') > -1) {
+    if (project.barcode && ['MERCH', 'T-SHIRT', 'HOODIE'].includes(project.barcode)) {
       project.sizes = true
     } else {
       project.sizes = false
@@ -226,6 +226,7 @@ class Project {
         }
       }
     }
+
     project.grouped_sizes = {}
     for (const product of Object.values(sizes) as any) {
       project.grouped_sizes[product.id] = product
@@ -1005,6 +1006,7 @@ class Project {
       return { error: 404 }
     }
 
+    console.log(products)
     project.products = products
     project.items = items.map((item) => {
       let soldout = true
