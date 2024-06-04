@@ -508,7 +508,7 @@ class Dispatch {
 
     await DB().execute('truncate table shipping_weight')
 
-    const prices = []
+    const prices: any[] = []
     worksheet.eachRow((row, rowNumber) => {
       if (rowNumber < 2) {
         return
@@ -523,21 +523,6 @@ class Dispatch {
 
     for (const price of prices) {
       let item: any = await DB('shipping_weight')
-        .where('country_id', price.country_id)
-        .where('state', price.state)
-        .where('partner', price.partner)
-        .where('transporter', price.transporter)
-        .first()
-
-      if (!item) {
-        item = DB('shipping_weight')
-        item.created_at = Utils.date()
-      }
-      if (params.id) {
-        item = await DB('article').find(params.id)
-      } else {
-      }
-
       item.country_id = price.country_id
       item.state = price.state
       item.partner = price.partner
