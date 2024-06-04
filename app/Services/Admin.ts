@@ -4346,7 +4346,7 @@ class Admin {
 
     const sanitizeForCSV = (str: string) => {
       if (!str) return ''
-      return str.replace(/[`"]/g, '＂')
+      return str.replace(/[`"]/g, '＂').replace(/[\n]/g, '')
     }
 
     for (const p in projects) {
