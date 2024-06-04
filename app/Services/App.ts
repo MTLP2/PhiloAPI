@@ -130,7 +130,7 @@ class App {
 
       if (hour === 2) {
         if (moment().format('E') === '5') {
-          // await Charts.uploadChartsAria()
+          await Charts.uploadChartsAria()
           await Charts.uploadChartsGfk()
         }
         await Charts.uploadOfficialCharts({

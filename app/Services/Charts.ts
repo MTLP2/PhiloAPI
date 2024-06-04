@@ -456,8 +456,8 @@ class Charts {
   }
 
   static async getChartsAria() {
-    const start = moment().subtract(1, 'weeks').day(5).format('YYYY-MM-DD')
-    const end = moment().day(4).format('YYYY-MM-DD')
+    const start = moment().day(-2).subtract(1, 'weeks').day(5).format('YYYY-MM-DD')
+    const end = moment().day(-2).day(4).format('YYYY-MM-DD')
 
     const orders = await Charts.getOrders({
       country_id: 'AU',
@@ -523,10 +523,11 @@ class Charts {
   static async uploadChartsAria() {
     const charts = await Charts.getChartsAria()
 
+    return charts
     /**
     let client = new SftpClient()
     let config = {
-      host: 'ftp.gfk-e.com',
+      host: 'ftp.aria.com.au',
       port: 22,
       username: 'FR_DiggFact',
       password: '1p13f7k8TffS'
