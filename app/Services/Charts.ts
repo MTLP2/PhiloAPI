@@ -195,14 +195,18 @@ class Charts {
   }
 
   static async getChartsGfk(params: { country_id: string }) {
-    const start = moment().subtract(1, 'weeks').day(5).format('YYYY-MM-DD')
-    const end = moment().day(4).format('YYYY-MM-DD')
+    const start = moment().day(-2).subtract(1, 'weeks').day(5).format('YYYY-MM-DD')
+    const end = moment().day(-2).day(4).format('YYYY-MM-DD')
 
     const orders = await Charts.getOrders({
       country_id: params.country_id,
       date_start: start,
       date_end: end
     })
+
+    if (orders.length === 0) {
+      return ''
+    }
 
     const columns = [
       'Retailer Name',
@@ -412,7 +416,7 @@ class Charts {
   }
 
   static async uploadChartsGfk() {
-    const date = moment().subtract(1, 'days').format('YYYYMMDD')
+    const date = moment().day(-2).format('YYYYMMDD')
 
     const countries = {
       ES: null,
@@ -434,14 +438,26 @@ class Charts {
       password: '1p13f7k8TffS'
     }
 
-    const partner = 'partner'
     client
       .connect(config)
       .then(() => {
         console.log('connected to charts')
 
         for (const country of Object.keys(countries)) {
-          client.put(Buffer.from(countries[country]), `${partner}_${country}_${date}.txt`)
+          if (!countries[country]) {
+            console.log('not data for', country)
+            continue
+          }
+          let filename
+          if (country === 'ES') {
+            filename = `80236_ES_${date}_V24.txt`
+          } else if (country === 'DE') {
+            filename = `29021_DE_${date}_V24.txt`
+          } else if (country === 'NL') {
+            filename = `55015_NL_${date}_V24.txt`
+          }
+          console.log('filename =>', filename)
+          client.put(Buffer.from(countries[country]), filename)
         }
 
         setTimeout(() => {
