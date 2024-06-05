@@ -106,16 +106,20 @@ class Charts {
 
       // CA
       if (countryId === 'CA') {
-        zipCode = zipCode.trim().substring(0, 6).toUpperCase().replace(' ', '')
+        zipCode = zipCode
+          .replace(/[^a-zA-Z0-9]/g, '')
+          .toUpperCase()
+          .substring(0, 6)
       }
 
       return zipCode
     }
 
+    const date = moment()
     const orders = await Charts.getOrders({
       country_id: countryId,
-      date_start: moment().subtract(8, 'days').format('YYYY-MM-DD'),
-      date_end: moment().subtract(1, 'days').format('YYYY-MM-DD')
+      date_start: moment(date).subtract(8, 'days').format('YYYY-MM-DD'),
+      date_end: moment(date).subtract(1, 'days').format('YYYY-MM-DD')
     })
 
     const barcodes: { barcode: string; project_id: number; type: string }[] = await DB(
@@ -145,7 +149,7 @@ class Charts {
     // Account Number (01864)
     text += '01864'
     // Date (YYMMDD)
-    text += moment().format('YYMMDD')
+    text += moment(date).format('YYMMDD')
     text += '\n'
 
     // Order Item reference
