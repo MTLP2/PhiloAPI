@@ -198,14 +198,10 @@ class Charts {
     return text
   }
 
-  static async getChartsGfk(params: { country_id: string }) {
-    const start = moment().day(-2).subtract(1, 'weeks').day(5).format('YYYY-MM-DD')
-    const end = moment().day(-2).day(4).format('YYYY-MM-DD')
-
+  static async getChartsGfk(params: { date: string; country_id: string }) {
     const orders = await Charts.getOrders({
       country_id: params.country_id,
-      date_start: start,
-      date_end: end
+      date: params.date
     })
 
     if (orders.length === 0) {
@@ -420,16 +416,18 @@ class Charts {
   }
 
   static async uploadChartsGfk() {
-    const date = moment().day(-2).format('YYYYMMDD')
+    const date = moment().subtract(1, 'days').format('YYYYMMDD')
 
     const countries = {
       ES: null,
       DE: null,
       NL: null
     }
+    console.log('date', date)
 
     for (const country of Object.keys(countries)) {
       countries[country] = await Charts.getChartsGfk({
+        date: date,
         country_id: country
       })
     }
@@ -450,7 +448,7 @@ class Charts {
         for (const country of Object.keys(countries)) {
           if (!countries[country]) {
             console.log('not data for', country)
-            continue
+            // continue
           }
           let filename
           if (country === 'ES') {

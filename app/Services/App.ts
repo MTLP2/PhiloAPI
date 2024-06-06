@@ -131,7 +131,6 @@ class App {
       if (hour === 2) {
         if (moment().format('E') === '5') {
           await Charts.uploadChartsAria()
-          await Charts.uploadChartsGfk()
         }
         await Charts.uploadOfficialCharts({
           country: 'GB'
@@ -147,6 +146,7 @@ class App {
       } else if (hour === 4) {
         await Whiplash.setTrackingLinks()
       } else if (hour === 5) {
+        await Charts.uploadChartsGfk()
         await Elogik.syncBoxes()
         await Cio.syncNewsletterNoAccount()
       } else if (hour === 7) {
