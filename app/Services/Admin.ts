@@ -126,6 +126,14 @@ class Admin {
           filters.splice(f, 1)
           params.filters = JSON.stringify(filters)
         }
+        if (filter.name === 'project') {
+          projects.where(
+            DB.raw(`CONCAT(project.artist_name, ' ', project.name) LIKE '%${filter.value}%'`),
+            null
+          )
+          filters.splice(f, 1)
+          params.filters = JSON.stringify(filters)
+        }
       }
     }
 
@@ -1774,6 +1782,15 @@ class Admin {
               query.where(DB.raw(`CONCAT(c.firstname, ' ', c.lastname) LIKE '%${filter.value}%'`))
               query.orWhere(DB.raw(`CONCAT(c.lastname, ' ', c.firstname) LIKE '%${filter.value}%'`))
             })
+            filters.splice(i, 1)
+            params.filters = JSON.stringify(filters)
+          }
+
+          if (filter.name === 'project') {
+            orders.where(
+              DB.raw(`CONCAT(project.artist_name, ' ', project.name) LIKE '%${filter.value}%'`),
+              null
+            )
             filters.splice(i, 1)
             params.filters = JSON.stringify(filters)
           }
