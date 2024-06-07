@@ -41,6 +41,124 @@ class Admin {
   }) => {
     const projects = DB('project')
       .select(
+        'project.id',
+        'project.artist_name',
+        'project.name',
+        'project.picture',
+        'project.country_id',
+        'project.category',
+        'project.home',
+        'project.cat_number',
+        'vod.origin',
+        'vod.id as vod_id',
+        'vod.step',
+        'vod.status',
+        'vod.phone_time',
+        'vod.count',
+        'vod.type',
+        'vod.is_licence',
+        'vod.is_distrib',
+        'vod.send_statement',
+        'vod.com_id',
+        'vod.resp_prod_id',
+        'vod.count_other',
+        'vod.barcode',
+        'vod.quantity_distribution',
+        'vod.is_notif',
+        'vod.date_shipping',
+        'vod.start',
+        'vod.end',
+        'vod.stage1',
+        'vod.fee_prod',
+        'vod.quote',
+        'vod.factory',
+        'vod.price',
+        'vod.created_at',
+        'user.id as user_id',
+        'user.name as user_name',
+        'user.email as user_email',
+        'user.sponsor as user_sponsor',
+        'customer.phone as phone',
+        'customer.email as customer_email',
+        'customer.country_id as customer_country',
+        'customer.phone as customer_phone',
+        'customer.firstname as customer_firstname',
+        'customer.lastname as customer_lastname',
+        DB().raw(`DATEDIFF(NOW(), vod.start) AS days_elapsed`),
+        'vod.comment'
+      )
+      .leftJoin('vod', 'vod.project_id', 'project.id')
+      .leftJoin('user', 'user.id', 'vod.user_id')
+      .leftJoin('customer', 'vod.customer_id', 'customer.id')
+      .where('project.is_delete', '!=', '1')
+      .whereNotNull('vod.user_id')
+
+    if (params.type !== 'references') {
+      projects.whereNotNull('vod.id')
+    }
+    if (params.in_progress) {
+      projects.whereIn('vod.step', ['in_progress', 'failed', 'successful'])
+    }
+
+    if (!params.sort) {
+      projects.orderBy('project.id', 'desc')
+    }
+
+    if (params.start) {
+      projects.where('vod.created_at', '>=', params.start)
+    }
+    if (params.end) {
+      projects.where('vod.created_at', '<=', `${params.end} 23:59`)
+    }
+
+    const filters = params.filters ? JSON.parse(params.filters) : null
+    if (filters) {
+      for (const f in filters) {
+        const filter = filters[f]
+        filter.value = decodeURIComponent(filter.value)
+        if (filter.name === 'customer.email') {
+          projects.where((query) => {
+            query.where('customer.email', 'LIKE', `%${filter.value}%`)
+            query.orWhere('user.email', 'LIKE', `%${filter.value}%`)
+          })
+          filters.splice(f, 1)
+          params.filters = JSON.stringify(filters)
+        }
+        if (filter.name === 'customer_name') {
+          projects.where(
+            DB.raw(`CONCAT(customer.firstname, ' ', customer.lastname) LIKE '%${filter.value}%'`),
+            null
+          )
+          filters.splice(f, 1)
+          params.filters = JSON.stringify(filters)
+        }
+        if (filter.name === 'project') {
+          projects.where(
+            DB.raw(`CONCAT(project.artist_name, ' ', project.name) LIKE '%${filter.value}%'`),
+            null
+          )
+          filters.splice(f, 1)
+          params.filters = JSON.stringify(filters)
+        }
+      }
+    }
+
+    const res = await Utils.getRows<any>({ ...params, query: projects })
+    return res
+  }
+
+  static getProjects2 = async (params: {
+    type?: string
+    in_progress?: boolean
+    sort?: any
+    start?: string
+    end?: string
+    query?: any
+    filters?: string
+    size?: number
+  }) => {
+    const projects = DB('project')
+      .select(
         'vod.*',
         'project.*',
         'user.id as user_id',
@@ -58,6 +176,7 @@ class Admin {
         'vod.id as vod_id',
         'vod.phone_time',
         'vod.count',
+        'vod.resp_prod_id',
         'vod.count_other',
         'vod.quantity_distribution',
         'vod.is_notif',
@@ -1667,35 +1786,42 @@ class Admin {
       .select(
         DB.raw('(os.shipping - os.shipping_cost) as shipping_diff'),
         DB.raw('ROUND(oi.total * order.currency_rate, 2) as euro_rate'),
-        'order.currency_rate',
         'os.*',
+        'order.currency_rate',
         'order.origin',
         'order.promo_code',
-        'oi.id as item_id',
-        'oi.project_id',
-        'oi.total',
         'order.payment_type',
         'order.refunded',
+        'order.total as o_total',
+        'order.transaction_id',
+        'order.status',
+        'order.payment_id',
+        'order.user_agent',
+        'order.user_contacted',
         'os.total as os_total',
         'os.is_paid',
         'os.is_paused',
         'os.ask_cancel',
-        'order.total as o_total',
-        'order.transaction_id',
+        'oi.id as item_id',
+        'oi.project_id',
+        'oi.total',
         'oi.order_id',
         'oi.order_shop_id',
         'oi.quantity',
         'oi.price',
         'oi.size',
         'oi.discount_code',
-        'order.status',
-        'order.payment_id',
+        'oi.discount_code',
+        'project.artist_name',
+        'project.name as project_name',
+        'project.picture',
         'user.name as user_name',
         'user.email as user_email',
         'user.picture as user_picture',
         'user.newsletter as user_newsletter',
-        'order.user_agent',
-        'order.user_contacted',
+        'user.is_pro',
+        'user.facebook_id',
+        'user.soundcloud_id',
         'c.country_id',
         'c.name',
         'c.firstname',
@@ -1705,13 +1831,6 @@ class Admin {
         'c.city',
         'c.state',
         'c.phone',
-        'user.is_pro',
-        'project.artist_name',
-        'project.name as project_name',
-        'project.picture',
-        'user.facebook_id',
-        'user.soundcloud_id',
-        'oi.discount_code',
         DB.raw("CONCAT(c.firstname, ' ', c.lastname) AS user_infos")
       )
       .join('order_item as oi', 'os.id', 'oi.order_shop_id')
