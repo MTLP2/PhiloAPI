@@ -1927,7 +1927,7 @@ class Admin {
       orders.where('user.id', params.user_id)
     }
 
-    return Utils.getRows<any>({ ...params, query: orders, pagination: false })
+    return Utils.getRows<any>({ ...params, query: orders, pagination: !!params.project_id })
   }
 
   static getOrder = async (id) => {
