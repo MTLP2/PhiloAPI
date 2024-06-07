@@ -1805,6 +1805,13 @@ class Project {
       .orderBy('date')
       .all()
 
+    const downloadPromise = DB('download')
+      .select('project_id', 'used')
+      .whereIn('project_id', ids)
+      .whereNotNull('used')
+      .orderBy('used')
+      .all()
+
     const paymentsPromise = DB('payment_artist_project')
       .select(
         'payment_artist.receiver',
@@ -1836,13 +1843,14 @@ class Project {
     const stocksSiteQuery = Stock.byProject({ project_id: +ids[0], is_distrib: false })
     const stocksDistribQuery = Stock.byProject({ project_id: +ids[0], is_distrib: true })
 
-    const [orders, statements, costs, payments, boxes, stocksSite, stockDistrib] =
+    const [orders, statements, costs, payments, boxes, download, stocksSite, stockDistrib] =
       await Promise.all([
         ordersPromise,
         statementsPromise,
         costsPromise,
         paymentsPromise,
         boxesPromise,
+        downloadPromise,
         stocksSiteQuery,
         stocksDistribQuery
       ])
@@ -2048,6 +2056,19 @@ class Project {
           countries: {}
         }
       },
+      download: {
+        all: {
+          all: 0,
+          total: 0,
+          dates: { ...dates }
+        },
+        site: {
+          all: 0,
+          total: 0,
+          dates: { ...dates },
+          countries: {}
+        }
+      },
       stocks: {
         all: { countries: {} },
         site: { countries: {} },
@@ -2183,6 +2204,9 @@ class Project {
       }
     }
 
+    for (const d of download) {
+      s.setDate('site', 'download', moment(d.used).format(format), 1)
+    }
     for (const stat of statements) {
       const date = moment(stat.date).format(format)
       const custom = stat.custom
