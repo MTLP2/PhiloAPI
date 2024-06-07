@@ -143,7 +143,7 @@ class Admin {
       }
     }
 
-    const res = await Utils.getRows<any>({ ...params, query: projects })
+    const res = await Utils.getRows<any>({ ...params, query: projects, pagination: false })
     return res
   }
 
@@ -1838,7 +1838,7 @@ class Admin {
       .join('user', 'user.id', 'order.user_id')
       .join('project', 'project.id', 'oi.project_id')
       .leftJoin('customer as c', 'c.id', 'os.customer_id')
-      .where('os.step', '!=', 'creating')
+      .whereNotNull('order.date_payment')
 
     if (params.project_id) {
       orders.whereIn('oi.project_id', params.project_id.split(','))
@@ -1927,7 +1927,7 @@ class Admin {
       orders.where('user.id', params.user_id)
     }
 
-    return Utils.getRows<any>({ ...params, query: orders })
+    return Utils.getRows<any>({ ...params, query: orders, pagination: false })
   }
 
   static getOrder = async (id) => {
