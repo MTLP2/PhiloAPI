@@ -3,6 +3,7 @@ import Utils from 'App/Utils'
 import SftpClient from 'ssh2-sftp-client'
 import moment from 'moment'
 const { XMLBuilder } = require('fast-xml-parser')
+import fs from 'fs'
 
 class Charts {
   static getOrders = async (params: {
@@ -54,9 +55,7 @@ class Charts {
         if (params.date) {
           query.whereRaw(`DATE_FORMAT(os.date_export, "%Y-%m-%d") = '${params.date}'`)
         } else if (params.date_start && params.date_end) {
-          query.whereRaw(
-            `DATE(os.date_export) BETWEEN '${params.date_start}' AND '${params.date_end}'`
-          )
+          query.whereRaw(`os.date_export BETWEEN '${params.date_start}' AND '${params.date_end}'`)
         }
       })
       .all()
@@ -119,7 +118,7 @@ class Charts {
     const orders = await Charts.getOrders({
       country_id: countryId,
       date_start: moment(date).subtract(8, 'days').format('YYYY-MM-DD'),
-      date_end: moment(date).subtract(1, 'days').format('YYYY-MM-DD')
+      date_end: moment(date).subtract(1, 'days').format('YYYY-MM-DD 23:59:59')
     })
 
     const barcodes: { barcode: string; project_id: number; type: string }[] = await DB(
@@ -474,8 +473,8 @@ class Charts {
   }
 
   static async getChartsAria() {
-    const start = moment().day(-2).subtract(1, 'weeks').day(5).format('YYYY-MM-DD')
-    const end = moment().day(-2).day(4).format('YYYY-MM-DD')
+    const start = moment().subtract(1, 'weeks').day(4).format('YYYY-MM-DD 16:00')
+    const end = moment().day(4).format('YYYY-MM-DD 16:00')
 
     const orders = await Charts.getOrders({
       country_id: 'AU',
@@ -539,27 +538,21 @@ class Charts {
   }
 
   static async uploadChartsAria() {
+    const date = moment().subtract(1, 'days').format('YYYYMMDD')
     const charts = await Charts.getChartsAria()
 
-    return charts
-    /**
     let client = new SftpClient()
     let config = {
       host: 'ftp.aria.com.au',
       port: 22,
-      username: 'FR_DiggFact',
-      password: '1p13f7k8TffS'
+      username: 'diggersfactory',
+      privateKey: fs.readFileSync('./resources/keys/aria')
     }
 
-    const partner = 'partner'
     client
       .connect(config)
       .then(() => {
-        console.log('connected to charts')
-
-        for (const country of Object.keys(countries)) {
-          client.put(Buffer.from(countries[country]), `${partner}_${country}_${date}.txt`)
-        }
+        client.put(Buffer.from(charts), `DiggersFactory_${date}01.xml`)
 
         setTimeout(() => {
           console.log('close connection to charts')
@@ -570,8 +563,6 @@ class Charts {
       .catch((err) => {
         console.error(err.message)
       })
-  }
-  **/
   }
 }
 

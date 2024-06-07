@@ -129,9 +129,6 @@ class App {
       }
 
       if (hour === 2) {
-        if (moment().format('E') === '5') {
-          await Charts.uploadChartsAria()
-        }
         await Charts.uploadOfficialCharts({
           country: 'GB'
         })
@@ -167,6 +164,9 @@ class App {
       } else if (hour === 14) {
         await Elogik.checkBlockedOrders()
       } else if (hour === 16) {
+        if (moment().format('E') === '4') {
+          await Charts.uploadChartsAria()
+        }
         if (moment().format('E') === '2') {
           await Charts.uploadCharts()
         }
