@@ -1600,7 +1600,7 @@ class Stats {
 
   static async getStats2(params: { start?: string; end?: string; period?: string }) {
     let format: string
-
+    console.log('get_stats2')
     let periodicity
     if (params.period === 'day') {
       periodicity = 'days'
@@ -1879,7 +1879,7 @@ class Stats {
       .hasMany('statement_distributor', 'distributors')
       .all()
 
-    const invoicesPromise = await DB('invoice')
+    const invoicesPromise = DB('invoice')
       .select(
         'id',
         'type',
@@ -1896,30 +1896,30 @@ class Stats {
       .where('compatibility', true)
       .all()
 
-    const invoicesNotPaidPromise = await DB('invoice')
+    const invoicesNotPaidPromise = DB('invoice')
       .select('total', 'currency', 'tax_rate', 'date')
       .where('type', 'invoice')
       .where('status', 'invoiced')
       .where('compatibility', true)
       .all()
 
-    const projectsPromise = await DB('vod')
+    const projectsPromise = DB('vod')
       .select('created_at', 'is_licence', 'com_id', 'user_id', 'start')
       .whereBetween('created_at', [params.start, params.end])
       .all()
 
-    const usersPromise = await DB('user')
+    const usersPromise = DB('user')
       .select('created_at', 'country_id', 'type')
       .whereBetween('created_at', [params.start, params.end])
       .all()
 
-    const quotesPromise = await DB('quote')
+    const quotesPromise = DB('quote')
       .select('created_at', 'project_id')
       .where('site', true)
       .whereBetween('created_at', [params.start, params.end])
       .all()
 
-    const productionsPromise = await DB('production')
+    const productionsPromise = DB('production')
       .select(
         'date_prod',
         'date_factory',
@@ -1932,7 +1932,7 @@ class Stats {
       .where('production.is_delete', false)
       .all()
 
-    const productionsSentPromise = await DB('production')
+    const productionsSentPromise = DB('production')
       .select('invoice.sub_total', 'invoice.currency_rate', 'production.date_factory')
       .join('invoice', 'invoice.production_id', 'production.id')
       .join('vod', 'vod.project_id', 'production.project_id')
@@ -1941,7 +1941,7 @@ class Stats {
       .where('production.is_delete', false)
       .all()
 
-    const costsPromise = await DB('production_cost')
+    const costsPromise = DB('production_cost')
       .select(
         'date',
         'production_cost.type',
@@ -1954,17 +1954,17 @@ class Stats {
       .whereBetween('date', [params.start, params.end])
       .all()
 
-    const stocksPromise = await DB('stock')
+    const stocksPromise = DB('stock')
       .select('type', DB.raw('sum(quantity) as quantity'))
       .groupBy('type')
       .all()
 
-    const stylesPromise = await DB('style')
+    const stylesPromise = DB('style')
       .select('style.id', 'genre.name')
       .join('genre', 'genre.id', 'style.genre_id')
       .all()
 
-    const playPromise = await DB('song_play')
+    const playPromise = DB('song_play')
       .select('created_at')
       .whereBetween('created_at', [params.start, params.end])
       .all()
@@ -3066,6 +3066,1080 @@ class Stats {
 
     console.log(days, projects)
     return days / projects
+  }
+
+  static async getStats4(params: { start?: string; end?: string; period?: string }) {
+    let format: string
+
+    const deb = new Date()
+    console.log('-----------------')
+    console.log('start', (new Date().getTime() - deb.getTime()) / 1000)
+    let periodicity
+    if (params.period === 'day') {
+      periodicity = 'days'
+      format = 'YYYY-MM-DD'
+    } else if (params.period === 'month') {
+      periodicity = 'months'
+      format = 'YYYY-MM'
+    } else {
+      periodicity = 'years'
+      format = 'YYYY'
+    }
+
+    params.end = params.end + ' 23:59'
+    const now =
+      periodicity === 'months' ? moment(params.start).startOf('month') : moment(params.start)
+
+    const dates = {}
+    let lastDate: string = ''
+    while (now.isSameOrBefore(moment(params.end))) {
+      dates[now.format(format)] = 0
+      lastDate = now.format(format)
+      now.add(1, periodicity)
+    }
+
+    console.log('01', (new Date().getTime() - deb.getTime()) / 1000)
+    const d = {
+      stocks: {},
+      total: {},
+      cart: {
+        avg_total: 0,
+        avg_quantity: 0
+      },
+      productions: {
+        total_start: { total: 0, dates: { ...dates } },
+        total_end: { total: 0, dates: { ...dates } },
+        sna_start: { total: 0, dates: { ...dates } },
+        sna_end: { total: 0, dates: { ...dates } },
+        vdp_start: { total: 0, dates: { ...dates } },
+        vdp_end: { total: 0, dates: { ...dates } }
+      },
+      orders: {
+        users: {
+          period: {}
+        },
+        projects: {
+          period: {},
+          current: {}
+        }
+      },
+      countries: {
+        quantity: {},
+        users: {},
+        turnover: {}
+      },
+      quotes: {
+        total: { total: 0, dates: { ...dates } },
+        success: { total: 0, dates: { ...dates } }
+      },
+      styles: {},
+      distrib: { list: {}, projects: {}, total: {} },
+      outstanding: 0,
+      outstanding_delayed: 0,
+      users: {
+        total: { total: 0, dates: { ...dates } },
+        digger: { total: 0, dates: { ...dates } },
+        artist: { total: 0, dates: { ...dates } },
+        label: { total: 0, dates: { ...dates } },
+        record_shop: { total: 0, dates: { ...dates } },
+        vinyl_factory: { total: 0, dates: { ...dates } },
+        distributor: { total: 0, dates: { ...dates } },
+        mastering_studio: { total: 0, dates: { ...dates } }
+      },
+      plays: { total: 0, dates: { ...dates } },
+      projects: {
+        created: { total: 0, dates: { ...dates } },
+        saved: { total: 0, dates: { ...dates } },
+        licence: { total: 0, dates: { ...dates } },
+        business: { total: 0, dates: { ...dates } },
+        organic: { total: 0, dates: { ...dates } }
+      },
+      quantity: {
+        all: { total: 0, dates: { ...dates } },
+        total: { total: 0, dates: { ...dates } },
+        site: { total: 0, dates: { ...dates } },
+        project: { total: 0, dates: { ...dates } },
+        licence: { total: 0, dates: { ...dates } },
+        refund: { total: 0, dates: { ...dates } },
+        distrib: { total: 0, dates: { ...dates } },
+        distrib_project: { total: 0, dates: { ...dates } },
+        distrib_licence: { total: 0, dates: { ...dates } },
+        distrib_returned: { total: 0, dates: { ...dates } },
+        site_project: { total: 0, dates: { ...dates } },
+        site_licence: { total: 0, dates: { ...dates } },
+        site_refund: { total: 0, dates: { ...dates } },
+        site_shop: { total: 0, dates: { ...dates } },
+        site_vod: { total: 0, dates: { ...dates } },
+        site_direct_shop: { total: 0, dates: { ...dates } }
+      },
+      turnover: {
+        total: { total: 0, dates: { ...dates } },
+        all: { total: 0, dates: { ...dates } },
+        credit_note: { total: 0, dates: { ...dates } },
+        project: {
+          total: { total: 0, dates: { ...dates } },
+          all: { total: 0, dates: { ...dates } },
+          site: { total: 0, dates: { ...dates } },
+          invoice: { total: 0, dates: { ...dates } },
+          credit_note: { total: 0, dates: { ...dates } }
+        },
+        licence: {
+          total: { total: 0, dates: { ...dates } },
+          all: { total: 0, dates: { ...dates } },
+          credit_note: { total: 0, dates: { ...dates } }
+        },
+        shipping: {
+          total: { total: 0, dates: { ...dates } },
+          all: { total: 0, dates: { ...dates } },
+          site: { total: 0, dates: { ...dates } },
+          invoice: { total: 0, dates: { ...dates } },
+          credit_note: { total: 0, dates: { ...dates } }
+        },
+        distrib: {
+          total: { total: 0, dates: { ...dates } },
+          all: { total: 0, dates: { ...dates } },
+          project: { total: 0, dates: { ...dates } },
+          licence: { total: 0, dates: { ...dates } },
+          credit_note: { total: 0, dates: { ...dates } }
+        },
+        direct_shop: {
+          total: { total: 0, dates: { ...dates } },
+          all: { total: 0, dates: { ...dates } },
+          project: { total: 0, dates: { ...dates } },
+          licence: { total: 0, dates: { ...dates } },
+          credit_note: { total: 0, dates: { ...dates } }
+        },
+        direct_pressing: {
+          total: { total: 0, dates: { ...dates } },
+          all: { total: 0, dates: { ...dates } },
+          credit_note: { total: 0, dates: { ...dates } }
+        },
+        box: {
+          total: { total: 0, dates: { ...dates } },
+          all: { total: 0, dates: { ...dates } },
+          site: { total: 0, dates: { ...dates } },
+          invoice: { total: 0, dates: { ...dates } },
+          credit_note: { total: 0, dates: { ...dates } }
+        },
+        error: { total: 0, dates: { ...dates } },
+        other: { total: 0, dates: { ...dates } }
+      },
+      sent: {
+        total: { total: 0, dates: { ...dates } },
+        project: { total: 0, dates: { ...dates } },
+        licence: { total: 0, dates: { ...dates } },
+        shipping: { total: 0, dates: { ...dates } },
+        distrib: { total: 0, dates: { ...dates } },
+        direct_shop: { total: 0, dates: { ...dates } },
+        direct_pressing: { total: 0, dates: { ...dates } },
+        box: { total: 0, dates: { ...dates } }
+      },
+      margin: {
+        total: { total: 0, dates: { ...dates } },
+        project: { total: 0, dates: { ...dates } },
+        licence: {
+          total: { total: 0, dates: { ...dates } },
+          invoiced: { total: 0, dates: { ...dates } },
+          cost: { total: 0, dates: { ...dates } }
+        },
+        shipping: { total: 0, dates: { ...dates } },
+        tips: { total: 0, dates: { ...dates } },
+        fee_change: { total: 0, dates: { ...dates } },
+        service_charge: { total: 0, dates: { ...dates } },
+        distrib: {
+          total: { total: 0, dates: { ...dates } },
+          project: { total: 0, dates: { ...dates } },
+          licence: { total: 0, dates: { ...dates } }
+        },
+        direct_shop: { total: 0, dates: { ...dates } },
+        direct_pressing: { total: 0, dates: { ...dates } },
+        box: { total: 0, dates: { ...dates } },
+        prod: { total: 0, dates: { ...dates } },
+        storage: { total: 0, dates: { ...dates } }
+      }
+    }
+
+    console.log('02', (new Date().getTime() - deb.getTime()) / 1000)
+    const currenciesPromise = DB('currency').all()
+
+    const quantityPromise = DB('order_shop as os')
+      .select(
+        'os.order_id',
+        'os.created_at',
+        'quantity',
+        'is_paid',
+        'os.type',
+        'is_licence',
+        'os.type',
+        'vod.project_id',
+        'project.artist_name',
+        'project.name',
+        'project.picture',
+        'project.styles',
+        'os.user_id',
+        'user.is_pro',
+        'user.name as user_name',
+        'user.country_id as user_country',
+        'oi.total as item_total',
+        'os.total',
+        'os.currency',
+        'os.tax_rate'
+      )
+      .join('order_item as oi', 'oi.order_shop_id', 'os.id')
+      .join('vod', 'vod.project_id', 'oi.project_id')
+      .join('project', 'project.id', 'oi.project_id')
+      .join('order', 'order.id', 'os.order_id')
+      .whereNotIn('order.status', [
+        'creating',
+        'failed',
+        'card_declined',
+        'requires_action',
+        'requires_source_action',
+        'external',
+        'pending',
+        'card_declined'
+      ])
+      .leftJoin('user', 'user.id', 'os.user_id')
+      .where('is_external', false)
+      .whereBetween('os.created_at', [params.start, params.end])
+      .all()
+
+    const sentShopPromise = DB('order_shop as os')
+      .select('os.date_export', 'os.shipping', 'os.currency_rate', 'os.tax_rate')
+      .where('is_paid', true)
+      .where('is_external', false)
+      .whereBetween('os.date_export', [params.start, params.end])
+      .all()
+
+    const sentItemPromise = DB('order_shop as os')
+      .select(
+        'os.date_export',
+        'is_licence',
+        'os.total',
+        'os.currency_rate',
+        'os.tax_rate',
+        'user.is_pro',
+        'oi.total as item_total'
+      )
+      .join('order_item as oi', 'oi.order_shop_id', 'os.id')
+      .join('vod', 'vod.project_id', 'oi.project_id')
+      .leftJoin('user', 'user.id', 'os.user_id')
+      .where('is_paid', true)
+      .where('is_external', false)
+      .whereBetween('os.date_export', [params.start, params.end])
+      .all()
+
+    const statementsPromise = DB()
+      .select(
+        'statement.id',
+        'statement.date',
+        'statement.storage',
+        'vod.fee_distrib_date',
+        'vod.payback_distrib',
+        'vod.is_licence',
+        'vod.currency',
+        'vod.project_id',
+        'project.name',
+        'project.picture',
+        'project.artist_name',
+        'project.styles'
+      )
+      .from('statement')
+      .join('vod', 'vod.project_id', 'statement.project_id')
+      .join('project', 'vod.project_id', 'project.id')
+      .whereBetween(DB.raw("DATE_FORMAT(concat(statement.date, '-01'), '%Y-%m-%d')"), [
+        params.start,
+        params.end
+      ])
+      .hasMany('statement_distributor', 'distributors')
+      .all()
+
+    const invoicesPromise = DB('invoice')
+      .select(
+        'id',
+        'type',
+        'name',
+        'date',
+        'category',
+        'sub_total',
+        'margin',
+        'currency_rate',
+        'order_id',
+        'order_shop_id'
+      )
+      .whereBetween('date', [params.start, params.end])
+      .where('compatibility', true)
+      .all()
+
+    const invoicesNotPaidPromise = DB('invoice')
+      .select('total', 'currency', 'tax_rate', 'date')
+      .where('type', 'invoice')
+      .where('status', 'invoiced')
+      .where('compatibility', true)
+      .all()
+
+    const projectsPromise = DB('vod')
+      .select('created_at', 'is_licence', 'com_id', 'user_id', 'start')
+      .whereBetween('created_at', [params.start, params.end])
+      .all()
+
+    const usersPromise = DB('user')
+      .select('created_at', 'country_id', 'type')
+      .whereBetween('created_at', [params.start, params.end])
+      .all()
+
+    const quotesPromise = DB('quote')
+      .select('created_at', 'project_id')
+      .where('site', true)
+      .whereBetween('created_at', [params.start, params.end])
+      .all()
+
+    const productionsPromise = DB('production')
+      .select(
+        'date_prod',
+        'date_factory',
+        'factory',
+        'quantity',
+        'quantity_pressed',
+        'project.nb_vinyl'
+      )
+      .join('project', 'project.id', 'production.project_id')
+      .where('production.is_delete', false)
+      .all()
+
+    const productionsSentPromise = DB('production')
+      .select('invoice.sub_total', 'invoice.currency_rate', 'production.date_factory')
+      .join('invoice', 'invoice.production_id', 'production.id')
+      .join('vod', 'vod.project_id', 'production.project_id')
+      .whereBetween('production.date_factory', [params.start, params.end])
+      .where('vod.type', 'direct_pressing')
+      .where('production.is_delete', false)
+      .all()
+
+    const costsPromise = DB('production_cost')
+      .select(
+        'date',
+        'production_cost.type',
+        'is_licence',
+        'in_statement',
+        'margin',
+        'production_cost.currency'
+      )
+      .join('vod', 'vod.project_id', 'production_cost.project_id')
+      .whereBetween('date', [params.start, params.end])
+      .all()
+
+    const stocksPromise = DB('stock')
+      .select('type', DB.raw('sum(quantity) as quantity'))
+      .groupBy('type')
+      .all()
+
+    const stylesPromise = DB('style')
+      .select('style.id', 'genre.name')
+      .join('genre', 'genre.id', 'style.genre_id')
+      .all()
+
+    const playPromise = DB('song_play')
+      .select('created_at')
+      .whereBetween('created_at', [params.start, params.end])
+      .all()
+
+    console.log('0', (new Date().getTime() - deb.getTime()) / 1000)
+    const fake = new Promise((resolve) => resolve([]))
+    const [
+      quantity,
+      sentShop,
+      sentItem,
+      invoices,
+      invoicesNotPaid,
+      statements,
+      projects,
+      productions,
+      productionsSent,
+      costs,
+      users,
+      stocks,
+      quotes,
+      stylesArray,
+      plays,
+      currenciesDb
+    ] = await Promise.all([
+      quantityPromise,
+      fake,
+      fake,
+      fake,
+      fake,
+      fake,
+      fake,
+      fake,
+      fake,
+      fake,
+      fake,
+      fake,
+      fake,
+      fake,
+      fake,
+      currenciesPromise
+    ])
+
+    console.log('1', (new Date().getTime() - deb.getTime()) / 1000)
+
+    const currencies = Utils.getCurrencies('EUR', currenciesDb)
+
+    const styles = {}
+    for (const s of stylesArray) {
+      styles[s.id] = s.name
+    }
+
+    const orders = {}
+    /**
+    const ordersList = await DB('order_shop')
+      .select(
+        'order_shop.id as order_shop_id',
+        'order_shop.order_id',
+        'order_shop.shipping',
+        'order_shop.shipping_cost',
+        'order_shop.sub_total',
+        'order_shop.tax_rate',
+        'order.service_charge',
+        'order.tips',
+        'order.status',
+        'order_shop.currency',
+        'order_shop.currency_rate',
+        'user.is_pro'
+      )
+      .join('user', 'user.id', 'order_shop.user_id')
+      .join('order', 'order.id', 'order_shop.order_id')
+      .whereIn(
+        'order_id',
+        invoices.map((i) => i.order_id)
+      )
+      .all()
+
+    for (const order of ordersList) {
+      if (!orders[order.order_id]) {
+        orders[order.order_id] = []
+      }
+      orders[order.order_id].push({
+        ...order,
+        items: []
+      })
+    }
+
+    const projectsList = await DB('vod')
+      .select(
+        'order_shop_id',
+        'order_id',
+        'order_item.total',
+        'quantity',
+        'fee_date',
+        'fee_change',
+        'payback_site',
+        'is_licence'
+      )
+      .join('order_item', 'order_item.project_id', 'vod.project_id')
+      .whereIn(
+        'order_shop_id',
+        ordersList.map((i) => i.order_shop_id)
+      )
+      .all()
+
+    for (const project of projectsList) {
+      const idx = orders[project.order_id].findIndex(
+        (o) => o.order_shop_id === project.order_shop_id
+      )
+      orders[project.order_id][idx].items.push(project)
+    }
+
+    const boxesList = await DB('order_box')
+      .select(
+        'order_id',
+        'id as order_box_id',
+        'total',
+        'tax_rate',
+        'currency',
+        'shipping',
+        'currency_rate'
+      )
+      .whereIn(
+        'order_id',
+        invoices.map((i) => i.order_id)
+      )
+      .all()
+    for (const order of boxesList) {
+      if (!orders[order.order_id]) {
+        orders[order.order_id] = []
+      }
+      orders[order.order_id].push({
+        ...order,
+        type: 'box',
+        items: [
+          {
+            ...order
+          }
+        ]
+      })
+    }
+    **/
+
+    const addTurnover = (type, cat, cat2, date, value) => {
+      if (type === 'invoice') {
+        d.turnover[cat].total.dates[date] += value
+        d.turnover[cat].all.dates[date] += value
+
+        if (cat2) {
+          d.turnover[cat][cat2].dates[date] += value
+        }
+      } else {
+        d.turnover[cat].total.dates[date] -= value
+        d.turnover[cat].credit_note.dates[date] += value
+      }
+    }
+
+    const addMarge = (type, cat, date, value) => {
+      if (isNaN(value)) {
+        return
+      }
+      if (cat) {
+        d.margin[type][cat].dates[date] += value
+        d.margin[type].total.dates[date] += value
+      } else {
+        d.margin[type].dates[date] += value
+      }
+      d.margin.total.dates[date] += value
+    }
+
+    for (const invoice of invoices) {
+      const total = invoice.sub_total * invoice.currency_rate
+      const date = moment(invoice.date).format(format)
+
+      if (invoice.type === 'invoice') {
+        d.turnover.total.dates[date] += total
+        d.turnover.all.dates[date] += total
+      } else {
+        d.turnover.total.dates[date] -= total
+        d.turnover.credit_note.dates[date] += total
+      }
+
+      const ods = orders[invoice.order_id]
+      if (ods) {
+        addMarge(
+          'service_charge',
+          null,
+          date,
+          (ods[0].service_charge * invoice.currency_rate) / (1 + ods[0].tax_rate)
+        )
+        if (ods[0].status === 'confirmed' && ods[0].tips) {
+          addMarge(
+            'tips',
+            null,
+            date,
+            (ods[0].tips * invoice.currency_rate) / (1 + ods[0].tax_rate)
+          )
+        }
+
+        for (const order of ods) {
+          let shipping = order.shipping * invoice.currency_rate
+          if (order.tax_rate) {
+            shipping = shipping / (1 + order.tax_rate)
+          }
+          if (order.shipping_cost) {
+            const shippingCost =
+              (order.shipping_cost * invoice.currency_rate) / (1 + order.tax_rate)
+            addMarge('shipping', null, date, shipping - shippingCost)
+          }
+
+          addTurnover(invoice.type, 'shipping', 'site', date, shipping)
+
+          for (const item of order.items) {
+            if (invoice.order_shop_id && item.order_shop_id !== invoice.order_shop_id) {
+              continue
+            }
+            let total = (item.total * order.currency_rate) / (1 + order.tax_rate)
+            let marge
+            if (item.payback_site) {
+              marge = total - item.payback_site * item.quantity
+            } else if (item.fee_date) {
+              const fee = Utils.getFee(JSON.parse(item.fee_date), date) / 100
+              marge = total * fee
+            }
+            if (order.type === 'box') {
+              total = (item.total - item.shipping) / (1 + order.tax_rate)
+              addTurnover(invoice.type, 'box', 'site', date, total)
+            } else if (order.is_pro) {
+              addMarge('direct_shop', null, date, marge)
+              if (item.is_licence) {
+                addTurnover(invoice.type, 'direct_shop', 'licence', date, total)
+              } else {
+                addTurnover(invoice.type, 'direct_shop', 'project', date, total)
+              }
+            } else if (item.is_licence) {
+              addMarge('licence', 'invoiced', date, marge)
+              addTurnover(invoice.type, 'licence', null, date, total)
+            } else {
+              addMarge('project', null, date, marge)
+              addTurnover(invoice.type, 'project', 'site', date, total)
+            }
+            addMarge(
+              'fee_change',
+              null,
+              date,
+              (item.fee_change * invoice.currency_rate) / (1 + order.tax_rate)
+            )
+          }
+        }
+      } else if (invoice.category === 'box') {
+        addTurnover(invoice.type, 'box', 'invoice', date, total)
+      } else if (invoice.category === 'distribution') {
+        addTurnover(invoice.type, 'distrib', null, date, total)
+      } else if (invoice.category === 'direct_pressing') {
+        if (invoice.margin) {
+          addMarge('direct_pressing', null, date, invoice.margin * invoice.currency_rate)
+        }
+        addTurnover(invoice.type, 'direct_pressing', null, date, total)
+      } else if (invoice.category === 'shipping') {
+        addTurnover(invoice.type, 'shipping', 'invoice', date, total)
+      } else if (invoice.category === 'project') {
+        addTurnover(invoice.type, 'project', 'invoice', date, total)
+      } else if (invoice.name?.includes('Order ')) {
+        d.turnover.error.total += total
+        d.turnover.error.dates[date] += total
+      } else {
+        d.turnover.other.total += total
+        d.turnover.other.dates[date] += total
+      }
+    }
+
+    console.log('1.1', (new Date().getTime() - deb.getTime()) / 1000)
+    for (const invoice of invoicesNotPaid) {
+      const date = moment(invoice.date)
+      const start = moment(Object.keys(dates)[0])
+      const total = invoice.total / currencies[invoice.currency] / (1 + invoice.tax_rate)
+
+      d.outstanding += total
+      if (date < start) {
+        d.outstanding_delayed += total
+      }
+    }
+
+    const u = {}
+    const p = {}
+
+    const cart = {}
+
+    for (const qty of quantity) {
+      const date = moment(qty.created_at).format(format)
+      const quantity = qty.quantity
+
+      d.quantity.all.total += quantity
+      d.quantity.all.dates[date] += quantity
+
+      d.quantity.total.total += quantity
+      d.quantity.total.dates[date] += quantity
+
+      d.quantity.site.total += quantity
+      d.quantity.site.dates[date] += quantity
+
+      if (qty.type === 'shop') {
+        d.quantity.site_shop.total += quantity
+        d.quantity.site_shop.dates[date] += quantity
+      } else if (qty.type === 'vod') {
+        d.quantity.site_vod.total += quantity
+        d.quantity.site_vod.dates[date] += quantity
+      }
+
+      if (qty.is_licence) {
+        d.quantity.licence.total += quantity
+        d.quantity.licence.dates[date] += quantity
+
+        d.quantity.site_licence.total += quantity
+        d.quantity.site_licence.dates[date] += quantity
+      } else {
+        d.quantity.project.total += quantity
+        d.quantity.project.dates[date] += quantity
+
+        d.quantity.site_project.total += quantity
+        d.quantity.site_project.dates[date] += quantity
+      }
+
+      if (qty.is_pro) {
+        d.quantity.site_direct_shop.total += quantity
+        d.quantity.site_direct_shop.dates[date] += quantity
+      }
+
+      if (!qty.is_paid) {
+        d.quantity.refund.total += quantity
+        d.quantity.refund.dates[date] += quantity
+
+        d.quantity.site_refund.total += quantity
+        d.quantity.site_refund.dates[date] += quantity
+
+        d.quantity.total.total -= quantity
+        d.quantity.total.dates[date] -= quantity
+      }
+
+      if (!qty.is_paid) {
+        continue
+      }
+
+      for (const style of qty.styles.split(',')) {
+        if (!d.styles[styles[style]]) {
+          d.styles[styles[style]] = 0
+        }
+        d.styles[styles[style]] += quantity
+      }
+
+      if (!p[qty.project_id]) {
+        p[qty.project_id] = {
+          id: qty.project_id,
+          name: qty.name,
+          artist: qty.artist_name,
+          picture: qty.picture,
+          period: 0,
+          period_tur: 0,
+          current: 0,
+          current_tur: 0
+        }
+      }
+
+      if (moment(date).isBetween(params.start, params.end)) {
+        if (!cart[qty.order_id]) {
+          cart[qty.order_id] = {
+            total: 0,
+            quantity: 0
+          }
+        }
+        cart[qty.order_id].total += qty.total / currencies[qty.currency]
+        cart[qty.order_id].quantity += qty.quantity
+      }
+
+      const turnover = qty.item_total / currencies[qty.currency] / (1 + qty.tax_rate)
+
+      if (!d.countries.quantity[qty.user_country]) {
+        d.countries.quantity[qty.user_country] = 0
+        d.countries.turnover[qty.user_country] = 0
+      }
+      d.countries.quantity[qty.user_country] += quantity
+      d.countries.turnover[qty.user_country] += turnover
+
+      p[qty.project_id].period += quantity
+      p[qty.project_id].period_tur += turnover
+
+      if (date === lastDate) {
+        p[qty.project_id].current += quantity
+        p[qty.project_id].current_tur += turnover
+      }
+
+      if (!u[qty.user_id]) {
+        u[qty.user_id] = {
+          id: qty.user_id,
+          name: qty.user_name,
+          country: qty.user_country,
+          period: 0,
+          current: 0,
+          turnover: 0
+        }
+      }
+      u[qty.user_id].period += quantity
+      u[qty.user_id].turnover += qty.total / currencies[qty.currency] / (1 + qty.tax_rate)
+      if (date === lastDate) {
+        u[qty.user_id].current += quantity
+      }
+    }
+
+    console.log('1.2', (new Date().getTime() - deb.getTime()) / 1000)
+    for (const s of sentShop) {
+      const date = moment(s.date_export).format(format)
+
+      let shipping = (s.shipping * s.currency_rate) / (1 + s.tax_rate)
+      d.sent.shipping.dates[date] += shipping
+    }
+
+    for (const s of sentItem) {
+      const date = moment(s.date_export).format(format)
+
+      let total = (s.item_total * s.currency_rate) / (1 + s.tax_rate)
+
+      // console.log(s)
+      if (s.is_pro) {
+        d.sent.direct_shop.dates[date] += total
+      } else if (s.is_licence) {
+        d.sent.licence.dates[date] += total
+      } else {
+        d.sent.project.dates[date] += total
+      }
+      d.sent.total.dates[date] += total
+    }
+
+    for (const prod of productionsSent) {
+      const date = moment(prod.date_factory).format(format)
+      d.sent.direct_pressing.dates[date] += prod.sub_total * prod.currency_rate
+    }
+
+    d.cart.avg_total =
+      <number>Object.values(cart).reduce((prev: number, cur: any) => prev + cur.total, 0) /
+      Object.values(cart).length
+
+    d.cart.avg_quantity =
+      <number>Object.values(cart).reduce((prev: number, cur: any) => prev + cur.quantity, 0) /
+      Object.values(cart).length
+
+    d.orders.projects.current = Object.values(p)
+      .filter((a: any) => a.current > 0)
+      .sort((a: any, b: any) => (a.current - b.current < 0 ? 1 : -1))
+      .slice(0, 20)
+
+    d.orders.projects.period = Object.values(p)
+      .filter((a: any) => a.period > 0)
+      .sort((a: any, b: any) => (a.period - b.period < 0 ? 1 : -1))
+      .slice(0, 20)
+
+    d.orders.users.period = Object.values(u)
+      .filter((a: any) => a.period > 0)
+      .sort((a: any, b: any) => (a.period - b.period < 0 ? 1 : -1))
+      .slice(0, 20)
+
+    for (const stat of statements) {
+      const date = moment(stat.date).format(format)
+
+      for (const dis of stat.distributors) {
+        dis.name = dis.name.toLowerCase().trim()
+
+        d.quantity.all.total += dis.quantity
+        d.quantity.all.dates[date] += dis.quantity
+
+        d.quantity.total.total += dis.quantity
+        d.quantity.total.dates[date] += dis.quantity
+
+        d.quantity.distrib.total += dis.quantity
+        d.quantity.distrib.dates[date] += dis.quantity
+
+        d.quantity.distrib_returned.total += Math.abs(dis.returned)
+        d.quantity.distrib_returned.dates[date] += Math.abs(dis.returned)
+
+        d.quantity.total.total -= Math.abs(dis.returned)
+        d.quantity.total.dates[date] -= Math.abs(dis.returned)
+
+        d.quantity.refund.total += Math.abs(dis.returned)
+        d.quantity.refund.dates[date] += Math.abs(dis.returned)
+
+        if (stat.is_licence) {
+          d.quantity.distrib_licence.total += dis.quantity
+          d.quantity.distrib_licence.dates[date] += dis.quantity
+
+          d.quantity.licence.total += dis.quantity
+          d.quantity.licence.dates[date] += dis.quantity
+        } else {
+          d.quantity.distrib_project.total += dis.quantity
+          d.quantity.distrib_project.dates[date] += dis.quantity
+
+          d.quantity.project.total += dis.quantity
+          d.quantity.project.dates[date] += dis.quantity
+        }
+
+        let marge
+        if (stat.payback_distrib) {
+          marge = dis.total / currencies[stat.currency] - stat.payback_distrib * dis.quantity
+        } else {
+          const fee = Utils.getFee(JSON.parse(stat.fee_distrib_date), stat.date) / 100
+          marge = (dis.total / currencies[stat.currency]) * fee
+        }
+
+        d.sent.distrib.dates[date] += dis.total / currencies[stat.currency]
+        d.sent.total.dates[date] += dis.total / currencies[stat.currency]
+
+        addMarge('distrib', stat.is_licence ? 'licence' : 'project', date, marge)
+
+        if (!d.distrib.list[dis.name]) {
+          d.distrib.list[dis.name] = {
+            total: 0,
+            projects: {}
+          }
+        }
+        d.distrib.list[dis.name].total += dis.quantity
+
+        const p = {
+          name: stat.name,
+          artist: stat.artist_name,
+          picture: stat.picture,
+          quantity: 0
+        }
+        if (!d.distrib.projects[stat.project_id]) {
+          d.distrib.projects[stat.project_id] = { ...p }
+        }
+        d.distrib.projects[stat.project_id].quantity += dis.quantity
+
+        if (!d.distrib.list[dis.name].projects[stat.project_id]) {
+          d.distrib.list[dis.name].projects[stat.project_id] = { ...p }
+        }
+        d.distrib.list[dis.name].projects[stat.project_id].quantity += dis.quantity
+
+        for (const style of stat.styles.split(',')) {
+          if (!d.styles[styles[style]]) {
+            d.styles[styles[style]] = 0
+          }
+          d.styles[styles[style]] += dis.quantity
+        }
+      }
+    }
+
+    console.log('1.3', (new Date().getTime() - deb.getTime()) / 1000)
+    for (const p of Object.keys(d.distrib.list)) {
+      d.distrib.list[p].projects = Object.values(d.distrib.list[p].projects).sort(
+        (a: any, b: any) => (a.quantity - b.quantity < 0 ? 1 : -1)
+      )
+    }
+    d.distrib.projects = Object.values(d.distrib.projects).sort((a: any, b: any) =>
+      a.quantity - b.quantity < 0 ? 1 : -1
+    )
+    d.distrib.total = Object.keys(d.distrib.list)
+      .map((dist) => {
+        return {
+          name: dist,
+          quantity: d.distrib.list[dist].total
+        }
+      })
+      .sort((a, b) => (a.quantity - b.quantity < 0 ? 1 : -1))
+
+    for (const cost of costs) {
+      const date = moment(cost.date).format(format)
+
+      if (cost.is_licence) {
+        addMarge('licence', 'cost', date, cost.margin)
+      } else if (cost.type !== 'direct_pressing') {
+        addMarge('prod', null, date, cost.margin)
+      }
+      if (cost.type === 'storage') {
+        addMarge('storage', null, date, cost.in_statement / currencies[cost.currency])
+      }
+    }
+
+    for (const play of plays) {
+      const date = moment(play.created_at).format(format)
+      d.plays.total++
+      d.plays.dates[date]++
+    }
+
+    for (const quote of quotes) {
+      const date = moment(quote.created_at).format(format)
+      d.quotes.total.total++
+      d.quotes.total.dates[date]++
+
+      if (quote.project_id) {
+        d.quotes.success.total++
+        d.quotes.success.dates[date]++
+      }
+    }
+
+    for (const project of projects) {
+      const date = moment(project.created_at).format(format)
+      if (d.projects.created.dates[date] === undefined) {
+        continue
+      }
+      if (project.user_id) {
+        d.projects.saved.total++
+        d.projects.saved.dates[date]++
+      } else {
+        d.projects.created.total++
+        d.projects.created.dates[date]++
+      }
+      if (project.start) {
+        const date = moment(project.start).format(format)
+        if (d.projects.created.dates[date] === undefined) {
+          continue
+        }
+        if (project.is_licence) {
+          d.projects.licence.total++
+          d.projects.licence.dates[date]++
+        } else if (
+          !project.com_id ||
+          [
+            80490, // Tom
+            122330, // Paul
+            103096, // Léopold
+            10913 // Margot
+          ].includes(project.com_id)
+        ) {
+          d.projects.organic.total++
+          d.projects.organic.dates[date]++
+        } else {
+          d.projects.business.total++
+          d.projects.business.dates[date]++
+        }
+      }
+    }
+
+    for (const user of users) {
+      const date = moment(user.created_at).format(format)
+
+      d.users.total.total++
+      d.users.total.dates[date]++
+
+      d.users[user.type].total++
+      d.users[user.type].dates[date]++
+
+      if (!d.countries.users[user.country_id]) {
+        d.countries.users[user.country_id] = 0
+      }
+      d.countries.users[user.country_id]++
+    }
+
+    for (const prod of productions) {
+      const start = moment(prod.date_prod).format(format)
+      const end = moment(prod.date_factory).format(format)
+
+      if (prod.factory === 'sna' || prod.factory === 'vdp') {
+        if (dates[start] !== undefined) {
+          d.productions[`${prod.factory}_start`].dates[start] += prod.quantity * prod.nb_vinyl
+        }
+        if (dates[end] !== undefined) {
+          d.productions[`${prod.factory}_end`].dates[end] += prod.quantity * prod.nb_vinyl
+        }
+      }
+      if (dates[start] !== undefined) {
+        d.productions.total_start.dates[start] += prod.quantity * prod.nb_vinyl
+      }
+      if (dates[end] !== undefined) {
+        d.productions.total_end.dates[end] += prod.quantity * prod.nb_vinyl
+      }
+    }
+
+    console.log('1.4', (new Date().getTime() - deb.getTime()) / 1000)
+    d.stocks = stocks.sort((a, b) => (a.quantity - b.quantity < 0 ? 1 : -1))
+
+    d.countries.turnover = Object.entries(d.countries.turnover)
+      .map(([country, value]) => ({ country: country, value: value }))
+      .sort((a: any, b: any) => (a.value - b.value < 0 ? 1 : -1))
+
+    d.countries.users = Object.entries(d.countries.users)
+      .map(([country, value]) => ({ country: country, value: value }))
+      .sort((a: any, b: any) => (a.value - b.value < 0 ? 1 : -1))
+
+    d.countries.quantity = Object.entries(d.countries.quantity)
+      .map(([country, value]) => ({ country: country, value: value }))
+      .sort((a: any, b: any) => (a.value - b.value < 0 ? 1 : -1))
+
+    d.styles = Object.entries(d.styles)
+      .map(([id, value]) => ({ name: id, value: value }))
+      .sort((a: any, b: any) => (a.value - b.value < 0 ? 1 : -1))
+
+    const date = Object.keys(dates)[0]
+
+    const total = d.turnover.total.dates[date]
+    let toto = 0
+    toto += d.turnover.direct_pressing.total.dates[date]
+    toto += d.turnover.box.total.dates[date]
+    toto += d.turnover.direct_shop.total.dates[date]
+    toto += d.turnover.distrib.total.dates[date]
+    toto += d.turnover.licence.total.dates[date]
+    toto += d.turnover.other.dates[date]
+    toto += d.turnover.project.total.dates[date]
+    toto += d.turnover.shipping.total.dates[date]
+    toto += d.turnover.error.dates[date]
+    console.log('diff =>', total, toto)
+
+    console.log('end', (new Date().getTime() - deb.getTime()) / 1000)
+    return d
   }
 }
 

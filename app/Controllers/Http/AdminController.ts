@@ -46,6 +46,18 @@ class AdminController {
     return Stats.getStats2(params)
   }
 
+  async getStats4({ params }) {
+    const payload = await validator.validate({
+      schema: schema.create({
+        type: schema.string.optional(),
+        start: schema.string.optional(),
+        end: schema.string.optional()
+      }),
+      data: params
+    })
+    return Stats.getStats4(params)
+  }
+
   getLinktree({ params }) {
     return Linktree.findAll(params)
   }
