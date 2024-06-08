@@ -116,3 +116,5 @@ export const model = <T extends keyof DB & string>(table: T): Model<T> => {
   })
   return proxyInstance as any
 }
+
+export default db
