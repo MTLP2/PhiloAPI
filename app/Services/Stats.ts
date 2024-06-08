@@ -5,7 +5,7 @@ import Statement from 'App/Services/Statement'
 import moment from 'moment'
 
 class Stats {
-  static async getStats(params) {
+  static async getStatsV1(params) {
     const names: string[] = []
     const promises: any[] = []
     let query
@@ -1598,7 +1598,7 @@ class Stats {
   }
   **/
 
-  static async getStats2(params: { start?: string; end?: string; period?: string }) {
+  static async getStatsAll(params: { start?: string; end?: string; period?: string }) {
     let format: string
     console.log('get_stats2')
     let periodicity
@@ -3068,12 +3068,10 @@ class Stats {
     return days / projects
   }
 
-  static async getStats4(params: { start?: string; end?: string; period?: string }) {
+  static async getStats(params: { start?: string; end?: string; period?: string }) {
     let format: string
 
     const deb = new Date()
-    console.log('-----------------')
-    console.log('start', (new Date().getTime() - deb.getTime()) / 1000)
     let periodicity
     if (params.period === 'day') {
       periodicity = 'days'
@@ -3098,7 +3096,6 @@ class Stats {
       now.add(1, periodicity)
     }
 
-    console.log('01', (new Date().getTime() - deb.getTime()) / 1000)
     const d = {
       stocks: {},
       total: {},
@@ -3259,7 +3256,6 @@ class Stats {
       }
     }
 
-    console.log('02', (new Date().getTime() - deb.getTime()) / 1000)
     const currenciesPromise = DB('currency').all()
 
     const quantityPromise = DB('order_shop as os')
@@ -3444,7 +3440,6 @@ class Stats {
       .whereBetween('created_at', [params.start, params.end])
       .all()
 
-    console.log('0', (new Date().getTime() - deb.getTime()) / 1000)
     const fake = new Promise((resolve) => resolve([]))
     const [
       quantity,
@@ -3467,22 +3462,20 @@ class Stats {
       quantityPromise,
       fake,
       fake,
+      invoicesPromise,
       fake,
       fake,
       fake,
       fake,
       fake,
       fake,
-      fake,
-      fake,
+      usersPromise,
       fake,
       fake,
       fake,
       fake,
       currenciesPromise
     ])
-
-    console.log('1', (new Date().getTime() - deb.getTime()) / 1000)
 
     const currencies = Utils.getCurrencies('EUR', currenciesDb)
 
@@ -3710,7 +3703,6 @@ class Stats {
       }
     }
 
-    console.log('1.1', (new Date().getTime() - deb.getTime()) / 1000)
     for (const invoice of invoicesNotPaid) {
       const date = moment(invoice.date)
       const start = moment(Object.keys(dates)[0])
@@ -3847,7 +3839,6 @@ class Stats {
       }
     }
 
-    console.log('1.2', (new Date().getTime() - deb.getTime()) / 1000)
     for (const s of sentShop) {
       const date = moment(s.date_export).format(format)
 
@@ -3860,7 +3851,6 @@ class Stats {
 
       let total = (s.item_total * s.currency_rate) / (1 + s.tax_rate)
 
-      // console.log(s)
       if (s.is_pro) {
         d.sent.direct_shop.dates[date] += total
       } else if (s.is_licence) {
@@ -3983,7 +3973,6 @@ class Stats {
       }
     }
 
-    console.log('1.3', (new Date().getTime() - deb.getTime()) / 1000)
     for (const p of Object.keys(d.distrib.list)) {
       d.distrib.list[p].projects = Object.values(d.distrib.list[p].projects).sort(
         (a: any, b: any) => (a.quantity - b.quantity < 0 ? 1 : -1)
@@ -4104,7 +4093,6 @@ class Stats {
       }
     }
 
-    console.log('1.4', (new Date().getTime() - deb.getTime()) / 1000)
     d.stocks = stocks.sort((a, b) => (a.quantity - b.quantity < 0 ? 1 : -1))
 
     d.countries.turnover = Object.entries(d.countries.turnover)
@@ -4123,22 +4111,6 @@ class Stats {
       .map(([id, value]) => ({ name: id, value: value }))
       .sort((a: any, b: any) => (a.value - b.value < 0 ? 1 : -1))
 
-    const date = Object.keys(dates)[0]
-
-    const total = d.turnover.total.dates[date]
-    let toto = 0
-    toto += d.turnover.direct_pressing.total.dates[date]
-    toto += d.turnover.box.total.dates[date]
-    toto += d.turnover.direct_shop.total.dates[date]
-    toto += d.turnover.distrib.total.dates[date]
-    toto += d.turnover.licence.total.dates[date]
-    toto += d.turnover.other.dates[date]
-    toto += d.turnover.project.total.dates[date]
-    toto += d.turnover.shipping.total.dates[date]
-    toto += d.turnover.error.dates[date]
-    console.log('diff =>', total, toto)
-
-    console.log('end', (new Date().getTime() - deb.getTime()) / 1000)
     return d
   }
 }

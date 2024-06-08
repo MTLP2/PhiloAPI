@@ -320,8 +320,8 @@ Route.group(() => {
 
 Route.group(() => {
   Route.get('/stats', 'AdminController.getStats')
-  Route.get('/stats2', 'AdminController.getStats2')
-  Route.get('/stats4', 'AdminController.getStats4')
+  Route.get('/stats-all', 'AdminController.getStatsAll')
+  Route.get('/stats-v1', 'AdminController.getStatsV1')
   Route.post('/linktree', 'AdminController.saveLinktree')
   Route.post('/linktree/:id', 'AdminController.saveLinktree')
   Route.post('/linktree/:id/links', 'AdminController.saveLinktreeLink')

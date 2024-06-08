@@ -42,8 +42,12 @@ class AdminController {
     return Stats.getStats(params)
   }
 
-  getStats2({ params }) {
-    return Stats.getStats2(params)
+  getStatsAll({ params }) {
+    return Stats.getStatsAll(params)
+  }
+
+  getStatsV1({ params }) {
+    return Stats.getStatsV1(params)
   }
 
   async getStats4({ params }) {
