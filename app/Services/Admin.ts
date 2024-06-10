@@ -40,6 +40,7 @@ class Admin {
     size?: number
     resp?: boolean
   }) => {
+    const filters = params.filters ? JSON.parse(params.filters) : null
     const selects = [
       'project.id',
       'project.artist_name',
@@ -87,6 +88,9 @@ class Admin {
       DB().raw(`DATEDIFF(NOW(), vod.start) AS days_elapsed`),
       'vod.comment'
     ]
+    if (filters.find((f) => f.name === 'resp_prod.name' || f.name === 'com.name')) {
+      params.resp = true
+    }
     if (params.resp) {
       selects.push(...['com.name as com', 'resp_prod.name as resp_prod'])
     }
@@ -121,7 +125,6 @@ class Admin {
       projects.where('vod.created_at', '<=', `${params.end} 23:59`)
     }
 
-    const filters = params.filters ? JSON.parse(params.filters) : null
     if (filters) {
       for (const f in filters) {
         const filter = filters[f]
