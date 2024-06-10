@@ -156,7 +156,7 @@ class Whiplash {
     } else if (params && params.shipping_type === 'tracking') {
       return 'tracking'
     } else {
-      return 'no_tracking'
+      return 'standard'
     }
   }
 
