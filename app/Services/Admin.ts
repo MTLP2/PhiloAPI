@@ -38,61 +38,71 @@ class Admin {
     query?: any
     filters?: string
     size?: number
+    resp?: boolean
   }) => {
+    const selects = [
+      'project.id',
+      'project.artist_name',
+      'project.name',
+      'project.picture',
+      'project.country_id',
+      'project.category',
+      'project.home',
+      'project.cat_number',
+      'vod.origin',
+      'vod.id as vod_id',
+      'vod.step',
+      'vod.status',
+      'vod.phone_time',
+      'vod.count',
+      'vod.type',
+      'vod.is_licence',
+      'vod.is_distrib',
+      'vod.send_statement',
+      'vod.com_id',
+      'vod.resp_prod_id',
+      'vod.count_other',
+      'vod.barcode',
+      'vod.quantity_distribution',
+      'vod.is_notif',
+      'vod.date_shipping',
+      'vod.start',
+      'vod.end',
+      'vod.stage1',
+      'vod.fee_prod',
+      'vod.quote',
+      'vod.factory',
+      'vod.price',
+      'vod.created_at',
+      'user.id as user_id',
+      'user.name as user_name',
+      'user.email as user_email',
+      'user.sponsor as user_sponsor',
+      'customer.phone as phone',
+      'customer.email as customer_email',
+      'customer.country_id as customer_country',
+      'customer.phone as customer_phone',
+      'customer.firstname as customer_firstname',
+      'customer.lastname as customer_lastname',
+      DB().raw(`DATEDIFF(NOW(), vod.start) AS days_elapsed`),
+      'vod.comment'
+    ]
+    if (params.resp) {
+      selects.push(...['com.name as com', 'resp_prod.name as resp_prod'])
+    }
     const projects = DB('project')
-      .select(
-        'project.id',
-        'project.artist_name',
-        'project.name',
-        'project.picture',
-        'project.country_id',
-        'project.category',
-        'project.home',
-        'project.cat_number',
-        'vod.origin',
-        'vod.id as vod_id',
-        'vod.step',
-        'vod.status',
-        'vod.phone_time',
-        'vod.count',
-        'vod.type',
-        'vod.is_licence',
-        'vod.is_distrib',
-        'vod.send_statement',
-        'vod.com_id',
-        'vod.resp_prod_id',
-        'vod.count_other',
-        'vod.barcode',
-        'vod.quantity_distribution',
-        'vod.is_notif',
-        'vod.date_shipping',
-        'vod.start',
-        'vod.end',
-        'vod.stage1',
-        'vod.fee_prod',
-        'vod.quote',
-        'vod.factory',
-        'vod.price',
-        'vod.created_at',
-        'user.id as user_id',
-        'user.name as user_name',
-        'user.email as user_email',
-        'user.sponsor as user_sponsor',
-        'customer.phone as phone',
-        'customer.email as customer_email',
-        'customer.country_id as customer_country',
-        'customer.phone as customer_phone',
-        'customer.firstname as customer_firstname',
-        'customer.lastname as customer_lastname',
-        DB().raw(`DATEDIFF(NOW(), vod.start) AS days_elapsed`),
-        'vod.comment'
-      )
+      .select(...selects)
       .leftJoin('vod', 'vod.project_id', 'project.id')
       .leftJoin('user', 'user.id', 'vod.user_id')
       .leftJoin('customer', 'vod.customer_id', 'customer.id')
       .where('project.is_delete', '!=', '1')
       .whereNotNull('vod.user_id')
 
+    if (params.resp) {
+      projects
+        .leftJoin('user as resp_prod', 'resp_prod.id', 'vod.resp_prod_id')
+        .leftJoin('user as com', 'com.id', 'vod.com_id')
+    }
     if (params.type !== 'references') {
       projects.whereNotNull('vod.id')
     }
@@ -4354,7 +4364,12 @@ class Admin {
   }
 
   static exportRawProjects = async (params) => {
-    const projects = await Admin.getProjects({ start: params.start, end: params.end, size: 0 })
+    const projects = await Admin.getProjects({
+      start: params.start,
+      end: params.end,
+      size: 0,
+      resp: true
+    })
 
     const dataWithOrganic = projects.data.map((project) => {
       let result = ''
