@@ -151,7 +151,7 @@ class Whiplash {
   static getShippingMethod = (params: {
     shipping_type: string
   }) => {
-    if (params.shipping_type === 'no_tracking') {
+    if (params && params.shipping_type === 'no_tracking') {
       return 'no_tracking'
     } else {
       return 'tracking'
