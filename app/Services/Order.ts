@@ -1123,7 +1123,9 @@ static toJuno = async (params) => {
           shipping_country: customer.country_id,
           shipping_zip: customer.zip_code,
           shipping_phone: customer.phone,
-          shop_shipping_method_text: Whiplash.getShippingMethod(),
+          shop_shipping_method_text: Whiplash.getShippingMethod({
+            shipping_type: params.shipping_type
+          }),
           email: item.email,
           order_items: []
         }
