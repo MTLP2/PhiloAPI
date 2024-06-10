@@ -1895,6 +1895,7 @@ class Admin {
       for (let i = 0; i < filters.length; i++) {
         const filter = filters[i]
         if (filter) {
+          filter.value = decodeURIComponent(filter.value)
           if (filter.name === 'user_infos') {
             filter.value = decodeURIComponent(filter.value)
             orders.where((query) => {
