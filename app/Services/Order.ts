@@ -956,9 +956,8 @@ static toJuno = async (params) => {
               return
             }
             const warehouses: any = await Whiplash.api(`items/${items[0].id}/warehouse_quantities`)
-
             const qty = warehouses.find(
-              (w) => w.id === (params.transporter === 'whiplash' ? 4 : 3)
+              (w) => w.id === (params.transporter === 'whiplash' ? 66 : 3)
             )?.quantity
             if (!qty || qty < item.quantity) {
               errors[item.barcode] = 'No stock whiplash'
