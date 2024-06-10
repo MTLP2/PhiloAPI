@@ -153,8 +153,10 @@ class Whiplash {
   }) => {
     if (params && params.shipping_type === 'no_tracking') {
       return 'no_tracking'
-    } else {
+    } else if (params && params.shipping_type === 'tracking') {
       return 'tracking'
+    } else {
+      return 'no_tracking'
     }
   }
 
