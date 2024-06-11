@@ -532,7 +532,6 @@ class Dispatch {
     const diffPrices = Object.keys(oldPrices).filter((key) => !newPrices[key])
 
     if (params.check) {
-      console.log(diffPrices)
       return diffPrices
     }
 
