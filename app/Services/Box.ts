@@ -2092,6 +2092,7 @@ class Box {
       .join('project_product', 'project_product.project_id', 'v.project_id')
       .join('stock', 'stock.product_id', 'project_product.product_id')
       .where('stock.type', 'daudin')
+      .where('stock.is_preorder', false)
       .orderBy('box_month.date', 'desc')
 
     let filters: any = []
