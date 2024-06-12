@@ -23,6 +23,16 @@ class ProductController {
     }
   }
 
+  async getProductsMerch({ params }) {
+    const payload = await validator.validate({
+      schema: schema.create({
+        id: schema.string()
+      }),
+      data: params
+    })
+    return Product.allMerch(payload)
+  }
+
   async getProduct({ params }) {
     const payload = await validator.validate({
       schema: schema.create({
