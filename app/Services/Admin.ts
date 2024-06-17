@@ -1938,14 +1938,23 @@ class Admin {
     order.comment = params.comment
     order.user_contacted = params.user_contacted
     order.updated_at = Utils.date()
-    if (params.item_id) {
+    if (params.product_id) {
       const item = await DB('order_item')
         .where('id', params.item_id)
         .where('order_id', params.id)
         .first()
 
       if (item) {
-        item.size = params.size
+        const sizes = await Promise.all(
+          params.merch.map(async (m) => {
+            const product = await DB('product').select('size').where('id', m.product_id).first()
+            return product.size
+          })
+        )
+
+        item.size = sizes.join(', ')
+        item.products = params.merch.map((m) => m.product_id).join('][')
+        item.products = '[' + item.products + ']'
         item.updated_at = Utils.date()
         await item.save()
       }
