@@ -472,7 +472,9 @@ class Charts {
 
   static async getChartsAria() {
     const start = moment().subtract(1, 'weeks').day(4).format('YYYY-MM-DD 16:00')
+    const startText = moment().subtract(1, 'weeks').day(5).format('YYYY-MM-DD')
     const end = moment().day(4).format('YYYY-MM-DD 16:00')
+    const endText = moment().day(4).format('YYYY-MM-DD')
 
     const orders = await Charts.getOrders({
       country_id: 'AU',
@@ -499,8 +501,8 @@ class Charts {
     const data = {
       Provider: {
         '__Name': 'Diggers Factory',
-        '__FromDate': start,
-        '__ToDate': end,
+        '__FromDate': startText,
+        '__ToDate': endText,
         '__xmlns': 'urn:aria-raps:etl-dsp-sales:1.0',
         '__xmlns:xsi': 'http://www.w3.org/2001/XMLSchema-instance',
         'Region': {
