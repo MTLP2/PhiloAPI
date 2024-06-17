@@ -129,10 +129,6 @@ class App {
       }
 
       if (hour === 2) {
-        if (moment().format('E') === '5') {
-          // await Charts.uploadChartsAria()
-          await Charts.uploadChartsGfk()
-        }
         await Charts.uploadOfficialCharts({
           country: 'GB'
         })
@@ -147,6 +143,7 @@ class App {
       } else if (hour === 4) {
         await Whiplash.setTrackingLinks()
       } else if (hour === 5) {
+        await Charts.uploadChartsGfk()
         await Elogik.syncBoxes()
         await Cio.syncNewsletterNoAccount()
       } else if (hour === 7) {
@@ -167,6 +164,9 @@ class App {
       } else if (hour === 14) {
         await Elogik.checkBlockedOrders()
       } else if (hour === 16) {
+        if (moment().format('E') === '4') {
+          await Charts.uploadChartsAria()
+        }
         if (moment().format('E') === '2') {
           await Charts.uploadCharts()
         }

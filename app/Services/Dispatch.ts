@@ -493,7 +493,7 @@ class Dispatch {
     return s
   }
 
-  static uploadShippingPrices = async (params: { file: string }) => {
+  static uploadShippingPrices = async (params: { check?: boolean; file: string }) => {
     const workbook = new Excel.Workbook()
     const file = Buffer.from(params.file, 'base64')
     await workbook.xlsx.load(file)
@@ -506,9 +506,16 @@ class Dispatch {
       columns[cell.value] = cell._column.letter
     })
 
-    await DB().execute('truncate table shipping_weight')
+    const oldPrices = {}
+    if (params.check) {
+      const shippings = await DB('shipping_weight').all()
+      for (const s of shippings) {
+        oldPrices[`${s.country_id}_${s.partner}_${s.transporter}`] = true
+      }
+    }
 
-    const prices = []
+    const newPrices = {}
+    const prices: any[] = []
     worksheet.eachRow((row, rowNumber) => {
       if (rowNumber < 2) {
         return
@@ -519,25 +526,19 @@ class Dispatch {
         price[key] = vv === 'NULL' ? null : !isNaN(vv) ? Utils.round(vv) : vv
       }
       prices.push(price)
+      newPrices[`${price.country_id}_${price.partner}_${price.transporter}`] = true
     })
+
+    const diffPrices = Object.keys(oldPrices).filter((key) => !newPrices[key])
+
+    if (params.check) {
+      return diffPrices
+    }
+
+    await DB().execute('truncate table shipping_weight')
 
     for (const price of prices) {
       let item: any = await DB('shipping_weight')
-        .where('country_id', price.country_id)
-        .where('state', price.state)
-        .where('partner', price.partner)
-        .where('transporter', price.transporter)
-        .first()
-
-      if (!item) {
-        item = DB('shipping_weight')
-        item.created_at = Utils.date()
-      }
-      if (params.id) {
-        item = await DB('article').find(params.id)
-      } else {
-      }
-
       item.country_id = price.country_id
       item.state = price.state
       item.partner = price.partner

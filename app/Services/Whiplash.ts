@@ -95,7 +95,7 @@ class Whiplash {
       const whiplashItem = await Whiplash.findItem(item.barcode)
       if (whiplashItem.error) {
         await Notification.sendEmail({
-          to: 'victor@diggersfactory.com,alexis@diggersfactory.com',
+          to: 'victor@diggersfactory.com,logistic@diggersfactory.com',
           subject: `Error Whiplash : ${item.error} - ${item.barcode}`,
           html: `<ul>
             <li><b>Barcode :</b> ${item.barcode}</li>
@@ -151,10 +151,12 @@ class Whiplash {
   static getShippingMethod = (params: {
     shipping_type: string
   }) => {
-    if (params.shipping_type === 'no_tracking') {
+    if (params && params.shipping_type === 'no_tracking') {
       return 'no_tracking'
-    } else {
+    } else if (params && params.shipping_type === 'tracking') {
       return 'tracking'
+    } else {
+      return 'standard'
     }
   }
 

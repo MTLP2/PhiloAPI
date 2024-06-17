@@ -45,7 +45,7 @@ class Project {
 
     project.step = project.sold_out ? 'successful' : project.step
 
-    if (project.barcode && project.barcode.indexOf('MERCH') > -1) {
+    if (project.barcode && ['MERCH', 'T-SHIRT', 'HOODIE'].includes(project.barcode)) {
       project.sizes = true
     } else {
       project.sizes = false
@@ -226,6 +226,7 @@ class Project {
         }
       }
     }
+
     project.grouped_sizes = {}
     for (const product of Object.values(sizes) as any) {
       project.grouped_sizes[product.id] = product
@@ -1737,7 +1738,18 @@ class Project {
       .where('is_delete', '!=', '1')
 
     if (params.user_id) {
-      projects.where('user_id', params.user_id)
+      projects.where((query) => {
+        query
+          .where('user_id', params.user_id)
+          .orWhereExists(
+            DB('project_user')
+              .select(DB.raw('1'))
+              .whereRaw('project_id = project.id')
+              .where('user_id', params.user_id)
+              .query()
+          )
+      })
+
       if (params.cashable) {
         projects.where('send_statement', true)
       }
@@ -1793,6 +1805,13 @@ class Project {
       .orderBy('date')
       .all()
 
+    const downloadPromise = DB('download')
+      .select('project_id', 'used')
+      .whereIn('project_id', ids)
+      .whereNotNull('used')
+      .orderBy('used')
+      .all()
+
     const paymentsPromise = DB('payment_artist_project')
       .select(
         'payment_artist.receiver',
@@ -1824,13 +1843,14 @@ class Project {
     const stocksSiteQuery = Stock.byProject({ project_id: +ids[0], is_distrib: false })
     const stocksDistribQuery = Stock.byProject({ project_id: +ids[0], is_distrib: true })
 
-    const [orders, statements, costs, payments, boxes, stocksSite, stockDistrib] =
+    const [orders, statements, costs, payments, boxes, download, stocksSite, stockDistrib] =
       await Promise.all([
         ordersPromise,
         statementsPromise,
         costsPromise,
         paymentsPromise,
         boxesPromise,
+        downloadPromise,
         stocksSiteQuery,
         stocksDistribQuery
       ])
@@ -2036,6 +2056,19 @@ class Project {
           countries: {}
         }
       },
+      download: {
+        all: {
+          all: 0,
+          total: 0,
+          dates: { ...dates }
+        },
+        site: {
+          all: 0,
+          total: 0,
+          dates: { ...dates },
+          countries: {}
+        }
+      },
       stocks: {
         all: { countries: {} },
         site: { countries: {} },
@@ -2171,6 +2204,9 @@ class Project {
       }
     }
 
+    for (const d of download) {
+      s.setDate('site', 'download', moment(d.used).format(format), 1)
+    }
     for (const stat of statements) {
       const date = moment(stat.date).format(format)
       const custom = stat.custom
@@ -2274,7 +2310,17 @@ class Project {
       .join('vod', 'vod.project_id', 'project.id')
 
     if (params.id === 'all') {
-      pp.where('user_id', params.user_id)
+      pp.where((query) => {
+        query
+          .where('user_id', params.user_id)
+          .orWhereExists(
+            DB('project_user')
+              .select(DB.raw('1'))
+              .whereRaw('project_id = project.id')
+              .where('user_id', params.user_id)
+              .query()
+          )
+      })
     } else {
       pp.where('project.id', params.id)
     }
@@ -2313,7 +2359,17 @@ class Project {
       .where('is_external', false)
 
     if (params.id === 'all') {
-      params.query.where('vod.user_id', params.user_id)
+      params.query.where((query) => {
+        query
+          .where('vod.user_id', params.user_id)
+          .orWhereExists(
+            DB('project_user')
+              .select(DB.raw('1'))
+              .whereRaw('project_id = project.id')
+              .where('user_id', params.user_id)
+              .query()
+          )
+      })
     } else if (params.ids) {
       params.query.whereIn('order_item.project_id', params.ids)
     } else {

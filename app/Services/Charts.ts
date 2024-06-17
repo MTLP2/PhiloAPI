@@ -3,6 +3,7 @@ import Utils from 'App/Utils'
 import SftpClient from 'ssh2-sftp-client'
 import moment from 'moment'
 const { XMLBuilder } = require('fast-xml-parser')
+import fs from 'fs'
 
 class Charts {
   static getOrders = async (params: {
@@ -54,9 +55,7 @@ class Charts {
         if (params.date) {
           query.whereRaw(`DATE_FORMAT(os.date_export, "%Y-%m-%d") = '${params.date}'`)
         } else if (params.date_start && params.date_end) {
-          query.whereRaw(
-            `DATE(os.date_export) BETWEEN '${params.date_start}' AND '${params.date_end}'`
-          )
+          query.whereRaw(`os.date_export BETWEEN '${params.date_start}' AND '${params.date_end}'`)
         }
       })
       .all()
@@ -106,16 +105,20 @@ class Charts {
 
       // CA
       if (countryId === 'CA') {
-        zipCode = zipCode.trim().substring(0, 6).toUpperCase().replace(' ', '')
+        zipCode = zipCode
+          .replace(/[^a-zA-Z0-9]/g, '')
+          .toUpperCase()
+          .substring(0, 6)
       }
 
       return zipCode
     }
 
+    const date = moment()
     const orders = await Charts.getOrders({
       country_id: countryId,
-      date_start: moment().subtract(8, 'days').format('YYYY-MM-DD'),
-      date_end: moment().subtract(1, 'days').format('YYYY-MM-DD')
+      date_start: moment(date).subtract(8, 'days').format('YYYY-MM-DD'),
+      date_end: moment(date).subtract(1, 'days').format('YYYY-MM-DD 23:59:59')
     })
 
     const barcodes: { barcode: string; project_id: number; type: string }[] = await DB(
@@ -145,7 +148,7 @@ class Charts {
     // Account Number (01864)
     text += '01864'
     // Date (YYMMDD)
-    text += moment().format('YYMMDD')
+    text += moment(date).format('YYMMDD')
     text += '\n'
 
     // Order Item reference
@@ -194,15 +197,15 @@ class Charts {
     return text
   }
 
-  static async getChartsGfk(params: { country_id: string }) {
-    const start = moment().subtract(1, 'weeks').day(5).format('YYYY-MM-DD')
-    const end = moment().day(4).format('YYYY-MM-DD')
-
+  static async getChartsGfk(params: { date: string; country_id: string }) {
     const orders = await Charts.getOrders({
       country_id: params.country_id,
-      date_start: start,
-      date_end: end
+      date: params.date
     })
+
+    if (orders.length === 0) {
+      return ''
+    }
 
     const columns = [
       'Retailer Name',
@@ -412,8 +415,7 @@ class Charts {
   }
 
   static async uploadChartsGfk() {
-    const date = moment().subtract(1, 'days').format('YYYYMMDD')
-
+    const date = moment().subtract(1, 'days')
     const countries = {
       ES: null,
       DE: null,
@@ -422,6 +424,7 @@ class Charts {
 
     for (const country of Object.keys(countries)) {
       countries[country] = await Charts.getChartsGfk({
+        date: date.format('YYYY-MM-DD'),
         country_id: country
       })
     }
@@ -434,14 +437,26 @@ class Charts {
       password: '1p13f7k8TffS'
     }
 
-    const partner = 'partner'
     client
       .connect(config)
       .then(() => {
         console.log('connected to charts')
 
         for (const country of Object.keys(countries)) {
-          client.put(Buffer.from(countries[country]), `${partner}_${country}_${date}.txt`)
+          if (!countries[country]) {
+            console.log('not data for', country)
+            // continue
+          }
+          let filename
+          if (country === 'ES') {
+            filename = `80236_ES_${date.format('YYYYMMDD')}_V24.txt`
+          } else if (country === 'DE') {
+            filename = `29021_DE_${date.format('YYYYMMDD')}_V24.txt`
+          } else if (country === 'NL') {
+            filename = `55015_NL_${date.format('YYYYMMDD')}_V24.txt`
+          }
+          console.log('filename =>', filename)
+          client.put(Buffer.from(countries[country]), filename)
         }
 
         setTimeout(() => {
@@ -456,8 +471,10 @@ class Charts {
   }
 
   static async getChartsAria() {
-    const start = moment().subtract(1, 'weeks').day(5).format('YYYY-MM-DD')
-    const end = moment().day(4).format('YYYY-MM-DD')
+    const start = moment().subtract(1, 'weeks').day(4).format('YYYY-MM-DD 16:00')
+    const startText = moment().subtract(1, 'weeks').day(5).format('YYYY-MM-DD')
+    const end = moment().day(4).format('YYYY-MM-DD 16:00')
+    const endText = moment().day(4).format('YYYY-MM-DD')
 
     const orders = await Charts.getOrders({
       country_id: 'AU',
@@ -469,7 +486,7 @@ class Charts {
     for (const o of orders) {
       if (!barcodes[o.barcode]) {
         barcodes[o.barcode] = {
-          barcode: o.barcode,
+          barcode: o.barcode.padStart(14, '0'),
           title: o.title,
           artist: o.artist,
           label: o.label,
@@ -484,8 +501,8 @@ class Charts {
     const data = {
       Provider: {
         '__Name': 'Diggers Factory',
-        '__FromDate': start,
-        '__ToDate': end,
+        '__FromDate': startText,
+        '__ToDate': endText,
         '__xmlns': 'urn:aria-raps:etl-dsp-sales:1.0',
         '__xmlns:xsi': 'http://www.w3.org/2001/XMLSchema-instance',
         'Region': {
@@ -521,26 +538,21 @@ class Charts {
   }
 
   static async uploadChartsAria() {
+    const date = moment().subtract(1, 'days').format('YYYYMMDD')
     const charts = await Charts.getChartsAria()
 
-    /**
     let client = new SftpClient()
     let config = {
-      host: 'ftp.gfk-e.com',
+      host: 'ftp.aria.com.au',
       port: 22,
-      username: 'FR_DiggFact',
-      password: '1p13f7k8TffS'
+      username: 'diggersfactory',
+      privateKey: fs.readFileSync('./resources/keys/aria')
     }
 
-    const partner = 'partner'
     client
       .connect(config)
       .then(() => {
-        console.log('connected to charts')
-
-        for (const country of Object.keys(countries)) {
-          client.put(Buffer.from(countries[country]), `${partner}_${country}_${date}.txt`)
-        }
+        client.put(Buffer.from(charts), `DiggersFactory_${date}01.xml`)
 
         setTimeout(() => {
           console.log('close connection to charts')
@@ -551,8 +563,6 @@ class Charts {
       .catch((err) => {
         console.error(err.message)
       })
-  }
-  **/
   }
 }
 

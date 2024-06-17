@@ -294,6 +294,7 @@ class Utils {
     size?: number
     sort?: any
     order?: any
+    pagination?: boolean
   }) => Promise<{
     count: number
     data: T[]
@@ -384,10 +385,17 @@ class Utils {
       query.limit(size).offset((page - 1) * size)
     }
 
-    const [data, count] = await Promise.all([query.all(), total])
-    return {
-      count: count,
-      data: data
+    if (params.pagination !== false) {
+      const [data, count] = await Promise.all([query.all(), total])
+      return {
+        count: count,
+        data: data
+      }
+    } else {
+      const [data] = await Promise.all([query.all()])
+      return {
+        data: data
+      }
     }
   }
 

@@ -92,7 +92,8 @@ class DispatchController {
   async uploadShippingPrices({ request }) {
     const payload = await validator.validate({
       schema: schema.create({
-        file: schema.string()
+        file: schema.string(),
+        check: schema.boolean.optional()
       }),
       data: request.body()
     })

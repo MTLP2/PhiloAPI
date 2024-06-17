@@ -156,6 +156,28 @@ type Label = {
   updated_at: Timestamp
 }
 
+type Order = {
+  id: Generated<number>
+  created_at: Timestamp
+  updated_at: Timestamp
+}
+
+type OrderShop = {
+  id: Generated<number>
+  total: number
+  currency: string
+  tax_rate: number
+  is_paid: Boolean
+  created_at: Timestamp
+  updated_at: Timestamp
+}
+
+type OrderItem = {
+  id: Generated<number>
+  created_at: Timestamp
+  updated_at: Timestamp
+}
+
 type ShippingWeight = {
   'id': Generated<number>
   'country_id': string
@@ -252,6 +274,9 @@ export type DB = {
   digital_todo: DigitalTodo
   feedback: Feedback
   label: Label
+  order: Order
+  order_item: OrderItem
+  order_shop: OrderShop
   shipping_weight: ShippingWeight
   shop: Shop
   user: User

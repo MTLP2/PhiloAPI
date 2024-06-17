@@ -109,6 +109,24 @@ class Production {
       }
     }
 
+    const filters = params.filters ? JSON.parse(params.filters) : null
+    if (filters) {
+      for (let i = 0; i < filters.length; i++) {
+        const filter = filters[i]
+        if (filter) {
+          filter.value = decodeURIComponent(filter.value)
+          if (filter.name === 'project') {
+            params.query.where(
+              DB.raw(`CONCAT(project.artist_name, ' ', project.name) LIKE '%${filter.value}%'`),
+              null
+            )
+            filters.splice(i, 1)
+            params.filters = JSON.stringify(filters)
+          }
+        }
+      }
+    }
+
     params.query.select(...selects)
 
     if (!params.sort) {
