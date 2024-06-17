@@ -1554,20 +1554,20 @@ class Box {
         customer: box.stripe_customer,
         type: 'card'
       })
-      const intent = {
-        amount: Math.round(box.total * 100),
-        currency: box.currency,
-        confirm: true,
-        off_session: true,
-        customer: box.stripe_customer,
-        payment_method: cards.data[0].id,
-        description: `Box N°${box.id}-${orderBox.id}`
-      }
-      if (process.env.NODE_ENV !== 'production') {
-        intent.customer = 'cus_KJiRI5dzm4Ll1C'
-      }
 
       try {
+        const intent = {
+          amount: Math.round(box.total * 100),
+          currency: box.currency,
+          confirm: true,
+          off_session: true,
+          customer: box.stripe_customer,
+          payment_method: cards.data[0].id,
+          description: `Box N°${box.id}-${orderBox.id}`
+        }
+        if (process.env.NODE_ENV !== 'production') {
+          intent.customer = 'cus_KJiRI5dzm4Ll1C'
+        }
         const pay = await stripe.paymentIntents.create(intent)
         if (pay.status === 'succeeded') {
           const txn = await stripe.balanceTransactions.retrieve(
