@@ -88,7 +88,7 @@ class Admin {
       DB().raw(`DATEDIFF(NOW(), vod.start) AS days_elapsed`),
       'vod.comment'
     ]
-    if (filters.find((f) => f.name === 'resp_prod.name' || f.name === 'com.name')) {
+    if (filters && filters.find((f) => f.name === 'resp_prod.name' || f.name === 'com.name')) {
       params.resp = true
     }
     if (params.resp) {
