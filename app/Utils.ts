@@ -636,6 +636,12 @@ class Utils {
         updated_at: Utils.date()
       })
     }
+    if (isFloat(data.rates.CAD)) {
+      await DB('currency').where('id', 'CAD').update({
+        value: data.rates.CAD,
+        updated_at: Utils.date()
+      })
+    }
     if (isFloat(data.rates.GBP)) {
       await DB('currency').where('id', 'GBP').update({
         value: data.rates.GBP,
@@ -706,6 +712,7 @@ class Utils {
       res.USD = res.USD * res.EUR
       res.GBP = res.GBP * res.EUR
       res.AUD = res.AUD * res.EUR
+      res.CAD = res.CAD * res.EUR
       res.PHP = res.PHP * res.EUR
       res.KRW = res.KRW * res.EUR
       res[base] = 1
@@ -716,6 +723,7 @@ class Utils {
       USD: number
       GBP: number
       AUD: number
+      CAD: number
       PHP: number
       KRW: number
     }
@@ -1054,7 +1062,7 @@ class Utils {
             if (regroup[word]) {
               ww = regroup[word] + '.' + word
             }
-            if (['EUR', 'USD', 'GBP', 'AUD', 'PHP', 'KRW'].includes(w)) {
+            if (['EUR', 'USD', 'GBP', 'AUD', 'CAD', 'PHP', 'KRW'].includes(w)) {
               return match.replace(w, ww)
             }
             return match.replace(w, ww).toLowerCase()
@@ -1273,7 +1281,15 @@ class Utils {
     currencies
   }: {
     price: number
-    prices?: { EUR: number; USD: number; GBP: number; AUD: number; PHP: number; KRW: number }
+    prices?: {
+      EUR: number
+      USD: number
+      GBP: number
+      AUD: number
+      CAD: number
+      PHP: number
+      KRW: number
+    }
     currency: Currencies
     currencies: { id: string; value: Currencies; updated_at: string }[]
   }) => {
@@ -1283,6 +1299,7 @@ class Utils {
     const USD = Math.ceil(price * curr.USD + 0.55) - 0.01
     const GBP = Math.ceil(price * curr.GBP + 0.45) - 0.01
     const AUD = Math.ceil(price * curr.AUD + 0.75) - 0.01
+    const CAD = Math.ceil(price * curr.CAD + 0.75) - 0.01
     const PHP = Math.ceil(price * curr.PHP + 50)
     const KRW = Math.ceil(Math.ceil((price * curr.KRW + 750) / 100) * 100) - 1
 
@@ -1291,6 +1308,7 @@ class Utils {
       USD: currency === 'USD' ? price : USD,
       GBP: currency === 'GBP' ? price : GBP,
       AUD: currency === 'AUD' ? price : AUD,
+      CAD: currency === 'CAD' ? price : CAD,
       PHP: currency === 'PHP' ? price : PHP,
       KRW: currency === 'KRW' ? price : KRW
     }
