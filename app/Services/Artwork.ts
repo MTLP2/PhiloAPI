@@ -735,6 +735,36 @@ class Artwork {
   static sharp(...args): sharp {
     return sharp(args)
   }
+
+  static async saveTextureSleeve({
+    project
+  }: {
+    project: {
+      picture: string
+    }
+  }) {
+    const mockup = new Mockup({
+      env: 'node',
+      image: Image,
+      createContext: (w: number, h: number) => {
+        console.log('creation cavnas', w, h)
+        return createCanvas(0, 0).getContext('2d')
+      }
+    })
+
+    const sleeve: any = await mockup.drawSleeve({
+      picture: project.picture,
+      template: false
+    })
+    await Storage.uploadImage(
+      `projects/${project.picture}/texture_sleeve`,
+      sleeve.toBuffer('image/png'),
+      {
+        type: 'png',
+        width: 600
+      }
+    )
+  }
 }
 
 export default Artwork
