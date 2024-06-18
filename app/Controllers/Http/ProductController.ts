@@ -24,9 +24,10 @@ class ProductController {
   }
 
   async getProductsMerch({ params }) {
+    params.project_id = params.id
     const payload = await validator.validate({
       schema: schema.create({
-        id: schema.string()
+        project_id: schema.string()
       }),
       data: params
     })
