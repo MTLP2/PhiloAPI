@@ -93,10 +93,10 @@ class Product {
     return items
   }
 
-  static async allMerch(params: { id: string }) {
+  static async allMerch(params: { project_id: string }) {
     const projects = await DB('project_product')
       .select('product_id', 'product.name', 'product.size', 'product.parent_id', 'p2.name')
-      .where('project_id', params.id)
+      .where('project_id', params.project_id)
       .leftJoin('product', 'product.id', 'project_product.product_id')
       .leftJoin('product as p2', 'p2.id', 'product.parent_id')
       .all()
