@@ -316,6 +316,12 @@ class App {
         updated_at: Utils.date()
       })
     }
+    if (isFloat(data.CAD)) {
+      await DB('currency').where('id', 'CAD').update({
+        value: data.CAD,
+        updated_at: Utils.date()
+      })
+    }
     if (isFloat(data.GBP)) {
       await DB('currency').where('id', 'GBP').update({
         value: data.GBP,

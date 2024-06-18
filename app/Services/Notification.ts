@@ -260,6 +260,7 @@ class Notification {
         USD: '$',
         GBP: '£',
         AUD: '$A',
+        CAD: '$C',
         KRW: '₩',
         PHP: '₱'
       }

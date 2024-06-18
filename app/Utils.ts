@@ -727,7 +727,7 @@ class Utils {
 
   static getCurrenciesApi = async (
     date = 'latest',
-    symbols = 'EUR,USD,GBP,AUD,PHP,KRW',
+    symbols = 'EUR,USD,GBP,AUD,CAD,PHP,KRW',
     base = 'EUR'
   ) => {
     return Utils.request(

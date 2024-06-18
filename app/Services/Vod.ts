@@ -175,6 +175,8 @@ class Vod {
         vod.payback_box = 6.8
       } else if (params.currency === 'AUD') {
         vod.payback_box = 12.4
+      } else if (params.currency === 'CAD') {
+        vod.payback_box = 10
       } else if (params.currency === 'PHP') {
         vod.payback_box = 500
       } else if (params.currency === 'KRW') {

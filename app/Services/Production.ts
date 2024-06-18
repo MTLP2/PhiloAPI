@@ -2261,6 +2261,9 @@ class Production {
       case 'AUD':
         invoice.currency = '$A'
         break
+      case 'CAD':
+        invoice.currency = '$C'
+        break
     }
     invoice.customer = prod.customer
     invoice.customer.country = country.name

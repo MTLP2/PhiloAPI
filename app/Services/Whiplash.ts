@@ -763,9 +763,9 @@ class Whiplash {
     let currencies
 
     if (+lines[0].warehouse_id === 3) {
-      currencies = await Utils.getCurrenciesApi(date, 'EUR,USD,GBP,AUD,PHP,KRW', 'GBP')
+      currencies = await Utils.getCurrenciesApi(date, 'EUR,USD,GBP,AUD,CAD,PHP,KRW', 'GBP')
     } else {
-      currencies = await Utils.getCurrenciesApi(date, 'EUR,USD,GBP,AUD,PHP,KRW', 'USD')
+      currencies = await Utils.getCurrenciesApi(date, 'EUR,USD,GBP,AUD,CAD,PHP,KRW', 'USD')
     }
 
     let shops = DB('order_shop').whereIn(
