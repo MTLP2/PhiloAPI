@@ -1851,7 +1851,10 @@ class Admin {
       .join('user', 'user.id', 'order.user_id')
       .join('project', 'project.id', 'oi.project_id')
       .leftJoin('customer as c', 'c.id', 'os.customer_id')
-      .whereNotNull('order.date_payment')
+      .where((query) => {
+        query.whereNotNull('order.date_payment')
+        query.orWhere('os.is_external', true)
+      })
 
     if (params.project_id) {
       orders.whereIn('oi.project_id', params.project_id.split(','))
@@ -1941,6 +1944,7 @@ class Admin {
       orders.where('user.id', params.user_id)
     }
 
+    console.log(orders.toString())
     return Utils.getRows<any>({ ...params, query: orders, pagination: !!params.project_id })
   }
 
