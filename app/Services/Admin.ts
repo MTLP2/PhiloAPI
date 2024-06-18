@@ -2083,7 +2083,15 @@ class Admin {
     return shop
   }
 
-  static saveOrder = async (params) => {
+  static saveOrder = async (params: {
+    id: number
+    comment: string
+    user_contacted: boolean
+    product_id: number
+    item_id: number
+    merch: any
+    quantity: number
+  }) => {
     const order = await DB('order').find(params.id)
     order.comment = params.comment
     order.user_contacted = params.user_contacted
@@ -2105,6 +2113,7 @@ class Admin {
         item.size = sizes.join(', ')
         item.products = params.merch.map((m) => m.product_id).join('][')
         item.products = '[' + item.products + ']'
+        item.quantity = params.quantity
         item.updated_at = Utils.date()
         await item.save()
       }
