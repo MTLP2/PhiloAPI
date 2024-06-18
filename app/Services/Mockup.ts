@@ -28,6 +28,7 @@ class Mockup {
     sHeight?: number
     sx?: number
     sy?: number
+    circle?: boolean
   }) {
     return new Promise((resolve, reject) => {
       const ctx = this.createContext()
@@ -64,6 +65,12 @@ class Mockup {
         ctx.canvas.width = img.width
         ctx.canvas.height = img.height
 
+        if (params.circle) {
+          ctx.beginPath()
+          ctx.arc(img.width / 2, img.height / 2, img.width / 2, 0, Math.PI * 2, true)
+          ctx.clip()
+          ctx.closePath()
+        }
         ctx.drawImage(img, 0, 0)
 
         if (params.color) {
@@ -1382,6 +1389,207 @@ class Mockup {
       ctx.closePath()
       ctx.clip()
     }
+  }
+
+  drawSleeve = async (params: { canvas?: any; picture: string; template?: boolean }) => {
+    const w = 3000
+    const h = 1584
+
+    const yDraw = 86
+
+    const ctx = params.canvas ? params.canvas.getContext('2d') : this.createContext()
+    const canvas = ctx.canvas
+    canvas.width = w
+    canvas.height = h
+    ctx.imageSmoothingEnabled = false
+
+    if (params.template !== false) {
+      await this.drawImage({
+        ctx: ctx,
+        url: `${storageUrl}/assets/images/mockup/sleeve_template.jpg`,
+        x: 0,
+        y: 0,
+        width: 3000,
+        height: 1584
+      })
+    } else {
+      ctx.rect(0, 0, w, h)
+      ctx.fillStyle = '#f1edec'
+      ctx.fill()
+    }
+
+    await this.drawImage({
+      ctx: ctx,
+      url: `${storageUrl}/projects/${params.picture}/back_original.jpg`,
+      x: 84,
+      y: yDraw,
+      opacity: 1,
+      width: 1407,
+      height: 1407
+    })
+
+    await this.drawImage({
+      ctx: ctx,
+      url: `${storageUrl}/projects/${params.picture}/original.jpg`,
+      x: 1491,
+      y: yDraw - 5,
+      opacity: 1,
+      width: 1424,
+      height: 1424
+    })
+    return ctx.canvas
+  }
+
+  drawDisc = (params: {
+    label: string
+    type?: string
+    color: string
+    color2?: string
+    color3?: string
+    picture?: string
+    canvas?: any
+  }) => {
+    return new Promise(async (resolve, _reject) => {
+      const ctx = params.canvas ? params.canvas.getContext('2d') : this.createContext()
+      const canvas = ctx.canvas
+
+      const w = 2500
+      const h = 2500
+      const wLabel = w / 2.85
+      const hLabel = h / 2.85
+      const xLabel = (w - wLabel) / 2
+      const yLabel = (h - hLabel) / 2
+
+      canvas.width = w
+      canvas.height = h
+
+      ctx.rect(0, 0, canvas.width, canvas.height)
+      ctx.fillStyle = params.color
+      ctx.fill()
+
+      if (params.picture) {
+        await this.drawImage({
+          ctx: ctx,
+          url: params.picture,
+          x: 0,
+          y: 0,
+          width: canvas.width,
+          clear: true
+        })
+        ctx.globalCompositeOperation = 'source-over'
+      } else {
+        if (params.type === 'splatter') {
+          await this.drawImage({
+            ctx: ctx,
+            url: `${storageUrl}/assets/images/mockup/splatter1.png`,
+            x: 0,
+            y: 0,
+            width: canvas.width,
+            color: params.color2,
+            clear: true
+          })
+        }
+
+        if (params.type === 'splatter' && params.color3) {
+          await this.drawImage({
+            ctx: ctx,
+            url: `${storageUrl}/assets/images/mockup/splatter2.png`,
+            x: 0,
+            y: 0,
+            width: canvas.width,
+            color: params.color3,
+            clear: true
+          })
+        }
+
+        if (params.type === 'marble') {
+          await this.drawImage({
+            ctx: ctx,
+            url: `${storageUrl}/assets/images/mockup/marble1.png`,
+            x: 0,
+            y: 0,
+            width: canvas.width,
+            color: params.color2,
+            clear: true
+          })
+        }
+
+        if (params.type === 'cloudy') {
+          await this.drawImage({
+            ctx: ctx,
+            url: `${storageUrl}/assets/images/mockup/cloudy.png`,
+            x: 0,
+            y: 0,
+            width: canvas.width,
+            color: params.color2,
+            clear: true
+          })
+        }
+
+        if (params.type === 'asidebside') {
+          await this.drawImage({
+            ctx: ctx,
+            url: `${storageUrl}/assets/images/mockup/galaxy.png`,
+            x: 0,
+            y: 0,
+            width: canvas.width,
+            color: params.color2,
+            clear: true
+          })
+        }
+
+        if (params.type === 'colorincolor') {
+          await this.drawImage({
+            ctx: ctx,
+            url: `${storageUrl}/assets/images/mockup/colorincolor.png`,
+            x: 0,
+            y: 0,
+            width: canvas.width,
+            color: params.color2,
+            clear: true
+          })
+        }
+
+        if (params.type === 'halfandhalf') {
+          await this.drawImage({
+            ctx: ctx,
+            url: `${storageUrl}/assets/images/mockup/halfandhalf.png`,
+            x: 0,
+            y: 0,
+            width: canvas.width,
+            color: params.color2,
+            clear: true
+          })
+        }
+      }
+      await this.drawImage({
+        ctx: ctx,
+        url:
+          params.color === 'black'
+            ? `${storageUrl}/assets/images/mockup/record.png`
+            : `${storageUrl}/assets/images/mockup/record2.png`,
+        opacity: params.color === 'black' ? 0.7 : 0.3,
+        x: 0,
+        y: 0,
+        width: canvas.width,
+        height: canvas.height,
+        clear: true
+      })
+
+      if (params.label) {
+        await this.drawImage({
+          ctx: ctx,
+          url: params.label,
+          x: xLabel,
+          y: yLabel,
+          width: wLabel,
+          height: hLabel,
+          circle: true
+        })
+      }
+
+      resolve(ctx.canvas)
+    })
   }
 }
 

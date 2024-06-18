@@ -1829,20 +1829,22 @@ class Cart {
       }
     }
 
+    const hasBox = params.calculate.boxes && params.calculate.boxes.length > 0
     const intent: any = {
       amount:
         params.calculate.currency === 'KRW'
           ? Math.round(params.calculate.total)
           : Math.round(params.calculate.total * 100),
       currency: params.calculate.currency,
-      payment_method_types: ['EUR', 'GBP'].includes(params.calculate.currency)
-        ? ['card', 'klarna']
-        : ['card'],
+      payment_method_types:
+        ['EUR', 'GBP'].includes(params.calculate.currency) && !hasBox
+          ? ['card', 'klarna']
+          : ['card'],
       transfer_group: `{ORDER_${params.order_id}}`,
       metadata: metadata
     }
 
-    if (params.calculate.boxes && params.calculate.boxes.length > 0) {
+    if (hasBox) {
       intent.setup_future_usage = 'off_session'
     }
     const customer = await Payments.getCustomer(params.user_id)

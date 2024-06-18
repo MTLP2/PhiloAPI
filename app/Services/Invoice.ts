@@ -418,6 +418,9 @@ class Invoice {
       case 'AUD':
         invoice.currency = '$A'
         break
+      case 'CAD':
+        invoice.currency = '$C'
+        break
       case 'KRW':
         invoice.currency = '₩'
         break
@@ -1021,6 +1024,14 @@ class Invoice {
           tax_eur: 0,
           total_eur: 0
         },
+        CAD: {
+          sub_total: 0,
+          tax: 0,
+          total: 0,
+          sub_total_eur: 0,
+          tax_eur: 0,
+          total_eur: 0
+        },
         PHP: {
           sub_total: 0,
           tax: 0,
@@ -1064,6 +1075,14 @@ class Invoice {
           total_eur: 0
         },
         AUD: {
+          sub_total: 0,
+          tax: 0,
+          total: 0,
+          sub_total_eur: 0,
+          tax_eur: 0,
+          total_eur: 0
+        },
+        CAD: {
           sub_total: 0,
           tax: 0,
           total: 0,

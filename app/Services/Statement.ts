@@ -106,7 +106,7 @@ class StatementService {
 
     const currencies = await Utils.getCurrenciesApi(
       `${params.year}-${params.month}-01`,
-      'EUR,USD,GBP,AUD,HKD,KRW'
+      'EUR,USD,GBP,AUD,CAD,HKD,KRW'
     )
     if (currencies.error) {
       return currencies
@@ -883,6 +883,9 @@ class StatementService {
       case 'AUD':
         currency = '$A'
         break
+      case 'CAD':
+        currency = '$C'
+        break
       case 'KRW':
         currency = '₩'
         break
@@ -1217,6 +1220,9 @@ class StatementService {
         break
       case 'AUD':
         currency = '$A'
+        break
+      case 'CAD':
+        currency = '$C'
         break
       case 'KRW':
         currency = '₩'
@@ -1666,6 +1672,9 @@ class StatementService {
           break
         case 'AUD':
           currency = '$A'
+          break
+        case 'CAD':
+          currency = '$C'
           break
         case 'KRW':
           currency = '₩'

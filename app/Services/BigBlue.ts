@@ -425,22 +425,30 @@ class BigBlue {
   }
 
   static async setTrackingLinks() {
-    const orders = await DB('order_shop')
-      .where('transporter', 'bigblue')
-      .whereNotNull('logistician_id')
-      .whereNull('tracking_number')
-      .orderBy('step_check', 'asc')
-      .orderBy('date_export', 'asc')
-      .all()
+    const orders: any[] = []
 
-    console.log('orders => ', orders.length)
+    let pageToken = ''
 
-    const res: any = await this.api('ListOrders', {
-      method: 'POST',
-      params: {}
-    })
+    do {
+      const res: any = await this.api('ListOrders', {
+        method: 'POST',
+        params: {
+          page_size: 500,
+          page_token: pageToken
+        }
+      })
+      orders.push(...res.orders)
+      if (res.next_page_token) {
+        pageToken = res.next_page_token
+      } else {
+        break
+      }
+    } while (pageToken)
 
-    for (const order of res.orders) {
+    console.log('orders bigblue', orders.length)
+
+    let updated = 0
+    for (const order of orders) {
       if (order.tracking_number) {
         const orderShop = await DB('order_shop').where('id', order.external_id).first()
         if (!orderShop || orderShop.tracking_link) {
@@ -451,6 +459,7 @@ class BigBlue {
         orderShop.tracking_link = order.tracking_url
         await orderShop.save()
 
+        updated++
         await Notification.add({
           type: 'my_order_sent',
           user_id: orderShop.user_id,
@@ -459,6 +468,9 @@ class BigBlue {
         })
       }
     }
+    console.log('updated', updated)
+
+    return updated
   }
 
   static async parsePrices() {
@@ -851,7 +863,7 @@ class BigBlue {
   static async setCost(buffer: string, date: string) {
     const lines: any = Utils.csvToArray(buffer)
 
-    const currencies = await Utils.getCurrenciesApi(date + '-01', 'EUR,USD,GBP,AUD,KRW', 'EUR')
+    const currencies = await Utils.getCurrenciesApi(date + '-01', 'EUR,USD,GBP,AUD,CAD,KRW', 'EUR')
 
     let marge = 0
     let i = 0

@@ -229,7 +229,7 @@ class Payment {
   static intent = async (params: { payment_id: string; user_id?: number }) => {
     const payment = await DB('payment').where('id', params.payment_id).first()
 
-    if (payment.date_payment) {
+    if (payment.payment_id && payment.date_payment) {
       return { error: 'already_paid' }
     }
     if (payment.payment_id) {
