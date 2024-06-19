@@ -863,13 +863,20 @@ class BigBlue {
   static async setCost(buffer: string, date: string) {
     const lines: any = Utils.csvToArray(buffer)
 
-    const currencies = await Utils.getCurrenciesApi(date + '-01', 'EUR,USD,GBP,AUD,CAD,KRW', 'EUR')
+    const currencies = await Utils.getCurrenciesApi(
+      date + '-01',
+      'EUR,USD,GBP,PHP,AUD,CAD,KRW',
+      'EUR'
+    )
 
     let marge = 0
     let i = 0
 
     const orders = {}
     for (const line of lines) {
+      if (isNaN(+line.Price) || +line.Price === 0) {
+        continue
+      }
       if (!orders[line.ID]) {
         orders[line.ID] = 0
       }
@@ -886,7 +893,6 @@ class BigBlue {
         order.shipping_cost = price * currencies[order.currency]
         marge += order.shipping - order.shipping_cost
         await order.save()
-        console.log(i)
       }
       i++
       promises.push(pro())
