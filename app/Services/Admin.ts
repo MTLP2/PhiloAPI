@@ -1944,7 +1944,6 @@ class Admin {
       orders.where('user.id', params.user_id)
     }
 
-    console.log(orders.toString())
     return Utils.getRows<any>({ ...params, query: orders, pagination: !!params.project_id })
   }
 
