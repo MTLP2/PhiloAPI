@@ -1444,6 +1444,7 @@ class Mockup {
     label: string
     type?: string
     color: string
+    ligth?: boolean
     color2?: string
     color3?: string
     picture?: string
@@ -1564,11 +1565,10 @@ class Mockup {
       }
       await this.drawImage({
         ctx: ctx,
-        url:
-          params.color === 'black'
-            ? `${storageUrl}/assets/images/mockup/record.png`
-            : `${storageUrl}/assets/images/mockup/record2.png`,
-        opacity: params.color === 'black' ? 0.7 : 0.3,
+        url: params.ligth
+          ? `${storageUrl}/assets/images/mockup/record2.png`
+          : `${storageUrl}/assets/images/mockup/record.png`,
+        opacity: params.ligth ? 0.3 : 0.7,
         x: 0,
         y: 0,
         width: canvas.width,

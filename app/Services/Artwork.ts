@@ -798,6 +798,7 @@ class Artwork {
     })
     const disc: any = await mockup.drawDisc({
       type: project.type_vinyl,
+      ligth: project.color_vinyl !== 'black',
       color: project.color_vinyl,
       color2: project.splatter1,
       color3: project.splatter2,
