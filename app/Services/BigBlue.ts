@@ -51,7 +51,13 @@ class BigBlue {
     }
   }
 
-  static async createProduct(params: { id: number; name: string; type: string; barcode: string }) {
+  static async createProduct(params: {
+    id: number
+    name: string
+    type: string
+    barcode: string
+    hs_code: string
+  }) {
     const id = String(params.id).padStart(10, '0')
     const bigId = `DIGG-${id.substring(0, 6)}-${id.substring(6, 10)}`
 
@@ -67,7 +73,7 @@ class BigBlue {
             amount: '9.99',
             currency: 'EUR'
           },
-          tariff_number: BigBlue.getTariffNumber(params.type)
+          tariff_number: params.hs_code
         }
       }
     })
