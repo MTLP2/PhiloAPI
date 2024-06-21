@@ -147,7 +147,7 @@ class Quote {
 
     params.label_color = params.label || 'color'
 
-    const ff = ['sna', 'vdp']
+    const ff = ['sna', 'vdp', 'precision']
     /**
     if (params.factory === 'sna2') {
       ff.push('sna2')
@@ -155,6 +155,7 @@ class Quote {
     **/
 
     for (const f of ff) {
+      console.log('f', f)
       factories[f] = await Quote.calculateFactory({
         ...params,
         factory: f
@@ -255,7 +256,7 @@ class Quote {
     }
     const factory: any = Object.values(params.costs[f])
     const curUsd = await Utils.getCurrencyComp('USD', 'EUR')
-
+    console.log('factory', factory)
     const q: any = {}
     for (const f of factory) {
       q[f.id] = f
