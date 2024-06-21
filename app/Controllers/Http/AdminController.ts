@@ -337,6 +337,10 @@ class AdminController {
     return Admin.generateProjectImages(params)
   }
 
+  set3dProject({ params }) {
+    return Admin.set3dProject(params)
+  }
+
   deleteProject({ params }) {
     return Admin.deleteProject(params.id)
   }

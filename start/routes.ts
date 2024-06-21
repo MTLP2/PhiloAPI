@@ -361,6 +361,7 @@ Route.group(() => {
   Route.post('/projects/:id/statements', 'AdminController.saveStatement')
   Route.post('/projects/:id/images', 'AdminController.saveProjectImage')
   Route.post('/projects/:id/generate-images', 'AdminController.generateProjectImages')
+  Route.put('/projects/:id/3d', 'AdminController.set3dProject')
   Route.post('/projects/:id/products', 'ProductController.saveProject')
   Route.delete('/projects/:id/products', 'ProductController.removeProject')
   Route.post('/projects/:id/stock', 'AdminController.setStock')
