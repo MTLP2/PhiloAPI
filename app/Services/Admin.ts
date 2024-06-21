@@ -1055,7 +1055,6 @@ class Admin {
   }
 
   static set3dProject = async (params: { id: number; value: boolean }) => {
-    console.log(params)
     const project = await DB('project').find(params.id)
     project.is_3d = params.value
     project.save()
