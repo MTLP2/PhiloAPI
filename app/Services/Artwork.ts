@@ -736,34 +736,85 @@ class Artwork {
     return sharp(args)
   }
 
-  static async saveTextureSleeve({
-    project
-  }: {
-    project: {
-      picture: string
+  static async saveTextures(params: { project_id: number }) {
+    const project = await DB('project')
+      .select(
+        'project.picture',
+        'vod.type_vinyl',
+        'vod.color_vinyl',
+        'vod.splatter1',
+        'vod.splatter2'
+      )
+      .join('vod', 'vod.project_id', 'project.id')
+      .where('project.id', params.project_id)
+      .first()
+    if (!project) {
+      return { success: false }
     }
-  }) {
+    await this.saveTextureSleeve(project)
+    await this.saveTextureDisc(project)
+
+    return { success: true }
+  }
+
+  static async saveTextureSleeve(project: { picture: string }) {
     const mockup = new Mockup({
       env: 'node',
       image: Image,
-      createContext: (w: number, h: number) => {
-        console.log('creation cavnas', w, h)
+      createContext: () => {
         return createCanvas(0, 0).getContext('2d')
       }
     })
-
     const sleeve: any = await mockup.drawSleeve({
       picture: project.picture,
       template: false
     })
+    // const fs = require('fs')
+    // fs.writeFileSync('texture_sleeve.png', sleeve.toBuffer('image/png'), 'binary')
     await Storage.uploadImage(
       `projects/${project.picture}/texture_sleeve`,
-      sleeve.toBuffer('image/png'),
+      sleeve.toBuffer('image/jpeg'),
       {
-        type: 'png',
-        width: 600
+        type: 'jpg',
+        width: 2000
       }
     )
+    return { success: true }
+  }
+
+  static async saveTextureDisc(project: {
+    picture: string
+    type_vinyl: string
+    color_vinyl: string
+    splatter1: string
+    splatter2: string
+  }) {
+    const mockup = new Mockup({
+      env: 'node',
+      image: Image,
+      createContext: () => {
+        return createCanvas(0, 0).getContext('2d')
+      }
+    })
+    const disc: any = await mockup.drawDisc({
+      type: project.type_vinyl,
+      ligth: project.color_vinyl !== 'black',
+      color: project.color_vinyl,
+      color2: project.splatter1,
+      color3: project.splatter2,
+      label: `${Env.get('STORAGE_URL')}/projects/${project.picture}/label.jpg`
+    })
+    // const fs = require('fs')
+    // fs.writeFileSync('texture_disc.png', disc.toBuffer('image/png'), 'binary')
+    await Storage.uploadImage(
+      `projects/${project.picture}/texture_disc`,
+      disc.toBuffer('image/png'),
+      {
+        type: 'png',
+        width: 1000
+      }
+    )
+    return { success: true }
   }
 }
 

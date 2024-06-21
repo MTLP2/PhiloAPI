@@ -212,6 +212,7 @@ class Product {
     isrc?: string
     parent_id?: number
     size?: string
+    hs_code?: string
     color?: string
     weight?: number
   }) {
@@ -239,6 +240,7 @@ class Product {
     item.barcode = params.barcode
     item.catnumber = params.catnumber
     item.isrc = params.isrc
+    item.hs_code = params.hs_code
     item.parent_id = params.parent_id
     item.size = params.size
     item.color = params.color

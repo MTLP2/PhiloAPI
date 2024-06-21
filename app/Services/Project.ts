@@ -852,6 +852,7 @@ class Project {
         'v.show_prod',
         'v.sizes',
         'v.is_size',
+        'p.is_3d',
         'count',
         'show_countdown',
         'show_count',

@@ -708,6 +708,10 @@ class Cart {
           shippingDiscount,
           taxRate: shop.tax_rate
         })
+        shipping.original_no_tracking = Utils.getShipDiscounts({
+          ship: shipping.no_tracking,
+          taxRate: shop.tax_rate
+        })
         shipping.tracking = Utils.getShipDiscounts({
           ship: shipping.tracking,
           shippingDiscount,
@@ -783,7 +787,7 @@ class Cart {
         ) {
           shop.shipping_type = 'no_tracking'
           shop.shipping = shipping.no_tracking
-          shop.original_shipping = shipping.original_tracking
+          shop.original_shipping = shipping.original_no_tracking
         } else if (
           p.shipping_type === 'pickup' &&
           shipping.pickup !== null &&

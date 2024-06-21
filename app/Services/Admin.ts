@@ -1054,6 +1054,18 @@ class Admin {
     })
   }
 
+  static set3dProject = async (params: { id: number; value: boolean }) => {
+    const project = await DB('project').find(params.id)
+    project.is_3d = params.value
+    project.save()
+    if (params.value) {
+      await Artwork.saveTextures({
+        project_id: project.id
+      })
+    }
+    return { success: true }
+  }
+
   static saveWishlist = async (params) => {
     const wishlist = await DB('wishlist').where('id', params.wishlist_id).first()
     const project = await DB('project').find(wishlist.project_id)
@@ -1944,7 +1956,6 @@ class Admin {
       orders.where('user.id', params.user_id)
     }
 
-    console.log(orders.toString())
     return Utils.getRows<any>({ ...params, query: orders, pagination: !!params.project_id })
   }
 

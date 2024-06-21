@@ -51,7 +51,13 @@ class BigBlue {
     }
   }
 
-  static async createProduct(params: { id: number; name: string; type: string; barcode: string }) {
+  static async createProduct(params: {
+    id: number
+    name: string
+    type: string
+    barcode: string
+    hs_code: string
+  }) {
     const id = String(params.id).padStart(10, '0')
     const bigId = `DIGG-${id.substring(0, 6)}-${id.substring(6, 10)}`
 
@@ -67,7 +73,7 @@ class BigBlue {
             amount: '9.99',
             currency: 'EUR'
           },
-          tariff_number: BigBlue.getTariffNumber(params.type)
+          tariff_number: params.hs_code
         }
       }
     })
@@ -863,30 +869,40 @@ class BigBlue {
   static async setCost(buffer: string, date: string) {
     const lines: any = Utils.csvToArray(buffer)
 
-    const currencies = await Utils.getCurrenciesApi(date + '-01', 'EUR,USD,GBP,AUD,CAD,KRW', 'EUR')
+    const currencies = await Utils.getCurrenciesApi(
+      date + '-01',
+      'EUR,USD,GBP,PHP,AUD,CAD,KRW',
+      'EUR'
+    )
 
     let marge = 0
     let i = 0
 
     const orders = {}
     for (const line of lines) {
+      if (isNaN(+line.Price) || +line.Price === 0) {
+        continue
+      }
       if (!orders[line.ID]) {
         orders[line.ID] = 0
       }
       orders[line.ID] += +line.Price
     }
 
+    console.log(Object.keys(orders).length)
+
     const promises: Promise<void>[] = []
     for (const [id, price] of Object.entries(orders) as any) {
       const pro = async () => {
         const order = await DB('order_shop').where('logistician_id', id).first()
-        if (!order) {
+        if (!order || order.shipping_cost) {
+          marge += order.shipping - order.shipping_cost
+          console.log('return', id)
           return
         }
         order.shipping_cost = price * currencies[order.currency]
         marge += order.shipping - order.shipping_cost
         await order.save()
-        console.log(i)
       }
       i++
       promises.push(pro())
