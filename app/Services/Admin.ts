@@ -2091,16 +2091,15 @@ class Admin {
     id: number
     comment: string
     user_contacted: boolean
-    product_id: number
     item_id: number
-    merch: any
+    items: any
     quantity: number
   }) => {
     const order = await DB('order').find(params.id)
     order.comment = params.comment
     order.user_contacted = params.user_contacted
     order.updated_at = Utils.date()
-    if (params.product_id) {
+    if (params.items && params.items.length > 0) {
       const item = await DB('order_item')
         .where('id', params.item_id)
         .where('order_id', params.id)
@@ -2108,14 +2107,14 @@ class Admin {
 
       if (item) {
         const sizes = await Promise.all(
-          params.merch.map(async (m) => {
+          params.items.map(async (m) => {
             const product = await DB('product').select('size').where('id', m.product_id).first()
             return product.size
           })
         )
 
         item.size = sizes.join(', ')
-        item.products = params.merch.map((m) => m.product_id).join('][')
+        item.products = params.items.map((m) => m.product_id).join('][')
         item.products = '[' + item.products + ']'
         item.quantity = params.quantity
         item.updated_at = Utils.date()
