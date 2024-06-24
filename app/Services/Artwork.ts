@@ -799,11 +799,12 @@ class Artwork {
     const disc: any = await mockup.drawDisc({
       type: project.type_vinyl,
       ligth: project.color_vinyl !== 'black',
-      color: project.color_vinyl,
-      color2: project.splatter1,
-      color3: project.splatter2,
+      color: config.colors.vinyl[project.color_vinyl],
+      color2: config.colors.vinyl[project.splatter1],
+      color3: config.colors.vinyl[project.splatter2],
       label: `${Env.get('STORAGE_URL')}/projects/${project.picture}/label.jpg`
     })
+
     // const fs = require('fs')
     // fs.writeFileSync('texture_disc.png', disc.toBuffer('image/png'), 'binary')
     await Storage.uploadImage(
