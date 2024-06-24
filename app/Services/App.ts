@@ -340,6 +340,12 @@ class App {
         updated_at: Utils.date()
       })
     }
+    if (isFloat(data.JPY)) {
+      await DB('currency').where('id', 'JPY').update({
+        value: data.JPY,
+        updated_at: Utils.date()
+      })
+    }
 
     return true
   }

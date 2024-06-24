@@ -106,7 +106,7 @@ class StatementService {
 
     const currencies = await Utils.getCurrenciesApi(
       `${params.year}-${params.month}-01`,
-      'EUR,USD,GBP,AUD,CAD,HKD,KRW'
+      'EUR,USD,GBP,AUD,CAD,HKD,KRW,JPY'
     )
     if (currencies.error) {
       return currencies
@@ -889,6 +889,9 @@ class StatementService {
       case 'KRW':
         currency = '₩'
         break
+      case 'JPY':
+        currency = '¥'
+        break
     }
 
     const data: any = await Project.getDashboard({
@@ -1226,6 +1229,9 @@ class StatementService {
         break
       case 'KRW':
         currency = '₩'
+        break
+      case 'JPY':
+        currency = '¥'
         break
     }
 
@@ -1678,6 +1684,9 @@ class StatementService {
           break
         case 'KRW':
           currency = '₩'
+          break
+        case 'JPY':
+          currency = '¥'
           break
       }
 

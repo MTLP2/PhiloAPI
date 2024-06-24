@@ -660,6 +660,12 @@ class Utils {
         updated_at: Utils.date()
       })
     }
+    if (isFloat(data.rates.JPY)) {
+      await DB('currency').where('id', 'JPY').update({
+        value: data.rates.JPY,
+        updated_at: Utils.date()
+      })
+    }
 
     return true
   }
@@ -715,6 +721,7 @@ class Utils {
       res.CAD = res.CAD * res.EUR
       res.PHP = res.PHP * res.EUR
       res.KRW = res.KRW * res.EUR
+      res.JPY = res.JPY * res.EUR
       res[base] = 1
     }
 
@@ -726,6 +733,7 @@ class Utils {
       CAD: number
       PHP: number
       KRW: number
+      JPY: number
     }
   }
 
@@ -735,7 +743,7 @@ class Utils {
 
   static getCurrenciesApi = async (
     date = 'latest',
-    symbols = 'EUR,USD,GBP,AUD,CAD,PHP,KRW',
+    symbols = 'EUR,USD,GBP,AUD,CAD,PHP,KRW,JPY',
     base = 'EUR'
   ) => {
     return Utils.request(
@@ -1062,7 +1070,7 @@ class Utils {
             if (regroup[word]) {
               ww = regroup[word] + '.' + word
             }
-            if (['EUR', 'USD', 'GBP', 'AUD', 'CAD', 'PHP', 'KRW'].includes(w)) {
+            if (['EUR', 'USD', 'GBP', 'AUD', 'CAD', 'PHP', 'KRW', 'JPY'].includes(w)) {
               return match.replace(w, ww)
             }
             return match.replace(w, ww).toLowerCase()
@@ -1289,6 +1297,7 @@ class Utils {
       CAD: number
       PHP: number
       KRW: number
+      JPY: number
     }
     currency: Currencies
     currencies: { id: string; value: Currencies; updated_at: string }[]
@@ -1300,8 +1309,9 @@ class Utils {
     const GBP = Math.ceil(price * curr.GBP + 0.45) - 0.01
     const AUD = Math.ceil(price * curr.AUD + 0.75) - 0.01
     const CAD = Math.ceil(price * curr.CAD + 0.75) - 0.01
-    const PHP = Math.ceil(price * curr.PHP + 50)
+    const PHP = Math.ceil(price * curr.PHP + 50) - 1
     const KRW = Math.ceil(Math.ceil((price * curr.KRW + 750) / 100) * 100) - 1
+    const JPY = Math.ceil(price * curr.JPY + 100) - 1
 
     return {
       EUR: currency === 'EUR' ? price : EUR,
@@ -1310,7 +1320,8 @@ class Utils {
       AUD: currency === 'AUD' ? price : AUD,
       CAD: currency === 'CAD' ? price : CAD,
       PHP: currency === 'PHP' ? price : PHP,
-      KRW: currency === 'KRW' ? price : KRW
+      KRW: currency === 'KRW' ? price : KRW,
+      JPY: currency === 'JPY' ? price : JPY
     }
   }
 

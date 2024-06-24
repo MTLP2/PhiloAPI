@@ -2031,6 +2031,7 @@ class Box {
       res.prices[d.type][d.periodicity].AUD = d.AUD
       res.prices[d.type][d.periodicity].CAD = d.CAD
       res.prices[d.type][d.periodicity].KRW = d.KRW
+      res.prices[d.type][d.periodicity].JPY = d.JPY
     }
 
     if (sales) {
@@ -2066,6 +2067,11 @@ class Box {
         res.prices_discount[d.type][d.periodicity].KRW = Utils.round(
           res.prices[d.type][d.periodicity].KRW -
             res.prices[d.type][d.periodicity].KRW * (sales.value / 100),
+          0
+        )
+        res.prices_discount[d.type][d.periodicity].JPY = Utils.round(
+          res.prices[d.type][d.periodicity].JPY -
+            res.prices[d.type][d.periodicity].JPY * (sales.value / 100),
           0
         )
       }

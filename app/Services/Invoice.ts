@@ -424,6 +424,9 @@ class Invoice {
       case 'KRW':
         invoice.currency = '₩'
         break
+      case 'JPY':
+        invoice.currency = '¥'
+        break
     }
     invoice.daudin = params.daudin
     invoice.number = invoice.code
@@ -1047,6 +1050,14 @@ class Invoice {
           sub_total_eur: 0,
           tax_eur: 0,
           total_eur: 0
+        },
+        JPY: {
+          sub_total: 0,
+          tax: 0,
+          total: 0,
+          sub_total_eur: 0,
+          tax_eur: 0,
+          total_eur: 0
         }
       },
       paypal: {
@@ -1099,6 +1110,14 @@ class Invoice {
           total_eur: 0
         },
         KRW: {
+          sub_total: 0,
+          tax: 0,
+          total: 0,
+          sub_total_eur: 0,
+          tax_eur: 0,
+          total_eur: 0
+        },
+        JPY: {
           sub_total: 0,
           tax: 0,
           total: 0,
