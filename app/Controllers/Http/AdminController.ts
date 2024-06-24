@@ -349,6 +349,16 @@ class AdminController {
     return Order.exportSales(params)
   }
 
+  async exportCategories({ params }) {
+    const payload = await validator.validate({
+      schema: schema.create({
+        id: schema.number()
+      }),
+      data: params
+    })
+    return Admin.exportCategories(payload)
+  }
+
   async exportCaByProjectId({ params }) {
     return Order.exportCaByProjectId(params)
   }

@@ -2268,6 +2268,26 @@ class Admin {
     )
   }
 
+  static exportCategories = async (params: { id: number }) => {
+    const categories = await DB('category_project')
+      .select('project.id', 'project.name as project_name', 'project.artist_name')
+      .join('project', 'project.id', 'project_id')
+      .where('category_id', params.id)
+      .all()
+
+    return Utils.arrayToXlsx([
+      {
+        worksheetName: 'Categories',
+        columns: [
+          { header: 'ID', key: 'id' },
+          { header: 'Artist', key: 'artist_name' },
+          { header: 'Project', key: 'project_name' }
+        ],
+        data: categories
+      }
+    ])
+  }
+
   static saveOrderItem = async (params) => {
     let item = DB('order_item')
 
