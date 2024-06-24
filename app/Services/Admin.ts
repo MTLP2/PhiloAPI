@@ -128,7 +128,7 @@ class Admin {
     if (filters) {
       for (const f in filters) {
         const filter = filters[f]
-        filter.value = decodeURIComponent(filter.value)
+        filter.value = decodeURIComponent(filter.value).replace(/'/g, "''")
         if (filter.name === 'customer.email') {
           projects.where((query) => {
             query.where('customer.email', 'LIKE', `%${filter.value}%`)
@@ -241,7 +241,8 @@ class Admin {
     if (filters) {
       for (const f in filters) {
         const filter = filters[f]
-        filter.value = decodeURIComponent(filter.value)
+        filter.value = decodeURIComponent(filter.value).replace(/'/g, "''")
+        console.log(filter.value)
         if (filter.name === 'customer.email') {
           projects.where((query) => {
             query.where('customer.email', 'LIKE', `%${filter.value}%`)
@@ -269,6 +270,7 @@ class Admin {
       }
     }
 
+    console.log(projects.toString())
     const res = await Utils.getRows<any>({ ...params, query: projects })
     return res
   }
@@ -1923,9 +1925,8 @@ class Admin {
       for (let i = 0; i < filters.length; i++) {
         const filter = filters[i]
         if (filter) {
-          filter.value = decodeURIComponent(filter.value)
+          filter.value = decodeURIComponent(filter.value).replace(/'/g, "''")
           if (filter.name === 'user_infos') {
-            filter.value = decodeURIComponent(filter.value)
             orders.where((query) => {
               query.where(DB.raw(`CONCAT(c.firstname, ' ', c.lastname) LIKE '%${filter.value}%'`))
               query.orWhere(DB.raw(`CONCAT(c.lastname, ' ', c.firstname) LIKE '%${filter.value}%'`))
