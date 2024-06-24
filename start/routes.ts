@@ -507,6 +507,7 @@ Route.group(() => {
   Route.delete('/categories/:id', 'AdminController.deleteCategory')
   Route.post('/products/create-items', 'ProductController.createItems')
   Route.get('/products', 'ProductController.getProducts')
+  Route.get('/productsMerch/:id', 'ProductController.getProductsMerch')
   Route.get('/products/:id', 'ProductController.getProduct')
   Route.post('/products/:id', 'ProductController.saveProduct')
   Route.delete('/products/:id', 'ProductController.removeProduct')

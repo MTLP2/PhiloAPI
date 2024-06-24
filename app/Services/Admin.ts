@@ -2098,11 +2098,40 @@ class Admin {
     return shop
   }
 
-  static saveOrder = async (params) => {
+  static saveOrder = async (params: {
+    id: number
+    comment: string
+    user_contacted: boolean
+    item_id: number
+    items: any
+    quantity: number
+  }) => {
     const order = await DB('order').find(params.id)
     order.comment = params.comment
     order.user_contacted = params.user_contacted
     order.updated_at = Utils.date()
+    if (params.items && params.items.length > 0) {
+      const item = await DB('order_item')
+        .where('id', params.item_id)
+        .where('order_id', params.id)
+        .first()
+
+      if (item) {
+        const sizes = await Promise.all(
+          params.items.map(async (m) => {
+            const product = await DB('product').select('size').where('id', m.product_id).first()
+            return product.size
+          })
+        )
+
+        item.size = sizes.join(', ')
+        item.products = params.items.map((m) => m.product_id).join('][')
+        item.products = '[' + item.products + ']'
+        item.quantity = params.quantity
+        item.updated_at = Utils.date()
+        await item.save()
+      }
+    }
 
     await order.save()
     return order
@@ -2110,7 +2139,6 @@ class Admin {
 
   static saveOrderShop = async (params) => {
     const shop = await DB('order_shop').find(params.id)
-
     const customer = await Customer.save(params.customer)
     shop.customer_id = customer.id
 

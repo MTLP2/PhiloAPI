@@ -93,6 +93,31 @@ class Product {
     return items
   }
 
+  static async allMerch(params: { project_id: string }) {
+    const projects = await DB('project_product')
+      .select('product_id', 'product.name', 'product.size', 'product.parent_id', 'p2.name')
+      .where('project_id', params.project_id)
+      .leftJoin('product', 'product.id', 'project_product.product_id')
+      .leftJoin('product as p2', 'p2.id', 'product.parent_id')
+      .all()
+
+    const groupedProjects: { id: string; projects: any[] }[] = []
+
+    for (const project of projects) {
+      if (project.parent_id !== null) {
+        let group = groupedProjects.find((g) => g.id === project.parent_id)
+        if (!group) {
+          group = { id: project.parent_id, projects: [] }
+          groupedProjects.push(group)
+        }
+
+        group.projects.push(project)
+      }
+    }
+
+    return groupedProjects
+  }
+
   static async find(params: { id: number }) {
     const item = await DB('product')
       .select('product.*', 'p2.name as parent')
