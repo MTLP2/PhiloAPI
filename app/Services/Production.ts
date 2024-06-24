@@ -140,7 +140,7 @@ class Production {
   }
 
   static async getStats() {
-    const factories = await DB('production')
+    let factories = await DB('production')
       .select(
         'factory',
         DB.raw(`date_format(date_prod, '%Y-%m') as date`),
@@ -153,6 +153,7 @@ class Production {
       .where('date_prod', '>', moment().subtract(6, 'months').format('YYYY-MM-DD'))
       .all()
 
+    factories = factories.sort((a, b) => (a.date < b.date ? -1 : 1))
     const res = {}
 
     const dates = {}
