@@ -965,6 +965,8 @@ class Project {
         'project.picture as related_picture',
         'project.name as related_name',
         'project.artist_name as related_artist',
+        'project.slug as related_slug',
+        'project.category as related_category',
         'vod.is_shop',
         'vod.type',
         'vod.user_id as related_user',
