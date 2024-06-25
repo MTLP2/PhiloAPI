@@ -57,7 +57,7 @@ class AppController {
 
     if (payload.type === 'projects') {
       return Project.findAll({
-        sort: 'popularity',
+        sort: 'added',
         search: payload.search
       })
     } else if (payload.type === 'artists') {
