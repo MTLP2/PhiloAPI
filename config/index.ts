@@ -132,7 +132,7 @@ export default {
       aqua_blue: '#007190',
       sea_blue: '#008091',
       electric_blue: '#9fd9de',
-      royal_blue: '#0091b4',
+      royal_blue: '#2f4ad1',
       baby_blue: '#96c5e6',
       transparent_blue: '#00a1ff47',
       mint: '#7ecc9e',
