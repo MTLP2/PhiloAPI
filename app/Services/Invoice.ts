@@ -14,21 +14,40 @@ import Payments from './Payments'
 
 class Invoice {
   static async all(params) {
-    params.query = DB()
-      .select('invoice.*', 'c.name as company', 'c.firstname', 'c.lastname', 'c.country_id')
+    const query = DB()
+      .select(
+        'invoice.*',
+        'vod.com_id',
+        'c.name as company',
+        'c.firstname',
+        'c.lastname',
+        'c.country_id'
+      )
       .from('invoice')
       .leftJoin('customer as c', 'c.id', 'invoice.customer_id')
+      .leftJoin('vod', 'vod.project_id', 'invoice.project_id')
 
     if (!params.sort) {
-      params.query.orderBy('invoice.id', 'desc')
+      query.orderBy('invoice.id', 'desc')
+    }
+
+    const filters = params.filters ? JSON.parse(params.filters) : null
+    if (filters && filters.find((f) => f.name === 'resp_prod.name' || f.name === 'com.name')) {
+      params.resp = true
+    }
+    if (params.resp) {
+      query.leftJoin('user as com', 'com.id', 'vod.com_id')
     }
     if (params.invoice_co) {
-      params.query.where((query) => {
+      query.where((query) => {
         query.where('compatibility', false).orWhere('invoice.name', 'like', `Commercial invoice%`)
       })
     }
 
-    return Utils.getRows(params)
+    return Utils.getRows({
+      query,
+      ...params
+    })
   }
 
   static async find(id) {
@@ -571,7 +590,7 @@ class Invoice {
     return { success: true }
   }
 
-  static async export(params: { start: string; end: string }) {
+  static async export(params: { start: string; end: string; com_id: number }) {
     const workbook = new Excel.Workbook()
 
     const datas = await DB('invoice')
@@ -608,8 +627,14 @@ class Invoice {
       .leftJoin('order', 'order.id', 'order_id')
       .leftJoin('customer', 'customer.id', 'invoice.customer_id')
       .leftJoin('payment', 'payment.id', 'invoice.payment_id')
+      .leftJoin('vod', 'vod.project_id', 'invoice.project_id')
       .where('invoice.date', '>=', params.start)
       .where('invoice.date', '<=', params.end)
+      .where((query) => {
+        if (params.com_id) {
+          query.where('vod.com_id', params.com_id)
+        }
+      })
       .orderBy('invoice.date', 'asc')
       .where('compatibility', true)
       .all()
