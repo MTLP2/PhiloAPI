@@ -59,12 +59,14 @@ class Invoice {
         'project.name as project_name',
         'project.artist_name',
         'production.name as prod_name',
-        'production.quantity as prod_quantity'
+        'production.quantity as prod_quantity',
+        'vod.user_id as project_user_id'
       )
       .from('invoice')
       .leftJoin('user', 'user.id', 'invoice.user_id')
       .leftJoin('project', 'project.id', 'invoice.project_id')
       .leftJoin('production', 'production.id', 'invoice.production_id')
+      .leftJoin('vod', 'vod.project_id', 'invoice.project_id')
       .hasMany('payment', 'payments', 'invoice_id')
       .where('invoice.id', id)
       .belongsTo('customer')
