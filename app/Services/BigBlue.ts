@@ -323,11 +323,14 @@ class BigBlue {
       }
 
       for (const o in order.items) {
+        order.items[o].product = order.items[o].bigblue_id
+        /**
         if (process.env.NODE_ENV !== 'production') {
           order.items[o].product = 'DIGG-000000-0001'
         } else {
           order.items[o].product = order.items[o].bigblue_id
         }
+        **/
       }
 
       const address = Utils.wrapText(order.address, ',', 35)
@@ -342,7 +345,7 @@ class BigBlue {
           pickup_point:
             order.shipping_type === 'pickup'
               ? {
-                  id: pickup.number,
+                  id: pickup.number.toString(),
                   display_name: pickup.name,
                   postal: pickup.zip_coe,
                   country: pickup.country_id,
@@ -372,6 +375,7 @@ class BigBlue {
           })
         }
       }
+      console.log(data)
       let res: any = await this.api('CreateOrder', {
         method: 'POST',
         params: data
