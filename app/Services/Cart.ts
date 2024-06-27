@@ -1414,6 +1414,7 @@ class Cart {
     res.is_shop = p.is_shop
     res.size = p.size
     res.chosen_sizes = p.chosen_sizes
+    res.comment = p.comment
     res.is_size = p.project.is_size
     res.sizes = p.project.sizes ? p.project.sizes : []
     res.grouped_sizes = p.project.grouped_sizes ? p.project.grouped_sizes : []
@@ -1740,7 +1741,7 @@ class Cart {
             discount_code: item.discount_code,
             shipping_discount: user.is_pro ? 0 : item.shipping_discount ?? 0,
             tips: item.tips,
-            size: chosenSizes,
+            size: chosenSizes || item.comment,
             products: item.chosen_sizes
               ? Object.values(item.chosen_sizes)
                   .map((v) => `[${v}]`)
