@@ -375,13 +375,10 @@ class BigBlue {
           })
         }
       }
-      console.log(data)
       let res: any = await this.api('CreateOrder', {
         method: 'POST',
         params: data
       })
-
-      console.log(res)
 
       if (res.code) {
         dispatchs.push({
