@@ -161,7 +161,7 @@ export default {
       orange_crush: '#f37646',
       redish: '#ee3f3e',
       red: '#ef2f2f',
-      transparent_red: '#cc0000eb',
+      transparent_red: '#ba222ceb',
       blood_red: '#ee403d',
       oxblood: '#ac3145',
       brown: 'rgb(138, 56, 8)',
