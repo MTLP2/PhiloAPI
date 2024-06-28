@@ -1808,58 +1808,59 @@ class Admin {
     end?: string
     filters?: any
     user_id?: number
+    with_products?: boolean
   }) => {
+    const selects = [
+      DB.raw('(os.shipping - os.shipping_cost) as shipping_diff'),
+      DB.raw('ROUND(oi.total * order.currency_rate, 2) as euro_rate'),
+      'os.*',
+      'order.currency_rate',
+      'order.origin',
+      'order.promo_code',
+      'order.payment_type',
+      'order.refunded',
+      'order.total as o_total',
+      'order.transaction_id',
+      'order.status',
+      'order.payment_id',
+      'order.user_agent',
+      'order.user_contacted',
+      'os.total as os_total',
+      'os.is_paid',
+      'os.is_paused',
+      'os.ask_cancel',
+      'oi.id as item_id',
+      'oi.project_id',
+      'oi.total',
+      'oi.order_id',
+      'oi.order_shop_id',
+      'oi.quantity',
+      'oi.price',
+      'oi.size',
+      'oi.discount_code',
+      'oi.discount_code',
+      'project.artist_name',
+      'project.name as project_name',
+      'project.picture',
+      'user.name as user_name',
+      'user.email as user_email',
+      'user.picture as user_picture',
+      'user.newsletter as user_newsletter',
+      'user.is_pro',
+      'user.facebook_id',
+      'user.soundcloud_id',
+      'c.country_id',
+      'c.name',
+      'c.firstname',
+      'c.lastname',
+      'c.address',
+      'c.zip_code',
+      'c.city',
+      'c.state',
+      'c.phone',
+      DB.raw("CONCAT(c.firstname, ' ', c.lastname) AS user_infos")
+    ]
     const orders = DB('order_shop as os')
-      .select(
-        DB.raw('(os.shipping - os.shipping_cost) as shipping_diff'),
-        DB.raw('ROUND(oi.total * order.currency_rate, 2) as euro_rate'),
-        'os.*',
-        'order.currency_rate',
-        'order.origin',
-        'order.promo_code',
-        'order.payment_type',
-        'order.refunded',
-        'order.total as o_total',
-        'order.transaction_id',
-        'order.status',
-        'order.payment_id',
-        'order.user_agent',
-        'order.user_contacted',
-        'os.total as os_total',
-        'os.is_paid',
-        'os.is_paused',
-        'os.ask_cancel',
-        'oi.id as item_id',
-        'oi.project_id',
-        'oi.total',
-        'oi.order_id',
-        'oi.order_shop_id',
-        'oi.quantity',
-        'oi.price',
-        'oi.size',
-        'oi.discount_code',
-        'oi.discount_code',
-        'project.artist_name',
-        'project.name as project_name',
-        'project.picture',
-        'user.name as user_name',
-        'user.email as user_email',
-        'user.picture as user_picture',
-        'user.newsletter as user_newsletter',
-        'user.is_pro',
-        'user.facebook_id',
-        'user.soundcloud_id',
-        'c.country_id',
-        'c.name',
-        'c.firstname',
-        'c.lastname',
-        'c.address',
-        'c.zip_code',
-        'c.city',
-        'c.state',
-        'c.phone',
-        DB.raw("CONCAT(c.firstname, ' ', c.lastname) AS user_infos")
-      )
       .join('order_item as oi', 'os.id', 'oi.order_shop_id')
       .join('order', 'oi.order_id', 'order.id')
       .join('user', 'user.id', 'order.user_id')
@@ -1870,6 +1871,21 @@ class Admin {
         query.orWhere('os.is_external', true)
       })
 
+    if (params.with_products) {
+      orders.join('project_product as pp', 'pp.project_id', 'project.id')
+      orders.join('product', 'product.id', 'pp.product_id')
+      orders.where((query) => {
+        query.whereRaw('product.size like oi.size')
+        query.orWhereRaw(`oi.products LIKE CONCAT('%[',product.id,']%')`)
+        query.orWhere((query) => {
+          query.whereNull('product.size')
+          query.whereNotExists((query) => {
+            query.from('product as child').whereRaw('product.id = child.parent_id')
+          })
+        })
+      })
+      selects.push('product.barcode', 'product.type')
+    }
     if (params.project_id) {
       orders.whereIn('oi.project_id', params.project_id.split(','))
     }
@@ -1956,6 +1972,8 @@ class Admin {
     if (params.user_id) {
       orders.where('user.id', params.user_id)
     }
+
+    orders.select(...selects)
 
     return Utils.getRows<any>({ ...params, query: orders, pagination: !!params.project_id })
   }
@@ -2172,6 +2190,7 @@ class Admin {
   static extractOrders = async (params) => {
     params.size = 0
     params.project_id = params.id
+    params.with_products = true
     const data = await Admin.getOrders(params)
 
     return Utils.arrayToXlsx([
@@ -2185,6 +2204,8 @@ class Admin {
           { header: 'Total', key: 'total' },
           { header: 'Currency', key: 'currency' },
           { header: 'Total Euro', key: 'euro_rate' },
+          { header: 'Barcode', key: 'barcode' },
+          { header: 'Type', key: 'type' },
           { header: 'Size', key: 'size' },
           { header: 'Promo', key: 'promo_code' },
           { header: 'Sales', key: 'discount_code' },
