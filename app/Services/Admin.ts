@@ -1884,7 +1884,13 @@ class Admin {
           })
         })
       })
-      selects.push('product.barcode', 'product.type')
+      selects.push(
+        'product.barcode',
+        'product.hs_code',
+        'product.type as product_type',
+        'product.country_id as product_country',
+        'product.weight as product_weight'
+      )
     }
     if (params.project_id) {
       orders.whereIn('oi.project_id', params.project_id.split(','))
@@ -2214,6 +2220,9 @@ class Admin {
           { header: 'Name', key: 'user_name' },
           { header: 'Phone', key: 'phone' },
           { header: 'Step', key: 'step' },
+          { header: 'Product Country', key: 'product_country' },
+          { header: 'HS code', key: 'hs_code' },
+          { header: 'Product Weight', key: 'product_weight' },
           { header: 'Transporter', key: 'transporter' },
           { header: 'Shipping Type', key: 'shipping_type' },
           { header: 'Shipping', key: 'shipping' },

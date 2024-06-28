@@ -213,6 +213,7 @@ class Product {
     parent_id?: number
     size?: string
     hs_code?: string
+    country_id?: string
     color?: string
     weight?: number
   }) {
@@ -241,6 +242,7 @@ class Product {
     item.catnumber = params.catnumber
     item.isrc = params.isrc
     item.hs_code = params.hs_code
+    item.country_id = params.country_id
     item.parent_id = params.parent_id
     item.size = params.size
     item.color = params.color
