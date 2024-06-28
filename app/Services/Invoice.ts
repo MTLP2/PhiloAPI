@@ -11,6 +11,7 @@ import I18n from '@ioc:Adonis/Addons/I18n'
 import View from '@ioc:Adonis/Core/View'
 import Log from 'App/Services/Log'
 import Payments from './Payments'
+import Storage from 'App/Services/Storage'
 
 class Invoice {
   static async all(params) {
@@ -21,11 +22,15 @@ class Invoice {
         'c.name as company',
         'c.firstname',
         'c.lastname',
-        'c.country_id'
+        'c.country_id',
+        'order.payment_id as order_payment_id',
+        'order.payment_type as order_payment_type',
+        'order.transaction_id as order_transaction_id'
       )
       .from('invoice')
       .leftJoin('customer as c', 'c.id', 'invoice.customer_id')
       .leftJoin('vod', 'vod.project_id', 'invoice.project_id')
+      .leftJoin('order', 'order.id', 'invoice.order_id')
 
     if (!params.sort) {
       query.orderBy('invoice.id', 'desc')
@@ -42,6 +47,8 @@ class Invoice {
       query.where((query) => {
         query.where('compatibility', false).orWhere('invoice.name', 'like', `Commercial invoice%`)
       })
+    } else {
+      query.where('compatibility', true)
     }
 
     return Utils.getRows({
@@ -153,6 +160,7 @@ class Invoice {
     box_dispatch_id?: number
     invoice_to_payment?: boolean
     payment_type?: string
+    proof_payment_file?: string
     charge_id?: string
   }) {
     let invoice: any = DB('invoice')
@@ -238,6 +246,13 @@ class Invoice {
     invoice.updated_at = params.updated_at || Utils.date()
 
     await invoice.save()
+
+    if (params.proof_payment_file) {
+      const file = Utils.uuid()
+      Storage.upload(`proofs/${file}.jpg`, Buffer.from(params.proof_payment_file, 'base64'))
+      invoice.proof_payment = file
+      await invoice.save()
+    }
 
     log.save(invoice)
     if (invoice.date_payment) {
