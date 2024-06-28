@@ -2135,7 +2135,8 @@ class Admin {
     order.comment = params.comment
     order.user_contacted = params.user_contacted
     order.updated_at = Utils.date()
-    if (params.items && params.items.length > 0) {
+
+    if (params.item_id) {
       const item = await DB('order_item')
         .where('id', params.item_id)
         .where('order_id', params.id)
