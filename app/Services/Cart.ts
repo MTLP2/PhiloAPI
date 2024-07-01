@@ -1414,6 +1414,11 @@ class Cart {
     res.is_shop = p.is_shop
     res.size = p.size
     res.chosen_sizes = p.chosen_sizes
+
+    if (p.comment === '' || p.comment === null) {
+      res.error = 'no_comment'
+    }
+
     res.comment = p.comment
     res.is_size = p.project.is_size
     res.sizes = p.project.sizes ? p.project.sizes : []
