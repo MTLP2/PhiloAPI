@@ -256,8 +256,12 @@ class Product {
       Product.setBarcodes({ project_id: project.project_id })
     }
     if (item.barcode) {
-      if (!item.whiplash_id) {
-        await Whiplash.setProduct({ id: item.id })
+      if (!item.whiplash_id || item.whiplash_id === -1) {
+        await Whiplash.createItem({
+          id: item.id,
+          sku: item.barcode,
+          title: item.name
+        })
       }
       if (!item.ekan_id) {
         await Elogik.createItem(item)
