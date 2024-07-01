@@ -565,7 +565,7 @@ class Cart {
     shop.slug = user.slug
     shop.country_id = user.country_id
     shop.transporter = p.transporter
-    shop.error = p.error
+    // shop.error = p.error
     shop.type = p.type
     shop.items = []
 
@@ -612,6 +612,8 @@ class Cart {
       item.currency = p.currency
       item.shipping_discount = p.shipping_discount
       const calculatedItem = await Cart.calculateItem(item)
+
+      console.log('calculatedItem.error =>', calculatedItem.error)
       if (calculatedItem.error) {
         shop.error = calculatedItem.error
       }
@@ -653,6 +655,7 @@ class Cart {
       }
     }
 
+    console.log('shop error', shop.error)
     if (shop.error) {
       return shop
     }
@@ -1415,7 +1418,9 @@ class Cart {
     res.size = p.size
     res.chosen_sizes = p.chosen_sizes
 
+    console.log('comment =>', p.comment)
     if (p.comment === '' || p.comment === null) {
+      console.log('SISII')
       res.error = 'no_comment'
     }
 
@@ -1554,6 +1559,7 @@ class Cart {
       res.ship_discount_sale_diff = (res.shipping_discount * res.quantity * p.project.promo) / 100
     }
 
+    console.log(res.error)
     return res
   }
 
