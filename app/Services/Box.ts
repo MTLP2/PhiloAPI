@@ -1506,6 +1506,19 @@ class Box {
         continue
       }
 
+      const cards = await stripe.paymentMethods.list({
+        customer: box.stripe_customer,
+        type: 'card'
+      })
+
+      if (!cards.data[0]) {
+        console.log(`XXXXX -> ${box.id} -> No card`)
+        await DB('box').where('id', box.id).update({
+          step: 'finished'
+        })
+        continue
+      }
+
       await DB('box').where('id', box.id).update({
         step: 'monthly_pending'
       })
@@ -1548,11 +1561,6 @@ class Box {
         total: box.total,
         created_at: Utils.date(),
         updated_at: Utils.date()
-      })
-
-      const cards = await stripe.paymentMethods.list({
-        customer: box.stripe_customer,
-        type: 'card'
       })
 
       try {
