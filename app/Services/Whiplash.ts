@@ -967,7 +967,6 @@ class Whiplash {
           media_mail: true
         }
       })
-      console.log(item)
     } else {
       item = res[0]
     }
