@@ -368,6 +368,7 @@ class Dispatch {
         'order_shop.shipping_cost',
         'order_shop.shipping',
         'order_shop.currency',
+        'order_shop.currency_rate',
         DB.raw('shipping - shipping_cost as diff'),
         DB.raw(
           '(SELECT sum(quantity) FROM order_item WHERE order_shop_id = order_shop.id) as quantity'
@@ -393,7 +394,11 @@ class Dispatch {
       query.orderBy('date_export', 'desc')
     }
 
-    return Utils.getRows<any>({ ...params, query: query })
+    const res = await Utils.getRows<any>({ ...params, query: query })
+    for (const row of res.data) {
+      row.diff_eur = row.diff * row.currency_rate
+    }
+    return res
   }
 
   static extractCosts = async (params: {
@@ -418,6 +423,8 @@ class Dispatch {
       { header: 'shipping', key: 'shipping', width: 10 },
       { header: 'cost', key: 'shipping_cost', width: 10 },
       { header: 'diff', key: 'diff', width: 10 },
+      { header: 'currency', key: 'currency', width: 10 },
+      { header: 'diff_eur', key: 'diff', width: 10 },
       { header: 'date', key: 'date_export', width: 20 }
     ]
 
