@@ -5554,6 +5554,8 @@ class Admin {
         DB('order_item as oi')
           .select(DB.raw('sum(quantity)'))
           .join('order_shop as os', 'os.id', 'oi.order_shop_id')
+          .join('customer', 'customer.id', 'os.user_id')
+          .whereNotIn('customer.country_id', ['RU', 'BY', 'UA', 'PS'])
           .whereRaw('project_id = project.id')
           .whereNull('os.date_export')
           .where('is_paid', true)
