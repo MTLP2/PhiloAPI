@@ -152,7 +152,7 @@ export default {
       higlighter_yellow: '#e0e454',
       milky_clear: '#d2c9ac',
       bone: '#feebd4',
-      gold: '#ffbc00',
+      gold: '#9b8853',
       beige: '#e6ddcd',
       bronze: '#a45d3d',
       beer: '#e5b978',
