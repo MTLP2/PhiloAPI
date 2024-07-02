@@ -424,7 +424,7 @@ class Dispatch {
       { header: 'cost', key: 'shipping_cost', width: 10 },
       { header: 'diff', key: 'diff', width: 10 },
       { header: 'currency', key: 'currency', width: 10 },
-      { header: 'diff_eur', key: 'diff', width: 10 },
+      { header: 'diff_eur', key: 'diff_eur', width: 10 },
       { header: 'date', key: 'date_export', width: 20 }
     ]
 
