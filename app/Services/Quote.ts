@@ -147,7 +147,8 @@ class Quote {
 
     params.label_color = params.label || 'color'
 
-    const ff = ['sna', 'vdp', 'precision']
+    const ff = ['precision']
+    // const ff = ['sna', 'vdp', 'precision']
     /**
     if (params.factory === 'sna2') {
       ff.push('sna2')
@@ -155,7 +156,6 @@ class Quote {
     **/
 
     for (const f of ff) {
-      console.log('f', f)
       factories[f] = await Quote.calculateFactory({
         ...params,
         factory: f
@@ -241,22 +241,22 @@ class Quote {
   static async calculateFactory(params) {
     let f
 
-    if (params.factory === 'sna') {
-      f = 'SNA'
-    } else if (params.factory === 'sna_old') {
-      f = 'SNA_OLD'
-    } else if (params.factory === 'mpo') {
-      f = 'MPO'
-    } else if (params.factory === 'vdp') {
-      f = 'VDP'
-    } else if (params.factory === 'kuroneko') {
-      f = 'kuroneko'
-    } else if (params.factory === 'precision') {
+    // if (params.factory === 'sna') {
+    //   f = 'SNA'
+    // } else if (params.factory === 'sna_old') {
+    //   f = 'SNA_OLD'
+    // } else if (params.factory === 'mpo') {
+    //   f = 'MPO'
+    // } else if (params.factory === 'vdp') {
+    //   f = 'VDP'
+    // } else if (params.factory === 'kuroneko') {
+    //   f = 'kuroneko'
+    // } else if (params.factory === 'precision') {
+    if (params.factory === 'precision') {
       f = 'precision'
     }
     const factory: any = Object.values(params.costs[f])
     const curUsd = await Utils.getCurrencyComp('USD', 'EUR')
-    console.log('factory', factory)
     const q: any = {}
     for (const f of factory) {
       q[f.id] = f
@@ -1137,7 +1137,11 @@ class Quote {
         option: 'DMM',
         active: params.cutting === 'DMM'
       })
-
+    // quote.colors =
+    //   getCost({
+    //     l: {
+    //       ''
+    //     }
     quote.prices.cutting.LACQUE =
       getCost({
         l: {
