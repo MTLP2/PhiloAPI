@@ -119,7 +119,7 @@ class BigBlue {
           type: 'bigblue',
           comment: 'api',
           is_preorder: false,
-          quantity: stock.available
+          quantity: stock.available || 0
         })
       }
     }
