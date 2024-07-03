@@ -131,7 +131,6 @@ class AppController {
 
   calculateQuote({ params, user }) {
     params.user = user
-    // console.log(params)
     return Quote.calculate(params)
   }
 
