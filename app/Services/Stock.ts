@@ -31,6 +31,8 @@ class Stock {
           query.where((query) => {
             query.whereNull('size').orWhereIn('pp.product_id', Object.values(params.sizes))
           })
+        } else {
+          query.whereNull('parent_id')
         }
       })
       .all()
