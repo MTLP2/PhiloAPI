@@ -70,6 +70,13 @@ type Chat = {
   updated_at: Timestamp
 }
 
+type Client = {
+  id: Generated<number>
+  name: string
+  created_at: Timestamp
+  updated_at: Timestamp
+}
+
 type Customer = {
   id: Generated<number>
   type?: string
@@ -267,6 +274,7 @@ export type DB = {
   artist: Artist
   badge: Badge
   banner: Banner
+  client: Client
   chat: Chat
   customer: Customer
   digital: Digital

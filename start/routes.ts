@@ -336,6 +336,11 @@ Route.group(() => {
   Route.post('/alerts', 'AdminController.saveAlert')
   Route.post('/alerts/:id', 'AdminController.saveAlert')
   Route.post('/alerts/:id/toggle', 'AdminController.toggleAlert')
+
+  Route.get('/clients', 'ClientsController.all')
+  Route.get('/clients/:id', 'ClientsController.find')
+  Route.delete('/clients/:id', 'ClientsController.remove')
+  Route.post('/clients', 'ClientsController.save')
   Route.get('/artists', 'ArtistsController.all')
   Route.get('/artists/:id', 'ArtistsController.find')
   Route.post('/artists/:id?', 'ArtistsController.save')
