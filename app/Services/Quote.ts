@@ -1137,11 +1137,7 @@ class Quote {
         option: 'DMM',
         active: params.cutting === 'DMM'
       })
-    // quote.colors =
-    //   getCost({
-    //     l: {
-    //       ''
-    //     }
+
     quote.prices.cutting.LACQUE =
       getCost({
         l: {
@@ -1192,8 +1188,260 @@ class Quote {
     } else if (params.format === '7"') {
       quote.prices.weight['180'] = false
     }
-    quote.type_vinyl = quote.prices.weight[params.weight]
-    quote.type_vinyl += quote.prices.type_vinyl[params.type_vinyl]
+    // quote.type_vinyl = quote.prices.weight[params.weight]
+    // quote.type_vinyl += quote.prices.type_vinyl[params.type_vinyl]
+
+    quote.prices.type_vinyl.surcharge = getCost({
+      l: 46,
+      type: 'type_vinyl',
+      option: 'surcharge',
+      active:
+        params.type_vinyl !== 'black' &&
+        !['cloudy', 'asidebside', 'marble', 'colorincolor', 'halfandhalf'].includes(
+          params.type_vinyl
+        )
+    })
+
+    console.log(quote.prices.type_vinyl.surcharge)
+
+    if (params.weight === '140') {
+      quote.prices.type_vinyl.color =
+        getCost({
+          l: {
+            '12"': 30,
+            '10"': 32,
+            '7"': 33
+          },
+          type: 'type_vinyl',
+          option: 'color',
+          active: params.type_vinyl === 'color'
+        }) + quote.prices.type_vinyl.surcharge
+
+      quote.prices.type_vinyl.splatter =
+        getCost({
+          l: {
+            '12"': 30,
+            '10"': 32,
+            '7"': 33
+          },
+          type: 'type_vinyl',
+          option: 'splatter',
+          active: params.type_vinyl === 'splatter'
+        }) +
+        getCost({
+          l: {
+            '12"': 39,
+            '10"': 39,
+            '7"': 39
+          },
+          type: 'type_vinyl',
+          option: 'splatter',
+          active: params.type_vinyl === 'splatter'
+        }) +
+        quote.prices.type_vinyl.surcharge +
+        getCost({
+          l: 47,
+          type: 'surcharge',
+          option: 'splatter',
+          active: params.type_vinyl === 'splatter'
+        })
+
+      quote.prices.type_vinyl.marble =
+        getCost({
+          l: {
+            '12"': 52,
+            '10"': 52,
+            '7"': 58
+          },
+          type: 'type_vinyl',
+          option: 'marble',
+          active: params.type_vinyl === 'marble'
+        }) +
+        quote.prices.type_vinyl.surcharge * 2
+
+      quote.prices.type_vinyl.asidebside =
+        getCost({
+          l: {
+            '12"': 52,
+            '10"': 52,
+            '7"': 58
+          },
+          type: 'type_vinyl',
+          option: 'asidebside',
+          active: params.type_vinyl === 'asidebside'
+        }) +
+        quote.prices.type_vinyl.surcharge * 2
+
+      quote.prices.type_vinyl.cloudy =
+        getCost({
+          l: {
+            '12"': 51,
+            '10"': 51,
+            '7"': 59
+          },
+          type: 'type_vinyl',
+          option: 'cloudy',
+          active: params.type_vinyl === 'cloudy'
+        }) + quote.prices.type_vinyl.surcharge
+
+      quote.prices.type_vinyl.colorincolor =
+        getCost({
+          l: {
+            '12"': 52,
+            '10"': 52,
+            '7"': 58
+          },
+          type: 'type_vinyl',
+          option: 'colorincolor',
+          active: params.type_vinyl === 'colorincolor'
+        }) +
+        quote.prices.type_vinyl.surcharge * 2
+
+      quote.prices.type_vinyl.halfandhalf =
+        getCost({
+          l: {
+            '12"': 52,
+            '10"': 52,
+            '7"': 58
+          },
+          type: 'type_vinyl',
+          option: 'halfandhalf',
+          active: params.type_vinyl === 'halfandhalf'
+        }) +
+        quote.prices.type_vinyl.surcharge * 2
+
+      quote.prices.type_vinyl.picture_disc = getCost({
+        l: {
+          '12"': null,
+          '10"': 75,
+          '7"': null
+        },
+        type: 'type_vinyl',
+        option: 'picture_disc',
+        active: params.type_vinyl === 'picture_disc'
+      })
+    } else if (params.weight === '180') {
+      quote.prices.type_vinyl.color =
+        getCost({
+          l: {
+            '12"': 31,
+            '10"': 32,
+            '7"': 34
+          },
+          type: 'type_vinyl',
+          option: 'color',
+          active: params.type_vinyl === 'color'
+        }) + quote.prices.type_vinyl.surcharge
+
+      quote.prices.type_vinyl.splatter =
+        getCost({
+          l: {
+            '12"': 31,
+            '10"': 32,
+            '7"': 34
+          },
+          type: 'type_vinyl',
+          option: 'splatter',
+          active: params.type_vinyl === 'splatter'
+        }) +
+        getCost({
+          l: {
+            '12"': 40,
+            '10"': 39,
+            '7"': 40
+          },
+          type: 'type_vinyl',
+          option: 'splatter',
+          active: params.type_vinyl === 'splatter'
+        }) +
+        quote.prices.type_vinyl.surcharge +
+        getCost({
+          l: 47,
+          type: 'surcharge',
+          option: 'splatter',
+          active: params.type_vinyl === 'splatter'
+        })
+
+      quote.prices.type_vinyl.marble =
+        getCost({
+          l: {
+            '12"': 64,
+            '10"': 52,
+            '7"': 70
+          },
+          type: 'type_vinyl',
+          option: 'marble',
+          active: params.type_vinyl === 'marble'
+        }) +
+        quote.prices.type_vinyl.surcharge * 2
+
+      quote.prices.type_vinyl.asidebside =
+        getCost({
+          l: {
+            '12"': 64,
+            '10"': 52,
+            '7"': 70
+          },
+          type: 'type_vinyl',
+          option: 'asidebside',
+          active: params.type_vinyl === 'asidebside'
+        }) +
+        quote.prices.type_vinyl.surcharge * 2
+
+      quote.prices.type_vinyl.cloudy =
+        getCost({
+          l: {
+            '12"': 63,
+            '10"': 51,
+            '7"': 71
+          },
+          type: 'type_vinyl',
+          option: 'cloudy',
+          active: params.type_vinyl === 'cloudy'
+        }) + quote.prices.type_vinyl.surcharge
+
+      quote.prices.type_vinyl.colorincolor =
+        getCost({
+          l: {
+            '12"': 64,
+            '10"': 52,
+            '7"': 70
+          },
+          type: 'type_vinyl',
+          option: 'colorincolor',
+          active: params.type_vinyl === 'colorincolor'
+        }) +
+        quote.prices.type_vinyl.surcharge * 2
+
+      quote.prices.type_vinyl.halfandhalf =
+        getCost({
+          l: {
+            '12"': 64,
+            '10"': 52,
+            '7"': 70
+          },
+          type: 'type_vinyl',
+          option: 'halfandhalf',
+          active: params.type_vinyl === 'halfandhalf'
+        }) +
+        quote.prices.type_vinyl.surcharge * 2
+
+      quote.prices.type_vinyl.picture_disc = getCost({
+        l: {
+          '12"': 74,
+          '10"': 75,
+          '7"': 76
+        },
+        type: 'type_vinyl',
+        option: 'picture_disc',
+        active: params.type_vinyl === 'picture_disc'
+      })
+    }
+
+    quote.type_vinyl =
+      quote.prices.weight[params.weight] + quote.prices.type_vinyl[params.type_vinyl]
+
+    console.log(quote.type_vinyl)
 
     quote.prices.label_color.white = getCost({
       l: 89,
