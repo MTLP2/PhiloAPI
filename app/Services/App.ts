@@ -1498,7 +1498,7 @@ class App {
     const file = await workbook.xlsx.writeBuffer()
 
     await Notification.sendEmail({
-      to: 'alexis@diggersfactory.com,cyril@diggersfactory.com,theo@diggersfactory.com,victor@diggersfactory.com,olivia@diggersfactory.com,armory@diggersfactory.com',
+      to: 'alexis@diggersfactory.com,cyril@diggersfactory.com,thibault@diggersfactory.com,victor@diggersfactory.com,olivia@diggersfactory.com,armory@diggersfactory.com',
       subject: 'Etat des stocks',
       html: 'Fichier en pièce jointe',
       attachments: [
