@@ -396,7 +396,10 @@ class Dispatch {
 
     const res = await Utils.getRows<any>({ ...params, query: query })
     for (const row of res.data) {
-      row.diff_eur = row.diff * row.currency_rate
+      row.shipping = row.shipping * row.currency_rate
+      row.shipping_cost = row.shipping_cost * row.currency_rate
+      row.diff = row.diff * row.currency_rate
+      row.currency = 'EUR'
     }
     return res
   }
@@ -424,7 +427,6 @@ class Dispatch {
       { header: 'cost', key: 'shipping_cost', width: 10 },
       { header: 'diff', key: 'diff', width: 10 },
       { header: 'currency', key: 'currency', width: 10 },
-      { header: 'diff_eur', key: 'diff_eur', width: 10 },
       { header: 'date', key: 'date_export', width: 20 }
     ]
 
