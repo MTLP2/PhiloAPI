@@ -896,16 +896,18 @@ class BigBlue {
     for (const [id, price] of Object.entries(orders) as any) {
       const pro = async () => {
         const order = await DB('order_shop').where('logistician_id', id).first()
-        if (!order || order.shipping_cost) {
+        if (!order) {
+          return
+        }
+        i++
+        if (order.shipping_cost) {
           marge += order.shipping - order.shipping_cost
-          console.log('return', id)
           return
         }
         order.shipping_cost = price * currencies[order.currency]
         marge += order.shipping - order.shipping_cost
         await order.save()
       }
-      i++
       promises.push(pro())
     }
     await Promise.all(promises)
