@@ -977,7 +977,7 @@ class Cart {
     } else if (params.transporter === 'bigblue') {
       params.weight += 185
     } else if (params.transporter === 'whiplash') {
-      params.weight += 340
+      params.weight += 240
     } else if (params.transporter === 'whiplash_uk') {
       params.weight += 160
     } else {
@@ -985,7 +985,7 @@ class Cart {
     }
 
     let weight
-    if (params.weight < 250 && params.transporter === 'bigblue') {
+    if (params.weight < 250) {
       weight = '250g'
     } else if (params.weight < 500) {
       weight = '500g'
