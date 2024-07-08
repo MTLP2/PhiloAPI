@@ -734,6 +734,7 @@ class Stock {
       .join('project_product', 'project_product.product_id', 'product.id')
       .join('vod', 'vod.project_id', 'project_product.project_id')
       .whereNotNull('product.barcode')
+      .where('vod.barcode', 'not like', '%,%')
       .hasMany('stock')
       .orderBy('vod.unit_cost')
       .all()
