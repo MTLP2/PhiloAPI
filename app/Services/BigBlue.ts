@@ -456,7 +456,7 @@ class BigBlue {
 
     let updated = 0
     for (const order of orders) {
-      if (order.tracking_number) {
+      if (order.tracking_number && order.external_id) {
         const orderShop = await DB('order_shop').where('id', order.external_id).first()
         if (!orderShop || orderShop.tracking_link) {
           continue
