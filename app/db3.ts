@@ -1,7 +1,7 @@
 import Env from '@ioc:Adonis/Core/Env'
 import { DB } from './types'
 import { createPool } from 'mysql2'
-import { Kysely, MysqlDialect, CompiledQuery } from 'kysely'
+import { sql, Kysely, MysqlDialect, CompiledQuery } from 'kysely'
 
 import Utils from 'App/Utils'
 
@@ -18,15 +18,29 @@ const dialect = new MysqlDialect({
 
 export const db = new Kysely<DB>({
   dialect,
-  log(event) {
+  log(_event) {
     /**
-    if (event.level === 'query') {
-      console.log(event.query.sql)
-      console.log(event.query.parameters)
+    console.log(_event.query.sql)
+    console.log(_event.query.parameters)
+    **/
+    if (_event.level === 'error') {
+      console.error('Query failed : ', {
+        durationMs: _event.queryDurationMillis,
+        error: _event.error,
+        sql: _event.query.sql,
+        params: _event.query.parameters
+      })
+    }
+    /**
+    if (_event.level === 'query') {
+      console.log(_event.query.sql)
+      console.log(_event.query.parameters)
     }
     **/
   }
 })
+
+export { sql }
 
 export const toSql = (compiled: CompiledQuery): string => {
   let sql = compiled.sql
@@ -97,7 +111,7 @@ export const model = <T extends keyof DB & string>(table: T): Model<T> => {
     }
   }
   const proxyInstance = new Proxy(methods, {
-    get(target, name: string) {
+    get(_target, name: string) {
       if (name === 'toJSON') {
         return () => data
       }
@@ -106,7 +120,7 @@ export const model = <T extends keyof DB & string>(table: T): Model<T> => {
       }
       return methods[name]
     },
-    set(target, name: string, value: any) {
+    set(_target, name: string, value: any) {
       if (data[name] !== value) {
         changed[name] = value
         data[name] = value
