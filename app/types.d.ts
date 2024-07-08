@@ -73,12 +73,20 @@ type Chat = {
 type Client = {
   id: Generated<number>
   name: string
+  email: string
+  country_id: string
   created_at: Timestamp
   updated_at: Timestamp
 }
 
-type Customer = {
+type ClientCustomer = {
   id: Generated<number>
+  client_id: number
+  customer_id: number
+}
+
+type Customer = {
+  id?: Generated<number>
   type?: string
   name?: string
   firstname?: string
@@ -92,8 +100,8 @@ type Customer = {
   birthday?: string
   lng?: number
   lat?: number
-  created_at: Timestamp
-  updated_at: Timestamp
+  created_at?: Timestamp
+  updated_at?: Timestamp
 }
 
 type Digital = {
@@ -275,6 +283,7 @@ export type DB = {
   badge: Badge
   banner: Banner
   client: Client
+  client_customer: ClientCustomer
   chat: Chat
   customer: Customer
   digital: Digital

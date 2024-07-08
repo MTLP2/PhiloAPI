@@ -36,10 +36,23 @@ class ClientsController {
       schema: schema.create({
         id: schema.number.optional(),
         name: schema.string(),
-        description: schema.string.optional(),
+        email: schema.string(),
         country_id: schema.string(),
-        project_id: schema.number.optional(),
-        picture: schema.string.optional()
+        addresses: schema.array.optional().members(
+          schema.object().members({
+            customer_id: schema.number.optional(),
+            type: schema.string.optional(),
+            name: schema.string.optional(),
+            firstname: schema.string.optional(),
+            lastname: schema.string.optional(),
+            address: schema.string.optional(),
+            state: schema.string.optional(),
+            city: schema.string.optional(),
+            zip_code: schema.string.optional(),
+            country_id: schema.string.optional(),
+            phone: schema.string.optional()
+          })
+        )
       }),
       data: {
         ...request.body()
