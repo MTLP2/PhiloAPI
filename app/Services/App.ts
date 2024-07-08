@@ -100,7 +100,7 @@ class App {
       await Notification.sendEmail({
         to: 'victor@diggersfactory.com',
         subject: 'Error daily task',
-        html: err.message
+        html: err.stack.replace(/\n/g, '<br />')
       })
       throw err
     }
@@ -185,7 +185,7 @@ class App {
       await Notification.sendEmail({
         to: 'victor@diggersfactory.com',
         subject: 'Error hourly task',
-        html: err.message
+        html: err.stack.replace(/\n/g, '<br />')
       })
       throw err
     }
@@ -224,7 +224,7 @@ class App {
       await Notification.sendEmail({
         to: 'victor@diggersfactory.com',
         subject: 'Error minutely task',
-        html: err.message
+        html: err.stack.replace(/\n/g, '<br />')
       })
       throw err
     }
