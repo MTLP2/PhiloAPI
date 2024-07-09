@@ -35,6 +35,12 @@ class Clients {
       .where('cc.client_id', '=', params.id)
       .execute()
 
+    item['invoices'] = await db
+      .selectFrom('invoice')
+      .selectAll()
+      .where('invoice.client_id', '=', params.id)
+      .execute()
+
     return item
   }
 
@@ -85,7 +91,61 @@ class Clients {
     await sql`truncate table client`.execute(db)
     await sql`truncate table client_customer`.execute(db)
 
-    return { success: true }
+    const clients = await db
+      .selectFrom('user')
+      .leftJoin('customer', 'customer.id', 'user.customer_id')
+      .select(['user.id', 'user.name', 'user.country_id', 'user.customer_id', 'customer.address'])
+      .where('user.email', 'is', null)
+      .execute()
+
+    const cc = {}
+    for (const client of clients) {
+      if (!client.name) {
+        continue
+      }
+      client.name = client.name
+        .trim()
+        .split(/[\s,\t,\n]+/)
+        .join(' ')
+      if (!cc[`${client.name}`]) {
+        cc[`${client.name}`] = []
+      }
+      cc[`${client.name}`].push(client)
+    }
+    for (const key in cc) {
+      const client = cc[key][0]
+      const data = {
+        name: key,
+        email: client.email,
+        country_id: client.country_id,
+        created_at: client.created_at,
+        updated_at: client.updated_at
+      }
+      const res = await db.insertInto('client').values(data).executeTakeFirst()
+      const insertId = res.insertId
+      let address = {}
+      for (const customer of cc[key]) {
+        await db
+          .updateTable('invoice')
+          .where('user_id', '=', customer.id)
+          .set({ client_id: parseInt(insertId as unknown as string) })
+          .execute()
+
+        if (customer.customer_id && !address[customer.address]) {
+          address[customer.address] = true
+          await db
+            .insertInto('client_customer')
+            .values({
+              client_id: parseInt(insertId as unknown as string),
+              customer_id: customer.customer_id
+            })
+            .execute()
+        } else {
+          delete cc[key]
+        }
+      }
+    }
+    return cc
   }
 }
 
