@@ -134,6 +134,14 @@ type Digital = {
   updated_at: Timestamp
 }
 
+type Invoice = {
+  id: Generated<number>
+  user_id: number
+  client_id: number
+  created_at: Timestamp
+  updated_at: Timestamp
+}
+
 type DigitalAction = {
   id: Generated<number>
   type: string
@@ -264,6 +272,8 @@ type Shop = {
 type User = {
   id: Generated<number>
   name: string
+  email: string | null
+  customer_id?: number
   created_at: Timestamp
   updated_at: Timestamp
 }
@@ -290,6 +300,7 @@ export type DB = {
   digital_action: DigitalAction
   digital_todo: DigitalTodo
   feedback: Feedback
+  invoice: Invoice
   label: Label
   order: Order
   order_item: OrderItem
