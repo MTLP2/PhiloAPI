@@ -532,7 +532,7 @@ class Dispatch {
       const price: any = {}
       for (const [key, value] of Object.entries(columns)) {
         const vv = row.getCell(value).text
-        price[key] = vv === 'NULL' ? null : !isNaN(vv) ? Utils.round(vv) : vv
+        price[key] = vv === '00' ? '00' : vv === 'NULL' ? null : !isNaN(vv) ? Utils.round(vv) : vv
       }
       prices.push(price)
       newPrices[`${price.country_id}_${price.partner}_${price.transporter}`] = true
