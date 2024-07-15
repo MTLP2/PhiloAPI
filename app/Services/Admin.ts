@@ -601,6 +601,13 @@ class Admin {
 
     project.barcodes = barcodes
     project.historic = JSON.parse(project.historic)
+
+    project.check_address = {}
+    for (const h of project.historic) {
+      if (h.type === 'status' && h.new === 'check_address') {
+        project.check_address[h.transporter] = h.date
+      }
+    }
     project.reviews = reviews
 
     return project
@@ -1365,22 +1372,15 @@ class Admin {
         date: Utils.date()
       })
     }
-    if (vod.step !== params.step) {
-      if (params.step === 'in_progress' && !vod.start) {
-        vod.start = Utils.date()
-      }
+    console.log(params.step, vod.step)
+    if (vod.status !== params.status) {
       vod.historic.push({
         type: 'status',
         user_id: params.user.id,
         old: vod.status,
-        new: `${params.status}${
-          params.transporter_choice
-            ? params.transporter_choice.includes('all')
-              ? ' (all)'
-              : ` (${params.transporter_choice.join(', ')})`
-            : ''
-        }`,
+        new: params.status,
         notif: params.notif,
+        transporter: params.transporter_choice || undefined,
         date: Utils.date()
       })
     }
@@ -5252,22 +5252,9 @@ class Admin {
 
   static redoCheckAddress = async (params: {
     projectId: number
-    transporter_choice: Transporters[]
+    transporters: string[]
     user: any
   }) => {
-    enum Transporters {
-      all = 'all',
-      daudin = 'daudin',
-      diggers = 'diggers',
-      whiplash = 'whiplash',
-      whiplash_uk = 'whiplash_uk',
-      sna = 'sna',
-      soundmerch = 'soundmerch',
-      shipehype = 'shipehype',
-      seko = 'seko',
-      rey_vinilo = 'rey_vinilo'
-    }
-
     // Check if current VOD has "check_address" status. Else, throw error
     const vod = await DB('vod')
       .select(
@@ -5290,12 +5277,7 @@ class Admin {
       .where('oi.project_id', vod.project_id)
       .where('oi.vod_id', vod.id)
       .where('os.is_paid', 1)
-      .whereIn(
-        'os.transporter',
-        params.transporter_choice.includes(Transporters.all)
-          ? Object.values(Transporters)
-          : params.transporter_choice
-      )
+      .whereIn('os.transporter', params.transporters)
       .whereNull('date_export')
       .all()
 
@@ -5341,13 +5323,8 @@ class Admin {
       type: 'status',
       user_id: params.user.id,
       old: vod.status,
-      new: `check_address ${
-        params.transporter_choice
-          ? params.transporter_choice.includes(Transporters.all)
-            ? ' (all)'
-            : ` (${params.transporter_choice.join(', ')})`
-          : ''
-      }`,
+      new: `check_address`,
+      transporter: params.transporters,
       notif: 1,
       date: Utils.date()
     })
@@ -5546,6 +5523,7 @@ class Admin {
 
   static getProjectsToSync = async (params: { transporter: string }) => {
     const trans = params.transporter.split(',')
+
     const list: any[] = []
     for (const transporter of trans) {
       const query = DB('project')
@@ -5555,6 +5533,7 @@ class Admin {
           'project.name',
           'project.picture',
           'vod.picture_project',
+          'vod.historic',
           DB.raw(`'${transporter}' as transporter`),
           DB('order_item as oi')
             .select(DB.raw('sum(quantity)'))
@@ -5584,7 +5563,26 @@ class Admin {
 
       list.push(...(await query.all()))
     }
-    return list.sort((a, b) => b.to_sync - a.to_sync)
+
+    return list
+      .map((item) => {
+        const historic = JSON.parse(item.historic)
+        item.check_address = historic.find(
+          (h) =>
+            h.type === 'status' &&
+            h.new === 'check_address' &&
+            h.transporter &&
+            h.transporter.includes(item.transporter)
+        )?.date
+        delete item.historic
+        return item
+      })
+      .sort((a, b) => b.to_sync - a.to_sync)
+      .sort(
+        (a, b) =>
+          !a.check_address - !b.check_address ||
+          a.check_address?.substring(0, 10).localeCompare(b.check_address?.substring(0, 10))
+      )
   }
 }
 
