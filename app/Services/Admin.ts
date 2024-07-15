@@ -1372,7 +1372,6 @@ class Admin {
         date: Utils.date()
       })
     }
-    console.log(params.step, vod.step)
     if (vod.status !== params.status) {
       vod.historic.push({
         type: 'status',
