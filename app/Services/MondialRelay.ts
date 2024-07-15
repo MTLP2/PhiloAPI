@@ -49,7 +49,6 @@ class MondialRelay {
           const parser = new XMLParser()
           const xml = parser.parse(body)
 
-          console.log(body)
           try {
             const p =
               xml['soap:Envelope']['soap:Body']['WSI4_PointRelais_RechercheResponse'][
