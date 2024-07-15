@@ -603,9 +603,11 @@ class Admin {
     project.historic = JSON.parse(project.historic)
 
     project.check_address = {}
-    for (const h of project.historic) {
-      if (h.type === 'status' && h.new === 'check_address') {
-        project.check_address[h.transporter] = h.date
+    if (project.historic) {
+      for (const h of project.historic) {
+        if (h.type === 'status' && h.new === 'check_address') {
+          project.check_address[h.transporter] = h.date
+        }
       }
     }
     project.reviews = reviews
