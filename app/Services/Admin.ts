@@ -5549,7 +5549,7 @@ class Admin {
             .as('to_sync')
             .query(),
           DB('stock')
-            .select(DB.raw('sum(quantity)'))
+            .select(DB.raw('min(quantity)'))
             .join('project_product as pp', 'stock.product_id', 'pp.product_id')
             .whereRaw('pp.project_id = project.id')
             .where('is_preorder', false)
