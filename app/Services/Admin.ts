@@ -2208,6 +2208,7 @@ class Admin {
           { header: 'Project', key: 'project_name' },
           { header: 'Artist', key: 'artist_name' },
           { header: 'Quantity', key: 'quantity' },
+          { header: 'Unit price', key: 'price' },
           { header: 'Total', key: 'total' },
           { header: 'Currency', key: 'currency' },
           { header: 'Total Euro', key: 'euro_rate' },
