@@ -237,6 +237,22 @@ class AdminController {
     return Stock.setStockProject({ projectIds: [params.id] })
   }
 
+  async changeTransporter({ params }) {
+    const payload = await validator.validate({
+      schema: schema.create({
+        id: schema.number(),
+        from: schema.string(),
+        to: schema.string()
+      }),
+      data: params
+    })
+    return Dispatch.changeTransporterProject({
+      project_id: payload.id,
+      from: payload.from,
+      to: payload.to
+    })
+  }
+
   getBusiness({ params, user }) {
     params.user_id = user.id
     return Admin.getBusiness(params)
