@@ -947,6 +947,20 @@ class Cart {
     return shop
   }
 
+  static getWeightString = (weight: number) => {
+    let weightString = ''
+    if (weight < 250) {
+      weightString = '250g'
+    } else if (weight < 500) {
+      weightString = '500g'
+    } else if (weight < 750) {
+      weightString = '750g'
+    } else {
+      weightString = Math.ceil(weight / 1000) + 'kg'
+    }
+    return weightString
+  }
+
   static calculateShippingByTransporter = async (params: {
     transporter: string
     partner: string
@@ -958,6 +972,11 @@ class Cart {
     state?: string
     pickup?: boolean
   }) => {
+    const packageWeights = await DB('shipping_weight')
+      .where('partner', 'like', params.partner)
+      .where('country_id', '00')
+      .first()
+
     const transporters = await DB('shipping_weight')
       .where('partner', 'like', params.partner)
       .where('country_id', params.country_id)
@@ -971,29 +990,11 @@ class Cart {
       })
       .all()
 
-    // add packaging
-    if (params.transporter === 'daudin') {
-      params.weight += 225
-    } else if (params.transporter === 'bigblue') {
-      params.weight += 185
-    } else if (params.transporter === 'whiplash') {
-      params.weight += 340
-    } else if (params.transporter === 'whiplash_uk') {
-      params.weight += 160
-    } else {
-      params.weight += 225
+    const packageWeight = packageWeights[Cart.getWeightString(params.weight)]
+    if (!packageWeight) {
+      return null
     }
-
-    let weight
-    if (params.weight < 250) {
-      weight = '250g'
-    } else if (params.weight < 500) {
-      weight = '500g'
-    } else if (params.weight < 750) {
-      weight = '750g'
-    } else {
-      weight = Math.ceil(params.weight / 1000) + 'kg'
-    }
+    let weight = Cart.getWeightString(params.weight + packageWeight)
 
     const costs: any = {
       transporter: params.transporter,
