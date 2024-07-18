@@ -1196,6 +1196,9 @@ class Admin {
     vod.scheduled_end = params.scheduled_end
     vod.is_licence = params.is_licence
     vod.is_distrib = params.is_distrib
+    if (params.transporters_block) {
+      vod.transporters_block = params.transporters_block.join(',')
+    }
     vod.shipping_delay_reason = params.shipping_delay_reason
     vod.shipping_discount = params.shipping_discount
     vod.save_shipping = params.save_shipping
@@ -4612,6 +4615,7 @@ class Admin {
       pp.stock = pp.is_shop
         ? stocks[pp.product_id]
         : pp.goal - pp.count - pp.count_distrib - pp.count_other
+
       pp.styles = pp.styles
         .split(',')
         .map((s) => ss[s])
@@ -5535,6 +5539,7 @@ class Admin {
           'project.picture',
           'vod.picture_project',
           'vod.historic',
+          'vod.transporters_block',
           DB.raw(`'${transporter}' as transporter`),
           DB('order_item as oi')
             .select(DB.raw('sum(quantity)'))
@@ -5575,6 +5580,11 @@ class Admin {
             h.transporter &&
             h.transporter.includes(item.transporter)
         )?.date
+        item.blocked = item.transporters_block
+          ? item.transporters_block.split(',').includes(item.transporter)
+            ? '1'
+            : '0'
+          : '0'
         delete item.historic
         return item
       })
