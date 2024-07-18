@@ -323,14 +323,11 @@ class BigBlue {
       }
 
       for (const o in order.items) {
-        order.items[o].product = order.items[o].bigblue_id
-        /**
         if (process.env.NODE_ENV !== 'production') {
           order.items[o].product = 'DIGG-000000-0001'
         } else {
           order.items[o].product = order.items[o].bigblue_id
         }
-        **/
       }
 
       const address = Utils.wrapText(order.address, ' ', 35)
