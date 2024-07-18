@@ -381,6 +381,7 @@ Route.group(() => {
   Route.get('/projects/:id/check-sync', 'AdminController.checkSync')
   Route.post('/projects/:id/orders/sync-project', 'AdminController.syncProject')
   Route.get('/projects/:id/calcul-stock', 'AdminController.calculStock')
+  Route.post('/projects/:id/change-transporter', 'AdminController.changeTransporter')
   Route.get('/projects/:id/songs', 'AdminController.downloadProject')
   Route.get('/projects/:id/promo-kit', 'AdminController.downloadPromoKit')
   Route.post('/projects/:id/duplicate', 'AdminController.duplicateProject')
