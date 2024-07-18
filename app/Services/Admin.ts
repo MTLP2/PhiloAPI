@@ -5549,6 +5549,7 @@ class Admin {
             .where('os.is_paused', false)
             .whereRaw('project_id = project.id')
             .whereNull('os.date_export')
+            .whereNull('logistician_id')
             .where('is_paid', true)
             .where('os.transporter', transporter)
             .as('to_sync')
