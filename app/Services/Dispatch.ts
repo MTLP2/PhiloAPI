@@ -1288,6 +1288,28 @@ class Dispatch {
       }
     ])
   }
+
+  static changeTransporterProject = async (params: {
+    project_id: number
+    from: string
+    to: string
+  }) => {
+    const res = await DB('order_shop')
+      .whereIn(
+        'id',
+        DB('order_item')
+          .where({ project_id: params.project_id })
+          .where('transporter', params.from)
+          .select('order_shop_id')
+          .query()
+      )
+      .update({ transporter: params.to })
+
+    return {
+      success: true,
+      count: res
+    }
+  }
 }
 
 export default Dispatch
