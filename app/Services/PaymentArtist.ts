@@ -97,6 +97,7 @@ class PaymentArtist {
     projects: any
     comment: string
     invoice: string
+    invoice_id: number
   }) {
     let item: any = DB('payment_artist')
 
@@ -119,6 +120,7 @@ class PaymentArtist {
     item.is_paid = params.is_paid
     item.receiver = params.receiver
     item.comment = params.comment
+    item.invoice_id = params.invoice_id
     item.updated_at = Utils.date()
 
     if (params.invoice) {
@@ -148,7 +150,7 @@ class PaymentArtist {
             p.created_at = Utils.date()
           }
           p.project_id = project.project_id
-
+          p.currency = pp.currency
           p.currency_rate = await Utils.getCurrencyComp(item.currency, pp.currency)
           p.total = project.total
           p.updated_at = Utils.date()

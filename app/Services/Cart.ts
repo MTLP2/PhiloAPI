@@ -565,7 +565,7 @@ class Cart {
     shop.slug = user.slug
     shop.country_id = user.country_id
     shop.transporter = p.transporter
-    shop.error = p.error
+    // shop.error = p.error
     shop.type = p.type
     shop.items = []
 
@@ -612,6 +612,7 @@ class Cart {
       item.currency = p.currency
       item.shipping_discount = p.shipping_discount
       const calculatedItem = await Cart.calculateItem(item)
+
       if (calculatedItem.error) {
         shop.error = calculatedItem.error
       }
@@ -946,6 +947,20 @@ class Cart {
     return shop
   }
 
+  static getWeightString = (weight: number) => {
+    let weightString = ''
+    if (weight < 250) {
+      weightString = '250g'
+    } else if (weight < 500) {
+      weightString = '500g'
+    } else if (weight < 750) {
+      weightString = '750g'
+    } else {
+      weightString = Math.ceil(weight / 1000) + 'kg'
+    }
+    return weightString
+  }
+
   static calculateShippingByTransporter = async (params: {
     transporter: string
     partner: string
@@ -957,6 +972,11 @@ class Cart {
     state?: string
     pickup?: boolean
   }) => {
+    const packageWeights = await DB('shipping_weight')
+      .where('partner', 'like', params.partner)
+      .where('country_id', '00')
+      .first()
+
     const transporters = await DB('shipping_weight')
       .where('partner', 'like', params.partner)
       .where('country_id', params.country_id)
@@ -970,29 +990,11 @@ class Cart {
       })
       .all()
 
-    // add packaging
-    if (params.transporter === 'daudin') {
-      params.weight += 225
-    } else if (params.transporter === 'bigblue') {
-      params.weight += 185
-    } else if (params.transporter === 'whiplash') {
-      params.weight += 340
-    } else if (params.transporter === 'whiplash_uk') {
-      params.weight += 160
-    } else {
-      params.weight += 225
+    const packageWeight = packageWeights[Cart.getWeightString(params.weight)]
+    if (!packageWeight) {
+      return null
     }
-
-    let weight
-    if (params.weight < 250 && params.transporter === 'bigblue') {
-      weight = '250g'
-    } else if (params.weight < 500) {
-      weight = '500g'
-    } else if (params.weight < 750) {
-      weight = '750g'
-    } else {
-      weight = Math.ceil(params.weight / 1000) + 'kg'
-    }
+    let weight = Cart.getWeightString(params.weight + packageWeight)
 
     const costs: any = {
       transporter: params.transporter,
@@ -1414,6 +1416,12 @@ class Cart {
     res.is_shop = p.is_shop
     res.size = p.size
     res.chosen_sizes = p.chosen_sizes
+
+    if (p.comment === '' || p.comment === null) {
+      res.error = 'no_comment'
+    }
+
+    res.comment = p.comment
     res.is_size = p.project.is_size
     res.sizes = p.project.sizes ? p.project.sizes : []
     res.grouped_sizes = p.project.grouped_sizes ? p.project.grouped_sizes : []
@@ -1740,7 +1748,7 @@ class Cart {
             discount_code: item.discount_code,
             shipping_discount: user.is_pro ? 0 : item.shipping_discount ?? 0,
             tips: item.tips,
-            size: chosenSizes,
+            size: chosenSizes || item.comment,
             products: item.chosen_sizes
               ? Object.values(item.chosen_sizes)
                   .map((v) => `[${v}]`)

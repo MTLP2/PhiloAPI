@@ -188,6 +188,7 @@ const translate: (key: string, lang?: 'FR' | 'EN', payload?: string) => string |
     PHP: '₱',
     KRW: '₩',
     GBP: '£',
+    JPY: '¥',
 
     // Order -> Status / Step
     sent:

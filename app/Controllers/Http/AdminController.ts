@@ -237,6 +237,22 @@ class AdminController {
     return Stock.setStockProject({ projectIds: [params.id] })
   }
 
+  async changeTransporter({ params }) {
+    const payload = await validator.validate({
+      schema: schema.create({
+        id: schema.number(),
+        from: schema.string(),
+        to: schema.string()
+      }),
+      data: params
+    })
+    return Dispatch.changeTransporterProject({
+      project_id: payload.id,
+      from: payload.from,
+      to: payload.to
+    })
+  }
+
   getBusiness({ params, user }) {
     params.user_id = user.id
     return Admin.getBusiness(params)
@@ -347,6 +363,16 @@ class AdminController {
 
   async exportSales({ params }) {
     return Order.exportSales(params)
+  }
+
+  async exportCategories({ params }) {
+    const payload = await validator.validate({
+      schema: schema.create({
+        id: schema.number()
+      }),
+      data: params
+    })
+    return Admin.exportCategories(payload)
   }
 
   async exportCaByProjectId({ params }) {
@@ -1247,25 +1273,17 @@ class AdminController {
   }
 
   async redoCheckAddress({ params, user }) {
-    enum Transporters {
-      all = 'all',
-      daudin = 'daudin',
-      diggers = 'diggers',
-      whiplash = 'whiplash',
-      whiplash_uk = 'whiplash_uk',
-      sna = 'sna',
-      soundmerch = 'soundmerch',
-      shipehype = 'shipehype'
-    }
-
     try {
       params.projectId = params.id
       const payload = await validator.validate({
         schema: schema.create({
           projectId: schema.number(),
-          transporter_choice: schema.enumSet(Object.values(Transporters))
+          transporters: schema.array().members(schema.string())
         }),
-        data: params
+        data: {
+          ...params,
+          transporters: params.transporter_choice
+        }
       })
       return Admin.redoCheckAddress({ ...payload, user })
     } catch (err) {

@@ -1468,6 +1468,7 @@ class Mockup {
       ctx.fillStyle = params.color
       ctx.fill()
 
+      console.log(params.picture)
       if (params.picture) {
         await this.drawImage({
           ctx: ctx,

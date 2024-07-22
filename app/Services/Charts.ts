@@ -203,10 +203,6 @@ class Charts {
       date: params.date
     })
 
-    if (orders.length === 0) {
-      return ''
-    }
-
     const columns = [
       'Retailer Name',
       'Shop ID',
@@ -419,7 +415,8 @@ class Charts {
     const countries = {
       ES: null,
       DE: null,
-      NL: null
+      NL: null,
+      IT: null
     }
 
     for (const country of Object.keys(countries)) {
@@ -454,6 +451,8 @@ class Charts {
             filename = `29021_DE_${date.format('YYYYMMDD')}_V24.txt`
           } else if (country === 'NL') {
             filename = `55015_NL_${date.format('YYYYMMDD')}_V24.txt`
+          } else if (country === 'IT') {
+            filename = `89998_IT_${date.format('YYYYMMDD')}_V24.txt`
           }
           console.log('filename =>', filename)
           client.put(Buffer.from(countries[country]), filename)

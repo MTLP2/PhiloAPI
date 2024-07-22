@@ -100,7 +100,7 @@ class App {
       await Notification.sendEmail({
         to: 'victor@diggersfactory.com',
         subject: 'Error daily task',
-        html: err.message
+        html: err.stack.replace(/\n/g, '<br />')
       })
       throw err
     }
@@ -185,7 +185,7 @@ class App {
       await Notification.sendEmail({
         to: 'victor@diggersfactory.com',
         subject: 'Error hourly task',
-        html: err.message
+        html: err.stack.replace(/\n/g, '<br />')
       })
       throw err
     }
@@ -224,7 +224,7 @@ class App {
       await Notification.sendEmail({
         to: 'victor@diggersfactory.com',
         subject: 'Error minutely task',
-        html: err.message
+        html: err.stack.replace(/\n/g, '<br />')
       })
       throw err
     }
@@ -337,6 +337,12 @@ class App {
     if (isFloat(data.KRW)) {
       await DB('currency').where('id', 'KRW').update({
         value: data.KRW,
+        updated_at: Utils.date()
+      })
+    }
+    if (isFloat(data.JPY)) {
+      await DB('currency').where('id', 'JPY').update({
+        value: data.JPY,
         updated_at: Utils.date()
       })
     }
@@ -1492,7 +1498,7 @@ class App {
     const file = await workbook.xlsx.writeBuffer()
 
     await Notification.sendEmail({
-      to: 'alexis@diggersfactory.com,cyril@diggersfactory.com,theo@diggersfactory.com,victor@diggersfactory.com,olivia@diggersfactory.com,armory@diggersfactory.com',
+      to: 'alexis@diggersfactory.com,cyril@diggersfactory.com,thibault@diggersfactory.com,victor@diggersfactory.com,olivia@diggersfactory.com,armory@diggersfactory.com',
       subject: 'Etat des stocks',
       html: 'Fichier en pièce jointe',
       attachments: [

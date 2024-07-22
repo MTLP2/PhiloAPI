@@ -965,6 +965,8 @@ class Project {
         'project.picture as related_picture',
         'project.name as related_name',
         'project.artist_name as related_artist',
+        'project.slug as related_slug',
+        'project.category as related_category',
         'vod.is_shop',
         'vod.type',
         'vod.user_id as related_user',
@@ -2268,9 +2270,10 @@ class Project {
     for (const payment of payments) {
       const date = moment(payment.date).format(format)
 
-      if (moment(payment.date) > moment('2024-01-01')) {
-        payment.total = payment.total * payment.currency_rate
+      if (!payment.currency_rate) {
+        payment.currency_rate = 1
       }
+      payment.total = payment.total * payment.currency_rate
       if (payment.receiver === 'artist') {
         s.addList('artist', 'payments', date, payment.total, payment.project_id)
         s.setDate('artist', 'payments', date, payment.total)

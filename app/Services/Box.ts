@@ -1506,6 +1506,19 @@ class Box {
         continue
       }
 
+      const cards = await stripe.paymentMethods.list({
+        customer: box.stripe_customer,
+        type: 'card'
+      })
+
+      if (!cards.data[0]) {
+        console.log(`XXXXX -> ${box.id} -> No card`)
+        await DB('box').where('id', box.id).update({
+          step: 'finished'
+        })
+        continue
+      }
+
       await DB('box').where('id', box.id).update({
         step: 'monthly_pending'
       })
@@ -1548,11 +1561,6 @@ class Box {
         total: box.total,
         created_at: Utils.date(),
         updated_at: Utils.date()
-      })
-
-      const cards = await stripe.paymentMethods.list({
-        customer: box.stripe_customer,
-        type: 'card'
       })
 
       try {
@@ -2031,6 +2039,7 @@ class Box {
       res.prices[d.type][d.periodicity].AUD = d.AUD
       res.prices[d.type][d.periodicity].CAD = d.CAD
       res.prices[d.type][d.periodicity].KRW = d.KRW
+      res.prices[d.type][d.periodicity].JPY = d.JPY
     }
 
     if (sales) {
@@ -2066,6 +2075,11 @@ class Box {
         res.prices_discount[d.type][d.periodicity].KRW = Utils.round(
           res.prices[d.type][d.periodicity].KRW -
             res.prices[d.type][d.periodicity].KRW * (sales.value / 100),
+          0
+        )
+        res.prices_discount[d.type][d.periodicity].JPY = Utils.round(
+          res.prices[d.type][d.periodicity].JPY -
+            res.prices[d.type][d.periodicity].JPY * (sales.value / 100),
           0
         )
       }

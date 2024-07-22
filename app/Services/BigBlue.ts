@@ -119,7 +119,7 @@ class BigBlue {
           type: 'bigblue',
           comment: 'api',
           is_preorder: false,
-          quantity: stock.available
+          quantity: stock.available || 0
         })
       }
     }
@@ -330,7 +330,7 @@ class BigBlue {
         }
       }
 
-      const address = Utils.wrapText(order.address, ',', 35)
+      const address = Utils.wrapText(order.address, ' ', 35)
 
       const data = {
         order: {
@@ -342,7 +342,7 @@ class BigBlue {
           pickup_point:
             order.shipping_type === 'pickup'
               ? {
-                  id: pickup.number,
+                  id: pickup.number.toString(),
                   display_name: pickup.name,
                   postal: pickup.zip_coe,
                   country: pickup.country_id,
@@ -376,8 +376,6 @@ class BigBlue {
         method: 'POST',
         params: data
       })
-
-      console.log(res)
 
       if (res.code) {
         dispatchs.push({
@@ -455,7 +453,7 @@ class BigBlue {
 
     let updated = 0
     for (const order of orders) {
-      if (order.tracking_number) {
+      if (order.tracking_number && order.external_id) {
         const orderShop = await DB('order_shop').where('id', order.external_id).first()
         if (!orderShop || orderShop.tracking_link) {
           continue
@@ -871,7 +869,7 @@ class BigBlue {
 
     const currencies = await Utils.getCurrenciesApi(
       date + '-01',
-      'EUR,USD,GBP,PHP,AUD,CAD,KRW',
+      'EUR,USD,GBP,PHP,AUD,CAD,KRW,JPY',
       'EUR'
     )
 
@@ -895,16 +893,18 @@ class BigBlue {
     for (const [id, price] of Object.entries(orders) as any) {
       const pro = async () => {
         const order = await DB('order_shop').where('logistician_id', id).first()
-        if (!order || order.shipping_cost) {
+        if (!order) {
+          return
+        }
+        i++
+        if (order.shipping_cost) {
           marge += order.shipping - order.shipping_cost
-          console.log('return', id)
           return
         }
         order.shipping_cost = price * currencies[order.currency]
         marge += order.shipping - order.shipping_cost
         await order.save()
       }
-      i++
       promises.push(pro())
     }
     await Promise.all(promises)

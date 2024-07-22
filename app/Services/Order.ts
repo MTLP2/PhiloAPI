@@ -938,7 +938,7 @@ static toJuno = async (params) => {
       for (const item of params.items) {
         promises.push(async () => {
           const product = await DB('product')
-            .select('product.id', 'stock.id as stock_id', 'stock.quantity')
+            .select('product.id', 'product.bigblue_id', 'stock.id as stock_id', 'stock.quantity')
             .where('barcode', item.barcode)
             .leftJoin('stock', 'stock.product_id', 'product.id')
             .where('stock.type', params.transporter)
@@ -948,7 +948,7 @@ static toJuno = async (params) => {
             errors[item.barcode] = 'No product'
             return
           }
-          products[item.barcode] = product.id
+          products[item.barcode] = product
           if (params.transporter === 'whiplash' || params.transporter === 'whiplash_uk') {
             const items: any = await Whiplash.api(`/items/sku/${item.barcode}`)
             if (items.length === 0) {
@@ -1029,7 +1029,7 @@ static toJuno = async (params) => {
     for (const it of params.items) {
       await DB('order_manual_item').insert({
         order_manual_id: item.id,
-        product_id: products[it.barcode],
+        product_id: products[it.barcode].id,
         barcode: it.barcode,
         quantity: it.quantity
       })
@@ -1076,7 +1076,6 @@ static toJuno = async (params) => {
       }
       if (['bigblue'].includes(params.transporter)) {
         if (!item.logistician_id) {
-          console.log(params)
           const dispatch: any = await BigBlue.sync([
             {
               ...customer,
@@ -1091,6 +1090,8 @@ static toJuno = async (params) => {
               items: params.items.map((b) => {
                 return {
                   barcode: b.barcode,
+                  product: products[b.barcode].id,
+                  bigblue_id: products[b.barcode].bigblue_id,
                   quantity: b.quantity
                 }
               })
@@ -1159,7 +1160,7 @@ static toJuno = async (params) => {
       for (const b of params.items) {
         if (products[b.barcode]) {
           await Stock.save({
-            product_id: products[b.barcode],
+            product_id: products[b.barcode].id,
             type: params.transporter,
             quantity: -b.quantity,
             diff: true,
@@ -1581,7 +1582,8 @@ static toJuno = async (params) => {
         GBP: 0,
         AUD: 0,
         CAD: 0,
-        KRW: 0
+        KRW: 0,
+        JPY: 0
       },
       paypal: {
         EUR: 0,
@@ -1589,7 +1591,8 @@ static toJuno = async (params) => {
         GBP: 0,
         AUD: 0,
         CAD: 0,
-        KRW: 0
+        KRW: 0,
+        JPY: 0
       }
     }
 
@@ -1605,7 +1608,8 @@ static toJuno = async (params) => {
         GBP: Utils.round(payments.stripe.GBP),
         AUD: Utils.round(payments.stripe.AUD),
         CAD: Utils.round(payments.stripe.CAD),
-        KRW: Utils.round(payments.stripe.KRW)
+        KRW: Utils.round(payments.stripe.KRW),
+        JPY: Utils.round(payments.stripe.JPY)
       },
       {
         type: 'Paypal',
@@ -1614,7 +1618,8 @@ static toJuno = async (params) => {
         GBP: Utils.round(payments.paypal.GBP),
         AUD: Utils.round(payments.paypal.AUD),
         CAD: Utils.round(payments.paypal.CAD),
-        KRW: Utils.round(payments.paypal.KRW)
+        KRW: Utils.round(payments.paypal.KRW),
+        JPY: Utils.round(payments.paypal.JPY)
       }
     ]
 
@@ -1626,7 +1631,8 @@ static toJuno = async (params) => {
         { name: 'GBP', index: 'GBP' },
         { name: 'AUD', index: 'AUD' },
         { name: 'CAD', index: 'CAD' },
-        { name: 'KRW', index: 'KRW' }
+        { name: 'KRW', index: 'KRW' },
+        { name: 'JPY', index: 'JPY' }
       ],
       rows
     )

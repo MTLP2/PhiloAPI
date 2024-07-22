@@ -70,8 +70,23 @@ type Chat = {
   updated_at: Timestamp
 }
 
-type Customer = {
+type Client = {
   id: Generated<number>
+  name: string
+  email: string
+  country_id: string
+  created_at: Timestamp
+  updated_at: Timestamp
+}
+
+type ClientCustomer = {
+  id: Generated<number>
+  client_id: number
+  customer_id: number
+}
+
+type Customer = {
+  id?: Generated<number>
   type?: string
   name?: string
   firstname?: string
@@ -85,8 +100,8 @@ type Customer = {
   birthday?: string
   lng?: number
   lat?: number
-  created_at: Timestamp
-  updated_at: Timestamp
+  created_at?: Timestamp
+  updated_at?: Timestamp
 }
 
 type Digital = {
@@ -115,6 +130,14 @@ type Digital = {
     | 'refused'
     | 'in_process'
     | 'uploaded'
+  created_at: Timestamp
+  updated_at: Timestamp
+}
+
+type Invoice = {
+  id: Generated<number>
+  user_id: number
+  client_id: number
   created_at: Timestamp
   updated_at: Timestamp
 }
@@ -249,6 +272,8 @@ type Shop = {
 type User = {
   id: Generated<number>
   name: string
+  email: string | null
+  customer_id?: number
   created_at: Timestamp
   updated_at: Timestamp
 }
@@ -267,12 +292,15 @@ export type DB = {
   artist: Artist
   badge: Badge
   banner: Banner
+  client: Client
+  client_customer: ClientCustomer
   chat: Chat
   customer: Customer
   digital: Digital
   digital_action: DigitalAction
   digital_todo: DigitalTodo
   feedback: Feedback
+  invoice: Invoice
   label: Label
   order: Order
   order_item: OrderItem

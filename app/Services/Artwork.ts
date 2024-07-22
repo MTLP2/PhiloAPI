@@ -743,7 +743,8 @@ class Artwork {
         'vod.type_vinyl',
         'vod.color_vinyl',
         'vod.splatter1',
-        'vod.splatter2'
+        'vod.splatter2',
+        'vod.url_vinyl'
       )
       .join('vod', 'vod.project_id', 'project.id')
       .where('project.id', params.project_id)
@@ -788,6 +789,7 @@ class Artwork {
     color_vinyl: string
     splatter1: string
     splatter2: string
+    url_vinyl: string
   }) {
     const mockup = new Mockup({
       env: 'node',
@@ -796,14 +798,20 @@ class Artwork {
         return createCanvas(0, 0).getContext('2d')
       }
     })
+
     const disc: any = await mockup.drawDisc({
       type: project.type_vinyl,
       ligth: project.color_vinyl !== 'black',
-      color: project.color_vinyl,
-      color2: project.splatter1,
-      color3: project.splatter2,
-      label: `${Env.get('STORAGE_URL')}/projects/${project.picture}/label.jpg`
+      color: config.colors.vinyl[project.color_vinyl],
+      color2: config.colors.vinyl[project.splatter1],
+      color3: config.colors.vinyl[project.splatter2],
+      label: `${Env.get('STORAGE_URL')}/projects/${project.picture}/label.jpg`,
+      picture:
+        project.url_vinyl === '1'
+          ? `${Env.get('STORAGE_URL')}/projects/${project.picture}/disc.png`
+          : project.url_vinyl
     })
+
     // const fs = require('fs')
     // fs.writeFileSync('texture_disc.png', disc.toBuffer('image/png'), 'binary')
     await Storage.uploadImage(

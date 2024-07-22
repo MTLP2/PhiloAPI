@@ -11,24 +11,50 @@ import I18n from '@ioc:Adonis/Addons/I18n'
 import View from '@ioc:Adonis/Core/View'
 import Log from 'App/Services/Log'
 import Payments from './Payments'
+import Storage from 'App/Services/Storage'
 
 class Invoice {
   static async all(params) {
-    params.query = DB()
-      .select('invoice.*', 'c.name as company', 'c.firstname', 'c.lastname', 'c.country_id')
+    const query = DB()
+      .select(
+        'invoice.*',
+        'vod.com_id',
+        'c.name as company',
+        'c.firstname',
+        'c.lastname',
+        'c.country_id',
+        'order.payment_id as order_payment_id',
+        'order.payment_type as order_payment_type',
+        'order.transaction_id as order_transaction_id'
+      )
       .from('invoice')
       .leftJoin('customer as c', 'c.id', 'invoice.customer_id')
+      .leftJoin('vod', 'vod.project_id', 'invoice.project_id')
+      .leftJoin('order', 'order.id', 'invoice.order_id')
 
     if (!params.sort) {
-      params.query.orderBy('invoice.id', 'desc')
-    }
-    if (params.invoice_co) {
-      params.query.where((query) => {
-        query.where('compatibility', false).orWhere('invoice.name', 'like', `Commercial invoice%`)
-      })
+      query.orderBy('invoice.id', 'desc')
     }
 
-    return Utils.getRows(params)
+    const filters = params.filters ? JSON.parse(params.filters) : null
+    if (filters && filters.find((f) => f.name === 'resp_prod.name' || f.name === 'com.name')) {
+      params.resp = true
+    }
+    if (params.resp) {
+      query.leftJoin('user as com', 'com.id', 'vod.com_id')
+    }
+    if (params.invoice_co) {
+      query.where((query) => {
+        query.where('compatibility', false).orWhere('invoice.name', 'like', `Commercial invoice%`)
+      })
+    } else {
+      query.where('compatibility', true)
+    }
+
+    return Utils.getRows({
+      query,
+      ...params
+    })
   }
 
   static async find(id) {
@@ -40,12 +66,14 @@ class Invoice {
         'project.name as project_name',
         'project.artist_name',
         'production.name as prod_name',
-        'production.quantity as prod_quantity'
+        'production.quantity as prod_quantity',
+        'vod.user_id as project_user_id'
       )
       .from('invoice')
       .leftJoin('user', 'user.id', 'invoice.user_id')
       .leftJoin('project', 'project.id', 'invoice.project_id')
       .leftJoin('production', 'production.id', 'invoice.production_id')
+      .leftJoin('vod', 'vod.project_id', 'invoice.project_id')
       .hasMany('payment', 'payments', 'invoice_id')
       .where('invoice.id', id)
       .belongsTo('customer')
@@ -132,6 +160,7 @@ class Invoice {
     box_dispatch_id?: number
     invoice_to_payment?: boolean
     payment_type?: string
+    proof_payment_file?: string
     charge_id?: string
   }) {
     let invoice: any = DB('invoice')
@@ -217,6 +246,13 @@ class Invoice {
     invoice.updated_at = params.updated_at || Utils.date()
 
     await invoice.save()
+
+    if (params.proof_payment_file) {
+      const file = Utils.uuid()
+      Storage.upload(`proofs/${file}.jpg`, Buffer.from(params.proof_payment_file, 'base64'))
+      invoice.proof_payment = file
+      await invoice.save()
+    }
 
     log.save(invoice)
     if (invoice.date_payment) {
@@ -424,6 +460,9 @@ class Invoice {
       case 'KRW':
         invoice.currency = '₩'
         break
+      case 'JPY':
+        invoice.currency = '¥'
+        break
     }
     invoice.daudin = params.daudin
     invoice.number = invoice.code
@@ -568,7 +607,7 @@ class Invoice {
     return { success: true }
   }
 
-  static async export(params: { start: string; end: string }) {
+  static async export(params: { start: string; end: string; com_id: number }) {
     const workbook = new Excel.Workbook()
 
     const datas = await DB('invoice')
@@ -605,8 +644,14 @@ class Invoice {
       .leftJoin('order', 'order.id', 'order_id')
       .leftJoin('customer', 'customer.id', 'invoice.customer_id')
       .leftJoin('payment', 'payment.id', 'invoice.payment_id')
+      .leftJoin('vod', 'vod.project_id', 'invoice.project_id')
       .where('invoice.date', '>=', params.start)
       .where('invoice.date', '<=', params.end)
+      .where((query) => {
+        if (params.com_id) {
+          query.where('vod.com_id', params.com_id)
+        }
+      })
       .orderBy('invoice.date', 'asc')
       .where('compatibility', true)
       .all()
@@ -1047,6 +1092,14 @@ class Invoice {
           sub_total_eur: 0,
           tax_eur: 0,
           total_eur: 0
+        },
+        JPY: {
+          sub_total: 0,
+          tax: 0,
+          total: 0,
+          sub_total_eur: 0,
+          tax_eur: 0,
+          total_eur: 0
         }
       },
       paypal: {
@@ -1099,6 +1152,14 @@ class Invoice {
           total_eur: 0
         },
         KRW: {
+          sub_total: 0,
+          tax: 0,
+          total: 0,
+          sub_total_eur: 0,
+          tax_eur: 0,
+          total_eur: 0
+        },
+        JPY: {
           sub_total: 0,
           tax: 0,
           total: 0,

@@ -368,6 +368,7 @@ class Dispatch {
         'order_shop.shipping_cost',
         'order_shop.shipping',
         'order_shop.currency',
+        'order_shop.currency_rate',
         DB.raw('shipping - shipping_cost as diff'),
         DB.raw(
           '(SELECT sum(quantity) FROM order_item WHERE order_shop_id = order_shop.id) as quantity'
@@ -393,7 +394,14 @@ class Dispatch {
       query.orderBy('date_export', 'desc')
     }
 
-    return Utils.getRows<any>({ ...params, query: query })
+    const res = await Utils.getRows<any>({ ...params, query: query })
+    for (const row of res.data) {
+      row.shipping = row.shipping * row.currency_rate
+      row.shipping_cost = row.shipping_cost * row.currency_rate
+      row.diff = row.diff * row.currency_rate
+      row.currency = 'EUR'
+    }
+    return res
   }
 
   static extractCosts = async (params: {
@@ -418,6 +426,7 @@ class Dispatch {
       { header: 'shipping', key: 'shipping', width: 10 },
       { header: 'cost', key: 'shipping_cost', width: 10 },
       { header: 'diff', key: 'diff', width: 10 },
+      { header: 'currency', key: 'currency', width: 10 },
       { header: 'date', key: 'date_export', width: 20 }
     ]
 
@@ -523,7 +532,7 @@ class Dispatch {
       const price: any = {}
       for (const [key, value] of Object.entries(columns)) {
         const vv = row.getCell(value).text
-        price[key] = vv === 'NULL' ? null : !isNaN(vv) ? Utils.round(vv) : vv
+        price[key] = vv === '00' ? '00' : vv === 'NULL' ? null : !isNaN(vv) ? Utils.round(vv) : vv
       }
       prices.push(price)
       newPrices[`${price.country_id}_${price.partner}_${price.transporter}`] = true
@@ -1278,6 +1287,28 @@ class Dispatch {
         data: data
       }
     ])
+  }
+
+  static changeTransporterProject = async (params: {
+    project_id: number
+    from: string
+    to: string
+  }) => {
+    const res = await DB('order_shop')
+      .whereIn(
+        'id',
+        DB('order_item')
+          .where({ project_id: params.project_id })
+          .where('transporter', params.from)
+          .select('order_shop_id')
+          .query()
+      )
+      .update({ transporter: params.to })
+
+    return {
+      success: true,
+      count: res
+    }
   }
 }
 

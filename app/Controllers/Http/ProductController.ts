@@ -23,6 +23,17 @@ class ProductController {
     }
   }
 
+  async getProductsMerch({ params }) {
+    params.project_id = params.id
+    const payload = await validator.validate({
+      schema: schema.create({
+        project_id: schema.string()
+      }),
+      data: params
+    })
+    return Product.allMerch(payload)
+  }
+
   async getProduct({ params }) {
     const payload = await validator.validate({
       schema: schema.create({
@@ -43,6 +54,7 @@ class ProductController {
           barcode: schema.number.optional(),
           catnumber: schema.string.optional(),
           isrc: schema.string.optional(),
+          country_id: schema.string.optional(),
           hs_code: schema.string.optional(),
           parent_id: schema.number.optional(),
           size: schema.string.optional(),

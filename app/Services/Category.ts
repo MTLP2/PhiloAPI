@@ -32,6 +32,7 @@ class Category {
         'category.id as category_id',
         'p.id',
         'p.name',
+        'p.category',
         'p.slug',
         'p.artist_name',
         'p.color',

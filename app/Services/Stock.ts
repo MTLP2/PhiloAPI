@@ -31,6 +31,8 @@ class Stock {
           query.where((query) => {
             query.whereNull('size').orWhereIn('pp.product_id', Object.values(params.sizes))
           })
+        } else {
+          query.whereNull('parent_id')
         }
       })
       .all()
@@ -732,6 +734,7 @@ class Stock {
       .join('project_product', 'project_product.product_id', 'product.id')
       .join('vod', 'vod.project_id', 'project_product.project_id')
       .whereNotNull('product.barcode')
+      .where('vod.barcode', 'not like', '%,%')
       .hasMany('stock')
       .orderBy('vod.unit_cost')
       .all()

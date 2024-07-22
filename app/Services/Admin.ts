@@ -128,7 +128,7 @@ class Admin {
     if (filters) {
       for (const f in filters) {
         const filter = filters[f]
-        filter.value = decodeURIComponent(filter.value)
+        filter.value = decodeURIComponent(filter.value).replace(/'/g, "''")
         if (filter.name === 'customer.email') {
           projects.where((query) => {
             query.where('customer.email', 'LIKE', `%${filter.value}%`)
@@ -241,7 +241,8 @@ class Admin {
     if (filters) {
       for (const f in filters) {
         const filter = filters[f]
-        filter.value = decodeURIComponent(filter.value)
+        filter.value = decodeURIComponent(filter.value).replace(/'/g, "''")
+        console.log(filter.value)
         if (filter.name === 'customer.email') {
           projects.where((query) => {
             query.where('customer.email', 'LIKE', `%${filter.value}%`)
@@ -269,6 +270,7 @@ class Admin {
       }
     }
 
+    console.log(projects.toString())
     const res = await Utils.getRows<any>({ ...params, query: projects })
     return res
   }
@@ -553,7 +555,7 @@ class Admin {
         project.trans[order.transporter].sizes[order.size] += order.quantity
       }
       project.count += order.quantity
-      if (!order.date_export && order.type === 'vod') {
+      if (!order.date_export) {
         project.trans[order.transporter].to_send += order.quantity
       }
       if (order.item_id) {
@@ -599,6 +601,15 @@ class Admin {
 
     project.barcodes = barcodes
     project.historic = JSON.parse(project.historic)
+
+    project.check_address = {}
+    if (project.historic) {
+      for (const h of project.historic) {
+        if (h.type === 'status' && h.new === 'check_address') {
+          project.check_address[h.transporter] = h.date
+        }
+      }
+    }
     project.reviews = reviews
 
     return project
@@ -1185,6 +1196,9 @@ class Admin {
     vod.scheduled_end = params.scheduled_end
     vod.is_licence = params.is_licence
     vod.is_distrib = params.is_distrib
+    if (params.transporters_block) {
+      vod.transporters_block = params.transporters_block.join(',')
+    }
     vod.shipping_delay_reason = params.shipping_delay_reason
     vod.shipping_discount = params.shipping_discount
     vod.save_shipping = params.save_shipping
@@ -1363,22 +1377,14 @@ class Admin {
         date: Utils.date()
       })
     }
-    if (vod.step !== params.step) {
-      if (params.step === 'in_progress' && !vod.start) {
-        vod.start = Utils.date()
-      }
+    if (vod.status !== params.status) {
       vod.historic.push({
         type: 'status',
         user_id: params.user.id,
         old: vod.status,
-        new: `${params.status}${
-          params.transporter_choice
-            ? params.transporter_choice.includes('all')
-              ? ' (all)'
-              : ` (${params.transporter_choice.join(', ')})`
-            : ''
-        }`,
+        new: params.status,
         notif: params.notif,
+        transporter: params.transporter_choice || undefined,
         date: Utils.date()
       })
     }
@@ -1806,58 +1812,59 @@ class Admin {
     end?: string
     filters?: any
     user_id?: number
+    with_products?: boolean
   }) => {
+    const selects = [
+      DB.raw('(os.shipping - os.shipping_cost) as shipping_diff'),
+      DB.raw('ROUND(oi.total * order.currency_rate, 2) as euro_rate'),
+      'os.*',
+      'order.currency_rate',
+      'order.origin',
+      'order.promo_code',
+      'order.payment_type',
+      'order.refunded',
+      'order.total as o_total',
+      'order.transaction_id',
+      'order.status',
+      'order.payment_id',
+      'order.user_agent',
+      'order.user_contacted',
+      'os.total as os_total',
+      'os.is_paid',
+      'os.is_paused',
+      'os.ask_cancel',
+      'oi.id as item_id',
+      'oi.project_id',
+      'oi.total',
+      'oi.order_id',
+      'oi.order_shop_id',
+      'oi.quantity',
+      'oi.price',
+      'oi.size',
+      'oi.discount_code',
+      'oi.discount_code',
+      'project.artist_name',
+      'project.name as project_name',
+      'project.picture',
+      'user.name as user_name',
+      'user.email as user_email',
+      'user.picture as user_picture',
+      'user.newsletter as user_newsletter',
+      'user.is_pro',
+      'user.facebook_id',
+      'user.soundcloud_id',
+      'c.country_id',
+      'c.name',
+      'c.firstname',
+      'c.lastname',
+      'c.address',
+      'c.zip_code',
+      'c.city',
+      'c.state',
+      'c.phone',
+      DB.raw("CONCAT(c.firstname, ' ', c.lastname) AS user_infos")
+    ]
     const orders = DB('order_shop as os')
-      .select(
-        DB.raw('(os.shipping - os.shipping_cost) as shipping_diff'),
-        DB.raw('ROUND(oi.total * order.currency_rate, 2) as euro_rate'),
-        'os.*',
-        'order.currency_rate',
-        'order.origin',
-        'order.promo_code',
-        'order.payment_type',
-        'order.refunded',
-        'order.total as o_total',
-        'order.transaction_id',
-        'order.status',
-        'order.payment_id',
-        'order.user_agent',
-        'order.user_contacted',
-        'os.total as os_total',
-        'os.is_paid',
-        'os.is_paused',
-        'os.ask_cancel',
-        'oi.id as item_id',
-        'oi.project_id',
-        'oi.total',
-        'oi.order_id',
-        'oi.order_shop_id',
-        'oi.quantity',
-        'oi.price',
-        'oi.size',
-        'oi.discount_code',
-        'oi.discount_code',
-        'project.artist_name',
-        'project.name as project_name',
-        'project.picture',
-        'user.name as user_name',
-        'user.email as user_email',
-        'user.picture as user_picture',
-        'user.newsletter as user_newsletter',
-        'user.is_pro',
-        'user.facebook_id',
-        'user.soundcloud_id',
-        'c.country_id',
-        'c.name',
-        'c.firstname',
-        'c.lastname',
-        'c.address',
-        'c.zip_code',
-        'c.city',
-        'c.state',
-        'c.phone',
-        DB.raw("CONCAT(c.firstname, ' ', c.lastname) AS user_infos")
-      )
       .join('order_item as oi', 'os.id', 'oi.order_shop_id')
       .join('order', 'oi.order_id', 'order.id')
       .join('user', 'user.id', 'order.user_id')
@@ -1868,6 +1875,27 @@ class Admin {
         query.orWhere('os.is_external', true)
       })
 
+    if (params.with_products) {
+      orders.join('project_product as pp', 'pp.project_id', 'project.id')
+      orders.join('product', 'product.id', 'pp.product_id')
+      orders.where((query) => {
+        query.whereRaw('product.size like oi.size')
+        query.orWhereRaw(`oi.products LIKE CONCAT('%[',product.id,']%')`)
+        query.orWhere((query) => {
+          query.whereNull('product.size')
+          query.whereNotExists((query) => {
+            query.from('product as child').whereRaw('product.id = child.parent_id')
+          })
+        })
+      })
+      selects.push(
+        'product.barcode',
+        'product.hs_code',
+        'product.type as product_type',
+        'product.country_id as product_country',
+        'product.weight as product_weight'
+      )
+    }
     if (params.project_id) {
       orders.whereIn('oi.project_id', params.project_id.split(','))
     }
@@ -1923,9 +1951,8 @@ class Admin {
       for (let i = 0; i < filters.length; i++) {
         const filter = filters[i]
         if (filter) {
-          filter.value = decodeURIComponent(filter.value)
+          filter.value = decodeURIComponent(filter.value).replace(/'/g, "''")
           if (filter.name === 'user_infos') {
-            filter.value = decodeURIComponent(filter.value)
             orders.where((query) => {
               query.where(DB.raw(`CONCAT(c.firstname, ' ', c.lastname) LIKE '%${filter.value}%'`))
               query.orWhere(DB.raw(`CONCAT(c.lastname, ' ', c.firstname) LIKE '%${filter.value}%'`))
@@ -1955,6 +1982,8 @@ class Admin {
     if (params.user_id) {
       orders.where('user.id', params.user_id)
     }
+
+    orders.select(...selects)
 
     return Utils.getRows<any>({ ...params, query: orders, pagination: !!params.project_id })
   }
@@ -2098,11 +2127,41 @@ class Admin {
     return shop
   }
 
-  static saveOrder = async (params) => {
+  static saveOrder = async (params: {
+    id: number
+    comment: string
+    user_contacted: boolean
+    item_id: number
+    items: any
+    quantity: number
+  }) => {
     const order = await DB('order').find(params.id)
     order.comment = params.comment
     order.user_contacted = params.user_contacted
     order.updated_at = Utils.date()
+
+    if (params.item_id) {
+      const item = await DB('order_item')
+        .where('id', params.item_id)
+        .where('order_id', params.id)
+        .first()
+
+      if (item) {
+        const sizes = await Promise.all(
+          params.items.map(async (m) => {
+            const product = await DB('product').select('size').where('id', m.product_id).first()
+            return product.size
+          })
+        )
+
+        item.size = sizes.join(', ')
+        item.products = params.items.map((m) => m.product_id).join('][')
+        item.products = '[' + item.products + ']'
+        item.quantity = params.quantity
+        item.updated_at = Utils.date()
+        await item.save()
+      }
+    }
 
     await order.save()
     return order
@@ -2110,7 +2169,6 @@ class Admin {
 
   static saveOrderShop = async (params) => {
     const shop = await DB('order_shop').find(params.id)
-
     const customer = await Customer.save(params.customer)
     shop.customer_id = customer.id
 
@@ -2143,6 +2201,7 @@ class Admin {
   static extractOrders = async (params) => {
     params.size = 0
     params.project_id = params.id
+    params.with_products = true
     const data = await Admin.getOrders(params)
 
     return Utils.arrayToXlsx([
@@ -2153,9 +2212,12 @@ class Admin {
           { header: 'Project', key: 'project_name' },
           { header: 'Artist', key: 'artist_name' },
           { header: 'Quantity', key: 'quantity' },
+          { header: 'Unit price', key: 'price' },
           { header: 'Total', key: 'total' },
           { header: 'Currency', key: 'currency' },
           { header: 'Total Euro', key: 'euro_rate' },
+          { header: 'Barcode', key: 'barcode' },
+          { header: 'Type', key: 'type' },
           { header: 'Size', key: 'size' },
           { header: 'Promo', key: 'promo_code' },
           { header: 'Sales', key: 'discount_code' },
@@ -2164,7 +2226,13 @@ class Admin {
           { header: 'Name', key: 'user_name' },
           { header: 'Phone', key: 'phone' },
           { header: 'Step', key: 'step' },
+          { header: 'Product Country', key: 'product_country' },
+          { header: 'HS code', key: 'hs_code' },
+          { header: 'Product Weight', key: 'product_weight' },
           { header: 'Transporter', key: 'transporter' },
+          { header: 'Shipping Type', key: 'shipping_type' },
+          { header: 'Shipping', key: 'shipping' },
+          { header: 'Shipping Cost', key: 'shipping_cost' },
           { header: 'Date export', key: 'date_export' },
           { header: 'Tracking', key: 'tracking_number' },
           { header: 'Paid?', key: 'is_paid' },
@@ -2238,6 +2306,26 @@ class Admin {
       ],
       data.data
     )
+  }
+
+  static exportCategories = async (params: { id: number }) => {
+    const categories = await DB('category_project')
+      .select('project.id', 'project.name as project_name', 'project.artist_name')
+      .join('project', 'project.id', 'project_id')
+      .where('category_id', params.id)
+      .all()
+
+    return Utils.arrayToXlsx([
+      {
+        worksheetName: 'Categories',
+        columns: [
+          { header: 'ID', key: 'id' },
+          { header: 'Artist', key: 'artist_name' },
+          { header: 'Project', key: 'project_name' }
+        ],
+        data: categories
+      }
+    ])
   }
 
   static saveOrderItem = async (params) => {
@@ -4527,6 +4615,7 @@ class Admin {
       pp.stock = pp.is_shop
         ? stocks[pp.product_id]
         : pp.goal - pp.count - pp.count_distrib - pp.count_other
+
       pp.styles = pp.styles
         .split(',')
         .map((s) => ss[s])
@@ -5168,22 +5257,9 @@ class Admin {
 
   static redoCheckAddress = async (params: {
     projectId: number
-    transporter_choice: Transporters[]
+    transporters: string[]
     user: any
   }) => {
-    enum Transporters {
-      all = 'all',
-      daudin = 'daudin',
-      diggers = 'diggers',
-      whiplash = 'whiplash',
-      whiplash_uk = 'whiplash_uk',
-      sna = 'sna',
-      soundmerch = 'soundmerch',
-      shipehype = 'shipehype',
-      seko = 'seko',
-      rey_vinilo = 'rey_vinilo'
-    }
-
     // Check if current VOD has "check_address" status. Else, throw error
     const vod = await DB('vod')
       .select(
@@ -5206,12 +5282,7 @@ class Admin {
       .where('oi.project_id', vod.project_id)
       .where('oi.vod_id', vod.id)
       .where('os.is_paid', 1)
-      .whereIn(
-        'os.transporter',
-        params.transporter_choice.includes(Transporters.all)
-          ? Object.values(Transporters)
-          : params.transporter_choice
-      )
+      .whereIn('os.transporter', params.transporters)
       .whereNull('date_export')
       .all()
 
@@ -5257,13 +5328,8 @@ class Admin {
       type: 'status',
       user_id: params.user.id,
       old: vod.status,
-      new: `check_address ${
-        params.transporter_choice
-          ? params.transporter_choice.includes(Transporters.all)
-            ? ' (all)'
-            : ` (${params.transporter_choice.join(', ')})`
-          : ''
-      }`,
+      new: `check_address`,
+      transporter: params.transporters,
       notif: 1,
       date: Utils.date()
     })
@@ -5461,38 +5527,74 @@ class Admin {
   }
 
   static getProjectsToSync = async (params: { transporter: string }) => {
-    const query = DB('project')
-      .select(
-        'project.id',
-        'project.artist_name',
-        'project.name',
-        'project.picture',
-        'vod.picture_project',
-        DB('order_item as oi')
-          .select(DB.raw('sum(quantity)'))
-          .join('order_shop as os', 'os.id', 'oi.order_shop_id')
-          .whereRaw('project_id = project.id')
-          .whereNull('os.date_export')
-          .where('is_paid', true)
-          .where('os.transporter', params.transporter)
-          .as('to_sync')
-          .query(),
-        DB('stock')
-          .select(DB.raw('sum(quantity)'))
-          .join('project_product as pp', 'stock.product_id', 'pp.product_id')
-          .whereRaw('pp.project_id = project.id')
-          .where('is_preorder', false)
-          .where('type', params.transporter)
-          .as('stock')
-          .query()
-      )
-      .join('vod', 'vod.project_id', 'project.id')
-      .having('to_sync', '>', 0)
-      .having('stock', '>', 0)
-      .orderBy('to_sync', 'desc')
+    const trans = params.transporter.split(',')
 
-    const projects = await query.all()
-    return projects
+    const list: any[] = []
+    for (const transporter of trans) {
+      const query = DB('project')
+        .select(
+          'project.id',
+          'project.artist_name',
+          'project.name',
+          'project.picture',
+          'vod.picture_project',
+          'vod.historic',
+          'vod.transporters_block',
+          DB.raw(`'${transporter}' as transporter`),
+          DB('order_item as oi')
+            .select(DB.raw('sum(quantity)'))
+            .join('order_shop as os', 'os.id', 'oi.order_shop_id')
+            .join('customer', 'customer.id', 'os.user_id')
+            .whereNotIn('customer.country_id', ['RU', 'BY', 'UA', 'PS'])
+            .where('os.is_paused', false)
+            .whereRaw('project_id = project.id')
+            .whereNull('os.date_export')
+            .whereNull('logistician_id')
+            .where('is_paid', true)
+            .where('os.transporter', transporter)
+            .as('to_sync')
+            .query(),
+          DB('stock')
+            .select(DB.raw('min(quantity)'))
+            .join('project_product as pp', 'stock.product_id', 'pp.product_id')
+            .whereRaw('pp.project_id = project.id')
+            .where('is_preorder', false)
+            .where('type', transporter)
+            .as('stock')
+            .query()
+        )
+        .join('vod', 'vod.project_id', 'project.id')
+        .having('to_sync', '>', 0)
+        .having('stock', '>', 0)
+        .orderBy('to_sync', 'desc')
+
+      list.push(...(await query.all()))
+    }
+
+    return list
+      .map((item) => {
+        const historic = JSON.parse(item.historic)
+        item.check_address = historic.find(
+          (h) =>
+            h.type === 'status' &&
+            h.new === 'check_address' &&
+            h.transporter &&
+            h.transporter.includes(item.transporter)
+        )?.date
+        item.blocked = item.transporters_block
+          ? item.transporters_block.split(',').includes(item.transporter)
+            ? '1'
+            : '0'
+          : '0'
+        delete item.historic
+        return item
+      })
+      .sort((a, b) => b.to_sync - a.to_sync)
+      .sort(
+        (a, b) =>
+          !a.check_address - !b.check_address ||
+          a.check_address?.substring(0, 10).localeCompare(b.check_address?.substring(0, 10))
+      )
   }
 }
 
