@@ -1206,7 +1206,7 @@ class Quote {
         )
     })
 
-    console.log(quote.prices.type_vinyl.surcharge)
+    console.log('surcharge', quote.prices.type_vinyl.surcharge)
 
     if (params.weight === '140') {
       quote.prices.type_vinyl.color =
