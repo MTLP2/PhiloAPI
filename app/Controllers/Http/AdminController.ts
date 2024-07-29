@@ -5,6 +5,7 @@ import Admin from 'App/Services/Admin'
 import DB from 'App/DB'
 import Notification from 'App/Services/Notification'
 import Order from 'App/Services/Order'
+import OrdersManual from 'App/Services/OrdersManual'
 import PromoCode from 'App/Services/PromoCode'
 import Goodie from 'App/Services/Goodie'
 import Sponsor from 'App/Services/Sponsor'
@@ -922,7 +923,7 @@ class AdminController {
   }
 
   getOrderManual({ params }) {
-    return Order.allManual(params)
+    return OrdersManual.all(params)
   }
 
   async findOrderManual({ params }) {
@@ -933,7 +934,7 @@ class AdminController {
         }),
         data: params
       })
-      return Order.findManual(payload)
+      return OrdersManual.find(payload)
     } catch (err) {
       return { error: err.message, validation: err.messages }
     }
@@ -976,7 +977,7 @@ class AdminController {
         }),
         data: params
       })
-      return Order.saveManual(payload)
+      return OrdersManual.save(payload)
     } catch (err) {
       return { error: err.message, validation: err.messages }
     }
@@ -999,7 +1000,7 @@ class AdminController {
         }),
         data: params
       })
-      return Order.getOrderManualInvoiceCo(payload)
+      return OrdersManual.getInvoiceCo(payload)
     } catch (err) {
       return { error: err.message, validation: err.messages }
     }
@@ -1014,14 +1015,14 @@ class AdminController {
         }),
         data: params
       })
-      return Order.packingList(payload)
+      return OrdersManual.packingList(payload)
     } catch (err) {
       return { error: err.message, validation: err.messages }
     }
   }
 
   deleteOrderManual({ params }) {
-    return Order.deleteManual(params)
+    return OrdersManual.delete(params)
   }
 
   getDaudinLines({ params }) {
@@ -1533,7 +1534,7 @@ class AdminController {
         }),
         data: params
       })
-      return Order.getColumnsManual(payload)
+      return OrdersManual.getColumns(payload)
     } catch (err) {
       return { error: err.message, validation: err.messages }
     }
@@ -1549,7 +1550,7 @@ class AdminController {
         }),
         data: params
       })
-      return Order.getBarcodesManual(payload)
+      return OrdersManual.getBarcodes(payload)
     } catch (err) {
       return { error: err.message, validation: err.messages }
     }
