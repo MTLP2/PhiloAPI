@@ -1928,6 +1928,56 @@ static toJuno = async (params) => {
     }
   }
 
+  static importOrdersStatus = async (params: {
+    file: string
+    action: string
+    user_id: number
+    transporters: string[]
+  }) => {
+    const file = Buffer.from(params.file, 'base64')
+    const workbook = new Excel.Workbook()
+    await workbook.xlsx.load(file)
+
+    const worksheet = workbook.getWorksheet(1)
+
+    const orders: {
+      id: string
+      date_export: string
+      tracking_number: string
+      tracking_link: string
+    }[] = []
+    worksheet.eachRow((row) => {
+      const data = {
+        id: row.getCell('A').text,
+        date_export: row.getCell('B').text,
+        tracking_number: row.getCell('C').text,
+        tracking_link: row.getCell('D').text
+      }
+      orders.push(data)
+    })
+    let i = 0
+    for (const order of orders) {
+      const o = await DB('order_shop').find(order.id)
+      if (!o) {
+        continue
+      }
+      o.step = 'sent'
+      o.date_export = order.date_export
+      o.tracking_number = order.tracking_number
+      o.tracking_link = order.tracking_link
+      await o.save()
+
+      await Notification.add({
+        type: 'my_order_sent',
+        user_id: o.user_id,
+        order_id: o.order_id,
+        order_shop_id: o.id
+      })
+      i++
+    }
+    return { count: i, success: true }
+  }
+
   static createExternalOrders = async () => {
     const workbook = new Excel.Workbook()
     await workbook.xlsx.readFile('orders.xlsx')

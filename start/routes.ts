@@ -429,6 +429,7 @@ Route.group(() => {
   Route.get('/ca-export', 'AdminController.exportCaByProjectId')
   Route.get('/reviews-export', 'AdminController.exportReviews')
   Route.post('/orders/import', 'AdminController.importOrders')
+  Route.post('/orders/status', 'AdminController.importOrdersStatus')
   Route.post('/orders/:id', 'AdminController.saveOrderShop')
   Route.post('/orders/:id/sync', 'AdminController.syncOrder')
   Route.post('/orders/:id/items', 'AdminController.saveOrderItem')
