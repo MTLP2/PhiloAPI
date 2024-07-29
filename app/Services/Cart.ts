@@ -1844,7 +1844,7 @@ class Cart {
     const hasBox = params.calculate.boxes && params.calculate.boxes.length > 0
     const intent: any = {
       amount:
-        params.calculate.currency === 'KRW'
+        params.calculate.currency === 'KRW' || params.calculate.currency === 'JPY'
           ? Math.round(params.calculate.total)
           : Math.round(params.calculate.total * 100),
       currency: params.calculate.currency,
