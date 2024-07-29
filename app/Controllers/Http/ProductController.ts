@@ -151,6 +151,17 @@ class ProductController {
     })
     return Product.createItems(payload)
   }
+
+  async getStocks({ params }) {
+    const payload = await validator.validate({
+      schema: schema.create({
+        products: schema.string(),
+        logistician: schema.string()
+      }),
+      data: params
+    })
+    return Product.getStocks(payload)
+  }
 }
 
 export default ProductController

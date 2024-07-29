@@ -813,6 +813,20 @@ class Product {
 
     return products
   }
+
+  static getStocks = async (params: { products: string; logistician: string }) => {
+    const stocks = await DB('stock')
+      .whereIn('product_id', params.products.split(','))
+      .where('type', params.logistician)
+      .where('is_preorder', false)
+      .all()
+
+    const res = {}
+    for (const stock of stocks) {
+      res[stock.product_id] = stock.quantity
+    }
+    return res
+  }
 }
 
 export default Product
