@@ -243,6 +243,7 @@ type ShippingWeight = {
   '28kg'?: number | null
   '29kg'?: number | null
   '30kg'?: number | null
+  '50kg'?: number | null
   'created_at': Timestamp
   'updated_at': Timestamp
 }

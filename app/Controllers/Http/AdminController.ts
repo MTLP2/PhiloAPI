@@ -1391,7 +1391,8 @@ class AdminController {
         '27kg': schema.number.nullableAndOptional(),
         '28kg': schema.number.nullableAndOptional(),
         '29kg': schema.number.nullableAndOptional(),
-        '30kg': schema.number.nullableAndOptional()
+        '30kg': schema.number.nullableAndOptional(),
+        '50kg': schema.number.nullableAndOptional()
       }),
       data: params
     })
@@ -1427,6 +1428,10 @@ class AdminController {
 
   importOrders({ params }) {
     return Order.importOrders(params)
+  }
+
+  importOrdersStatus({ params }) {
+    return Order.importOrdersStatus(params)
   }
 
   getUserStock({ params }) {
