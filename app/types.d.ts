@@ -201,6 +201,14 @@ type OrderItem = {
   updated_at: Timestamp
 }
 
+type OrderManual = {
+  id: Generated<number>
+  user_id: number
+  client_id: number
+  created_at: Timestamp
+  updated_at: Timestamp
+}
+
 type ShippingWeight = {
   'id': Generated<number>
   'country_id': string
@@ -305,6 +313,7 @@ export type DB = {
   label: Label
   order: Order
   order_item: OrderItem
+  order_manual: OrderManual
   order_shop: OrderShop
   shipping_weight: ShippingWeight
   shop: Shop
