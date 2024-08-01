@@ -260,7 +260,7 @@ class User {
     const users = DB().from('user')
 
     if (params.with_address) {
-      users.select('id', 'name', 'customer_id', 'customer_invoice_id', 'slug')
+      users.select('id', 'name', 'email', 'customer_id', 'customer_invoice_id', 'slug')
       users
         .belongsTo('customer')
         .belongsTo('customer', '*', 'customer_invoice', 'customer_invoice_id')
