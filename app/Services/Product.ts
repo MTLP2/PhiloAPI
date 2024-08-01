@@ -814,16 +814,19 @@ class Product {
     return products
   }
 
-  static getStocks = async (params: { products: string; logistician: string }) => {
+  static getStocks = async (params: { products: string }) => {
     const stocks = await DB('stock')
       .whereIn('product_id', params.products.split(','))
-      .where('type', params.logistician)
       .where('is_preorder', false)
+      .whereIn('type', ['whiplash', 'whiplash_uk', 'daudin', 'bigblue'])
       .all()
 
     const res = {}
     for (const stock of stocks) {
-      res[stock.product_id] = stock.quantity
+      if (!res[stock.product_id]) {
+        res[stock.product_id] = {}
+      }
+      res[stock.product_id][stock.type] = stock.quantity
     }
     return res
   }
