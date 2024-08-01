@@ -2124,6 +2124,19 @@ class Admin {
       .join('vod', 'project.id', 'vod.project_id')
       .all()
 
+    shop.products = await DB('product')
+      .select(
+        'order_item.quantity',
+        'product.id',
+        'product.name',
+        'product.size',
+        'product.barcode'
+      )
+      .join('project_product', 'project_product.product_id', 'product.id')
+      .join('order_item', 'order_item.project_id', 'project_product.project_id')
+      .where('order_item.order_shop_id', id)
+      .all()
+
     return shop
   }
 
