@@ -4,7 +4,7 @@ import Utils from 'App/Utils'
 import Customers from './Customer'
 
 class Clients {
-  static all = (params: {
+  static all = async (params: {
     filters?: string | object
     sort?: string
     order?: string
@@ -15,7 +15,7 @@ class Clients {
       params.sort = 'id'
       params.order = 'desc'
     }
-    return Utils.getRows2({
+    const res = await Utils.getRows2({
       query: db.selectFrom('client').selectAll(),
       filters: params.filters,
       sort: params.sort,
@@ -23,6 +23,41 @@ class Clients {
       size: params.size,
       page: params.page
     })
+
+    let addresss = db
+      .selectFrom('client_customer')
+      .select([
+        'client_customer.client_id',
+        'customer.id',
+        'customer.type',
+        'customer.name',
+        'customer.firstname',
+        'customer.lastname',
+        'customer.address',
+        'customer.phone',
+        'customer.email',
+        'customer.zip_code',
+        'customer.phone',
+        'customer.city',
+        'customer.state',
+        'customer.country_id'
+      ])
+      .innerJoin('customer', 'client_customer.customer_id', 'customer.id')
+
+    if (res.data.length > 0) {
+      addresss = addresss.where(
+        'client_id',
+        'in',
+        res.data.map((row) => row.id)
+      )
+    }
+
+    addresss = await addresss.execute()
+    for (const i in res.data) {
+      res.data[i].addresses = addresss.filter((address) => address.client_id === res.data[i].id)
+    }
+
+    return res
   }
 
   static async find(params: { id: number }) {
@@ -107,15 +142,22 @@ class Clients {
         .trim()
         .split(/[\s,\t,\n]+/)
         .join(' ')
-      if (!cc[`${client.name}`]) {
-        cc[`${client.name}`] = []
+
+      const slug = client.name
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+      if (!cc[`${slug}`]) {
+        cc[`${slug}`] = []
       }
-      cc[`${client.name}`].push(client)
+      cc[`${slug}`].push(client)
     }
+
     for (const key in cc) {
       const client = cc[key][0]
       const data = {
-        name: key,
+        name: client.name,
         email: client.email,
         country_id: client.country_id,
         created_at: client.created_at,
@@ -127,6 +169,12 @@ class Clients {
       for (const customer of cc[key]) {
         await db
           .updateTable('invoice')
+          .where('user_id', '=', customer.id)
+          .set({ client_id: parseInt(insertId as unknown as string) })
+          .execute()
+
+        await db
+          .updateTable('order_manual')
           .where('user_id', '=', customer.id)
           .set({ client_id: parseInt(insertId as unknown as string) })
           .execute()
