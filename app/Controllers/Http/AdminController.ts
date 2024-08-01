@@ -953,13 +953,18 @@ class AdminController {
           comment: schema.string.optional(),
           order_shop_id: schema.number.optional(),
           tracking_number: schema.string.optional(),
+          shipping_cost: schema.number.optional(),
+          purchase_order: schema.string.optional(),
+          invoice_number: schema.string.optional(),
+          missing_items: schema.string.optional(),
           user_id: schema.number.optional(),
           step: schema.string.optional(),
           force: schema.boolean.optional(),
           items: schema.array().members(
             schema.object().members({
               barcode: schema.number(),
-              quantity: schema.number()
+              quantity: schema.number(),
+              stock: schema.number.optional()
             })
           ),
           customer: schema.object().members({
@@ -1021,8 +1026,8 @@ class AdminController {
     }
   }
 
-  deleteOrderManual({ params }) {
-    return OrdersManual.delete(params)
+  cancelOrderManual({ params }) {
+    return OrdersManual.cancel(params)
   }
 
   getDaudinLines({ params }) {

@@ -39,6 +39,18 @@ class OrdersManual {
         filters.splice(i, 1)
         filters = JSON.stringify(filters)
       }
+      if (filters[i].name === 'product') {
+        query.whereExists(
+          DB('order_manual_item')
+            .select('product.id')
+            .whereRaw('order_manual_item.order_manual_id = order_manual.id')
+            .join('product', 'product.id', 'order_manual_item.product_id')
+            .whereRaw(`product.name like '%${filters[i].value}%'`)
+            .query()
+        )
+        filters.splice(i, 1)
+        filters = JSON.stringify(filters)
+      }
     }
 
     const rows: any = await Utils.getRows({
@@ -47,10 +59,27 @@ class OrdersManual {
       query: query
     })
 
+    const ids = {}
+    for (const i in rows.data) {
+      for (const item of rows.data[i].items) {
+        if (item.product_id) {
+          ids[item.product_id] = true
+        }
+      }
+    }
+    const products = await DB('product').select('id', 'name').whereIn('id', Object.keys(ids)).all()
+
     for (const i in rows.data) {
       rows.data[i].address_pickup = rows.data[i].address_pickup
         ? JSON.parse(rows.data[i].address_pickup)
         : null
+
+      rows.data[i].items = rows.data[i].items.map((item: any) => {
+        return {
+          ...item,
+          product: products.find((p: any) => p.id === item.product_id)
+        }
+      })
     }
     return rows
   }
@@ -86,11 +115,16 @@ class OrdersManual {
     tracking_number?: string
     comment?: string
     user_id?: number
+    client_id?: number
+    shipping_cost?: number
+    purchase_order?: string
+    invoice_number?: string
+    missing_items?: string
     step?: string
-    force?: boolean
     items: {
       barcode: number
       quantity: number
+      stock: number
     }[]
     customer: CustomerDb
   }) => {
@@ -111,11 +145,34 @@ class OrdersManual {
 
     const products = {}
 
-    if (!params.force && !item.date_export) {
+    let items = [...params.items]
+    const missingItems = params.items
+      .filter((i) => !i.stock || i.quantity > i.stock)
+      .map((i) => {
+        return {
+          barcode: i.barcode,
+          quantity: i.quantity - (i.stock || 0),
+          stock: i.stock
+        }
+      })
+
+    if (
+      params.missing_items === 'another_order_with_items' ||
+      params.missing_items === 'only_available'
+    ) {
+      for (const i in items) {
+        items[i].quantity = items[i].stock
+      }
+      items = items.filter((i) => i.quantity > 0)
+    } else if (params.missing_items === 'without_items') {
+      items = items.filter((i) => i.quantity <= i.stock)
+    }
+
+    if (!item.date_export) {
       const errors = {}
       const promises: (() => Promise<void>)[] = [] as any
 
-      for (const item of params.items) {
+      for (const item of items) {
         promises.push(async () => {
           const product = await DB('product')
             .select('product.id', 'product.bigblue_id', 'stock.id as stock_id', 'stock.quantity')
@@ -177,36 +234,18 @@ class OrdersManual {
     item.order_shop_id = params.order_shop_id || null
     item.tracking_number = params.tracking_number || null
     item.user_id = params.user_id || null
+    item.client_id = params.client_id || null
+    item.purchase_order = params.purchase_order || null
+    item.shipping_cost = params.shipping_cost || null
+    item.invoice_number = params.invoice_number || null
     item.updated_at = Utils.date()
-
-    if (params.email && !params.user_id) {
-      const user = await DB('user').where('email', 'like', params.email).first()
-      if (user) {
-        item.user_id = user.id
-      }
-    }
-
-    if (params.user_id === 0) {
-      const cus = await Customer.save(params.customer)
-
-      const [userId] = await DB('user').insert({
-        name: params.customer.name || `${params.customer.firstname} ${params.customer.lastname}`,
-        customer_invoice_id: cus.id,
-        country_id: params.customer.country_id,
-        email: null,
-        created_at: Utils.date(),
-        updated_at: Utils.date()
-      })
-
-      item.user_id = userId
-    }
 
     const customer = await Customer.save(params.customer)
     item.customer_id = customer.id
     await item.save()
 
     await DB('order_manual_item').where('order_manual_id', item.id).delete()
-    for (const it of params.items) {
+    for (const it of items) {
       await DB('order_manual_item').insert({
         order_manual_id: item.id,
         product_id: products[it.barcode].id,
@@ -229,7 +268,7 @@ class OrdersManual {
               address_pickup: params.address_pickup,
               created_at: item.created_at,
               email: item.email,
-              items: params.items.map((b) => {
+              items: items.map((b) => {
                 return {
                   barcode: b.barcode,
                   quantity: b.quantity
@@ -267,7 +306,7 @@ class OrdersManual {
               address_pickup: params.address_pickup,
               created_at: item.created_at,
               email: item.email,
-              items: params.items.map((b) => {
+              items: items.map((b) => {
                 return {
                   barcode: b.barcode,
                   product: products[b.barcode].id,
@@ -310,7 +349,7 @@ class OrdersManual {
           order_items: []
         }
 
-        for (const b of params.items) {
+        for (const b of items) {
           const item = await Whiplash.findItem(b.barcode)
           if (item.error) {
             return { error: `Whiplash not found ${b.barcode} ` }
@@ -337,7 +376,7 @@ class OrdersManual {
         }
       }
 
-      for (const b of params.items) {
+      for (const b of items) {
         if (products[b.barcode]) {
           await Stock.save({
             product_id: products[b.barcode].id,
@@ -356,6 +395,16 @@ class OrdersManual {
           order_manual_id: item.id
         })
       }
+    }
+
+    if (params.missing_items === 'another_order_with_items') {
+      await OrdersManual.save({
+        ...params,
+        id: undefined,
+        step: 'pending',
+        missing_items: undefined,
+        items: missingItems
+      })
     }
 
     return item
@@ -387,8 +436,18 @@ class OrdersManual {
     return columns
   }
 
-  static delete = (params: { id: number }) => {
-    return DB('order_manual').where('id', params.id).delete()
+  static cancel = async (params: { id: number }) => {
+    const order = await DB('order_manual').find(params.id)
+
+    if (order.date_export) {
+      order.step = 'cancelled'
+      await order.save()
+      return { success: true }
+    } else {
+      await DB('order_manual_item').where('order_manual_id', params.id).delete()
+      await DB('order_manual').where('id', params.id).delete()
+      return { success: true }
+    }
   }
 
   static getBarcodes = async (params: { file: any; barcode: string; quantity: string }) => {
@@ -399,16 +458,36 @@ class OrdersManual {
     const items: {
       barcode: string
       quantity: string
+      product_id: number | null
+      name: string | null
     }[] = []
 
     worksheet.eachRow((row, rowNumber) => {
       if (rowNumber > 1) {
         items.push({
           barcode: row.getCell(params.barcode).text,
-          quantity: row.getCell(params.quantity).text
+          quantity: row.getCell(params.quantity).text,
+          product_id: null,
+          name: null
         })
       }
     })
+
+    const products = await DB('product')
+      .select('id', 'barcode', 'name')
+      .whereIn(
+        'barcode',
+        items.map((i) => i.barcode)
+      )
+      .all()
+
+    for (const i in items) {
+      const product = products.find((p) => p.barcode === items[i].barcode)
+      if (product) {
+        items[i].product_id = product.id
+        items[i].name = product.name
+      }
+    }
 
     return items
   }
