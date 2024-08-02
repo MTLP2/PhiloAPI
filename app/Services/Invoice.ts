@@ -733,6 +733,8 @@ class Invoice {
     invoice.year = moment().format('YY')
     invoice.date = moment().format('YYYY-MM-DD')
     invoice.type = params.type
+    invoice.date_payment = null
+    invoice.proof_payment = null
     invoice.status = 'invoiced'
 
     const customer = await Customer.save({
