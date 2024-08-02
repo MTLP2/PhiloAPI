@@ -16,6 +16,8 @@
   "service_charge": "Frais de service",
   "price_ht": "Montant HT",
   "total": "Total",
+  "hs_code": "Code HS",
+  "origin": "Origine",
   "tips": "Donation",
   "tva_rate": "Taux de TVA applicable",
   "sub_total": "Sous-total",

@@ -94,7 +94,13 @@ class OrdersManual {
       .first()
 
     item.items = await DB('order_manual_item')
-      .select('order_manual_item.*', 'product.name')
+      .select(
+        'order_manual_item.*',
+        'product.name',
+        'product.hs_code',
+        'product.country_id',
+        'product.more'
+      )
       .leftJoin('product', 'product.id', 'order_manual_item.product_id')
       .where('order_manual_id', item.id)
       .all()
@@ -498,7 +504,7 @@ class OrdersManual {
     products: {
       barcode: number
       quantity: number
-      title?: string
+      name?: string
       price: number
     }[]
   }) => {
@@ -524,12 +530,17 @@ class OrdersManual {
     invoice.total = total
     invoice.invoice_comment = order.comment ? order.comment.split('\n') : []
     invoice.lines = []
-    invoice.lines = params.products.map((prod) => {
+    invoice.lines = params.products.map((item) => {
+      const product = order.items.find((i) => +i.barcode === +item.barcode)
       return {
-        name: prod.title || prod.barcode || '',
-        price: prod.price,
-        quantity: prod.quantity,
-        total: prod.price * prod.quantity
+        barcode: item.barcode,
+        country_id: product?.country_id,
+        more: product?.more,
+        name: product?.name,
+        hs_code: product?.hs_code,
+        price: item.price,
+        quantity: item.quantity,
+        total: item.price * item.quantity
       }
     })
 

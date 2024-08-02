@@ -55,6 +55,7 @@ class ProductController {
           catnumber: schema.string.optional(),
           isrc: schema.string.optional(),
           country_id: schema.string.optional(),
+          more: schema.string.optional(),
           hs_code: schema.string.optional(),
           parent_id: schema.number.optional(),
           size: schema.string.optional(),

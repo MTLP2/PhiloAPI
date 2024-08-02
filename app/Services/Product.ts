@@ -214,6 +214,7 @@ class Product {
     size?: string
     hs_code?: string
     country_id?: string
+    more?: string
     color?: string
     weight?: number
   }) {
@@ -243,6 +244,7 @@ class Product {
     item.isrc = params.isrc
     item.hs_code = params.hs_code
     item.country_id = params.country_id
+    item.more = params.more
     item.parent_id = params.parent_id
     item.size = params.size
     item.color = params.color

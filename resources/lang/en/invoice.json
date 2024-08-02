@@ -18,6 +18,8 @@
   "price_ht": "Montant HT",
   "tva_rate": "VAT Rate",
   "sub_total": "Sub-total",
+  "hs_code": "HS Code",
+  "origin": "Origin",
   "total": "Total",
   "total_ht": "Total excl. VAT",
   "total_tva": "VAT",

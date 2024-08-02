@@ -9,10 +9,11 @@
     }
     body,
     html {
-      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font-family: Arial;
       font-size: 10px;
       padding: 0px;
       margin: 0px;
+      letter-spacing: -0.2px;
       zoom: 0.95;
     }
     .invoice {
@@ -39,7 +40,7 @@
     }
     table.table td, table.table th {
       vertical-align: top;
-      padding: 5px;
+      padding: 2px 5px;
     }
     table.table td {
       color: #888;
@@ -50,12 +51,11 @@
       text-align: left;
     }
     table.border td, table.border th {
-      padding: 7px 20px;
+      padding: 6px 8px;
     }
     tr.header {
       background: #ffd21e;
       color: #000;
-      text-transform: uppercase;
       text-align: center;
     }
     table.lines td.color {
@@ -67,16 +67,17 @@
     }
     table.lines {
       border-collapse: collapse;
-      background: #F5F5F5;
+      background: #F9F9F9;
       width: 100%;
       text-align: left;
     }
     table.lines th {
       text-align: left;
-      padding: 7px 15px;
+      padding: 6px 6px;
     }
     table.lines td {
-      padding: 7px 15px;
+      padding: 4px 6px;
+      border: 1px solid #DDD;
     }
     .nowrap {
       white-space: nowrap;
@@ -137,7 +138,6 @@
     </tr>
   </table>
 
-  <br class="clear" />
   <table style="width: 100%">
     <tr>
       @if(daudin)
@@ -235,15 +235,17 @@
   </table>
 
   <br />
-  <br />
   <table class="lines">
-    @if(ean)
+    @if(!compatibility)
     <tr class="header">
       <th>{{ t('invoice.ean13') }}</th>
       <th>{{ t('invoice.wording') }}</th>
+      <th>{{ t('invoice.hs_code') }}</th>
+      <th>{{ t('invoice.origin') }}</th>
+      <th></th>
+      <th class="price">{{ t('invoice.unit_price') }}</th>
       <th class="price">{{ t('invoice.quantity') }}</th>
-      <th class="price">{{ t('invoice.price_unit') }}</th>
-      <th class="price">{{ t('invoice.amount') }}</th>
+      <th class="price">{{ t('invoice.total') }}</th>
     </tr>
     @else
     <tr class="header">
@@ -255,13 +257,16 @@
     @endif
 
     @each(line in lines)
-      @if(ean)
+      @if(!compatibility)
       <tr>
-          <td>{{line.ean13}}</td>
+          <td>{{line.barcode}}</td>
           <td>{{line.name}}</td>
+          <td>{{line.hs_code || ''}}</td>
+          <td>{{line.country_id || ''}}</td>
+          <td>{{line.more || ''}}</td>
+          <td class="nowrap">{{line.price}} {{currency}}</td>
           <td class="nowrap">{{line.quantity}}</td>
-          <td class="nowrap">{{line.price_unit}} {{currency}}</td>
-          <td class="nowrap">{{line.amount}} {{currency}}</td>
+          <td class="nowrap">{{line.total}} {{currency}}</td>
       </tr>
       @else
       <tr>
