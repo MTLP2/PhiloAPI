@@ -467,8 +467,10 @@ class Invoice {
     invoice.daudin = params.daudin
     invoice.number = invoice.code
     invoice.customer.country = country?.name || ''
+
     invoice.lines = Array.isArray(invoice.lines) ? invoice.lines : JSON.parse(invoice.lines)
     for (const i in invoice.lines) {
+      invoice.lines[i].price = invoice.lines[i].price || invoice.lines[i].price_unit
       invoice.lines[i].total = Utils.round(invoice.lines[i].price * invoice.lines[i].quantity)
       if (invoice.lines[i].ean13 !== undefined) {
         invoice.ean = true
