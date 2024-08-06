@@ -249,6 +249,9 @@
     </tr>
     @else
     <tr class="header">
+      @if (ean)
+        <th>{{ t('invoice.ean13') }}</th>
+      @endif
       <th width="70%">{{ t('invoice.operations') }}</th>
       <th>{{ t('invoice.unit_price') }}</th>
       <th>{{ t('invoice.quantity') }}</th>
@@ -270,6 +273,9 @@
       </tr>
       @else
       <tr>
+          @if(ean)
+            <td>{{line.ean13}}</td>
+          @endif
           <td>{{line.name}}</td>
           <td class="nowrap">{{line.price}} {{currency}}</td>
           <td class="nowrap">{{line.quantity}}</td>
