@@ -327,7 +327,10 @@
     EORI = GB914711637000<br />
   </p>
   @else 
-  <p align="right" class="medium">Code SH = 85238090<br />
+  <p align="right" class="medium">
+    @if(incoterm)
+    INCOTERM = {{incoterm}}<br />
+    @endif
     EORI = FR81364871400018<br />
     EORI UK = GB439120509000
   </p>

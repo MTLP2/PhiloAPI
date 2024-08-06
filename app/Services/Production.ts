@@ -2212,6 +2212,7 @@ class Production {
     invoice.name = 'Invoice co - ' + prod.artist_name + ' - ' + prod.name
     invoice.client = 'B2B'
     invoice.status = 'invoiced'
+    invoice.incoterm = params.incoterm
     invoice.category = 'shipping'
     invoice.sub_total = Utils.round(params.price * prod.quantity)
     invoice.tax = 0
@@ -2230,7 +2231,9 @@ class Production {
     await DB('production_dispatch').where('id', params.dispatch_id).update({
       invoice_id: res.id
     })
-    return (await Invoice.download({ params: { id: res.id, lang: 'en' } })).data
+    return (
+      await Invoice.download({ params: { id: res.id, lang: 'en', incoterm: params.incoterm } })
+    ).data
   }
 
   static async packingList(params) {

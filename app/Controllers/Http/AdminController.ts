@@ -994,6 +994,7 @@ class AdminController {
         schema: schema.create({
           id: schema.number(),
           type: schema.string.optional(),
+          incoterm: schema.string.optional(),
           products: schema.array().members(
             schema.object().members({
               barcode: schema.number(),

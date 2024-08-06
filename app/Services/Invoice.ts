@@ -141,6 +141,7 @@ class Invoice {
     email: string
     payment_days: number
     compatibility: boolean
+    incoterm?: string
     sub_total?: number
     margin?: number
     tax?: number
@@ -240,6 +241,7 @@ class Invoice {
     invoice.lines = params.invoice_to_payment ? params.lines : JSON.stringify(params.lines)
     invoice.payment_id = params.payment_id
     invoice.comment = params.comment
+    invoice.incoterm = params.incoterm
     invoice.resp_payment = params.resp_payment || null
     invoice.resp_accounting = params.resp_accounting || null
     invoice.updated_at = params.created_at || Utils.date()
@@ -465,6 +467,9 @@ class Invoice {
         break
     }
     invoice.daudin = params.daudin
+    if (params.incoterm) {
+      invoice.incoterm = params.incoterm
+    }
     invoice.number = invoice.code
     invoice.customer.country = country?.name || ''
 

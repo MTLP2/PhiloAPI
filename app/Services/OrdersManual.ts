@@ -99,7 +99,8 @@ class OrdersManual {
         'product.name',
         'product.hs_code',
         'product.country_id',
-        'product.more'
+        'product.more',
+        'product.type'
       )
       .leftJoin('product', 'product.id', 'order_manual_item.product_id')
       .where('order_manual_id', item.id)
@@ -501,6 +502,7 @@ class OrdersManual {
   static getInvoiceCo = async (params: {
     id: number
     type?: string
+    incoterm: string
     products: {
       barcode: number
       quantity: number
@@ -525,6 +527,7 @@ class OrdersManual {
     invoice.client = 'B2B'
     invoice.status = 'invoiced'
     invoice.category = 'shipping'
+    invoice.incoterm = params.incoterm
     invoice.sub_total = total
     invoice.tax = 0
     invoice.total = total
