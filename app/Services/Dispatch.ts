@@ -1311,6 +1311,8 @@ class Dispatch {
         DB('order_item')
           .where({ project_id: params.project_id })
           .where('transporter', params.from)
+          .whereNull('date_export')
+          .whereNull('logistician_id')
           .select('order_shop_id')
           .query()
       )
