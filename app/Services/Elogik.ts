@@ -397,6 +397,7 @@ class Elogik {
         codeServiceTransporteur: Elogik.getTransporter(order).id,
         dateCommande: order.created_at.replace(' ', 'T') + 'P',
         numeroLogo: 1,
+        codeTypeClient: order.name ? 'ENTREPRISE' : 'PARTICULIER',
         adresseFacturation: adr,
         numeroDepot: pickup?.number,
         montantHT: order.sub_total,

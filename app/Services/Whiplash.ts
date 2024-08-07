@@ -78,6 +78,7 @@ class Whiplash {
     const customer = await DB('customer').find(shop.customer_id)
 
     const params: any = {
+      shipping_company: customer.name,
       shipping_name: `${customer.firstname} ${customer.lastname}`,
       shipping_address_1: customer.address,
       shipping_city: customer.city,
