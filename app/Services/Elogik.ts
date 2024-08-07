@@ -107,7 +107,9 @@ class Elogik {
   }
 
   static getTransporter(order: any) {
-    if (order.shipping_type === 'kuehne_nagel') {
+    if (order.shipping_type === 'removal_pickup') {
+      return { id: 38, name: 'Enlevement Sedrap' }
+    } else if (order.shipping_type === 'kuehne_nagel') {
       return { id: 132, name: 'Kuehne Nagel' }
     } else if (order.shipping_type === 'sedrap') {
       return { id: 38, name: 'Enlevement Sedrap' }
@@ -327,7 +329,17 @@ class Elogik {
     }
 
     const items = await DB()
-      .select('product.id', 'order_shop_id', 'oi.quantity', 'product.barcode')
+      .select(
+        'product.id',
+        'order_shop_id',
+        'oi.quantity',
+        'product.barcode',
+        'product.name',
+        'product.hs_code',
+        'product.country_id',
+        'product.more',
+        'product.type'
+      )
       .from('order_item as oi')
       .join('project_product', 'project_product.project_id', 'oi.project_id')
       .join('product', 'project_product.product_id', 'product.id')
@@ -464,6 +476,7 @@ class Elogik {
             })
           )
         }
+        console.log(invoice)
         const file: any = await Invoice.download({
           params: {
             invoice: invoice,

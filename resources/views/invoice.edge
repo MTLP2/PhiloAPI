@@ -262,8 +262,8 @@
     @each(line in lines)
       @if(!compatibility)
       <tr>
-          <td>{{line.barcode}}</td>
-          <td>{{line.name}}</td>
+          <td>{{line.barcode || ''}}</td>
+          <td>{{line.name || ''}}</td>
           <td>{{line.hs_code || ''}}</td>
           <td>{{line.country_id || ''}}</td>
           <td>{{line.more || ''}}</td>
@@ -274,9 +274,9 @@
       @else
       <tr>
           @if(ean)
-            <td>{{line.ean13}}</td>
+            <td>{{line.ean13 || ''}}</td>
           @endif
-          <td>{{line.name}}</td>
+          <td>{{line.name || ''}}</td>
           <td class="nowrap">{{line.price}} {{currency}}</td>
           <td class="nowrap">{{line.quantity}}</td>
           <td class="nowrap">{{line.total}} {{currency}}</td>
@@ -298,6 +298,8 @@
       <tr>
         <td>{{ t('invoice.shipping_costs') }}</td>
         <td class="nowrap"></td>
+        <td></td>
+        <td></td>
         <td></td>
         <td class="nowrap">{{order.shipping || shipping}} {{currency}}</td>
       </tr>

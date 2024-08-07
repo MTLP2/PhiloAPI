@@ -908,7 +908,7 @@ static toJuno = async (params) => {
     }
     let res: any = { success: true }
     const items = await DB('order_item')
-      .select('order_item.quantity', 'order_item.price', 'product.barcode')
+      .select('order_item.quantity', 'order_item.price', 'product.name', 'product.barcode')
       .join('project_product', 'project_product.project_id', 'order_item.project_id')
       .join('product', 'product.id', 'project_product.product_id')
       .where((query) => {
