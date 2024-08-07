@@ -100,12 +100,15 @@ class Invoice {
   }
 
   static async byOrderShopId(id) {
-    const invoice = {}
+    const invoice: any = {}
     const shop = await Admin.getOrderShop(id)
-    invoice.order = {
-      shops: [shop],
-      shipping: shop.shipping
-    }
+    invoice.lines = JSON.stringify(
+      shop.products.map((p) => ({
+        ...p,
+        price: '0',
+        total: '0'
+      }))
+    )
     invoice.customer = shop.customer
     invoice.number = id
     invoice.code = id
@@ -114,11 +117,11 @@ class Invoice {
     invoice.currency = shop.currency
     invoice.currency_rate = shop.currency_rate
     invoice.date = shop.created_at
-    invoice.sub_toal = shop.sub_total
-    invoice.tax = shop.tax
-    invoice.tax_rate = shop.tax_rate
-    invoice.total = shop.total
-    invoice.lines = JSON.stringify([])
+    invoice.sub_toal = 0
+    invoice.tax = 0
+    invoice.tax_rate = 0
+    invoice.total = 0
+
     return invoice
   }
 
@@ -646,7 +649,8 @@ class Invoice {
         'order.total as order_total',
         'order.payment_type',
         'order.shipping as order_shipping',
-        'payment.payment_id'
+        'payment.payment_id as payment_pay_id',
+        'order.payment_id'
       )
       .leftJoin('order', 'order.id', 'order_id')
       .leftJoin('customer', 'customer.id', 'invoice.customer_id')
@@ -692,7 +696,7 @@ class Invoice {
       data.shipping_eur = data.shipping * data.currency_rate
       data.total_eur = data.total * data.currency_rate
 
-      if (!data.payment_type && data.payment_id) {
+      if (!data.payment_type && data.payment_pay_id) {
         data.payment_type = 'stripe'
       }
       invoices.push(data)
@@ -720,6 +724,7 @@ class Invoice {
       { header: 'Total HT EUR', key: 'total_ht_eur' },
       { header: 'Tax EUR', key: 'tax_eur' },
       { header: 'Total EUR', key: 'total_eur' },
+      { header: 'Payment ID', key: 'payment_id' },
       { header: 'Comment', key: 'comment', width: 40 }
     ]
 

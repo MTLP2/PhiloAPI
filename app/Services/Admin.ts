@@ -2130,7 +2130,12 @@ class Admin {
         'product.id',
         'product.name',
         'product.size',
-        'product.barcode'
+        'product.barcode',
+        'product.hs_code',
+        'product.type',
+        'product.country_id',
+        'product.weight',
+        'product.more'
       )
       .join('project_product', 'project_product.product_id', 'product.id')
       .join('order_item', 'order_item.project_id', 'project_product.project_id')
