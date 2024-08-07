@@ -124,6 +124,7 @@ class OrdersManual {
     user_id?: number
     client_id?: number
     shipping_cost?: number
+    incoterm?: string
     purchase_order?: string
     invoice_number?: string
     missing_items?: string
@@ -182,7 +183,17 @@ class OrdersManual {
       for (const item of items) {
         promises.push(async () => {
           const product = await DB('product')
-            .select('product.id', 'product.bigblue_id', 'stock.id as stock_id', 'stock.quantity')
+            .select(
+              'product.id',
+              'product.name',
+              'product.bigblue_id',
+              'product.hs_code',
+              'product.country_id',
+              'product.more',
+              'product.type',
+              'stock.id as stock_id',
+              'stock.quantity'
+            )
             .where('barcode', item.barcode)
             .leftJoin('stock', 'stock.product_id', 'product.id')
             .where('stock.type', params.transporter)
@@ -240,6 +251,7 @@ class OrdersManual {
     item.step = params.step
     item.order_shop_id = params.order_shop_id || null
     item.tracking_number = params.tracking_number || null
+    item.incoterm = params.incoterm || null
     item.user_id = params.user_id || null
     item.client_id = params.client_id || null
     item.purchase_order = params.purchase_order || null
@@ -273,11 +285,17 @@ class OrdersManual {
               currency: 'EUR',
               shipping_type: params.shipping_type,
               address_pickup: params.address_pickup,
+              incoterm: params.incoterm,
               created_at: item.created_at,
               email: item.email,
               items: items.map((b) => {
                 return {
                   barcode: b.barcode,
+                  name: products[b.barcode].name,
+                  hs_code: products[b.barcode].hs_code,
+                  country_id: products[b.barcode].country_id,
+                  more: products[b.barcode].more,
+                  type: products[b.barcode].type,
                   quantity: b.quantity
                 }
               })

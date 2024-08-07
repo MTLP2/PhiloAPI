@@ -957,6 +957,7 @@ class AdminController {
           purchase_order: schema.string.optional(),
           invoice_number: schema.string.optional(),
           missing_items: schema.string.optional(),
+          incoterm: schema.string.optional(),
           user_id: schema.number.optional(),
           step: schema.string.optional(),
           force: schema.boolean.optional(),

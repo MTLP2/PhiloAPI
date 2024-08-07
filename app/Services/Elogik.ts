@@ -443,17 +443,23 @@ class Elogik {
           number: order.id,
           code: order.id,
           date: Utils.date(),
+          incoterm: order.incoterm,
           tax: order.tax,
           tax_rate: order.tax_rate * 100,
           sub_total: order.sub_total,
           total: order.total,
           lines: JSON.stringify(
             order.items.map((item: any) => {
-              console.log(item)
               return {
-                name: `${item.artist_name} - ${item.name}`,
+                barcode: item.barcode,
+                name: item.name,
                 quantity: item.quantity,
-                price: item.price
+                price: '0',
+                total: '0',
+                hs_code: item.hs_code,
+                country_id: item.country_id,
+                more: item.more,
+                type: item.type
               }
             })
           )
