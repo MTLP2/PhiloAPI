@@ -650,6 +650,7 @@ class Invoice {
         'order.payment_type',
         'order.shipping as order_shipping',
         'payment.payment_id as payment_pay_id',
+        'order.transaction_id',
         'order.payment_id'
       )
       .leftJoin('order', 'order.id', 'order_id')
@@ -725,6 +726,7 @@ class Invoice {
       { header: 'Tax EUR', key: 'tax_eur' },
       { header: 'Total EUR', key: 'total_eur' },
       { header: 'Payment ID', key: 'payment_id' },
+      { header: 'Transaction ID', key: 'transaction_id' },
       { header: 'Comment', key: 'comment', width: 40 }
     ]
 
