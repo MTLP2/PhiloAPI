@@ -824,18 +824,25 @@ class Product {
       .all()
 
     const res = {}
+    const base = {
+      stock: 0,
+      dispo: 0,
+      reserved: 0,
+      pending: 0,
+      theoric: 0
+    }
     for (const stock of stocks) {
       if (!res[stock.product_id]) {
         res[stock.product_id] = {}
       }
+      if (!res[stock.product_id].all) {
+        res[stock.product_id].all = { ...base }
+      }
       if (!res[stock.product_id][stock.type]) {
-        res[stock.product_id][stock.type] = {
-          stock: 0,
-          reserved: 0,
-          dispached: 0
-        }
+        res[stock.product_id][stock.type] = { ...base }
       }
       res[stock.product_id][stock.type].stock += stock.quantity
+      res[stock.product_id].all.stock += stock.quantity
     }
 
     const dispatchs = await DB('production_dispatch')
@@ -859,13 +866,9 @@ class Product {
         res[dispatch.product_id] = {}
       }
       if (!res[dispatch.product_id][dispatch.logistician]) {
-        res[dispatch.product_id][dispatch.logistician] = {
-          stock: 0,
-          reserved: 0,
-          dispached: 0
-        }
+        res[dispatch.product_id][dispatch.logistician] = { ...base }
       }
-      res[dispatch.product_id][dispatch.logistician].dispached += dispatch.quantity
+      res[dispatch.product_id][dispatch.logistician].pending += dispatch.quantity
     }
 
     const orders = await DB('order_manual_item')
@@ -888,14 +891,42 @@ class Product {
       if (!res[order.product_id]) {
         res[order.product_id] = {}
       }
-      if (!res[order.product_id][order.transporter]) {
-        res[order.product_id][order.transporter] = {
-          stock: 0,
-          reserved: 0,
-          dispached: 0
-        }
+      if (!res[order.product_id].all) {
+        res[order.product_id].all = { ...base }
       }
+      if (!res[order.product_id][order.transporter]) {
+        res[order.product_id][order.transporter] = { ...base }
+      }
+      res[order.product_id].all.reserved += order.quantity
       res[order.product_id][order.transporter].reserved += order.quantity
+    }
+
+    const productions = await DB('production')
+      .select('pp.product_id', 'production.quantity')
+      .join('project_product as pp', 'pp.project_id', 'production.project_id')
+      .join('product', 'product.id', 'pp.product_id')
+      .where('step', '!=', 'postprod')
+      .whereIn('product.id', params.products.split(','))
+      .all()
+
+    for (const prod of productions) {
+      if (!res[prod.product_id]) {
+        res[prod.product_id] = {}
+      }
+      if (!res[prod.product_id].all) {
+        res[prod.product_id].all = { ...base }
+      }
+      res[prod.product_id].all.pending += prod.quantity
+    }
+
+    for (const product of Object.keys(res)) {
+      res[product].all = { ...base, ...res[product].all }
+      for (const logistician of Object.keys(res[product])) {
+        res[product][logistician].dispo =
+          res[product][logistician].stock - res[product][logistician].reserved
+        res[product][logistician].theoric =
+          res[product][logistician].dispo + res[product][logistician].pending
+      }
     }
 
     return res
