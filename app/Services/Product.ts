@@ -816,7 +816,7 @@ class Product {
     return products
   }
 
-  static getStocks = async (params: { products: string }) => {
+  static getStocks = async (params: { products: string; order_manual_id?: number }) => {
     const stocks = await DB('stock')
       .whereIn('product_id', params.products.split(','))
       .where('is_preorder', false)
@@ -828,8 +828,76 @@ class Product {
       if (!res[stock.product_id]) {
         res[stock.product_id] = {}
       }
-      res[stock.product_id][stock.type] = stock.quantity
+      if (!res[stock.product_id][stock.type]) {
+        res[stock.product_id][stock.type] = {
+          stock: 0,
+          reserved: 0,
+          dispached: 0
+        }
+      }
+      res[stock.product_id][stock.type].stock += stock.quantity
     }
+
+    const dispatchs = await DB('production_dispatch')
+      .select(
+        'production_dispatch.id',
+        'pp.product_id',
+        'production_dispatch.logistician',
+        'production_dispatch.quantity',
+        'production_dispatch.quantity_received'
+      )
+      .join('production', 'production.id', 'production_dispatch.production_id')
+      .join('project_product as pp', 'pp.project_id', 'production.project_id')
+      .join('product', 'product.id', 'pp.product_id')
+      .whereIn('product.id', params.products.split(','))
+      .whereIn('production_dispatch.logistician', ['whiplash', 'whiplash_uk', 'daudin', 'bigblue'])
+      .whereNull('production_dispatch.quantity_received')
+      .all()
+
+    for (const dispatch of dispatchs) {
+      if (!res[dispatch.product_id]) {
+        res[dispatch.product_id] = {}
+      }
+      if (!res[dispatch.product_id][dispatch.logistician]) {
+        res[dispatch.product_id][dispatch.logistician] = {
+          stock: 0,
+          reserved: 0,
+          dispached: 0
+        }
+      }
+      res[dispatch.product_id][dispatch.logistician].dispached += dispatch.quantity
+    }
+
+    const orders = await DB('order_manual_item')
+      .select(
+        'order_manual_item.product_id',
+        'order_manual.transporter',
+        'order_manual_item.quantity'
+      )
+      .join('order_manual', 'order_manual.id', 'order_manual_item.order_manual_id')
+      .whereIn('order_manual_item.product_id', params.products.split(','))
+      .where('order_manual.step', '=', 'pending')
+      .where((query) => {
+        if (params.order_manual_id) {
+          query.where('order_manual.id', '!=', params.order_manual_id)
+        }
+      })
+      .all()
+
+    for (const order of orders) {
+      if (!res[order.product_id]) {
+        res[order.product_id] = {}
+      }
+      if (!res[order.product_id][order.transporter]) {
+        res[order.product_id][order.transporter] = {
+          stock: 0,
+          reserved: 0,
+          dispached: 0
+        }
+      }
+      res[order.product_id][order.transporter].reserved += order.quantity
+    }
+
     return res
   }
 }

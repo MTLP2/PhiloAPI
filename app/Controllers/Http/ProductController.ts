@@ -156,7 +156,8 @@ class ProductController {
   async getStocks({ params }) {
     const payload = await validator.validate({
       schema: schema.create({
-        products: schema.string()
+        products: schema.string(),
+        order_manual_id: schema.number.optional()
       }),
       data: params
     })
