@@ -102,25 +102,78 @@ class Invoice {
   static async byOrderShopId(id) {
     const invoice: any = {}
     const shop = await Admin.getOrderShop(id)
-    invoice.lines = JSON.stringify(
-      shop.products.map((p) => ({
-        ...p,
-        price: '0',
-        total: '0'
-      }))
-    )
+
+    for (const product of shop.products) {
+      const idx = shop.items.findIndex((i) => i.project_id === product.project_id)
+      if (!shop.items[idx].lines) {
+        shop.items[idx].lines = []
+      }
+      console.log('product', shop.items[idx].lines)
+      shop.items[idx].lines.push(product)
+    }
+
+    type Line = {
+      name: string
+      price: number | string
+      quantity: number
+      total: number | string
+      barcode?: string
+      hs_code?: string
+      type?: string
+      country_id?: number
+      more?: string
+    }
+
+    const lines: Line[] = []
+    for (const item of shop.items) {
+      const p: Line = {
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        total: item.total
+      }
+      if (item.lines.length === 1) {
+        p.barcode = item.lines[0].barcode
+        p.hs_code = item.lines[0].hs_code
+        p.type = item.lines[0].type
+        p.more = item.lines[0].more
+        p.country_id = item.lines[0].country_id
+      }
+      lines.push(p)
+      if (item.lines.length > 1) {
+        for (const line of item.lines) {
+          lines.push({
+            name: line.name,
+            price: '',
+            total: '',
+            barcode: line.barcode,
+            quantity: line.quantity,
+            hs_code: line.hs_code,
+            type: line.type,
+            more: line.more,
+            country_id: line.country_id
+          })
+        }
+      }
+    }
+    invoice.order = {
+      shipping: shop.shipping
+    }
+    invoice.lines = JSON.stringify(lines)
+
     invoice.customer = shop.customer
     invoice.number = id
     invoice.code = id
     invoice.type = 'invoice'
     invoice.lang = 'en'
+    invoice.incoterm = 'DAP'
     invoice.currency = shop.currency
     invoice.currency_rate = shop.currency_rate
     invoice.date = shop.created_at
-    invoice.sub_toal = 0
-    invoice.tax = 0
-    invoice.tax_rate = 0
-    invoice.total = 0
+    invoice.sub_toal = shop.sub_total
+    invoice.tax = shop.tax
+    invoice.tax_rate = shop.tax_rate
+    invoice.total = shop.total
 
     return invoice
   }

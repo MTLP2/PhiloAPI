@@ -238,8 +238,8 @@
   <table class="lines">
     @if(!compatibility)
     <tr class="header">
-      <th>{{ t('invoice.ean13') }}</th>
       <th>{{ t('invoice.wording') }}</th>
+      <th>{{ t('invoice.ean13') }}</th>
       <th>{{ t('invoice.hs_code') }}</th>
       <th>{{ t('invoice.origin') }}</th>
       <th></th>
@@ -249,10 +249,10 @@
     </tr>
     @else
     <tr class="header">
+      <th width="70%">{{ t('invoice.operations') }}</th>
       @if (ean)
         <th>{{ t('invoice.ean13') }}</th>
       @endif
-      <th width="70%">{{ t('invoice.operations') }}</th>
       <th>{{ t('invoice.unit_price') }}</th>
       <th>{{ t('invoice.quantity') }}</th>
       <th>{{ t('invoice.total') }}</th>
@@ -262,24 +262,24 @@
     @each(line in lines)
       @if(!compatibility)
       <tr>
-          <td>{{line.barcode || ''}}</td>
           <td>{{line.name || ''}}</td>
+          <td>{{line.barcode || ''}}</td>
           <td>{{line.hs_code || ''}}</td>
           <td>{{line.country_id || ''}}</td>
           <td>{{line.more || ''}}</td>
-          <td class="nowrap">{{line.price}} {{currency}}</td>
+          <td class="nowrap">{{line.price || ''}} {{line.price ? currency : ''}}</td>
           <td class="nowrap">{{line.quantity}}</td>
-          <td class="nowrap">{{line.total}} {{currency}}</td>
+          <td class="nowrap">{{line.total || ''}} {{line.total ? currency : ''}}</td>
       </tr>
       @else
       <tr>
+          <td>{{line.name || ''}}</td>
           @if(ean)
             <td>{{line.ean13 || ''}}</td>
           @endif
-          <td>{{line.name || ''}}</td>
-          <td class="nowrap">{{line.price}} {{currency}}</td>
+          <td class="nowrap">{{line.price || ''}} {{line.price ? currency : ''}}</td>
           <td class="nowrap">{{line.quantity}}</td>
-          <td class="nowrap">{{line.total}} {{currency}}</td>
+          <td class="nowrap">{{line.total || ''}} {{line.total ? currency : ''}}</td>
       </tr>
       @endif
     @endeach
@@ -288,17 +288,21 @@
         @each(item in shop.items)
         <tr>
             <td>{{item.name}} - {{item.artist_name}}</td>
-            <td class="nowrap">{{item.price}} {{currency}}</td>
+            <td class="nowrap">{{item.price || ''}} {{item.price ? currency : ''}}</td>
             <td class="nowrap">{{item.quantity}}</td>
-            <td class="nowrap">{{item.total}} {{currency}}</td>
+            <td class="nowrap">{{item.total || ''}} {{item.total ? currency : ''}}</td>
         </tr>
         @endeach
       @endeach
       @if(order.shipping || shipping)
       <tr>
         <td>{{ t('invoice.shipping_costs') }}</td>
-        <td class="nowrap"></td>
-        <td></td>
+        @if(!compatibility)
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+        @endif
         <td></td>
         <td></td>
         <td class="nowrap">{{order.shipping || shipping}} {{currency}}</td>

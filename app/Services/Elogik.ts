@@ -443,41 +443,8 @@ class Elogik {
       }
 
       if (!Utils.isEuropean(order.country_id) || order.country_id === 'GB') {
-        const invoice = {
-          customer: {
-            ...order
-          },
-          type: 'invoice',
-          currency: order.currency,
-          order: {
-            shipping: order.shipping
-          },
-          number: order.id,
-          code: order.id,
-          date: Utils.date(),
-          incoterm: order.incoterm,
-          tax: order.tax,
-          tax_rate: order.tax_rate * 100,
-          sub_total: order.sub_total,
-          total: order.total,
-          lines: JSON.stringify(
-            order.items.map((item: any) => {
-              return {
-                barcode: item.barcode,
-                name: item.name,
-                quantity: item.quantity,
-                price: '0',
-                total: '0',
-                hs_code: item.hs_code,
-                country_id: item.country_id,
-                more: item.more,
-                type: item.type
-              }
-            })
-          )
-        }
-        console.log(invoice)
-        const file: any = await Invoice.download({
+        const invoice = await Invoice.byOrderShopId(order.id)
+        const file = await Invoice.download({
           params: {
             invoice: invoice,
             lang: 'en',
