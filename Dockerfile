@@ -1,10 +1,11 @@
 ARG NODE_IMAGE=node:16.13.1-alpine
 FROM $NODE_IMAGE AS base
 
-RUN apk update && apk add build-base g++ cairo-dev pango-dev giflib-dev
+RUN apk add --no-cache make gcc g++ python3 pkgconfig pixman-dev cairo-dev pango-dev libjpeg-turbo-dev
+RUN apk add --no-cache cairo pango libjpeg-turbo
 
 ENV PHANTOMJS_VERSION=2.1.1
-RUN apk update && apk add --no-cache fontconfig curl curl-dev && \
+RUN apk update && apk add --no-cache fontconfig ttf-freefont curl curl-dev && \
   cd /tmp && curl -Ls https://github.com/topseom/phantomized/releases/download/${PHANTOMJS_VERSION}/dockerized-phantomjs.tar.gz | tar xz && \
   cp -R lib lib64 / && \
   cp -R usr/lib/x86_64-linux-gnu /usr/lib && \
@@ -12,6 +13,7 @@ RUN apk update && apk add --no-cache fontconfig curl curl-dev && \
   cp -R etc/fonts /etc && \
   curl -k -Ls https://bitbucket.org/ariya/phantomjs/downloads/phantomjs-${PHANTOMJS_VERSION}-linux-x86_64.tar.bz2 | tar -jxf - && \
   cp phantomjs-2.1.1-linux-x86_64/bin/phantomjs /usr/local/bin/phantomjs
+
 ENV TZ=Europe/Paris
 
 RUN apk add --update busybox-suid
@@ -41,7 +43,9 @@ ENV DRIVE_DISK=local
 ENV PORT=3000
 
 COPY --chown=node:node ./package*.json ./
-RUN npm ci --production
+#UN npm ci --production
+RUN npm install --include=dev
+
 COPY --chown=node:node --from=build /home/node/app/build .
 EXPOSE $PORT
 #CMD [ "dumb-init", "node", "server.js" ]
