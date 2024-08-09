@@ -9,6 +9,7 @@ import Notification from 'App/Services/Notification'
 import Order from 'App/Services/Order'
 import Payments from 'App/Services/Payments'
 import BigBlue from 'App/Services/BigBlue'
+import Elogik from 'App/Services/Elogik'
 import Cart from 'App/Services/Cart'
 import Stock from 'App/Services/Stock'
 import Storage from 'App/Services/Storage'
@@ -1322,6 +1323,15 @@ class Dispatch {
       success: true,
       count: res
     }
+  }
+
+  static addDispatchLogisticianId = async () => {
+    const daudin = await Elogik.commandesFournisseur()
+
+    const order = await Elogik.commandeFournisseur({
+      id: daudin.commandes[0].numeroCommande
+    })
+    console.log(order)
   }
 }
 
