@@ -106,6 +106,19 @@ class Elogik {
     })
   }
 
+  static async commandesFournisseur(params: {} = {}) {
+    return Elogik.api('commandes-fournisseur/liste', {
+      method: 'POST',
+      body: params
+    })
+  }
+
+  static async commandeFournisseur(params: { id: string }) {
+    return Elogik.api(`commandes-fournisseur/${params.id}/details`, {
+      method: 'GET'
+    })
+  }
+
   static getTransporter(order: any) {
     if (order.shipping_type === 'removal_pickup') {
       return { id: 38, name: 'Enlevement Sedrap' }
