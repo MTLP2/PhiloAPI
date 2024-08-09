@@ -1332,6 +1332,8 @@ class Dispatch {
       id: daudin.commandes[0].numeroCommande
     })
     console.log(order)
+
+    return order
   }
 }
 
