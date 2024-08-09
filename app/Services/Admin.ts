@@ -2135,11 +2135,22 @@ class Admin {
         'product.type',
         'product.country_id',
         'product.weight',
-        'product.more'
+        'product.more',
+        'project_product.project_id'
       )
       .join('project_product', 'project_product.product_id', 'product.id')
       .join('order_item', 'order_item.project_id', 'project_product.project_id')
       .where('order_item.order_shop_id', id)
+      .where((query) => {
+        query.whereRaw('product.size like order_item.size')
+        query.orWhereRaw(`order_item.products LIKE CONCAT('%[',product.id,']%')`)
+        query.orWhere((query) => {
+          query.whereNull('product.size')
+          query.whereNotExists((query) => {
+            query.from('product as child').whereRaw('product.id = child.parent_id')
+          })
+        })
+      })
       .all()
 
     return shop
