@@ -337,7 +337,7 @@ class Payment {
 
       if (resp) {
         await Notification.sendEmail({
-          to: resp.email,
+          to: `${resp.email},invoicing@diggersfactory.com`,
           subject: `Paiement de ${payment.total} ${payment.currency}`,
           text: `https://www.diggersfactory.com/sheraf/invoice/${payment.invoice_id}`
         })
