@@ -86,9 +86,16 @@ class OrdersManual {
 
   static find = async (params: { id: number }) => {
     const item = await DB('order_manual')
-      .select('order_manual.*', 'customer.firstname', 'customer.lastname', 'user.name as user_name')
+      .select(
+        'order_manual.*',
+        'customer.firstname',
+        'customer.lastname',
+        'user.name as user_name',
+        'client.name as client_name'
+      )
       .join('customer', 'customer.id', 'order_manual.customer_id')
       .leftJoin('user', 'user.id', 'order_manual.user_id')
+      .leftJoin('client', 'client.id', 'order_manual.client_id')
       .belongsTo('customer')
       .where('order_manual.id', params.id)
       .first()
