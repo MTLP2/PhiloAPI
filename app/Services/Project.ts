@@ -2459,9 +2459,12 @@ class Project {
     vod.date_export_order = null
     vod.daudin_export = null
     vod.whiplash_export = null
+    vod.historic = null
     vod.barcode = null
     vod.stock = 0
     vod.count = 0
+    vod.start = null
+    vod.end = null
     vod.send_statement = 0
     vod.step = 'creating'
     vod.created_at = Utils.date()
