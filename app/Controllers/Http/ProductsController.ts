@@ -1,8 +1,8 @@
-import Product from 'App/Services/Product'
+import Products from 'App/Services/Products'
 import Stock from 'App/Services/Stock'
 import { validator, schema } from '@ioc:Adonis/Core/Validator'
 
-class ProductController {
+class ProductsController {
   async getProducts({ params }) {
     try {
       const payload = await validator.validate({
@@ -17,7 +17,7 @@ class ProductController {
         }),
         data: params
       })
-      return Product.all(payload)
+      return Products.all(payload)
     } catch (err) {
       return { error: err.message, validation: err.messages }
     }
@@ -31,7 +31,7 @@ class ProductController {
       }),
       data: params
     })
-    return Product.allMerch(payload)
+    return Products.allMerch(payload)
   }
 
   async getProduct({ params }) {
@@ -41,7 +41,7 @@ class ProductController {
       }),
       data: params
     })
-    return Product.find(payload)
+    return Products.find(payload)
   }
 
   async saveProduct({ request }) {
@@ -64,7 +64,7 @@ class ProductController {
         }),
         data: request.body()
       })
-      return Product.save(payload)
+      return Products.save(payload)
     } catch (err) {
       return { error: err.message, validation: err.messages }
     }
@@ -77,7 +77,7 @@ class ProductController {
       }),
       data: params
     })
-    return Product.remove(payload)
+    return Products.remove(payload)
   }
 
   async saveStocks({ params, user }) {
@@ -98,7 +98,7 @@ class ProductController {
       }),
       data: params
     })
-    return Product.saveSubProduct(payload)
+    return Products.saveSubProduct(payload)
   }
 
   async removeSubProduct({ params }) {
@@ -109,7 +109,7 @@ class ProductController {
       }),
       data: params
     })
-    return Product.removeSubProduct(payload)
+    return Products.removeSubProduct(payload)
   }
 
   async saveProject({ params }) {
@@ -122,7 +122,7 @@ class ProductController {
       }),
       data: params
     })
-    return Product.saveProject(payload)
+    return Products.saveProject(payload)
   }
 
   async removeProject({ params }) {
@@ -133,7 +133,7 @@ class ProductController {
       }),
       data: params
     })
-    return Product.removeProject(payload)
+    return Products.removeProject(payload)
   }
 
   async createItems({ params }) {
@@ -150,7 +150,7 @@ class ProductController {
       }),
       data: params
     })
-    return Product.createItems(payload)
+    return Products.createItems(payload)
   }
 
   async getStocks({ params }) {
@@ -161,8 +161,8 @@ class ProductController {
       }),
       data: params
     })
-    return Product.getStocks(payload)
+    return Products.getStocks(payload)
   }
 }
 
-export default ProductController
+export default ProductsController

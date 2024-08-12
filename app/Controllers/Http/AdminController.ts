@@ -31,7 +31,7 @@ import MailJet from 'App/Services/MailJet'
 import Review from 'App/Services/Review'
 import ApiError from 'App/ApiError'
 import ProjectService from 'App/Services/Project'
-import Product from 'App/Services/Product'
+import Products from 'App/Services/Products'
 import Dispatch from 'App/Services/Dispatch'
 import ShippingWeight from 'App/Services/ShippingWeight'
 import Log from 'App/Services/Log'
@@ -1448,7 +1448,7 @@ class AdminController {
   }
 
   getUserProducts({ params }) {
-    return Product.forUser({ user_id: params.id, ship_notices: params.ship_notices })
+    return Products.forUser({ user_id: params.id, ship_notices: params.ship_notices })
   }
 
   saveShipNotice({ params }) {

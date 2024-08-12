@@ -5,7 +5,7 @@ import Whiplash from 'App/Services/Whiplash'
 import Elogik from 'App/Services/Elogik'
 import BigBlue from 'App/Services/BigBlue'
 
-class Product {
+class Products {
   static async all(params: {
     filters?: string
     sort?: string
@@ -167,7 +167,7 @@ class Product {
       .where('product_id', params.id)
       .all()
 
-    const sales = await Product.getProductsSales({ productIds: [params.id] })
+    const sales = await Products.getProductsSales({ productIds: [params.id] })
     for (const s in item.stocks) {
       const stock = item.stocks[s]
       const sale = sales[params.id] && sales[params.id][stock.type]
@@ -255,7 +255,7 @@ class Product {
 
     const projects = await DB('project_product').where('product_id', item.id).all()
     for (const project of projects) {
-      Product.setBarcodes({ project_id: project.project_id })
+      Products.setBarcodes({ project_id: project.project_id })
     }
     if (item.barcode) {
       if (!item.whiplash_id || item.whiplash_id === -1) {
@@ -458,7 +458,7 @@ class Product {
     type?: string
   }) => {
     if (!params.product_id) {
-      const product = await Product.save({
+      const product = await Products.save({
         type: params.type,
         name: params.name
       })
@@ -487,7 +487,7 @@ class Product {
       })
     }
 
-    await Product.setBarcodes({ project_id: params.project_id })
+    await Products.setBarcodes({ project_id: params.project_id })
     await Stock.setStockProject({
       projectIds: [params.project_id]
     })
@@ -508,7 +508,7 @@ class Product {
         .delete()
     }
 
-    await Product.setBarcodes({ project_id: params.project_id })
+    await Products.setBarcodes({ project_id: params.project_id })
     await Stock.setStockProject({
       projectIds: [params.project_id]
     })
@@ -835,10 +835,7 @@ class Product {
       .whereIn('product_id', params.products.split(','))
       .where('is_preorder', false)
       .where('quantity', '!=', '0')
-      // .whereIn('type', ['whiplash', 'whiplash_uk', 'daudin', 'bigblue'])
       .all()
-
-    console.log(stocks)
 
     for (const stock of stocks) {
       if (!res[stock.product_id]) {
@@ -996,4 +993,4 @@ class Product {
   }
 }
 
-export default Product
+export default Products
