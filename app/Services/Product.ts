@@ -817,20 +817,29 @@ class Product {
   }
 
   static getStocks = async (params: { products: string; order_manual_id?: number }) => {
-    const stocks = await DB('stock')
-      .whereIn('product_id', params.products.split(','))
-      .where('is_preorder', false)
-      .whereIn('type', ['whiplash', 'whiplash_uk', 'daudin', 'bigblue'])
-      .all()
-
     const res = {}
     const base = {
+      is_distrib: false,
       stock: 0,
       dispo: 0,
       reserved: 0,
+      reserved_preorder: 0,
+      reserved_manual: 0,
       pending: 0,
       theoric: 0
     }
+    const logisticians = ['whiplash', 'whiplash_uk', 'daudin', 'bigblue']
+
+    const stocks = await DB('stock')
+      .select('product_id', 'quantity', 'type')
+      .whereIn('product_id', params.products.split(','))
+      .where('is_preorder', false)
+      .where('quantity', '!=', '0')
+      // .whereIn('type', ['whiplash', 'whiplash_uk', 'daudin', 'bigblue'])
+      .all()
+
+    console.log(stocks)
+
     for (const stock of stocks) {
       if (!res[stock.product_id]) {
         res[stock.product_id] = {}
@@ -839,7 +848,10 @@ class Product {
         res[stock.product_id].all = { ...base }
       }
       if (!res[stock.product_id][stock.type]) {
-        res[stock.product_id][stock.type] = { ...base }
+        res[stock.product_id][stock.type] = {
+          ...base,
+          is_distrib: logisticians.includes(stock.type)
+        }
       }
       res[stock.product_id][stock.type].stock += stock.quantity
       res[stock.product_id].all.stock += stock.quantity
@@ -866,18 +878,48 @@ class Product {
         res[dispatch.product_id] = {}
       }
       if (!res[dispatch.product_id][dispatch.logistician]) {
-        res[dispatch.product_id][dispatch.logistician] = { ...base }
+        res[dispatch.product_id][dispatch.logistician] = {
+          ...base,
+          is_distrib: logisticians.includes(dispatch.logistician)
+        }
       }
       res[dispatch.product_id][dispatch.logistician].pending += dispatch.quantity
     }
 
-    const orders = await DB('order_manual_item')
+    const orders = await DB('order_item')
+      .select('pp.product_id', 'order_item.quantity', 'order_shop.transporter')
+      .join('order_shop', 'order_shop.id', 'order_item.order_shop_id')
+      .join('project_product as pp', 'pp.project_id', 'order_item.project_id')
+      .whereIn('pp.product_id', params.products.split(','))
+      .where('order_shop.is_paid', true)
+      .whereNull('order_shop.date_export')
+      .all()
+
+    for (const order of orders) {
+      if (!res[order.product_id]) {
+        res[order.product_id] = {}
+        res[order.product_id].all = { ...base }
+      }
+      if (!res[order.product_id][order.transporter]) {
+        res[order.product_id][order.transporter] = {
+          ...base,
+          is_distrib: logisticians.includes(order.transporter)
+        }
+      }
+      res[order.product_id].all.reserved += order.quantity
+      res[order.product_id][order.transporter].reserved += order.quantity
+      res[order.product_id][order.transporter].reserved_preorder += order.quantity
+    }
+
+    const ordersManual = await DB('order_manual_item')
       .select(
         'order_manual_item.product_id',
         'order_manual.transporter',
-        'order_manual_item.quantity'
+        'order_manual_item.quantity',
+        'client.code'
       )
       .join('order_manual', 'order_manual.id', 'order_manual_item.order_manual_id')
+      .leftJoin('client', 'client.id', 'order_manual.client_id')
       .whereIn('order_manual_item.product_id', params.products.split(','))
       .where('order_manual.step', '=', 'pending')
       .where((query) => {
@@ -887,7 +929,7 @@ class Product {
       })
       .all()
 
-    for (const order of orders) {
+    for (const order of ordersManual) {
       if (!res[order.product_id]) {
         res[order.product_id] = {}
       }
@@ -895,10 +937,25 @@ class Product {
         res[order.product_id].all = { ...base }
       }
       if (!res[order.product_id][order.transporter]) {
-        res[order.product_id][order.transporter] = { ...base }
+        res[order.product_id][order.transporter] = {
+          ...base,
+          is_distrib: logisticians.includes(order.transporter)
+        }
       }
       res[order.product_id].all.reserved += order.quantity
       res[order.product_id][order.transporter].reserved += order.quantity
+      res[order.product_id][order.transporter].reserved_manual += order.quantity
+
+      if (order.code) {
+        if (!res[order.product_id][order.code]) {
+          res[order.product_id][order.code] = {
+            ...base,
+            is_distrib: logisticians.includes(order.code)
+          }
+        }
+        res[order.product_id][order.code].reserved += order.quantity
+        res[order.product_id][order.code].reserved_manual += order.quantity
+      }
     }
 
     const productions = await DB('production')
@@ -922,10 +979,16 @@ class Product {
     for (const product of Object.keys(res)) {
       res[product].all = { ...base, ...res[product].all }
       for (const logistician of Object.keys(res[product])) {
-        res[product][logistician].dispo =
-          res[product][logistician].stock - res[product][logistician].reserved
-        res[product][logistician].theoric =
-          res[product][logistician].dispo + res[product][logistician].pending
+        if (logisticians.includes(logistician)) {
+          res[product][logistician].dispo =
+            res[product][logistician].stock - res[product][logistician].reserved
+          res[product][logistician].theoric =
+            res[product][logistician].dispo + res[product][logistician].pending
+        } else {
+          res[product][logistician].dispo = res[product][logistician].stock
+          res[product][logistician].theoric =
+            res[product][logistician].dispo + res[product][logistician].reserved
+        }
       }
     }
 
