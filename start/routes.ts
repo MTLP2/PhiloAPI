@@ -24,6 +24,7 @@ Route.get('/', 'AppController.index')
 Route.get('/test', 'TestController.test')
 
 Route.get('/cron', 'AppController.cron')
+Route.get('/minutely', 'AppController.minutely')
 Route.get('/hourly', 'AppController.hourly')
 Route.get('/daily', 'AppController.daily')
 

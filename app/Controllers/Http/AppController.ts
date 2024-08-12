@@ -24,7 +24,11 @@ class AppController {
   }
 
   cron() {
-    return App.cron()
+    return App.minutely()
+  }
+
+  minutely() {
+    return App.minutely()
   }
 
   hourly() {
