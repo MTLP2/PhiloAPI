@@ -959,6 +959,7 @@ class AdminController {
           missing_items: schema.string.optional(),
           incoterm: schema.string.optional(),
           user_id: schema.number.optional(),
+          client_id: schema.number.optional(),
           step: schema.string.optional(),
           force: schema.boolean.optional(),
           items: schema.array().members(

@@ -74,6 +74,7 @@ type Client = {
   id: Generated<number>
   name: string
   email: string
+  code: string
   country_id: string
   created_at: Timestamp
   updated_at: Timestamp

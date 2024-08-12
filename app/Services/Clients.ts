@@ -84,6 +84,7 @@ class Clients {
     name: string
     email: string
     country_id: string
+    code: string
     addresses?: (Customer & { customer_id?: number })[]
   }) {
     let item = model('client')
@@ -93,6 +94,7 @@ class Clients {
     }
     item.name = params.name
     item.email = params.email
+    item.code = params.code
     item.country_id = params.country_id
 
     await item.save()
