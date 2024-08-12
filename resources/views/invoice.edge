@@ -238,16 +238,26 @@
   <br />
   <table class="lines">
     @if(!compatibility)
-    <tr class="header">
-      <th>{{ t('invoice.wording') }}</th>
-      <th>{{ t('invoice.ean13') }}</th>
-      <th>{{ t('invoice.hs_code') }}</th>
-      <th>{{ t('invoice.origin') }}</th>
-      <th></th>
-      <th class="price">{{ t('invoice.unit_price') }}</th>
-      <th class="price">{{ t('invoice.quantity') }}</th>
-      <th class="price">{{ t('invoice.total') }}</th>
-    </tr>
+      @if(lines[0].ean13) 
+      <tr class="header">
+        <th>{{ t('invoice.wording') }}</th>
+        <th>{{ t('invoice.ean13') }}</th>
+        <th class="price">{{ t('invoice.unit_price') }}</th>
+        <th class="price">{{ t('invoice.quantity') }}</th>
+        <th class="price">{{ t('invoice.total') }}</th>
+      </tr>
+      @else 
+      <tr class="header">
+        <th>{{ t('invoice.wording') }}</th>
+        <th>{{ t('invoice.ean13') }}</th>
+        <th>{{ t('invoice.hs_code') }}</th>
+        <th>{{ t('invoice.origin') }}</th>
+        <th></th>
+        <th class="price">{{ t('invoice.unit_price') }}</th>
+        <th class="price">{{ t('invoice.quantity') }}</th>
+        <th class="price">{{ t('invoice.total') }}</th>
+      </tr>
+      @endif
     @else
     <tr class="header">
       <th width="70%">{{ t('invoice.operations') }}</th>
@@ -262,16 +272,26 @@
 
     @each(line in lines)
       @if(!compatibility)
-      <tr>
-          <td>{{line.name || ''}}</td>
-          <td>{{line.barcode || ''}}</td>
-          <td>{{line.hs_code || ''}}</td>
-          <td>{{line.country_id || ''}}</td>
-          <td>{{line.more || ''}}</td>
-          <td class="nowrap">{{line.price || ''}} {{line.price ? currency : ''}}</td>
-          <td class="nowrap">{{line.quantity}}</td>
-          <td class="nowrap">{{line.total || ''}} {{line.total ? currency : ''}}</td>
-      </tr>
+        @if(line.ean13)
+        <tr>
+            <td>{{line.name || ''}}</td>
+            <td>{{line.ean13 || ''}}</td>
+            <td class="nowrap">{{line.price || ''}} {{line.price ? currency : ''}}</td>
+            <td class="nowrap">{{line.quantity}}</td>
+            <td class="nowrap">{{line.total || ''}} {{line.total ? currency : ''}}</td>
+        </tr>
+        @else
+        <tr>
+            <td>{{line.name || ''}}</td>
+            <td>{{line.barcode || line.ean13 || ''}}</td>
+            <td>{{line.hs_code || ''}}</td>
+            <td>{{line.country_id || ''}}</td>
+            <td>{{line.more || ''}}</td>
+            <td class="nowrap">{{line.price || ''}} {{line.price ? currency : ''}}</td>
+            <td class="nowrap">{{line.quantity}}</td>
+            <td class="nowrap">{{line.total || ''}} {{line.total ? currency : ''}}</td>
+        </tr>
+        @endif
       @else
       <tr>
           <td>{{line.name || ''}}</td>
