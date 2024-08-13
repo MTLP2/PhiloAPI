@@ -74,6 +74,7 @@ type Client = {
   id: Generated<number>
   name: string
   email: string
+  code: string
   country_id: string
   created_at: Timestamp
   updated_at: Timestamp
@@ -201,6 +202,14 @@ type OrderItem = {
   updated_at: Timestamp
 }
 
+type OrderManual = {
+  id: Generated<number>
+  user_id: number
+  client_id: number
+  created_at: Timestamp
+  updated_at: Timestamp
+}
+
 type ShippingWeight = {
   'id': Generated<number>
   'country_id': string
@@ -243,6 +252,7 @@ type ShippingWeight = {
   '28kg'?: number | null
   '29kg'?: number | null
   '30kg'?: number | null
+  '50kg'?: number | null
   'created_at': Timestamp
   'updated_at': Timestamp
 }
@@ -304,6 +314,7 @@ export type DB = {
   label: Label
   order: Order
   order_item: OrderItem
+  order_manual: OrderManual
   order_shop: OrderShop
   shipping_weight: ShippingWeight
   shop: Shop

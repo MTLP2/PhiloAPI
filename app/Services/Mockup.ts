@@ -67,7 +67,14 @@ class Mockup {
 
         if (params.circle) {
           ctx.beginPath()
-          ctx.arc(img.width / 2, img.height / 2, img.width / 2, 0, Math.PI * 2, true)
+          ctx.arc(
+            img.width / 2,
+            img.height / 2,
+            img.width / 2,
+            0,
+            Math.PI * 2,
+            true
+          )
           ctx.clip()
           ctx.closePath()
         }
@@ -92,7 +99,13 @@ class Mockup {
         if (params.opacity) {
           params.ctx.globalAlpha = params.opacity
         }
-        params.ctx.drawImage(ctx.canvas, params.x, params.y, params.width, params.height)
+        params.ctx.drawImage(
+          ctx.canvas,
+          params.x,
+          params.y,
+          params.width,
+          params.height
+        )
 
         if (params.opacity) {
           params.ctx.globalAlpha = 1
@@ -121,8 +134,12 @@ class Mockup {
 
       const image = new this.Image()
       image.onload = () => {
-        const w = resize.w ? resize.w + resize.w / 2 : image.width + image.width / 2
-        const h = resize.h ? resize.h + resize.h / 2 : image.height + image.height / 2
+        const w = resize.w
+          ? resize.w + resize.w / 2
+          : image.width + image.width / 2
+        const h = resize.h
+          ? resize.h + resize.h / 2
+          : image.height + image.height / 2
 
         ctx.canvas.width = w
         ctx.canvas.height = h
@@ -177,7 +194,9 @@ class Mockup {
     canvas?: HTMLCanvasElement
   }): Promise<HTMLCanvasElement> {
     return new Promise((resolve, reject) => {
-      const ctx = params.canvas ? params.canvas.getContext('2d') : this.createContext()
+      const ctx = params.canvas
+        ? params.canvas.getContext('2d')
+        : this.createContext()
       const canvas = ctx.canvas
 
       const img = new this.Image()
@@ -407,7 +426,13 @@ class Mockup {
       matrice: matrice,
       resize: resizeDisc
     })
-    ctx.drawImage(coverDisc, offsetX + 1050, offsetY - 45, resizeDisc.w, resizeDisc.h)
+    ctx.drawImage(
+      coverDisc,
+      offsetX + 1050,
+      offsetY - 45,
+      resizeDisc.w,
+      resizeDisc.h
+    )
 
     const resize = {
       w: 1895,
@@ -494,7 +519,13 @@ class Mockup {
       matrice: matriceBack,
       resize: resizeBack
     })
-    ctx.drawImage(coverBack, offsetX + 420, offsetY + 480, resizeBack.w, resizeBack.h)
+    ctx.drawImage(
+      coverBack,
+      offsetX + 420,
+      offsetY + 480,
+      resizeBack.w,
+      resizeBack.h
+    )
 
     const resizeDisc = {
       w: 1700,
@@ -511,7 +542,13 @@ class Mockup {
       matrice: matriceDisc,
       resize: resizeDisc
     })
-    ctx.drawImage(coverDisc, offsetX + 1050, offsetY + 440, resizeDisc.w, resizeDisc.h)
+    ctx.drawImage(
+      coverDisc,
+      offsetX + 1050,
+      offsetY + 440,
+      resizeDisc.w,
+      resizeDisc.h
+    )
 
     const spin = () => {
       return new Promise((resolve) => {
@@ -528,7 +565,17 @@ class Mockup {
 
           // canvCtx.scale(-1, 1)
           // canvCtx.drawImage(img, 0, 0, img.width * scale, img.height, 0, 0, -width, height)
-          canvCtx.drawImage(img, 0, 0, img.width * scale, img.height, 0, 0, width, height)
+          canvCtx.drawImage(
+            img,
+            0,
+            0,
+            img.width * scale,
+            img.height,
+            0,
+            0,
+            width,
+            height
+          )
 
           const canvCtx2 = this.createContext()
           canvCtx2.canvas.width = canvCtx.canvas.width
@@ -724,7 +771,17 @@ class Mockup {
         canvSpin.canvas.height = img.height
         // canvSpin.scale(-1, 1)
         // canvSpin.drawImage(img, 0, 0, img.width * scale, img.height, 0, 0, -width, height)
-        canvSpin.drawImage(img, 0, 0, img.width * scale, img.height, 0, 0, width, height)
+        canvSpin.drawImage(
+          img,
+          0,
+          0,
+          img.width * scale,
+          img.height,
+          0,
+          0,
+          width,
+          height
+        )
 
         const canvCtx3 = this.createContext()
         canvCtx3.canvas.width = canvSpin.canvas.width
@@ -910,7 +967,10 @@ class Mockup {
     ]
 
     ctx.globalAlpha = 1
-    const discPer = await this.getPerspective({ cover: params.disc, matrice: matrice })
+    const discPer = await this.getPerspective({
+      cover: params.disc,
+      matrice: matrice
+    })
     ctx.drawImage(discPer, 950, 420, 2200, 2200)
 
     const resize = {
@@ -1031,7 +1091,10 @@ class Mockup {
     })
     ctx.globalAlpha = 1
 
-    const discPer = await this.getPerspective({ cover: params.disc, matrice: matrice })
+    const discPer = await this.getPerspective({
+      cover: params.disc,
+      matrice: matrice
+    })
     ctx.drawImage(discPer, 880, 480, 2230, 2230)
 
     return ctx.canvas
@@ -1391,13 +1454,19 @@ class Mockup {
     }
   }
 
-  drawSleeve = async (params: { canvas?: any; picture: string; template?: boolean }) => {
+  drawSleeve = async (params: {
+    canvas?: any
+    picture: string
+    template?: boolean
+  }) => {
     const w = 3000
     const h = 1584
 
     const yDraw = 86
 
-    const ctx = params.canvas ? params.canvas.getContext('2d') : this.createContext()
+    const ctx = params.canvas
+      ? params.canvas.getContext('2d')
+      : this.createContext()
     const canvas = ctx.canvas
     canvas.width = w
     canvas.height = h
@@ -1451,7 +1520,9 @@ class Mockup {
     canvas?: any
   }) => {
     return new Promise(async (resolve, _reject) => {
-      const ctx = params.canvas ? params.canvas.getContext('2d') : this.createContext()
+      const ctx = params.canvas
+        ? params.canvas.getContext('2d')
+        : this.createContext()
       const canvas = ctx.canvas
 
       const w = 2500

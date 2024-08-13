@@ -856,7 +856,8 @@ class BigBlue {
           ['27kg']: price['27kg'],
           ['28kg']: price['28kg'],
           ['29kg']: price['29kg'],
-          ['30kg']: price['30kg']
+          ['30kg']: price['30kg'],
+          ['50kg']: price['50kg']
         })
       }
     }

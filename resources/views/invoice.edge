@@ -9,10 +9,11 @@
     }
     body,
     html {
-      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font-family: Arial, sans-serif;
       font-size: 10px;
       padding: 0px;
       margin: 0px;
+      letter-spacing: -0.2px;
       zoom: 0.95;
     }
     .invoice {
@@ -39,7 +40,7 @@
     }
     table.table td, table.table th {
       vertical-align: top;
-      padding: 5px;
+      padding: 2px 5px;
     }
     table.table td {
       color: #888;
@@ -50,12 +51,11 @@
       text-align: left;
     }
     table.border td, table.border th {
-      padding: 7px 20px;
+      padding: 6px 8px;
     }
     tr.header {
       background: #ffd21e;
       color: #000;
-      text-transform: uppercase;
       text-align: center;
     }
     table.lines td.color {
@@ -67,16 +67,17 @@
     }
     table.lines {
       border-collapse: collapse;
-      background: #F5F5F5;
+      background: #F9F9F9;
       width: 100%;
       text-align: left;
     }
     table.lines th {
       text-align: left;
-      padding: 7px 15px;
+      padding: 6px 6px;
     }
     table.lines td {
-      padding: 7px 15px;
+      padding: 4px 6px;
+      border: 1px solid #DDD;
     }
     .nowrap {
       white-space: nowrap;
@@ -102,11 +103,11 @@
 
 <body>
   <div class="invoice">
-  <img src="https://storage.diggersfactory.com/assets/images/logo_black.png" />
 
   <table>
     <tr>
       <td>
+        <img src="https://storage.diggersfactory.com/assets/images/logo_black.png" />
         @if(!compatibility)
         <div class="commercial">{{ t('invoice.commercial') }}</div>
         @endif
@@ -136,8 +137,8 @@
       </td>
     </tr>
   </table>
+  <br />
 
-  <br class="clear" />
   <table style="width: 100%">
     <tr>
       @if(daudin)
@@ -235,19 +236,34 @@
   </table>
 
   <br />
-  <br />
   <table class="lines">
-    @if(ean)
-    <tr class="header">
-      <th>{{ t('invoice.ean13') }}</th>
-      <th>{{ t('invoice.wording') }}</th>
-      <th class="price">{{ t('invoice.quantity') }}</th>
-      <th class="price">{{ t('invoice.price_unit') }}</th>
-      <th class="price">{{ t('invoice.amount') }}</th>
-    </tr>
+    @if(!compatibility)
+      @if(lines[0].ean13) 
+      <tr class="header">
+        <th>{{ t('invoice.wording') }}</th>
+        <th>{{ t('invoice.ean13') }}</th>
+        <th class="price">{{ t('invoice.unit_price') }}</th>
+        <th class="price">{{ t('invoice.quantity') }}</th>
+        <th class="price">{{ t('invoice.total') }}</th>
+      </tr>
+      @else 
+      <tr class="header">
+        <th>{{ t('invoice.wording') }}</th>
+        <th>{{ t('invoice.ean13') }}</th>
+        <th>{{ t('invoice.hs_code') }}</th>
+        <th>{{ t('invoice.origin') }}</th>
+        <th></th>
+        <th class="price">{{ t('invoice.unit_price') }}</th>
+        <th class="price">{{ t('invoice.quantity') }}</th>
+        <th class="price">{{ t('invoice.total') }}</th>
+      </tr>
+      @endif
     @else
     <tr class="header">
       <th width="70%">{{ t('invoice.operations') }}</th>
+      @if (ean)
+        <th>{{ t('invoice.ean13') }}</th>
+      @endif
       <th>{{ t('invoice.unit_price') }}</th>
       <th>{{ t('invoice.quantity') }}</th>
       <th>{{ t('invoice.total') }}</th>
@@ -255,20 +271,36 @@
     @endif
 
     @each(line in lines)
-      @if(ean)
-      <tr>
-          <td>{{line.ean13}}</td>
-          <td>{{line.name}}</td>
-          <td class="nowrap">{{line.quantity}}</td>
-          <td class="nowrap">{{line.price_unit}} {{currency}}</td>
-          <td class="nowrap">{{line.amount}} {{currency}}</td>
-      </tr>
+      @if(!compatibility)
+        @if(line.ean13)
+        <tr>
+            <td>{{line.name || ''}}</td>
+            <td>{{line.ean13 || ''}}</td>
+            <td class="nowrap">{{line.price || ''}} {{line.price ? currency : ''}}</td>
+            <td class="nowrap">{{line.quantity}}</td>
+            <td class="nowrap">{{line.total || ''}} {{line.total ? currency : ''}}</td>
+        </tr>
+        @else
+        <tr>
+            <td>{{line.name || ''}}</td>
+            <td>{{line.barcode || line.ean13 || ''}}</td>
+            <td>{{line.hs_code || ''}}</td>
+            <td>{{line.country_id || ''}}</td>
+            <td>{{line.more || ''}}</td>
+            <td class="nowrap">{{line.price || ''}} {{line.price ? currency : ''}}</td>
+            <td class="nowrap">{{line.quantity}}</td>
+            <td class="nowrap">{{line.total || ''}} {{line.total ? currency : ''}}</td>
+        </tr>
+        @endif
       @else
       <tr>
-          <td>{{line.name}}</td>
-          <td class="nowrap">{{line.price}} {{currency}}</td>
+          <td>{{line.name || ''}}</td>
+          @if(ean)
+            <td>{{line.ean13 || ''}}</td>
+          @endif
+          <td class="nowrap">{{line.price || ''}} {{line.price ? currency : ''}}</td>
           <td class="nowrap">{{line.quantity}}</td>
-          <td class="nowrap">{{line.total}} {{currency}}</td>
+          <td class="nowrap">{{line.total || ''}} {{line.total ? currency : ''}}</td>
       </tr>
       @endif
     @endeach
@@ -277,16 +309,22 @@
         @each(item in shop.items)
         <tr>
             <td>{{item.name}} - {{item.artist_name}}</td>
-            <td class="nowrap">{{item.price}} {{currency}}</td>
+            <td class="nowrap">{{item.price || ''}} {{item.price ? currency : ''}}</td>
             <td class="nowrap">{{item.quantity}}</td>
-            <td class="nowrap">{{item.total}} {{currency}}</td>
+            <td class="nowrap">{{item.total || ''}} {{item.total ? currency : ''}}</td>
         </tr>
         @endeach
       @endeach
       @if(order.shipping || shipping)
       <tr>
         <td>{{ t('invoice.shipping_costs') }}</td>
-        <td class="nowrap"></td>
+        @if(!compatibility)
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+        @endif
+        <td></td>
         <td></td>
         <td class="nowrap">{{order.shipping || shipping}} {{currency}}</td>
       </tr>
@@ -322,7 +360,10 @@
     EORI = GB914711637000<br />
   </p>
   @else 
-  <p align="right" class="medium">Code SH = 85238090<br />
+  <p align="right" class="medium">
+    @if(incoterm)
+    INCOTERM = {{incoterm}}<br />
+    @endif
     EORI = FR81364871400018<br />
     EORI UK = GB439120509000
   </p>

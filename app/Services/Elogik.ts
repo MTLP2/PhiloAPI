@@ -106,8 +106,23 @@ class Elogik {
     })
   }
 
+  static async commandesFournisseur(params: {} = {}) {
+    return Elogik.api('commandes-fournisseur/liste', {
+      method: 'POST',
+      body: params
+    })
+  }
+
+  static async commandeFournisseur(params: { id: string }) {
+    return Elogik.api(`commandes-fournisseur/${params.id}/details`, {
+      method: 'GET'
+    })
+  }
+
   static getTransporter(order: any) {
-    if (order.shipping_type === 'kuehne_nagel') {
+    if (order.shipping_type === 'removal_pickup') {
+      return { id: 38, name: 'Enlevement Sedrap' }
+    } else if (order.shipping_type === 'kuehne_nagel') {
       return { id: 132, name: 'Kuehne Nagel' }
     } else if (order.shipping_type === 'sedrap') {
       return { id: 38, name: 'Enlevement Sedrap' }
@@ -327,7 +342,17 @@ class Elogik {
     }
 
     const items = await DB()
-      .select('product.id', 'order_shop_id', 'oi.quantity', 'product.barcode')
+      .select(
+        'product.id',
+        'order_shop_id',
+        'oi.quantity',
+        'product.barcode',
+        'product.name',
+        'product.hs_code',
+        'product.country_id',
+        'product.more',
+        'product.type'
+      )
       .from('order_item as oi')
       .join('project_product', 'project_product.project_id', 'oi.project_id')
       .join('product', 'project_product.product_id', 'product.id')
@@ -397,6 +422,7 @@ class Elogik {
         codeServiceTransporteur: Elogik.getTransporter(order).id,
         dateCommande: order.created_at.replace(' ', 'T') + 'P',
         numeroLogo: 1,
+        codeTypeClient: order.name ? 'ENTREPRISE' : 'PARTICULIER',
         adresseFacturation: adr,
         numeroDepot: pickup?.number,
         montantHT: order.sub_total,
@@ -430,34 +456,8 @@ class Elogik {
       }
 
       if (!Utils.isEuropean(order.country_id) || order.country_id === 'GB') {
-        const invoice = {
-          customer: {
-            ...order
-          },
-          type: 'invoice',
-          currency: order.currency,
-          order: {
-            shipping: order.shipping
-          },
-          number: order.id,
-          code: order.id,
-          date: Utils.date(),
-          tax: order.tax,
-          tax_rate: order.tax_rate * 100,
-          sub_total: order.sub_total,
-          total: order.total,
-          lines: JSON.stringify(
-            order.items.map((item: any) => {
-              console.log(item)
-              return {
-                name: `${item.artist_name} - ${item.name}`,
-                quantity: item.quantity,
-                price: item.price
-              }
-            })
-          )
-        }
-        const file: any = await Invoice.download({
+        const invoice = await Invoice.byOrderShopId(order.id)
+        const file = await Invoice.download({
           params: {
             invoice: invoice,
             lang: 'en',

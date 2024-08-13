@@ -216,7 +216,6 @@ class Cart {
             state: params.customer.state
           })
           if (shipping.error === 'no_shipping' && process.env.NODE_ENV === 'production') {
-            /**
             await Notification.sendEmail({
               to: Env.get('DEBUG_EMAIL'),
               subject: `No Shipping: ${project.artist_name} - ${project.name}`,
@@ -225,7 +224,6 @@ class Cart {
                 <p>http://diggersfactory.com/sheraf/project/${project.project_id}/stocks</p>
               </div>`
             })
-            **/
           }
           if (shipping.error) {
             cart.error = shipping.error
@@ -1844,7 +1842,7 @@ class Cart {
     const hasBox = params.calculate.boxes && params.calculate.boxes.length > 0
     const intent: any = {
       amount:
-        params.calculate.currency === 'KRW'
+        params.calculate.currency === 'KRW' || params.calculate.currency === 'JPY'
           ? Math.round(params.calculate.total)
           : Math.round(params.calculate.total * 100),
       currency: params.calculate.currency,

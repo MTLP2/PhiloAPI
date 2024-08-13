@@ -933,10 +933,12 @@ class Production {
         'production.project_id',
         'project.name',
         'project.artist_name',
-        'project.picture'
+        'project.picture',
+        'client.name as client_name'
       )
       .join('production', 'production.id', 'production_dispatch.production_id')
       .join('project', 'project.id', 'production.project_id')
+      .leftJoin('client', 'client.id', 'production_dispatch.client_id')
       .belongsTo('customer')
       .where('production_dispatch.is_delete', false)
 
@@ -1160,8 +1162,10 @@ class Production {
     const customer = await Customer.save(params.customer)
     item.production_id = params.id
     item.customer_id = customer.id
+    item.client_id = params.client_id
     item.sender = params.sender
     item.logistician = params.logistician
+    item.logistician_id = params.logistician_id
     item.date_sent = params.date_sent || null
     item.tracking = params.tracking
     item.price = params.price || null
@@ -2184,15 +2188,21 @@ class Production {
         'production.currency',
         'production.final_price',
         'production.form_price',
-        'production.quantity_pressed',
-        'project.artist_name',
-        'project.name'
+        'production.quantity_pressed'
       )
       .join('production_dispatch', 'production_dispatch.production_id', 'production.id')
       .where('production_dispatch.id', params.dispatch_id)
       .join('project', 'project.id', 'production.project_id')
       .belongsTo('customer')
       .first()
+
+    const items = await DB('production')
+      .select('product.name', 'product.hs_code', 'product.barcode')
+      .join('production_dispatch', 'production_dispatch.production_id', 'production.id')
+      .join('project_product', 'project_product.project_id', 'production.project_id')
+      .join('product', 'product.id', 'project_product.product_id')
+      .where('production_dispatch.id', params.dispatch_id)
+      .all()
 
     const invoice: any = {}
     invoice.date = moment().format('YYYY-MM-DD')
@@ -2203,25 +2213,28 @@ class Production {
     invoice.name = 'Invoice co - ' + prod.artist_name + ' - ' + prod.name
     invoice.client = 'B2B'
     invoice.status = 'invoiced'
+    invoice.incoterm = params.incoterm
     invoice.category = 'shipping'
     invoice.sub_total = Utils.round(params.price * prod.quantity)
     invoice.tax = 0
     invoice.total = invoice.sub_total
     invoice.invoice_comment = prod.invoice_comment ? prod.invoice_comment.split('\n') : []
-    invoice.lines = [
-      {
-        name: `${prod.artist_name} - ${prod.name}`,
-        price: params.price,
-        quantity: prod.quantity,
-        total: invoice.sub_total
-      }
-    ]
+    invoice.lines = items.map((item) => ({
+      name: item.name,
+      hs_code: item.hs_code,
+      barcode: item.barcode,
+      quantity: prod.quantity,
+      price: params.price,
+      total: invoice.sub_total
+    }))
 
     const res = await Invoice.save(invoice)
     await DB('production_dispatch').where('id', params.dispatch_id).update({
       invoice_id: res.id
     })
-    return (await Invoice.download({ params: { id: res.id, lang: 'en' } })).data
+    return (
+      await Invoice.download({ params: { id: res.id, lang: 'en', incoterm: params.incoterm } })
+    ).data
   }
 
   static async packingList(params) {
@@ -2405,9 +2418,7 @@ class Production {
 
   static async downloadInvoiceCost(params) {
     const item = await DB('production_cost').find(params.cid)
-
     const file = await Storage.get(item.invoice, true)
-
     return file
   }
 

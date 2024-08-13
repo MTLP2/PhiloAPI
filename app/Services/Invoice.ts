@@ -100,17 +100,73 @@ class Invoice {
   }
 
   static async byOrderShopId(id) {
-    const invoice = {}
+    const invoice: any = {}
     const shop = await Admin.getOrderShop(id)
+
+    for (const product of shop.products) {
+      const idx = shop.items.findIndex((i) => i.project_id === product.project_id)
+      if (!shop.items[idx].lines) {
+        shop.items[idx].lines = []
+      }
+      console.log('product', shop.items[idx].lines)
+      shop.items[idx].lines.push(product)
+    }
+
+    type Line = {
+      name: string
+      price: number | string
+      quantity: number
+      total: number | string
+      barcode?: string
+      hs_code?: string
+      type?: string
+      country_id?: number
+      more?: string
+    }
+
+    const lines: Line[] = []
+    for (const item of shop.items) {
+      const p: Line = {
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        total: item.total
+      }
+      if (item.lines.length === 1) {
+        p.barcode = item.lines[0].barcode
+        p.hs_code = item.lines[0].hs_code
+        p.type = item.lines[0].type
+        p.more = item.lines[0].more
+        p.country_id = item.lines[0].country_id
+      }
+      lines.push(p)
+      if (item.lines.length > 1) {
+        for (const line of item.lines) {
+          lines.push({
+            name: line.name,
+            price: '',
+            total: '',
+            barcode: line.barcode,
+            quantity: line.quantity,
+            hs_code: line.hs_code,
+            type: line.type,
+            more: line.more,
+            country_id: line.country_id
+          })
+        }
+      }
+    }
     invoice.order = {
-      shops: [shop],
       shipping: shop.shipping
     }
+    invoice.lines = JSON.stringify(lines)
+
     invoice.customer = shop.customer
     invoice.number = id
     invoice.code = id
     invoice.type = 'invoice'
     invoice.lang = 'en'
+    invoice.incoterm = 'DAP'
     invoice.currency = shop.currency
     invoice.currency_rate = shop.currency_rate
     invoice.date = shop.created_at
@@ -118,7 +174,7 @@ class Invoice {
     invoice.tax = shop.tax
     invoice.tax_rate = shop.tax_rate
     invoice.total = shop.total
-    invoice.lines = JSON.stringify([])
+
     return invoice
   }
 
@@ -141,6 +197,7 @@ class Invoice {
     email: string
     payment_days: number
     compatibility: boolean
+    incoterm?: string
     sub_total?: number
     margin?: number
     tax?: number
@@ -240,6 +297,7 @@ class Invoice {
     invoice.lines = params.invoice_to_payment ? params.lines : JSON.stringify(params.lines)
     invoice.payment_id = params.payment_id
     invoice.comment = params.comment
+    invoice.incoterm = params.incoterm
     invoice.resp_payment = params.resp_payment || null
     invoice.resp_accounting = params.resp_accounting || null
     invoice.updated_at = params.created_at || Utils.date()
@@ -465,10 +523,15 @@ class Invoice {
         break
     }
     invoice.daudin = params.daudin
+    if (params.incoterm) {
+      invoice.incoterm = params.incoterm
+    }
     invoice.number = invoice.code
     invoice.customer.country = country?.name || ''
+
     invoice.lines = Array.isArray(invoice.lines) ? invoice.lines : JSON.parse(invoice.lines)
     for (const i in invoice.lines) {
+      invoice.lines[i].price = invoice.lines[i].price || invoice.lines[i].price_unit
       invoice.lines[i].total = Utils.round(invoice.lines[i].price * invoice.lines[i].quantity)
       if (invoice.lines[i].ean13 !== undefined) {
         invoice.ean = true
@@ -639,7 +702,9 @@ class Invoice {
         'order.total as order_total',
         'order.payment_type',
         'order.shipping as order_shipping',
-        'payment.payment_id'
+        'payment.payment_id as payment_pay_id',
+        'order.transaction_id',
+        'order.payment_id'
       )
       .leftJoin('order', 'order.id', 'order_id')
       .leftJoin('customer', 'customer.id', 'invoice.customer_id')
@@ -685,7 +750,7 @@ class Invoice {
       data.shipping_eur = data.shipping * data.currency_rate
       data.total_eur = data.total * data.currency_rate
 
-      if (!data.payment_type && data.payment_id) {
+      if (!data.payment_type && data.payment_pay_id) {
         data.payment_type = 'stripe'
       }
       invoices.push(data)
@@ -713,6 +778,8 @@ class Invoice {
       { header: 'Total HT EUR', key: 'total_ht_eur' },
       { header: 'Tax EUR', key: 'tax_eur' },
       { header: 'Total EUR', key: 'total_eur' },
+      { header: 'Payment ID', key: 'payment_id' },
+      { header: 'Transaction ID', key: 'transaction_id' },
       { header: 'Comment', key: 'comment', width: 40 }
     ]
 
@@ -733,6 +800,8 @@ class Invoice {
     invoice.year = moment().format('YY')
     invoice.date = moment().format('YYYY-MM-DD')
     invoice.type = params.type
+    invoice.date_payment = null
+    invoice.proof_payment = null
     invoice.status = 'invoiced'
 
     const customer = await Customer.save({

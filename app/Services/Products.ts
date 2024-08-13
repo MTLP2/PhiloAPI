@@ -5,7 +5,7 @@ import Whiplash from 'App/Services/Whiplash'
 import Elogik from 'App/Services/Elogik'
 import BigBlue from 'App/Services/BigBlue'
 
-class Product {
+class Products {
   static async all(params: {
     filters?: string
     sort?: string
@@ -167,7 +167,7 @@ class Product {
       .where('product_id', params.id)
       .all()
 
-    const sales = await Product.getProductsSales({ productIds: [params.id] })
+    const sales = await Products.getProductsSales({ productIds: [params.id] })
     for (const s in item.stocks) {
       const stock = item.stocks[s]
       const sale = sales[params.id] && sales[params.id][stock.type]
@@ -214,6 +214,7 @@ class Product {
     size?: string
     hs_code?: string
     country_id?: string
+    more?: string
     color?: string
     weight?: number
   }) {
@@ -243,6 +244,7 @@ class Product {
     item.isrc = params.isrc
     item.hs_code = params.hs_code
     item.country_id = params.country_id
+    item.more = params.more
     item.parent_id = params.parent_id
     item.size = params.size
     item.color = params.color
@@ -253,7 +255,7 @@ class Product {
 
     const projects = await DB('project_product').where('product_id', item.id).all()
     for (const project of projects) {
-      Product.setBarcodes({ project_id: project.project_id })
+      Products.setBarcodes({ project_id: project.project_id })
     }
     if (item.barcode) {
       if (!item.whiplash_id || item.whiplash_id === -1) {
@@ -456,7 +458,7 @@ class Product {
     type?: string
   }) => {
     if (!params.product_id) {
-      const product = await Product.save({
+      const product = await Products.save({
         type: params.type,
         name: params.name
       })
@@ -485,7 +487,7 @@ class Product {
       })
     }
 
-    await Product.setBarcodes({ project_id: params.project_id })
+    await Products.setBarcodes({ project_id: params.project_id })
     await Stock.setStockProject({
       projectIds: [params.project_id]
     })
@@ -506,7 +508,7 @@ class Product {
         .delete()
     }
 
-    await Product.setBarcodes({ project_id: params.project_id })
+    await Products.setBarcodes({ project_id: params.project_id })
     await Stock.setStockProject({
       projectIds: [params.project_id]
     })
@@ -813,6 +815,182 @@ class Product {
 
     return products
   }
+
+  static getStocks = async (params: { products: string; order_manual_id?: number }) => {
+    const res = {}
+    const base = {
+      is_distrib: false,
+      stock: 0,
+      dispo: 0,
+      reserved: 0,
+      reserved_preorder: 0,
+      reserved_manual: 0,
+      pending: 0,
+      theoric: 0
+    }
+    const logisticians = ['whiplash', 'whiplash_uk', 'daudin', 'bigblue']
+
+    const stocks = await DB('stock')
+      .select('product_id', 'quantity', 'type')
+      .whereIn('product_id', params.products.split(','))
+      .where('is_preorder', false)
+      .where('quantity', '!=', '0')
+      .all()
+
+    for (const stock of stocks) {
+      if (!res[stock.product_id]) {
+        res[stock.product_id] = {}
+      }
+      if (!res[stock.product_id].all) {
+        res[stock.product_id].all = { ...base }
+      }
+      if (!res[stock.product_id][stock.type]) {
+        res[stock.product_id][stock.type] = {
+          ...base,
+          is_distrib: logisticians.includes(stock.type)
+        }
+      }
+      res[stock.product_id][stock.type].stock += stock.quantity
+      res[stock.product_id].all.stock += stock.quantity
+    }
+
+    const dispatchs = await DB('production_dispatch')
+      .select(
+        'production_dispatch.id',
+        'pp.product_id',
+        'production_dispatch.logistician',
+        'production_dispatch.quantity',
+        'production_dispatch.quantity_received'
+      )
+      .join('production', 'production.id', 'production_dispatch.production_id')
+      .join('project_product as pp', 'pp.project_id', 'production.project_id')
+      .join('product', 'product.id', 'pp.product_id')
+      .whereIn('product.id', params.products.split(','))
+      .whereIn('production_dispatch.logistician', ['whiplash', 'whiplash_uk', 'daudin', 'bigblue'])
+      .whereNull('production_dispatch.quantity_received')
+      .all()
+
+    for (const dispatch of dispatchs) {
+      if (!res[dispatch.product_id]) {
+        res[dispatch.product_id] = {}
+      }
+      if (!res[dispatch.product_id][dispatch.logistician]) {
+        res[dispatch.product_id][dispatch.logistician] = {
+          ...base,
+          is_distrib: logisticians.includes(dispatch.logistician)
+        }
+      }
+      res[dispatch.product_id][dispatch.logistician].pending += dispatch.quantity
+    }
+
+    const orders = await DB('order_item')
+      .select('pp.product_id', 'order_item.quantity', 'order_shop.transporter')
+      .join('order_shop', 'order_shop.id', 'order_item.order_shop_id')
+      .join('project_product as pp', 'pp.project_id', 'order_item.project_id')
+      .whereIn('pp.product_id', params.products.split(','))
+      .where('order_shop.is_paid', true)
+      .whereNull('order_shop.date_export')
+      .all()
+
+    for (const order of orders) {
+      if (!res[order.product_id]) {
+        res[order.product_id] = {}
+        res[order.product_id].all = { ...base }
+      }
+      if (!res[order.product_id][order.transporter]) {
+        res[order.product_id][order.transporter] = {
+          ...base,
+          is_distrib: logisticians.includes(order.transporter)
+        }
+      }
+      res[order.product_id].all.reserved += order.quantity
+      res[order.product_id][order.transporter].reserved += order.quantity
+      res[order.product_id][order.transporter].reserved_preorder += order.quantity
+    }
+
+    const ordersManual = await DB('order_manual_item')
+      .select(
+        'order_manual_item.product_id',
+        'order_manual.transporter',
+        'order_manual_item.quantity',
+        'client.code'
+      )
+      .join('order_manual', 'order_manual.id', 'order_manual_item.order_manual_id')
+      .leftJoin('client', 'client.id', 'order_manual.client_id')
+      .whereIn('order_manual_item.product_id', params.products.split(','))
+      .where('order_manual.step', '=', 'pending')
+      .where((query) => {
+        if (params.order_manual_id) {
+          query.where('order_manual.id', '!=', params.order_manual_id)
+        }
+      })
+      .all()
+
+    for (const order of ordersManual) {
+      if (!res[order.product_id]) {
+        res[order.product_id] = {}
+      }
+      if (!res[order.product_id].all) {
+        res[order.product_id].all = { ...base }
+      }
+      if (!res[order.product_id][order.transporter]) {
+        res[order.product_id][order.transporter] = {
+          ...base,
+          is_distrib: logisticians.includes(order.transporter)
+        }
+      }
+      res[order.product_id].all.reserved += order.quantity
+      res[order.product_id][order.transporter].reserved += order.quantity
+      res[order.product_id][order.transporter].reserved_manual += order.quantity
+
+      if (order.code) {
+        if (!res[order.product_id][order.code]) {
+          res[order.product_id][order.code] = {
+            ...base,
+            is_distrib: logisticians.includes(order.code)
+          }
+        }
+        res[order.product_id][order.code].reserved += order.quantity
+        res[order.product_id][order.code].reserved_manual += order.quantity
+      }
+    }
+
+    const productions = await DB('production')
+      .select('pp.product_id', 'production.quantity')
+      .join('project_product as pp', 'pp.project_id', 'production.project_id')
+      .join('product', 'product.id', 'pp.product_id')
+      .where('step', '!=', 'postprod')
+      .whereIn('product.id', params.products.split(','))
+      .all()
+
+    for (const prod of productions) {
+      if (!res[prod.product_id]) {
+        res[prod.product_id] = {}
+      }
+      if (!res[prod.product_id].all) {
+        res[prod.product_id].all = { ...base }
+      }
+      res[prod.product_id].all.pending += prod.quantity
+    }
+
+    for (const product of Object.keys(res)) {
+      res[product].all = { ...base, ...res[product].all }
+      for (const logistician of Object.keys(res[product])) {
+        if (logisticians.includes(logistician)) {
+          res[product][logistician].dispo =
+            res[product][logistician].stock - res[product][logistician].reserved
+          res[product][logistician].theoric =
+            res[product][logistician].dispo + res[product][logistician].pending
+        } else {
+          res[product][logistician].dispo = res[product][logistician].stock
+          res[product][logistician].theoric =
+            res[product][logistician].dispo + res[product][logistician].reserved
+        }
+      }
+    }
+
+    return res
+  }
 }
 
-export default Product
+export default Products

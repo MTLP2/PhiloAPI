@@ -78,6 +78,7 @@ class Whiplash {
     const customer = await DB('customer').find(shop.customer_id)
 
     const params: any = {
+      shipping_company: customer.name,
       shipping_name: `${customer.firstname} ${customer.lastname}`,
       shipping_address_1: customer.address,
       shipping_city: customer.city,
@@ -151,7 +152,9 @@ class Whiplash {
   static getShippingMethod = (params: {
     shipping_type: string
   }) => {
-    if (params && params.shipping_type === 'no_tracking') {
+    if (params && params.shipping_type === 'removal_pickup') {
+      return 'removal_pickup'
+    } else if (params && params.shipping_type === 'no_tracking') {
       return 'no_tracking'
     } else if (params && params.shipping_type === 'tracking') {
       return 'tracking'

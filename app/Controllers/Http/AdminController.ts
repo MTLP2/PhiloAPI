@@ -5,6 +5,7 @@ import Admin from 'App/Services/Admin'
 import DB from 'App/DB'
 import Notification from 'App/Services/Notification'
 import Order from 'App/Services/Order'
+import OrdersManual from 'App/Services/OrdersManual'
 import PromoCode from 'App/Services/PromoCode'
 import Goodie from 'App/Services/Goodie'
 import Sponsor from 'App/Services/Sponsor'
@@ -30,7 +31,7 @@ import MailJet from 'App/Services/MailJet'
 import Review from 'App/Services/Review'
 import ApiError from 'App/ApiError'
 import ProjectService from 'App/Services/Project'
-import Product from 'App/Services/Product'
+import Products from 'App/Services/Products'
 import Dispatch from 'App/Services/Dispatch'
 import ShippingWeight from 'App/Services/ShippingWeight'
 import Log from 'App/Services/Log'
@@ -922,7 +923,7 @@ class AdminController {
   }
 
   getOrderManual({ params }) {
-    return Order.allManual(params)
+    return OrdersManual.all(params)
   }
 
   async findOrderManual({ params }) {
@@ -933,7 +934,7 @@ class AdminController {
         }),
         data: params
       })
-      return Order.findManual(payload)
+      return OrdersManual.find(payload)
     } catch (err) {
       return { error: err.message, validation: err.messages }
     }
@@ -952,13 +953,20 @@ class AdminController {
           comment: schema.string.optional(),
           order_shop_id: schema.number.optional(),
           tracking_number: schema.string.optional(),
+          shipping_cost: schema.number.optional(),
+          purchase_order: schema.string.optional(),
+          invoice_number: schema.string.optional(),
+          missing_items: schema.string.optional(),
+          incoterm: schema.string.optional(),
           user_id: schema.number.optional(),
+          client_id: schema.number.optional(),
           step: schema.string.optional(),
           force: schema.boolean.optional(),
           items: schema.array().members(
             schema.object().members({
               barcode: schema.number(),
-              quantity: schema.number()
+              quantity: schema.number(),
+              stock: schema.number.optional()
             })
           ),
           customer: schema.object().members({
@@ -976,7 +984,7 @@ class AdminController {
         }),
         data: params
       })
-      return Order.saveManual(payload)
+      return OrdersManual.save(payload)
     } catch (err) {
       return { error: err.message, validation: err.messages }
     }
@@ -988,6 +996,7 @@ class AdminController {
         schema: schema.create({
           id: schema.number(),
           type: schema.string.optional(),
+          incoterm: schema.string.optional(),
           products: schema.array().members(
             schema.object().members({
               barcode: schema.number(),
@@ -999,7 +1008,7 @@ class AdminController {
         }),
         data: params
       })
-      return Order.getOrderManualInvoiceCo(payload)
+      return OrdersManual.getInvoiceCo(payload)
     } catch (err) {
       return { error: err.message, validation: err.messages }
     }
@@ -1014,14 +1023,14 @@ class AdminController {
         }),
         data: params
       })
-      return Order.packingList(payload)
+      return OrdersManual.packingList(payload)
     } catch (err) {
       return { error: err.message, validation: err.messages }
     }
   }
 
-  deleteOrderManual({ params }) {
-    return Order.deleteManual(params)
+  cancelOrderManual({ params }) {
+    return OrdersManual.cancel(params)
   }
 
   getDaudinLines({ params }) {
@@ -1391,7 +1400,8 @@ class AdminController {
         '27kg': schema.number.nullableAndOptional(),
         '28kg': schema.number.nullableAndOptional(),
         '29kg': schema.number.nullableAndOptional(),
-        '30kg': schema.number.nullableAndOptional()
+        '30kg': schema.number.nullableAndOptional(),
+        '50kg': schema.number.nullableAndOptional()
       }),
       data: params
     })
@@ -1429,12 +1439,16 @@ class AdminController {
     return Order.importOrders(params)
   }
 
+  importOrdersStatus({ params }) {
+    return Order.importOrdersStatus(params)
+  }
+
   getUserStock({ params }) {
     return Stock.getUserStock({ user_id: params.id })
   }
 
   getUserProducts({ params }) {
-    return Product.forUser({ user_id: params.id, ship_notices: params.ship_notices })
+    return Products.forUser({ user_id: params.id, ship_notices: params.ship_notices })
   }
 
   saveShipNotice({ params }) {
@@ -1528,7 +1542,7 @@ class AdminController {
         }),
         data: params
       })
-      return Order.getColumnsManual(payload)
+      return OrdersManual.getColumns(payload)
     } catch (err) {
       return { error: err.message, validation: err.messages }
     }
@@ -1544,7 +1558,7 @@ class AdminController {
         }),
         data: params
       })
-      return Order.getBarcodesManual(payload)
+      return OrdersManual.getBarcodes(payload)
     } catch (err) {
       return { error: err.message, validation: err.messages }
     }

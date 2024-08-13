@@ -4,6 +4,7 @@ import Utils from 'App/Utils'
 import Invoice from 'App/Services/Invoice'
 import Customer from 'App/Services/Customer'
 import Orders from 'App/Services/Order'
+import OrdersManual from 'App/Services/OrdersManual'
 import ApiError from 'App/ApiError'
 import Notification from './Notification'
 import Revolut from 'App/Services/Revolut'
@@ -314,7 +315,7 @@ class Payment {
         .where('order_shop_id', payment.order_shop_id)
         .all()
 
-      await Orders.saveManual({
+      await OrdersManual.save({
         transporter: order.transporter || 'daudin',
         type: 'return',
         order_shop_id: payment.order_shop_id,
@@ -322,8 +323,7 @@ class Payment {
         address_pickup: order.address_pickup,
         customer: order.customer,
         email: order.email,
-        barcodes: items,
-        force: true
+        items: items
       })
     }
 
@@ -337,7 +337,7 @@ class Payment {
 
       if (resp) {
         await Notification.sendEmail({
-          to: resp.email,
+          to: `${resp.email},invoicing@diggersfactory.com`,
           subject: `Paiement de ${payment.total} ${payment.currency}`,
           text: `https://www.diggersfactory.com/sheraf/invoice/${payment.invoice_id}`
         })

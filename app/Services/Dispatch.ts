@@ -9,6 +9,7 @@ import Notification from 'App/Services/Notification'
 import Order from 'App/Services/Order'
 import Payments from 'App/Services/Payments'
 import BigBlue from 'App/Services/BigBlue'
+import Elogik from 'App/Services/Elogik'
 import Cart from 'App/Services/Cart'
 import Stock from 'App/Services/Stock'
 import Storage from 'App/Services/Storage'
@@ -591,6 +592,7 @@ class Dispatch {
       item['28kg'] = price['28kg']
       item['29kg'] = price['29kg']
       item['30kg'] = price['30kg']
+      item['50kg'] = price['50kg']
       item.updated_at = Utils.date()
       await item.save()
     }
@@ -670,7 +672,8 @@ class Dispatch {
         '27kg': getPrice(row, 'AK'),
         '28kg': getPrice(row, 'AL'),
         '29kg': getPrice(row, 'AM'),
-        '30kg': getPrice(row, 'AN')
+        '30kg': getPrice(row, 'AN'),
+        '50kg': getPrice(row, 'AO')
       }
       if (price.country_id.length === 2) {
         prices.push(price)
@@ -711,7 +714,8 @@ class Dispatch {
         '27kg': getPrice(pickup, 'D27'),
         '28kg': getPrice(pickup, 'D27'),
         '29kg': getPrice(pickup, 'D27'),
-        '30kg': getPrice(pickup, 'D27')
+        '30kg': getPrice(pickup, 'D27'),
+        '50kg': getPrice(pickup, 'D27')
       }
     })
 
@@ -748,7 +752,8 @@ class Dispatch {
         '27kg': getPrice(pickup, 'D45'),
         '28kg': getPrice(pickup, 'D45'),
         '29kg': getPrice(pickup, 'D45'),
-        '30kg': getPrice(pickup, 'D45')
+        '30kg': getPrice(pickup, 'D45'),
+        '50kg': getPrice(pickup, 'D45')
       }
     })
 
@@ -785,7 +790,8 @@ class Dispatch {
         '27kg': getPrice(pickup, 'E45'),
         '28kg': getPrice(pickup, 'E45'),
         '29kg': getPrice(pickup, 'E45'),
-        '30kg': getPrice(pickup, 'E45')
+        '30kg': getPrice(pickup, 'E45'),
+        '50kg': getPrice(pickup, 'E45')
       }
     })
 
@@ -822,7 +828,8 @@ class Dispatch {
         '27kg': getPrice(pickup, 'F45'),
         '28kg': getPrice(pickup, 'F45'),
         '29kg': getPrice(pickup, 'F45'),
-        '30kg': getPrice(pickup, 'F45')
+        '30kg': getPrice(pickup, 'F45'),
+        '50kg': getPrice(pickup, 'F45')
       }
     })
 
@@ -859,7 +866,8 @@ class Dispatch {
         '27kg': getPrice(pickup, 'H45'),
         '28kg': getPrice(pickup, 'H45'),
         '29kg': getPrice(pickup, 'H45'),
-        '30kg': getPrice(pickup, 'H45')
+        '30kg': getPrice(pickup, 'H45'),
+        '50kg': getPrice(pickup, 'H45')
       }
     })
 
@@ -896,7 +904,8 @@ class Dispatch {
         '27kg': getPrice(pickup, 'I45'),
         '28kg': getPrice(pickup, 'I45'),
         '29kg': getPrice(pickup, 'I45'),
-        '30kg': getPrice(pickup, 'I45')
+        '30kg': getPrice(pickup, 'I45'),
+        '50kg': getPrice(pickup, 'I45')
       }
     })
 
@@ -933,7 +942,8 @@ class Dispatch {
         '27kg': getPrice(pickup, 'J45'),
         '28kg': getPrice(pickup, 'J45'),
         '29kg': getPrice(pickup, 'J45'),
-        '30kg': getPrice(pickup, 'J45')
+        '30kg': getPrice(pickup, 'J45'),
+        '50kg': getPrice(pickup, 'J45')
       }
     })
 
@@ -976,7 +986,8 @@ class Dispatch {
         '27kg': price.prices['27kg'],
         '28kg': price.prices['28kg'],
         '29kg': price.prices['29kg'],
-        '30kg': price.prices['30kg']
+        '30kg': price.prices['30kg'],
+        '50kg': price.prices['50kg']
       })
     }
 
@@ -1141,7 +1152,8 @@ class Dispatch {
         '27kg': price.prices['27kg'],
         '28kg': price.prices['28kg'],
         '29kg': price.prices['29kg'],
-        '30kg': price.prices['30kg']
+        '30kg': price.prices['30kg'],
+        '50kg': price.prices['50kg']
       })
     }
 
@@ -1300,6 +1312,8 @@ class Dispatch {
         DB('order_item')
           .where({ project_id: params.project_id })
           .where('transporter', params.from)
+          .whereNull('date_export')
+          .whereNull('logistician_id')
           .select('order_shop_id')
           .query()
       )
@@ -1309,6 +1323,17 @@ class Dispatch {
       success: true,
       count: res
     }
+  }
+
+  static addDispatchLogisticianId = async () => {
+    const daudin = await Elogik.commandesFournisseur()
+
+    const order = await Elogik.commandeFournisseur({
+      id: daudin.commandes[0].numeroCommande
+    })
+    console.log(order)
+
+    return order
   }
 }
 

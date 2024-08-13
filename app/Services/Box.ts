@@ -1250,6 +1250,7 @@ class Box {
         !boxDispatchs[box.id] &&
         ['3_months', '6_months', '12_months'].includes(box.periodicity)
       ) {
+        barcodes.push('3760396023836')
         barcodes.push('TOTEBAGBLANC')
         barcodes.push('QOBUZFLYER')
       }

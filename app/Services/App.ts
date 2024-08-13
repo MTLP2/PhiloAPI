@@ -191,7 +191,7 @@ class App {
     }
   }
 
-  static cron = async () => {
+  static minutely = async () => {
     let cron
     try {
       cron = await DB('cronjobs').create({
