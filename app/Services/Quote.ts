@@ -1153,7 +1153,7 @@ class Quote {
       getCost({
         l: {
           '12"': 9,
-          '10"': 8,
+          '10"': 9,
           '7"': 13
         },
         quantity: params.nb_vinyl,
@@ -1314,9 +1314,9 @@ class Quote {
 
       quote.prices.type_vinyl.picture_disc = getCost({
         l: {
-          '12"': null,
+          '12"': 74,
           '10"': 75,
-          '7"': null
+          '7"': 76
         },
         type: 'type_vinyl',
         option: 'picture_disc',
@@ -1349,7 +1349,7 @@ class Quote {
         getCost({
           l: {
             '12"': 40,
-            '10"': 39,
+            '10"': 40,
             '7"': 40
           },
           type: 'type_vinyl',
@@ -1437,8 +1437,6 @@ class Quote {
 
     quote.type_vinyl =
       quote.prices.weight[params.weight] + quote.prices.type_vinyl[params.type_vinyl]
-
-    // console.log(quote.type_vinyl)
 
     quote.prices.label_color.white = getCost({
       l: 89,
@@ -1649,6 +1647,7 @@ class Quote {
     quote.sticker = quote.prices.sticker[params.sticker]
 
     // test pressing
+    // A voir avec vico
     quote.test_pressing = 0
     if (params.test_pressing) {
       quote.test_pressing += getCost({
@@ -1756,7 +1755,7 @@ class Quote {
     quote.prices.sleeve.pvc =
       quote.prices.sleeve.color +
       getCost({
-        l: 48,
+        l: 51,
         type: 'sleeve',
         option: 'pvc',
         onceByCopy: true,
@@ -1838,7 +1837,7 @@ class Quote {
     }
     if (params.weight === '140') {
       quote.prices.inner_sleeve.printed = getCost({
-        l: 61,
+        l: 60,
         type: 'inner_sleeve',
         option: 'printed',
         active: params.inner_sleeve === 'printed'
@@ -1937,7 +1936,6 @@ class Quote {
       onceByCopy: true,
       active: params.numbered === 'hand_numbered'
     })
-    console.log(params.numbered)
     quote.prices.numbered.numbered = getCost({
       l: 100,
       type: 'numbered',
@@ -1948,27 +1946,25 @@ class Quote {
     quote.numbered = quote.prices.numbered[params.numbered]
 
     // Assembly options (x Nb de LP)
-    quote.prices.assembly =
-      getCost({
-        l: 91,
-        type: 'assembly',
-        option: '',
-        active: true
-      }) +
-      getCost({
-        l: 92,
-        type: 'assembly',
-        option: '',
-        active: true
-      })
+    // quote.prices.assembly =
+    //   getCost({
+    //     l: 91,
+    //     type: 'assembly',
+    //     option: '',
+    //     active: true
+    //   }) +
+    //   getCost({
+    //     l: 92,
+    //     type: 'assembly',
+    //     option: '',
+    //     active: true
+    //   })
 
-    // Frais supplementaire + échentillon diggers
     quote.test_pressing = 40
 
     if (params.quantity === 100) {
       quote.test_pressing += 90
     }
-
     return quote
   }
 
