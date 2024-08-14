@@ -1166,6 +1166,7 @@ class Production {
     item.sender = params.sender
     item.logistician = params.logistician
     item.logistician_id = params.logistician_id
+    item.status = params.status
     item.date_sent = params.date_sent || null
     item.tracking = params.tracking
     item.price = params.price || null
