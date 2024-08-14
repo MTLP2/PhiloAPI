@@ -1565,8 +1565,8 @@ class AdminController {
   }
 
   async getProjectsToSync({ params }) {
-    if (params.transporter === 'refund') {
-      return Admin.getProjectsToRefund()
+    if (params.transporter === 'error') {
+      return Admin.getProjectsToSyncError()
     } else {
       return Admin.getProjectsToSync(params)
     }

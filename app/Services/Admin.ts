@@ -5610,7 +5610,7 @@ class Admin {
       )
   }
 
-  static getProjectsToRefund = async () => {
+  static getProjectsToSyncError = async () => {
     const list = DB('project')
       .select(
         'project.id',
