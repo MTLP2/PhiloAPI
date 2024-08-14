@@ -365,11 +365,7 @@ class Utils {
       }
     }
 
-    const total = query
-      .getQuery()
-      .clone()
-      .count()
-      .then((res) => res[0]['count(*)'])
+    const total = query.getQuery().clone().clear('select').clear('order').count()
 
     const page = params.page && params.page > 0 ? params.page : 1
     const size = params.size && params.size > 0 ? params.size : 50
@@ -386,7 +382,10 @@ class Utils {
     }
 
     if (params.pagination !== false) {
-      const [data, count] = await Promise.all([query.all(), total])
+      const [data, count] = await Promise.all([
+        query.all(),
+        total.then((res) => res[0]['count(*)'])
+      ])
       return {
         count: count,
         data: data
@@ -484,9 +483,8 @@ class Utils {
 
     const total = query
       .clearSelect()
+      .clearOrderBy()
       .select(({ fn }) => [fn.count((params.count || 'id') as any).as('count')])
-      .executeTakeFirst()
-      .then((res) => res?.count)
 
     const page = params.page && params.page > 0 ? params.page : 1
     const size = params.size && params.size > 0 ? params.size : 50
@@ -502,7 +500,10 @@ class Utils {
       query = query.limit(size).offset((page - 1) * size)
     }
 
-    const [data, count] = await Promise.all([query.execute(), total])
+    const [data, count] = await Promise.all([
+      query.execute(),
+      total.executeTakeFirst().then((res) => res?.count)
+    ])
     return {
       count: count,
       data: data
