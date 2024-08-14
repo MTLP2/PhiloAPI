@@ -390,19 +390,6 @@ class Admin {
       is_preorder: false
     })
 
-    const itemsQuery = DB('item')
-      .select(
-        'item.*',
-        DB.raw(`(select count(*)
-      from order_shop
-      inner join order_item on order_item.order_shop_id = order_shop.id
-      where order_shop.is_paid = 1
-      and order_item.item_id = item.id) as sell
-    `)
-      )
-      .where('project_id', id)
-      .all()
-
     const ordersQuery = DB('order_shop as os')
       .select(
         'os.id',
@@ -444,7 +431,6 @@ class Admin {
       stocksSite,
       stocksSitePreorder,
       stocksDistrib,
-      items,
       orders,
       reviews,
       prod,
@@ -458,7 +444,6 @@ class Admin {
       stocksSiteQuery,
       stocksSitePreorderQuery,
       stocksDistribQuery,
-      itemsQuery,
       ordersQuery,
       reviewsQuery,
       prodQuery,
@@ -472,7 +457,6 @@ class Admin {
 
     project.codes = codes
     project.costs = costs
-    project.items = items
     project.project_images = projectImages
     project.exports = exps
 
