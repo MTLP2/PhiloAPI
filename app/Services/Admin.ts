@@ -5609,6 +5609,46 @@ class Admin {
           a.check_address?.substring(0, 10).localeCompare(b.check_address?.substring(0, 10))
       )
   }
+
+  static getProjectsToRefund = async () => {
+    const list = DB('project')
+      .select(
+        'project.id',
+        'project.artist_name',
+        'project.name',
+        'project.picture',
+        'vod.picture_project',
+        'vod.historic',
+        'vod.transporters_block',
+        DB('order_item as oi')
+          .select(DB.raw('sum(quantity)'))
+          .join('order_shop as os', 'os.id', 'oi.order_shop_id')
+          .join('customer', 'customer.id', 'os.user_id')
+          .whereNotIn('customer.country_id', ['RU', 'BY', 'UA', 'PS'])
+          .where('os.is_paused', false)
+          .whereRaw('project_id = project.id')
+          .whereNull('os.date_export')
+          .whereNull('logistician_id')
+          .where('is_paid', true)
+          .where('os.created_at', '<', moment().subtract(6, 'months').toISOString())
+          .as('to_sync')
+          .query(),
+        DB('stock')
+          .select(DB.raw('min(quantity)'))
+          .join('project_product as pp', 'stock.product_id', 'pp.product_id')
+          .whereRaw('pp.project_id = project.id')
+          .where('is_preorder', false)
+          .as('stock')
+          .query()
+      )
+      .join('vod', 'vod.project_id', 'project.id')
+      .having('to_sync', '>', 0)
+      //.having('stock', '>', 0)
+      .orderBy('to_sync', 'desc')
+      .all()
+
+    return list
+  }
 }
 
 export default Admin
