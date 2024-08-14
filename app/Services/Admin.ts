@@ -2096,7 +2096,7 @@ class Admin {
   static getOrderShop = async (id) => {
     const shop = await DB('order_shop')
       .select('order_shop.*', 'user.name', 'user.email')
-      .join('user', 'user.id', 'order_shop.user_id')
+      .leftJoin('user', 'user.id', 'order_shop.user_id')
       .where('order_shop.id', id)
       .belongsTo('customer')
       .first()
