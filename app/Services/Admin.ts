@@ -370,6 +370,19 @@ class Admin {
 
     const codesQuery = DB('download').where('project_id', id).all()
 
+    const itemsQuery = DB('item')
+      .select(
+        'item.*',
+        DB.raw(`(select count(*)
+      from order_shop
+      inner join order_item on order_item.order_shop_id = order_shop.id
+      where order_shop.is_paid = 1
+      and order_item.item_id = item.id) as sell
+    `)
+      )
+      .where('project_id', id)
+      .all()
+
     const costsQuery = DB('production_cost')
       .where('project_id', id)
       .orderBy('date', 'desc')
@@ -435,7 +448,8 @@ class Admin {
       reviews,
       prod,
       projectImages,
-      exps
+      exps,
+      items
     ] = await Promise.all([
       projectQuery,
       codesQuery,
@@ -448,7 +462,8 @@ class Admin {
       reviewsQuery,
       prodQuery,
       projectImagesQuery,
-      exportsQuery
+      exportsQuery,
+      itemsQuery
     ])
 
     if (!project) {
@@ -459,7 +474,7 @@ class Admin {
     project.costs = costs
     project.project_images = projectImages
     project.exports = exps
-
+    project.items = items
     project.stock_historic = stockHistoric
     project.stocks = []
 
