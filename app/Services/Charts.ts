@@ -260,8 +260,8 @@ class Charts {
     return txt
   }
 
-  static async getOfficialCharts(params: { country: 'FR' | 'GB' }) {
-    const date = moment().subtract(1, 'days')
+  static async getOfficialCharts(params: { country: 'FR' | 'GB'; date?: string }) {
+    const date = moment(params.date) || moment().subtract(1, 'days')
     const orders = await Charts.getOrders({
       country_id: params.country,
       date: date.format('YYYY-MM-DD')
@@ -337,9 +337,10 @@ class Charts {
     return file
   }
 
-  static async uploadOfficialCharts(params: { country: 'FR' | 'GB' }) {
+  static async uploadOfficialCharts(params: { country: 'FR' | 'GB'; date?: string }) {
+    const date = moment(params.date) || moment().subtract(1, 'days')
     const file = await Charts.getOfficialCharts({
-      date: moment().subtract(1, 'days').format('YYYY-MM-DD'),
+      date: date.format('YYYY-MM-DD'),
       country: params.country
     })
 
