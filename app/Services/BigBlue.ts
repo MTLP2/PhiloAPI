@@ -203,6 +203,9 @@ class BigBlue {
 
       if (order.shipping_type === 'pickup') {
         const pickup = JSON.parse(order.address_pickup)
+        if (!pickup || !pickup.number) {
+          continue
+        }
         const available = await MondialRelay.checkPickupAvailable(pickup.number)
         if (!available) {
           const around = await MondialRelay.findPickupAround(pickup)
@@ -330,7 +333,28 @@ class BigBlue {
         }
       }
 
+      if (!order.address) {
+        dispatchs.push({
+          id: order.id,
+          order_id: order.order_id,
+          status: 'error',
+          msg: 'no_address',
+          success: false
+        })
+        continue
+      }
       const address = Utils.wrapText(order.address, ' ', 35)
+
+      if (order.shipping_type === 'pickup' && (!pickup || !pickup.number)) {
+        dispatchs.push({
+          id: order.id,
+          order_id: order.order_id,
+          status: 'error',
+          msg: 'no_pickup_number',
+          success: false
+        })
+        continue
+      }
 
       const data = {
         order: {
@@ -363,6 +387,10 @@ class BigBlue {
             country: order.country_id
           },
           line_items: order.items.map((item: any) => {
+            if (item.product === 'DIGG-000006-5357') {
+              item.price = '0'
+              item.quantity = 1
+            }
             return {
               product: item.product,
               quantity: item.quantity,
@@ -372,6 +400,7 @@ class BigBlue {
           })
         }
       }
+
       let res: any = await this.api('CreateOrder', {
         method: 'POST',
         params: data
