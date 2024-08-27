@@ -51,7 +51,7 @@ class ProductsController {
           id: schema.number.optional(),
           name: schema.string(),
           type: schema.string.optional(),
-          barcode: schema.number.optional(),
+          barcode: schema.string.optional(),
           catnumber: schema.string.optional(),
           isrc: schema.string.optional(),
           country_id: schema.string.optional(),
