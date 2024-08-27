@@ -966,6 +966,7 @@ class AdminController {
             schema.object().members({
               barcode: schema.number(),
               quantity: schema.number(),
+              product_id: schema.number(),
               stock: schema.number.optional()
             })
           ),
