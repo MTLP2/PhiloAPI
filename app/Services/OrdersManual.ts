@@ -140,6 +140,7 @@ class OrdersManual {
       barcode: number
       quantity: number
       stock: number
+      product_id: number
     }[]
     customer: CustomerDb
   }) => {
@@ -147,13 +148,6 @@ class OrdersManual {
 
     if (params.id) {
       item = await DB('order_manual').find(params.id)
-      if (item.date_export) {
-        if (params.comment) {
-          item.comment = params.comment
-          await item.save()
-        }
-        return false
-      }
     } else {
       item.created_at = Utils.date()
     }
@@ -274,7 +268,7 @@ class OrdersManual {
     for (const it of items) {
       await DB('order_manual_item').insert({
         order_manual_id: item.id,
-        product_id: products[it.barcode].id,
+        product_id: it.product_id,
         barcode: it.barcode,
         quantity: it.quantity
       })
@@ -427,16 +421,16 @@ class OrdersManual {
           order_manual_id: item.id
         })
       }
-    }
 
-    if (params.missing_items === 'another_order_with_items') {
-      await OrdersManual.save({
-        ...params,
-        id: undefined,
-        step: 'pending',
-        missing_items: undefined,
-        items: missingItems
-      })
+      if (params.missing_items === 'another_order_with_items') {
+        await OrdersManual.save({
+          ...params,
+          id: undefined,
+          step: 'pending',
+          missing_items: undefined,
+          items: missingItems
+        })
+      }
     }
 
     return item
