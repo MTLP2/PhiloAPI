@@ -1186,15 +1186,20 @@ class Utils {
     return csv
   }
 
-  static csvToArray = (file) => {
+  static csvToArray = (file: string) => {
     const lines = file.toString().split('\n')
 
-    const columns = lines[0].split(',')
+    let delimiter = ','
+    if (lines[0].includes(';')) {
+      delimiter = ';'
+    }
+
+    const columns = lines[0].split(delimiter)
 
     const data: any[] = []
     for (let i = 1; i < lines.length; i++) {
       const value = {}
-      const values = lines[i].split(/,(?=(?:[^\"]*\"[^\"]*\")*(?![^\"]*\"))/)
+      const values = lines[i].split(delimiter)
 
       if (values) {
         for (let c = 0; c < columns.length; c++) {
