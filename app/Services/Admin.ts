@@ -406,6 +406,7 @@ class Admin {
     const ordersQuery = DB('order_shop as os')
       .select(
         'os.id',
+        'os.order_id',
         'type',
         'quantity',
         'size',
@@ -555,6 +556,7 @@ class Admin {
       }
       project.count += order.quantity
       if (!order.date_export) {
+        console.log(order)
         project.trans[order.transporter].to_send += order.quantity
       }
       if (order.item_id) {
