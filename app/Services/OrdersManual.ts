@@ -476,6 +476,38 @@ class OrdersManual {
     }
   }
 
+  static importCosts = async (params: { file: any }) => {
+    const file = Buffer.from(params.file, 'base64')
+    const workbook = new Excel.Workbook()
+    await workbook.xlsx.load(file)
+    const worksheet = workbook.getWorksheet(1)
+
+    let change = 0
+
+    const lines: { id: string; invoice: string; cost: string }[] = []
+    worksheet.eachRow((row, rowNumber) => {
+      if (rowNumber > 1) {
+        lines.push({
+          id: row.getCell('A').text,
+          invoice: row.getCell('B').text,
+          cost: row.getCell('C').text
+        })
+      }
+    })
+
+    for (const line of lines) {
+      const res = await DB('order_manual').where('id', line.id).update({
+        invoice_number: line.invoice,
+        shipping_cost: line.cost
+      })
+      if (res) {
+        change++
+      }
+    }
+
+    return { data: change }
+  }
+
   static getBarcodes = async (params: { file: any; barcode: string; quantity: string }) => {
     const file = Buffer.from(params.file, 'base64')
     const workbook = new Excel.Workbook()

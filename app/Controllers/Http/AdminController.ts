@@ -1015,6 +1015,20 @@ class AdminController {
     }
   }
 
+  async importOrderManualCosts({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          file: schema.string()
+        }),
+        data: params
+      })
+      return OrdersManual.importCosts(payload)
+    } catch (err) {
+      return { error: err.message, validation: err.messages }
+    }
+  }
+
   async orderManuelPackingList({ params }) {
     try {
       const payload = await validator.validate({
