@@ -917,27 +917,23 @@ class BigBlue {
       orders[line.ID] += +line.Price
     }
 
-    console.log(Object.keys(orders).length)
+    const oo = await DB('order_shop')
+      .select('id', 'logistician_id', 'shipping', 'shipping_cost', 'currency')
+      .whereIn('logistician_id', Object.keys(orders))
+      .all()
 
-    const promises: Promise<void>[] = []
-    for (const [id, price] of Object.entries(orders) as any) {
-      const pro = async () => {
-        const order = await DB('order_shop').where('logistician_id', id).first()
-        if (!order) {
-          return
-        }
-        i++
-        if (order.shipping_cost) {
-          marge += order.shipping - order.shipping_cost
-          return
-        }
-        order.shipping_cost = price * currencies[order.currency]
+    for (const order of oo) {
+      i++
+      if (order.shipping_cost) {
         marge += order.shipping - order.shipping_cost
-        await order.save()
+        continue
       }
-      promises.push(pro())
+      order.shipping_cost = orders[order.logistician_id] * currencies[order.currency]
+      marge += order.shipping - order.shipping_cost
+      await DB('order_shop').where('id', order.id).update({
+        shipping_cost: order.shipping_cost
+      })
     }
-    await Promise.all(promises)
 
     console.log('marge => ', marge)
     return {
