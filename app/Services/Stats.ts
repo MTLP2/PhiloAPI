@@ -1782,6 +1782,9 @@ class Stats {
         box: { total: 0, dates: { ...dates } },
         prod: { total: 0, dates: { ...dates } },
         storage: { total: 0, dates: { ...dates } }
+      },
+      invoices: {
+        total: { total: 0, dates: { ...dates } }
       }
     }
 
@@ -2115,6 +2118,26 @@ class Stats {
       }
     }
 
+    const addInvoice = (type, cat, date, value) => {
+      if (!cat) {
+        cat = 'other'
+      }
+      if (!d.invoices[cat]) {
+        d.invoices[cat] = {
+          total: 0,
+          dates: { ...dates }
+        }
+      }
+
+      if (type === 'invoice') {
+        d.invoices[cat].dates[date] += value
+        d.invoices.total.dates[date] += value
+      } else {
+        d.invoices[cat].dates[date] -= value
+        d.invoices.total.dates[date] -= value
+      }
+    }
+
     const addMarge = (type, cat, date, value) => {
       if (isNaN(value)) {
         return
@@ -2131,6 +2154,8 @@ class Stats {
     for (const invoice of invoices) {
       const total = invoice.sub_total * invoice.currency_rate
       const date = moment(invoice.date).format(format)
+
+      addInvoice(invoice.type, invoice.category, date, total)
 
       if (invoice.type === 'invoice') {
         d.turnover.total.dates[date] += total
