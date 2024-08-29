@@ -2155,6 +2155,11 @@ class Stats {
       const total = invoice.sub_total * invoice.currency_rate
       const date = moment(invoice.date).format(format)
 
+      if (invoice.order_box_id) {
+        invoice.category = 'box'
+      } else if (invoice.order_id) {
+        invoice.category = 'project'
+      }
       addInvoice(invoice.type, invoice.category, date, total)
 
       if (invoice.type === 'invoice') {
