@@ -2118,6 +2118,10 @@ class Admin {
       .belongsTo('customer')
       .first()
 
+    if (!shop) {
+      return null
+    }
+
     shop.items = await DB('order_item')
       .select('order_item.*', 'vod.barcode', 'project.name', 'project.artist_name')
       .where('order_shop_id', id)

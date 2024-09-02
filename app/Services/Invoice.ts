@@ -102,7 +102,9 @@ class Invoice {
   static async byOrderShopId(id) {
     const invoice: any = {}
     const shop = await Admin.getOrderShop(id)
-
+    if (!shop) {
+      return null
+    }
     for (const product of shop.products) {
       const idx = shop.items.findIndex((i) => i.project_id === product.project_id)
       if (!shop.items[idx].lines) {

@@ -456,20 +456,22 @@ class Elogik {
       }
 
       if (!Utils.isEuropean(order.country_id) || order.country_id === 'GB') {
-        const invoice = await Invoice.byOrderShopId(order.id)
-        const file = await Invoice.download({
-          params: {
-            invoice: invoice,
-            lang: 'en',
-            daudin: true
-          }
-        })
-        await Elogik.api(`commandes/${res.referenceEKAN}/facture`, {
-          method: 'POST',
-          body: {
-            base64: file.data.toString('base64')
-          }
-        })
+        if (order.id) {
+          const invoice = await Invoice.byOrderShopId(order.id)
+          const file = await Invoice.download({
+            params: {
+              invoice: invoice,
+              lang: 'en',
+              daudin: true
+            }
+          })
+          await Elogik.api(`commandes/${res.referenceEKAN}/facture`, {
+            method: 'POST',
+            body: {
+              base64: file.data.toString('base64')
+            }
+          })
+        }
       }
 
       const dispatch = {
