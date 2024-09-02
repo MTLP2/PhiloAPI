@@ -1995,25 +1995,53 @@ class Cart {
     }
   }
 
-  static confirmStripePayment = async (params: { order_id: number; payment_id: number }) => {
+  static confirmStripePayment = async (params: {
+    order_id: number
+    payment_id: number
+    set_incomplete?: boolean
+  }) => {
     const paymentIntent = await stripe.paymentIntents.retrieve(params.payment_id)
+
     if (paymentIntent.status === 'succeeded') {
+      let status = 'confirmed'
       const txn = await stripe.balanceTransactions.retrieve(
         paymentIntent.charges.data[0].balance_transaction
       )
+      /**
+      const refunds = await stripe.refunds.list({
+        payment_intent: params.payment_id
+      })
+      if (refunds.data.length > 0) {
+        status = 'refunded'
+        console.log('refunded =>', params.order_id)
+      }
+      **/
       await DB('order')
         .where('id', params.order_id)
         .update({
+          status: status,
+          date_payment: moment(paymentIntent.created).format('YYYY-MM-DD HH:mm:ss'),
           transaction_id: paymentIntent.charges.data[0].balance_transaction,
           fee_bank: txn.fee / 100,
           net_total: txn.net / 100,
           net_currency: txn.currency
         })
 
-      return Cart.validPayment({
-        order_id: params.order_id
-      })
+      await DB('order_shop')
+        .where('order_id', params.order_id)
+        .update({
+          step: status,
+          is_paid: status === 'confirmed' ? true : false
+        })
+
+      if (status === 'confirmed') {
+        // console.log('succeeded =>', params.order_id)
+        return Cart.validPayment({
+          order_id: params.order_id
+        })
+      }
     } else if (paymentIntent.last_payment_error) {
+      // console.log('failed =>', params.order_id)
       await DB('order').where('id', params.order_id).update({
         status: 'failed',
         error: paymentIntent.last_payment_error.code,
@@ -2023,6 +2051,11 @@ class Cart {
         step: 'failed'
       })
       return { success: false }
+    } else if (params.set_incomplete) {
+      // console.log('set_incomplete =>', params.order_id)
+      await DB('order').where('id', params.order_id).update({
+        status: 'incomplete'
+      })
     } else {
       return { success: false }
     }
@@ -2068,6 +2101,25 @@ class Cart {
         step: 'failed'
       })
       return { success: false }
+    }
+  }
+
+  static checkIncompleteCart = async () => {
+    const orders = await DB('order')
+      .select('id', 'payment_id', 'created_at')
+      .where('status', 'creating')
+      .whereNotNull('payment_id')
+      .where('payment_type', 'stripe')
+      .whereRaw('created_at < NOW() - INTERVAL 15 MINUTE')
+      .orderBy('created_at', 'desc')
+      .all()
+
+    for (const order of orders) {
+      await Cart.confirmStripePayment({
+        order_id: order.id,
+        payment_id: order.payment_id,
+        set_incomplete: true
+      })
     }
   }
 

@@ -13,6 +13,7 @@ import Customer from './Customer'
 import Utils from 'App/Utils'
 import Charts from 'App/Services/Charts'
 import Statement from 'App/Services/Statement'
+import Cart from 'App/Services/Cart'
 import Production from 'App/Services/Production'
 import Elogik from 'App/Services/Elogik'
 import BigBlue from 'App/Services/BigBlue'
@@ -205,6 +206,7 @@ class App {
 
     try {
       await App.checkNotifications()
+      await Cart.checkIncompleteCart()
       await Invoice.setNumbers()
       await Project.deleteDownload()
       await MondialRelay.checkSent()
