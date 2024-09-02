@@ -838,10 +838,9 @@ class Products {
 
     for (const stock of stocks) {
       if (!res[stock.product_id]) {
-        res[stock.product_id] = {}
-      }
-      if (!res[stock.product_id].all) {
-        res[stock.product_id].all = { ...base }
+        res[stock.product_id] = {
+          all: { ...base }
+        }
       }
       if (!res[stock.product_id][stock.type]) {
         res[stock.product_id][stock.type] = {
@@ -871,7 +870,9 @@ class Products {
 
     for (const dispatch of dispatchs) {
       if (!res[dispatch.product_id]) {
-        res[dispatch.product_id] = {}
+        res[dispatch.product_id] = {
+          all: { ...base }
+        }
       }
       if (!res[dispatch.product_id][dispatch.logistician]) {
         res[dispatch.product_id][dispatch.logistician] = {
@@ -893,8 +894,9 @@ class Products {
 
     for (const order of orders) {
       if (!res[order.product_id]) {
-        res[order.product_id] = {}
-        res[order.product_id].all = { ...base }
+        res[order.product_id] = {
+          all: { ...base }
+        }
       }
       if (!res[order.product_id][order.transporter]) {
         res[order.product_id][order.transporter] = {
@@ -927,10 +929,9 @@ class Products {
 
     for (const order of ordersManual) {
       if (!res[order.product_id]) {
-        res[order.product_id] = {}
-      }
-      if (!res[order.product_id].all) {
-        res[order.product_id].all = { ...base }
+        res[order.product_id] = {
+          all: { ...base }
+        }
       }
       if (!res[order.product_id][order.transporter]) {
         res[order.product_id][order.transporter] = {
@@ -971,10 +972,9 @@ class Products {
 
     for (const prod of productions) {
       if (!res[prod.product_id]) {
-        res[prod.product_id] = {}
-      }
-      if (!res[prod.product_id].all) {
-        res[prod.product_id].all = { ...base }
+        res[prod.product_id] = {
+          all: { ...base }
+        }
       }
       res[prod.product_id].all.incoming += prod.quantity
     }
