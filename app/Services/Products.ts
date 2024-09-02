@@ -825,8 +825,7 @@ class Products {
       reserved: 0,
       reserved_preorder: 0,
       reserved_manual: 0,
-      pending: 0,
-      theoric: 0
+      incoming: 0
     }
     const logisticians = ['whiplash', 'whiplash_uk', 'daudin', 'bigblue']
 
@@ -880,7 +879,7 @@ class Products {
           is_distrib: logisticians.includes(dispatch.logistician)
         }
       }
-      res[dispatch.product_id][dispatch.logistician].pending += dispatch.quantity
+      res[dispatch.product_id][dispatch.logistician].incoming += dispatch.quantity
     }
 
     const orders = await DB('order_item')
@@ -956,10 +955,17 @@ class Products {
     }
 
     const productions = await DB('production')
-      .select('pp.product_id', 'production.quantity')
+      .select(
+        'production.id',
+        'production.step',
+        'pp.product_id',
+        'production.project_id',
+        'production.quantity'
+      )
       .join('project_product as pp', 'pp.project_id', 'production.project_id')
       .join('product', 'product.id', 'pp.product_id')
-      .where('step', '!=', 'postprod')
+      .whereIn('production.step', ['preprod', 'prod'])
+      .where('is_delete', false)
       .whereIn('product.id', params.products.split(','))
       .all()
 
@@ -970,22 +976,14 @@ class Products {
       if (!res[prod.product_id].all) {
         res[prod.product_id].all = { ...base }
       }
-      res[prod.product_id].all.pending += prod.quantity
+      res[prod.product_id].all.incoming += prod.quantity
     }
 
     for (const product of Object.keys(res)) {
       res[product].all = { ...base, ...res[product].all }
       for (const logistician of Object.keys(res[product])) {
-        if (logisticians.includes(logistician)) {
-          res[product][logistician].dispo =
-            res[product][logistician].stock - res[product][logistician].reserved
-          res[product][logistician].theoric =
-            res[product][logistician].dispo + res[product][logistician].pending
-        } else {
-          res[product][logistician].dispo = res[product][logistician].stock
-          res[product][logistician].theoric =
-            res[product][logistician].dispo + res[product][logistician].reserved
-        }
+        res[product][logistician].dispo =
+          res[product][logistician].stock - res[product][logistician].reserved
       }
     }
 
