@@ -95,7 +95,7 @@ class Customer {
       if (comp.types.includes('route')) {
         address.address += ` ${comp.long_name}`
       }
-      if (comp.types.includes('locality')) {
+      if (comp.types.includes('locality') || comp.types.includes('postal_town')) {
         address.city = `${comp.long_name}`
       }
       if (comp.types.includes('postal_code')) {
