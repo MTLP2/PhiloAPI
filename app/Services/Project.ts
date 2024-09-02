@@ -88,7 +88,12 @@ class Project {
 
         if (!sale.projects) {
           discount = true
-        } else if (sale.projects.split(',').indexOf(project.id.toString()) !== -1) {
+        } else if (
+          sale.projects
+            .split(',')
+            .map((s) => s.trim())
+            .indexOf(project.id.toString()) !== -1
+        ) {
           discount = true
         }
 
