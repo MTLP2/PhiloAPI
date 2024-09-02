@@ -57,7 +57,7 @@ class Customer {
     lng?: number
   }) => {
     let url = `https://maps.googleapis.com/maps/api/place/autocomplete/json`
-    url += `?input=${params.search}`
+    url += `?input=${encodeURI(params.search)}`
     url += `&location=${params.lat},${params.lng}`
     url += `&radius=10000`
     url += `&language=${params.lang}`
