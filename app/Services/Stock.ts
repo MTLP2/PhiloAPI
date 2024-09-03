@@ -198,7 +198,7 @@ class Stock {
 
   static async syncApi(params: { productIds?: number[]; projectIds?: number[] }) {
     const products = await DB('product')
-      .select(DB.raw('distinct product.id, product.barcode'))
+      .select(DB.raw('distinct product.id, product.barcode, product.parent_id'))
       .join('project_product as pp', 'pp.product_id', 'product.id')
       .where((query) => {
         if (params.productIds) {
@@ -211,15 +211,24 @@ class Stock {
       .whereNotNull('barcode')
       .all()
 
+    const parentIds = {}
+
     await Promise.all(
-      products.map((product) =>
-        Promise.all([
+      products.map((product) => {
+        if (product.parent_id) {
+          parentIds[product.parent_id] = true
+        }
+        return Promise.all([
           Whiplash.syncStocks({ productIds: products.map((p) => p.id) }),
           BigBlue.syncStocks({ productIds: products.map((p) => p.id) }),
           Elogik.syncStocks({ barcode: product.barcode })
         ])
-      )
+      })
     )
+
+    if (Object.keys(parentIds).length) {
+      await Stock.setStockParents({ ids: Object.keys(parentIds).map((p) => +p) })
+    }
 
     return { success: true }
   }
@@ -237,7 +246,7 @@ class Stock {
           query.whereIn('p2.project_id', params.projectIds)
         }
       })
-      // .whereNull('product.parent_id')
+      .whereNull('product.parent_id')
       .all()
 
     if (listProjects.length === 0) {
@@ -260,7 +269,7 @@ class Stock {
         listProjects.map((p) => p.product_id)
       )
       .where('is_distrib', false)
-      // .whereNull('parent_id')
+      .whereNull('parent_id')
       .all()
 
     const products = {}
@@ -326,6 +335,47 @@ class Stock {
     }
 
     return projects
+  }
+
+  static async setStockParents(params: { ids: number[] }) {
+    const stocks = await DB('stock')
+      .select(
+        'stock.id',
+        'stock.product_id',
+        'product.parent_id',
+        'stock.type',
+        'stock.is_preorder',
+        'stock.quantity'
+      )
+      .join('product', 'product.id', 'stock.product_id')
+      .whereIn('product.parent_id', params.ids)
+      .all()
+
+    const ss = {}
+
+    for (const stock of stocks) {
+      stock.type = `${stock.is_preorder ? 'preorder' : 'stock'}#${stock.type}`
+      if (!ss[stock.parent_id]) {
+        ss[stock.parent_id] = {}
+      }
+      if (!ss[stock.parent_id][stock.type]) {
+        ss[stock.parent_id][stock.type] = 0
+      }
+      ss[stock.parent_id][stock.type] += stock.quantity
+    }
+
+    for (const parent of Object.keys(ss)) {
+      for (const type of Object.keys(ss[parent])) {
+        const tt = type.split('#')
+        await DB('stock')
+          .where('product_id', parent)
+          .where('type', tt[1])
+          .where('is_preorder', tt[0] === 'preorder')
+          .update({
+            quantity: ss[parent][type]
+          })
+      }
+    }
   }
 
   static async save(params: {
