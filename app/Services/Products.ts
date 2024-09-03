@@ -243,12 +243,12 @@ class Products {
     item.catnumber = params.catnumber
     item.isrc = params.isrc
     item.hs_code = params.hs_code
-    item.country_id = params.country_id
-    item.more = params.more
-    item.parent_id = params.parent_id
-    item.size = params.size
-    item.color = params.color
-    item.weight = params.weight
+    item.country_id = params.country_id || null
+    item.more = params.more || null
+    item.parent_id = params.parent_id || null
+    item.size = params.size || null
+    item.color = params.color || null
+    item.weight = params.weight || null
     item.updated_at = Utils.date()
 
     await item.save()
