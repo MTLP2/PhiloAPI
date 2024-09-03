@@ -5493,7 +5493,7 @@ class Admin {
 
     console.log(uniqueUsersAndOrdersByMonth)
     await Notification.sendEmail({
-      to: 'robin@diggersfactory.com,olivia@diggersfactory.com',
+      to: 'robin@diggersfactory.com,jeremy.r@diggersfactory.com',
       subject: `Export clients mensuel - ${previousMonth}/${thisYear}`,
       html: `Bonjour,
       <p>Nombre de clients uniques : ${uniqueUsersAndOrdersByMonth.uniq_clients}</p>
