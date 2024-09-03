@@ -2256,6 +2256,7 @@ class Admin {
           { header: 'Shipping Type', key: 'shipping_type' },
           { header: 'Shipping', key: 'shipping' },
           { header: 'Shipping Cost', key: 'shipping_cost' },
+          { header: 'Package Weight', key: 'weight' },
           { header: 'Date export', key: 'date_export' },
           { header: 'Tracking', key: 'tracking_number' },
           { header: 'Paid?', key: 'is_paid' },
