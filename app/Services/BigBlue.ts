@@ -94,12 +94,24 @@ class BigBlue {
       product = await DB('product').whereIn('id', params.productIds).first()
     }
     const listProducts = await DB('product')
-      .select('id', 'bigblue_id')
+      .select('product.id', 'product.bigblue_id', 'stock.quantity as stock')
       .whereNotNull('bigblue_id')
+      .leftJoin('stock', (query) => {
+        query
+          .on('stock.product_id', '=', 'product.id')
+          .andOn('stock.type', '=', DB.raw("'bigblue'"))
+          .andOn('stock.is_preorder', '=', DB.raw("'false'"))
+      })
       .all()
+
     const products = {}
+
     for (const product of listProducts) {
-      products[product.bigblue_id] = product.id
+      products[product.bigblue_id] = {
+        id: product.id,
+        old: product.stock,
+        qty: null
+      }
     }
 
     const res: any = await this.api('ListInventories', {
@@ -114,8 +126,9 @@ class BigBlue {
         if (!products[stock.product]) {
           continue
         }
+        products[stock.product].qty = stock.available
         Stock.save({
-          product_id: products[stock.product],
+          product_id: products[stock.product].id,
           type: 'bigblue',
           comment: 'api',
           is_preorder: false,
@@ -123,6 +136,12 @@ class BigBlue {
         })
       }
     }
+
+    Object.keys(products).forEach((product) => {
+      if (products[product].qty === null && products[product].old > 0) {
+        console.log('product', product)
+      }
+    })
 
     return res
   }
