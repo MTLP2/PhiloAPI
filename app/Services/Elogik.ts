@@ -464,11 +464,9 @@ class Elogik {
         listeArticles: <any>[]
       }
       for (const item of order.items) {
-        /**
         if (process.env.NODE_ENV !== 'production') {
           item.barcode = 3760370262046
         }
-          **/
         params.listeArticles.push({
           refEcommercant: item.barcode,
           quantite: item.quantity

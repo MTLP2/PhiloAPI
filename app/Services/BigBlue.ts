@@ -151,7 +151,6 @@ class BigBlue {
       .join('order_item as oi', 'oi.order_shop_id', 'os.id')
       .where('oi.project_id', params.id)
       .where('os.transporter', 'bigblue')
-      .where('os.type', 'vod')
       .whereNull('date_export')
       .whereNull('logistician_id')
       .where('is_paid', true)
@@ -188,6 +187,7 @@ class BigBlue {
       }
     }
 
+    const errors: any[] = []
     const dispatchs: any[] = []
     let qty = 0
     for (const order of orders) {
@@ -195,15 +195,30 @@ class BigBlue {
         break
       }
       if (!order.items) {
+        errors.push({
+          id: order.id,
+          order_id: order.order_id,
+          msg: 'no items'
+        })
         continue
       }
-      if (order.items.length !== nbProducts.length) {
+      if (order.items.length < nbProducts.length) {
+        errors.push({
+          id: order.id,
+          order_id: order.order_id,
+          msg: 'no enouth items'
+        })
         continue
       }
 
       if (order.shipping_type === 'pickup') {
         const pickup = JSON.parse(order.address_pickup)
         if (!pickup || !pickup.number) {
+          errors.push({
+            id: order.id,
+            order_id: order.order_id,
+            msg: 'no pickup'
+          })
           continue
         }
         const available = await MondialRelay.checkPickupAvailable(pickup.number)
@@ -225,6 +240,11 @@ class BigBlue {
               user_id: order.user_id
             })
           } else {
+            errors.push({
+              id: order.id,
+              order_id: order.order_id,
+              msg: 'no pickup around'
+            })
             continue
           }
         }
@@ -234,18 +254,27 @@ class BigBlue {
       qty = qty + order.quantity
     }
 
-    if (dispatchs.length === 0) {
-      return { success: false }
+    let res: any = []
+    if (dispatchs.length > 0) {
+      res = await BigBlue.syncOrders(dispatchs)
+
+      if (qty > 0) {
+        await DB('project_export').insert({
+          transporter: 'bigblue',
+          project_id: vod.project_id,
+          quantity: qty,
+          date: Utils.date()
+        })
+      }
     }
 
-    const res = await BigBlue.syncOrders(dispatchs)
-
-    if (qty > 0) {
-      await DB('project_export').insert({
-        transporter: 'bigblue',
-        project_id: vod.project_id,
-        quantity: qty,
-        date: Utils.date()
+    for (const error of errors) {
+      res.push({
+        order_id: error.order_id,
+        id: error.id,
+        blocked: true,
+        status: 'error',
+        msg: error.msg
       })
     }
 
@@ -326,6 +355,7 @@ class BigBlue {
       }
 
       for (const o in order.items) {
+        order.items[o].product = order.items[o].bigblue_id
         if (process.env.NODE_ENV !== 'production') {
           order.items[o].product = 'DIGG-000000-0001'
         } else {
