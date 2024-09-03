@@ -441,7 +441,9 @@ class App {
         'production_refuse_action'
       ].includes(notif.type)
     ) {
-      data.action = I18n.locale(data.lang).formatMessage(`production.${JSON.parse(notif.data)}`)
+      try {
+        data.action = I18n.locale(data.lang).formatMessage(`production.${JSON.parse(notif.data)}`)
+      } catch (err) {}
       n.order_id = null
     }
     if (
