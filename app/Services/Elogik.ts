@@ -424,6 +424,7 @@ class Elogik {
     for (const order of orders) {
       const pickup = order.address_pickup ? JSON.parse(order.address_pickup) : null
       const address = order.address ? order.address.match(/.{1,30}(\s|$)/g) : []
+      const address2 = address[1] ? ` ${address[1]} ${order.address2}` : order.address2
 
       let check
       if (order.id[0] === 'M') {
@@ -442,7 +443,7 @@ class Elogik {
         nom: order.lastname,
         prenom: order.firstname,
         adresse: address[0],
-        adresse2: address[1],
+        adresse2: address2,
         codePostal: order.zip_code,
         ville: order.city,
         codePays: order.country_id,

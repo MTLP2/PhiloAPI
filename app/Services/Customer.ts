@@ -11,6 +11,7 @@ class Customer {
       firstname: params.firstname,
       lastname: params.lastname,
       address: params.address,
+      address2: params.address2,
       zip_code: params.zip_code,
       city: params.city,
       country_id: params.country_id ? params.country_id.toUpperCase() : null,
@@ -80,6 +81,7 @@ class Customer {
 
     const address = {
       address: '',
+      address2: '',
       zip_code: '',
       city: '',
       country_id: '',
@@ -94,6 +96,12 @@ class Customer {
       }
       if (comp.types.includes('route')) {
         address.address += ` ${comp.long_name}`
+      }
+      if (comp.types.includes('sublocality_level_1')) {
+        address.address2 += ` ${comp.long_name}`
+      }
+      if (comp.types.includes('sublocality_level_2')) {
+        address.address2 += ` ${comp.long_name}`
       }
       if (comp.types.includes('locality') || comp.types.includes('postal_town')) {
         address.city = `${comp.long_name}`

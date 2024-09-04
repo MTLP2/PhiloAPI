@@ -393,6 +393,7 @@ class BigBlue {
         continue
       }
       const address = Utils.wrapText(order.address, ' ', 35)
+      const address2 = address[1] ? ` ${address[1]} ${order.address2}` : order.address2
 
       if (order.shipping_type === 'pickup' && (!pickup || !pickup.number)) {
         dispatchs.push({
@@ -429,7 +430,7 @@ class BigBlue {
             phone: order.phone,
             email: order.email,
             line1: address[0],
-            line2: address[1] || '',
+            line2: address2,
             city: order.city,
             postal: order.zip_code,
             state: order.state,
