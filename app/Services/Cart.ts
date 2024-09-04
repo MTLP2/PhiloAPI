@@ -1548,7 +1548,7 @@ class Cart {
           shipping_display: ss.shipping,
           shipping_type: ss.shipping_type ? ss.shipping_type : 'standard',
           transporter: ss.transporter,
-          weight: ss.weight_package,
+          weight: ss.weight_package / 1000,
           address_pickup: ss.shipping_type === 'pickup' ? JSON.stringify(calculate.pickup) : null,
           customer_id: customer.id,
           customer_invoice_id: customerInvoiceId,
