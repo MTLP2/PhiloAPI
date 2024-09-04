@@ -1181,7 +1181,6 @@ class Cart {
       }
     }
 
-    console.log(shippings, 'shippings')
     if (shippings.length === 0) {
       return { error: 'no_tg' }
     }
