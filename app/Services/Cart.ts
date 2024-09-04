@@ -812,7 +812,7 @@ class Cart {
         }
 
         if (!shop.shipping && !shop.error && !shop.total_ship_discount) {
-          shop.error = 'no_shipping'
+          shop.error = 'no_qty'
         }
       }
     }
@@ -1181,12 +1181,17 @@ class Cart {
       }
     }
 
+    console.log(shippings, 'shippings')
     if (shippings.length === 0) {
-      return { error: 'no_shipping' }
+      return { error: 'no_tg' }
     }
 
     let shipping
+    let qtyAvailable = false
     for (const ship of shippings) {
+      if (params.stocks && params.stocks[ship.transporter] > 0) {
+        qtyAvailable = true
+      }
       if (
         !params.transporter &&
         !(!params.is_shop && params.stocks[ship.transporter] === null) &&
@@ -1226,7 +1231,7 @@ class Cart {
     }
 
     if (!shipping) {
-      return { error: 'no_shipping' }
+      return { error: qtyAvailable ? 'no_qty' : 'no_shipping' }
     }
 
     const res: any = {}
