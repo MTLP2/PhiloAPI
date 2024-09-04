@@ -2551,9 +2551,9 @@ class Stats {
       const date = moment(cost.date).format(format)
 
       if (cost.is_licence) {
-        addMarge('licence', 'cost', date, cost.margin)
+        addMarge('licence', 'cost', date, cost.margin / currencies[cost.currency])
       } else if (cost.type !== 'direct_pressing') {
-        addMarge('prod', null, date, cost.margin)
+        addMarge('prod', null, date, cost.margin / currencies[cost.currency])
       }
       if (cost.type === 'storage') {
         addMarge('storage', null, date, cost.in_statement / currencies[cost.currency])
@@ -4024,9 +4024,9 @@ class Stats {
       const date = moment(cost.date).format(format)
 
       if (cost.is_licence) {
-        addMarge('licence', 'cost', date, cost.margin)
+        addMarge('licence', 'cost', date, cost.margin / currencies[cost.currency])
       } else if (cost.type !== 'direct_pressing') {
-        addMarge('prod', null, date, cost.margin)
+        addMarge('prod', null, date, cost.margin / currencies[cost.currency])
       }
       if (cost.type === 'storage') {
         addMarge('storage', null, date, cost.in_statement / currencies[cost.currency])
