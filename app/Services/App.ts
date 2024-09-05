@@ -267,7 +267,7 @@ class App {
       }
       let to = 'contact@diggersfactory.com'
       if (params.type === 'cd' || params.type === 'merch' || params.type === 'tape') {
-        to = 'kendal@diggersfactory.com'
+        to = 'kendale@diggersfactory.com'
       }
       await Notification.sendEmail({
         to: to,
