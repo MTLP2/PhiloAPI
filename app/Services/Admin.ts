@@ -1276,6 +1276,9 @@ class Admin {
       vod.follow_up_payment = params.follow_up_payment
       vod.statement_comment = params.statement_comment || null
     }
+    if (params.category === 'digital') {
+      vod.storage_costs = 0
+    }
     if (params.com) {
       vod.newsletter_fr = params.newsletter_fr
       vod.newsletter_en = params.newsletter_en
