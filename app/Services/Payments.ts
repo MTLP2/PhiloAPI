@@ -230,9 +230,6 @@ class Payment {
   static intent = async (params: { payment_id: string; user_id?: number }) => {
     const payment = await DB('payment').where('id', params.payment_id).first()
 
-    if (payment.payment_id && payment.date_payment) {
-      return { error: 'already_paid' }
-    }
     if (payment.payment_id) {
       const paymentIntent = await stripe.paymentIntents.retrieve(payment.payment_id)
       if (paymentIntent.status === 'succeeded') {
@@ -285,7 +282,7 @@ class Payment {
     const payment = await DB('payment').where('id', params.id).first()
     payment.payment_id = params.payment_id
     payment.error = ''
-    payment.status = 'confirmed'
+    payment.status = 'paid'
     payment.user_id = params.user_id
     payment.date_payment = Utils.date()
     payment.updated_at = Utils.date()
@@ -578,6 +575,21 @@ class Payment {
     }
 
     return groupedNotifications
+  }
+
+  static checkIncomplete = async () => {
+    const payments = await DB('payment')
+      .select('id', 'payment_id', 'created_at')
+      .whereIn('status', ['unpaid', 'creating'])
+      .whereNotNull('payment_id')
+      .orderBy('created_at', 'desc')
+      .all()
+
+    for (const payment of payments) {
+      await Payment.intent({
+        payment_id: payment.id
+      })
+    }
   }
 }
 
