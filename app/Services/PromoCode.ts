@@ -207,6 +207,36 @@ class PromoCode {
     }
     return { success: true }
   }
+
+  static isValid = async ({ promocode, user_id }) => {
+    if (promocode.code === 'BACK10') {
+      const order = await DB('order')
+        .select('id')
+        .where('user_id', user_id)
+        .where('promo_code', 'BACK10')
+        .first()
+
+      if (order) {
+        return { success: false, error: 'Code already used' }
+      }
+
+      const lastOrder = await DB('order')
+        .select('created_at')
+        .where('user_id', user_id)
+        .orderBy('id', 'desc')
+        .where('status', 'confirmed')
+        .first()
+
+      if (!lastOrder) {
+        return { success: false, error: 'No order found' }
+      }
+
+      if (lastOrder.created_at > moment().subtract(2, 'month').format('YYYY-MM-DD')) {
+        return { success: false, error: 'Order too recent' }
+      } else return { success: true }
+    }
+    return { success: true }
+  }
 }
 
 export default PromoCode

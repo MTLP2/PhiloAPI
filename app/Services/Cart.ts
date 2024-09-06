@@ -21,6 +21,7 @@ import I18n from '@ioc:Adonis/Addons/I18n'
 import moment from 'moment'
 import Pass from './Pass'
 import Stripe from 'stripe'
+import PromoCode from 'App/Services/PromoCode'
 
 const stripe = require('stripe')(config.stripe.client_secret)
 
@@ -518,6 +519,15 @@ class Cart {
       if (!code) {
         shop.promo_error = 'promo_code_not_found'
       } else {
+        if (p.promo_code === 'BACK10') {
+          const valid = await PromoCode.isValid({
+            promocode: code,
+            user_id: p.user_id
+          })
+          if (!valid.success) {
+            shop.promo_error = 'promo_code_not_applicable'
+          }
+        }
         if (code.users) {
           const users = code.users.split(',')
           if (users.indexOf(p.user_id.toString()) === -1) {
