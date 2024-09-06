@@ -49,6 +49,10 @@ class Payment {
   static get = async (params: { id: string }) => {
     const item = await DB('payment').where('code', params.id).first()
 
+    if (!item) {
+      throw new ApiError(404)
+    }
+
     if (item.payment_type === 'revolut' && !item.date_payment) {
       const order = await Revolut.getOrder(item.payment_id)
       if (order.state === 'completed') {
