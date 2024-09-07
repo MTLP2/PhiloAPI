@@ -214,7 +214,7 @@ class App {
       await Vod.checkCampaignStart()
       await User.syncCIOs()
       await User.syncEvents()
-      await Vod.checkCampaignEnd(new Date().getHours(), new Date().getMinutes())
+      await Vod.checkCampaignEnd()
 
       cron.status = 'complete'
       cron.end = new Date()

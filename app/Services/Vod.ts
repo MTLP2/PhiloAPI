@@ -976,20 +976,16 @@ class Vod {
     return { success: true }
   }
 
-  static checkCampaignEnd = async (hour: number, minutes: number) => {
+  static checkCampaignEnd = async () => {
     const vodToEnd = await DB('vod')
-      .whereNotIn('step', ['successful'])
-      // where day is today
+      .whereIn('step', ['in_progress', 'private'])
+      .where('type', 'funding')
+      .where('end', '<', new Date())
       .whereRaw('DATE(`end`) = CURDATE()')
-      // where hour is hourly hour
-      .whereRaw(`HOUR(\`end\`) = ${hour}`)
-      // where minute is hourly minutes
-      .whereRaw(`MINUTE(\`end\`) = ${minutes}`)
       .where('vod.scheduled_end', 1)
       .all()
 
     for (const vod of vodToEnd) {
-      // Update each vod to step 'in_progress'
       await DB('vod').where('id', vod.id).update({
         step: 'successful'
       })
