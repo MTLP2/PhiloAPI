@@ -1288,6 +1288,9 @@ class Cart {
     res.size = p.size
     res.chosen_sizes = p.chosen_sizes
 
+    if (p.project_id === 321371 && p.quantity > 4) {
+      res.error = 'too_many_items'
+    }
     if (p.comment === '' || p.comment === null) {
       res.error = 'no_comment'
     }
