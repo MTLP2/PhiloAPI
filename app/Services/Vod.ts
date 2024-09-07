@@ -979,7 +979,6 @@ class Vod {
   static checkCampaignEnd = async () => {
     const vodToEnd = await DB('vod')
       .whereIn('step', ['in_progress', 'private'])
-      .where('type', 'funding')
       .where('end', '<', new Date())
       .whereRaw('DATE(`end`) = CURDATE()')
       .where('vod.scheduled_end', 1)
