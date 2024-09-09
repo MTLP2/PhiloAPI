@@ -870,6 +870,9 @@ class Products {
       .all()
 
     for (const dispatch of dispatchs) {
+      if (!dispatch.logistician) {
+        continue
+      }
       dispatch.logistician = dispatch.logistician.split('-')[0]
       if (!res[dispatch.product_id]) {
         res[dispatch.product_id] = {
