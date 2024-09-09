@@ -658,7 +658,12 @@ class Stock {
   }) {
     const file = Buffer.from(params.file, 'base64')
     const workbook = new Excel.Workbook()
-    await workbook.xlsx.load(file)
+
+    try {
+      await workbook.xlsx.load(file)
+    } catch (e) {
+      return { error: 'Invalid file' }
+    }
 
     const stocks: any[] = []
     const worksheet = workbook.getWorksheet(1)
