@@ -1288,7 +1288,7 @@ class Cart {
     res.size = p.size
     res.chosen_sizes = p.chosen_sizes
 
-    if (p.project.status !== 'in_progress' && p.project.status !== 'private') {
+    if (p.project.step !== 'in_progress' && p.project.step !== 'private') {
       res.error = 'project_not_available'
     }
     if (p.project_id === 321371 && p.quantity > 4) {
