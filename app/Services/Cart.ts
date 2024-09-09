@@ -1288,6 +1288,9 @@ class Cart {
     res.size = p.size
     res.chosen_sizes = p.chosen_sizes
 
+    if (p.project.status !== 'in_progress' && p.project.status !== 'private') {
+      res.error = 'project_not_available'
+    }
     if (p.project_id === 321371 && p.quantity > 4) {
       res.error = 'too_many_items'
     }
@@ -1305,12 +1308,13 @@ class Cart {
     res.category = p.project.category
     res.save_shipping = p.project.save_shipping
 
-    for (const s of Object.keys(p.project.grouped_sizes)) {
-      if (!params.chosen_sizes || !params.chosen_sizes[s]) {
-        res.error = 'no_size_selected'
+    if (p.project.grouped_sizes) {
+      for (const s of Object.keys(p.project.grouped_sizes)) {
+        if (!params.chosen_sizes || !params.chosen_sizes[s]) {
+          res.error = 'no_size_selected'
+        }
       }
     }
-
     if (p.item_id) {
       for (const i of p.project.items) {
         if (i.id === p.item_id) {
@@ -1332,7 +1336,7 @@ class Cart {
         }
       }
     } else {
-      res.price = p.project.prices[params.currency]
+      res.price = p.project.prices && p.project.prices[params.currency]
       res.price_project = p.project.price
       res.price_ship_discount = p.project.prices_ship_discount?.[params.currency] ?? null
       res.picture = p.project.picture
