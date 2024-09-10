@@ -947,7 +947,7 @@ static toJuno = async (params) => {
         if (throwError) {
           throw err
         } else {
-          console.log(err)
+          console.error(err)
           await Notification.sendEmail({
             to: 'victor@diggersfactory.com',
             subject: `Problem with Elogik : ${shop.id}`,
@@ -970,7 +970,7 @@ static toJuno = async (params) => {
         if (throwError) {
           throw err
         } else {
-          console.log(err)
+          console.error(err)
           await Notification.sendEmail({
             to: 'victor@diggersfactory.com',
             subject: `Problem with BigBlue : ${shop.id}`,
@@ -990,7 +990,7 @@ static toJuno = async (params) => {
         if (throwError) {
           throw err
         } else {
-          console.log(err)
+          console.error(err)
           await Notification.sendEmail({
             to: 'victor@diggersfactory.com',
             subject: `Problem with Whiplash : ${shop.id}`,
@@ -1025,7 +1025,7 @@ static toJuno = async (params) => {
         if (throwError) {
           throw err
         } else {
-          console.log(err)
+          console.error(err)
           await Notification.sendEmail({
             to: 'victor@diggersfactory.com',
             subject: `Problem with SNA : ${shop.id}`,
@@ -1570,10 +1570,6 @@ static toJuno = async (params) => {
         updated_at: Utils.date()
       })
     }
-    // console.log(projects)
-
-    console.log(tt)
-
     return list
   }
 }

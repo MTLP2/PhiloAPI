@@ -25,7 +25,6 @@ class MailJet {
       const v = l.split(',')
       return "'" + v[0] + "'"
     })
-    console.log(i)
 
     const res = {
       emails: 0,

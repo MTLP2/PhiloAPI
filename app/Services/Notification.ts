@@ -448,7 +448,7 @@ class Notification {
       }
       params.html = _.template(params.html)(params)
     } catch (e) {
-      console.log(e)
+      console.error(e)
     }
 
     let template = `

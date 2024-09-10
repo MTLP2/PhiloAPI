@@ -139,7 +139,7 @@ class BigBlue {
 
     Object.keys(products).forEach((product) => {
       if (products[product].qty === null && products[product].old > 0) {
-        console.log('product', product)
+        console.info('product', product)
       }
     })
 
@@ -528,7 +528,7 @@ class BigBlue {
       }
     } while (pageToken)
 
-    console.log('orders bigblue', orders.length)
+    console.info('orders bigblue', orders.length)
 
     let updated = 0
     for (const order of orders) {
@@ -551,7 +551,7 @@ class BigBlue {
         })
       }
     }
-    console.log('updated', updated)
+    console.info('updated', updated)
 
     return updated
   }
@@ -894,7 +894,6 @@ class BigBlue {
         if (!price['1kg']) {
           continue
         }
-        console.log(price)
         await DB('shipping_weight').insert({
           country_id: country,
           partner: 'bigblue',
@@ -985,7 +984,7 @@ class BigBlue {
       })
     }
 
-    console.log('marge => ', marge)
+    console.info('marge => ', marge)
     return {
       dispatchs: i,
       marge: marge

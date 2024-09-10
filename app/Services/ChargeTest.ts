@@ -5,7 +5,7 @@ class ChargeTest {
   static test = async (params: { number: number; time: number }) => {
     const start = new Date()
     let ok = 0
-    console.log(`🚀 Test starting => ${params.number} times`)
+    console.info(`🚀 Test starting => ${params.number} times`)
 
     const request = async (i) => {
       const id = Utils.randomString(10, '#aA')
@@ -67,13 +67,12 @@ class ChargeTest {
           'cart_id': id
         }
       })
-      // console.log(i, res.code)
       if (res.code) ok++
     }
 
     const perSeconds = Math.ceil(params.number / params.time)
     for (let s = 1; s <= params.time; s++) {
-      console.log('----------> ', s)
+      console.info('----------> ', s)
       for (let q = 1; q <= perSeconds; q++) {
         request(s * q)
       }
@@ -89,7 +88,7 @@ class ChargeTest {
       time: Utils.round((end.getTime() - start.getTime()) / 600, 2)
     }
 
-    console.log(`✅ Test finished => ${res.pourcent}% success in ${res.time} seconds`)
+    console.info(`✅ Test finished => ${res.pourcent}% success in ${res.time} seconds`)
 
     return res
   }

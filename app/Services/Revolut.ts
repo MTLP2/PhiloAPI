@@ -9,7 +9,6 @@ class Revolut {
       data?: any
     }
   ) => {
-    console.log(Env.get('REVOLUT_SECRET_KEY'))
     const config = {
       method: params?.method || 'get',
       maxBodyLength: Infinity,
@@ -22,8 +21,6 @@ class Revolut {
       },
       data: params?.data ? JSON.stringify(params.data) : undefined
     }
-
-    console.log(config)
 
     return axios(config)
       .then((res) => {

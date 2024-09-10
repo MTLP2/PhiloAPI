@@ -139,7 +139,6 @@ class Review {
     // Gamification
     try {
       const res = await Pass.addHistory({ type: 'first_review', userId: params.user_id })
-      // console.log('res in gamification, review', res)
     } catch (err) {
       await Pass.errorNotification('first_review', params.user_id, err)
     }

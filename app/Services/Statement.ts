@@ -1194,8 +1194,6 @@ class StatementService {
     const stat = await DB('statement_history').where('id', params.id).first()
     const file = await Storage.get(`statements/${stat.user_id}_${stat.date}.xlsx`, true)
 
-    console.log(`statements/${stat.user_id}_${stat.date}.xlsx`)
-
     return file
   }
 
@@ -2619,9 +2617,7 @@ class StatementService {
       let price = 0.1
       try {
         price = Utils.getFee(stockPrice, moment().format('YYYY-MM-DD')) as number
-      } catch (e) {
-        console.log(p.id, e)
-      }
+      } catch (e) {}
       const unitPrice: number = p.category === 'vinyl' ? price : 0.05
 
       if (change[p.id]) {
@@ -2931,7 +2927,6 @@ class StatementService {
 
     for (const order of orders) {
       if (order.item_id && !items.find((i) => i.id === order.item_id)) {
-        console.log(order)
         continue
       }
 

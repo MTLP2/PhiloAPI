@@ -20,7 +20,7 @@ class Parser {
     const j = request.jar()
 
     for (let i = 1; i <= 173; i++) {
-      console.log('page => ', i)
+      console.info('page => ', i)
       const url = `https://social.sxsw.com/?page=${i}&search%5Bq%5D=music`
       j.setCookie(cookie, url)
 

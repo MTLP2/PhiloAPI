@@ -862,7 +862,7 @@ class Stock {
     columns.push({ header: 'Unit cost', key: 'unit_cost', width: 7 })
     columns.push({ header: 'Price stock', key: 'price_stock', width: 7 })
 
-    console.log(
+    console.info(
       'quantity =>',
       refs.reduce((prev: number, current: any) => prev + current.quantity, 0)
     )

@@ -377,7 +377,6 @@ class App {
         try {
           await App.notification(notif)
         } catch (err) {
-          console.log(err)
           if (e < 2) {
             await Notification.sendEmail({
               to: 'victor@diggersfactory.com',
@@ -1761,7 +1760,7 @@ class App {
     for (const ref of refs) {
       const vod = await DB('vod').where('barcode', ref.barcode).first()
       if (!vod) {
-        console.log('not_found', ref.barcode)
+        console.info('not_found', ref.barcode)
         continue
       }
       if (!vod.unit_cost) {
@@ -1804,7 +1803,7 @@ class App {
           .update({
             unit_cost: Utils.round(price / quantity)
           })
-        console.log(res)
+        console.info(res)
       }
     }
 

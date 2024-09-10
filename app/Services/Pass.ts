@@ -368,7 +368,7 @@ export default class Pass {
     updateTotal?: boolean
   }) {
     return
-    // console.log('addHistory', type, userId, refId, times)
+    /**
     const quests = await Pass.findQuest({ type, userId })
 
     // If no quests is returned at all
@@ -445,10 +445,12 @@ export default class Pass {
     }
 
     return res
+    **/
   }
 
   static async addGenreHistory({ userId, genreList }: { userId: number; genreList: string[] }) {
     return
+    /**
     // lowercase genre type and convert spaces to underscores to match quest type
     const questListFromGenres: string[] = []
     for (const genre of genreList) {
@@ -459,6 +461,7 @@ export default class Pass {
     if (!questListFromGenres.length)
       throw new Error('No quest found for these genres: ' + genreList)
     return Pass.addHistory({ type: questListFromGenres, userId })
+    **/
   }
 
   static findQuest = async ({ type, userId }: { type: string | Array<string>; userId: number }) => {

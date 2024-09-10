@@ -242,7 +242,6 @@ class Admin {
       for (const f in filters) {
         const filter = filters[f]
         filter.value = decodeURIComponent(filter.value).replace(/'/g, "''")
-        console.log(filter.value)
         if (filter.name === 'customer.email') {
           projects.where((query) => {
             query.where('customer.email', 'LIKE', `%${filter.value}%`)
@@ -270,7 +269,6 @@ class Admin {
       }
     }
 
-    console.log(projects.toString())
     const res = await Utils.getRows<any>({ ...params, query: projects })
     return res
   }
@@ -545,7 +543,6 @@ class Admin {
       }
       project.count += order.quantity
       if (!order.date_export) {
-        console.log(order)
         project.trans[order.transporter].to_send += order.quantity
       }
       if (order.item_id) {
@@ -847,18 +844,9 @@ class Admin {
     }
 
     for (const project of projects) {
-      // console.log(project)
       const stats = await Admin.getProjectStats({ id: project.id })
 
       if (project.is_licence && stats.marge_artist > 0) {
-        /**
-      console.log({
-        project_id: project.id,
-        marge_artist: stats.marge_artist,
-        marge_diggers: stats.marge_diggers,
-        marge_costs: stats.marge_costs
-      })
-      **/
         res.marge_licence.nb++
         res.marge_licence.value += stats.marge_artist
         res.marge_prod_licence.nb++
@@ -870,7 +858,6 @@ class Admin {
       } else if (stats.prod > 0 && stats.marge_artist > 0) {
         res.marge.nb++
         res.marge.value += stats.marge_artist
-        console.log(stats.marge_costs)
         if (stats.marge_costs) {
           res.marge_prod.nb++
           res.marge_prod.value += stats.marge_costs
@@ -885,17 +872,7 @@ class Admin {
         nb++
         marges += stats.marge_artist
       }
-
-      console.log({
-        project_id: project.id,
-        marge_artist: stats.marge_artist,
-        marge_diggers: stats.marge_diggers,
-        marge_costs: stats.marge_costs
-      })
-      **/
       }
-
-      // console.log(stats)
     }
 
     return {
@@ -2820,7 +2797,6 @@ class Admin {
         throw err
       }
     }
-    console.log(user.id)
 
     if (user.email) {
       User.syncCIOs({ id: user.id })
@@ -2902,7 +2878,6 @@ class Admin {
       .where('is_preorder', false)
       .all()
 
-    console.log(stocks)
     const workbook = new Excel.Workbook()
 
     const worksheet = workbook.addWorksheet('Prospects')
@@ -2928,7 +2903,6 @@ class Admin {
         : 0
     }))
 
-    console.log(rows)
     worksheet.addRows(rows)
 
     return workbook.xlsx.writeBuffer()
@@ -3751,7 +3725,6 @@ class Admin {
       com[item.com_id].total += item.total / currencies[item.currency]
     }
 
-    console.log(com)
     const res = Object.values(com)
 
     res.sort((a: any, b: any) => {
@@ -4971,7 +4944,6 @@ class Admin {
 
     for (const payment of payments) {
       if (!boxes[payment.box_id]) {
-        console.log(payment.box_id)
         continue
       }
       const b = boxes[payment.box_id]
@@ -5381,8 +5353,6 @@ class Admin {
     cio_id?: number | null
     project_id: number
   }) => {
-    console.log(params)
-
     // Create if id is null
     if (!params.id) return Admin.createDelayNewsletter(params)
 
@@ -5495,7 +5465,6 @@ class Admin {
         .first()
     ])
 
-    console.log(uniqueUsersAndOrdersByMonth)
     await Notification.sendEmail({
       to: 'robin@diggersfactory.com,jeremy.r@diggersfactory.com',
       subject: `Export clients mensuel - ${previousMonth}/${thisYear}`,

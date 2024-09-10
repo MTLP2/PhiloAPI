@@ -577,7 +577,6 @@ class Production {
     item.final_price = params.final_price || null
     item.notif = params.notif
     item.is_billing = params.is_billing
-    console.log(params.costs_option)
     item.costs_option = JSON.stringify(params.costs_option)
     item.updated_at = Utils.date()
 
@@ -1097,7 +1096,6 @@ class Production {
 
     let item
     if (!params.did) {
-      console.log(params)
       item = DB('production_dispatch')
       item.production_id = params.id || null
       item.project_id = params.project_id
@@ -1724,14 +1722,6 @@ class Production {
     // Send notif if notif si activated in prod or method is called with overrideNotif.
     // Recipient is the user linked to the production, or userId value for override.
     if (prod.notif || overrideNotif) {
-      console.log('add_notif', {
-        type: `production_${type}`,
-        prod_id: prod.id,
-        user_id: userId || prod.user_id,
-        project_id: prod.project_id,
-        date: date,
-        data: data
-      })
       await Notification.add({
         type: `production_${type}`,
         prod_id: prod.id,
@@ -2134,8 +2124,6 @@ class Production {
       .where('cost.created_at', '>', '2022-01-01')
       .all()
 
-    console.log(costs.length)
-
     const c = {}
     for (const cost of costs) {
       if (!c[cost.project_id]) {
@@ -2154,7 +2142,6 @@ class Production {
       c[cost.project_id].margin += cost.margin
     }
 
-    // console.log(c)
     for (const [id, project] of Object.entries(costs)) {
       const prod = DB('production')
       if (project.production_id) {

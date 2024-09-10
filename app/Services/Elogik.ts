@@ -85,7 +85,6 @@ class Elogik {
       .all()
 
     return res.articles.map((article: any) => {
-      console.log(article)
       return {
         title: article.titre,
         barcode: article.EAN13,
@@ -333,9 +332,8 @@ class Elogik {
       .orderBy('box_dispatch.id', 'desc')
       .all()
 
-    console.log('boxes => ', boxes.length)
+    console.info('boxes => ', boxes.length)
     for (const box of boxes) {
-      console.log(box)
       if (!box.firstname) {
         continue
       }
@@ -562,7 +560,7 @@ class Elogik {
       .orderBy('date_export', 'asc')
       .all()
 
-    console.log('orders => ', orders.length)
+    console.info('orders => ', orders.length)
 
     const packages = await Elogik.listeColis(
       orders.slice(0, 300).map((o: any) => {
@@ -601,7 +599,7 @@ class Elogik {
         }
       }
     }
-    console.log('orders sent => ', i)
+    console.info('orders sent => ', i)
 
     const manuals = await DB('order_manual')
       .where('transporter', 'daudin')
@@ -610,7 +608,7 @@ class Elogik {
       .orderBy('date_export', 'asc')
       .all()
 
-    console.log('manuals => ', manuals.length)
+    console.info('manuals => ', manuals.length)
 
     const packagesManuals = await Elogik.listeColis(
       manuals.map((o: any) => {
@@ -639,7 +637,7 @@ class Elogik {
         }
       }
     }
-    console.log('manuals sent => ', j)
+    console.info('manuals sent => ', j)
 
     const boxes = await DB('box_dispatch')
       .select('box_dispatch.*', 'box.user_id')
@@ -649,7 +647,7 @@ class Elogik {
       .orderBy('date_export', 'asc')
       .all()
 
-    console.log('boxes => ', boxes.length)
+    console.info('boxes => ', boxes.length)
 
     const packagesBoxes = await Elogik.listeColis(
       boxes.map((o: any) => {
@@ -679,7 +677,7 @@ class Elogik {
         }
       }
     }
-    console.log('boxes sent => ', k)
+    console.info('boxes sent => ', k)
   }
 
   static syncStocks = async (params?: { barcode?: string }) => {
@@ -793,7 +791,6 @@ class Elogik {
       })
       offset = offset + size
       if (res && res.commandes && res.commandes.length > 0) {
-        console.log(res.commandes.length)
         list.push(...res.commandes)
       } else {
         next = false

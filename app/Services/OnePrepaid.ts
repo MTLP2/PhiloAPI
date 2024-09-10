@@ -45,7 +45,7 @@ class OnePrepaid {
 
       soap.createClient(url, function (err, client) {
         if (err) {
-          console.log(err)
+          console.error(err)
         }
         const params = {
           header: {

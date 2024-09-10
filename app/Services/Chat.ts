@@ -79,7 +79,7 @@ class Chat {
         }
       }
     } catch (e) {
-      console.log(e)
+      console.error(e)
     }
     return true
   }

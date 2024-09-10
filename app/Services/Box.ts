@@ -887,7 +887,7 @@ class Box {
         if (box.is_gift) {
           if (dispatchs.length >= Box.getNbMonths(box.periodicity)) {
             finished++
-            console.log('finished gift', box.id, box.periodicity)
+            console.info('finished gift', box.id, box.periodicity)
             isFinish = true
           }
         }
@@ -924,7 +924,7 @@ class Box {
         }
 
         if (box.dispatch_left !== left) {
-          console.log(box.id, box.dispatch_left, left, dispatchs.length)
+          console.info(box.id, box.dispatch_left, left, dispatchs.length)
         }
 
         if (box.step === 'confirmed' && left < 1) {
@@ -935,7 +935,7 @@ class Box {
             date: end
           })
           finished++
-          console.log('finished', box.id, box.periodicity)
+          console.info('finished', box.id, box.periodicity)
         }
 
         // For setting step :
@@ -958,7 +958,7 @@ class Box {
           })
       }
     }
-    console.log('finished', finished)
+    console.info('finished', finished)
   }
 
   static async cleanDispatchs() {
@@ -988,7 +988,7 @@ class Box {
         .first()
 
       if (vod) {
-        console.log('vod =>', bb[b], b)
+        console.info('vod =>', bb[b], b)
         Stock.save({
           product_id: vod.product_id,
           type: 'daudin',
@@ -1001,7 +1001,7 @@ class Box {
             stock: DB.raw(`stock + ${bb[b]}`)
           })
       } else {
-        console.log('goodie =>', bb[b], b)
+        console.info('goodie =>', bb[b], b)
         await DB('goodie')
           .where('barcode', b)
           .update({
@@ -1041,7 +1041,7 @@ class Box {
         box_project.created_at ASC
     `)
 
-    console.log('boxes : ', boxes.length)
+    console.info('boxes : ', boxes.length)
 
     const users = {}
     const usersProjects = await DB()
@@ -1079,7 +1079,7 @@ class Box {
     for (const b in boxes) {
       const box = boxes[b]
       if (box.step === 'stopped') {
-        console.log('stoped', box.id, box.step, box.date_stop)
+        console.info('stoped', box.id, box.step, box.date_stop)
       }
       boxes[b].nb_vinyl = box.type === 'one' ? 1 : 2
     }
@@ -1157,7 +1157,6 @@ class Box {
             if (!p) {
               errors.push({ id: box.id, type: `vinyl${i}_selected_not_box` })
             } else {
-              // console.log(box[`project${i}`], p.barcode)
               barcodes.push(p.barcode)
             }
           }
@@ -1224,7 +1223,7 @@ class Box {
             !barcodes.find((b) => b === p.barcode)
           ) {
             if (box.styles) {
-              console.log('pad de style =>', box.id, box.styles)
+              console.info('pad de style =>', box.id, box.styles)
             }
             stocks[p.id]--
             selected[p.id] = !selected[p.id] ? 1 : selected[p.id] + 1
@@ -1234,7 +1233,9 @@ class Box {
         }
       }
       if (Object.keys(already).length > 0) {
-        // console.log(`Client already have: ${box.id} ${box.user_id} : ${Object.keys(already).join(',')}`)
+        console.info(
+          `Client already have: ${box.id} ${box.user_id} : ${Object.keys(already).join(',')}`
+        )
       }
 
       if (new Set(barcodes).size !== barcodes.length) {
@@ -1292,7 +1293,7 @@ class Box {
       })
     }
 
-    console.log('// Goodies', goods)
+    console.info('// Goodies', goods)
 
     for (const g of Object.keys(goods)) {
       await DB('goodie')
@@ -1311,7 +1312,7 @@ class Box {
         })
     }
 
-    console.log('selected', selected)
+    console.info('selected', selected)
     for (const s of Object.keys(selected)) {
       const product = await DB('project_product').where('project_id', s).first()
 
@@ -1324,7 +1325,7 @@ class Box {
       })
     }
 
-    console.log(errors)
+    console.info(errors)
 
     await Notification.sendEmail({
       to: 'box@diggersfactory.com,victor@diggersfactory.com',
@@ -1501,9 +1502,9 @@ class Box {
         dispatch
       ) {
         payments.push(box.id)
-        console.log('++++++' + box.id)
+        console.info('++++++' + box.id)
       } else {
-        console.log('------' + box.id)
+        console.info('------' + box.id)
         continue
       }
 
@@ -1513,7 +1514,7 @@ class Box {
       })
 
       if (!cards.data[0]) {
-        console.log(`XXXXX -> ${box.id} -> No card`)
+        console.info(`XXXXX -> ${box.id} -> No card`)
         await DB('box').where('id', box.id).update({
           step: 'finished'
         })
@@ -1621,7 +1622,7 @@ class Box {
           })
         }
       } catch (e) {
-        console.log(e)
+        console.error(e)
         errors.push({ id: box.id, type: JSON.stringify(e.code) })
         await Notification.add({
           type: 'my_box_payment_refused',
@@ -1727,7 +1728,6 @@ class Box {
   }
 
   static async errorCheck({ status, payment, error, box, order, orderBox }) {
-    console.log('error', status)
     const b = await DB('box').find(box.id)
     b.step = 'error'
     b.updated_at = Utils.date()
@@ -2736,7 +2736,7 @@ class Box {
 
       soap.createClient(url, function (err, client) {
         if (err) {
-          console.log(err)
+          console.error(err)
         }
         const params = {
           header: {
@@ -2886,9 +2886,7 @@ class Box {
       const barcodes = dispatch.barcodes.split(',')
       const found = barcodes.some((b) => b === (barcode || barcode2))
       if (!found) {
-        console.log(dispatch)
         barcodes.push(barcode)
-        console.log(barcodes)
         DB('box_dispatch')
           .where('id', dispatch.id)
           .update({
@@ -2933,7 +2931,7 @@ class Box {
 
         if (shipping < 5) {
           if (box.step === 'confirmed' || box.step === 'stopped') {
-            console.log(order.box_id, order.shipping, shipping, order.periodicity)
+            console.info(order.box_id, order.shipping, shipping, order.periodicity)
           }
         } else {
           await DB('box').where('id', box.id).update({
@@ -3164,11 +3162,11 @@ class Box {
       .where('box.step', 'confirmed')
       .all()
 
-    console.log(boxes)
+    console.info(boxes)
     for (const box of boxes) {
       if (box.partner) {
         if (!costs[box.partner]) {
-          console.log(box.partner)
+          console.info(box.partner)
           continue
         }
         const cost = {
@@ -3213,7 +3211,6 @@ class Box {
             currency: cost.currency
           })
         }
-        // console.log(box)
       }
     }
 
@@ -3256,12 +3253,12 @@ class Box {
       for (let i = 1; i < 6; i++) {
         if (select[`project${i}`]) {
           if (!dis[select.box_id]) {
-            console.log('OOOOOOO => no box', select.box_id)
+            console.info('OOOOOOO => no box', select.box_id)
             continue
           } else if (dis[select.box_id].indexOf(refs[select[`project${i}`]]) < 0) {
-            console.log('XXXXXXXX => not found', dis[select.box_id], refs[select[`project${i}`]])
+            console.info('XXXXXXXX => not found', dis[select.box_id], refs[select[`project${i}`]])
           } else {
-            console.log('=====> found')
+            console.info('=====> found')
           }
         }
       }
@@ -3286,7 +3283,7 @@ class Box {
       const barcodes = dispatch.barcodes.split(',')
       if (!dis && dispatch.periodicity !== 'monthly' && barcodes.indexOf('TOTEBAGBLANC') < 0) {
         barcodes.push('TOTEBAGBLANC')
-        console.log(dis, dispatch)
+        console.info(dis, dispatch)
         DB('box_dispatch')
           .where('id', dispatch.id)
           .update({

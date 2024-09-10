@@ -301,7 +301,6 @@ class Bid {
     const duration = moment.duration(moment(project.end).diff(moment()))
     const minutes = duration.asMinutes()
     if (minutes < 5) {
-      console.log(moment().add('5', 'minutes').format('YYYY-MM-DD HH:mm:ss'))
       project.updated_at = Utils.date()
       await project.save()
     }
@@ -450,7 +449,6 @@ class Bid {
           function (err, res, body) {
             if (err) reject(err)
             else resolve(body)
-            console.log(res)
           }
         )
       })
@@ -473,7 +471,7 @@ class Bid {
         },
         auth: auths[i]
       }).then((res) => {
-        console.log(i, res)
+        console.info(i, res)
       })
     }
 

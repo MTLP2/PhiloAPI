@@ -454,7 +454,7 @@ class Dispatch {
         continue
       }
       **/
-      console.log('=>', path)
+      console.info('=>', path)
 
       const date = path[path.length - 1]
       const buffer: Buffer = <Buffer>await Storage.get(file.path, true)
@@ -463,7 +463,7 @@ class Dispatch {
       dispatchs += dis
     }
 
-    console.log('dispatchs => ', dispatchs)
+    console.info('dispatchs => ', dispatchs)
     return dispatchs
   }
 
@@ -1098,7 +1098,6 @@ class Dispatch {
     const buffer = Buffer.from(params.invoice, 'base64')
     const date = `${params.year}-${params.month}`
     const res = await Dispatch.setCost(params.logistician, date, buffer, true)
-    console.log(res)
     return res
   }
 
@@ -1114,7 +1113,6 @@ class Dispatch {
       if (!price.prices['1kg']) {
         continue
       }
-      console.log(price.security)
       await DB('shipping_weight').insert({
         'partner': 'daudin',
         'country_id': price.country_id,
@@ -1160,77 +1158,6 @@ class Dispatch {
     }
 
     return prices
-
-    const countries = await DB('country').where('lang', 'fr').all()
-    const cc = {}
-    for (const country of countries) {
-      cc[Utils.slugify(country.name)] = country.id
-    }
-
-    const getWeightString = (weight: number) => {
-      if (weight < 0.5) {
-        return `500g`
-      }
-      return `${Math.ceil(weight)}kg`
-    }
-
-    const workbook = new Excel.Workbook()
-    await workbook.xlsx.readFile('../shippings/daudin/DGF DETAIL 2023-05.xlsx')
-    const costs: any[] = []
-
-    const expe = workbook.getWorksheet('Expéditions')
-
-    let diff = 0
-    expe.eachRow((row, rowNumber) => {
-      const cost: any = {
-        id: row.getCell('A').text,
-        order_id: row.getCell('B').text,
-        date: row.getCell('E').text,
-        country_id: cc[Utils.slugify(row.getCell('O').text)],
-        mode: row.getCell('G').text,
-        weight: row.getCell('U').text,
-        weight_str: getWeightString(+row.getCell('U').text),
-        cost: row.getCell('V').text
-      }
-      if (row.getCell('O').text === 'REPUBLIQUE DE COREE') {
-        cost.country_id = 'KR'
-      }
-      if (!cost.country_id) {
-        console.log('=>', row.getCell('O').text)
-      }
-      cost.price = Utils.round(
-        prices[`${cost.country_id}_${cost.mode}`]?.prices[cost.weight_str],
-        2
-      )
-      cost.diff = Utils.round(cost.cost - cost.price)
-
-      if (!isNaN(cost.diff)) {
-        diff += cost.diff
-      }
-
-      if (cost.weight && cost.diff > 0 && !isNaN(+cost.weight)) {
-        costs.push(cost)
-      }
-    })
-
-    const work = new Excel.Workbook()
-    const worksheet = work.addWorksheet('Diff')
-
-    worksheet.columns = [
-      { key: 'id', header: 'Id', width: 20 },
-      { key: 'order_id', header: 'Order', width: 10 },
-      { key: 'country_id', header: 'Country', width: 15 },
-      { key: 'date', header: 'Date', width: 20 },
-      { key: 'weight', header: 'Weight', width: 15 },
-      { key: 'weight_str', header: 'Weight', width: 15 },
-      { key: 'cost', header: 'Facturé', width: 15 },
-      { key: 'price', header: 'Grille', width: 15 },
-      { key: 'diff', header: 'Diff', width: 15 }
-    ]
-    console.log('diff => ', diff)
-
-    worksheet.addRows(costs)
-    return work.xlsx.writeBuffer()
   }
 
   static extractPrices = async () => {
@@ -1291,7 +1218,6 @@ class Dispatch {
       data.push(da)
     }
 
-    console.log(data)
     return Utils.arrayToXlsx([
       {
         worksheetName: 'Shipping',
@@ -1333,7 +1259,6 @@ class Dispatch {
     const order = await Elogik.commandeFournisseur({
       id: daudin.commandes[0].numeroCommande
     })
-    console.log(order)
 
     return order
   }

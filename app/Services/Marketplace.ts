@@ -679,15 +679,11 @@ class Marketplace {
     if (type === 'refused') {
       return Utils.request(
         `http://action.metaffiliation.com/refuse.php?mclic=I4F2011011&argann=${id}`
-      ).then((res) => {
-        console.log(res.body)
-      })
+      ).then((res) => {})
     } else if (type === 'confirmed') {
       return Utils.request(
         `http://action.metaffiliation.com/valide.php?mclic=I4F2011011&argann=${id}`
-      ).then((res) => {
-        console.log(res.body)
-      })
+      ).then((res) => {})
     }
   }
 
@@ -1519,9 +1515,7 @@ class Marketplace {
 
   /**
   static getShippingCostsItem = async (params) => {
-    // console.log(params)
     // return { marketplace: params.id, user: params.user }
-    console.log(params)
     const marketplace = await DB('marketplace as m')
       .select('customer.*', 'country.continent', 'marketplace.currency')
       .join('marketplace_item as mi', 'm..id', 'marketplace.customer_id')

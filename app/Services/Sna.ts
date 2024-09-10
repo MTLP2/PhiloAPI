@@ -161,7 +161,6 @@ class Sna {
           weight: Utils.round(row.getCell('F').toString())
         }
 
-        // console.log(dispatch)
         if (!dispatch.id || isNaN(dispatch.id) || !dispatch.trans) {
           return
         }
@@ -201,11 +200,8 @@ class Sna {
       promises.push(pro)
     })
 
-    console.log(promises)
-
     await Promise.all(promises)
 
-    console.log(dispatchs)
     return dispatchs.length
   }
 
@@ -218,7 +214,6 @@ class Sna {
       .all()
 
     for (const order of orders.filter((o) => shops.exists((s) => s.id === o.customerOrderNumber))) {
-      console.log(order)
     }
   }
 

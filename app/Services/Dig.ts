@@ -149,7 +149,6 @@ class Dig {
       .where('dig.type', 'purchase')
       .all()
 
-    console.log(confirm.length)
     for (const dig of confirm) {
       await DB('dig').where('id', dig.id).update({
         confirm: 1

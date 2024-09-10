@@ -145,7 +145,6 @@ class Artists {
       .whereNull('artist_id')
       .orderBy('project.id', 'asc')
       .all()
-    console.log(projects.length)
 
     let i = 0
     for (const project of projects) {
@@ -194,7 +193,6 @@ class Artists {
         })
       }
       i++
-      console.log(i)
     }
 
     return projects.length
@@ -210,7 +208,6 @@ class Artists {
         picture: picture
       })
       i++
-      console.log(i)
     }
 
     return artists.length

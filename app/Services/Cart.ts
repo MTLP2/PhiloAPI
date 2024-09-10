@@ -1893,7 +1893,6 @@ class Cart {
       })
       if (refunds.data.length > 0) {
         status = 'refunded'
-        console.log('refunded =>', params.order_id)
       }
       **/
       await DB('order')
@@ -1915,13 +1914,11 @@ class Cart {
         })
 
       if (status === 'confirmed') {
-        // console.log('succeeded =>', params.order_id)
         return Cart.validPayment({
           order_id: params.order_id
         })
       }
     } else if (paymentIntent.last_payment_error) {
-      // console.log('failed =>', params.order_id)
       await DB('order').where('id', params.order_id).update({
         status: 'failed',
         error: paymentIntent.last_payment_error.code,
@@ -1932,7 +1929,6 @@ class Cart {
       })
       return { success: false }
     } else if (params.set_incomplete) {
-      // console.log('set_incomplete =>', params.order_id)
       await DB('order').where('id', params.order_id).update({
         status: 'incomplete'
       })
@@ -2119,7 +2115,7 @@ class Cart {
           try {
             Order.sync({ id: shop.id })
           } catch (e) {
-            console.log(e)
+            console.error(e)
           }
         }
 
@@ -2329,7 +2325,6 @@ class Cart {
           userId: user.id,
           type: ['two_genres_order']
         })
-        // console.log('res of gamification two_genres_order', res)
       } catch (err) {
         await Pass.errorNotification('two genres order', user.id, err)
       }

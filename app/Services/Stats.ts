@@ -1600,7 +1600,6 @@ class Stats {
 
   static async getStatsAll(params: { start?: string; end?: string; period?: string }) {
     let format: string
-    console.log('get_stats2')
     let periodicity
     if (params.period === 'day') {
       periodicity = 'days'
@@ -2407,7 +2406,6 @@ class Stats {
 
       let total = (s.item_total * s.currency_rate) / (1 + s.tax_rate)
 
-      // console.log(s)
       if (s.is_pro) {
         d.sent.direct_shop.dates[date] += total
       } else if (s.is_licence) {
@@ -2681,7 +2679,7 @@ class Stats {
     toto += d.turnover.project.total.dates[date]
     toto += d.turnover.shipping.total.dates[date]
     toto += d.turnover.error.dates[date]
-    console.log('diff =>', total, toto)
+    console.info('diff =>', total, toto)
 
     return d
   }
@@ -2965,7 +2963,6 @@ class Stats {
       .orderBy('stock_historic.created_at', 'desc')
       .all()
 
-    console.log(historic.length)
     const data = {}
 
     for (const h of historic) {
@@ -2983,9 +2980,6 @@ class Stats {
       }
       const diff = d.old.quantity - d.new.quantity
 
-      if (diff > 1000) {
-        console.log(h.id, h.project_id, date, qty, diff)
-      }
       if (isNaN(diff)) {
         continue
       }
@@ -3006,7 +3000,6 @@ class Stats {
       .whereIn('step', ['successful'])
       .all()
 
-    console.log('vod', vod.length)
     const tt = []
 
     for (const v of vod) {
@@ -3015,13 +3008,10 @@ class Stats {
         for (const h of historic) {
           if (h.new === 'in_progress' && moment(h.date).isBetween(params.start, params.end)) {
             tt.push(v.project_id)
-            // console.log(v.project_id, h.date)
           }
         }
       }
     }
-
-    console.log('tt =>', tt.length)
 
     let total = 0
     const orders = await DB('order_item')
@@ -3094,7 +3084,6 @@ class Stats {
       }
     }
 
-    console.log(days, projects)
     return days / projects
   }
 

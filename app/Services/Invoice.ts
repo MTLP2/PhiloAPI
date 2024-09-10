@@ -110,7 +110,6 @@ class Invoice {
       if (!shop.items[idx].lines) {
         shop.items[idx].lines = []
       }
-      console.log('product', shop.items[idx].lines)
       shop.items[idx].lines.push(product)
     }
 
@@ -621,7 +620,7 @@ class Invoice {
         </table>
       `
     })
-    console.log(invoices.length)
+    console.info(invoices.length)
 
     return invoices
   }
@@ -989,8 +988,6 @@ class Invoice {
     //   )
     //   .all()
 
-    // console.log('first length', first.length)
-
     // for (const f of first) {
     //   await Notification.add({
     //     type: 'invoice_reminder_first',
@@ -1026,8 +1023,6 @@ class Invoice {
     //     invoice_id: f.id
     //   })
     // }
-
-    // console.log('second length', second.length)
 
     const first = await DB('payment')
       .select('*')
@@ -1376,7 +1371,6 @@ class Invoice {
       .where('compatibility', true)
       .all()
 
-    console.log(b2b.length)
     await DB('invoice')
       .whereIn(
         'id',
@@ -1442,7 +1436,6 @@ class Invoice {
       "SELECT invoice.* FROM `invoice` WHERE (sub_total + tax) != total AND invoice.date > '2023-01-01'"
     const invoices = await DB().execute(sql)
 
-    console.log(invoices.length)
     for (const invoice of invoices) {
       const subTotal = Utils.round(invoice.total / (1 + invoice.tax_rate / 100))
       const tax = Utils.round(invoice.total - subTotal)

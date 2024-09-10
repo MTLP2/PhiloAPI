@@ -304,7 +304,6 @@ class Shop {
   static async addRecommendations(params: { shop_id: number; projects: number[] }) {
     const projects = await DB('shop_project').where('shop_id', params.shop_id).all()
 
-    console.log(projects)
     for (const project of projects) {
       for (const reco of params.projects) {
         const exists = await DB('item')

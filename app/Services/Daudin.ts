@@ -58,17 +58,13 @@ class Daudin {
           orderShopId = line[7]
           tracking = line[0]
         } else if (params.transporter === 'GLS') {
-          console.log(line)
           orderShopId = line[0]
           tracking = line[2]
         }
 
-        console.log(line)
-
         if (!orderShopId || !tracking) {
           continue
         }
-        console.log(tracking)
         orders.push({
           id: orderShopId.replace('X', '').trim(),
           tracking: tracking.trim(),
@@ -1230,7 +1226,6 @@ class Daudin {
           columns.security = cell._column.letter
         }
       })
-      console.log(columns)
     } else {
       worksheet = workbook.getWorksheet(1)
       columns = {
@@ -1343,7 +1338,7 @@ class Daudin {
       i++
     }
 
-    console.log('marge => ', marge)
+    console.info('marge => ', marge)
     return {
       dispatchs: i,
       marge: marge

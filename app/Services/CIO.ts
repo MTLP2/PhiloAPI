@@ -31,7 +31,6 @@ cio.convertProfiles = async () => {
         id: u.id,
         email: u.email
       })
-      console.log(cus, u)
     }
   }
 }
@@ -63,7 +62,7 @@ cio.cleanUsersUnsubscribed = async () => {
       await cio.destroy(user.email)
     }
     if (i % 100 === 0) {
-      console.log(i)
+      console.info(i)
     }
   }
   return { success: true }

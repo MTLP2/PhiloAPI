@@ -253,7 +253,6 @@ class Whiplash {
         continue
       }
       if (order.items.length !== nbProducts.length) {
-        console.log(order.items.length, nbProducts.length)
         throw new ApiError(406, `No enouth items for order N°${order.id}`)
         continue
       }
@@ -536,18 +535,16 @@ class Whiplash {
 
     for (const shop of shops) {
       // shop.logistician_id = 22888898
-      // console.log(shop.logistician_id)
       const order: any = await Whiplash.getOrder(shop.logistician_id)
-      console.log(shop.id, shop.logistician_id, order.status_name, order.approximate_delivery_date)
       /**
-    await DB('order_shop')
-      .where('id', shop.id)
-      .update({
-        step: 'sent',
-        tracking_number: order.tracking[0],
-        tracking_link: order.tracking_links[0]
-      })
-    **/
+      await DB('order_shop')
+        .where('id', shop.id)
+        .update({
+          step: 'sent',
+          tracking_number: order.tracking[0],
+          tracking_link: order.tracking_links[0]
+        })
+      **/
     }
 
     return { success: true }
@@ -827,11 +824,10 @@ class Whiplash {
         }
 
         dispatchs.push(dispatch)
-        // console.log(shop.order_id, dispatch.creator_id, dispatch.warehouse_id, -dispatch.total, shop.shipping_cost)
       }
     }
 
-    console.log('marge => ', marge)
+    console.info('marge => ', marge)
     return {
       dispatchs: dispatchs.length,
       marge

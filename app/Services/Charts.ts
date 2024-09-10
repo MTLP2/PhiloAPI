@@ -273,7 +273,7 @@ class Charts {
       currenciesDB
     )
 
-    console.log('orders Uk =>', orders.length)
+    console.info('orders Uk =>', orders.length)
     const zipCode = {}
 
     for (const i in orders) {
@@ -358,19 +358,19 @@ class Charts {
     client
       .connect(config)
       .then(() => {
-        console.log('connected to charts')
+        console.info('connected to charts')
 
         if (params.country === 'FR') {
           const filename = `FR_DF_${date.format('DDMMYY')}.csv`
-          console.log(filename)
+          console.info(filename)
           client.put(Buffer.from(file), filename)
         } else if (params.country === 'GB') {
           const filename = `DF${date.format('DDMMYY')}.asc`
-          console.log(filename)
+          console.info(filename)
           client.put(Buffer.from(file), filename)
         }
         setTimeout(() => {
-          console.log('close connection to charts')
+          console.info('close connection to charts')
           client.end()
         }, 10000)
       })
@@ -396,12 +396,12 @@ class Charts {
     client
       .connect(config)
       .then(() => {
-        console.log('connected to charts')
+        console.info('connected to charts')
         client.put(Buffer.from(us), '40301864.txt')
         client.put(Buffer.from(ca), 'C4001864.txt')
 
         setTimeout(() => {
-          console.log('close connection to charts')
+          console.info('close connection to charts')
           client.end()
         }, 20000)
       })
@@ -438,11 +438,11 @@ class Charts {
     client
       .connect(config)
       .then(() => {
-        console.log('connected to charts')
+        console.info('connected to charts')
 
         for (const country of Object.keys(countries)) {
           if (!countries[country]) {
-            console.log('not data for', country)
+            console.info('not data for', country)
             // continue
           }
           let filename
@@ -455,12 +455,12 @@ class Charts {
           } else if (country === 'IT') {
             filename = `89998_IT_${date.format('YYYYMMDD')}_V24.txt`
           }
-          console.log('filename =>', filename)
+          console.info('filename =>', filename)
           client.put(Buffer.from(countries[country]), filename)
         }
 
         setTimeout(() => {
-          console.log('close connection to charts')
+          console.info('close connection to charts')
           client.end()
         }, 20000)
       })
@@ -555,7 +555,7 @@ class Charts {
         client.put(Buffer.from(charts), `DiggersFactory_${date}01.xml`)
 
         setTimeout(() => {
-          console.log('close connection to charts')
+          console.info('close connection to charts')
           client.end()
         }, 20000)
       })

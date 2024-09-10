@@ -425,7 +425,6 @@ class User {
           userId: userId,
           type: 'user_styles'
         })
-        // console.log('res in gamification, user styles', res)
       }
     } catch (err) {
       await Pass.errorNotification('user styles', userId, err)
@@ -600,7 +599,6 @@ class User {
           userId: userId,
           type: 'user_newsletter'
         })
-        // console.log('res in gamification, user newsletter', res)
       }
     } catch (err) {
       await Pass.errorNotification('newsletter', userId, err)
@@ -813,13 +811,11 @@ class User {
     const user = await DB('user').where('id', params.user_id).first()
 
     if (params.box_id) {
-      console.log(params.box_id, params.user_id)
       const code = await DB('box_code')
         .where('order_box_id', params.box_id)
         .where('user_id', params.user_id)
         .first()
 
-      console.log(code)
       if (code) {
         return Box.giftCard({
           lang: user.lang,
