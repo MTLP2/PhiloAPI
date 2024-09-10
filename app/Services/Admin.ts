@@ -863,16 +863,6 @@ class Admin {
           res.marge_prod.value += stats.marge_costs
         }
       }
-      if (stats.prod > 0 && stats.marge_artist > 0) {
-        /**
-      if (project.is_licence) {
-        nbLicence++
-        margesLicence += stats.marge_artist
-      } else {
-        nb++
-        marges += stats.marge_artist
-      }
-      }
     }
 
     return {
