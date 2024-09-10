@@ -5177,6 +5177,8 @@ class Admin {
       .where('project.id', projectId)
       .first()
 
+    if (!project) throw new ApiError(404, 'Project not found')
+
     // Type -> fileName map
     const typeToFileName = {
       front_cover: { name: ['cover', 'mini', 'original', 'low'] },
