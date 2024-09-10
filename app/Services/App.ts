@@ -214,7 +214,7 @@ class App {
       await Vod.checkCampaignStart()
       await User.syncCIOs()
       await User.syncEvents()
-      await Vod.checkCampaignEnd(new Date().getHours(), new Date().getMinutes())
+      await Vod.checkCampaignEnd()
 
       cron.status = 'complete'
       cron.end = new Date()
@@ -267,7 +267,7 @@ class App {
       }
       let to = 'contact@diggersfactory.com'
       if (params.type === 'cd' || params.type === 'merch' || params.type === 'tape') {
-        to = 'kendal@diggersfactory.com'
+        to = 'kendale@diggersfactory.com'
       }
       await Notification.sendEmail({
         to: to,
@@ -441,7 +441,9 @@ class App {
         'production_refuse_action'
       ].includes(notif.type)
     ) {
-      data.action = I18n.locale(data.lang).formatMessage(`production.${JSON.parse(notif.data)}`)
+      try {
+        data.action = I18n.locale(data.lang).formatMessage(`production.${JSON.parse(notif.data)}`)
+      } catch (err) {}
       n.order_id = null
     }
     if (

@@ -94,12 +94,24 @@ class BigBlue {
       product = await DB('product').whereIn('id', params.productIds).first()
     }
     const listProducts = await DB('product')
-      .select('id', 'bigblue_id')
+      .select('product.id', 'product.bigblue_id', 'stock.quantity as stock')
       .whereNotNull('bigblue_id')
+      .leftJoin('stock', (query) => {
+        query
+          .on('stock.product_id', '=', 'product.id')
+          .andOn('stock.type', '=', DB.raw("'bigblue'"))
+          .andOn('stock.is_preorder', '=', DB.raw("'false'"))
+      })
       .all()
+
     const products = {}
+
     for (const product of listProducts) {
-      products[product.bigblue_id] = product.id
+      products[product.bigblue_id] = {
+        id: product.id,
+        old: product.stock,
+        qty: null
+      }
     }
 
     const res: any = await this.api('ListInventories', {
@@ -114,8 +126,9 @@ class BigBlue {
         if (!products[stock.product]) {
           continue
         }
+        products[stock.product].qty = stock.available
         Stock.save({
-          product_id: products[stock.product],
+          product_id: products[stock.product].id,
           type: 'bigblue',
           comment: 'api',
           is_preorder: false,
@@ -123,6 +136,12 @@ class BigBlue {
         })
       }
     }
+
+    Object.keys(products).forEach((product) => {
+      if (products[product].qty === null && products[product].old > 0) {
+        console.log('product', product)
+      }
+    })
 
     return res
   }
@@ -151,7 +170,6 @@ class BigBlue {
       .join('order_item as oi', 'oi.order_shop_id', 'os.id')
       .where('oi.project_id', params.id)
       .where('os.transporter', 'bigblue')
-      .where('os.type', 'vod')
       .whereNull('date_export')
       .whereNull('logistician_id')
       .where('is_paid', true)
@@ -188,6 +206,7 @@ class BigBlue {
       }
     }
 
+    const errors: any[] = []
     const dispatchs: any[] = []
     let qty = 0
     for (const order of orders) {
@@ -195,15 +214,30 @@ class BigBlue {
         break
       }
       if (!order.items) {
+        errors.push({
+          id: order.id,
+          order_id: order.order_id,
+          msg: 'no items'
+        })
         continue
       }
-      if (order.items.length !== nbProducts.length) {
+      if (order.items.length < nbProducts.length) {
+        errors.push({
+          id: order.id,
+          order_id: order.order_id,
+          msg: 'no enouth items'
+        })
         continue
       }
 
       if (order.shipping_type === 'pickup') {
         const pickup = JSON.parse(order.address_pickup)
         if (!pickup || !pickup.number) {
+          errors.push({
+            id: order.id,
+            order_id: order.order_id,
+            msg: 'no pickup'
+          })
           continue
         }
         const available = await MondialRelay.checkPickupAvailable(pickup.number)
@@ -225,6 +259,11 @@ class BigBlue {
               user_id: order.user_id
             })
           } else {
+            errors.push({
+              id: order.id,
+              order_id: order.order_id,
+              msg: 'no pickup around'
+            })
             continue
           }
         }
@@ -234,18 +273,27 @@ class BigBlue {
       qty = qty + order.quantity
     }
 
-    if (dispatchs.length === 0) {
-      return { success: false }
+    let res: any = []
+    if (dispatchs.length > 0) {
+      res = await BigBlue.syncOrders(dispatchs)
+
+      if (qty > 0) {
+        await DB('project_export').insert({
+          transporter: 'bigblue',
+          project_id: vod.project_id,
+          quantity: qty,
+          date: Utils.date()
+        })
+      }
     }
 
-    const res = await BigBlue.syncOrders(dispatchs)
-
-    if (qty > 0) {
-      await DB('project_export').insert({
-        transporter: 'bigblue',
-        project_id: vod.project_id,
-        quantity: qty,
-        date: Utils.date()
+    for (const error of errors) {
+      res.push({
+        order_id: error.order_id,
+        id: error.id,
+        blocked: true,
+        status: 'error',
+        msg: error.msg
       })
     }
 
@@ -326,6 +374,7 @@ class BigBlue {
       }
 
       for (const o in order.items) {
+        order.items[o].product = order.items[o].bigblue_id
         if (process.env.NODE_ENV !== 'production') {
           order.items[o].product = 'DIGG-000000-0001'
         } else {
@@ -344,6 +393,7 @@ class BigBlue {
         continue
       }
       const address = Utils.wrapText(order.address, ' ', 35)
+      const address2 = address[1] ? ` ${address[1]} ${order.address2}` : order.address2
 
       if (order.shipping_type === 'pickup' && (!pickup || !pickup.number)) {
         dispatchs.push({
@@ -380,7 +430,7 @@ class BigBlue {
             phone: order.phone,
             email: order.email,
             line1: address[0],
-            line2: address[1] || '',
+            line2: address2,
             city: order.city,
             postal: order.zip_code,
             state: order.state,

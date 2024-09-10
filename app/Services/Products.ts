@@ -243,12 +243,12 @@ class Products {
     item.catnumber = params.catnumber
     item.isrc = params.isrc
     item.hs_code = params.hs_code
-    item.country_id = params.country_id
-    item.more = params.more
-    item.parent_id = params.parent_id
-    item.size = params.size
-    item.color = params.color
-    item.weight = params.weight
+    item.country_id = params.country_id || null
+    item.more = params.more || null
+    item.parent_id = params.parent_id || null
+    item.size = params.size || null
+    item.color = params.color || null
+    item.weight = params.weight || null
     item.updated_at = Utils.date()
 
     await item.save()
@@ -830,7 +830,7 @@ class Products {
     const logisticians = ['whiplash', 'whiplash_uk', 'daudin', 'bigblue']
 
     const stocks = await DB('stock')
-      .select('product_id', 'quantity', 'type')
+      .select('product_id', 'quantity', 'reserved', 'type')
       .whereIn('product_id', params.products.split(','))
       .where('is_preorder', false)
       .where('quantity', '!=', '0')
@@ -849,6 +849,7 @@ class Products {
         }
       }
       res[stock.product_id][stock.type].stock += stock.quantity
+      res[stock.product_id][stock.type].reserved += stock.reserved || 0
       res[stock.product_id].all.stock += stock.quantity
     }
 
@@ -864,11 +865,15 @@ class Products {
       .join('project_product as pp', 'pp.project_id', 'production.project_id')
       .join('product', 'product.id', 'pp.product_id')
       .whereIn('product.id', params.products.split(','))
-      .whereIn('production_dispatch.logistician', ['whiplash', 'whiplash_uk', 'daudin', 'bigblue'])
+      // .whereIn('production_dispatch.logistician', ['whiplash', 'whiplash_uk', 'daudin', 'bigblue'])
       .whereNull('production_dispatch.quantity_received')
       .all()
 
     for (const dispatch of dispatchs) {
+      if (!dispatch.logistician) {
+        continue
+      }
+      dispatch.logistician = dispatch.logistician.split('-')[0]
       if (!res[dispatch.product_id]) {
         res[dispatch.product_id] = {
           all: { ...base }

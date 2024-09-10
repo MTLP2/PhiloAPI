@@ -21,6 +21,7 @@ import I18n from '@ioc:Adonis/Addons/I18n'
 import moment from 'moment'
 import Pass from './Pass'
 import Stripe from 'stripe'
+import PromoCode from 'App/Services/PromoCode'
 
 const stripe = require('stripe')(config.stripe.client_secret)
 
@@ -238,6 +239,7 @@ class Cart {
                 type: 'shop',
                 transporter: shipping.transporter,
                 shipping_type: item.shipping_type,
+                weight_package: shipping.weight,
                 items: []
               }
             }
@@ -251,6 +253,7 @@ class Cart {
                 type: 'vod',
                 transporter: shipping.transporter,
                 shipping_type: item.shipping_type,
+                weight_package: shipping.weight,
                 items: []
               }
             }
@@ -516,6 +519,15 @@ class Cart {
       if (!code) {
         shop.promo_error = 'promo_code_not_found'
       } else {
+        if (p.promo_code === 'BACK10') {
+          const valid = await PromoCode.isValid({
+            promocode: code,
+            user_id: p.user_id
+          })
+          if (!valid.success) {
+            shop.promo_error = 'promo_code_not_applicable'
+          }
+        }
         if (code.users) {
           const users = code.users.split(',')
           if (users.indexOf(p.user_id.toString()) === -1) {
@@ -738,6 +750,7 @@ class Cart {
           shipping.pickup !== null && shipping.pickup <= min ? 0 : shipping.pickup
         shop.shipping_type = p.shipping_type
         shop.transporter = shipping.transporter
+        shop.weight_package = shipping.weight
 
         if (shop.save_shipping) {
           let shipping =
@@ -809,7 +822,7 @@ class Cart {
         }
 
         if (!shop.shipping && !shop.error && !shop.total_ship_discount) {
-          shop.error = 'no_shipping'
+          shop.error = 'no_qty'
         }
       }
     }
@@ -1001,7 +1014,8 @@ class Cart {
       picking: null,
       no_tracking: null,
       standard: null,
-      tracking: null
+      tracking: null,
+      weight: params.weight + packageWeight
     }
 
     for (const transporter of transporters) {
@@ -1057,145 +1071,6 @@ class Cart {
       return null
     }
 
-    return costs
-  }
-
-  static calculateShippingWhiplashUk = async (params) => {
-    const transporters = await DB('shipping_weight')
-      .where('partner', 'whiplash_uk')
-      .where('country_id', params.country_id)
-      .all()
-
-    let weight = params.weight
-    if (
-      (params.category === 'cd' || params.category === 'tape' || params.category === 'k7') &&
-      params.country_id === 'GB'
-    ) {
-      if (weight < 500) {
-        weight = '500g'
-      } else if (weight < 750) {
-        weight = '750g'
-      } else {
-        weight = Math.ceil(params.weight / 1000) + 'kg'
-      }
-    } else if (weight < 750) {
-      weight = '750g'
-    } else {
-      weight = Math.ceil(params.weight / 1000) + 'kg'
-    }
-    const costs: any = {
-      transporter: 'whiplash_uk',
-      partner: 'whiplash_uk',
-      currency: 'GBP',
-      no_tracking: null,
-      standard: null,
-      tracking: null
-    }
-
-    for (const transporter of transporters) {
-      if (params.quantity > 1) {
-        transporter.picking = 1
-      }
-      if (params.category === 'cd' && params.country_id === 'GB') {
-        transporter.packing = 0.2
-      }
-      const cost = transporter.packing + transporter.picking * params.insert
-      if (
-        transporter[weight] &&
-        (!costs || !costs.standard || costs.standard > transporter[weight])
-      ) {
-        if (params.country_id !== 'GB') {
-          transporter[weight] = transporter[weight] * 1.1
-        }
-        if (transporter.type === 'no_tracking') {
-          costs.no_tracking = Utils.round(transporter[weight] + cost)
-        } else {
-          costs.standard = Utils.round(transporter[weight] + cost)
-          costs.tracking = Utils.round((transporter[weight] + cost) * 1.15)
-        }
-      }
-    }
-
-    if (!costs.standard && !costs.no_tracking) {
-      return null
-    }
-    return costs
-  }
-
-  static calculateShippingWhiplash = async (params, trans) => {
-    const transporter = await DB('shipping_vinyl')
-      .where('country_id', params.country_id)
-      .where('transporter', trans)
-      .first()
-
-    if (!transporter) {
-      return null
-    }
-
-    let cost = 0
-    if (params.quantity > 1) {
-      transporter.picking = 1
-    }
-    transporter.cost = transporter.packing + params.insert * transporter.picking
-
-    if (trans === 'whiplash' && transporter[`${params.quantity}_vinyl`] < 4.65) {
-      transporter[`${params.quantity}_vinyl`] = 4.65
-    }
-
-    if (params.category === 'k7' || params.category === 'tape') {
-      transporter[`${params.quantity}_vinyl`] = transporter[`${params.quantity}_vinyl`] * 0.6
-    }
-
-    if (params.quantity < 4) {
-      cost = Utils.round(transporter[`${params.quantity}_vinyl`] + transporter.cost)
-    } else {
-      const diff = (params.quantity - 3) * (transporter['2_vinyl'] - transporter['1_vinyl'])
-      cost = Utils.round(transporter['3_vinyl'] + diff + transporter.cost)
-    }
-
-    const costs = {
-      transporter: trans,
-      partner: '',
-      currency: transporter.currency,
-      standard: cost,
-      tracking: Utils.round(cost * 1.15)
-    }
-
-    /**
-  if (trans === 'whiplash' && costs.standard < 9.9) {
-    costs.standard = 9.9
-  }
-  **/
-
-    return costs
-  }
-
-  static calculateShippingSoundmerch = async (params) => {
-    const transporter = await DB('shipping_vinyl')
-      .where('country_id', params.country_id === 'AU' ? params.country_id : '%')
-      .where('transporter', 'soundmerch')
-      .first()
-
-    if (!transporter) {
-      return null
-    }
-
-    let cost = 0
-    transporter.cost = transporter.packing + params.insert * transporter.picking
-    if (params.quantity < 4) {
-      cost = Utils.round(transporter[`${params.quantity}_vinyl`] + transporter.cost)
-    } else {
-      const diff = (params.quantity - 3) * (transporter['2_vinyl'] - transporter['1_vinyl'])
-      cost = Utils.round(transporter['3_vinyl'] + diff + transporter.cost)
-    }
-
-    const costs = {
-      transporter: 'soundmerch',
-      partner: '',
-      currency: transporter.currency,
-      standard: cost,
-      tracking: Utils.round(cost * 1.15)
-    }
     return costs
   }
 
@@ -1291,7 +1166,6 @@ class Cart {
         partner: 'whiplash',
         transporter: 'whiplash'
       })
-      // const whiplash = await Cart.calculateShippingWhiplash(params, 'whiplash')
       if (whiplash) {
         shippings.push(whiplash)
       }
@@ -1302,7 +1176,6 @@ class Cart {
         partner: 'whiplash_uk',
         transporter: 'whiplash_uk'
       })
-      // const whiplashUk = await Cart.calculateShippingWhiplashUk(params)
       if (whiplashUk) {
         shippings.push(whiplashUk)
       }
@@ -1317,19 +1190,17 @@ class Cart {
         shippings.push(ships)
       }
     }
-    if (transporters.soundmerch) {
-      const soundmerch = await Cart.calculateShippingSoundmerch(params)
-      if (soundmerch) {
-        shippings.push(soundmerch)
-      }
-    }
 
     if (shippings.length === 0) {
-      return { error: 'no_shipping' }
+      return { error: 'no_tg' }
     }
 
     let shipping
+    let qtyAvailable = false
     for (const ship of shippings) {
+      if (params.stocks && params.stocks[ship.transporter] > 0) {
+        qtyAvailable = true
+      }
       if (
         !params.transporter &&
         !(!params.is_shop && params.stocks[ship.transporter] === null) &&
@@ -1369,7 +1240,7 @@ class Cart {
     }
 
     if (!shipping) {
-      return { error: 'no_shipping' }
+      return { error: qtyAvailable ? 'no_qty' : 'no_shipping' }
     }
 
     const res: any = {}
@@ -1392,6 +1263,7 @@ class Cart {
       ? Utils.round(shipping.letter / currencies[params.currency], 2)
       : null
     res.transporter = shipping.transporter
+    res.weight = shipping.weight
 
     return res as {
       standard: number
@@ -1400,6 +1272,7 @@ class Cart {
       pickup: number
       letter: number
       transporter: string
+      weight: number
     }
   }
 
@@ -1415,6 +1288,12 @@ class Cart {
     res.size = p.size
     res.chosen_sizes = p.chosen_sizes
 
+    if (p.project.step !== 'in_progress' && p.project.step !== 'private') {
+      res.error = 'project_not_available'
+    }
+    if (p.project_id === 321371 && p.quantity > 4) {
+      res.error = 'too_many_items'
+    }
     if (p.comment === '' || p.comment === null) {
       res.error = 'no_comment'
     }
@@ -1429,12 +1308,13 @@ class Cart {
     res.category = p.project.category
     res.save_shipping = p.project.save_shipping
 
-    for (const s of Object.keys(p.project.grouped_sizes)) {
-      if (!params.chosen_sizes || !params.chosen_sizes[s]) {
-        res.error = 'no_size_selected'
+    if (p.project.grouped_sizes) {
+      for (const s of Object.keys(p.project.grouped_sizes)) {
+        if (!params.chosen_sizes || !params.chosen_sizes[s]) {
+          res.error = 'no_size_selected'
+        }
       }
     }
-
     if (p.item_id) {
       for (const i of p.project.items) {
         if (i.id === p.item_id) {
@@ -1456,7 +1336,7 @@ class Cart {
         }
       }
     } else {
-      res.price = p.project.prices[params.currency]
+      res.price = p.project.prices && p.project.prices[params.currency]
       res.price_project = p.project.price
       res.price_ship_discount = p.project.prices_ship_discount?.[params.currency] ?? null
       res.picture = p.project.picture
@@ -1689,7 +1569,7 @@ class Cart {
           shipping_display: ss.shipping,
           shipping_type: ss.shipping_type ? ss.shipping_type : 'standard',
           transporter: ss.transporter,
-          weight: ss.weight,
+          weight: ss.weight_package / 1000,
           address_pickup: ss.shipping_type === 'pickup' ? JSON.stringify(calculate.pickup) : null,
           customer_id: customer.id,
           customer_invoice_id: customerInvoiceId,

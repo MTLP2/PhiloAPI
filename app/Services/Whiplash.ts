@@ -277,6 +277,7 @@ class Whiplash {
         const data: any = {
           shipping_name: `${order.firstname} ${order.lastname}`,
           shipping_address_1: order.address,
+          shipping_address_2: order.address2,
           shipping_city: order.city,
           shipping_state: order.state,
           shipping_country: order.country_id,

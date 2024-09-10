@@ -1276,6 +1276,9 @@ class Admin {
       vod.follow_up_payment = params.follow_up_payment
       vod.statement_comment = params.statement_comment || null
     }
+    if (params.category === 'digital') {
+      vod.storage_costs = 0
+    }
     if (params.com) {
       vod.newsletter_fr = params.newsletter_fr
       vod.newsletter_en = params.newsletter_en
@@ -2256,6 +2259,7 @@ class Admin {
           { header: 'Shipping Type', key: 'shipping_type' },
           { header: 'Shipping', key: 'shipping' },
           { header: 'Shipping Cost', key: 'shipping_cost' },
+          { header: 'Package Weight', key: 'weight' },
           { header: 'Date export', key: 'date_export' },
           { header: 'Tracking', key: 'tracking_number' },
           { header: 'Paid?', key: 'is_paid' },
@@ -5493,7 +5497,7 @@ class Admin {
 
     console.log(uniqueUsersAndOrdersByMonth)
     await Notification.sendEmail({
-      to: 'robin@diggersfactory.com,olivia@diggersfactory.com',
+      to: 'robin@diggersfactory.com,jeremy.r@diggersfactory.com',
       subject: `Export clients mensuel - ${previousMonth}/${thisYear}`,
       html: `Bonjour,
       <p>Nombre de clients uniques : ${uniqueUsersAndOrdersByMonth.uniq_clients}</p>

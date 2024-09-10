@@ -1657,6 +1657,16 @@ class Utils {
       id: 132242,
       name: 'Ferdinand',
       picture: 'https://ca.slack-edge.com/T0UHRUB19-U0400N4T139-5922e3df99a0-512'
+    },
+    {
+      id: 80490,
+      name: 'Tom',
+      picture: 'https://ca.slack-edge.com/T0UHRUB19-U02473HJNGK-962016807a63-512'
+    },
+    {
+      id: 181458,
+      name: 'Kendale',
+      picture: 'https://ca.slack-edge.com/T0UHRUB19-U05G1324K1U-8d9c6ddece9f-512'
     }
   ]
 

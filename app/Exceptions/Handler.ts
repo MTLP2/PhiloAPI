@@ -62,7 +62,8 @@ export default class ExceptionHandler extends HttpExceptionHandler {
         file: file && file[0],
         line: file && file[1],
         method: ctx.request.method(),
-        post: JSON.stringify(ctx.request.body()).substring(0, 2000),
+        // post: JSON.stringify(ctx.request.body()).substring(0, 5000),
+        post: JSON.stringify(ctx.request.body()),
         get: JSON.stringify(ctx.request.qs()),
         stack: error.stack && error.stack.replace(/\n/g, '<br />')
       }

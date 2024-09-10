@@ -164,7 +164,6 @@ class Elogik {
       .join('order_item as oi', 'oi.order_shop_id', 'os.id')
       .where('oi.project_id', params.id)
       .where('os.transporter', 'daudin')
-      .where('os.type', 'vod')
       .whereNull('date_export')
       .whereNull('logistician_id')
       .where('is_paid', true)
@@ -173,7 +172,7 @@ class Elogik {
       .all()
 
     const items = await DB()
-      .select('product.id', 'order_shop_id', 'oi.quantity', 'product.barcode')
+      .select('product.id', 'order_shop_id', 'oi.quantity', 'product.barcode', 'oi.order_id')
       .from('order_item as oi')
       .join('project_product', 'project_product.project_id', 'oi.project_id')
       .join('product', 'project_product.product_id', 'product.id')
@@ -203,14 +202,26 @@ class Elogik {
 
     const dispatchs: any[] = []
     let qty = 0
+
+    const errors: { id: number; order_id: number; message: string }[] = []
     for (const order of orders) {
       if (qty + order.quantity > params.quantity) {
         break
       }
       if (!order.items) {
+        errors.push({
+          id: order.id,
+          order_id: order.order_id,
+          message: `no items`
+        })
         continue
       }
-      if (order.items.length !== nbProducts.length) {
+      if (order.items.length < nbProducts.length) {
+        errors.push({
+          id: order.id,
+          order_id: order.order_id,
+          message: `no enough items`
+        })
         continue
       }
       let ok = order.items.every((item) => {
@@ -219,11 +230,21 @@ class Elogik {
         })
       })
       if (!ok) {
+        errors.push({
+          id: order.id,
+          order_id: order.order_id,
+          message: `no product found`
+        })
         continue
       }
       if (order.shipping_type === 'pickup') {
         const pickup = JSON.parse(order.address_pickup)
         if (!pickup || !pickup.number) {
+          errors.push({
+            id: order.id,
+            order_id: order.order_id,
+            message: `no pickup`
+          })
           continue
         }
         const available = await MondialRelay.checkPickupAvailable(pickup.number)
@@ -245,6 +266,11 @@ class Elogik {
               user_id: order.user_id
             })
           } else {
+            errors.push({
+              id: order.id,
+              order_id: order.order_id,
+              message: `no pickup around`
+            })
             continue
           }
         }
@@ -253,18 +279,26 @@ class Elogik {
       qty = qty + order.quantity
     }
 
-    if (dispatchs.length === 0) {
-      return { success: false }
+    let res: any = []
+    if (dispatchs.length > 0) {
+      res = await Elogik.syncOrders(dispatchs)
+      if (qty > 0) {
+        await DB('project_export').insert({
+          transporter: 'daudin',
+          project_id: vod.project_id,
+          quantity: qty,
+          date: Utils.date()
+        })
+      }
     }
 
-    const res = await Elogik.syncOrders(dispatchs)
-
-    if (qty > 0) {
-      await DB('project_export').insert({
-        transporter: 'daudin',
-        project_id: vod.project_id,
-        quantity: qty,
-        date: Utils.date()
+    for (const error of errors) {
+      res.push({
+        order_id: error.order_id,
+        id: error.id,
+        blocked: true,
+        status_detail: 'error',
+        msg: error.message
       })
     }
 
@@ -390,6 +424,7 @@ class Elogik {
     for (const order of orders) {
       const pickup = order.address_pickup ? JSON.parse(order.address_pickup) : null
       const address = order.address ? order.address.match(/.{1,30}(\s|$)/g) : []
+      const address2 = address[1] ? ` ${address[1]} ${order.address2}` : order.address2
 
       let check
       if (order.id[0] === 'M') {
@@ -408,7 +443,7 @@ class Elogik {
         nom: order.lastname,
         prenom: order.firstname,
         adresse: address[0],
-        adresse2: address[1],
+        adresse2: address2,
         codePostal: order.zip_code,
         ville: order.city,
         codePays: order.country_id,

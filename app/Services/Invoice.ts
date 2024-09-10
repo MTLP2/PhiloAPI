@@ -596,7 +596,7 @@ class Invoice {
       .all()
 
     await Notification.sendEmail({
-      to: 'box@diggersfactory.com,victor@diggersfactory.com',
+      to: 'invoicing@diggersfactory.com,victor@diggersfactory.com',
       subject: 'Factures incorrect',
       html: `
         <p>${invoices.length} factures incorrect.</p>
