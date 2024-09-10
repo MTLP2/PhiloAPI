@@ -134,7 +134,7 @@ class IntercomController {
       const canvas = await Intercom.replyWithOrderInit({ botData, lang })
       return response.json(canvas)
     } catch (err) {
-      console.log('err in init', err)
+      console.error('err in init', err)
       const canvas = await Intercom.replyWithErrorCard({ lang: 'EN' })
       return response.json(canvas)
     }
@@ -221,7 +221,7 @@ class IntercomController {
         return response.json(canvas)
       }
     } catch (err) {
-      console.log(
+      console.info(
         '🚀 ~ file: IntercomController.js ~ line 177 ~ IntercomController ~ submitOrder ~ err',
         err
       )

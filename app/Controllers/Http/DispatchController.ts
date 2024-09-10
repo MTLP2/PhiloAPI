@@ -61,7 +61,6 @@ class DispatchController {
 
   async updateStocks({ params, request }) {
     try {
-      console.log(params)
       const payload = await validator.validate({
         schema: schema.create({
           inventories: schema.array().members(
@@ -73,7 +72,6 @@ class DispatchController {
         }),
         data: request.body()
       })
-      console.log(payload)
 
       return Dispatch.changeStock(payload)
     } catch (err) {

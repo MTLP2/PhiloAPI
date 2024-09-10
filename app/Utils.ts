@@ -1101,19 +1101,19 @@ class Utils {
         locales.en[regroup[word]][word] = t.en[word.toUpperCase()] || t.en[word]
 
         if (!locales.fr[regroup[word]][word]) {
-          console.log('miss fr ' + word)
+          console.info('miss fr ' + word)
         }
         if (!locales.en[regroup[word]][word]) {
-          console.log('miss en ' + word)
+          console.info('miss en ' + word)
         }
       } else {
         locales.fr[word] = t.fr[word.toUpperCase()] || t.fr[word]
         locales.en[word] = t.en[word.toUpperCase()] || t.en[word]
         if (!locales.fr[word]) {
-          console.log('miss fr ' + word)
+          console.info('miss fr ' + word)
         }
         if (!locales.en[word]) {
-          console.log('miss en ' + word)
+          console.info('miss en ' + word)
         }
       }
     }
@@ -1454,20 +1454,6 @@ class Utils {
       data: data
     })
     return payload
-    /**
-    try {
-      console.log(data, schema)
-      const payload = await validator.validate({
-        schema: schema,
-        data: data
-      })
-      return payload
-    } catch (error) {
-      console.log(error)
-      throw new ApiError(400, error.messages, error.messages)
-      // return response.status(400).send({ error: error.messages })
-    }
-    **/
   }
 
   static getShipDiscounts = ({
