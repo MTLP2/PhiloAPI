@@ -1171,6 +1171,7 @@ class Quote {
       },
       type: 'type_vinyl',
       option: '140',
+      onceByCopy: true,
       active: params.weight === '140'
     })
     quote.prices.weight['180'] = getCost({
@@ -1181,6 +1182,7 @@ class Quote {
       },
       type: 'type_vinyl',
       option: '180',
+      onceByCopy: true,
       active: params.weight === '180'
     })
     if (params.format === '10"') {
@@ -1196,6 +1198,7 @@ class Quote {
       type: 'type_vinyl',
       option: 'surcharge',
       quantity: 1,
+      onceByCopy: true,
       active:
         params.type_vinyl !== 'black' &&
         !['splatter', 'marble', 'cloudy', 'asidebside', 'colorincolor', 'halfandhalf'].includes(
@@ -1208,6 +1211,7 @@ class Quote {
       type: 'type_vinyl',
       option: 'second_surcharge',
       quantity: 1,
+      onceByCopy: true,
       active: params.type_vinyl !== 'black' && ['splatter'].includes(params.type_vinyl)
     })
 
@@ -1221,6 +1225,7 @@ class Quote {
           },
           type: 'type_vinyl',
           option: 'color',
+          onceByCopy: true,
           active: params.type_vinyl === 'color'
         }) + quote.prices.type_vinyl.surcharge
 
@@ -1233,6 +1238,7 @@ class Quote {
           },
           type: 'type_vinyl',
           option: 'splatter',
+          onceByCopy: true,
           active: params.type_vinyl === 'splatter'
         }) +
         getCost({
@@ -1243,6 +1249,7 @@ class Quote {
           },
           type: 'type_vinyl',
           option: 'splatter',
+          onceByCopy: true,
           active: params.type_vinyl === 'splatter'
         }) +
         quote.prices.type_vinyl.surcharge +
@@ -1257,6 +1264,7 @@ class Quote {
           },
           type: 'type_vinyl',
           option: 'marble',
+          onceByCopy: true,
           active: params.type_vinyl === 'marble'
         }) +
         quote.prices.type_vinyl.surcharge * 2
@@ -1270,6 +1278,7 @@ class Quote {
           },
           type: 'type_vinyl',
           option: 'asidebside',
+          onceByCopy: true,
           active: params.type_vinyl === 'asidebside'
         }) +
         quote.prices.type_vinyl.surcharge * 2
@@ -1283,6 +1292,7 @@ class Quote {
           },
           type: 'type_vinyl',
           option: 'cloudy',
+          onceByCopy: true,
           active: params.type_vinyl === 'cloudy'
         }) + quote.prices.type_vinyl.surcharge
 
@@ -1295,6 +1305,7 @@ class Quote {
           },
           type: 'type_vinyl',
           option: 'colorincolor',
+          onceByCopy: true,
           active: params.type_vinyl === 'colorincolor'
         }) +
         quote.prices.type_vinyl.surcharge * 2
@@ -1308,6 +1319,7 @@ class Quote {
           },
           type: 'type_vinyl',
           option: 'halfandhalf',
+          onceByCopy: true,
           active: params.type_vinyl === 'halfandhalf'
         }) +
         quote.prices.type_vinyl.surcharge * 2
@@ -1320,6 +1332,7 @@ class Quote {
         },
         type: 'type_vinyl',
         option: 'picture_disc',
+        onceByCopy: true,
         active: params.type_vinyl === 'picture_disc'
       })
     } else if (params.weight === '180') {
@@ -1332,6 +1345,7 @@ class Quote {
           },
           type: 'type_vinyl',
           option: 'color',
+          onceByCopy: true,
           active: params.type_vinyl === 'color'
         }) + quote.prices.type_vinyl.surcharge
 
@@ -1344,6 +1358,7 @@ class Quote {
           },
           type: 'type_vinyl',
           option: 'splatter',
+          onceByCopy: true,
           active: params.type_vinyl === 'splatter'
         }) +
         getCost({
@@ -1354,6 +1369,7 @@ class Quote {
           },
           type: 'type_vinyl',
           option: 'splatter',
+          onceByCopy: true,
           active: params.type_vinyl === 'splatter'
         }) +
         quote.prices.type_vinyl.surcharge +
@@ -1368,6 +1384,7 @@ class Quote {
           },
           type: 'type_vinyl',
           option: 'marble',
+          onceByCopy: true,
           active: params.type_vinyl === 'marble'
         }) +
         quote.prices.type_vinyl.surcharge * 2
@@ -1381,6 +1398,7 @@ class Quote {
           },
           type: 'type_vinyl',
           option: 'asidebside',
+          onceByCopy: true,
           active: params.type_vinyl === 'asidebside'
         }) +
         quote.prices.type_vinyl.surcharge * 2
@@ -1394,6 +1412,7 @@ class Quote {
           },
           type: 'type_vinyl',
           option: 'cloudy',
+          onceByCopy: true,
           active: params.type_vinyl === 'cloudy'
         }) + quote.prices.type_vinyl.surcharge
 
@@ -1406,6 +1425,7 @@ class Quote {
           },
           type: 'type_vinyl',
           option: 'colorincolor',
+          onceByCopy: true,
           active: params.type_vinyl === 'colorincolor'
         }) +
         quote.prices.type_vinyl.surcharge * 2
@@ -1419,6 +1439,7 @@ class Quote {
           },
           type: 'type_vinyl',
           option: 'halfandhalf',
+          onceByCopy: true,
           active: params.type_vinyl === 'halfandhalf'
         }) +
         quote.prices.type_vinyl.surcharge * 2
@@ -1431,6 +1452,7 @@ class Quote {
         },
         type: 'type_vinyl',
         option: 'picture_disc',
+        onceByCopy: true,
         active: params.type_vinyl === 'picture_disc'
       })
     }
@@ -1442,12 +1464,14 @@ class Quote {
       l: 89,
       type: 'label',
       option: 'white',
+      onceByCopy: true,
       active: params.label_color === 'white'
     })
     quote.prices.label_color.color = getCost({
       l: 92,
       type: 'label',
       option: 'color',
+      onceByCopy: true,
       active: params.label_color === 'color'
     })
     quote.label = quote.prices.label_color[params.label_color]
@@ -1460,6 +1484,7 @@ class Quote {
       },
       type: 'inner_sleeve',
       option: 'black',
+      onceByCopy: true,
       active: params.inner_sleeve === 'black'
     })
     quote.prices.inner_sleeve.white = getCost({
@@ -1470,6 +1495,7 @@ class Quote {
       },
       type: 'inner_sleeve',
       option: 'white',
+      onceByCopy: true,
       active: params.inner_sleeve === 'white'
     })
     quote.prices.inner_sleeve.printed = quote.inner_sleeve = getCost({
@@ -1480,6 +1506,7 @@ class Quote {
       },
       type: 'inner_sleeve',
       option: 'printed',
+      onceByCopy: true,
       active: params.inner_sleeve === 'printed'
     })
     quote.inner_sleeve = quote.prices.inner_sleeve[params.inner_sleeve]
@@ -1525,14 +1552,14 @@ class Quote {
     /**
     // numbered
     quote.prices.numbered.numbered = getCost({
-      l: 302,
+      l: 281,
       type: 'numbered',
       option: 'numbered',
       onceByCopy: true,
       active: params.numbered === 'numbered'
     })
     quote.prices.numbered.hand_numbered = getCost({
-      l: 303,
+      l: 282,
       type: 'numbered',
       option: 'hand_numbered',
       onceByCopy: true,
@@ -1710,47 +1737,48 @@ class Quote {
 
     quote.prices.sleeve.discobag = 0
     if (params.nb_vinyl === 1) {
-      quote.prices.sleeve.color = getCost({
-        l: 5,
-        type: 'sleeve',
-        option: 'color',
-        onceByCopy: true,
-        active: true
-      })
-      // - quote.cutting
-      quote.prices.sleeve.double_gatefold = getCost({
-        l: 3,
-        type: 'sleeve',
-        option: 'double_gatefold',
-        onceByCopy: true,
-        active: true
-      })
+      quote.prices.sleeve.color =
+        getCost({
+          l: 5,
+          type: 'sleeve',
+          option: 'color',
+          onceByCopy: true,
+          active: true
+        }) - quote.cutting
+      quote.prices.sleeve.double_gatefold =
+        getCost({
+          l: 3,
+          type: 'sleeve',
+          option: 'double_gatefold',
+          onceByCopy: true,
+          active: true
+        }) - quote.cutting
       if (params.sleeve === 'double_gatefold') {
         quote.prices.sleeve.double_gatefold += getCost({
           l: 102,
           type: 'surcharge',
           option: 'double_gatefold',
+          onceByCopy: true,
           active: true
         })
       }
-      //  - quote.cutting
     } else if (params.nb_vinyl === 2) {
-      quote.prices.sleeve.color = getCost({
-        l: 4,
-        type: 'sleeve',
-        option: 'color',
-        onceByCopy: true,
-        active: true
-      })
-      // - quote.cutting
-      quote.prices.sleeve.double_gatefold = getCost({
-        l: 2,
-        type: 'sleeve',
-        option: 'double_gatefold',
-        onceByCopy: true,
-        active: true
-      })
-      //  - quote.cutting
+      quote.prices.sleeve.color =
+        getCost({
+          l: 4,
+          type: 'sleeve',
+          option: 'color',
+          onceByCopy: true,
+          active: true
+        }) - quote.cutting
+      quote.prices.sleeve.double_gatefold =
+        getCost({
+          l: 2,
+          type: 'sleeve',
+          option: 'double_gatefold',
+          onceByCopy: true,
+          active: true
+        }) - quote.cutting
     }
     quote.prices.sleeve.pvc =
       quote.prices.sleeve.color +
@@ -1770,6 +1798,7 @@ class Quote {
       l: 29,
       type: 'weight',
       option: '180',
+      onceByCopy: true,
       active: params.weight === '180'
     })
 
@@ -1783,6 +1812,7 @@ class Quote {
       l: 29,
       type: 'type_vinyl',
       option: 'surcharge',
+      onceByCopy: true,
       active: true
     })
     quote.prices.type_vinyl.color =
@@ -1790,6 +1820,7 @@ class Quote {
         l: 17,
         type: 'type_vinyl',
         option: 'color',
+        onceByCopy: true,
         active: params.type_vinyl === 'color'
       }) + quote.prices.type_vinyl.surcharge
     quote.type_vinyl = this.getPrice(quote, params, 'type_vinyl')
@@ -1798,6 +1829,7 @@ class Quote {
         l: 18,
         type: 'type_vinyl',
         option: 'pantone',
+        onceByCopy: true,
         active: params.type_vinyl === 'pantone'
       }) + quote.prices.type_vinyl.surcharge
     quote.prices.type_vinyl.marble =
@@ -1805,6 +1837,7 @@ class Quote {
         l: 19,
         type: 'type_vinyl',
         option: 'marble',
+        onceByCopy: true,
         active: params.type_vinyl === 'marble'
       }) +
       quote.prices.type_vinyl.surcharge * 2
@@ -1813,18 +1846,21 @@ class Quote {
       l: 32,
       type: 'inner_sleeve',
       option: 'black',
+      onceByCopy: true,
       active: params.inner_sleeve === 'black'
     })
     quote.prices.inner_sleeve.white_antistatic = getCost({
       l: 35,
       type: 'inner_sleeve',
       option: 'white_antistatic',
+      onceByCopy: true,
       active: params.inner_sleeve === 'black'
     })
     quote.prices.inner_sleeve.black_antistatic = getCost({
       l: 36,
       type: 'inner_sleeve',
       option: 'black_antistatic',
+      onceByCopy: true,
       active: params.inner_sleeve === 'black_antistatic'
     })
     if (params.weight === '180') {
@@ -1832,6 +1868,7 @@ class Quote {
         l: 60,
         type: 'inner_sleeve',
         option: 'printed',
+        onceByCopy: true,
         active: params.inner_sleeve === 'printed'
       })
     }
@@ -1840,6 +1877,7 @@ class Quote {
         l: 60,
         type: 'inner_sleeve',
         option: 'printed',
+        onceByCopy: true,
         active: params.inner_sleeve === 'printed'
       })
     }
@@ -1920,7 +1958,7 @@ class Quote {
     quote.prices.sticker.sticker =
       quote.prices.sticker.base +
       getCost({
-        l: 57,
+        l: 81,
         type: 'sticker',
         option: 'base',
         onceByCopy: true,
@@ -1946,19 +1984,22 @@ class Quote {
     quote.numbered = quote.prices.numbered[params.numbered]
 
     // Assembly options (x Nb de LP)
-    // quote.prices.assembly =
-    //   getCost({
-    //     l: 91,
-    //     type: 'assembly',
-    //     option: '',
-    //     active: true
-    //   }) +
-    //   getCost({
-    //     l: 92,
-    //     type: 'assembly',
-    //     option: '',
-    //     active: true
-    //   })
+    quote.prices.assembly =
+      getCost({
+        l: 91,
+        type: 'assembly',
+        option: '',
+        onceByCopy: true,
+        active: true
+      }) +
+      getCost({
+        l: 92,
+        type: 'assembly',
+        option: '',
+        onceByCopy: true,
+        active: true
+      })
+    quote.assembly = quote.prices.assembly
 
     quote.test_pressing = 40
 
