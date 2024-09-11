@@ -83,28 +83,28 @@ class Artwork {
           params.back.replace(/^data:image\/(png|jpg|jpeg);base64,/, ''),
           'base64'
         )
-        Artwork.convertCoverType(uid, 'back', back)
+        await Artwork.convertCoverType(uid, 'back', back)
       }
       if (params.cover2) {
         const img = Buffer.from(
           params.cover2.replace(/^data:image\/(png|jpg|jpeg);base64,/, ''),
           'base64'
         )
-        Artwork.convertCoverType(uid, 'cover2', img)
+        await Artwork.convertCoverType(uid, 'cover2', img)
       }
       if (params.cover3) {
         const img = Buffer.from(
           params.cover3.replace(/^data:image\/(png|jpg|jpeg);base64,/, ''),
           'base64'
         )
-        Artwork.convertCoverType(uid, 'cover3', img)
+        await Artwork.convertCoverType(uid, 'cover3', img)
       }
       if (params.cover4) {
         const img = Buffer.from(
           params.cover4.replace(/^data:image\/(png|jpg|jpeg);base64,/, ''),
           'base64'
         )
-        Artwork.convertCoverType(uid, 'cover4', img)
+        await Artwork.convertCoverType(uid, 'cover4', img)
       }
       if (params.cover5) {
         const img = Buffer.from(
@@ -183,7 +183,6 @@ class Artwork {
 
       return { success: true, picture: uid }
     } catch (e) {
-      console.error(e)
       return {
         error: 'image_error',
         success: false
@@ -395,6 +394,7 @@ class Artwork {
           Storage.upload(`${path}/${type}_original.jpg`, buffer)
           resolve(buffer)
         })
+        .catch((err) => reject(err))
 
       sharp(buffer)
         .jpeg({ quality: 90 })
