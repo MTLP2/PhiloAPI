@@ -1719,6 +1719,10 @@ class Production {
       .where('pu.production', 1)
       .first()
 
+    if (!prod) {
+      return
+    }
+
     // Send notif if notif si activated in prod or method is called with overrideNotif.
     // Recipient is the user linked to the production, or userId value for override.
     if (prod.notif || overrideNotif) {
