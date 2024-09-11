@@ -961,26 +961,34 @@ class BigBlue {
         continue
       }
       if (!orders[line.ID]) {
-        orders[line.ID] = 0
+        orders[line.ID] = {
+          price: 0,
+          weight: 0
+        }
       }
-      orders[line.ID] += +line.Price
+      orders[line.ID].price += +line.Price
+      if (line.Weight) {
+        orders[line.ID].weight = line.Weight
+      }
     }
 
     const oo = await DB('order_shop')
-      .select('id', 'logistician_id', 'shipping', 'shipping_cost', 'currency')
+      .select('id', 'order_id', 'logistician_id', 'shipping', 'shipping_cost', 'currency')
       .whereIn('logistician_id', Object.keys(orders))
       .all()
 
     for (const order of oo) {
       i++
-      if (order.shipping_cost) {
+      if (order.shipping_cost && order.shipping_weight) {
         marge += order.shipping - order.shipping_cost
         continue
       }
-      order.shipping_cost = orders[order.logistician_id] * currencies[order.currency]
+      order.shipping_cost = orders[order.logistician_id].price * currencies[order.currency]
       marge += order.shipping - order.shipping_cost
+
       await DB('order_shop').where('id', order.id).update({
-        shipping_cost: order.shipping_cost
+        shipping_cost: order.shipping_cost,
+        shipping_weight: orders[order.logistician_id].weight
       })
     }
 
