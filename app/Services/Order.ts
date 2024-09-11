@@ -1430,16 +1430,24 @@ static toJuno = async (params) => {
       date_export: string
       tracking_number: string
       tracking_link: string
+      weight: string
+      price: string
     }[] = []
     worksheet.eachRow((row) => {
       const data = {
         id: row.getCell('A').text,
         date_export: row.getCell('B').text,
         tracking_number: row.getCell('C').text,
-        tracking_link: row.getCell('D').text
+        tracking_link: row.getCell('D').text,
+        weight: row.getCell('E').text,
+        price: row.getCell('F').text
       }
       orders.push(data)
     })
+
+    const currenciesDb = await Utils.getCurrenciesDb()
+    const currencies = await Utils.getCurrencies('USD', currenciesDb)
+
     let i = 0
     for (const order of orders) {
       const o = await DB('order_shop').find(order.id)
@@ -1447,17 +1455,32 @@ static toJuno = async (params) => {
         continue
       }
       o.step = 'sent'
-      o.date_export = order.date_export
-      o.tracking_number = order.tracking_number
-      o.tracking_link = order.tracking_link
+      if (order.date_export) {
+        o.date_export = order.date_export
+      }
+      if (order.tracking_number) {
+        o.tracking_number = order.tracking_number
+      }
+      if (order.tracking_link) {
+        o.tracking_link = order.tracking_link
+      }
+      if (order.weight) {
+        o.shipping_weight = order.weight
+      }
+      if (order.price) {
+        o.shipping_cost = +order.price * currencies[o.currency]
+      }
+
       await o.save()
 
-      await Notification.add({
-        type: 'my_order_sent',
-        user_id: o.user_id,
-        order_id: o.order_id,
-        order_shop_id: o.id
-      })
+      if (order.tracking_link) {
+        await Notification.add({
+          type: 'my_order_sent',
+          user_id: o.user_id,
+          order_id: o.order_id,
+          order_shop_id: o.id
+        })
+      }
       i++
     }
     return { count: i, success: true }
