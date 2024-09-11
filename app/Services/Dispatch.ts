@@ -1260,6 +1260,25 @@ class Dispatch {
       id: daudin.commandes[0].numeroCommande
     })
 
+    console.log(order)
+    for (const item of order.listeArticles) {
+      console.log(item)
+      const dispatchs = await DB('production_dispatch')
+        .select('production_dispatch.*')
+        .join('production', 'production.id', 'production_dispatch.production_id')
+        .join('project_product', 'production.project_id', 'project_product.project_id')
+        .join('product', 'product.id', 'project_product.product_id')
+        .where('production_dispatch.logistician', 'daudin')
+        .where('production_dispatch.quantity', item.qteCommandeArticle)
+        .where('product.barcode', item.article.refEcommercant)
+        .all()
+
+      if (dispatchs.length === 1) {
+        console.log(dispatchs[0])
+      }
+      console.log(dispatchs)
+    }
+
     return order
   }
 }
