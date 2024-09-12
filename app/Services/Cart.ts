@@ -1439,11 +1439,6 @@ class Cart {
   static createOrder = async (params) => {
     const calculate = await Cart.calculate(params)
 
-    if (!calculate.transporter) {
-      return {
-        error: 'no_transporter'
-      }
-    }
     // Check if cart is empty
     if (
       calculate.count === 0 ||
@@ -1684,11 +1679,6 @@ class Cart {
     calculate: any
   }) => {
     const order = await Cart.createOrder(params)
-    if (order.error) {
-      return {
-        error: order.error
-      }
-    }
     if (order.exists) {
       return {
         error: 'payment_already_done',
