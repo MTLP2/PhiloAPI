@@ -518,7 +518,7 @@ class Cart {
       if (!code) {
         shop.promo_error = 'promo_code_not_found'
       } else {
-        if (p.promo_code === 'BACK10') {
+        if (p.promo_code === 'COMEBACK10') {
           const valid = await PromoCode.isValid({
             promocode: code,
             user_id: p.user_id

@@ -209,11 +209,11 @@ class PromoCode {
   }
 
   static isValid = async ({ promocode, user_id }) => {
-    if (promocode.code === 'BACK10') {
+    if (promocode.code === 'COMEBACK10') {
       const order = await DB('order')
         .select('id')
         .where('user_id', user_id)
-        .where('promo_code', 'BACK10')
+        .where('promo_code', 'COMEBACK10')
         .first()
 
       if (order) {
