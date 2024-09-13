@@ -3301,6 +3301,87 @@ class StatementService {
 
     return workbook.xlsx.writeBuffer()
   }
+
+  static getBalancesCasti = async () => {
+    const currenciesDB = await Utils.getCurrenciesDb()
+    const currencies = await Utils.getCurrencies('EUR', currenciesDB)
+
+    const projects = await DB()
+      .select(
+        'project.id',
+        'project.name',
+        'project.artist_name',
+        'user.name as user_name',
+        'vod.barcode',
+        'vod.user_id',
+        'vod.currency'
+      )
+      .from('vod')
+      .join('project', 'project.id', 'vod.project_id')
+      .join('user', 'user.id', 'vod.user_id')
+      .where('send_statement', 1)
+      .whereExists(
+        DB('order_shop')
+          .select(DB.raw(1))
+          .join('order_item', 'order_item.order_shop_id', 'order_shop.id')
+          .whereRaw('order_item.project_id = vod.project_id')
+          .where('order_shop.created_at', '>=', '2023-01-01')
+          .query()
+      )
+      .orderBy('id', 'desc')
+      .all()
+
+    console.log(projects.length)
+
+    const res: any[] = []
+    for (const project of projects) {
+      const statement = await this.getStatement({
+        id: project.id,
+        start: '2001-01-01',
+        end: '2024-06-30'
+      })
+      const statement2 = await this.getStatement({
+        id: project.id,
+        start: '2001-01-01',
+        end: '2025-06-30'
+      })
+      if (statement) {
+        const data = {
+          id: project.id,
+          project: project.name,
+          user_id: project.user_id,
+          user_name: project.user_name,
+          currency: project.currency,
+          balance: Utils.round(statement.final_revenue.total / currencies[project.currency]),
+          balance2: Utils.round(statement2.final_revenue.total / currencies[project.currency]),
+          costs: Utils.round(statement.total_cost.total / currencies[project.currency]),
+          income: Utils.round(statement.total_income.total / currencies[project.currency])
+        }
+        res.push(data)
+        // console.log(data)
+
+        if (res.length > 100) {
+          // break
+        }
+      }
+    }
+
+    return Utils.arrayToXlsx([
+      {
+        worksheetName: 'Balances',
+        columns: [
+          { header: 'ID', key: 'id', width: 10 },
+          { header: 'User name', key: 'user_name', width: 30 },
+          { header: 'Project', key: 'project', width: 50 },
+          { header: 'Balance', key: 'balance', width: 10 },
+          { header: 'Balance Now', key: 'balance2', width: 10 },
+          { header: 'Costs', key: 'costs', width: 10 }
+          // { header: 'Income', key: 'income', width: 10 }
+        ],
+        data: res
+      }
+    ])
+  }
 }
 
 export default StatementService
