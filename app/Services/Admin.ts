@@ -1434,6 +1434,7 @@ class Admin {
     }
 
     vod.status = params.status
+    vod.status_acc = params.status_acc
     vod.step = params.step
 
     if (notification) {
