@@ -984,15 +984,23 @@ class Whiplash {
     sender: string
     eta: string
     logistician: string
-    products: any[]
+    products: {
+      barcode: string
+      id: number
+      quantity: number
+      name?: string
+      item_id: number
+    }[]
   }) => {
     for (const p in params.products) {
-      const item: any = await Whiplash.createItem({
-        id: params.products[p].id,
-        sku: params.products[p].barcode,
-        title: params.products[p].name
-      })
-      params.products[p].item_id = item.id
+      if (!params.products[p].item_id) {
+        const item: any = await Whiplash.createItem({
+          id: params.products[p].id,
+          sku: params.products[p].barcode,
+          title: params.products[p].name as string
+        })
+        params.products[p].item_id = item.id
+      }
     }
 
     const res = await Whiplash.api(`/shipnotices`, {
@@ -1011,6 +1019,10 @@ class Whiplash {
     })
 
     return res
+  }
+
+  static getShopNotice = async (id: number) => {
+    return Whiplash.api(`/shipnotices/${id}`)
   }
 }
 

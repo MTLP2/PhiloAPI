@@ -8,6 +8,8 @@ import Invoice from 'App/Services/Invoice'
 import User from 'App/Services/User'
 import File from 'App/Services/File'
 import Log from 'App/Services/Log'
+import Whiplash from 'App/Services/Whiplash'
+import BigBlue from 'App/Services/BigBlue'
 import Excel from 'exceljs'
 import Storage from 'App/Services/Storage'
 import View from '@ioc:Adonis/Core/View'
@@ -1166,6 +1168,7 @@ class Production {
     item.logistician_id = params.logistician_id
     item.status = params.status
     item.date_sent = params.date_sent || null
+    item.date_arrival = params.date_arrival || null
     item.tracking = params.tracking
     item.price = params.price || null
     item.transporter = params.transporter
@@ -2482,6 +2485,102 @@ class Production {
     }
 
     return { success: true }
+  }
+
+  static async findDispatch(params: { dispatch_id: number }) {
+    const dispatch = await DB('production_dispatch').find(params.dispatch_id)
+    return dispatch
+  }
+
+  static async createShipNotice(params: { dispatch_id: number }) {
+    const dispatch = await DB('production_dispatch')
+      .select(
+        'production_dispatch.*',
+        'product.id as product_id',
+        'product.barcode',
+        'product.whiplash_id',
+        'product.bigblue_id'
+      )
+      .join('production', 'production.id', 'production_dispatch.production_id')
+      .join('project_product', 'project_product.project_id', 'production.project_id')
+      .join('product', 'product.id', 'project_product.product_id')
+      .where('production_dispatch.id', params.dispatch_id)
+      .first()
+
+    if (dispatch.logistician_id) {
+      return { success: true }
+    }
+
+    if (dispatch.logistician === 'whiplash' || dispatch.logistician === 'whiplash_uk') {
+      const res: any = await Whiplash.createShopNotice({
+        sender: dispatch.sender,
+        eta: dispatch.date_arrival,
+        logistician: dispatch.logistician,
+        products: [
+          {
+            id: dispatch.product_id,
+            barcode: dispatch.barcode,
+            item_id: dispatch.whiplash_id,
+            quantity: dispatch.quantity
+          }
+        ]
+      })
+
+      if (res.errors) {
+        return { error: res.errors }
+      } else if (res.id) {
+        await DB('production_dispatch').where('id', params.dispatch_id).update({
+          logistician_id: res.id,
+          status: 'in_progress'
+        })
+      }
+    } else if (dispatch.logistician === 'bigblue') {
+      const res: any = await BigBlue.createShopNotice({
+        sender: dispatch.sender,
+        transporter: dispatch.transporter,
+        date_arrival: `${dispatch.date_arrival}T12:00:00+00:00`,
+        tracking_number: dispatch.tracking,
+        products: [
+          {
+            barcode: dispatch.barcode,
+            id: dispatch.bigblue_id,
+            quantity: dispatch.quantity
+          }
+        ]
+      })
+      if (res.msg) {
+        return { error: res.msg }
+      } else if (res.inbound_shipment) {
+        await DB('production_dispatch').where('id', params.dispatch_id).update({
+          logistician_id: res.inbound_shipment.id,
+          status: 'in_progress'
+        })
+      }
+    }
+
+    return { success: true }
+  }
+
+  static async updateDispatchsStatus() {
+    const dispatchs = await DB('production_dispatch')
+      .whereNotIn('status', ['completed', 'unexpected'])
+      .whereNotNull('logistician_id')
+      .limit(1)
+      .all()
+
+    for (const dispatch of dispatchs) {
+      if (dispatch.logistician === 'whiplash' || dispatch.logistician === 'whiplash_uk') {
+        const res: any = await Whiplash.getShopNotice(dispatch.logistician_id)
+        await DB('production_dispatch').where('id', dispatch.id).update({
+          status: res.status_name.toLowerCase()
+        })
+      } else if (dispatch.logistician === 'bigblue') {
+        const res: any = await BigBlue.getShopNotice(dispatch.logistician_id)
+        await DB('production_dispatch').where('id', dispatch.id).update({
+          status: res.inbound_shipment.status.code.toLowerCase()
+        })
+      }
+    }
   }
 }
 
