@@ -998,6 +998,40 @@ class BigBlue {
       marge: marge
     }
   }
+
+  static createShopNotice = async (params: {
+    sender: string
+    transporter: string
+    tracking_number: string
+    date_arrival: string
+    products: {
+      id: string
+      barcode: string
+      quantity: number
+    }[]
+  }) => {
+    const res = this.api('CreateInboundShipment', {
+      method: 'POST',
+      params: {
+        inbound_shipment: {
+          carrier_name: params.transporter,
+          supplier_shipment_id: params.tracking_number,
+          supplier_name: params.sender,
+          warehouse: 'EU-FRA-002',
+          expected_arrival_time: params.date_arrival,
+          finalize: true,
+          line_items: params.products.map((p) => {
+            return {
+              product: p.id,
+              supplier_sku: p.barcode,
+              quantity: p.quantity
+            }
+          })
+        }
+      }
+    })
+    return res
+  }
 }
 
 export default BigBlue
