@@ -1831,6 +1831,7 @@ class StatementService {
       .table('project')
       .join('vod', 'vod.project_id', 'project.id')
       .where('vod.user_id', paylaod.user_id)
+      .where('vod.send_statement', true)
       .where('is_delete', '!=', '1')
       .all()
 
