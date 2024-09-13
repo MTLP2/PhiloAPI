@@ -1,5 +1,6 @@
 import Utils from 'App/Utils'
 import Production from 'App/Services/Production'
+import { validator, schema } from '@ioc:Adonis/Core/Validator'
 
 class ProductionController {
   async all({ params, user }) {
@@ -171,6 +172,30 @@ class ProductionController {
 
   checkIfActionHasNotifications({ params }) {
     return Production.checkIfActionHasNotifications(params)
+  }
+
+  async findDispatch({ params }) {
+    const payload = await validator.validate({
+      schema: schema.create({
+        dispatch_id: schema.number()
+      }),
+      data: {
+        dispatch_id: params.did
+      }
+    })
+    return Production.findDispatch(payload)
+  }
+
+  async createShipNotice({ params }) {
+    const payload = await validator.validate({
+      schema: schema.create({
+        dispatch_id: schema.number()
+      }),
+      data: {
+        dispatch_id: params.did
+      }
+    })
+    return Production.createShipNotice(payload)
   }
 }
 
