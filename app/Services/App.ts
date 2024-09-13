@@ -123,6 +123,7 @@ class App {
     try {
       const hour = new Date().getHours()
 
+      await Order.checkNoOrder()
       if ([9, 12, 15, 17].includes(hour)) {
         await Elogik.syncStocks()
         await BigBlue.syncStocks()

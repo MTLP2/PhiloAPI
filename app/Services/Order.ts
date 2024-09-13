@@ -479,6 +479,24 @@ static toJuno = async (params) => {
     return file
   }
 
+  static checkNoOrder = async () => {
+    const orders = await DB('order')
+      .select('id')
+      .whereRaw('created_at >= NOW() - INTERVAL 2 HOUR')
+      .where('status', 'confirmed')
+      .count()
+
+    if (orders === 0) {
+      console.log('no orders')
+      await Notification.sendEmail({
+        to: 'victor@diggersfactory.com',
+        subject: 'No order',
+        html: `No order found in the last 2 hours`
+      })
+    }
+    return true
+  }
+
   static exportSales = async (params) => {
     const orders = await DB('vod')
       .select(
