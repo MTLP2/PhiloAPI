@@ -68,6 +68,7 @@ class Box {
     if (!params.sort) {
       params.query.orderBy('box.id', 'desc')
     }
+
     return Utils.getRows(params)
   }
 
@@ -2195,7 +2196,7 @@ class Box {
       .where('stock.quantity', '>', 0)
       .where('is_box', true)
       .where('is_delete', false)
-      .orderBy(DB.raw('RAND()'))
+      .orderBy('p.id', 'desc')
       .all()
       .then((res) => {
         return res.map((project) => Project.setInfos(project, null, null, styles))
