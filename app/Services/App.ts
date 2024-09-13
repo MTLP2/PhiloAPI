@@ -129,6 +129,9 @@ class App {
         await BigBlue.syncStocks()
         await Whiplash.syncStocks()
       }
+      if ([8, 13, 16].includes(hour)) {
+        await Production.updateDispatchsStatus()
+      }
 
       if (hour === 2) {
         await Charts.uploadOfficialCharts({
