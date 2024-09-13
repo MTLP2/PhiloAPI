@@ -1032,6 +1032,15 @@ class BigBlue {
     })
     return res
   }
+
+  static getShopNotice = async (id: number) => {
+    return this.api(`GetInboundShipment`, {
+      method: 'POST',
+      params: {
+        id: id
+      }
+    })
+  }
 }
 
 export default BigBlue
