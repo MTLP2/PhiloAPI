@@ -1289,7 +1289,7 @@ class Cart {
     if (p.project.step !== 'in_progress' && p.project.step !== 'private') {
       res.error = 'project_not_available'
     }
-    if (p.project_id === 321371 && p.quantity > 4) {
+    if (p.project.limit_user_quantity && p.quantity > p.project.limit_user_quantity) {
       res.error = 'too_many_items'
     }
     if (p.comment === '' || p.comment === null) {

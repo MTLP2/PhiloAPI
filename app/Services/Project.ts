@@ -920,6 +920,7 @@ class Project {
         'stock',
         'only_country',
         'exclude_country',
+        'limit_user_quantity',
         'v.step',
         'v.is_label_bside',
         'v.shipping_discount',

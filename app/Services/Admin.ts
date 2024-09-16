@@ -1211,6 +1211,7 @@ class Admin {
       vod.alert_stock = params.alert_stock || null
       vod.only_country = params.only_country
       vod.exclude_country = params.exclude_country
+      vod.limit_user_quantity = params.limit_user_quantity
       vod.is_box = params.is_box
       vod.comment = params.comment
     }
