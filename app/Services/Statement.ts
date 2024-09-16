@@ -3356,6 +3356,7 @@ class StatementService {
           balance: Utils.round(statement.final_revenue.total / currencies[project.currency]),
           balance2: Utils.round(statement2.final_revenue.total / currencies[project.currency]),
           costs: Utils.round(statement.total_cost.total / currencies[project.currency]),
+          costs2: Utils.round(statement2.total_cost.total / currencies[project.currency]),
           income: Utils.round(statement.total_income.total / currencies[project.currency])
         }
         res.push(data)
@@ -3376,7 +3377,8 @@ class StatementService {
           { header: 'Project', key: 'project', width: 50 },
           { header: 'Balance', key: 'balance', width: 10 },
           { header: 'Balance Now', key: 'balance2', width: 10 },
-          { header: 'Costs', key: 'costs', width: 10 }
+          { header: 'Costs', key: 'costs', width: 10 },
+          { header: 'Costs Now', key: 'costs2', width: 10 }
           // { header: 'Income', key: 'income', width: 10 }
         ],
         data: res
