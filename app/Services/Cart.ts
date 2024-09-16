@@ -698,7 +698,6 @@ class Cart {
           country_id: p.country_id,
           state: p.customer.state
         })
-
         // Standard
         shipping.original_standard = Utils.getShipDiscounts({
           ship: shipping.standard,
