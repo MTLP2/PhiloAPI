@@ -1254,12 +1254,70 @@ class Dispatch {
   }
 
   static addDispatchLogisticianId = async () => {
-    const daudin = await Elogik.commandesFournisseur()
+    /**
+    const res: any = await Whiplash.getShipNotices()
+    for (const inbound of res) {
+      if (!inbound.shipnotice_items || !inbound.shipnotice_items[0]) {
+        continue
+      }
 
+      const dispatchs = await DB('production_dispatch')
+        .select('production_dispatch.*')
+        .join('production', 'production.id', 'production_dispatch.production_id')
+        .join('project_product', 'production.project_id', 'project_product.project_id')
+        .join('product', 'product.id', 'project_product.product_id')
+        .where(
+          'production_dispatch.logistician',
+          inbound.warehouse_id === 3 ? 'whiplash_uk' : 'whiplash'
+        )
+        .where('production_dispatch.quantity', '>=', inbound.shipnotice_items[0].quantity / 1.1)
+        .where('production_dispatch.quantity', '<=', inbound.shipnotice_items[0].quantity * 1.1)
+        .where('product.whiplash_id', inbound.shipnotice_items[0].item_id)
+        .all()
+
+      if (dispatchs.length === 1) {
+        console.log({
+          logistician_id: inbound.id,
+          status: inbound.status_name.toLowerCase(),
+          quantity_received: inbound.shipnotice_items[0].quantity_good,
+          date_arrival: inbound.completed_at
+        })
+        await DB('production_dispatch').where('id', dispatchs[0].id).update({
+          logistician_id: inbound.id,
+          status: inbound.status_name.toLowerCase(),
+          quantity_received: inbound.shipnotice_items[0].quantity_good,
+          date_arrival: inbound.completed_at
+        })
+      }
+    }
+    **/
+
+    const res: any = await BigBlue.getInboundShipments()
+    for (const inbound of res.inbound_shipments) {
+      const dispatchs = await DB('production_dispatch')
+        .select('production_dispatch.*')
+        .join('production', 'production.id', 'production_dispatch.production_id')
+        .join('project_product', 'production.project_id', 'project_product.project_id')
+        .join('product', 'product.id', 'project_product.product_id')
+        .where('production_dispatch.logistician', 'bigblue')
+        .where('production_dispatch.quantity', inbound.line_items[0].quantity)
+        .where('product.bigblue_id', inbound.line_items[0].product)
+        .all()
+
+      if (dispatchs.length === 1) {
+        await DB('production_dispatch').where('id', dispatchs[0].id).update({
+          logistician_id: inbound.supplier_shipment_id,
+          quantity_received: inbound.status.line_progresses[0].offloaded_count,
+          status: inbound.status.code.toLowerCase()
+        })
+      }
+    }
+
+    /**
+    const daudin = await Elogik.commandesFournisseur()
     const order = await Elogik.commandeFournisseur({
       id: daudin.commandes[0].numeroCommande
     })
-
     console.log(order)
     for (const item of order.listeArticles) {
       console.log(item)
@@ -1278,8 +1336,9 @@ class Dispatch {
       }
       console.log(dispatchs)
     }
+    **/
 
-    return order
+    return { success: true }
   }
 }
 

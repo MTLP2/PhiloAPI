@@ -2565,18 +2565,28 @@ class Production {
     const dispatchs = await DB('production_dispatch')
       .whereNotIn('status', ['completed', 'unexpected'])
       .whereNotNull('logistician_id')
-      .limit(1)
       .all()
 
     for (const dispatch of dispatchs) {
       if (dispatch.logistician === 'whiplash' || dispatch.logistician === 'whiplash_uk') {
         const res: any = await Whiplash.getShopNotice(dispatch.logistician_id)
+
+        if (!res.status_name) {
+          continue
+        }
         await DB('production_dispatch').where('id', dispatch.id).update({
-          status: res.status_name.toLowerCase()
+          status: res.status_name.toLowerCase(),
+          quantity_received: res.shipnotice_items[0].quantity_good,
+          date_arrival: res.completed_at
         })
       } else if (dispatch.logistician === 'bigblue') {
         const res: any = await BigBlue.getShopNotice(dispatch.logistician_id)
+        if (res.msg) {
+          continue
+        }
         await DB('production_dispatch').where('id', dispatch.id).update({
+          logistician_id: res.inbound_shipment.supplier_shipment_id,
+          quantity_received: res.inbound_shipment.status.line_progresses[0].offloaded_count,
           status: res.inbound_shipment.status.code.toLowerCase()
         })
       }

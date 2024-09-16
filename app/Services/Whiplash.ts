@@ -955,10 +955,6 @@ class Whiplash {
     }
   }
 
-  static getShipNotices = async () => {
-    return Whiplash.api(`/shipnotices`)
-  }
-
   static createItem = async (params: { id: number; sku: string; title: string }) => {
     let item
     let res: any = await Whiplash.api(`/items/sku/${params.sku}`)
@@ -978,6 +974,14 @@ class Whiplash {
       whiplash_id: item.id
     })
     return item
+  }
+
+  static getShopNotice = async (id: number) => {
+    return Whiplash.api(`/shipnotices/${id}`)
+  }
+
+  static getShipNotices = async () => {
+    return Whiplash.api(`/shipnotices`)
   }
 
   static createShopNotice = async (params: {
@@ -1019,10 +1023,6 @@ class Whiplash {
     })
 
     return res
-  }
-
-  static getShopNotice = async (id: number) => {
-    return Whiplash.api(`/shipnotices/${id}`)
   }
 }
 

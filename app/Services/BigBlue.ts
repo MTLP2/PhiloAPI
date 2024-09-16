@@ -1041,6 +1041,15 @@ class BigBlue {
       }
     })
   }
+
+  static getInboundShipments = async () => {
+    return this.api('ListInboundShipments', {
+      method: 'POST',
+      params: {
+        page_size: 500
+      }
+    })
+  }
 }
 
 export default BigBlue
