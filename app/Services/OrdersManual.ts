@@ -378,7 +378,7 @@ class OrdersManual {
         for (const b of items) {
           const item = await Whiplash.findItem(b.barcode)
           if (item.error) {
-            return { error: `Whiplash not found ${b.barcode} ` }
+            return { error: item.error }
           }
           pp.order_items.push({
             item_id: item.id,
