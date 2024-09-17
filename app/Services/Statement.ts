@@ -3309,6 +3309,21 @@ class StatementService {
     const currenciesDB = await Utils.getCurrenciesDb()
     const currencies = await Utils.getCurrencies('EUR', currenciesDB)
 
+    const users = await DB()
+      .select('user.id')
+      .from('vod')
+      .join('user', 'user.id', 'vod.user_id')
+      .where('send_statement', 1)
+      .whereExists(
+        DB('order_shop')
+          .select(DB.raw(1))
+          .join('order_item', 'order_item.order_shop_id', 'order_shop.id')
+          .whereRaw('order_item.project_id = vod.project_id')
+          .where('order_shop.created_at', '>=', '2023-01-01')
+          .query()
+      )
+      .all()
+
     const projects = await DB()
       .select(
         'project.id',
@@ -3326,15 +3341,10 @@ class StatementService {
       .join('project', 'project.id', 'vod.project_id')
       .join('user', 'user.id', 'vod.user_id')
       .where('send_statement', 1)
-      .whereExists(
-        DB('order_shop')
-          .select(DB.raw(1))
-          .join('order_item', 'order_item.order_shop_id', 'order_shop.id')
-          .whereRaw('order_item.project_id = vod.project_id')
-          .where('order_shop.created_at', '>=', '2023-01-01')
-          .query()
+      .whereIn(
+        'user.id',
+        users.map((u: any) => u.id)
       )
-      .orderBy('id', 'desc')
       .all()
 
     console.log(projects.length)
