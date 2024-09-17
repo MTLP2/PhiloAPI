@@ -81,6 +81,7 @@ class Whiplash {
       shipping_company: customer.name,
       shipping_name: `${customer.firstname} ${customer.lastname}`,
       shipping_address_1: customer.address,
+      shipping_address_2: customer.address2,
       shipping_city: customer.city,
       shipping_state: customer.state,
       shipping_country: customer.country_id,
