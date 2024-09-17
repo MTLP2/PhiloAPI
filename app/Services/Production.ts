@@ -2362,7 +2362,7 @@ class Production {
 
     if (item.check_status === 'incomplete' || item.check_status === 'tuiled') {
       await Notification.sendEmail({
-        to: 'compta@diggersfactory.com',
+        to: 'invoicing@diggersfactory.com',
         subject: `${project.artist_name} ${project.name} - Problem with cost : ${item.check_status}`,
         html: `
         <ul>
@@ -2385,7 +2385,7 @@ class Production {
     if (resp) {
       const project = await DB('project').where('id', item.project_id).first()
       await Notification.sendEmail({
-        to: params.user_id === resp.resp_id ? 'compta@diggersfactory.com' : resp.email,
+        to: params.user_id === resp.resp_id ? 'invoicing@diggersfactory.com' : resp.email,
         subject: `${project.artist_name} ${project.name} - ${item.type} - ${
           params.id ? 'Cost changed' : 'New cost'
         }`,
