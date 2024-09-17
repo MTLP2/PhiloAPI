@@ -804,6 +804,8 @@ class Invoice {
     invoice.date_payment = null
     invoice.proof_payment = null
     invoice.status = 'invoiced'
+    invoice.created_at = moment().format('YYYY-MM-DD HH:mm:ss')
+    invoice.updated_at = moment().format('YYYY-MM-DD HH:mm:ss')
 
     const customer = await Customer.save({
       ...invoice.customer,
