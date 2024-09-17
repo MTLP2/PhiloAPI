@@ -3317,7 +3317,10 @@ class StatementService {
         'user.name as user_name',
         'vod.barcode',
         'vod.user_id',
-        'vod.currency'
+        'vod.currency',
+        DB.raw(
+          '(select min(date_export) from order_shop, order_item where order_shop.id = order_item.order_shop_id and order_item.project_id = vod.project_id) as date_export'
+        )
       )
       .from('vod')
       .join('project', 'project.id', 'vod.project_id')
@@ -3366,6 +3369,7 @@ class StatementService {
           user_id: project.user_id,
           user_name: project.user_name,
           currency: project.currency,
+          date_export: project.date_export,
           balance: Utils.round(statement.outstanding.total / currencies[project.currency]),
           balance2: Utils.round(statement2.outstanding.total / currencies[project.currency]),
           costs: Utils.round(statement.costs.all.total / currencies[project.currency]),
@@ -3388,6 +3392,7 @@ class StatementService {
           { header: 'ID', key: 'id', width: 10 },
           { header: 'User name', key: 'user_name', width: 30 },
           { header: 'Project', key: 'project', width: 50 },
+          { header: 'Date export', key: 'date_export', width: 10 },
           { header: 'Balance', key: 'balance', width: 10 },
           { header: 'Balance Now', key: 'balance2', width: 10 },
           { header: 'Costs', key: 'costs', width: 10 },
