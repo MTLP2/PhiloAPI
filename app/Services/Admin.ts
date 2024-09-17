@@ -593,7 +593,9 @@ class Admin {
     if (project.historic) {
       for (const h of project.historic) {
         if (h.type === 'status' && h.new === 'check_address') {
-          project.check_address[h.transporter] = h.date
+          for (const t of h.transporter) {
+            project.check_address[t] = h.date
+          }
         }
       }
     }
