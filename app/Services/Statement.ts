@@ -1837,16 +1837,18 @@ class StatementService {
 
     const res: any[] = []
     for (const project of projects) {
-      const data: any = await this.getStatement({
-        id: project.id,
+      const data: any = await await Project.getDashboard({
+        project_id: project.id,
         start: paylaod.start,
-        end: paylaod.end
+        end: paylaod.end,
+        periodicity: 'months',
+        cashable: true,
+        only_data: true
       })
-
       if (data) {
         res.push({
           ...project,
-          total: Utils.round(data.final_revenue.total, 2)
+          total: Utils.round(data.outstanding.total, 2)
         })
       }
     }
@@ -3336,28 +3338,39 @@ class StatementService {
 
     const res: any[] = []
     for (const project of projects) {
-      const statement = await this.getStatement({
-        id: project.id,
+      const statement = await await Project.getDashboard({
+        project_id: project.id,
         start: '2001-01-01',
-        end: '2024-06-30'
+        end: '2024-06-30',
+        periodicity: 'months',
+        cashable: true,
+        only_data: true
       })
-      const statement2 = await this.getStatement({
-        id: project.id,
+
+      const statement2 = await await Project.getDashboard({
+        project_id: project.id,
         start: '2001-01-01',
-        end: '2025-06-30'
+        end: '2025-06-30',
+        periodicity: 'months',
+        cashable: true,
+        only_data: true
       })
+
       if (statement) {
+        if (!statement.outstanding) {
+          continue
+        }
         const data = {
           id: project.id,
           project: project.name,
           user_id: project.user_id,
           user_name: project.user_name,
           currency: project.currency,
-          balance: Utils.round(statement.final_revenue.total / currencies[project.currency]),
-          balance2: Utils.round(statement2.final_revenue.total / currencies[project.currency]),
-          costs: Utils.round(statement.total_cost.total / currencies[project.currency]),
-          costs2: Utils.round(statement2.total_cost.total / currencies[project.currency]),
-          income: Utils.round(statement.total_income.total / currencies[project.currency])
+          balance: Utils.round(statement.outstanding.total / currencies[project.currency]),
+          balance2: Utils.round(statement2.outstanding.total / currencies[project.currency]),
+          costs: Utils.round(statement.costs.all.total / currencies[project.currency]),
+          costs2: Utils.round(statement2.costs.all.total / currencies[project.currency]),
+          income: Utils.round(statement.income.all.total / currencies[project.currency])
         }
         res.push(data)
         // console.log(data)
