@@ -103,6 +103,8 @@ class PennyLane {
     }
     const file = await Invoice.download({ params: { id: invoice.id, lang: 'fr' } })
 
+    const isEuropean = Utils.isEuropean(invoice.customer.country_id)
+
     invoice.total_eur = invoice.total * invoice.currency_rate
     const imp: any = await PennyLane.execute('customer_invoices/import', {
       method: 'POST',
@@ -125,12 +127,18 @@ class PennyLane {
               currency_amount:
                 invoice.type === 'credit_note' ? -invoice.total_eur : invoice.total_eur,
               unit: 'piece',
-              vat_rate: invoice.tax_rate ? 'FR_200' : 'exempt'
+              vat_rate:
+                invoice.customer.country_id === 'FR'
+                  ? `${invoice.customer.country_id}_${invoice.tax_rate * 1000}`
+                  : isEuropean
+                  ? 'intracom_200'
+                  : 'extracom'
             }
           ]
         }
       }
     })
+    console.log(imp)
     if (
       !imp.error ||
       imp.error === 'Une facture avec le numéro fourni a déjà été créée' ||
@@ -145,6 +153,11 @@ class PennyLane {
     }
 
     return imp
+  }
+
+  static async getInvoice(params: { number: string }) {
+    console.log(`customer_invoices/${params.number}`)
+    return PennyLane.execute(`customer_invoices/${params.number}`)
   }
 }
 
