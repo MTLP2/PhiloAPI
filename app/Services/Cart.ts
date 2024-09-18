@@ -77,6 +77,9 @@ class Cart {
     if (!params.customer.country_id) {
       params.customer.country_id = 'fr'
     }
+    if (!params.country_id) {
+      params.country_id = params.customer.country_id
+    }
     const countryId = params.customer.country_id
 
     Object.keys(params).map((i) => {
@@ -171,19 +174,17 @@ class Cart {
 
     if (params.shops) {
       const items: any = []
-      if (params.country_id) {
-        for (const k of Object.keys(params.shops)) {
-          params.shops[k].items = params.shops[k].items.map((i) => {
-            return {
-              ...i,
-              shipping_type: params.shops[k].shipping_type,
-              type: params.shops[k].type,
-              group_shipping: k
-            }
-          })
-          items.push(...params.shops[k].items)
-          delete params.shops[k]
-        }
+      for (const k of Object.keys(params.shops)) {
+        params.shops[k].items = params.shops[k].items.map((i) => {
+          return {
+            ...i,
+            shipping_type: params.shops[k].shipping_type,
+            type: params.shops[k].type,
+            group_shipping: k
+          }
+        })
+        items.push(...params.shops[k].items)
+        delete params.shops[k]
       }
       if (items.length > 0) {
         for (const i in items) {
