@@ -1171,7 +1171,7 @@ class Production {
     item.date_arrival = params.date_arrival || null
     item.tracking = params.tracking
     item.price = params.price || null
-    item.transporter = params.transporter
+    item.transporter = params.transporter ? params.transporter.toLowerCase() : null
     item.comment = params.comment || null
     item.type = params.type
     item.quantity = params.quantity || null
