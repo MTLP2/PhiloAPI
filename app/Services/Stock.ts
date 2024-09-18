@@ -572,9 +572,19 @@ class Stock {
 
     const rest = await Stock.setStockProject({ projectIds: [params.project_id] })
     if (rest[params.project_id] !== null && rest[params.project_id] < 1) {
-      DB('vod').where('project_id', params.project_id).update({
-        step: 'successful'
+      const vod = await DB('vod').where('project_id', params.project_id).first()
+      vod.historic = JSON.parse(vod.historic || '[]')
+      vod.historic.push({
+        date: Utils.date(),
+        type: 'step',
+        old: vod.step,
+        new: 'successful',
+        user_id: 'api',
+        comment: 'no_stock'
       })
+      vod.historic = JSON.stringify(vod.historic)
+      vod.step = 'successful'
+      await vod.save()
     }
     return { success: true }
   }
