@@ -106,6 +106,7 @@ class PennyLane {
     const isEuropean = Utils.isEuropean(invoice.customer.country_id)
 
     invoice.total_eur = invoice.total * invoice.currency_rate
+
     const imp: any = await PennyLane.execute('customer_invoices/import', {
       method: 'POST',
       params: {
@@ -129,18 +130,17 @@ class PennyLane {
               unit: 'piece',
               vat_rate:
                 invoice.customer.country_id === 'FR'
-                  ? `${invoice.customer.country_id}_${invoice.tax_rate * 1000}`
+                  ? `FR_200`
                   : isEuropean
-                  ? 'intracom_200'
+                  ? 'crossborder'
                   : 'extracom'
             }
           ]
         }
       }
     })
-    console.log(imp)
     if (
-      !imp.error ||
+      imp.invoice ||
       imp.error === 'Une facture avec le numéro fourni a déjà été créée' ||
       imp.error.indexOf('Le numéro de facture est déjà utilisé par une autre facture') !== -1
     ) {
