@@ -424,6 +424,12 @@ class App {
     }
     if (n.user_id) {
       data.user = await DB('user').find(n.user_id)
+      if (!data.user.email) {
+        await DB('notification').where('id', n.id).update({
+          email: 0
+        })
+        return false
+      }
       data.lang = data.user.lang
     }
     const url = data.lang === 'fr' ? `${config.app.url}/fr` : config.app.url
