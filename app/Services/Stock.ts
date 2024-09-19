@@ -367,13 +367,22 @@ class Stock {
     for (const parent of Object.keys(ss)) {
       for (const type of Object.keys(ss[parent])) {
         const tt = type.split('#')
-        await DB('stock')
+
+        let stock = await DB('stock')
           .where('product_id', parent)
           .where('type', tt[1])
           .where('is_preorder', tt[0] === 'preorder')
-          .update({
-            quantity: ss[parent][type]
-          })
+          .first()
+
+        if (!stock) {
+          stock = DB('stock')
+        }
+
+        stock.product_id = parent
+        stock.type = tt[1]
+        stock.is_preorder = tt[0] === 'preorder'
+        stock.quantity = ss[parent][type]
+        await stock.save()
       }
     }
   }
