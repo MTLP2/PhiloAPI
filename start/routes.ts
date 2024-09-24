@@ -117,6 +117,8 @@ Route.group(() => {
   Route.post('/quote', 'AppController.sendQuote')
   Route.post('/quote/calculate', 'AppController.calculateQuote')
 
+  Route.get('/shops/:id', 'ShopController.find')
+
   Route.get('/banners', 'AppController.getBanners')
   Route.get('/home', 'AppController.getHome')
 
@@ -127,8 +129,6 @@ Route.group(() => {
 
   Route.get('/blog', 'BlogController.all')
   Route.get('/blog/:id', 'BlogController.find')
-
-  Route.get('/shops/:id', 'ShopController.find')
 
   Route.post('projects/check-code', 'ProjectsController.checkCode')
   Route.post('/projects/download', 'ProjectsController.download')

@@ -25,6 +25,7 @@ class Shop {
     code?: string
     all_project?: boolean
     projects?: boolean
+    auth_id?: number
   }) {
     let shop: any = DB('shop').select(
       'shop.*',
@@ -51,6 +52,16 @@ class Shop {
     if (!shop) {
       throw new ApiError(404)
     }
+    if (shop.status !== 'online' && params.code) {
+      if (params.auth_id) {
+        const user = await DB('user').where('id', params.auth_id).first()
+        if (!user || (user.shop_id !== shop.id && user.is_admin !== 1)) {
+          throw new ApiError(404)
+        }
+      } else {
+        throw new ApiError(404)
+      }
+    }
     if (params.projects !== false) {
       shop.projects = await Project.findAll({
         shop_id: shop.id,
@@ -67,6 +78,7 @@ class Shop {
     user_id: number
     name: string
     code: string
+    status: string
     bg_color: string
     font_color: string
     title_color: string
@@ -106,6 +118,7 @@ class Shop {
     }
     item.name = params.name
     item.code = params.code ? params.code : Utils.slugify(params.name)
+    item.status = params.status
     item.bg_color = params.bg_color
     item.font_color = params.font_color
     item.title_color = params.title_color

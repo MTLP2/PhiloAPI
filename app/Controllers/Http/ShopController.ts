@@ -11,7 +11,7 @@ class ShopController {
     return Shop.all(params)
   }
 
-  async find({ params }) {
+  async find({ params, user }) {
     params.code = params.id
     const payload = await validator.validate({
       schema: schema.create({
@@ -19,7 +19,7 @@ class ShopController {
       }),
       data: params
     })
-    return Shop.find({ code: payload.code })
+    return Shop.find({ code: payload.code, auth_id: user.id })
   }
 
   async getShop({ params, user }) {
@@ -45,6 +45,7 @@ class ShopController {
         user_id: schema.number(),
         name: schema.string(),
         code: schema.string(),
+        status: schema.string(),
         bg_color: schema.string(),
         font_color: schema.string(),
         title_color: schema.string(),
