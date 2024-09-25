@@ -188,6 +188,8 @@ class OrdersManual {
               'product.id',
               'product.name',
               'product.bigblue_id',
+              'product.whiplash_id',
+              'product.ekan_id',
               'product.hs_code',
               'product.country_id',
               'product.more',
@@ -219,7 +221,7 @@ class OrdersManual {
               errors[item.barcode] = 'No stock whiplash'
               return
             }
-          } else if (params.transporter === 'daudin') {
+          } else if (params.transporter === 'daudin' && !product.ekan_id) {
             const it = await Elogik.getItem({ barcode: item.barcode })
             if (!it) {
               errors[item.barcode] = 'No elogik'
