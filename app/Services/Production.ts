@@ -2321,7 +2321,6 @@ class Production {
     item.project_id = params.project_id
     item.type = params.type
     item.check_status = params.check_status
-    item.currency = params.currency
     item.production_id = params.production_id || null
     item.name = params.name
     item.invoice_number = params.invoice_number
@@ -2346,6 +2345,12 @@ class Production {
     item.is_statement = params.is_statement
     item.margin = params.margin
     item.comment = params.comment
+    item.currency = params.currency
+    if (params.currency !== 'EUR') {
+      item.currency_rate = await Utils.getCurrency(params.currency)
+    } else {
+      item.currency_rate = 1
+    }
     item.updated_at = Utils.date()
 
     if (params.invoice) {
