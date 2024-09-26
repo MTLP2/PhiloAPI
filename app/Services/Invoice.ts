@@ -936,6 +936,7 @@ class Invoice {
         date: cost.date,
         type: cost.type,
         name: cost.name,
+        invoice: cost.invoice_number,
         project_id: cost.project_id,
         artist_name: cost.artist_name,
         project_name: cost.project_name,
@@ -974,6 +975,7 @@ class Invoice {
         artist_name: payment.artist_name,
         project_name: payment.project_name,
         total: payment.total,
+        invoice: payment.invoice,
         currency: payment.currency,
         total_eur: payment.total / currencies[payment.currency]
       })
@@ -985,6 +987,7 @@ class Invoice {
           { key: 'date', header: 'date', width: 10 },
           { key: 'type', header: 'type', width: 10 },
           { key: 'name', header: 'name', width: 15 },
+          { key: 'invoice', header: 'invoice', width: 15 },
           { key: 'project_id', header: 'project_id', width: 10 },
           { key: 'artist_name', header: 'artist_name', width: 20 },
           { key: 'project_name', header: 'project_name', width: 20 },
