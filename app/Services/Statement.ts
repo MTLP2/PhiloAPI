@@ -3241,6 +3241,7 @@ class StatementService {
       .join('statement_distributor as dist', 'dist.statement_id', 'statement.id')
       .join('project', 'project.id', 'statement.project_id')
       .join('vod', 'vod.project_id', 'project.id')
+      .where('dist.country_id', 'GB')
       .orderBy('statement.date')
 
     if (params.start) {
@@ -3252,6 +3253,7 @@ class StatementService {
 
     refs = await refs.all()
 
+    console.log(refs)
     const data: any = {}
     for (const ref of refs) {
       if (!ref.country_id || !isNaN(ref.country_id)) {
@@ -3282,6 +3284,15 @@ class StatementService {
 
     const workbook = new Excel.Workbook()
 
+    const dates: string[] = []
+    const dateStart = moment(params.start)
+    const dateEnd = moment(params.end)
+
+    while (dateEnd > dateStart || dateStart.format('D') === dateEnd.format('D')) {
+      dates.push(dateStart.format('YYYY-MM'))
+      dateStart.add(1, 'month')
+    }
+
     for (const country of Object.keys(data)) {
       const worksheet = workbook.addWorksheet(country)
 
@@ -3291,7 +3302,7 @@ class StatementService {
         { header: 'Quantity', key: 'quantity' }
       ]
 
-      for (const date of Object.keys(data[country].dates)) {
+      for (const date of dates) {
         columns.push({ header: date, key: date })
       }
       delete data[country].dates
