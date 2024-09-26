@@ -30,7 +30,9 @@ class Shop {
     let shop: any = DB('shop').select(
       'shop.*',
       'user_artist.name as artist_name',
-      'user_label.name as label_name'
+      'user_label.name as label_name',
+      'user_user.id as user_id',
+      'user_user.name as user_name'
     )
 
     if (params.id) {
@@ -46,6 +48,7 @@ class Shop {
     shop
       .leftJoin('user as user_artist', 'user_artist.id', 'shop.artist_id')
       .leftJoin('user as user_label', 'user_label.id', 'shop.label_id')
+      .leftJoin('user as user_user', 'user_user.shop_id', 'shop.id')
 
     shop = await shop.first()
 
@@ -75,7 +78,7 @@ class Shop {
 
   static async update(params: {
     id?: number
-    user_id: number
+    user_id?: number
     name: string
     code: string
     status: string
@@ -91,6 +94,7 @@ class Shop {
     group_shipment?: boolean
     artist_id?: number
     label_id?: number
+    auth_id?: number
   }) {
     let item: ShopModel = <any>DB('shop')
 
@@ -165,8 +169,15 @@ class Shop {
     }
 
     await item.save()
-    if (!params.id && params.user_id) {
-      DB('user').where('id', params.user_id).update({
+    if (!params.id && params.auth_id) {
+      await DB('user').where('id', params.auth_id).update({
+        shop_id: item.id
+      })
+    } else if (params.user_id) {
+      await DB('user').where('shop_id', item.id).update({
+        shop_id: null
+      })
+      await DB('user').where('id', params.user_id).update({
         shop_id: item.id
       })
     }

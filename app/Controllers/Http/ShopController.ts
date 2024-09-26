@@ -37,12 +37,12 @@ class ShopController {
   }
 
   async updateShop({ params, user }) {
-    params.user_id = user.id
+    params.auth_id = user.id
 
     const payload = await validator.validate({
       schema: schema.create({
         id: schema.number.optional(),
-        user_id: schema.number(),
+        user_id: schema.number.optional(),
         name: schema.string(),
         code: schema.string(),
         status: schema.string(),
@@ -57,7 +57,8 @@ class ShopController {
         youtube: schema.string.optional(),
         artist_id: schema.number.optional(),
         label_id: schema.number.optional(),
-        group_shipment: schema.boolean.optional()
+        group_shipment: schema.boolean.optional(),
+        auth_id: schema.number()
       }),
       data: params
     })
@@ -68,6 +69,9 @@ class ShopController {
       throw new ApiError(401)
     }
     if (payload.id && !(await Shop.canEdit(payload.id, user.id))) {
+      throw new ApiError(403)
+    }
+    if (payload.user_id && !(await Utils.isTeam(user.id))) {
       throw new ApiError(403)
     }
     return Shop.update(payload)
