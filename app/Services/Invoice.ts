@@ -917,6 +917,86 @@ class Invoice {
     )
   }
 
+  static async exportCosts(params: { start: string; end: string }) {
+    const lines: any[] = []
+    const costs = await DB('production_cost')
+      .select(
+        'production_cost.*',
+        'project.name as project_name',
+        'project.artist_name',
+        'project.id as project_id'
+      )
+      .whereBetween('production_cost.date', [params.start, params.end + ' 23:59'])
+      .join('production', 'production.id', 'production_cost.production_id')
+      .join('project', 'project.id', 'production.project_id')
+      .all()
+
+    for (const cost of costs) {
+      lines.push({
+        date: cost.date,
+        type: cost.type,
+        name: cost.name,
+        project_id: cost.project_id,
+        artist_name: cost.artist_name,
+        project_name: cost.project_name,
+        total: cost.cost_real,
+        currency: cost.currency,
+        total_eur: cost.cost_real * cost.currency_rate
+      })
+    }
+
+    const payments = await DB('payment_artist_project')
+      .select(
+        'payment_artist_project.*',
+        'payment_artist.date',
+        'project.name as project_name',
+        'project.artist_name',
+        'project.id as project_id'
+      )
+      .whereBetween('payment_artist.date', [params.start, params.end + ' 23:59'])
+      .join('payment_artist', 'payment_artist.id', 'payment_artist_project.payment_id')
+      .join('project', 'project.id', 'payment_artist_project.project_id')
+      .where('payment_artist.receiver', 'artist')
+      .all()
+
+    const currenciesDB = await Utils.getCurrenciesDb()
+    const currencies = await Utils.getCurrencies('EUR', currenciesDB)
+
+    for (const payment of payments) {
+      if (!payment.currency) {
+        payment.currency = 'EUR'
+      }
+      lines.push({
+        date: payment.date,
+        type: 'payment',
+        name: '',
+        project_id: payment.project_id,
+        artist_name: payment.artist_name,
+        project_name: payment.project_name,
+        total: payment.total,
+        currency: payment.currency,
+        total_eur: payment.total / currencies[payment.currency]
+      })
+    }
+
+    return Utils.arrayToXlsx([
+      {
+        columns: [
+          { key: 'date', header: 'date', width: 10 },
+          { key: 'type', header: 'type', width: 10 },
+          { key: 'name', header: 'name', width: 15 },
+          { key: 'project_id', header: 'project_id', width: 10 },
+          { key: 'artist_name', header: 'artist_name', width: 20 },
+          { key: 'project_name', header: 'project_name', width: 20 },
+          { key: 'total', header: 'total', width: 10 },
+          { key: 'currency', header: 'currency', width: 5 },
+          { key: 'total_eur', header: 'total_eur', width: 10 }
+        ],
+        data: lines
+      }
+    ])
+  }
+
   static async getPaymentReminders(params: { id: number }) {
     const res = DB('payment_reminder as pr')
       .select('pr.*', 'u.name')

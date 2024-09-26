@@ -570,6 +570,7 @@ Route.group(() => {
   Route.get('/invoices/csv', 'AdminController.invoicesCsv')
   Route.get('/invoices/export', 'AdminController.exportInvoices')
   Route.get('/invoices/b2c', 'AdminController.exportB2C')
+  Route.get('/invoices/costs', 'AdminController.exportInvoicesCosts')
   Route.get('/invoices/:id', 'AdminController.getInvoice')
   Route.get('/invoices/:id/payment-reminders', 'AdminController.getPaymentReminders')
   Route.put('/invoices/:id/payment-reminders/:prid', 'AdminController.putPaymentReminder')

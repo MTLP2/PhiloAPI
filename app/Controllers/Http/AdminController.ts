@@ -898,6 +898,10 @@ class AdminController {
     return Invoice.export(params)
   }
 
+  async exportInvoicesCosts({ params }) {
+    return Invoice.exportCosts(params)
+  }
+
   async zipInvoices({ params }) {
     return Invoice.zip(params)
   }
