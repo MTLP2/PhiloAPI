@@ -950,6 +950,7 @@ class Invoice {
       .select(
         'payment_artist_project.*',
         'payment_artist.date',
+        'payment_artist.currency as payment_currency',
         'project.name as project_name',
         'project.artist_name',
         'project.id as project_id'
@@ -965,7 +966,7 @@ class Invoice {
 
     for (const payment of payments) {
       if (!payment.currency) {
-        payment.currency = 'EUR'
+        payment.currency = payment.payment_currency
       }
       lines.push({
         date: payment.date,
