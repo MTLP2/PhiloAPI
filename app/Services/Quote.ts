@@ -148,7 +148,7 @@ class Quote {
     params.label_color = params.label || 'color'
 
     // const ff = ['precision']
-    const ff = ['sna', 'precision']
+    const ff = ['sna', 'vdp', 'precision']
     /**
     if (params.factory === 'sna2') {
       ff.push('sna2')
