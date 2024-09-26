@@ -1157,6 +1157,7 @@ class Admin {
     vod.scheduled_end = params.scheduled_end
     vod.is_licence = params.is_licence
     vod.is_distrib = params.is_distrib
+    vod.is_large = params.is_large
     if (params.transporters_block) {
       vod.transporters_block = params.transporters_block.join(',')
     }

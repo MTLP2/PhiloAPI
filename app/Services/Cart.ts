@@ -208,6 +208,7 @@ class Cart {
           const shipping: any = await Cart.calculateShipping({
             quantity: item.quantity,
             insert: item.quantity,
+            is_large: project.is_large,
             currency: project.currency,
             is_shop: item.type === 'shop',
             stock: true,
@@ -623,6 +624,7 @@ class Cart {
       item.shipping_discount = p.shipping_discount
       const calculatedItem = await Cart.calculateItem(item)
 
+      shop.is_large = calculatedItem.is_large
       if (calculatedItem.error) {
         shop.error = calculatedItem.error
       }
@@ -693,6 +695,7 @@ class Cart {
           quantity: shop.quantity,
           weight: shop.weight,
           insert: shop.insert,
+          is_large: shop.is_large,
           transporter: shop.transporter,
           currency: shop.currency,
           category: shop.category,
@@ -978,6 +981,7 @@ class Cart {
     weight: number
     quantity: number
     insert: number
+    is_large: boolean
     mode?: string
     state?: string
     pickup?: boolean
@@ -1005,6 +1009,10 @@ class Cart {
       return null
     }
     let weight = Cart.getWeightString(params.weight + packageWeight)
+
+    if (params.is_large && params.weight + packageWeight < 2000) {
+      weight = Cart.getWeightString(2000)
+    }
 
     const costs: any = {
       transporter: params.transporter,
@@ -1039,10 +1047,16 @@ class Cart {
 
       transporter[weight] = transporter[weight] + cost
 
+      if (params.is_large) {
+        transporter.marge = 15
+      }
       if (transporter.marge) {
         transporter[weight] = transporter[weight] + (transporter.marge / 100) * transporter[weight]
       }
 
+      if (params.is_large && params.quantity > 1) {
+        transporter[weight] = transporter[weight] * params.quantity
+      }
       if (transporter.transporter === 'MDR') {
         if (params.pickup === false) {
           continue
@@ -1286,6 +1300,7 @@ class Cart {
     res.is_shop = p.is_shop
     res.size = p.size
     res.chosen_sizes = p.chosen_sizes
+    res.is_large = p.project.is_large
 
     if (p.project.step !== 'in_progress' && p.project.step !== 'private') {
       res.error = 'project_not_available'

@@ -823,6 +823,7 @@ class Project {
         'p.cat_number',
         'p.category',
         'p.tags',
+        'v.is_large',
         'numbered',
         'year',
         'v.description',
