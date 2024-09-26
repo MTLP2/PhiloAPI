@@ -3241,7 +3241,6 @@ class StatementService {
       .join('statement_distributor as dist', 'dist.statement_id', 'statement.id')
       .join('project', 'project.id', 'statement.project_id')
       .join('vod', 'vod.project_id', 'project.id')
-      .where('dist.country_id', 'GB')
       .orderBy('statement.date')
 
     if (params.start) {
