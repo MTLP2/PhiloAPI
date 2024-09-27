@@ -1203,6 +1203,16 @@ class Cart {
         shippings.push(ships)
       }
     }
+    if (transporters.cbip) {
+      const ships = await Cart.calculateShippingByTransporter({
+        ...params,
+        partner: 'cbip',
+        transporter: 'cbip'
+      })
+      if (ships) {
+        shippings.push(ships)
+      }
+    }
 
     if (shippings.length === 0) {
       return { error: 'no_tg' }
