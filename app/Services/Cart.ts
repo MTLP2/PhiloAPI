@@ -1029,7 +1029,7 @@ class Cart {
       costs.currency = transporter.currency
 
       let cost: any
-      if (['whiplash', 'whiplash_uk', 'bigblue'].includes(params.transporter)) {
+      if (['whiplash', 'whiplash_uk', 'bigblue', 'cbip'].includes(params.transporter)) {
         cost = transporter.packing + transporter.picking * (params.insert - 1)
       } else {
         cost = transporter.packing + transporter.picking * params.insert
