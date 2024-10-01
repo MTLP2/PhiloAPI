@@ -1411,13 +1411,18 @@ class Invoice {
         'project.name as project',
         'project.artist_name',
         'vod.com_id',
+        'vod.resp_prod_id',
         'vod.is_licence',
         'user.email',
-        'user.name as user'
+        'user.name as user',
+        'user2.email as prod_email',
+        'user2.name as prod_user'
       )
       .join('project', 'project.id', 'invoice.project_id')
       .join('vod', 'vod.project_id', 'invoice.project_id')
       .leftJoin('user', 'user.id', 'vod.com_id')
+      .leftJoin('user as user2', 'user2.id', 'vod.resp_prod_id')
+      .where('compatibility', true)
       .whereNull('date_payment')
       .all()
 
@@ -1428,9 +1433,8 @@ class Invoice {
       }
       if (invoice.category === 'distribution' || invoice.com_id === 26584) {
         invoice.com_id = 26584
-        invoice.email =
-          'cyril@diggersfactory.com,guillaume@diggersfactory.com,theo@diggersfactory.com'
-        invoice.user = 'Cyril'
+        invoice.email = 'retail@diggersfacory.com'
+        invoice.user = 'Retail'
       }
       if (!com[invoice.com_id]) {
         com[invoice.com_id] = {
@@ -1441,6 +1445,16 @@ class Invoice {
         }
       }
       com[invoice.com_id].items.push(invoice)
+      if (!com[invoice.resp_prod_id]) {
+        console.log(invoice.prod_email)
+        com[invoice.resp_prod_id] = {
+          email: invoice.prod_email,
+          user: invoice.prod_user,
+          user_id: invoice.resp_prod_id,
+          items: []
+        }
+      }
+      com[invoice.resp_prod_id].items.push(invoice)
     }
 
     return com
