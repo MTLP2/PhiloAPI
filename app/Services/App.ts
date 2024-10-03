@@ -149,7 +149,7 @@ class App {
         await Whiplash.setTrackingLinks()
       } else if (hour === 5) {
         await Charts.uploadChartsGfk()
-        await Elogik.syncBoxes()
+        // await Elogik.syncBoxes()
         await Cio.syncNewsletterNoAccount()
       } else if (hour === 7) {
         await App.check5DaysLeftProjects()
