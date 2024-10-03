@@ -1423,10 +1423,17 @@ class Invoice {
       .leftJoin('user', 'user.id', 'vod.com_id')
       .leftJoin('user as user2', 'user2.id', 'vod.resp_prod_id')
       .where('compatibility', true)
-      .whereNull('date_payment')
+      .where('invoice.status', '!=', 'paid')
       .all()
 
-    const com = {}
+    const com = {
+      0: {
+        email: 'invocing@diggersfactory.com',
+        user: 'Invoicing',
+        user_id: 0,
+        items: []
+      } as any
+    }
     for (const invoice of invoices) {
       if (!invoice.com_id) {
         invoice.com_id = 6140
@@ -1446,7 +1453,6 @@ class Invoice {
       }
       com[invoice.com_id].items.push(invoice)
       if (!com[invoice.resp_prod_id]) {
-        console.log(invoice.prod_email)
         com[invoice.resp_prod_id] = {
           email: invoice.prod_email,
           user: invoice.prod_user,
@@ -1455,6 +1461,7 @@ class Invoice {
         }
       }
       com[invoice.resp_prod_id].items.push(invoice)
+      com[0].items.push(invoice)
     }
 
     return com
