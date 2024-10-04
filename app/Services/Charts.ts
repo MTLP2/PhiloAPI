@@ -9,6 +9,7 @@ class Charts {
   static getOrders = async (params: {
     country_id: string
     date?: string
+    digital?: boolean
     date_start?: string
     date_end?: string
   }) => {
@@ -26,6 +27,7 @@ class Charts {
         'c.country_id',
         'c.state',
         'c.zip_code',
+        'v.start',
         'p.name as project_name',
         'p.artist_name as artist_name',
         'v.is_licence',
@@ -46,18 +48,35 @@ class Charts {
       .leftJoin('label', 'label.id', 'p.label_id')
       .leftJoin('artist', 'artist.id', 'p.artist_id')
       .leftJoin('invoice', 'invoice.order_id', 'os.order_id')
-      .whereIn('product.type', ['vinyl', 'cd', 'tape'])
-      .whereNotNull('os.date_export')
+      .where((query) => {
+        if (params.digital) {
+          query.whereIn('p.category', ['digital'])
+          query.where((query) => {
+            if (params.date) {
+              query.whereRaw(`DATE_FORMAT(os.created_at, "%Y-%m-%d") = '${params.date}'`)
+            } else if (params.date_start && params.date_end) {
+              query.whereRaw(
+                `os.created_at BETWEEN '${params.date_start}' AND '${params.date_end}'`
+              )
+            }
+          })
+        } else {
+          query.whereNotNull('os.date_export')
+          query.whereIn('product.type', ['vinyl', 'cd', 'tape'])
+          query.where((query) => {
+            if (params.date) {
+              query.whereRaw(`DATE_FORMAT(os.date_export, "%Y-%m-%d") = '${params.date}'`)
+            } else if (params.date_start && params.date_end) {
+              query.whereRaw(
+                `os.date_export BETWEEN '${params.date_start}' AND '${params.date_end}'`
+              )
+            }
+          })
+        }
+      })
       .where('is_paid', true)
       .where('oi.total', '>', 3.49)
       .where('c.country_id', params.country_id)
-      .where((query) => {
-        if (params.date) {
-          query.whereRaw(`DATE_FORMAT(os.date_export, "%Y-%m-%d") = '${params.date}'`)
-        } else if (params.date_start && params.date_end) {
-          query.whereRaw(`os.date_export BETWEEN '${params.date_start}' AND '${params.date_end}'`)
-        }
-      })
       .all()
 
     return orders.map((o) => {
@@ -193,6 +212,57 @@ class Charts {
     text += filteredOrders.length.toString().padStart(5, ' ')
     // Number of Units (7 digits, left padded with spaces)
     text += totalQuantity.toString().padStart(7, ' ')
+
+    return text
+  }
+
+  // Get Luminate Charts (US & CA shipped only)
+  static async getLuminateDigitalCharts(countryId: 'CA' | 'US') {
+    const date = moment()
+    const orders = await Charts.getOrders({
+      country_id: countryId,
+      digital: true,
+      // date: moment(date).subtract(1, 'days').format('YYYY-MM-DD')
+      date: moment(date).format('YYYY-MM-DD')
+    })
+    console.log(orders)
+
+    let totalQuantity = 0
+
+    // Record Number (92)
+    let text = '92'
+    // Chain Number (4030 US || C400 CA)
+    text += countryId === 'US' ? '4030' : 'C400'
+    // Account Number (01864)
+    text += '01864'
+    // Date (YYMMDD)
+    text += moment(date).format('YYMMDD')
+    text += '\n'
+
+    for (const o of orders) {
+      totalQuantity += o.quantity
+
+      text += moment(o.created_at).format('YYYYMMDD') + '|'
+      text += moment(o.created_at).format('HHmmss') + '|'
+      text += o.oshop_id + '|'
+      text += o.barcode + '|'
+      text += '|' // ISRC
+      text += o.zip_code + '|'
+      text += o.country_id + '|'
+      text += 'S|' // Transaction Type (S = Sale, R = Return)
+      text += o.quantity + '|'
+      text += Math.trunc(o.price * 100) + '|'
+      text += o.artist + '|'
+      text += o.title + '|'
+      text += '|' // Release date
+      text += '00|' // Name code
+      text += o.label + '|'
+      text += 'N' // Bundled Product (Y/N)
+      text += '\n'
+    }
+    // Record Number (94)
+    text += '94'
+    text += ' ' + totalQuantity.toString()
 
     return text
   }
