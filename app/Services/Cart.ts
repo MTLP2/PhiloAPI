@@ -1213,6 +1213,17 @@ class Cart {
         shippings.push(ships)
       }
     }
+    if (transporters.digital) {
+      const ships = {
+        transporter: 'digital',
+        partner: 'digital',
+        currency: 'EUR',
+        standard: 1
+      }
+      if (ships) {
+        shippings.push(ships)
+      }
+    }
 
     if (shippings.length === 0) {
       return { error: 'no_tg' }
@@ -1594,7 +1605,7 @@ class Cart {
           shipping_display: ss.shipping,
           shipping_type: ss.shipping_type ? ss.shipping_type : 'standard',
           transporter: ss.transporter,
-          weight: ss.weight_package / 1000,
+          weight: ss.weight_package ? ss.weight_package / 1000 : null,
           address_pickup: ss.shipping_type === 'pickup' ? JSON.stringify(calculate.pickup) : null,
           customer_id: customer.id,
           customer_invoice_id: customerInvoiceId,
