@@ -20,7 +20,7 @@ import BigBlue from 'App/Services/BigBlue'
 import Storage from 'App/Services/Storage'
 import MondialRelay from 'App/Services/MondialRelay'
 import Review from 'App/Services/Review'
-import Invoice from 'App/Services/Invoice'
+import Invoices from 'App/Services/Invoices'
 import Blog from 'App/Services/Blog'
 import Vod from 'App/Services/Vod'
 import Cio from 'App/Services/CIO'
@@ -163,8 +163,8 @@ class App {
         await Review.checkNotif()
         await Elogik.checkBlockedOrders()
       } else if (hour === 12) {
-        await Invoice.reminder()
-        await Invoice.checkIncorrectInvoices()
+        await Invoices.reminder()
+        await Invoices.checkIncorrectInvoices()
         await BigBlue.setTrackingLinks()
       } else if (hour === 14) {
         await Elogik.checkBlockedOrders()
@@ -211,7 +211,7 @@ class App {
     try {
       await App.checkNotifications()
       await Cart.checkIncompleteCart()
-      await Invoice.setNumbers()
+      await Invoices.setNumbers()
       await Project.deleteDownload()
       await MondialRelay.checkSent()
       await MondialRelay.checkDelivered()
@@ -664,12 +664,12 @@ class App {
       data.payment = await DB('payment').where('id', n.payment_id).first()
 
       if (data.payment.invoice_id) {
-        const pdf: any = await Invoice.download({
+        const pdf: any = await Invoices.download({
           params: { id: data.payment.invoice_id, lang: data.lang }
         })
         data.attachments = [
           {
-            filename: `Invoice.pdf`,
+            filename: `Invoices.pdf`,
             content: pdf.data
           }
         ]
@@ -892,7 +892,7 @@ class App {
       ) {
         data.to = 'cyril@diggersfactory.com'
       }
-      const pdf: any = await Invoice.download({ params: { id: n.invoice_id, lang: data.lang } })
+      const pdf: any = await Invoices.download({ params: { id: n.invoice_id, lang: data.lang } })
       data.attachments = [
         {
           filename: `${data.invoice.code}.pdf`,
@@ -1905,7 +1905,7 @@ class App {
 
   static async sendTeamSummaryProjects() {
     const users = {}
-    const invoices = await Invoice.getUnpaidInvoicesByTeam()
+    const invoices = await Invoices.getUnpaidInvoicesByTeam()
     const balances = await Statement.getBalancesByTeam()
     for (const u in invoices) {
       if (!users[u]) {

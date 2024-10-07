@@ -5,7 +5,7 @@ import Whiplash from 'App/Services/Whiplash'
 import Elogik from 'App/Services/Elogik'
 import BigBlue from 'App/Services/BigBlue'
 import Stock from 'App/Services/Stock'
-import Invoice from 'App/Services/Invoice'
+import Invoices from 'App/Services/Invoices'
 import Notification from 'App/Services/Notification'
 import moment from 'moment'
 import Excel from 'exceljs'
@@ -601,7 +601,7 @@ class OrdersManual {
     })
 
     return (
-      await Invoice.download({
+      await Invoices.download({
         params: {
           lang: 'en',
           invoice: invoice

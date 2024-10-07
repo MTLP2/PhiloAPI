@@ -4,7 +4,7 @@ import Stripe from 'App/Services/Stripe'
 import Customer from 'App/Services/Customer'
 import Notification from 'App/Services/Notification'
 import I18n from '@ioc:Adonis/Addons/I18n'
-import Invoice from 'App/Services/Invoice'
+import Invoices from 'App/Services/Invoices'
 import request from 'request'
 import ApiError from 'App/ApiError'
 import moment from 'moment'
@@ -404,7 +404,7 @@ class Bid {
         type: 'invoice',
         date: Utils.date()
       }
-      invoice = await Invoice.save(p)
+      invoice = await Invoices.save(p)
       bid.invoice_id = invoice.id
       await bid.save()
     } else {
@@ -428,7 +428,7 @@ class Bid {
       }
     ]
 
-    await Invoice.save(invoice)
+    await Invoices.save(invoice)
 
     return { success: true }
   }

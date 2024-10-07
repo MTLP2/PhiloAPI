@@ -5,7 +5,7 @@ import moment from 'moment'
 import DB from 'App/DB'
 import Utils from 'App/Utils'
 import Notification from 'App/Services/Notification'
-import Invoice from 'App/Services/Invoice'
+import Invoices from 'App/Services/Invoices'
 import Project from 'App/Services/Project'
 import Customer from 'App/Services/Customer'
 import PromoCode from 'App/Services/PromoCode'
@@ -1602,7 +1602,7 @@ class Box {
           orderBox.updated_at = Utils.date()
           await orderBox.save()
 
-          await Invoice.insertOrder({
+          await Invoices.insertOrder({
             ...order,
             customer_id: box.customer_id,
             order_box_id: orderBox.id
@@ -1692,7 +1692,7 @@ class Box {
 
     //? Check params.credit_note
     if (params.credit_note) {
-      await Invoice.insertRefund(order)
+      await Invoices.insertRefund(order)
     }
 
     //? Check params.cancel_box
@@ -1866,7 +1866,7 @@ class Box {
       ]
     }
 
-    const pdf: any = await Invoice.download({
+    const pdf: any = await Invoices.download({
       params: {
         invoice: invoice,
         lang: 'en',
@@ -2872,7 +2872,7 @@ class Box {
       { name: `Box ${box.periodicity}`, price: order.price, quantity: 1 }
     ])
 
-    return Invoice.download({
+    return Invoices.download({
       params: {
         invoice: invoice,
         lang: 'en'

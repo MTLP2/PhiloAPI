@@ -13,7 +13,7 @@ import Log from 'App/Services/Log'
 import Payments from './Payments'
 import Storage from 'App/Services/Storage'
 
-class Invoice {
+class Invoices {
   static async all(params) {
     const query = DB()
       .select(
@@ -460,10 +460,10 @@ class Invoice {
 
   static async remove(id) {
     /**
-    const invoice = await Invoice.find(id)
+    const invoice = await Invoices.find(id)
     await DB('invoice').where('id', id).delete()
 
-    await Invoice.sort(invoice.year)
+    await Invoices.sort(invoice.year)
     **/
     return true
   }
@@ -472,7 +472,7 @@ class Invoice {
     let invoice
 
     if (params.id) {
-      invoice = await Invoice.find(params.id)
+      invoice = await Invoices.find(params.id)
       if (invoice.order_box_id) {
         const box = await DB('order_box')
           .select('box.*', 'order_box.*')
@@ -492,7 +492,7 @@ class Invoice {
     } else if (params.invoice) {
       invoice = params.invoice
     } else if (params.order_shop_id) {
-      invoice = await Invoice.byOrderShopId(params.order_shop_id)
+      invoice = await Invoices.byOrderShopId(params.order_shop_id)
     }
 
     const country = await DB('country')
@@ -1174,7 +1174,7 @@ class Invoice {
     const zip = new JSZip()
 
     for (const invoice of invoices) {
-      const pdf = await Invoice.download({
+      const pdf = await Invoices.download({
         params: {
           id: invoice.id,
           lang: 'en'
@@ -1615,6 +1615,11 @@ class Invoice {
 
     return workbook2.xlsx.writeBuffer()
   }
+
+  static async exportPennylane(params) {
+    const invoice = await Invoices.download(params)
+    return invoice.data
+  }
 }
 
-export default Invoice
+export default Invoices

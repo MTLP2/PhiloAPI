@@ -3,7 +3,7 @@ import DB from 'App/DB'
 import Utils from 'App/Utils'
 import Notification from 'App/Services/Notification'
 import MondialRelay from 'App/Services/MondialRelay'
-import Invoice from 'App/Services/Invoice'
+import Invoices from 'App/Services/Invoices'
 import Stock from 'App/Services/Stock'
 import Env from '@ioc:Adonis/Core/Env'
 
@@ -490,8 +490,8 @@ class Elogik {
 
       if (!Utils.isEuropean(order.country_id) || order.country_id === 'GB') {
         if (order.id) {
-          const invoice = await Invoice.byOrderShopId(order.id)
-          const file = await Invoice.download({
+          const invoice = await Invoices.byOrderShopId(order.id)
+          const file = await Invoices.download({
             params: {
               invoice: invoice,
               lang: 'en',

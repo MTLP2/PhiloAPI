@@ -3,10 +3,9 @@ import Excel from 'exceljs'
 import config from 'Config/index'
 import Utils from 'App/Utils'
 import DB from 'App/DB'
-import Customer from 'App/Services/Customer'
 import Stock from 'App/Services/Stock'
 import Notification from 'App/Services/Notification'
-import Invoice from 'App/Services/Invoice'
+import Invoices from 'App/Services/Invoices'
 import Whiplash from 'App/Services/Whiplash'
 import Elogik from 'App/Services/Elogik'
 import BigBlue from 'App/Services/BigBlue'
@@ -774,7 +773,7 @@ static toJuno = async (params) => {
     }
 
     if ((params && params.credit_note === 'true') || !params) {
-      await Invoice.insertRefund({
+      await Invoices.insertRefund({
         ...order,
         order_shop_id: id
       })

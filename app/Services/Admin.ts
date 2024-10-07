@@ -10,7 +10,7 @@ import Utils from 'App/Utils'
 import User from 'App/Services/User'
 import Box from 'App/Services/Box'
 import Whiplash from 'App/Services/Whiplash'
-import Invoice from 'App/Services/Invoice'
+import Invoices from 'App/Services/Invoices'
 import Project from 'App/Services/Project'
 import MondialRelay from 'App/Services/MondialRelay'
 import config from 'Config/index'
@@ -2385,8 +2385,8 @@ class Admin {
   }
 
   static getOrderShopInvoice = async (id) => {
-    const invoice = await Invoice.byOrderShopId(id)
-    const pdf = await Invoice.download({
+    const invoice = await Invoices.byOrderShopId(id)
+    const pdf = await Invoices.download({
       params: {
         invoice: invoice,
         lang: 'en',
@@ -2519,7 +2519,7 @@ class Admin {
 
     // params.credit_note means we want to edit a credit note / invoice. A CN is emmitted by default if the method is called without params.credit_note. Choosen when a refund is made in the Sheraf.
     if (params.credit_note || params.credit_note === undefined) {
-      await Invoice.insertRefund({
+      await Invoices.insertRefund({
         ...order,
         order_shop_id: params.order_shop_id,
         customer_id: customer.customer_id,
@@ -2537,7 +2537,7 @@ class Admin {
       .where('order_id', params.id)
       .first()
 
-    await Invoice.insertRefund({
+    await Invoices.insertRefund({
       ...order,
       customer_id: customer.customer_id,
       order_id: order.id,

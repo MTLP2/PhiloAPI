@@ -4,7 +4,7 @@ import ProjectEdit from 'App/Services/ProjectEdit'
 import Notification from 'App/Services/Notification'
 import MondialRelay from 'App/Services/MondialRelay'
 import Customer from 'App/Services/Customer'
-import Invoice from 'App/Services/Invoice'
+import Invoices from 'App/Services/Invoices'
 import User from 'App/Services/User'
 import File from 'App/Services/File'
 import Log from 'App/Services/Log'
@@ -2223,12 +2223,12 @@ class Production {
       total: invoice.sub_total
     }))
 
-    const res = await Invoice.save(invoice)
+    const res = await Invoices.save(invoice)
     await DB('production_dispatch').where('id', params.dispatch_id).update({
       invoice_id: res.id
     })
     return (
-      await Invoice.download({ params: { id: res.id, lang: 'en', incoterm: params.incoterm } })
+      await Invoices.download({ params: { id: res.id, lang: 'en', incoterm: params.incoterm } })
     ).data
   }
 

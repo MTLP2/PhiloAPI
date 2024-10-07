@@ -4,7 +4,7 @@ import moment from 'moment'
 
 import DB from 'App/DB'
 import Dig from 'App/Services/Dig'
-import Invoice from 'App/Services/Invoice'
+import Invoices from 'App/Services/Invoices'
 import Notification from 'App/Services/Notification'
 import Payments from './Payments'
 import Storage from 'App/Services/Storage'
@@ -603,7 +603,7 @@ class Daudin {
       const invoice = invoices[i]
       invoice.lines = JSON.stringify(invoice.items)
 
-      html += await Invoice.download({
+      html += await Invoices.download({
         params: {
           invoice: invoice,
           lang: 'en',
@@ -821,7 +821,7 @@ class Daudin {
       const invoice = invoices[i]
       invoice.lines = JSON.stringify(invoice.items)
 
-      const pdf: any = await Invoice.download({
+      const pdf: any = await Invoices.download({
         params: {
           invoice: invoice,
           lang: 'en',

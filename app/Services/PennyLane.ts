@@ -1,7 +1,7 @@
 import Env from '@ioc:Adonis/Core/Env'
 import Utils from 'App/Utils'
 import DB from 'App/DB'
-import Invoice from 'App/Services/Invoice'
+import Invoices from 'App/Services/Invoices'
 
 class PennyLane {
   static async execute(
@@ -59,7 +59,7 @@ class PennyLane {
   }
 
   static async exportInvoice(id: number) {
-    const invoice = await Invoice.find(id)
+    const invoice = await Invoices.find(id)
 
     let customer: any = await PennyLane.execute(`customers/${invoice.user_id}`)
     if (customer.error === 'Not found') {
@@ -101,7 +101,7 @@ class PennyLane {
     } else {
       planItemNumber = '70719'
     }
-    const file = await Invoice.download({ params: { id: invoice.id, lang: 'fr' } })
+    const file = await Invoices.download({ params: { id: invoice.id, lang: 'fr' } })
 
     const isEuropean = Utils.isEuropean(invoice.customer.country_id)
 

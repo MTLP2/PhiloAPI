@@ -12,7 +12,7 @@ import Box from 'App/Services/Box'
 import Customer from 'App/Services/Customer'
 import DB from 'App/DB'
 import Payments from 'App/Services/Payments'
-import Invoice from 'App/Services/Invoice'
+import Invoices from 'App/Services/Invoices'
 import Stock from 'App/Services/Stock'
 import Order from 'App/Services/Order'
 import PayPal from 'App/Services/Paypal'
@@ -2318,7 +2318,7 @@ class Cart {
     }
 
     order.customer_id = customerId
-    await Invoice.insertOrder(order)
+    await Invoices.insertOrder(order)
 
     await DB('promo_code')
       .where('code', order.promo_code)

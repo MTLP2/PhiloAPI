@@ -1,7 +1,7 @@
 import config from 'Config/index'
 import DB from 'App/DB'
 import Utils from 'App/Utils'
-import Invoice from 'App/Services/Invoice'
+import Invoices from 'App/Services/Invoices'
 import Customer from 'App/Services/Customer'
 import Orders from 'App/Services/Order'
 import OrdersManual from 'App/Services/OrdersManual'
@@ -193,7 +193,7 @@ class Payment {
         compatibility: true,
         date: Utils.date()
       }
-      invoice = await Invoice.save(p)
+      invoice = await Invoices.save(p)
       payment.invoice_id = invoice.id
       await payment.save()
     } else {
@@ -226,7 +226,7 @@ class Payment {
       }
     ]
 
-    await Invoice.save(invoice)
+    await Invoices.save(invoice)
 
     return invoice
   }
@@ -377,7 +377,7 @@ class Payment {
     payment.updated_at = Utils.date()
     await payment.save()
 
-    await Invoice.insertRefund({
+    await Invoices.insertRefund({
       id: null,
       customer_id: payment.customer_id,
       sub_total: payment.sub_total,

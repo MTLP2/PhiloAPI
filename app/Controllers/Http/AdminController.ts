@@ -12,7 +12,6 @@ import Sponsor from 'App/Services/Sponsor'
 import Customer from 'App/Services/Customer'
 import Quote from 'App/Services/Quote'
 import Stock from 'App/Services/Stock'
-import Invoice from 'App/Services/Invoice'
 import Whiplash from 'App/Services/Whiplash'
 import Song from 'App/Services/Song'
 import Utils from 'App/Utils'
@@ -850,64 +849,6 @@ class AdminController {
     response.header('Content-Type', 'application/pdf')
     response.header('Content-Disposition', `attachment; filename=${quote.name}`)
     response.send(quote.data)
-  }
-
-  getInvoices({ params }) {
-    return Invoice.all(params)
-  }
-
-  getInvoice({ params }) {
-    return Invoice.find(params.id)
-  }
-
-  getPaymentReminders({ params }) {
-    return Invoice.getPaymentReminders(params)
-  }
-
-  putPaymentReminder({ params }) {
-    return Invoice.putPaymentReminder(params)
-  }
-
-  deletePaymentReminder({ params }) {
-    return Invoice.deletePaymentReminder(params)
-  }
-
-  removeInvoice({ params }) {
-    return Invoice.remove(params.id)
-  }
-
-  saveInvoice({ params, user }) {
-    params.auth_id = user.id
-    return Invoice.save(params)
-  }
-
-  duplicateInvoice({ params }) {
-    return Invoice.duplicate(params)
-  }
-
-  async downloadInvoice(params) {
-    const invoice = await Invoice.download(params)
-    return invoice.data
-  }
-
-  invoicesCsv({ params }) {
-    return Invoice.exportCsv(params)
-  }
-
-  async exportInvoices({ params }) {
-    return Invoice.export(params)
-  }
-
-  async exportInvoicesCosts({ params }) {
-    return Invoice.exportCosts(params)
-  }
-
-  async zipInvoices({ params }) {
-    return Invoice.zip(params)
-  }
-
-  exportB2C({ params }) {
-    return Invoice.exportB2C(params)
   }
 
   getDaudin({ params }) {
