@@ -186,12 +186,6 @@ class AdminController {
       })
     }
 
-    if (params.category !== project.category) {
-      await Artwork.updateArtwork({
-        id: project.id,
-        category: params.category
-      })
-    }
     project.category = params.category
     project.tags = params.tags && params.tags.join(',')
     project.cat_number = params.cat_number ? params.cat_number.trim() : null
