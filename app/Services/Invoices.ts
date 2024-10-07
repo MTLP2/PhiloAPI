@@ -1615,11 +1615,6 @@ class Invoices {
 
     return workbook2.xlsx.writeBuffer()
   }
-
-  static async exportPennylane(params) {
-    const invoice = await Invoices.download(params)
-    return invoice.data
-  }
 }
 
 export default Invoices

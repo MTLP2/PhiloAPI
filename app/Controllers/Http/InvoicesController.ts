@@ -1,4 +1,6 @@
 import Invoices from 'App/Services/Invoices'
+import PennyLane from 'App/Services/PennyLane'
+import { schema, validator } from '@ioc:Adonis/Core/Validator'
 
 class InvoicesController {
   getInvoices({ params }) {
@@ -59,8 +61,16 @@ class InvoicesController {
     return Invoices.exportB2C(params)
   }
 
-  exportPennylane({ params }) {
-    return Invoices.exportPennylane(params)
+  async exportPennylane({ params }) {
+    const payload = await validator.validate({
+      schema: schema.create({
+        id: schema.number()
+      }),
+      data: params
+    })
+    return PennyLane.exportInvoices({
+      ids: [payload.id]
+    })
   }
 }
 
