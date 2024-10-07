@@ -1614,7 +1614,7 @@ class StatementService {
     const wsAllTime: any = workbook.addWorksheet('Summary - All Time')
 
     let i = 1
-    const datas: any = []
+    const datas: any = {}
     for (const project of projects) {
       const data = await this.setWorksheet2(workbook, {
         id: project.id,
@@ -1632,7 +1632,10 @@ class StatementService {
         project.stock += stock[s]
       }
 
-      datas.push({
+      if (!datas[project.currency]) {
+        datas[project.currency] = []
+      }
+      datas[project.currency].push({
         project: project,
         data: data
       })
@@ -1644,12 +1647,13 @@ class StatementService {
       ws: any
       columns: any[]
       datas: any[]
+      line_start: number
     }) => {
       const { ws, columns, title, datas } = params
       ws.views = [{ showGridLines: false }]
 
-      let y = 4
-      ws.mergeCells(`B${y}:${Utils.columnToLetter(8)}1`)
+      let y = params.line_start
+      ws.mergeCells(`B${y}:${Utils.columnToLetter(8)}${y}`)
       ws.getCell(`B${y}`).value = title
       ws.getCell(`B${y}`).alignment = { horizontal: 'left' }
       ws.getCell(`B${y}`).font = { bold: true, size: 20 }
@@ -1664,7 +1668,7 @@ class StatementService {
       }
 
       let currency
-      switch (projects[0].currency) {
+      switch (datas[0].project.currency) {
         case 'EUR':
           currency = '€'
           break
@@ -1760,9 +1764,9 @@ class StatementService {
           continue
         }
         const cell = ws.getCell(`${Utils.columnToLetter(c)}${y}`)
-        const f = `SUM(${Utils.columnToLetter(c)}7:${Utils.columnToLetter(c)}${
-          7 + projects.length - 1
-        })`
+        const f = `SUM(${Utils.columnToLetter(c)}${params.line_start + 3}:${Utils.columnToLetter(
+          c
+        )}${params.line_start + 3 + datas.length - 1})`
         if (column.currency) {
           cell.numFmt = `${currency}#,##0.00`
         }
@@ -1771,56 +1775,72 @@ class StatementService {
       }
     }
 
-    setSummary({
-      title: `SUMMARY - ${moment(params.end).format('MMMM YYYY')}`,
-      ws: wsMonthly,
-      type: 'monthly',
-      columns: [
-        { header: 'Artist', key: 'artist_name', width: 30 },
-        { header: 'Project', key: 'name', width: 40 },
-        { header: 'Quantity sold', key: 'quantity', width: 20, alignement: 'right' },
-        { header: 'Revenues', key: 'income', width: 15, alignement: 'right', currency: true },
-        { header: 'Costs', key: 'costs', width: 15, alignement: 'right', currency: true },
-        { header: 'Stocks left', key: 'stock', width: 15, alignement: 'right' },
-        {
-          header: 'Artist has to invoice Diggers',
-          key: 'net',
-          width: 40,
-          alignement: 'right',
-          currency: true
-        }
-      ],
-      datas: datas
-    })
+    let y = 4
+    for (const currency of Object.keys(datas)) {
+      if (datas[currency].length === 0) {
+        continue
+      }
+      setSummary({
+        line_start: y,
+        title: `SUMMARY in ${currency} - ${moment(params.end).format('MMMM YYYY')}`,
+        ws: wsMonthly,
+        type: 'monthly',
+        columns: [
+          { header: 'Artist', key: 'artist_name', width: 30 },
+          { header: 'Project', key: 'name', width: 40 },
+          { header: 'Quantity sold', key: 'quantity', width: 20, alignement: 'right' },
+          { header: 'Revenues', key: 'income', width: 15, alignement: 'right', currency: true },
+          { header: 'Costs', key: 'costs', width: 15, alignement: 'right', currency: true },
+          { header: 'Stocks left', key: 'stock', width: 15, alignement: 'right' },
+          {
+            header: 'Artist has to invoice Diggers',
+            key: 'net',
+            width: 40,
+            alignement: 'right',
+            currency: true
+          }
+        ],
+        datas: datas[currency]
+      })
+      y += datas[currency].length + 6
+    }
 
-    setSummary({
-      title: `SUMMARY - All Time`,
-      ws: wsAllTime,
-      type: 'all_time',
-      columns: [
-        { header: 'Artist', key: 'artist_name', width: 30 },
-        { header: 'Project', key: 'name', width: 40 },
-        { header: 'Quantity sold', key: 'quantity', width: 20, alignement: 'right' },
-        { header: 'Revenues', key: 'income', width: 15, alignement: 'right', currency: true },
-        { header: 'Costs', key: 'costs', width: 15, alignement: 'right', currency: true },
-        { header: 'Benefits', key: 'balance', width: 15, alignement: 'right', currency: true },
-        {
-          header: 'Paid to Artist',
-          key: 'artist_pay',
-          width: 20,
-          alignement: 'right',
-          currency: true
-        },
-        {
-          header: 'Paid from Artist',
-          key: 'diggers_pay',
-          width: 20,
-          alignement: 'right',
-          currency: true
-        }
-      ],
-      datas: datas
-    })
+    y = 4
+    for (const currency of Object.keys(datas)) {
+      if (datas[currency].length === 0) {
+        continue
+      }
+      setSummary({
+        line_start: y,
+        title: `SUMMARY in ${currency} - All Time`,
+        ws: wsAllTime,
+        type: 'all_time',
+        columns: [
+          { header: 'Artist', key: 'artist_name', width: 30 },
+          { header: 'Project', key: 'name', width: 40 },
+          { header: 'Quantity sold', key: 'quantity', width: 20, alignement: 'right' },
+          { header: 'Revenues', key: 'income', width: 15, alignement: 'right', currency: true },
+          { header: 'Costs', key: 'costs', width: 15, alignement: 'right', currency: true },
+          { header: 'Benefits', key: 'balance', width: 15, alignement: 'right', currency: true },
+          {
+            header: 'Paid to Artist',
+            key: 'artist_pay',
+            width: 20,
+            alignement: 'right',
+            currency: true
+          },
+          {
+            header: 'Paid from Artist',
+            key: 'diggers_pay',
+            width: 20,
+            alignement: 'right',
+            currency: true
+          }
+        ],
+        datas: datas[currency]
+      })
+      y += datas[currency].length + 6
+    }
 
     return workbook.xlsx.writeBuffer()
   }
