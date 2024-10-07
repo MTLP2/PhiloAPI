@@ -5202,7 +5202,9 @@ class Admin {
     }
 
     const files = typeToFileName[type] ?? null
-    if (!files) throw new Error('Invalid type to remove picture')
+    if (!files) {
+      return { success: false, error: 'Invalid type to remove picture' }
+    }
 
     // Delete files
     if (typeof files.name === 'string') files.name = [files.name]
