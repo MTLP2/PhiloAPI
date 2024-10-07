@@ -109,18 +109,11 @@ class Linktree {
     return true
   }
 
-  static async addVisit(params: { id: number; link_id?: number }) {
-    if (params.link_id) {
-      const item: any = await DB('linktree_link').where('id', params.link_id).first()
-      item.visit = item.visit + 1
-      await item.save()
-      return true
-    } else {
-      const item: any = await DB('linktree').where('id', params.id).first()
-      item.visit = item.visit + 1
-      await item.save()
-      return true
-    }
+  static async addVisit(params: { link_id: number }) {
+    const item: any = await DB('linktree_link').where('id', params.link_id).first()
+    item.visit = item.visit + 1
+    await item.save()
+    return true
   }
 }
 
