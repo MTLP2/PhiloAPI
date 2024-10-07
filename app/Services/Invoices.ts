@@ -1428,8 +1428,8 @@ class Invoices {
 
     const com = {
       0: {
-        email: 'invocing@diggersfactory.com',
-        user: 'Invoicing',
+        email: 'sandy@diggersfactory.com',
+        user: 'Sandy',
         user_id: 0,
         items: []
       } as any
@@ -1440,8 +1440,8 @@ class Invoices {
       }
       if (invoice.category === 'distribution' || invoice.com_id === 26584) {
         invoice.com_id = 26584
-        invoice.email = 'retail@diggersfacory.com'
-        invoice.user = 'Retail'
+        invoice.email = 'cyril@diggersfacory.com'
+        invoice.user = 'Cyril'
       }
       if (!com[invoice.com_id]) {
         com[invoice.com_id] = {
