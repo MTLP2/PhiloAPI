@@ -26,36 +26,46 @@ class PennyLane {
     return PennyLane.execute('customer_invoices')
   }
 
-  static async exportInvoices(params?: { start: string; end: string }) {
-    if (!params) {
-      params = {
-        // start: moment().subtract('1', 'month').startOf('month').format('YYYY-MM-DD'),
-        // end: moment().subtract('1', 'month').endOf('month').format('YYYY-MM-DD')
-        start: '2023-10-01',
-        end: '2023-10-31'
-      }
-    }
-
+  static async exportInvoices(params: {
+    start?: string
+    end?: string
+    ids?: number[]
+    codes?: string[]
+  }) {
     const invoices = await DB('invoice')
       .select('id', 'type')
       .where('client', 'B2B')
       .where('compatibility', true)
-      .where('is_sync', false)
-      .whereBetween('invoice.date', [params.start, params.end + ' 23:59'])
+      .where((query) => {
+        if (params.ids) {
+          query.whereIn('id', params.ids)
+        } else if (params.codes) {
+          query.whereIn('code', params.codes)
+        } else {
+          query.whereBetween('invoice.date', [params.start, params.end + ' 23:59'])
+          query.where('is_sync', false)
+        }
+      })
       .orderBy('date', 'asc')
       .all()
+
     console.info('invoice => ', invoices.length)
 
+    let i = 0
     for (const invoice of invoices) {
       try {
         await PennyLane.exportInvoice(invoice.id)
+        i++
       } catch (e) {
         console.error('error =>', invoice.id)
         console.error(e)
       }
     }
 
-    return invoices
+    return {
+      invoices: invoices.length,
+      exported: i
+    }
   }
 
   static async exportInvoice(id: number) {
