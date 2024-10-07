@@ -38,6 +38,7 @@ class Customer {
     ${c.name ? `${c.name}<br/>` : ''}
     ${c.firstname} ${c.lastname}<br />
     ${c.address}<br />
+    ${c.address2 ? `${c.address2}<br />` : ''}
     ${c.zip_code} - ${c.city}<br />
     ${c.country}${c.state ? ` - ${c.state}` : ''}
   `
