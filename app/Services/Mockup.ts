@@ -1397,7 +1397,13 @@ class Mockup {
     }
   }
 
-  drawSleeve = async (params: { canvas?: any; picture: string; template?: boolean }) => {
+  drawSleeve = async (params: {
+    canvas?: any
+    picture: string
+    front?: string
+    back?: string
+    template?: boolean
+  }) => {
     const w = 3000
     const h = 1584
 
@@ -1426,7 +1432,9 @@ class Mockup {
 
     await this.drawImage({
       ctx: ctx,
-      url: `${storageUrl}/projects/${params.picture}/back_original.jpg`,
+      url: params.front
+        ? `${storageUrl}/${params.back}`
+        : `${storageUrl}/projects/${params.picture}/back_original.jpg`,
       x: 84,
       y: yDraw,
       opacity: 1,
@@ -1436,7 +1444,9 @@ class Mockup {
 
     await this.drawImage({
       ctx: ctx,
-      url: `${storageUrl}/projects/${params.picture}/original.jpg`,
+      url: params.front
+        ? `${storageUrl}/${params.front}`
+        : `${storageUrl}/projects/${params.picture}/original.jpg`,
       x: 1491,
       y: yDraw - 5,
       opacity: 1,

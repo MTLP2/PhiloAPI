@@ -744,7 +744,8 @@ class Artwork {
         'vod.color_vinyl',
         'vod.splatter1',
         'vod.splatter2',
-        'vod.url_vinyl'
+        'vod.url_vinyl',
+        'vod.sleeve'
       )
       .join('vod', 'vod.project_id', 'project.id')
       .where('project.id', params.project_id)
@@ -753,12 +754,12 @@ class Artwork {
       return { success: false }
     }
     await this.saveTextureSleeve(project)
-    await this.saveTextureDisc(project)
+    // await this.saveTextureDisc(project)
 
     return { success: true }
   }
 
-  static async saveTextureSleeve(project: { picture: string }) {
+  static async saveTextureSleeve(project: { sleeve: string; picture: string }) {
     const mockup = new Mockup({
       env: 'node',
       image: Image,
@@ -768,6 +769,11 @@ class Artwork {
     })
     const sleeve: any = await mockup.drawSleeve({
       picture: project.picture,
+      front:
+        project.sleeve === 'double_gatefold'
+          ? `projects/${project.picture}/cover3.jpg`
+          : `projects/${project.picture}/original.jpg`,
+      back: `projects/${project.picture}/back_original.jpg`,
       template: false
     })
     // const fs = require('fs')
@@ -780,6 +786,33 @@ class Artwork {
         width: 2000
       }
     )
+
+    if (project.sleeve === 'double_gatefold') {
+      const mockup = new Mockup({
+        env: 'node',
+        image: Image,
+        createContext: () => {
+          return createCanvas(0, 0).getContext('2d')
+        }
+      })
+      const sleeve: any = await mockup.drawSleeve({
+        picture: project.picture,
+        front: `projects/${project.picture}/original.jpg`,
+        back: `projects/${project.picture}/cover2.jpg`,
+        template: false
+      })
+      // const fs = require('fs')
+      // fs.writeFileSync('texture_sleeve.png', sleeve.toBuffer('image/png'), 'binary')
+      await Storage.uploadImage(
+        `projects/${project.picture}/texture_sleeve_gatefold`,
+        sleeve.toBuffer('image/jpeg'),
+        {
+          type: 'jpg',
+          width: 2000
+        }
+      )
+    }
+
     return { success: true }
   }
 
