@@ -70,6 +70,9 @@ class Notification {
     email?: 0 | 1
     data?: any
   }) => {
+    if (params.user_id === 0) {
+      return false
+    }
     return DB('notification').insert({
       type: params.type,
       user_id: params.user_id,
