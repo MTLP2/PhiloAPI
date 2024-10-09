@@ -54,7 +54,12 @@ class PennyLane {
     let i = 0
     for (const invoice of invoices) {
       try {
-        await PennyLane.exportInvoice(invoice.id)
+        const res = await PennyLane.exportInvoice(invoice.id)
+        if (res.error) {
+          return {
+            error: res.error
+          }
+        }
         i++
       } catch (e) {
         console.error('error =>', invoice.id)
