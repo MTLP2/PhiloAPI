@@ -754,7 +754,7 @@ class Artwork {
       return { success: false }
     }
     await this.saveTextureSleeve(project)
-    // await this.saveTextureDisc(project)
+    await this.saveTextureDisc(project)
 
     return { success: true }
   }
