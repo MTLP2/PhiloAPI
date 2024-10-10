@@ -125,7 +125,7 @@ class App {
 
       await Order.checkNoOrder()
       if ([9, 12, 15, 17].includes(hour)) {
-        await Elogik.syncStocks()
+        // await Elogik.syncStocks()
         await BigBlue.syncStocks()
         await Whiplash.syncStocks()
       }
@@ -161,13 +161,13 @@ class App {
         await Production.checkProductionToBeCompleted()
       } else if (hour === 9) {
         await Review.checkNotif()
-        await Elogik.checkBlockedOrders()
+        // await Elogik.checkBlockedOrders()
       } else if (hour === 12) {
         await Invoices.reminder()
         await Invoices.checkIncorrectInvoices()
         await BigBlue.setTrackingLinks()
       } else if (hour === 14) {
-        await Elogik.checkBlockedOrders()
+        // await Elogik.checkBlockedOrders()
       } else if (hour === 16) {
         if (moment().format('E') === '4') {
           await Charts.uploadChartsAria()
