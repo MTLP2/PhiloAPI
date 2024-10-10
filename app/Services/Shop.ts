@@ -91,6 +91,8 @@ class Shop {
     bg_image?: string
     white_label?: boolean
     youtube?: string
+    video_top?: string
+    video_bottom?: string
     group_shipment?: boolean
     artist_id?: number
     label_id?: number
@@ -166,6 +168,22 @@ class Shop {
         type: 'png',
         width: 300
       })
+    }
+    if (params.video_top) {
+      if (item.video_top) {
+        Storage.delete(item.video_top)
+      }
+      const fileName = `shops/${Utils.uuid()}`
+      item.video_top = fileName
+      Storage.upload('shops/' + fileName, Buffer.from(params.video_top, 'base64'))
+    }
+    if (params.video_bottom) {
+      if (item.video_bottom) {
+        Storage.delete(item.video_bottom)
+      }
+      const fileName = `shops/${Utils.uuid()}`
+      item.video_bottom = fileName
+      Storage.upload('shops/' + fileName, Buffer.from(params.video_bottom, 'base64'))
     }
 
     await item.save()
