@@ -239,7 +239,7 @@ class Products {
     }
     item.type = params.type
     item.name = params.name
-    item.barcode = params.barcode
+    item.barcode = params.barcode || null
     item.catnumber = params.catnumber
     item.isrc = params.isrc
     item.hs_code = params.hs_code
@@ -268,9 +268,9 @@ class Products {
       if (!item.ekan_id) {
         await Elogik.createItem(item)
       }
-      if (!item.bigblue_id) {
-        await BigBlue.createProduct(item)
-      }
+    }
+    if (!item.bigblue_id) {
+      await BigBlue.createProduct(item)
     }
 
     return item
