@@ -175,7 +175,7 @@ class Shop {
       }
       const fileName = `shops/${Utils.uuid()}`
       item.video_top = fileName
-      Storage.upload('shops/' + fileName, Buffer.from(params.video_top, 'base64'))
+      await Storage.upload(fileName + '.mp4', Buffer.from(params.video_top, 'base64'))
     }
     if (params.video_bottom) {
       if (item.video_bottom) {
@@ -183,7 +183,7 @@ class Shop {
       }
       const fileName = `shops/${Utils.uuid()}`
       item.video_bottom = fileName
-      Storage.upload('shops/' + fileName, Buffer.from(params.video_bottom, 'base64'))
+      Storage.upload(fileName + '.mp4', Buffer.from(params.video_bottom, 'base64'))
     }
 
     await item.save()
