@@ -81,9 +81,9 @@ class PennyLane {
       const params = {
         source_id: invoice.user_id ? invoice.user_id.toString() : undefined,
         customer_type: !invoice.customer.name ? 'individual' : 'company',
-        name: invoice.customer.name,
-        first_name: invoice.customer.firstname,
-        last_name: invoice.customer.lastname,
+        name: invoice.customer.name || undefined,
+        first_name: invoice.customer.firstname || undefined,
+        last_name: invoice.customer.lastname || undefined,
         address: invoice.customer.address,
         postal_code: invoice.customer.zip_code,
         phone: invoice.customer.phone || undefined,
