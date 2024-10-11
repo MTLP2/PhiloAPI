@@ -254,7 +254,7 @@ class Whiplash {
         continue
       }
       if (order.items.length !== nbProducts.length) {
-        throw new ApiError(406, `No enouth items for order N°${order.id}`)
+        // throw new ApiError(406, `No enouth items for order N°${order.id}`)
         continue
       }
       let ok = order.items.every((item) => {
