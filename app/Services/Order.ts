@@ -955,6 +955,8 @@ static toJuno = async (params) => {
     }
 
     if (shop.transporter === 'daudin') {
+      return
+      /**
       await DB('order_shop').where('id', shop.id).update({
         sending: true
       })
@@ -977,6 +979,7 @@ static toJuno = async (params) => {
           })
         }
       }
+      **/
     } else if (shop.transporter === 'bigblue') {
       await DB('order_shop').where('id', shop.id).update({
         sending: true
