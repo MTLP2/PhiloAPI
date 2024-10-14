@@ -3272,7 +3272,6 @@ class StatementService {
 
     refs = await refs.all()
 
-    console.log(refs)
     const data: any = {}
     for (const ref of refs) {
       if (!ref.country_id || !isNaN(ref.country_id)) {
@@ -3377,8 +3376,6 @@ class StatementService {
       )
       .all()
 
-    console.log(projects.length)
-
     const res: any[] = []
     for (const project of projects) {
       const statement = await await Project.getDashboard({
@@ -3417,7 +3414,6 @@ class StatementService {
           income: Utils.round(statement.income.all.total / currencies[project.currency])
         }
         res.push(data)
-        // console.log(data)
 
         if (res.length > 100) {
           // break

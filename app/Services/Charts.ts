@@ -225,7 +225,6 @@ class Charts {
       // date: moment(date).subtract(1, 'days').format('YYYY-MM-DD')
       date: moment(date).format('YYYY-MM-DD')
     })
-    console.log(orders)
 
     let totalQuantity = 0
 

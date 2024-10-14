@@ -486,7 +486,6 @@ static toJuno = async (params) => {
       .count()
 
     if (orders === 0) {
-      console.log('no orders')
       await Notification.sendEmail({
         to: 'victor@diggersfactory.com',
         subject: 'No order',

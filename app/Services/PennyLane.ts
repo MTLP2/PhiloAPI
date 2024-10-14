@@ -155,38 +155,6 @@ class PennyLane {
       }
     })
 
-    /**
-    console.log(invoice.code)
-    const toto: any = await PennyLane.execute(`customer_invoices/${invoice.code}`)
-    console.log(toto)
-    return toto
-
-    const imp: any = await PennyLane.execute(`customer_invoices/${invoice.code}`, {
-      method: 'PUT',
-      params: {
-        invoice: {
-          line_items: [
-            {
-              label: 'Total',
-              quantity: 1,
-              plan_item_number: planItemNumber,
-              currency_amount:
-                invoice.type === 'credit_note' ? -invoice.total_eur : invoice.total_eur,
-              unit: 'piece',
-              vat_rate:
-                invoice.customer.country_id === 'FR'
-                  ? `FR_200`
-                  : isEuropean
-                  ? 'crossborder'
-                  : 'extracom'
-            }
-          ]
-        }
-      }
-    })
-    console.log(imp)
-    **/
-
     if (
       imp.invoice ||
       imp.error === 'Une facture avec le numéro fourni a déjà été créée' ||
@@ -204,7 +172,6 @@ class PennyLane {
   }
 
   static async getInvoice(params: { number: string }) {
-    console.log(`customer_invoices/${params.number}`)
     return PennyLane.execute(`customer_invoices/${params.number}`)
   }
 }
