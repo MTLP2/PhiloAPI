@@ -968,6 +968,76 @@ class AdminController {
     }
   }
 
+  async saveOrderManualInvoice({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          id: schema.number.optional(),
+          order_manual_id: schema.number(),
+          invoice_number: schema.string.optional(),
+          total: schema.number.optional(),
+          date: schema.string.optional(),
+          currency: schema.string.optional(),
+          file: schema.string.optional()
+        }),
+        data: {
+          ...params
+        }
+      })
+      return OrdersManual.saveInvoice(payload)
+    } catch (err) {
+      return { error: err.message, validation: err.messages }
+    }
+  }
+
+  async downloadOrderManualInvoice({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          id: schema.number()
+        }),
+        data: {
+          id: params.id
+        }
+      })
+      return OrdersManual.downloadInvoice(payload)
+    } catch (err) {
+      return { error: err.message, validation: err.messages }
+    }
+  }
+
+  async removeOrderManualInvoice({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          id: schema.number()
+        }),
+        data: {
+          id: params.id
+        }
+      })
+      return OrdersManual.removeInvoice(payload)
+    } catch (err) {
+      return { error: err.message, validation: err.messages }
+    }
+  }
+
+  async applyOrderManualInvoiceCosts({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          id: schema.number()
+        }),
+        data: {
+          id: params.id
+        }
+      })
+      return OrdersManual.applyInvoiceCosts(payload)
+    } catch (err) {
+      return { error: err.message, validation: err.messages }
+    }
+  }
+
   async orderManuelPackingList({ params }) {
     try {
       const payload = await validator.validate({

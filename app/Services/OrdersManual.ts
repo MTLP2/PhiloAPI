@@ -7,6 +7,7 @@ import BigBlue from 'App/Services/BigBlue'
 import Stock from 'App/Services/Stock'
 import Invoices from 'App/Services/Invoices'
 import Notification from 'App/Services/Notification'
+import Storage from 'App/Services/Storage'
 import moment from 'moment'
 import Excel from 'exceljs'
 
@@ -114,6 +115,8 @@ class OrdersManual {
       .all()
 
     item.address_pickup = item.address_pickup ? JSON.parse(item.address_pickup) : null
+
+    item.invoices = await DB('order_invoice').where('order_manual_id', item.id).all()
 
     return item
   }
@@ -682,6 +685,138 @@ class OrdersManual {
     }
 
     return workbook.xlsx.writeBuffer()
+  }
+
+  static async saveInvoice(params: {
+    id?: number
+    order_manual_id?: number
+    invoice_number?: string
+    total?: number
+    date?: string
+    currency?: string
+    file?: string
+  }) {
+    let item: any = DB('order_invoice')
+    if (params.id) {
+      item = await DB('order_invoice').find(params.id)
+    } else {
+      item.created_at = Utils.date()
+    }
+
+    console.log(params)
+    item.order_manual_id = params.order_manual_id
+    item.invoice_number = params.invoice_number
+    item.total = params.total
+    item.currency = params.currency
+    item.date = params.date
+    item.updated_at = Utils.date()
+
+    if (params.file) {
+      if (item.file) {
+        Storage.delete(item.file, true)
+      }
+      const fileName = `invoices/${Utils.uuid()}`
+      item.file = fileName
+      Storage.upload(fileName, Buffer.from(params.file, 'base64'), true)
+    }
+
+    await item.save()
+
+    return { success: true }
+  }
+
+  static async downloadInvoice(params: { id: number }) {
+    const item: any = await DB('order_invoice').where('id', params.id).first()
+    if (!item || !item.file) {
+      return { error: 'not_found' }
+    }
+    const file = await Storage.get(item.file, true)
+    return file
+  }
+
+  static async removeInvoice(params: { id: number }) {
+    const item: any = await DB('order_invoice').where('id', params.id).first()
+    if (!item) {
+      return { error: 'not_found' }
+    }
+    await Storage.delete(item.file, true)
+    await item.delete()
+    return { success: true }
+  }
+
+  static async applyInvoiceCosts(params: { id: number }) {
+    const invoice: any = await DB('order_invoice')
+      .select('order_invoice.*', 'customer.name as company')
+      .join('order_manual', 'order_manual.id', 'order_invoice.order_manual_id')
+      .join('customer', 'customer.id', 'order_manual.customer_id')
+      .where('order_invoice.id', params.id)
+      .first()
+
+    console.log(invoice)
+
+    if (!invoice) {
+      return { error: 'not_found' }
+    }
+
+    const projects = await DB('project')
+      .select('project.id', 'vod.weight', 'omi.quantity', 'is_licence', 'vod.currency')
+      .join('vod', 'vod.project_id', 'project.id')
+      .join('project_product', 'project_product.project_id', 'project.id')
+      .join('order_manual_item as omi', 'omi.product_id', 'project_product.product_id')
+      .where('omi.order_manual_id', invoice.order_manual_id)
+      .all()
+
+    const weight = projects.reduce(
+      (
+        acc: number,
+        cur: {
+          weight: number
+          quantity: number
+        }
+      ) => {
+        return acc + cur.weight * cur.quantity
+      },
+      0
+    )
+
+    await DB('production_cost').where('order_manual_id', invoice.order_manual_id).delete()
+
+    const currenciesDb = await Utils.getCurrenciesDb()
+    const currencies = await Utils.getCurrencies(invoice.currency, currenciesDb)
+
+    for (const project of projects) {
+      const weightProject = project.weight * project.quantity
+      const ratio = weightProject / weight
+      const costReel = Utils.round(invoice.total * ratio, 2)
+      const costInvoiced = project.is_licence ? 0 : Utils.round(costReel * 1.25)
+
+      const data = {
+        project_id: project.id,
+        order_manual_id: invoice.order_manual_id,
+        date: invoice.date,
+        type: 'logistic',
+        name: `Transport B2B : ${invoice.company}`,
+        invoice_number: invoice.invoice_number,
+        cost_real: costReel,
+        cost_real_ttc: costReel,
+        cost_invoiced: costInvoiced,
+        margin: costInvoiced - costReel,
+        is_statement: project.is_licence ? 0 : 1,
+        in_statement: Utils.round(costInvoiced * currencies[project.currency], 2),
+        invoice: invoice.file,
+        currency: invoice.currency,
+        created_at: Utils.date(),
+        updated_at: Utils.date()
+      }
+
+      await DB('production_cost').insert(data)
+    }
+
+    invoice.in_statement = true
+    invoice.updated_at = Utils.date()
+    await invoice.save()
+
+    return { success: true }
   }
 }
 
