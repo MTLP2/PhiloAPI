@@ -221,14 +221,6 @@ class BigBlue {
         })
         continue
       }
-      if (order.items.length < nbProducts.length) {
-        errors.push({
-          id: order.id,
-          order_id: order.order_id,
-          msg: 'no enouth items'
-        })
-        continue
-      }
 
       if (order.shipping_type === 'pickup') {
         const pickup = JSON.parse(order.address_pickup)

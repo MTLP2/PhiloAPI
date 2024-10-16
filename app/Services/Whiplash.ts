@@ -135,9 +135,11 @@ class Whiplash {
   }
 
   static findItem = (sku) => {
+    /**
     if (process.env.NODE_ENV !== 'production') {
       sku = 'TEST'
     }
+    **/
     return Whiplash.api(`/items/sku/${sku}`).then((res: any[]) => {
       if (!res || res.length === 0) {
         return { error: `not_found_${sku}` }
@@ -251,10 +253,6 @@ class Whiplash {
       }
       if (!order.items) {
         throw new ApiError(406, `No items for order N°${order.id}`)
-        continue
-      }
-      if (order.items.length !== nbProducts.length) {
-        // throw new ApiError(406, `No enouth items for order N°${order.id}`)
         continue
       }
       let ok = order.items.every((item) => {
