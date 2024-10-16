@@ -739,8 +739,11 @@ class OrdersManual {
     if (!item) {
       return { error: 'not_found' }
     }
-    await Storage.delete(item.file, true)
+    await DB('production_cost').where('order_manual_id', item.order_manual_id).delete()
     await item.delete()
+    if (item.file) {
+      await Storage.delete(item.file, true)
+    }
     return { success: true }
   }
 
@@ -751,8 +754,6 @@ class OrdersManual {
       .join('customer', 'customer.id', 'order_manual.customer_id')
       .where('order_invoice.id', params.id)
       .first()
-
-    console.log(invoice)
 
     if (!invoice) {
       return { error: 'not_found' }
