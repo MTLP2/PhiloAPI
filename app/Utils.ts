@@ -1368,23 +1368,39 @@ class Utils {
     return true
   }
 
-  static getTransporterLink = (shop) => {
-    shop.tracking_number = shop.tracking_number ? shop.tracking_number.replace(/\s/g, '') : ''
-    if (shop.tracking_link) {
-      return shop.tracking_link
-    } else if (shop.tracking_transporter === 'IMX') {
-      return `https://suivi.imxpostal.fr/colis/suivi/${shop.tracking_number}/html/`
-    } else if (shop.tracking_transporter === 'COL' || shop.tracking_transporter === 'LTS') {
-      return `https://www.laposte.fr/outils/suivre-vos-envois?code=${shop.tracking_number}`
-    } else if (
-      shop.tracking_transporter === 'MDR' ||
-      shop.tracking_transporter === 'MONDIAL RELAY'
-    ) {
-      return `https://www.mondialrelay.fr/suivi-de-colis?codeMarque=F2&nexp=${shop.tracking_number}`
-    } else if (shop.tracking_transporter === 'GLS') {
-      return `https://gls-group.eu/FR/fr/suivi-colis?match=${shop.tracking_number}`
-    } else {
-      return ''
+  static getTransporterLink = (params: {
+    tracking_transporter: string
+    tracking_number: string
+    tracking_link?: string
+  }) => {
+    params.tracking_number = params.tracking_number ? params.tracking_number.replace(/\s/g, '') : ''
+    params.tracking_transporter = params.tracking_transporter
+      ? params.tracking_transporter.toUpperCase()
+      : ''
+    if (params.tracking_link) {
+      return params.tracking_link
+    }
+    switch (params.tracking_transporter.toLowerCase()) {
+      case 'imx':
+        return `https://suivi.imxpostal.fr/colis/suivi/${params.tracking_number}/html/`
+      case 'col':
+      case 'lts':
+        return `https://www.laposte.fr/outils/suivre-vos-envois?code=${params.tracking_number}`
+      case 'mdr':
+      case 'mondial relay':
+        return `https://www.mondialrelay.fr/suivi-de-colis?codeMarque=F2&nexp=${params.tracking_number}`
+      case 'gls':
+        return `https://gls-group.eu/FR/fr/suivi-colis?match=${params.tracking_number}`
+      case 'dhl':
+        return `https://mydhl.express.dhl/fr/fr/tracking.html#/results?id=${params.tracking_number}`
+      case 'ups':
+        return `https://www.ups.com/track?loc=en_US&Requester=DAN&tracknum=${params.tracking_number}/tracking`
+      case 'schenker':
+        return `https://www.dbschenker.com/app/tracking-public/?refNumber=${params.tracking_number}&refType=ShippersRefNo`
+      case 'fedex':
+        return `https://www.fedex.com/fedextrack/?trknbr=${params.tracking_number}`
+      default:
+        return ''
     }
   }
 
