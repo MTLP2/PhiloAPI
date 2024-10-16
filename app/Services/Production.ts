@@ -1107,6 +1107,12 @@ class Production {
       item = await DB('production_dispatch').where('id', params.did).first()
     }
 
+    const project = await DB('project')
+      .select('project.name', 'project.artist_name')
+      .join('production', 'production.project_id', 'project.id')
+      .where('production.id', item.production_id)
+      .first()
+
     // Test Pressing notification
     if (params.type === 'test_pressing' && !item.tracking && params.tracking) {
       Production.addNotif({ id: item.production_id, type: 'tp_pending', data: params.tracking })
@@ -1118,16 +1124,31 @@ class Production {
           status: 'to_check'
         })
 
-      const project = await DB('project')
-        .select('project.name', 'project.artist_name')
-        .join('production', 'production.project_id', 'project.id')
-        .where('production.id', item.production_id)
-        .first()
-
       await Notification.sendEmail({
         to: 'jeanne@diggersfactory.com',
         subject: `TP reçu pour la production ${project.artist_name} - ${project.name}`,
         text: `TP reçu pour la production ${project.artist_name} - ${project.name}`
+      })
+    }
+
+    if (
+      params.tracking &&
+      !item.tracking &&
+      params.logistician &&
+      ['whiplash', 'whiplash_uk', 'bigblue'].includes(params.logistician)
+    ) {
+      const link = Utils.getTransporterLink({
+        tracking_transporter: params.transporter,
+        tracking_number: params.tracking
+      })
+      await Notification.sendEmail({
+        to: 'retail@diggersfactory.com,ferdinand@diggersfactory.com,victor@diggersfactory.com',
+        subject: `${project.artist_name} ${project.name} : Tracking pour un dispatch allant à ${params.customer.name}`,
+        text: `
+          <p>Le projet ${project.artist_name} ${project.name}  a été envoyé à <strong>${params.customer.name}</strong>.</p>
+          <p>Transporter : ${params.transporter}</p>
+          <p>Tracking number : <a href="${link}">${params.tracking}</a></p>
+        `
       })
     }
 
