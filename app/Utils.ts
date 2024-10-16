@@ -1413,6 +1413,7 @@ class Utils {
         return 'fr'
       case 'whiplash':
       case 'lita':
+      case 'amped':
         return 'us'
       case 'whiplash_uk':
       case 'rom':
@@ -1440,6 +1441,7 @@ class Utils {
         return 'FR'
       case 'whiplash':
       case 'lita':
+      case 'amped':
         return 'US'
       case 'whiplash_uk':
       case 'rom':
