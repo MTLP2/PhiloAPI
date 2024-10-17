@@ -1133,6 +1133,7 @@ class Production {
 
     if (
       params.tracking &&
+      params.tracking !== '123' &&
       !item.tracking &&
       params.logistician &&
       ['whiplash', 'whiplash_uk', 'bigblue'].includes(params.logistician)
