@@ -1928,6 +1928,7 @@ class App {
       users[u].balances = balances[u].projects
     }
 
+    const usersNotif: string[] = []
     for (const u in users) {
       const workbook = new Excel.Workbook()
 
@@ -1985,6 +1986,8 @@ class App {
       }
 
       const file = await workbook.xlsx.writeBuffer()
+
+      usersNotif.push(users[u].email)
       await Notification.sendEmail({
         to: users[u].email || 'alexis@diggersfactory.com',
         subject: 'Summary projects',
@@ -1997,6 +2000,13 @@ class App {
         ]
       })
     }
+
+    await Notification.sendEmail({
+      to: 'victor@diggersfactory.com',
+      subject: 'Summary projects',
+      html: `<p>${JSON.stringify(usersNotif)}</p>`
+    })
+
     return { success: true }
   }
 }

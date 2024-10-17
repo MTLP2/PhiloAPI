@@ -211,9 +211,11 @@ class Notification {
       params.from_name = 'Diggers Factory'
       params.from_address = 'contact@diggersfactory.com'
     }
+    /**
     if (process.env.NODE_ENV === 'development') {
       params.to = Env.get('DEBUG_EMAIL')
     }
+    **/
     for (let to of params.to.split(',')) {
       if (process.env.NODE_ENV === 'staging') {
         const domain = to.split('@')
