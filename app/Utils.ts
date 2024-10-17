@@ -1399,6 +1399,8 @@ class Utils {
         return `https://www.dbschenker.com/app/tracking-public/?refNumber=${params.tracking_number}&refType=ShippersRefNo`
       case 'fedex':
         return `https://www.fedex.com/fedextrack/?trknbr=${params.tracking_number}`
+      case 'dachser':
+        return `https://elogistics.dachser.com/shpdl/?c=15&n=${params.tracking_number}`
       default:
         return ''
     }
