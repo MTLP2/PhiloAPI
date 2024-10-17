@@ -927,8 +927,7 @@ class Invoices {
         'project.id as project_id'
       )
       .whereBetween('production_cost.date', [params.start, params.end + ' 23:59'])
-      .join('production', 'production.id', 'production_cost.production_id')
-      .join('project', 'project.id', 'production.project_id')
+      .join('project', 'project.id', 'production_cost.project_id')
       .all()
 
     for (const cost of costs) {
