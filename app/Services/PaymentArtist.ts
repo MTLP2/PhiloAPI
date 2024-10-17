@@ -88,8 +88,13 @@ class PaymentArtist {
     id: number
     user_id: number
     auth_id: number
+    name: string
     date: string
+    date_invoice: string
+    date_payment: string
+    invoice_number: string
     type: string
+    supplier: string
     total: number
     currency: string
     is_paid: boolean
@@ -115,6 +120,11 @@ class PaymentArtist {
     item.user_id = params.user_id
     item.date = params.date
     item.type = params.type
+    item.supplier = params.supplier
+    item.invoice_number = params.invoice_number
+    item.name = params.name
+    item.date_invoice = params.date_invoice
+    item.date_payment = params.date_payment
     item.total = params.total
     item.currency = params.currency
     item.is_paid = params.is_paid
