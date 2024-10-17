@@ -1380,7 +1380,7 @@ class Utils {
     if (params.tracking_link) {
       return params.tracking_link
     }
-    switch (params.tracking_transporter.toLowerCase()) {
+    switch (params.tracking_transporter.toLowerCase().trim()) {
       case 'imx':
         return `https://suivi.imxpostal.fr/colis/suivi/${params.tracking_number}/html/`
       case 'col':
