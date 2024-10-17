@@ -43,7 +43,7 @@ class PennyLane {
           query.whereIn('code', params.codes)
         } else {
           query.whereBetween('invoice.date', [params.start, params.end + ' 23:59'])
-          query.where('is_sync', false)
+          // query.where('is_sync', false)
         }
       })
       .orderBy('date', 'asc')
@@ -51,14 +51,17 @@ class PennyLane {
 
     console.info('invoice => ', invoices.length)
 
+    let errors: any[] = []
     let i = 0
     for (const invoice of invoices) {
       try {
         const res = await PennyLane.exportInvoice(invoice.id)
         if (res.error) {
-          return {
+          errors.push({
+            id: invoice.id,
             error: res.error
-          }
+          })
+          continue
         }
         i++
       } catch (e) {
@@ -69,6 +72,7 @@ class PennyLane {
 
     return {
       invoices: invoices.length,
+      errors: errors.length,
       exported: i
     }
   }
