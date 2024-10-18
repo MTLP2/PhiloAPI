@@ -36,6 +36,7 @@ class Charts {
         'p.label_name',
         'product.name as name',
         'product.barcode',
+        'os.created_at',
         'os.date_export',
         'invoice.code as invoice'
       )
