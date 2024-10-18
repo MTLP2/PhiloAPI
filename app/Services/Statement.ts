@@ -899,6 +899,7 @@ class StatementService {
       start: params.start,
       end: params.end,
       periodicity: 'months',
+      auto: params.auto,
       only_data: true
     })
     if (!data) {

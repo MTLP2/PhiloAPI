@@ -1728,6 +1728,7 @@ class Project {
     end?: string
     periodicity?: string
     cashable?: boolean
+    auto?: boolean
     only_data?: boolean
   }) => {
     let projects = DB('project')
@@ -2096,6 +2097,7 @@ class Project {
 
     s.setDate = function (type, cat, date, value) {
       if (value) {
+        console.log(type)
         if (inDate(date)) {
           this[cat][type].dates[date] += value
           this[cat].all.dates[date] += value
