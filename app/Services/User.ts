@@ -983,7 +983,7 @@ class User {
   static getProjects = async (userId, params?) => {
     let projects = DB()
       .select(
-        'p.id',
+        DB.raw('distinct(p.id)'),
         'name',
         'picture',
         'artist_name',
@@ -1022,6 +1022,7 @@ class User {
     }
 
     projects = await projects.all()
+    console.log(projects)
     return projects
   }
 
