@@ -1510,7 +1510,7 @@ class StatementService {
     send_statement?: boolean
   }) {
     let projects: any = DB()
-      .select('project.id', 'artist_name', 'name')
+      .select(DB.raw('distinct(project.id)'), 'artist_name', 'name')
       .table('project')
       .join('vod', 'vod.project_id', 'project.id')
       .where('vod.user_id', params.id)
@@ -1588,7 +1588,7 @@ class StatementService {
       params.end = moment().format('YYYY-MM-DD')
     }
     let projects: any = DB()
-      .select('project.id', 'vod.barcode', 'currency', 'artist_name', 'name')
+      .select(DB.raw('distinct(project.id)'), 'vod.barcode', 'currency', 'artist_name', 'name')
       .table('project')
       .join('vod', 'vod.project_id', 'project.id')
       .join('project_user as pu', 'pu.project_id', 'project.id')
