@@ -978,7 +978,7 @@ class App {
     html += '</tbody></table>'
 
     await Notification.sendEmail({
-      to: `${config.emails.commercial},${config.emails.compatibility}`,
+      to: `${config.emails.commercial}`,
       subject: 'Liste des projets finis',
       html: html
     })
