@@ -1879,6 +1879,14 @@ class Project {
     if (payments.length > 0 && (!start || start > moment(payments[0].date))) {
       start = moment(payments[0].date)
     }
+
+    if (
+      params.auto &&
+      params.end &&
+      moment(payments.at(-1).date).format('YYYY-MM-DD') > params.end
+    ) {
+      params.end = moment(payments.at(-1).date).format('YYYY-MM-DD')
+    }
     if (!params.start) {
       if (!start) {
         return false
@@ -2097,8 +2105,11 @@ class Project {
 
     s.setDate = function (type, cat, date, value) {
       if (value) {
-        console.log(type)
-        if (inDate(date)) {
+        if (!this[cat][type].dates[date]) {
+          this[cat][type].dates[date] = 0
+          this[cat].all.dates[date] = 0
+        }
+        if ((cat === 'payments' && params.auto) || inDate(date)) {
           this[cat][type].dates[date] += value
           this[cat].all.dates[date] += value
           this[cat][type].total += value
