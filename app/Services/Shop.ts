@@ -155,7 +155,7 @@ class Shop {
       item.banner = fileName
       Storage.uploadImage(fileName, Buffer.from(params.banner, 'base64'), {
         type: 'jpg',
-        width: 2200
+        width: 3000
       })
     }
     if (params.bg_image) {
