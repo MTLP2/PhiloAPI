@@ -555,7 +555,9 @@ class Cart {
         }
         if (code.unique) {
           const already = await DB('order')
-            .where('promo_code', code.id)
+            .where((query) => {
+              query.where('promo_code', code.id).orWhere('promo_code', code.code)
+            })
             .where('user_id', p.user_id)
             .first()
           if (already) {
