@@ -2105,11 +2105,7 @@ class Project {
 
     s.setDate = function (type, cat, date, value) {
       if (value) {
-        if (!this[cat][type].dates[date]) {
-          this[cat][type].dates[date] = 0
-          this[cat].all.dates[date] = 0
-        }
-        if ((cat === 'payments' && params.auto) || inDate(date)) {
+        if (inDate(date)) {
           this[cat][type].dates[date] += value
           this[cat].all.dates[date] += value
           this[cat][type].total += value
