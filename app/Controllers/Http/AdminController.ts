@@ -1207,7 +1207,10 @@ class AdminController {
         logistician: schema.string(),
         year: schema.string(),
         month: schema.string(),
-        invoice: schema.string()
+        invoice: schema.object().members({
+          name: schema.string(),
+          data: schema.string()
+        })
       }),
       data: params
     })

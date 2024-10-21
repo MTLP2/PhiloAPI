@@ -3,8 +3,10 @@ import Utils from 'App/Utils'
 import Notification from 'App/Services/Notification'
 import MondialRelay from 'App/Services/MondialRelay'
 import Stock from 'App/Services/Stock'
+import Storage from 'App/Services/Storage'
 import Env from '@ioc:Adonis/Core/Env'
 import Excel from 'exceljs'
+import OrdersManual from 'App/Services/OrdersManual'
 
 class BigBlue {
   static async api(
@@ -935,11 +937,11 @@ class BigBlue {
     return prices
   }
 
-  static async setCost(buffer: string, date: string) {
-    const lines: any = Utils.csvToArray(buffer)
+  static async setCost(params: { invoice_number: string; file: string; date: string }) {
+    const lines: any = Utils.csvToArray(params.file)
 
     const currencies = await Utils.getCurrenciesApi(
-      date + '-01',
+      params.date + '-01',
       'EUR,USD,GBP,PHP,AUD,CAD,KRW,JPY',
       'EUR'
     )
@@ -982,6 +984,42 @@ class BigBlue {
         shipping_cost: order.shipping_cost,
         shipping_weight: orders[order.logistician_id].weight
       })
+    }
+
+    const fileName = `invoices/${Utils.uuid()}`
+    Storage.upload(fileName, params.file, true)
+
+    const ooo = await DB('order_manual')
+      .select('id', 'type', 'logistician_id')
+      .whereIn('logistician_id', Object.keys(orders))
+      .all()
+
+    for (const order of ooo) {
+      if (!orders[order.logistician_id]) {
+        continue
+      }
+
+      const inStatement = order.type === 'to_artist' || order.type === 'b2b'
+      await DB('order_invoice').where('order_manual_id', order.id).delete()
+      const [id] = await DB('order_invoice')
+        .where('id', order.id)
+        .insert({
+          date: `${params.date}-01`,
+          currency: 'EUR',
+          file: fileName,
+          order_manual_id: order.id,
+          in_statement: inStatement,
+          invoice_number: params.invoice_number.split('.')[0],
+          total: Utils.round(orders[order.logistician_id].price, 2),
+          created_at: Utils.date(),
+          updated_at: Utils.date()
+        })
+
+      if (inStatement) {
+        await OrdersManual.applyInvoiceCosts({
+          id: id
+        })
+      }
     }
 
     console.info('marge => ', marge)

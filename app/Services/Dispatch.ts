@@ -467,19 +467,26 @@ class Dispatch {
     return dispatchs
   }
 
-  static setCost = async (
-    transporter: string,
-    date: string,
-    buffer: Buffer,
-    force: boolean = false
-  ) => {
+  static setCost = async (params: {
+    transporter: string
+    date: string
+    invoice: {
+      file: Buffer | string
+      name: string
+    }
+    force: boolean
+  }) => {
     let res
-    if (transporter === 'daudin') {
-      res = await Daudin.setCost(date, buffer, force)
-    } else if (transporter === 'bigblue') {
-      res = await BigBlue.setCost(buffer, date, force)
-    } else if (transporter === 'whiplash') {
-      res = await Whiplash.setCost(buffer, force)
+    if (params.transporter === 'daudin') {
+      res = await Daudin.setCost(params.date, params.invoice.file, params.force)
+    } else if (params.transporter === 'bigblue') {
+      res = await BigBlue.setCost({
+        invoice_number: params.invoice.name,
+        file: params.invoice.file as string,
+        date: params.date
+      })
+    } else if (params.transporter === 'whiplash') {
+      res = await Whiplash.setCost(params.invoice.file, params.force)
     }
 
     return res
@@ -1093,11 +1100,22 @@ class Dispatch {
     logistician: string
     year: string
     month: string
-    invoice: string
+    invoice: {
+      name: string
+      data: string
+    }
   }) => {
-    const buffer = Buffer.from(params.invoice, 'base64')
+    const buffer = Buffer.from(params.invoice.data, 'base64')
     const date = `${params.year}-${params.month}`
-    const res = await Dispatch.setCost(params.logistician, date, buffer, true)
+    const res = await Dispatch.setCost({
+      transporter: params.logistician,
+      date: date,
+      invoice: {
+        name: params.invoice.name,
+        file: buffer
+      },
+      force: true
+    })
     return res
   }
 
