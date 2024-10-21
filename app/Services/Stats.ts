@@ -1950,6 +1950,7 @@ class Stats {
         'is_licence',
         'in_statement',
         'margin',
+        'vod.type as project_type',
         'production_cost.currency'
       )
       .join('vod', 'vod.project_id', 'production_cost.project_id')
@@ -2241,9 +2242,6 @@ class Stats {
       } else if (invoice.category === 'distribution') {
         addTurnover(invoice.type, 'distrib', null, date, total)
       } else if (invoice.category === 'direct_pressing') {
-        if (invoice.margin) {
-          addMarge('direct_pressing', null, date, invoice.margin * invoice.currency_rate)
-        }
         addTurnover(invoice.type, 'direct_pressing', null, date, total)
       } else if (invoice.category === 'shipping') {
         addTurnover(invoice.type, 'shipping', 'invoice', date, total)
@@ -2550,7 +2548,9 @@ class Stats {
 
       if (cost.is_licence) {
         addMarge('licence', 'cost', date, cost.margin / currencies[cost.currency])
-      } else if (cost.type !== 'direct_pressing') {
+      } else if (cost.project_type === 'direct_pressing') {
+        addMarge('direct_pressing', null, date, cost.margin / currencies[cost.currency])
+      } else {
         addMarge('prod', null, date, cost.margin / currencies[cost.currency])
       }
       if (cost.type === 'storage') {
