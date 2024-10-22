@@ -116,27 +116,39 @@ class BigBlue {
       }
     }
 
-    const res: any = await this.api('ListInventories', {
-      method: 'POST',
-      params: {
-        product: product ? product.bigblue_id : ''
-      }
-    })
+    const inventories: any[] = []
 
-    if (res.inventories) {
-      for (const stock of res.inventories) {
-        if (!products[stock.product]) {
-          continue
+    let pageToken = ''
+
+    do {
+      const res: any = await this.api('ListInventories', {
+        method: 'POST',
+        params: {
+          product: product ? product.bigblue_id : '',
+          page_size: 500,
+          page_token: pageToken
         }
-        products[stock.product].qty = stock.available
-        Stock.save({
-          product_id: products[stock.product].id,
-          type: 'bigblue',
-          comment: 'api',
-          is_preorder: false,
-          quantity: stock.available || 0
-        })
+      })
+      inventories.push(...res.inventories)
+      if (res.next_page_token) {
+        pageToken = res.next_page_token
+      } else {
+        break
       }
+    } while (pageToken)
+
+    for (const stock of inventories) {
+      if (!products[stock.product]) {
+        continue
+      }
+      products[stock.product].qty = stock.available
+      await Stock.save({
+        product_id: products[stock.product].id,
+        type: 'bigblue',
+        comment: 'api',
+        is_preorder: false,
+        quantity: stock.available || 0
+      })
     }
 
     Object.keys(products).forEach((product) => {
@@ -145,7 +157,7 @@ class BigBlue {
       }
     })
 
-    return res
+    return inventories.length
   }
 
   static syncProject = async (params: { id: number; quantity: number }) => {
