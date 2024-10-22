@@ -59,6 +59,7 @@ class BigBlue {
     type: string
     barcode: string
     hs_code: string
+    country_id: string
   }) {
     const id = String(params.id).padStart(10, '0')
     const bigId = `DIGG-${id.substring(0, 6)}-${id.substring(6, 10)}`
@@ -70,7 +71,7 @@ class BigBlue {
           id: bigId,
           name: !params.barcode ? params.name : `${params.name} - ${params.barcode}`,
           barcode: params.barcode,
-          origin_country: 'FR',
+          origin_country: params.country_id,
           value: {
             amount: '9.99',
             currency: 'EUR'
@@ -88,6 +89,33 @@ class BigBlue {
     } else {
       return false
     }
+  }
+
+  static async saveProduct(params: {
+    bigblue_id: string
+    name: string
+    type: string
+    barcode: string
+    hs_code: string
+    country_id: string
+  }) {
+    await this.api('UpdateProduct', {
+      method: 'POST',
+      params: {
+        product: {
+          id: params.bigblue_id,
+          barcode: params.barcode,
+          name: !params.barcode ? params.name : `${params.name} - ${params.barcode}`,
+          origin_country: params.country_id,
+          value: {
+            amount: '9.99',
+            currency: 'EUR'
+          },
+          tariff_number: params.hs_code
+        }
+      }
+    })
+    return true
   }
 
   static syncStocks = async (params: { productIds?: number[] } = {}) => {

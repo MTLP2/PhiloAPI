@@ -271,6 +271,8 @@ class Products {
     }
     if (!item.bigblue_id) {
       await BigBlue.createProduct(item)
+    } else {
+      await BigBlue.saveProduct(item)
     }
 
     return item
