@@ -375,6 +375,9 @@ class OrdersManual {
           shipping_country: customer.country_id,
           shipping_zip: customer.zip_code,
           shipping_phone: customer.phone,
+          order_type: params.type === 'b2b' ? 'wholesale' : 'direct_to_consumer',
+          incoterm: params.incoterm,
+          purchase_order: params.purchase_order,
           shop_shipping_method_text: Whiplash.getShippingMethod({
             shipping_type: params.shipping_type
           }),
@@ -394,18 +397,20 @@ class OrdersManual {
         }
 
         const order: any = await Whiplash.saveOrder(pp)
-        item.step = 'in_preparation'
-        item.logistician_id = order.id
-        item.date_export = Utils.date()
-        await item.save()
+        if (order.id) {
+          item.step = 'in_preparation'
+          item.logistician_id = order.id
+          item.date_export = Utils.date()
+          await item.save()
 
-        if (item.order_shop_id) {
-          await DB('order_shop').where('id', item.order_shop_id).update({
-            logistician_id: order.id,
-            tracking_number: null,
-            tracking_transporter: null,
-            updated_at: Utils.date()
-          })
+          if (item.order_shop_id) {
+            await DB('order_shop').where('id', item.order_shop_id).update({
+              logistician_id: order.id,
+              tracking_number: null,
+              tracking_transporter: null,
+              updated_at: Utils.date()
+            })
+          }
         }
       }
 
