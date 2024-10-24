@@ -2048,6 +2048,7 @@ class Cart {
         'order.currency',
         'order.currency_rate',
         'order.service_charge',
+        'order.payment_id',
         'user_agent',
         'promo_code',
         'discount',
