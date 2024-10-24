@@ -31,6 +31,26 @@ class Whiplash {
     })
   }
 
+  static api2 = (endpoint, options = {}) => {
+    return new Promise((resolve, reject) => {
+      request(
+        {
+          method: 'GET',
+          url: `${config.whiplash.api2}/${endpoint}`,
+          json: true,
+          headers: {
+            'X-API-KEY': config.whiplash.key
+          },
+          ...options
+        },
+        function (err, res, body) {
+          if (err) reject(err)
+          resolve(body)
+        }
+      )
+    })
+  }
+
   static getOrders = (body = {}) => {
     return Whiplash.api('orders', {
       methid: 'POST',

@@ -95,7 +95,8 @@ export default {
 
   whiplash: {
     key: 'FVLEeReSuxCVvGSw7z7r',
-    api: 'https://www.whiplashmerch.com/api'
+    api: 'https://www.whiplashmerch.com/api',
+    api2: 'https://www.getwhiplash.com/api/v2'
   },
 
   discogs: {
