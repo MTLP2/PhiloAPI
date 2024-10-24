@@ -324,6 +324,7 @@ class OrdersManual {
           }
         }
       }
+
       if (['bigblue'].includes(params.transporter)) {
         if (!item.logistician_id) {
           const dispatch: any = await BigBlue.sync([
@@ -333,6 +334,7 @@ class OrdersManual {
               user_id: item.user_id || 'M' + item.id,
               sub_total: '40',
               currency: 'EUR',
+              b2b: item.type === 'b2b',
               shipping_type: params.shipping_type,
               address_pickup: params.address_pickup,
               created_at: item.created_at,

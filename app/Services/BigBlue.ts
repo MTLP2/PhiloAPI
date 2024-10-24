@@ -59,6 +59,7 @@ class BigBlue {
     type: string
     barcode: string
     hs_code: string
+    size: string
     country_id: string
   }) {
     const id = String(params.id).padStart(10, '0')
@@ -72,6 +73,7 @@ class BigBlue {
           name: !params.barcode ? params.name : `${params.name} - ${params.barcode}`,
           barcode: params.barcode,
           origin_country: params.country_id,
+          descriotion: params.size,
           value: {
             amount: '9.99',
             currency: 'EUR'
@@ -97,6 +99,7 @@ class BigBlue {
     type: string
     barcode: string
     hs_code: string
+    size: string
     country_id: string
   }) {
     await this.api('UpdateProduct', {
@@ -107,6 +110,7 @@ class BigBlue {
           barcode: params.barcode,
           name: !params.barcode ? params.name : `${params.name} - ${params.barcode}`,
           origin_country: params.country_id,
+          descriotion: params.size,
           value: {
             amount: '9.99',
             currency: 'EUR'
@@ -447,6 +451,7 @@ class BigBlue {
           currency: 'EUR',
           shipping_method: order.shipping_type === 'pickup' ? 'pickup' : 'standard',
           shipping_price: order.shipping ? order.shipping.toString() : '1',
+          b2b: order.b2b ? true : false,
           pickup_point:
             order.shipping_type === 'pickup'
               ? {
