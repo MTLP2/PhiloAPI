@@ -791,6 +791,40 @@ class Invoices {
     return workbook.xlsx.writeBuffer()
   }
 
+  static async cancel(params) {
+    const exists = await DB('invoice').where('invoice_id', params.id).first()
+    if (exists) {
+      return { id: exists.id }
+    }
+
+    const invoice = await DB('invoice').belongsTo('customer').find(params.id)
+    invoice.id = null
+    invoice.number = null
+    invoice.name = `Credit note for ${invoice.code}`
+    invoice.code = null
+    invoice.inc = 1
+    invoice.year = moment().format('YY')
+    invoice.date = moment().format('YYYY-MM-DD')
+    invoice.type = 'credit_note'
+    invoice.date_payment = null
+    invoice.proof_payment = null
+    invoice.status = 'canceled'
+    invoice.invoice_id = params.id
+    invoice.created_at = moment().format('YYYY-MM-DD HH:mm:ss')
+    invoice.updated_at = moment().format('YYYY-MM-DD HH:mm:ss')
+
+    const customer = await Customer.save({
+      ...invoice.customer,
+      customer_id: null
+    })
+    delete invoice.customer
+    invoice.customer_id = customer.id
+
+    const insert = await DB('invoice').insert(JSON.parse(JSON.stringify(invoice)))
+
+    return { id: insert[0] }
+  }
+
   static async duplicate(params) {
     const invoice = await DB('invoice').belongsTo('customer').find(params.id)
 

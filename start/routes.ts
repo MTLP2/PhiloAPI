@@ -567,6 +567,7 @@ Route.group(() => {
   Route.get('/quote-export', 'AdminController.exportQuotes')
   Route.get('/invoices', 'InvoicesController.getInvoices')
   Route.post('/invoices', 'InvoicesController.saveInvoice')
+  Route.post('/invoices/canceled', 'InvoicesController.cancelInvoice')
   Route.get('/invoices/csv', 'InvoicesController.invoicesCsv')
   Route.get('/invoices/export', 'InvoicesController.exportInvoices')
   Route.get('/invoices/b2c', 'InvoicesController.exportB2C')

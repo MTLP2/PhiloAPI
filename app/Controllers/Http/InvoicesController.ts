@@ -32,6 +32,10 @@ class InvoicesController {
     return Invoices.save(params)
   }
 
+  cancelInvoice({ params }) {
+    return Invoices.cancel(params)
+  }
+
   duplicateInvoice({ params }) {
     return Invoices.duplicate(params)
   }
