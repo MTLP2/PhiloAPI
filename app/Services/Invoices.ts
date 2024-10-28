@@ -1479,7 +1479,7 @@ class Invoices {
       }
       if (invoice.category === 'distribution' || invoice.com_id === 26584) {
         invoice.com_id = 26584
-        invoice.email = 'cyril@diggersfacory.com'
+        invoice.email = 'cyril@diggersfactory.com'
         invoice.user = 'Cyril'
       }
       if (!com[invoice.com_id]) {
