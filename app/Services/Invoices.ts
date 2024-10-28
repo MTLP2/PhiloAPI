@@ -1443,7 +1443,7 @@ class Invoices {
     ])
   }
 
-  static async getUnpaidInvoicesByTeam() {
+  static async getUnpaidInvoicesByTeam(params?: { category?: string }) {
     const invoices = await DB('invoice')
       .select(
         'invoice.*',
@@ -1457,12 +1457,17 @@ class Invoices {
         'user2.email as prod_email',
         'user2.name as prod_user'
       )
-      .join('project', 'project.id', 'invoice.project_id')
-      .join('vod', 'vod.project_id', 'invoice.project_id')
+      .leftJoin('project', 'project.id', 'invoice.project_id')
+      .leftJoin('vod', 'vod.project_id', 'invoice.project_id')
       .leftJoin('user', 'user.id', 'vod.com_id')
       .leftJoin('user as user2', 'user2.id', 'vod.resp_prod_id')
       .where('compatibility', true)
       .where('invoice.status', '!=', 'paid')
+      .where((query) => {
+        if (params?.category) {
+          query.where('invoice.category', params.category)
+        }
+      })
       .all()
 
     const com = {
@@ -1476,11 +1481,6 @@ class Invoices {
     for (const invoice of invoices) {
       if (!invoice.com_id) {
         invoice.com_id = 6140
-      }
-      if (invoice.category === 'distribution' || invoice.com_id === 26584) {
-        invoice.com_id = 26584
-        invoice.email = 'cyril@diggersfactory.com'
-        invoice.user = 'Cyril'
       }
       if (!com[invoice.com_id]) {
         com[invoice.com_id] = {

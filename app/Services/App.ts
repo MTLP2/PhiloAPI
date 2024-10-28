@@ -1906,7 +1906,11 @@ class App {
   static async sendTeamSummaryProjects() {
     const users = {}
     const invoices = await Invoices.getUnpaidInvoicesByTeam()
+    const distribs = await Invoices.getUnpaidInvoicesByTeam({
+      category: 'distribution'
+    })
     const balances = await Statement.getBalancesByTeam()
+
     for (const u in invoices) {
       if (!users[u]) {
         users[u] = {
@@ -1984,6 +1988,28 @@ class App {
           })
         )
       }
+      if (users[u].email === 'cyril@diggersfactory.com') {
+        const workDistrib = workbook.addWorksheet('Distribution')
+        workDistrib.columns = [
+          { header: 'Date', key: 'date', width: 13 },
+          { header: 'N°Facture', key: 'number' },
+          { header: 'Status', key: 'status' },
+          { header: 'Licence', key: 'is_licence' },
+          { header: 'Type', key: 'type', width: 13 },
+          { header: 'Name', key: 'name', width: 20 },
+          { header: 'Total', key: 'total' },
+          { header: 'Currency', key: 'currency' },
+          { header: 'Link', key: 'link', width: 20 }
+        ]
+        workDistrib.addRows(
+          distribs[0].items.map((p) => {
+            return {
+              ...p,
+              link: `https://www.diggersfactory.com/sheraf/invoice/${p.id}`
+            }
+          })
+        )
+      }
 
       const file = await workbook.xlsx.writeBuffer()
 
@@ -2000,12 +2026,6 @@ class App {
         ]
       })
     }
-
-    await Notification.sendEmail({
-      to: 'victor@diggersfactory.com',
-      subject: 'Summary projects',
-      html: `<p>${JSON.stringify(usersNotif)}</p>`
-    })
 
     return { success: true }
   }
