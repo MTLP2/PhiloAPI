@@ -1883,6 +1883,7 @@ class Project {
     if (
       params.auto &&
       params.end &&
+      payments.at(-1) &&
       moment(payments.at(-1).date).format('YYYY-MM-DD') > params.end
     ) {
       params.end = moment(payments.at(-1).date).format('YYYY-MM-DD')
