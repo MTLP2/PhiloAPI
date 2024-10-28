@@ -316,9 +316,10 @@ class Quote {
       } else if (line && line.type === 'F') {
         quantity = params.nb_vinyl
       } else {
+        const samples = params.quantity >= 500 ? 10 : 5
         quantity = payload.onceByCopy
-          ? params.quantity + 5
-          : (params.quantity + 5) * params.nb_vinyl
+          ? params.quantity + samples
+          : (params.quantity + samples) * params.nb_vinyl
       }
       if (payload.type && payload.active) {
         logs.push({
@@ -335,9 +336,7 @@ class Quote {
         price = line[`q${qty}`] * quantity
       }
       price = price * (1 + feeProd / 100)
-      if (data.factory === 'vdp') {
-        price = price * 0.85
-      } else if (data.factory === 'precision') {
+      if (data.factory === 'precision') {
         price = price * curUsd
       }
 
@@ -1732,27 +1731,23 @@ class Quote {
     quote.prices.print_finish.matt_varnish = false
     quote.prices.sticker.sticker = false
 
-    // Disacobag base price
-    quote.cutting = getCost({ l: 6, type: 'cutting', option: '', active: true })
-
+    // quote.cutting = getCost({ l: 6, type: 'cutting', option: '', active: true })
     quote.prices.sleeve.discobag = 0
     if (params.nb_vinyl === 1) {
-      quote.prices.sleeve.color =
-        getCost({
-          l: 5,
-          type: 'sleeve',
-          option: 'color',
-          onceByCopy: true,
-          active: true
-        }) - quote.cutting
-      quote.prices.sleeve.double_gatefold =
-        getCost({
-          l: 3,
-          type: 'sleeve',
-          option: 'double_gatefold',
-          onceByCopy: true,
-          active: true
-        }) - quote.cutting
+      quote.prices.sleeve.color = getCost({
+        l: 5,
+        type: 'base',
+        option: 'color',
+        onceByCopy: true,
+        active: true
+      })
+      quote.prices.sleeve.double_gatefold = getCost({
+        l: 3,
+        type: 'base',
+        option: 'double_gatefold',
+        onceByCopy: true,
+        active: true
+      })
       if (params.sleeve === 'double_gatefold') {
         quote.prices.sleeve.double_gatefold += getCost({
           l: 102,
@@ -1763,22 +1758,20 @@ class Quote {
         })
       }
     } else if (params.nb_vinyl === 2) {
-      quote.prices.sleeve.color =
-        getCost({
-          l: 4,
-          type: 'sleeve',
-          option: 'color',
-          onceByCopy: true,
-          active: true
-        }) - quote.cutting
-      quote.prices.sleeve.double_gatefold =
-        getCost({
-          l: 2,
-          type: 'sleeve',
-          option: 'double_gatefold',
-          onceByCopy: true,
-          active: true
-        }) - quote.cutting
+      quote.prices.sleeve.color = getCost({
+        l: 4,
+        type: 'base',
+        option: 'color',
+        onceByCopy: true,
+        active: true
+      })
+      quote.prices.sleeve.double_gatefold = getCost({
+        l: 2,
+        type: 'base',
+        option: 'double_gatefold',
+        onceByCopy: true,
+        active: true
+      })
     }
     quote.prices.sleeve.pvc =
       quote.prices.sleeve.color +
@@ -1789,10 +1782,15 @@ class Quote {
         onceByCopy: true,
         active: params.sleeve === 'pvc'
       })
-    quote.sleeve = quote.prices.sleeve[params.sleeve]
-    if (params.quantity >= 300) {
-      quote.sleeve += getCost({ l: 35, type: 'sleeve', option: '', onceByCopy: true, active: true })
-    }
+    quote.sleeve =
+      quote.prices.sleeve[params.sleeve] +
+      getCost({
+        l: 112,
+        type: 'sleeve',
+        option: '',
+        onceByCopy: true,
+        active: true
+      })
 
     quote.prices.weight['180'] = getCost({
       l: 29,
@@ -1808,6 +1806,7 @@ class Quote {
       quote.prices.weight['180'] = false
     }
     quote.weight = this.getPrice(quote, params, 'weight')
+
     quote.prices.type_vinyl.surcharge = getCost({
       l: 29,
       type: 'type_vinyl',
@@ -1983,29 +1982,18 @@ class Quote {
     })
     quote.numbered = quote.prices.numbered[params.numbered]
 
-    // Assembly options (x Nb de LP)
-    quote.prices.assembly =
-      getCost({
-        l: 91,
-        type: 'assembly',
-        option: '',
-        onceByCopy: true,
-        active: true
-      }) +
-      getCost({
-        l: 92,
-        type: 'assembly',
-        option: '',
-        onceByCopy: true,
-        active: true
-      })
-    quote.assembly = quote.prices.assembly
+    quote.assembly = 0
 
-    quote.test_pressing = 40
-
-    if (params.quantity === 100) {
-      quote.test_pressing += 90
+    quote.test_pressing = 0
+    if (params.quantity < 200) {
+      quote.test_pressing += 70
     }
+
+    quote.transport = getCost({
+      l: 139,
+      quantity: 1
+    })
+
     return quote
   }
 
