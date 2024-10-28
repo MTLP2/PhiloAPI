@@ -527,19 +527,24 @@ class OrdersManual {
     const worksheet = workbook.getWorksheet(1)
     const items: {
       barcode: string
-      quantity: string
+      quantity: number
       product_id: number | null
       name: string | null
     }[] = []
 
     worksheet.eachRow((row, rowNumber) => {
       if (rowNumber > 1) {
-        items.push({
-          barcode: row.getCell(params.barcode).text,
-          quantity: row.getCell(params.quantity).text,
-          product_id: null,
-          name: null
-        })
+        const exists = items.findIndex((i) => i.barcode === row.getCell(params.barcode).text)
+        if (exists === -1) {
+          items.push({
+            barcode: row.getCell(params.barcode).text,
+            quantity: +row.getCell(params.quantity).text,
+            product_id: null,
+            name: null
+          })
+        } else {
+          items[exists].quantity += +row.getCell(params.quantity).text
+        }
       }
     })
 
