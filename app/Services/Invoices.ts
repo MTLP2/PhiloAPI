@@ -699,18 +699,22 @@ class Invoices {
         'customer.name as customer_name',
         'firstname',
         'lastname',
-        'country_id',
+        'customer.country_id',
         'order.total as order_total',
         'order.payment_type',
         'order.shipping as order_shipping',
         'payment.payment_id as payment_pay_id',
         'order.transaction_id',
-        'order.payment_id'
+        'order.payment_id',
+        'resp_prod.name as resp_prod',
+        'resp_com.name as resp_com'
       )
       .leftJoin('order', 'order.id', 'order_id')
       .leftJoin('customer', 'customer.id', 'invoice.customer_id')
       .leftJoin('payment', 'payment.id', 'invoice.payment_id')
       .leftJoin('vod', 'vod.project_id', 'invoice.project_id')
+      .leftJoin('user as resp_prod', 'resp_prod.id', 'vod.resp_prod_id')
+      .leftJoin('user as resp_com', 'resp_com.id', 'vod.com_id')
       .where('invoice.date', '>=', params.start)
       .where('invoice.date', '<=', params.end)
       .where((query) => {
@@ -779,6 +783,8 @@ class Invoices {
       { header: 'Total HT EUR', key: 'total_ht_eur' },
       { header: 'Tax EUR', key: 'tax_eur' },
       { header: 'Total EUR', key: 'total_eur' },
+      { header: 'Resp Prod', key: 'resp_prod' },
+      { header: 'Resp Com', key: 'resp_com' },
       { header: 'Payment ID', key: 'payment_id' },
       { header: 'Transaction ID', key: 'transaction_id' },
       { header: 'Comment', key: 'comment', width: 40 }
