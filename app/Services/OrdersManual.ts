@@ -158,27 +158,6 @@ class OrdersManual {
     const products = {}
 
     let items = [...params.items]
-    const missingItems = params.items
-      .filter((i) => !i.stock || i.quantity > i.stock)
-      .map((i) => {
-        return {
-          barcode: i.barcode,
-          quantity: i.quantity - (i.stock || 0),
-          stock: i.stock
-        }
-      })
-
-    if (
-      params.missing_items === 'another_order_with_items' ||
-      params.missing_items === 'only_available'
-    ) {
-      for (const i in items) {
-        items[i].quantity = items[i].stock
-      }
-      items = items.filter((i) => i.quantity > 0)
-    } else if (params.missing_items === 'without_items') {
-      items = items.filter((i) => i.quantity <= i.stock)
-    }
 
     if (!item.date_export) {
       const errors = {}
@@ -196,13 +175,9 @@ class OrdersManual {
               'product.hs_code',
               'product.country_id',
               'product.more',
-              'product.type',
-              'stock.id as stock_id',
-              'stock.quantity'
+              'product.type'
             )
             .where('barcode', item.barcode)
-            .leftJoin('stock', 'stock.product_id', 'product.id')
-            .where('stock.type', params.transporter)
             .first()
 
           if (!product) {
@@ -210,31 +185,6 @@ class OrdersManual {
             return
           }
           products[item.barcode] = product
-          if (params.transporter === 'whiplash' || params.transporter === 'whiplash_uk') {
-            const items: any = await Whiplash.api(`/items/sku/${item.barcode}`)
-            if (items.length === 0) {
-              errors[item.barcode] = 'No whiplash'
-              return
-            }
-            const warehouses: any = await Whiplash.api(`items/${items[0].id}/warehouse_quantities`)
-            const qty = warehouses.find(
-              (w) => w.id === (params.transporter === 'whiplash' ? 66 : 3)
-            )?.quantity
-            if (!qty || qty < item.quantity) {
-              errors[item.barcode] = 'No stock whiplash'
-              return
-            }
-          } else if (params.transporter === 'daudin' && !product.ekan_id) {
-            const it = await Elogik.getItem({ barcode: item.barcode })
-            if (!it) {
-              errors[item.barcode] = 'No elogik'
-              return
-            }
-            if (it.stock < item.quantity) {
-              errors[item.barcode] = 'No stock elogik'
-              return
-            }
-          }
         })
       }
       await Promise.all(
@@ -246,6 +196,32 @@ class OrdersManual {
       if (Object.keys(errors).length > 0) {
         return { errors: errors }
       }
+    }
+
+    const missingItems = params.items
+      .filter((i) => !i.stock || i.quantity > i.stock)
+      .map((i) => {
+        i.stock = i.stock < 0 ? 0 : i.stock || 0
+        return {
+          ...i,
+          quantity: i.quantity - i.stock,
+          stock: i.stock
+        }
+      })
+
+    if (
+      params.missing_items === 'another_order_with_items' ||
+      params.missing_items === 'only_available'
+    ) {
+      for (const i in items) {
+        if (items[i].stock < items[i].quantity) {
+          items[i].stock = items[i].stock < 0 ? 0 : items[i].stock || 0
+          items[i].quantity = items[i].stock
+        }
+      }
+      items = items.filter((i) => i.quantity > 0)
+    } else if (params.missing_items === 'without_items') {
+      items = items.filter((i) => i.quantity <= i.stock)
     }
 
     item.type = params.type
@@ -340,6 +316,7 @@ class OrdersManual {
               created_at: item.created_at,
               email: item.email,
               items: items.map((b) => {
+                console.log(b)
                 return {
                   barcode: b.barcode,
                   product: products[b.barcode].id,
