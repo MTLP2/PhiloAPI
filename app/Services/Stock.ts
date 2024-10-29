@@ -211,20 +211,19 @@ class Stock {
       .whereNotNull('barcode')
       .all()
 
-    const parentIds = {}
+    const parentIds = products.reduce((acc, product) => {
+      if (product.parent_id) {
+        acc[product.parent_id] = true
+      }
+      return acc
+    }, {})
 
-    await Promise.all(
-      products.map((product) => {
-        if (product.parent_id) {
-          parentIds[product.parent_id] = true
-        }
-        return Promise.all([
-          Whiplash.syncStocks({ productIds: products.map((p) => p.id) }),
-          BigBlue.syncStocks({ productIds: products.map((p) => p.id) }),
-          Elogik.syncStocks({ barcode: product.barcode })
-        ])
-      })
-    )
+    console.log(parentIds)
+
+    await Promise.all([
+      Whiplash.syncStocks({ productIds: products.map((p) => p.id) }),
+      BigBlue.syncStocks({ productIds: products.map((p) => p.id) })
+    ])
 
     if (Object.keys(parentIds).length) {
       await Stock.setStockParents({ ids: Object.keys(parentIds).map((p) => +p) })

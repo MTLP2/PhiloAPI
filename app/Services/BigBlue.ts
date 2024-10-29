@@ -123,10 +123,6 @@ class BigBlue {
   }
 
   static syncStocks = async (params: { productIds?: number[] } = {}) => {
-    let product
-    if (params?.productIds) {
-      product = await DB('product').whereIn('id', params.productIds).first()
-    }
     const listProducts = await DB('product')
       .select('product.id', 'product.bigblue_id', 'stock.quantity as stock')
       .whereNotNull('bigblue_id')
@@ -135,6 +131,11 @@ class BigBlue {
           .on('stock.product_id', '=', 'product.id')
           .andOn('stock.type', '=', DB.raw("'bigblue'"))
           .andOn('stock.is_preorder', '=', DB.raw("'false'"))
+      })
+      .where((query) => {
+        if (params?.productIds) {
+          query.whereIn('product.id', params.productIds)
+        }
       })
       .all()
 
@@ -156,11 +157,14 @@ class BigBlue {
       const res: any = await this.api('ListInventories', {
         method: 'POST',
         params: {
-          product: product ? product.bigblue_id : '',
+          product: listProducts.length === 1 ? listProducts[0].bigblue_id : '',
           page_size: 500,
           page_token: pageToken
         }
       })
+      if (!res.inventories) {
+        break
+      }
       inventories.push(...res.inventories)
       if (res.next_page_token) {
         pageToken = res.next_page_token
