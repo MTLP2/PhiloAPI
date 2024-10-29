@@ -1438,8 +1438,8 @@ class Mockup {
       x: 84,
       y: yDraw,
       opacity: 1,
-      width: 1407,
-      height: 1407
+      width: 1424,
+      height: 1424
     })
 
     await this.drawImage({
