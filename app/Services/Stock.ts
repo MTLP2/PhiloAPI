@@ -218,8 +218,6 @@ class Stock {
       return acc
     }, {})
 
-    console.log(parentIds)
-
     await Promise.all([
       Whiplash.syncStocks({ productIds: products.map((p) => p.id) }),
       BigBlue.syncStocks({ productIds: products.map((p) => p.id) })
@@ -331,6 +329,11 @@ class Stock {
       await DB('vod').where('project_id', p).update({
         stock: projects[p]
       })
+    }
+
+    const parents = listProducts.map((p) => +p.parent_id).filter((p) => p !== 0)
+    if (parents.length > 0) {
+      await Stock.setStockParents({ ids: parents })
     }
 
     return projects
@@ -450,8 +453,6 @@ class Stock {
     stock.updated_at = Utils.date()
     await stock.save()
 
-    Stock.setStockProject({ productIds: [params.product_id] })
-
     const filter = (item) => {
       return {
         quantity: item.quantity,
@@ -461,6 +462,14 @@ class Stock {
     }
 
     if (JSON.stringify(filter(old)) !== JSON.stringify(filter(stock))) {
+      if (params.product_id) {
+        const product = await DB('product').where('id', params.product_id).first()
+        if (product.parent_id) {
+          Stock.setStockParents({ ids: [product.parent_id] })
+        }
+      }
+      Stock.setStockProject({ productIds: [params.product_id] })
+
       const data = {
         old: filter(old),
         new: filter(stock)
