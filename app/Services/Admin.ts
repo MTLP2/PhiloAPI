@@ -4626,13 +4626,13 @@ class Admin {
 
       let currency = 'EUR'
 
-      if (params.lang === 'FR') {
+      if (params.lang.toLocaleUpperCase() === 'FR') {
         pp.price = `${projects[p].prices.EUR} EUR`
         currency = 'EUR'
-      } else if (params.lang === 'UK') {
+      } else if (params.lang.toLocaleUpperCase() === 'UK') {
         pp.price = `${projects[p].prices.GBP} GBP`
         currency = 'GBP'
-      } else if (params.lang === 'US') {
+      } else if (params.lang.toLocaleUpperCase() === 'US') {
         pp.price = `${projects[p].prices.USD} USD`
         currency = 'USD'
       }
