@@ -151,6 +151,8 @@ class App {
         await Charts.uploadChartsGfk()
         // await Elogik.syncBoxes()
         await Cio.syncNewsletterNoAccount()
+      } else if (hour === 6) {
+        await Charts.uploadDigitalCharts()
       } else if (hour === 7) {
         await App.check5DaysLeftProjects()
         await App.checkFinishedProjects()

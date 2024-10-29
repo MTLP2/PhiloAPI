@@ -92,6 +92,7 @@ class Charts {
     })
   }
 
+  /**
   // Get Luminate Charts (US & CA shipped only)
   static async getLuminateCharts(countryId: 'CA' | 'US') {
     // Local helpers
@@ -216,15 +217,23 @@ class Charts {
 
     return text
   }
+  **/
 
   // Get Luminate Charts (US & CA shipped only)
-  static async getLuminateDigitalCharts(countryId: 'CA' | 'US') {
+  static async getLuminateCharts(params: {
+    country_id: 'CA' | 'US'
+    digital: boolean
+    date?: string
+    start?: string
+    end?: string
+  }) {
     const date = moment()
     const orders = await Charts.getOrders({
-      country_id: countryId,
-      digital: true,
-      // date: moment(date).subtract(1, 'days').format('YYYY-MM-DD')
-      date: moment(date).format('YYYY-MM-DD')
+      country_id: params.country_id,
+      digital: params.digital,
+      date_start: params.start,
+      date_end: params.end,
+      date: params.date
     })
 
     let totalQuantity = 0
@@ -232,7 +241,7 @@ class Charts {
     // Record Number (92)
     let text = '92'
     // Chain Number (4030 US || C400 CA)
-    text += countryId === 'US' ? '4030' : 'C400'
+    text += params.country_id === 'US' ? '4030' : 'C400'
     // Account Number (01864)
     text += '01864'
     // Date (YYMMDD)
@@ -265,6 +274,38 @@ class Charts {
     text += ' ' + totalQuantity.toString()
 
     return text
+  }
+
+  static async uploadDigitalCharts() {
+    const us = await Charts.getLuminateCharts({
+      country_id: 'US',
+      date: moment().format('YYYY-MM-DD'),
+      digital: true
+    })
+
+    let client = new SftpClient()
+    let config = {
+      host: 'sftp.mrc-data.com',
+      port: 22,
+      username: '40301864',
+      password: 'QC9cAVEmKL52iKCb'
+    }
+
+    client
+      .connect(config)
+      .then(() => {
+        console.info('connected to charts')
+        client.put(Buffer.from(us), '40302042.txt')
+
+        setTimeout(() => {
+          console.info('close connection to charts')
+          client.end()
+        }, 20000)
+      })
+      // .finally(() => client.end())
+      .catch((err) => {
+        console.error(err.message)
+      })
   }
 
   static async getChartsGfk(params: { date: string; country_id: string }) {
@@ -452,8 +493,21 @@ class Charts {
   }
 
   static async uploadCharts() {
-    const us = await Charts.getLuminateCharts('US')
-    const ca = await Charts.getLuminateCharts('CA')
+    const start = moment().subtract(1, 'days').format('YYYY-MM-DD')
+    const end = moment().format('YYYY-MM-DD 23:59:59')
+
+    const us = await Charts.getLuminateCharts({
+      country_id: 'US',
+      digital: false,
+      start: start,
+      end: end
+    })
+    const ca = await Charts.getLuminateCharts({
+      country_id: 'CA',
+      digital: false,
+      start: start,
+      end: end
+    })
 
     let client = new SftpClient()
     let config = {
