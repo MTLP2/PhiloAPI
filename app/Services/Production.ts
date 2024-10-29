@@ -1692,17 +1692,6 @@ class Production {
       })
     }
 
-    // Nely
-    if (params.type === 'production_step_changed') {
-      await Notification.add({
-        type: params.type,
-        user_id: 50273,
-        data: params.data,
-        project_id: prod.project_id,
-        date: Utils.date()
-      })
-    }
-
     if (params.artist && prod.notif) {
       await Notification.add({
         type: params.type,
