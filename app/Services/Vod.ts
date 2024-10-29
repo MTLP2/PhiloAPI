@@ -985,9 +985,21 @@ class Vod {
       .all()
 
     for (const vod of vodToEnd) {
-      await DB('vod').where('id', vod.id).update({
-        step: 'successful'
+      vod.historic = JSON.parse(vod.historic || '[]')
+      vod.historic.push({
+        date: Utils.date(),
+        type: 'step',
+        old: vod.step,
+        new: 'successful',
+        user_id: 'api',
+        comment: 'date_end'
       })
+      await DB('vod')
+        .where('id', vod.id)
+        .update({
+          historic: JSON.stringify(vod.historic),
+          step: 'successful'
+        })
     }
 
     return { success: true }
