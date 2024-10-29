@@ -391,7 +391,11 @@
   @if(from.bank)
   <p>
     <strong>{{ t('invoice.bank') }}:</strong> Société Générale<br />
-    <strong>IBAN:</strong> FR76 3000 3018 8300 0206 6940 824<br />
+    @if(currency === '$')
+      <strong>IBAN:</strong> FR76 3000 3018 7000 0207 3025 926<br />
+    @else
+      <strong>IBAN:</strong> FR76 3000 3018 8300 0206 6940 824<br />
+    @endif
     <strong>Code BIC/SWIFT:</strong> SOGEFRPP<br />
     <strong>Siret:</strong> 813 648 714 00018<br />
     SAS Diggers Factory<br />
