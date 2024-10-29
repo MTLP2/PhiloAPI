@@ -803,6 +803,24 @@ class Stock {
     return stocks
   }
 
+  static async getErrors() {
+    return Utils.arrayToXlsx([
+      {
+        worksheetName: '',
+        columns: [
+          { header: 'Project ID', key: 'id', width: 10 },
+          { header: 'Artist', key: 'artist_name', width: 30 },
+          { header: 'Project', key: 'artist_name', width: 30 },
+          { header: 'Status', key: 'status', width: 15 },
+          { header: 'BigBlue', key: 'stock_bigblue', width: 10 },
+          { header: 'Whiplash', key: 'stock_whiplash', width: 10 },
+          { header: 'WhiplashUk', key: 'stock_whiplash_uk', width: 10 }
+        ],
+        data: []
+      }
+    ])
+  }
+
   static async exportStocksPrices(params: { end: string }) {
     let refs = await DB('product')
       .select(
