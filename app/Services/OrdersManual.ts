@@ -35,18 +35,24 @@ class OrdersManual {
     }
 
     for (const i in filters) {
-      if (filters[i] && filters[i].name === 'customer') {
-        query.whereRaw(`concat(firstname, ' ', lastname) like '%${filters[i].value}%'`)
+      const filter = filters[i]
+      filter.value = decodeURIComponent(filters[i].value)
+      if (filter && filter.name === 'customer') {
+        query.whereRaw(`concat(firstname, ' ', lastname) like '%${filter.value}%'`)
         filters.splice(i, 1)
         filters = JSON.stringify(filters)
       }
-      if (filters[i].name === 'product') {
+      if (filter.name === 'product') {
         query.whereExists(
           DB('order_manual_item')
             .select('product.id')
             .whereRaw('order_manual_item.order_manual_id = order_manual.id')
             .join('product', 'product.id', 'order_manual_item.product_id')
-            .whereRaw(`product.name like '%${filters[i].value}%'`)
+            .where((query) => {
+              query
+                .whereRaw(`product.name like '%${filter.value}%'`)
+                .orWhere('product.barcode', 'like', `%${filter.value}%`)
+            })
             .query()
         )
         filters.splice(i, 1)
