@@ -4626,6 +4626,9 @@ class Admin {
 
       let currency = 'EUR'
 
+      if (!params.lang) {
+        params.lang = 'FR'
+      }
       if (params.lang.toLocaleUpperCase() === 'FR') {
         pp.price = `${projects[p].prices.EUR} EUR`
         currency = 'EUR'
