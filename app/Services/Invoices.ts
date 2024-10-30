@@ -1151,7 +1151,7 @@ class Invoices {
 
     const first = await DB('payment')
       .select('*')
-      .join('invoice', 'invoice.id', 'invoice_id')
+      .join('invoice', 'invoice.id', 'payment.invoice_id')
       .whereNotNull('email')
       .where('payment.status', 'unpaid')
       .whereRaw('DATE_ADD(payment.date, INTERVAL (payment.payment_days + 7) DAY) < NOW()')
@@ -1159,7 +1159,7 @@ class Invoices {
         query
           .from('notification')
           .where('type', 'like', 'invoice_reminder%')
-          .whereRaw('invoice_id = invoice.id')
+          .whereRaw('payment.invoice_id = invoice.id')
       )
       .all()
 
@@ -1173,20 +1173,20 @@ class Invoices {
 
     const second = await DB('payment')
       .select('*')
-      .leftJoin('invoice', 'invoice.id', 'invoice_id')
+      .leftJoin('invoice', 'invoice.id', 'payment.invoice_id')
       .whereNotNull('email')
       .where('payment.status', 'unpaid')
       .whereExists((query) =>
         query
           .from('notification')
           .where('type', 'like', 'invoice_reminder%')
-          .whereRaw('invoice_id = invoice.id')
+          .whereRaw('payment.invoice_id = invoice.id')
       )
       .whereNotExists((query) =>
         query
           .from('notification')
           .where('type', 'like', 'invoice_reminder%')
-          .whereRaw('invoice_id = invoice.id')
+          .whereRaw('payment.invoice_id = invoice.id')
           .whereRaw('DATE_ADD(payment.date, INTERVAL 7 DAY) > NOW()')
       )
       .whereRaw('DATE_ADD(payment.date, INTERVAL (payment.payment_days + 7) DAY) < NOW()')
