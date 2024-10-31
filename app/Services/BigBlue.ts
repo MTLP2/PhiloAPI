@@ -252,7 +252,7 @@ class BigBlue {
       const idx = orders.findIndex((o: any) => o.id === item.order_shop_id)
       orders[idx].items = orders[idx].items ? [...orders[idx].items, item] : [item]
       if (!item.barcode) {
-        throw new Error('no_barcode')
+        return { error: 'no_barcode' }
       }
     }
 
@@ -344,7 +344,7 @@ class BigBlue {
 
   static syncOrders = async (ids: number[]) => {
     const orders = await DB()
-      .select('customer.*', 'os.*', 'user.email')
+      .select('customer.*', 'customer.email as customer_email', 'os.*', 'user.email')
       .from('order_shop as os')
       .join('customer', 'customer.id', 'os.customer_id')
       .join('user', 'user.id', 'os.user_id')
@@ -390,7 +390,7 @@ class BigBlue {
       const idx = orders.findIndex((o: any) => o.id === item.order_shop_id)
       orders[idx].items = orders[idx].items ? [...orders[idx].items, item] : [item]
       if (!item.barcode) {
-        throw new Error('no_barcode')
+        return { error: 'no_barcode' }
       }
     }
 
@@ -471,7 +471,7 @@ class BigBlue {
             last_name: order.lastname,
             company: order.name,
             phone: order.phone,
-            email: order.email,
+            email: order.customer_email || order.email,
             line1: address[0],
             line2: address2,
             city: order.city,
@@ -494,6 +494,7 @@ class BigBlue {
         }
       }
 
+      console.log(data)
       let res: any = await this.api('CreateOrder', {
         method: 'POST',
         params: data

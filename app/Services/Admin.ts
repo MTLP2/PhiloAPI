@@ -1829,6 +1829,7 @@ class Admin {
       'c.city',
       'c.state',
       'c.phone',
+      'c.email as customer_email',
       DB.raw("CONCAT(c.firstname, ' ', c.lastname) AS user_infos")
     ]
     const orders = DB('order_shop as os')

@@ -107,7 +107,7 @@ class Whiplash {
       shipping_country: customer.country_id,
       shipping_zip: customer.zip_code,
       shipping_phone: customer.phone,
-      email: shop.email,
+      email: customer.email || shop.email,
       shop_shipping_method_text: Whiplash.getShippingMethod(shop),
       shop_warehouse_id: shop.transporter === 'whiplash_uk' ? 3 : 66,
       order_items: []
@@ -155,11 +155,9 @@ class Whiplash {
   }
 
   static findItem = (sku) => {
-    /**
     if (process.env.NODE_ENV !== 'production') {
       sku = 'TEST'
     }
-    **/
     return Whiplash.api(`/items/sku/${sku}`).then((res: any[]) => {
       if (!res || res.length === 0) {
         return { error: `not_found_${sku}` }
