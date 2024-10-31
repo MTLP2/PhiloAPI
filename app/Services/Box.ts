@@ -1248,6 +1248,9 @@ class Box {
 
       barcodes.push('BOXDIGGERSV2')
 
+      // Flyers Lyon Béton Box Vinyle
+      barcodes.push('3760396028442')
+
       if (
         !boxDispatchs[box.id] &&
         ['3_months', '6_months', '12_months'].includes(box.periodicity)
@@ -2484,10 +2487,9 @@ class Box {
     await Box.checkStock(params.month)
 
     barcodes.push('BOXDIGGERSV2')
-    barcodes.push('3760396024680')
-    if (box.dispatchs === 0 && ['3_months', '6_months', '12_months'].includes(box.periodicity)) {
-      barcodes.push('TOTEBAGBLANC')
-    }
+
+    // Flyers Lyon Béton Box Vinyle
+    barcodes.push('3760396028442')
 
     const myGoodies = await Box.getMyGoodie(box, goodies, dispatchs)
     barcodes.push(...myGoodies.map((g: any) => g.barcode.split(',')))
