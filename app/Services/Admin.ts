@@ -4610,9 +4610,7 @@ class Admin {
 
       pp.com = pp.com ? JSON.parse(pp.com) : {}
 
-      pp.stock = pp.is_shop
-        ? stocks[pp.product_id]
-        : pp.goal - pp.count - pp.count_distrib - pp.count_other
+      pp.stock = pp.is_shop ? stocks[pp.product_id] : 100
 
       pp.styles = pp.styles
         .split(',')
