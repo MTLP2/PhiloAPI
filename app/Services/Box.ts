@@ -16,6 +16,7 @@ import Payments from './Payments'
 import config from 'Config/index'
 import View from '@ioc:Adonis/Core/View'
 import I18n from '@ioc:Adonis/Addons/I18n'
+import BigBlue from 'App/Services/BigBlue'
 import Env from '@ioc:Adonis/Core/Env'
 const stripe = require('stripe')(config.stripe.client_secret)
 const soap = require('soap')
@@ -306,7 +307,7 @@ class Box {
       .join('project_product', 'project_product.project_id', 'p.id')
       .join('product', 'product.id', 'project_product.product_id')
       .join('stock', 'stock.product_id', 'product.id')
-      .where('stock.type', 'daudin')
+      .where('stock.type', 'bigblue')
       .where('is_shop', true)
       .where('stock.quantity', '>', 0)
       .where('is_box', true)
@@ -992,7 +993,7 @@ class Box {
         console.info('vod =>', bb[b], b)
         Stock.save({
           product_id: vod.product_id,
-          type: 'daudin',
+          type: 'bigblue',
           quantity: +bb[b],
           comment: 'boxes'
         })
@@ -1094,7 +1095,7 @@ class Box {
       JOIN stock ON stock.product_id = project_product.product_id
       JOIN vod ON vod.project_id = box_month.project_id
       WHERE DATE_FORMAT(date, "%Y-%m") = DATE_FORMAT(NOW(), "%Y-%m")
-        AND stock.type = 'daudin'
+        AND stock.type = 'bigblue'
     `)
     const stocks = {}
     const selected = {}
@@ -1118,7 +1119,7 @@ class Box {
       FROM vod JOIN project ON project.id = vod.project_id
         JOIN project_product ON project_product.project_id = project.id
         JOIN stock ON stock.product_id = project_product.product_id
-        AND stock.type = 'daudin'
+        AND stock.type = 'bigblue'
       WHERE vod.is_box = 1
     `)
     for (const p in selections) {
@@ -1322,7 +1323,7 @@ class Box {
 
       Stock.save({
         product_id: product.product_id,
-        type: 'daudin',
+        type: 'bigblue',
         quantity: -selected[s],
         diff: true,
         comment: 'boxes'
@@ -1777,7 +1778,7 @@ class Box {
           .join('project_product as pp', 'pp.project_id', 'vod.project_id')
           .join('product', 'product.id', 'pp.product_id')
           .join('stock', 'stock.product_id', 'product.id')
-          .where('stock.type', 'daudin')
+          .where('stock.type', 'bigblue')
           .first()
 
         if (!params.force_quantity && vod && vod.stock < 1) {
@@ -1785,7 +1786,7 @@ class Box {
         } else if (vod) {
           Stock.save({
             product_id: vod.product_id,
-            type: 'daudin',
+            type: 'bigblue',
             quantity: -1,
             diff: true,
             comment: 'box'
@@ -2116,7 +2117,7 @@ class Box {
       .join('vod as v', 'v.project_id', 'p.id')
       .join('project_product', 'project_product.project_id', 'v.project_id')
       .join('stock', 'stock.product_id', 'project_product.product_id')
-      .where('stock.type', 'daudin')
+      .where('stock.type', 'bigblue')
       .where('stock.is_preorder', false)
       .orderBy('box_month.date', 'desc')
 
@@ -2194,7 +2195,7 @@ class Box {
       .join('project as p', 'p.id', 'project_id')
       .join('project_product', 'project_product.project_id', 'p.id')
       .join('stock', 'project_product.product_id', 'stock.product_id')
-      .where('stock.type', 'daudin')
+      .where('stock.type', 'bigblue')
       .where('is_shop', true)
       .where('stock.quantity', '>', 0)
       .where('is_box', true)
@@ -2380,7 +2381,7 @@ class Box {
           .join('product', 'project_product.product_id', 'product.id')
           .join('stock', 'stock.product_id', 'product.id')
           .where('vod.project_id', p)
-          .where('stock.type', 'daudin')
+          .where('stock.type', 'bigblue')
           .first()
 
         if (!project && !vod.is_box) {
@@ -2425,7 +2426,7 @@ class Box {
           })
         await Stock.save({
           product_id: products.find((p) => p.project_id === a).product_id,
-          type: 'daudin',
+          type: 'bigblue',
           quantity: -1,
           diff: true,
           comment: 'box'
@@ -2441,7 +2442,7 @@ class Box {
           })
         await Stock.save({
           product_id: products.find((p) => p.project_id === s).product_id,
-          type: 'daudin',
+          type: 'bigblue',
           quantity: +1,
           diff: true,
           comment: 'box'
@@ -3491,6 +3492,57 @@ class Box {
         res[date] += barcodes[barcode] || 0
       }
     }
+    return res
+  }
+
+  static syncBoxes = async () => {
+    const res: any[] = []
+
+    const boxes = await DB('box_dispatch')
+      .select(
+        'customer.*',
+        'box.id as box_id',
+        'box.user_id',
+        'box_dispatch.id',
+        'box_dispatch.created_at',
+        'box.shipping_type',
+        'box.address_pickup',
+        'box.price as sub_total',
+        'user.email',
+        'barcodes'
+      )
+      .join('box', 'box.id', 'box_dispatch.box_id')
+      .join('customer', 'box.customer_id', 'customer.id')
+      .join('user', 'box.user_id', 'user.id')
+      .where('is_daudin', true)
+      .whereNull('logistician_id')
+      .whereNull('date_export')
+      .where('box_dispatch.step', 'confirmed')
+      .whereNull('box_dispatch.date_export')
+      .orderBy('box_dispatch.id', 'desc')
+      .all()
+
+    console.info('boxes => ', boxes.length)
+    for (const box of boxes) {
+      if (!box.firstname) {
+        continue
+      }
+
+      // Box Diggers
+      // 3760396029562
+
+      const res = await BigBlue.sync({
+        ...box,
+        id: 'B' + box.id,
+        items: box.barcodes.split(',').map((b: any) => {
+          return {
+            barcode: b,
+            quantity: 1
+          }
+        })
+      })
+    }
+
     return res
   }
 }
