@@ -486,7 +486,12 @@ class Dispatch {
         date: params.date
       })
     } else if (params.transporter === 'whiplash') {
-      res = await Whiplash.setCost(params.invoice.file, params.force)
+      res = await Whiplash.setCost({
+        file: params.invoice.file as string,
+        date: params.date,
+        invoice_number: params.invoice.name,
+        force: params.force
+      })
     }
 
     return res

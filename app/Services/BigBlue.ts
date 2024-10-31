@@ -1059,7 +1059,7 @@ class BigBlue {
           file: fileName,
           order_manual_id: order.id,
           in_statement: inStatement,
-          invoice_number: params.invoice_number.split('.')[0],
+          invoice_number: params.invoice_number,
           total: Utils.round(orders[order.logistician_id].price, 2),
           created_at: Utils.date(),
           updated_at: Utils.date()
