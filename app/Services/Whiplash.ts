@@ -110,7 +110,11 @@ class Whiplash {
       shipping_zip: customer.zip_code,
       shipping_phone: customer.phone,
       email: customer.email || shop.email,
-      shop_shipping_method_text: Whiplash.getShippingMethod(shop),
+      shop_shipping_method_text: Whiplash.getShippingMethod({
+        country_id: customer.country_id,
+        transporter: shop.transporter,
+        shipping_type: shop.shipping_type
+      }),
       shop_warehouse_id: shop.transporter === 'whiplash_uk' ? 3 : 66,
       order_items: []
     }
@@ -173,14 +177,18 @@ class Whiplash {
   }
 
   static getShippingMethod = (params: {
+    country_id: string
+    transporter: string
     shipping_type: string
   }) => {
     if (params && params.shipping_type === 'removal_pickup') {
       return 'removal_pickup'
-    } else if (params && params.shipping_type === 'no_tracking') {
-      return 'no_tracking'
     } else if (params && params.shipping_type === 'tracking') {
       return 'tracking'
+    } else if (params.country_id === 'US' && params.transporter === 'whiplash') {
+      return 'standard_us'
+    } else if (params && params.shipping_type === 'no_tracking') {
+      return 'no_tracking'
     } else {
       return 'standard'
     }
@@ -303,6 +311,8 @@ class Whiplash {
           shipping_phone: order.phone,
           email: order.customer_email || order.email,
           shop_shipping_method_text: Whiplash.getShippingMethod({
+            country_id: order.country_id,
+            transporter: params.type,
             shipping_type: order.shipping_type
           }),
           shop_warehouse_id: params.type === 'whiplash_uk' ? 3 : 66,
@@ -598,6 +608,8 @@ class Whiplash {
       csv += `"${order.zip_code}",`
       csv += `"${order.country_id}",`
       csv += `"${Whiplash.getShippingMethod({
+        country_id: order.country_id,
+        transporter: params.type,
         shipping_type: order.shipping_type
       })}",`
       csv += `"${order.phone}",`
