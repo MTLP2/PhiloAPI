@@ -4614,9 +4614,14 @@ class Admin {
       return str.replace(/[`"]/g, '＂').replace(/[\n]/g, '')
     }
 
+    let exists = {}
     for (const p in projects) {
       const pp = projects[p]
 
+      if (exists[pp.id]) {
+        continue
+      }
+      exists[pp.id] = true
       pp.com = pp.com ? JSON.parse(pp.com) : {}
 
       pp.stock = pp.is_shop ? stocks[pp.product_id] : 100
