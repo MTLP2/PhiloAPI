@@ -221,6 +221,9 @@ class Notification {
           to = Env.get('DEBUG_EMAIL')
         }
       }
+      if (!to) {
+        continue
+      }
 
       const request = new SendEmailRequest({
         from: `${params.from_name} <${params.from_address}>`,
