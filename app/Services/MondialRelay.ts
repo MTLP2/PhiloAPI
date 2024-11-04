@@ -11,28 +11,28 @@ const codeEnseigne = 'XXELOGIK'
 const privateKey = 'SKuHmWzZ'
 
 class MondialRelay {
-  static checkPickupAvailable(number: string) {
+  static checkPickupAvailable(params: { number: string; country_id: string }) {
     return new Promise((resolve) => {
-      const params = {
+      const data = {
         Enseigne: codeEnseigne,
-        Pays: 'FR',
-        NumPointRelais: number,
+        Pays: params.country_id,
+        NumPointRelais: params.number,
         NombreResultats: 30,
         Security: ''
       }
 
-      const security = Object.values(params).join('') + privateKey
-      params.Security = md5(security).toUpperCase()
+      const security = Object.values(data).join('') + privateKey
+      data.Security = md5(security).toUpperCase()
 
       const body = `<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:web="http://www.mondialrelay.fr/webservice/">
         <soap:Header/>
           <soap:Body>
             <web:WSI4_PointRelais_Recherche>
-              <web:Enseigne>${params.Enseigne}</web:Enseigne>
-              <web:Pays>${params.Pays}</web:Pays>
-              <web:NumPointRelais>${params.NumPointRelais}</web:NumPointRelais>
-              <web:NombreResultats>${params.NombreResultats}</web:NombreResultats>
-              <web:Security>${params.Security}</web:Security>
+              <web:Enseigne>${data.Enseigne}</web:Enseigne>
+              <web:Pays>${data.Pays}</web:Pays>
+              <web:NumPointRelais>${data.NumPointRelais}</web:NumPointRelais>
+              <web:NombreResultats>${data.NombreResultats}</web:NombreResultats>
+              <web:Security>${data.Security}</web:Security>
             </web:WSI4_PointRelais_Recherche>
           </soap:Body>
         </soap:Envelope>`
@@ -63,14 +63,21 @@ class MondialRelay {
     })
   }
 
-  static findPickupAround(pickup) {
+  static findPickupAround(pickup: {
+    country_id: string
+    lat?: string
+    lng?: string
+    number: string
+    city: string
+    zip_code: string
+  }) {
     return new Promise((resolve) => {
       const params: any = {
         Enseigne: codeEnseigne,
-        Pays: 'FR'
+        Pays: pickup.country_id
       }
 
-      if (pickup.lat) {
+      if (pickup.lat && pickup.lng) {
         params.Latitude = pickup.lat.replace(',', '.')
         params.Longitude = pickup.lng.replace(',', '.')
       } else {
@@ -97,6 +104,7 @@ class MondialRelay {
             </web:WSI4_PointRelais_Recherche>
           </soap:Body>
         </soap:Envelope>`
+
       request(
         {
           method: 'POST',
@@ -109,6 +117,7 @@ class MondialRelay {
         function (err, res, body) {
           const parser = new XMLParser()
           const xml = parser.parse(body)
+
           try {
             const p =
               xml['soap:Envelope']['soap:Body']['WSI4_PointRelais_RechercheResponse'][

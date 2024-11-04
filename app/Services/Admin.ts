@@ -1414,7 +1414,10 @@ class Admin {
             if (!pickup || !pickup.number) {
               continue
             }
-            const avaiblable = await MondialRelay.checkPickupAvailable(pickup.number)
+            const avaiblable = await MondialRelay.checkPickupAvailable({
+              country_id: pickup.country_id,
+              number: pickup.number
+            })
             if (!avaiblable) {
               data.type = 'my_order_pickup_must_change'
               pickupNotFound = true
@@ -1535,7 +1538,10 @@ class Admin {
       }
       if (order.shipping_type === 'pickup') {
         const pickup = JSON.parse(order.address_pickup)
-        const available = await MondialRelay.checkPickupAvailable(pickup.number)
+        const available = await MondialRelay.checkPickupAvailable({
+          country_id: pickup.country_id,
+          number: pickup.number
+        })
 
         if (!available) {
           const around = await MondialRelay.findPickupAround(pickup)
@@ -1635,7 +1641,10 @@ class Admin {
       if (qty + order.quantity <= params.quantity) {
         if (order.shipping_type === 'pickup') {
           const pickup = JSON.parse(order.address_pickup)
-          const available = await MondialRelay.checkPickupAvailable(pickup.number)
+          const available = await MondialRelay.checkPickupAvailable({
+            country_id: pickup.country_id,
+            number: pickup.number
+          })
 
           if (!available) {
             const around = await MondialRelay.findPickupAround(pickup)
@@ -5306,7 +5315,10 @@ class Admin {
         if (!pickup || !pickup.number) {
           continue
         }
-        const available = await MondialRelay.checkPickupAvailable(pickup.number)
+        const available = await MondialRelay.checkPickupAvailable({
+          country_id: pickup.country_id,
+          number: pickup.number
+        })
         if (!available) {
           data.type = 'my_order_pickup_must_change'
           pickupNotFound = true

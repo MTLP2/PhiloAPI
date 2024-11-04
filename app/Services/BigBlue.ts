@@ -282,10 +282,12 @@ class BigBlue {
           })
           continue
         }
-        const available = await MondialRelay.checkPickupAvailable(pickup.number)
+        const available = await MondialRelay.checkPickupAvailable({
+          country_id: pickup.country_id,
+          number: pickup.number
+        })
         if (!available) {
           const around = await MondialRelay.findPickupAround(pickup)
-
           if (around) {
             order.address_pickup = JSON.stringify(around)
             await DB('order_shop')

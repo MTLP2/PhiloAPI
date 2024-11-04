@@ -784,7 +784,10 @@ class Production {
           let pickupNotFound = false
           if (params.type === 'check_address' && order.shipping_type === 'pickup') {
             const pickup = JSON.parse(order.address_pickup)
-            const avaiblable = await MondialRelay.checkPickupAvailable(pickup.number)
+            const avaiblable = await MondialRelay.checkPickupAvailable({
+              country_id: pickup.country_id,
+              number: pickup.number
+            })
             if (!avaiblable) {
               data.type = 'my_order_pickup_must_change'
               pickupNotFound = true
