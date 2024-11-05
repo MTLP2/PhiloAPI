@@ -3496,8 +3496,6 @@ class Box {
   }
 
   static syncBoxes = async () => {
-    const res: any[] = []
-
     const boxes = await DB('box_dispatch')
       .select(
         'customer.*',
@@ -3519,30 +3517,119 @@ class Box {
       .whereNull('date_export')
       .where('box_dispatch.step', 'confirmed')
       .whereNull('box_dispatch.date_export')
-      .orderBy('box_dispatch.id', 'desc')
+      .orderBy('box_dispatch.id', 'asc')
+      .where('box_dispatch.created_at', '>', '2024-08-01')
       .all()
 
-    console.info('boxes => ', boxes.length)
+    console.log('boxes => ', boxes.length)
+
+    const convert = (barcode: string) => {
+      switch (barcode) {
+        case 'TOTEBAGBLANC':
+          return '3760396029586'
+        case 'BOXDIGGERSV2':
+          return '3760396029562'
+        case 'ADAPTATEUR45T':
+          return '3760155850475'
+        case 'LIVRETENTRETIEN':
+          return '3760396029647'
+        case 'LIVRETDIGGERFR':
+          return '3760396029654'
+        case 'LIVRETDIGGEREN':
+          return '3760396029661'
+        case 'LIVRETPLATINEFR':
+        case 'LIVRETCELLULEFR':
+        case 'LIVRETBEATLESFR':
+          return '3760396029609'
+        case 'LIVRETPLATINEEN':
+          return '3760396029630'
+        case 'LIVRETEQUIPLATINEEN':
+          return '3760396029630'
+        case 'LIVRETCELLULEEN':
+          return '3760396029623'
+        case '0803341553859':
+          return '803341553859'
+        case '0602438261345':
+          return '602438261345'
+        case '760300314807':
+          return '3760300314807'
+        case 'STICKERSDIGGERS':
+          return '3760396029593'
+        case 'POCHETTESOUPLE33TX10':
+          return '3760155850222'
+        case '602445198238':
+          return '0602445567409'
+        case 'LIVRETSONFR':
+        case 'LIVRETSONEN':
+          return null
+        default:
+          return barcode
+      }
+    }
+
+    const barcodes = {}
+    for (const box of boxes) {
+      for (const barcode of box.barcodes.split(',')) {
+        const b = convert(barcode)
+        if (b) {
+          barcodes[b] = true
+        }
+      }
+    }
+
+    const products = await DB('product')
+      .select('id', 'name', 'barcode', 'whiplash_id', 'bigblue_id')
+      .whereIn('barcode', Object.keys(barcodes))
+      .whereNotNull('bigblue_id')
+      .all()
+
+    console.info('dispatchs => ', boxes.length)
+
+    const dispatchs: any[] = []
+    const errors: any[] = []
     for (const box of boxes) {
       if (!box.firstname) {
         continue
       }
 
-      // Box Diggers
-      // 3760396029562
+      let error = false
+      const items: any[] = []
+      for (const barcode of box.barcodes.split(',')) {
+        const b = convert(barcode)
+        if (!b) {
+          continue
+        }
+        const product = products.find((p) => p.barcode.toString() === b.toString())
+        if (product) {
+          items.push({
+            ...product,
+            quantity: 1
+          })
+        } else {
+          errors.push({ dispatch: box, error: `no_product ${b}` })
+          error = true
+        }
+      }
+      if (error) {
+        continue
+      }
 
-      const res = await BigBlue.sync({
+      const data = {
         ...box,
         id: 'B' + box.id,
-        items: box.barcodes.split(',').map((b: any) => {
-          return {
-            barcode: b,
-            quantity: 1
-          }
-        })
-      })
+        items: items
+      }
+      dispatchs.push(data)
     }
 
+    console.log(dispatchs.length)
+    if (errors.length > 0) {
+      console.log('errors', errors)
+      // return errors
+    }
+
+    const res = await BigBlue.sync(dispatchs)
+    console.log(res)
     return res
   }
 }

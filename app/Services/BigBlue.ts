@@ -437,7 +437,8 @@ class BigBlue {
         continue
       }
       const address = Utils.wrapText(order.address, ' ', 35)
-      const address2 = address[1] ? ` ${address[1]} ${order.address2}` : order.address2
+      let address2 = address[1] ? ` ${address[1]} ${order.address2}` : order.address2
+      address2 = address2 ? address2.substring(0, 35) : ''
 
       if (order.shipping_type === 'pickup' && (!pickup || !pickup.number)) {
         dispatchs.push({
@@ -495,8 +496,6 @@ class BigBlue {
           })
         }
       }
-
-      console.log(data)
       let res: any = await this.api('CreateOrder', {
         method: 'POST',
         params: data
@@ -532,6 +531,7 @@ class BigBlue {
         await DB('box_dispatch').where('id', order.id.substring(1)).update({
           step: 'in_preparation',
           logistician_id: res.order.id,
+          transporter: 'bigblue',
           date_export: Utils.date()
         })
       } else {
