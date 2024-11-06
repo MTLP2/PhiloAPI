@@ -251,8 +251,8 @@ class Charts {
     for (const o of orders) {
       totalQuantity += o.quantity
 
-      text += moment(o.created_at).format('YYYYMMDD') + '|'
-      text += moment(o.created_at).format('HHmmss') + '|'
+      text += moment(params.digital ? o.created_at : o.date_export).format('YYYYMMDD') + '|'
+      text += moment(params.digital ? o.created_at : o.date_export).format('HHmmss') + '|'
       text += o.oshop_id + '|'
       text += o.barcode + '|'
       text += '|' // ISRC
@@ -493,8 +493,8 @@ class Charts {
   }
 
   static async uploadCharts() {
-    const start = moment().subtract(1, 'days').format('YYYY-MM-DD')
-    const end = moment().format('YYYY-MM-DD 23:59:59')
+    const start = moment().subtract(8, 'days').format('YYYY-MM-DD')
+    const end = moment().subtract(1, 'days').format('YYYY-MM-DD 23:59:59')
 
     const us = await Charts.getLuminateCharts({
       country_id: 'US',
