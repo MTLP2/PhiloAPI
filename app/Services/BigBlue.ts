@@ -367,6 +367,7 @@ class BigBlue {
       .select(
         'product.id',
         'order_shop_id',
+        'oi.id as order_item_id',
         'oi.quantity',
         'oi.price',
         'product.bigblue_id',
@@ -390,6 +391,9 @@ class BigBlue {
 
     for (const item of items) {
       const idx = orders.findIndex((o: any) => o.id === item.order_shop_id)
+      const itemQty = items.filter((i: any) => i.order_item_id === item.order_item_id).length
+
+      item.price = Utils.round(item.price / itemQty, 2)
       orders[idx].items = orders[idx].items ? [...orders[idx].items, item] : [item]
       if (!item.barcode) {
         return { error: 'no_barcode' }
