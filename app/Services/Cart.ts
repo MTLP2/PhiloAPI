@@ -122,6 +122,10 @@ class Cart {
     cart.hasPickup = false
     cart.pickup = params.pickup
 
+    if (cart.currency === 'KRW') {
+      cart.noPaypal = true
+    }
+
     cart.total = cart.total + cart.tips
 
     cart.promo_code = params.promo_code
