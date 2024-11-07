@@ -294,6 +294,7 @@ const enum Currencies {
   GBP = 'GBP',
   AUD = 'AUD',
   PHP = 'PHP',
+  CNY = 'CNY',
   KRW = 'KRW'
 }
 

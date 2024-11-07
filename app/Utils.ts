@@ -667,6 +667,12 @@ class Utils {
         updated_at: Utils.date()
       })
     }
+    if (isFloat(data.rates.CNY)) {
+      await DB('currency').where('id', 'CNY').update({
+        value: data.rates.CNY,
+        updated_at: Utils.date()
+      })
+    }
 
     return true
   }
@@ -723,6 +729,7 @@ class Utils {
       res.PHP = res.PHP * res.EUR
       res.KRW = res.KRW * res.EUR
       res.JPY = res.JPY * res.EUR
+      res.CNY = res.CNY * res.EUR
       res[base] = 1
     }
 
@@ -735,6 +742,7 @@ class Utils {
       PHP: number
       KRW: number
       JPY: number
+      CNY: number
     }
   }
 
@@ -744,7 +752,7 @@ class Utils {
 
   static getCurrenciesApi = async (
     date = 'latest',
-    symbols = 'EUR,USD,GBP,AUD,CAD,PHP,KRW,JPY',
+    symbols = 'EUR,USD,GBP,AUD,CAD,PHP,KRW,JPY,CNY',
     base = 'EUR'
   ) => {
     return Utils.request(
@@ -1071,7 +1079,7 @@ class Utils {
             if (regroup[word]) {
               ww = regroup[word] + '.' + word
             }
-            if (['EUR', 'USD', 'GBP', 'AUD', 'CAD', 'PHP', 'KRW', 'JPY'].includes(w)) {
+            if (['EUR', 'USD', 'GBP', 'AUD', 'CAD', 'PHP', 'KRW', 'JPY', 'CNY'].includes(w)) {
               return match.replace(w, ww)
             }
             return match.replace(w, ww).toLowerCase()
@@ -1304,20 +1312,22 @@ class Utils {
       PHP: number
       KRW: number
       JPY: number
+      CNY: number
     }
     currency: Currencies
     currencies: { id: string; value: Currencies; updated_at: string }[]
   }) => {
     const curr = Utils.getCurrencies(currency, currencies)
 
-    const EUR = Math.ceil(price * curr.EUR + 0.5) - 0.01
-    const USD = Math.ceil(price * curr.USD + 0.55) - 0.01
-    const GBP = Math.ceil(price * curr.GBP + 0.45) - 0.01
-    const AUD = Math.ceil(price * curr.AUD + 0.75) - 0.01
-    const CAD = Math.ceil(price * curr.CAD + 0.75) - 0.01
-    const PHP = Math.ceil(price * curr.PHP + 50) - 1
-    const KRW = Math.ceil(Math.ceil((price * curr.KRW + 750) / 100) * 100) - 1
-    const JPY = Math.ceil(price * curr.JPY + 100) - 1
+    const EUR = Math.ceil(price * curr.EUR + 1) - 0.01
+    const USD = Math.ceil(price * curr.USD + 1) - 0.01
+    const GBP = Math.ceil(price * curr.GBP + 0.75) - 0.01
+    const AUD = Math.ceil(price * curr.AUD + 1) - 0.01
+    const CAD = Math.ceil(price * curr.CAD + 1) - 0.01
+    const PHP = Math.ceil(price * curr.PHP + 75) - 1
+    const KRW = Math.ceil(Math.ceil((price * curr.KRW + 1500) / 100) * 100) - 1
+    const JPY = Math.ceil(price * curr.JPY + 200) - 1
+    const CNY = Math.ceil(price * curr.CNY + 8) - 1
 
     return {
       EUR: currency === 'EUR' ? price : EUR,
@@ -1327,7 +1337,8 @@ class Utils {
       CAD: currency === 'CAD' ? price : CAD,
       PHP: currency === 'PHP' ? price : PHP,
       KRW: currency === 'KRW' ? price : KRW,
-      JPY: currency === 'JPY' ? price : JPY
+      JPY: currency === 'JPY' ? price : JPY,
+      CNY: currency === 'CNY' ? price : CNY
     }
   }
 

@@ -269,7 +269,8 @@ class Notification {
         CAD: '$C',
         KRW: '₩',
         PHP: '₱',
-        JPY: '¥'
+        JPY: '¥',
+        CNY: '¥'
       }
 
       params.items = `

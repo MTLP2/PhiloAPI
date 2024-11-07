@@ -189,6 +189,7 @@ const translate: (key: string, lang?: 'FR' | 'EN', payload?: string) => string |
     KRW: '₩',
     GBP: '£',
     JPY: '¥',
+    CNY: '¥',
 
     // Order -> Status / Step
     sent:

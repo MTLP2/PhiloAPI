@@ -354,6 +354,12 @@ class App {
         updated_at: Utils.date()
       })
     }
+    if (isFloat(data.CNY)) {
+      await DB('currency').where('id', 'CNY').update({
+        value: data.CNY,
+        updated_at: Utils.date()
+      })
+    }
 
     return true
   }

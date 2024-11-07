@@ -2046,6 +2046,7 @@ class Box {
       res.prices[d.type][d.periodicity].CAD = d.CAD
       res.prices[d.type][d.periodicity].KRW = d.KRW
       res.prices[d.type][d.periodicity].JPY = d.JPY
+      res.prices[d.type][d.periodicity].CNY = d.CNY
     }
 
     if (sales) {
@@ -2086,6 +2087,11 @@ class Box {
         res.prices_discount[d.type][d.periodicity].JPY = Utils.round(
           res.prices[d.type][d.periodicity].JPY -
             res.prices[d.type][d.periodicity].JPY * (sales.value / 100),
+          0
+        )
+        res.prices_discount[d.type][d.periodicity].CNY = Utils.round(
+          res.prices[d.type][d.periodicity].CNY -
+            res.prices[d.type][d.periodicity].CNY * (sales.value / 100),
           0
         )
       }

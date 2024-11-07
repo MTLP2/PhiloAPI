@@ -998,7 +998,7 @@ class BigBlue {
 
     const currencies = await Utils.getCurrenciesApi(
       params.date + '-01',
-      'EUR,USD,GBP,PHP,AUD,CAD,KRW,JPY',
+      'EUR,USD,GBP,PHP,AUD,CAD,KRW,JPY,CNY',
       'EUR'
     )
 

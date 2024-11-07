@@ -522,6 +522,9 @@ class Invoices {
       case 'JPY':
         invoice.currency = '¥'
         break
+      case 'CNY':
+        invoice.currency = '¥'
+        break
     }
     invoice.daudin = params.daudin
     if (params.incoterm) {
@@ -1291,6 +1294,14 @@ class Invoices {
           sub_total_eur: 0,
           tax_eur: 0,
           total_eur: 0
+        },
+        CNY: {
+          sub_total: 0,
+          tax: 0,
+          total: 0,
+          sub_total_eur: 0,
+          tax_eur: 0,
+          total_eur: 0
         }
       },
       paypal: {
@@ -1351,6 +1362,14 @@ class Invoices {
           total_eur: 0
         },
         JPY: {
+          sub_total: 0,
+          tax: 0,
+          total: 0,
+          sub_total_eur: 0,
+          tax_eur: 0,
+          total_eur: 0
+        },
+        CNY: {
           sub_total: 0,
           tax: 0,
           total: 0,

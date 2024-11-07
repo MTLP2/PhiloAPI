@@ -183,6 +183,8 @@ class Vod {
         vod.payback_box = 1200
       } else if (params.currency === 'JPY') {
         vod.payback_box = 500
+      } else if (params.currency === 'CNY') {
+        vod.payback_box = 500
       }
     }
     vod.currency = params.currency
