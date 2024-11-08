@@ -1770,7 +1770,7 @@ class Cart {
       currency: params.calculate.currency,
       payment_method_types:
         ['EUR', 'GBP'].includes(params.calculate.currency) && !hasBox
-          ? ['card', 'klarna']
+          ? ['card', 'klarna', 'alipay', 'wechat_pay']
           : ['card'],
       transfer_group: `{ORDER_${params.order_id}}`,
       metadata: metadata
