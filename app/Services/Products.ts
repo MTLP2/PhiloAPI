@@ -214,6 +214,8 @@ class Products {
     size?: string
     hs_code?: string
     country_id?: string
+    bigblue_id?: string
+    whiplash_id?: string
     more?: string
     color?: string
     weight?: number
@@ -246,6 +248,8 @@ class Products {
     item.country_id = params.country_id || null
     item.more = params.more || null
     item.parent_id = params.parent_id || null
+    item.bigblue_id = params.bigblue_id || null
+    item.whiplash_id = params.whiplash_id || null
     item.size = params.size || null
     item.color = params.color || null
     item.weight = params.weight || null
