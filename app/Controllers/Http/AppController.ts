@@ -83,7 +83,7 @@ class AppController {
 
   async getHome({ params }) {
     params.all = params.all !== undefined
-    if (!params.lang) {
+    if (params.lang !== 'fr') {
       params.lang = 'en'
     }
     const banners: any = Banners.getHome({ lang: params.lang })
