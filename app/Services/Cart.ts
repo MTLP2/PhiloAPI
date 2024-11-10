@@ -1762,16 +1762,24 @@ class Cart {
     }
 
     const hasBox = params.calculate.boxes && params.calculate.boxes.length > 0
+
+    const paymentMethods = ['card']
+
+    if (['EUR', 'GBP'].includes(params.calculate.currency) && !hasBox) {
+      paymentMethods.push('klarna')
+    }
+    if (params.calculate.currency === 'CNY' && !hasBox) {
+      paymentMethods.push('alipay')
+      paymentMethods.push('wechat_pay')
+    }
+
     const intent: any = {
       amount:
         params.calculate.currency === 'KRW' || params.calculate.currency === 'JPY'
           ? Math.round(params.calculate.total)
           : Math.round(params.calculate.total * 100),
       currency: params.calculate.currency,
-      payment_method_types:
-        ['EUR', 'GBP'].includes(params.calculate.currency) && !hasBox
-          ? ['card', 'klarna', 'alipay', 'wechat_pay']
-          : ['card'],
+      payment_method_types: paymentMethods,
       transfer_group: `{ORDER_${params.order_id}}`,
       metadata: metadata
     }
