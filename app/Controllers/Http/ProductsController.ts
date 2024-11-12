@@ -59,7 +59,7 @@ class ProductsController {
           hs_code: schema.string.optional(),
           parent_id: schema.number.optional(),
           bigblue_id: schema.string.optional(),
-          whiplash_id: schema.string.optional(),
+          whiplash_id: schema.number.optional(),
           size: schema.string.optional(),
           color: schema.string.optional(),
           weight: schema.number.optional()
