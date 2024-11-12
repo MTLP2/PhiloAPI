@@ -361,7 +361,10 @@ class OrdersManual {
           order_type: params.type === 'b2b' ? 'wholesale' : 'direct_to_consumer',
           incoterm: params.incoterm,
           purchase_order: params.purchase_order,
+          shop_warehouse_id: params.transporter === 'whiplash_uk' ? 3 : 66,
           shop_shipping_method_text: Whiplash.getShippingMethod({
+            transporter: params.transporter,
+            country_id: customer.country_id,
             shipping_type: params.shipping_type
           }),
           email: item.email,
