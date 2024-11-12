@@ -36,7 +36,7 @@ class ClientsController {
       schema: schema.create({
         id: schema.number.optional(),
         name: schema.string(),
-        code: schema.string(),
+        code: schema.string.optional(),
         email: schema.string(),
         country_id: schema.string(),
         addresses: schema.array.optional().members(
