@@ -782,6 +782,7 @@ class User {
         box.records[dispatch.date].date_export = dispatch.date_export
         box.records[dispatch.date].tracking_number = dispatch.tracking_number
         box.records[dispatch.date].tracking_transporter = dispatch.tracking_transporter
+        box.records[dispatch.date].tracking_link = dispatch.tracking_link
       }
 
       if (box.step === 'confirmed' && box.dispatch_left > 0) {
