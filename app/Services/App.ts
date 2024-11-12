@@ -149,8 +149,8 @@ class App {
         await Whiplash.setTrackingLinks()
       } else if (hour === 5) {
         await Charts.uploadChartsGfk()
-        // await Elogik.syncBoxes()
         await Cio.syncNewsletterNoAccount()
+        await Box.syncBoxes()
       } else if (hour === 6) {
         await Charts.uploadDigitalCharts()
       } else if (hour === 7) {
@@ -168,8 +168,6 @@ class App {
         await Invoices.reminder()
         await Invoices.checkIncorrectInvoices()
         await BigBlue.setTrackingLinks()
-      } else if (hour === 14) {
-        // await Elogik.checkBlockedOrders()
       } else if (hour === 16) {
         if (moment().format('E') === '4') {
           await Charts.uploadChartsAria()
@@ -177,9 +175,9 @@ class App {
         if (moment().format('E') === '2') {
           await Charts.uploadCharts()
         }
+        await Box.syncBoxes()
       }
 
-      await Elogik.setTrackingLinks()
       await Storage.cleanTmp('storage')
 
       cron.status = 'complete'
