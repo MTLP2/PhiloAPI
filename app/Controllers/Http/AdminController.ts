@@ -193,6 +193,7 @@ class AdminController {
     project.hide = params.hide.join(',')
     project.nb_vinyl = params.nb_vinyl
     project.color = params.color
+    project.dark = params.dark
     project.name = params.name ?? project.name
     project.artist_name = params.artist_name ?? project.artist_name
 

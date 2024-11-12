@@ -880,6 +880,7 @@ class Project {
         'partner_distribution',
         'quantity_distribution',
         'v.currency',
+        'p.dark',
         'p.picture',
         'p.video',
         'p.banner',
