@@ -583,22 +583,73 @@ class BigBlue {
     let updated = 0
     for (const order of orders) {
       if (order.tracking_number && order.external_id) {
-        const orderShop = await DB('order_shop').where('id', order.external_id).first()
-        if (!orderShop || orderShop.tracking_link) {
-          continue
-        }
-        orderShop.step = order.status.code === 'DELIVERED' ? 'delivered' : 'sent'
-        orderShop.tracking_number = order.tracking_number
-        orderShop.tracking_link = order.tracking_url
-        await orderShop.save()
+        const step = order.status.code === 'DELIVERED' ? 'delivered' : 'sent'
+        if (order.external_id[0] === 'B') {
+          const boxDispatch = await DB('box_dispatch')
+            .where('id', order.external_id.slice(1))
+            .where('step', '!=', 'delivered')
+            .first()
+          if (!boxDispatch) {
+            continue
+          }
+          if (!boxDispatch.tracking_link) {
+            updated++
+          }
+          boxDispatch.step = step
+          boxDispatch.tracking_number = order.tracking_number
+          boxDispatch.tracking_link = order.tracking_url
+          await boxDispatch.save()
 
-        updated++
-        await Notification.add({
-          type: 'my_order_sent',
-          user_id: orderShop.user_id,
-          order_id: orderShop.order_id,
-          order_shop_id: orderShop.id
-        })
+          await Notification.add({
+            type: 'my_box_sent',
+            user_id: boxDispatch.user_id,
+            box_id: boxDispatch.box_id,
+            box_dispatch_id: boxDispatch.id
+          })
+        } else if (order.external_id[0] === 'M') {
+          const manual = await DB('order_manual')
+            .where('id', order.external_id.slice(1))
+            .where('step', '!=', 'delivered')
+            .first()
+          if (!manual) {
+            continue
+          }
+          if (!manual.tracking_link) {
+            updated++
+          }
+          manual.step = step
+          manual.tracking_number = order.tracking_number
+          manual.tracking_link = order.tracking_url
+          await manual.save()
+
+          await Notification.add({
+            type: 'my_order_sent',
+            user_id: order.user_id,
+            order_manual_id: order.id
+          })
+        } else {
+          const orderShop = await DB('order_shop')
+            .where('id', order.external_id)
+            .where('step', '!=', 'delivered')
+            .first()
+          if (!orderShop) {
+            continue
+          }
+          if (!orderShop.tracking_link) {
+            updated++
+          }
+          orderShop.step = step
+          orderShop.tracking_number = order.tracking_number
+          orderShop.tracking_link = order.tracking_url
+          await orderShop.save()
+
+          await Notification.add({
+            type: 'my_order_sent',
+            user_id: orderShop.user_id,
+            order_id: orderShop.order_id,
+            order_shop_id: orderShop.id
+          })
+        }
       }
     }
     console.info('updated', updated)
