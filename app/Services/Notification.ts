@@ -137,6 +137,9 @@ class Notification {
       return false
     }
     if (p.type) {
+      if (p.lang !== 'fr') {
+        p.lang = 'en'
+      }
       const template = await DB('email').where('type', params.type).where('lang', p.lang).first()
 
       p.subject = template.subject
