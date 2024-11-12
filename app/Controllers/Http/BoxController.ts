@@ -66,8 +66,8 @@ class BoxController {
     return Box.find(params.id)
   }
 
-  checkPayments() {
-    return Box.checkPayments()
+  checkPayments({ params }) {
+    return Box.checkPayments(params)
   }
 
   refundBoxPayment({ params }) {

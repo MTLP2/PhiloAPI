@@ -1471,7 +1471,7 @@ class Box {
   }
 
   static async checkPayments(params?: { box_id: number }) {
-    await Box.setDispatchLeft()
+    await Box.setDispatchLeft(params?.box_id ? { boxId: params?.box_id } : undefined)
 
     const errors: any = []
 
