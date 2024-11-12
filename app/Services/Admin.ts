@@ -3598,11 +3598,11 @@ class Admin {
     const projectsPromise = DB().execute(query)
 
     query = `
-      select invoice.id, invoice.type, com_id, sub_total, currency_rate
+      select invoice.id, invoice.type, invoice.status, invoice.date_payment, com_id, sub_total, currency_rate
       from vod, invoice
       where invoice.date between '${params.start}' and '${params.end} 23:59'
       AND invoice.project_id = vod.project_id
-      AND vod.type = 'direct_pressing'
+      AND invoice.category = 'direct_pressing'
     `
     if (!admin.includes(params.user_id)) {
       query += `AND vod.com_id = '${params.user_id}' `
@@ -3667,8 +3667,10 @@ class Admin {
         projects: 0,
         success: 0,
         direct_pressing: 0,
+        direct_pressing_paid: 0,
         prospects: 0,
         distrib: 0,
+        total_invoiced: 0,
         total: 0
       }
     }
@@ -3678,6 +3680,7 @@ class Admin {
         com[item.com_id] = setDefault(item.com_id)
       }
       com[item.com_id].sent += (item.total * item.currency_rate) / (1 + item.tax_rate)
+      com[item.com_id].total += (item.total * item.currency_rate) / (1 + item.tax_rate)
     }
 
     for (const item of turnover) {
@@ -3685,7 +3688,7 @@ class Admin {
         com[item.com_id] = setDefault(item.com_id)
       }
       com[item.com_id].turnover += (item.total * item.currency_rate) / (1 + item.tax_rate)
-      com[item.com_id].total += (item.total * item.currency_rate) / (1 + item.tax_rate)
+      com[item.com_id].total_invoiced += (item.total * item.currency_rate) / (1 + item.tax_rate)
     }
 
     for (const item of directPressing) {
@@ -3694,11 +3697,19 @@ class Admin {
       }
 
       if (item.type === 'invoice') {
+        if (item.status === 'paid') {
+          com[item.com_id].direct_pressing_paid += item.sub_total * item.currency_rate
+          com[item.com_id].total += item.sub_total * item.currency_rate
+        }
         com[item.com_id].direct_pressing += item.sub_total * item.currency_rate
-        com[item.com_id].total += item.sub_total * item.currency_rate
+        com[item.com_id].total_invoiced += item.sub_total * item.currency_rate
       } else {
         com[item.com_id].direct_pressing -= item.sub_total * item.currency_rate
-        com[item.com_id].total -= item.sub_total * item.currency_rate
+        com[item.com_id].total_invoiced -= item.sub_total * item.currency_rate
+
+        if (item.status === 'paid') {
+          com[item.com_id].direct_pressing_paid -= item.sub_total * item.currency_rate
+        }
       }
     }
 
