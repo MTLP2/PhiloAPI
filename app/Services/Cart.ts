@@ -1566,7 +1566,7 @@ class Cart {
         .where('cart_id', params.cart_id)
         .where('user_id', params.user_id)
         .where('paying', true)
-        .where('status', 'creating')
+        .whereIn('status', ['creating', 'incomplete'])
         .first()
     }
 
