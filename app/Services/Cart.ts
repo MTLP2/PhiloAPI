@@ -122,7 +122,7 @@ class Cart {
     cart.hasPickup = false
     cart.pickup = params.pickup
 
-    if (cart.currency === 'KRW') {
+    if (cart.currency === 'KRW' || cart.currency === 'JPY') {
       cart.noPaypal = true
     }
 
