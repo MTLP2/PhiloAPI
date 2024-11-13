@@ -493,7 +493,7 @@ class Charts {
   }
 
   static async uploadCharts() {
-    const start = moment().subtract(8, 'days').format('YYYY-MM-DD')
+    const start = moment().subtract(7, 'days').format('YYYY-MM-DD')
     const end = moment().subtract(1, 'days').format('YYYY-MM-DD 23:59:59')
 
     const us = await Charts.getLuminateCharts({
