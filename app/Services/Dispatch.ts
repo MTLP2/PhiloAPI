@@ -9,8 +9,8 @@ import Notification from 'App/Services/Notification'
 import Order from 'App/Services/Order'
 import Payments from 'App/Services/Payments'
 import BigBlue from 'App/Services/BigBlue'
-import Elogik from 'App/Services/Elogik'
 import Cart from 'App/Services/Cart'
+import Cbip from 'App/Services/Cbip'
 import Stock from 'App/Services/Stock'
 import Storage from 'App/Services/Storage'
 import Utils from 'App/Utils'
@@ -487,6 +487,13 @@ class Dispatch {
       })
     } else if (params.transporter === 'whiplash') {
       res = await Whiplash.setCost({
+        file: params.invoice.file as string,
+        date: params.date,
+        invoice_number: params.invoice.name,
+        force: params.force
+      })
+    } else if (params.transporter === 'cbip') {
+      res = await Cbip.setCost({
         file: params.invoice.file as string,
         date: params.date,
         invoice_number: params.invoice.name,
