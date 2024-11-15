@@ -3709,6 +3709,7 @@ class Admin {
 
         if (item.status === 'paid') {
           com[item.com_id].direct_pressing_paid -= item.sub_total * item.currency_rate
+          com[item.com_id].total -= item.sub_total * item.currency_rate
         }
       }
     }
