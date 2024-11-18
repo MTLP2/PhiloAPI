@@ -809,12 +809,15 @@ class Invoices {
     const invoice = await DB('invoice').belongsTo('customer').find(params.id)
     invoice.id = null
     invoice.number = null
-    invoice.name = `Credit note for ${invoice.code}`
+    invoice.name =
+      invoice.type === 'invoice'
+        ? `Credit note for N°${invoice.code}`
+        : `Invoice for N°${invoice.code}`
     invoice.code = null
     invoice.inc = 1
     invoice.year = moment().format('YY')
     invoice.date = moment().format('YYYY-MM-DD')
-    invoice.type = 'credit_note'
+    invoice.type = invoice.type === 'invoice' ? 'credit_note' : 'invoice'
     invoice.date_payment = null
     invoice.proof_payment = null
     invoice.status = 'canceled'
