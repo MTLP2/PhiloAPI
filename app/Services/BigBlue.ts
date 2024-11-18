@@ -196,17 +196,11 @@ class BigBlue {
     return inventories.length
   }
 
-  static syncProject = async (params: { id: number; quantity: number }) => {
+  static syncProject = async (params: { id: number; quantity: number; products: number[] }) => {
     const vod = await DB('vod').where('project_id', params.id).first()
     if (!vod) {
       return false
     }
-
-    const nbProducts = await DB('product')
-      .join('project_product', 'project_product.product_id', 'product.id')
-      .where('project_product.project_id', params.id)
-      .whereNull('parent_id')
-      .all()
 
     const orders = await DB('order_shop as os')
       .select(
@@ -248,20 +242,31 @@ class BigBlue {
       )
       .all()
 
+    const errors: any[] = []
     for (const item of items) {
       const idx = orders.findIndex((o: any) => o.id === item.order_shop_id)
+
+      const inProducts = params.products.find((p) => +p === item.id)
+      if (params.products && !inProducts) {
+        orders[idx].error = 'products_not_in'
+        continue
+      }
+
       orders[idx].items = orders[idx].items ? [...orders[idx].items, item] : [item]
-      if (!item.barcode) {
-        return { error: 'no_barcode' }
+      if (!item.biglbue_id) {
+        errors.push({ id: item.id, type: 'no_bigblue_id' })
+        continue
       }
     }
 
-    const errors: any[] = []
     const dispatchs: any[] = []
     let qty = 0
     for (const order of orders) {
       if (qty >= params.quantity) {
         break
+      }
+      if (order.error) {
+        continue
       }
       if (!order.items) {
         errors.push({

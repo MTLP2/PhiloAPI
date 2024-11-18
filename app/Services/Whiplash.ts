@@ -195,11 +195,6 @@ class Whiplash {
   }
 
   static syncProject = async (params: { project_id: number; type: string, products: number[]; quantity: number }) => {{
-    const nbProducts = await DB('product')
-      .join('project_product', 'project_product.product_id', 'product.id')
-      .where('project_product.project_id', params.project_id)
-      .whereNull('parent_id')
-      .all()
 
     const orders = await DB('order_shop as os')
       .select(
@@ -251,13 +246,18 @@ class Whiplash {
 
     const products = {}
     for (const item of items) {
+      const idx = orders.findIndex((o: any) => o.id === item.order_shop_id)
+      const inProducts = params.products.find((p) => +p === item.product_id)
+      if (params.products && !inProducts) {
+        orders[idx].error = 'products_not_in'
+        continue
+      }
       let ok =  params.products.some((p) => {
         return +p === +item.product_id
       })
       if (ok && !products[item.product_id]) {
         products[item.product_id] = item.barcode
       }
-      const idx = orders.findIndex((o: any) => o.id === item.order_shop_id)
       orders[idx].items = orders[idx].items ? [...orders[idx].items, item] : [item]
       if (!item.barcode) {
         throw new ApiError(406, 'no_barcode')
@@ -278,6 +278,9 @@ class Whiplash {
     for (const order of orders) {
       if (count + order.quantity > params.quantity) {
         break
+      }
+      if (order.error) {
+        continue
       }
       if (!order.items) {
         throw new ApiError(406, `No items for order N°${order.id}`)
