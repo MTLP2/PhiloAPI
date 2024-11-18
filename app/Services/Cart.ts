@@ -2033,7 +2033,7 @@ class Cart {
   static checkIncompleteCart = async () => {
     const orders = await DB('order')
       .select('id', 'payment_id', 'created_at')
-      .where('status', 'creating')
+      .whereIn('status', ['creating', 'incomplete'])
       .whereNotNull('payment_id')
       .where('payment_type', 'stripe')
       .whereRaw('created_at < NOW() - INTERVAL 15 MINUTE')
