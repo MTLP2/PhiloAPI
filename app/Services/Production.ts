@@ -2345,6 +2345,7 @@ class Production {
     item.date_due = params.date_due || null
     item.date_payment = params.date_payment || null
     item.quote = params.quote || null
+    item.quantity = params.quantity || null
     item.cost_real = params.cost_real
     item.cost_real_ttc = params.cost_real_ttc
     item.cost_invoiced = params.cost_invoiced
