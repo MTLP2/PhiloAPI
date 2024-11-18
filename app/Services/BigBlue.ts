@@ -222,7 +222,7 @@ class BigBlue {
       .all()
 
     const items = await DB()
-      .select('product.id', 'order_shop_id', 'oi.quantity', 'product.barcode')
+      .select('product.id', 'product.bigblue_id', 'order_shop_id', 'oi.quantity', 'product.barcode')
       .from('order_item as oi')
       .join('project_product', 'project_product.project_id', 'oi.project_id')
       .join('product', 'project_product.product_id', 'product.id')
@@ -247,13 +247,14 @@ class BigBlue {
       const idx = orders.findIndex((o: any) => o.id === item.order_shop_id)
 
       const inProducts = params.products.find((p) => +p === item.id)
+
       if (params.products && !inProducts) {
         orders[idx].error = 'products_not_in'
         continue
       }
 
       orders[idx].items = orders[idx].items ? [...orders[idx].items, item] : [item]
-      if (!item.biglbue_id) {
+      if (!item.bigblue_id) {
         errors.push({ id: item.id, type: 'no_bigblue_id' })
         continue
       }
