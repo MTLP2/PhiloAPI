@@ -4588,6 +4588,8 @@ class Admin {
       .orderBy('artist_name', 'name')
       .where('step', 'in_progress')
       .where('product.type', 'vinyl')
+      .where('is_visible', true)
+      .whereIn('step', ['in_progress', 'successful'])
       .whereNotNull('product.barcode')
 
     if (!params.lang) {
