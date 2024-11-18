@@ -445,9 +445,11 @@ class Project {
       .from('project as p')
       .join('vod as v', 'p.id', 'v.project_id')
       .leftJoin('item', 'item.id', 'v.related_item_id')
-      .where('p.is_visible', true)
       .where('is_delete', false)
 
+    if (!params.shop_id) {
+      projects.where('p.is_visible', true)
+    }
     if (params.type === 'liked') {
       params.liked = params.user_id
       params.user_id = null
