@@ -1161,7 +1161,7 @@ class BigBlue {
           supplier_shipment_id: params.tracking_number,
           supplier_name: params.sender,
           warehouse: 'EU-FRA-002',
-          expected_arrival_time: params.date_arrival,
+          expected_arrival_time: params.date_arrival.substring(0, 19) + 'Z',
           finalize: true,
           line_items: params.products.map((p) => {
             return {
