@@ -435,10 +435,7 @@ class OrdersManual {
   }
 
   static export = async (params) => {
-    console.log(params)
-
     const workbook = new Excel.Workbook()
-
     const worksheet = workbook.addWorksheet('Order')
 
     worksheet.columns = [
