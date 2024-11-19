@@ -434,6 +434,25 @@ class OrdersManual {
     return item
   }
 
+  static export = async (params) => {
+    console.log(params)
+
+    const workbook = new Excel.Workbook()
+
+    const worksheet = workbook.addWorksheet('Order')
+
+    worksheet.columns = [
+      { header: 'Barcode', key: 'barcode', width: 20 },
+      { header: 'Name', key: 'name', width: 40 },
+      { header: 'Quantity', key: 'quantity', width: 10 },
+      { header: 'Stock', key: 'stock', width: 10 }
+    ]
+
+    worksheet.addRows(params.items)
+
+    return workbook.xlsx.writeBuffer()
+  }
+
   static getColumns = async (params: { file: any }) => {
     const file = Buffer.from(params.file, 'base64')
     const workbook = new Excel.Workbook()

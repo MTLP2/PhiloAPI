@@ -935,6 +935,10 @@ class AdminController {
     }
   }
 
+  async exportOrderManual({ params }) {
+    return OrdersManual.export(params)
+  }
+
   async getOrderManualInvoiceCo({ params }) {
     try {
       const payload = await validator.validate({

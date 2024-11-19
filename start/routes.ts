@@ -593,6 +593,7 @@ Route.group(() => {
   Route.get('/order-manual', 'AdminController.getOrderManual')
   Route.get('/order-manual/:id', 'AdminController.findOrderManual')
   Route.post('/order-manual', 'AdminController.saveOrderManual')
+  Route.post('/order-manual/:id/export', 'AdminController.exportOrderManual')
   Route.post('/order-manual/columns', 'AdminController.importOderManual')
   Route.post('/order-manual/barcodes', 'AdminController.getBarcodesManual')
   Route.post('/order-manual/:id/invoice-co', 'AdminController.getOrderManualInvoiceCo')
