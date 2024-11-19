@@ -410,6 +410,21 @@ class BigBlue {
     return res
   }
 
+  static getShippingType(type: string) {
+    switch (type) {
+      case 'pickup':
+        return 'pickup'
+      case 'B2B Box':
+        return 'B2B Box'
+      case 'B2B pallet':
+        return 'B2B pallet'
+      case 'B2B removal':
+        return 'B2B removal'
+      default:
+        return 'standard'
+    }
+  }
+
   static async sync(orders: any[]) {
     const dispatchs: any[] = []
     for (const order of orders) {
@@ -466,7 +481,7 @@ class BigBlue {
           external_id: order.id.toString(),
           language: 'fr',
           currency: 'EUR',
-          shipping_method: order.shipping_type === 'pickup' ? 'pickup' : 'standard',
+          shipping_method: BigBlue.getShippingType(order.shipping_type),
           shipping_price: order.shipping ? order.shipping.toString() : '1',
           b2b: order.b2b ? true : false,
           pickup_point:
