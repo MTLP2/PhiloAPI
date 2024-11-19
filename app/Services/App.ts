@@ -1501,7 +1501,7 @@ class App {
       { header: 'Barcode', key: 'barcode', width: 18 },
       { header: 'Alert', key: 'alert_stock', width: 12 },
       { header: 'Stock', key: 'stock', width: 12 },
-      { header: 'Daudin', key: 'stock_daudin', width: 12 },
+      { header: 'Bigblue', key: 'stock_bigblue', width: 12 },
       { header: 'Whiplash', key: 'stock_whiplash', width: 12 },
       { header: 'Whiplash Uk', key: 'stock_whiplash_uk', width: 12 },
       { header: 'PIAS', key: 'stock_pias', width: 12 },

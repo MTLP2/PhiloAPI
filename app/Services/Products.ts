@@ -833,7 +833,7 @@ class Products {
       reserved_manual: 0,
       incoming: 0
     }
-    const logisticians = ['whiplash', 'whiplash_uk', 'daudin', 'bigblue']
+    const logisticians = ['whiplash', 'whiplash_uk', 'bigblue']
 
     const stocks = await DB('stock')
       .select('product_id', 'quantity', 'reserved', 'type')
