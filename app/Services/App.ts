@@ -602,11 +602,15 @@ class App {
             .add(80, 'days')
             .format('MMMM YYYY')
         }
-        if (order.is_gift && data.type == 'my_order_confirmed') {
+        if (order.is_gift && data.type === 'my_order_confirmed') {
           const html = await View.render('gift', {
-            artist: item.artist_name,
-            name: item.name,
-            picture: `${Env.get('STORAGE_URL')}/projects/${item.picture}/vinyl.png`
+            artist: item.artist_name.substring(0, 30),
+            name: item.name.substring(0, 30),
+            user: data.user.name.substring(0, 30),
+            lang: data.user.lang,
+            picture: item.picture_project
+              ? `${Env.get('STORAGE_URL')}/projects/${item.picture}/${item.picture_project}.png`
+              : `${Env.get('STORAGE_URL')}/projects/${item.picture || item.id}/vinyl.png`
           })
           data.attachments.push({
             filename: `${item.artist_name} - ${item.name}.pdf`,
@@ -921,13 +925,18 @@ class App {
       }
     }
 
+    console.log('lol')
     if (!test) {
+      await Notification.email(data)
+      send = 2
+      /**
       if (process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'staging') {
         send = 3
       } else {
         await Notification.email(data)
         send = 2
       }
+      **/
       n.email = send
       await n.save()
       return true

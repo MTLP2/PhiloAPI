@@ -833,9 +833,9 @@ class User {
         .first()
 
       const html = await View.render('gift', {
-        artist: project.artist_name,
-        name: project.name,
-        user: user.name,
+        artist: project.artist_name.substring(0, 30),
+        name: project.name.substring(0, 30),
+        user: user.name.substring(0, 30),
         lang: user.lang,
         picture_project: project.picture_project,
         picture: project.picture_project
