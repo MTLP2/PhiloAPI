@@ -794,7 +794,10 @@ class OrdersManual {
       0
     )
 
-    await DB('production_cost').where('order_manual_id', invoice.order_manual_id).delete()
+    await DB('production_cost')
+      .where('order_manual_id', invoice.order_manual_id)
+      .where('invoice_number', invoice.invoice_number)
+      .delete()
 
     const currenciesDb = await Utils.getCurrenciesDb()
     const currencies = await Utils.getCurrencies(invoice.currency, currenciesDb)
