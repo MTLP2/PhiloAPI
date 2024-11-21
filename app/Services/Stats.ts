@@ -2995,37 +2995,59 @@ class Stats {
 
   static async getAverageTurnoverProjects(params: { start?: string; end?: string }) {
     const vod = await DB('vod')
+      .select('vod.project_id', 'project.name', 'project.artist_name')
+      .join('project', 'project.id', 'vod.project_id')
       .where('is_licence', false)
       .whereIn('type', ['limited_edition', 'funding'])
-      .whereIn('step', ['successful'])
+      .whereIn('step', ['successful', 'in_progress'])
+      .whereIn('com_id', [1, 146000, 182067, 224284, 269711, 176794])
+      .whereExists(function () {
+        this.from('order_item')
+          .whereRaw('order_item.project_id = vod.project_id')
+          .whereBetween('order_item.created_at', [params.start, params.end])
+      })
       .all()
 
-    const tt = []
+    console.log(vod.length)
 
-    for (const v of vod) {
-      const historic = JSON.parse(v.historic)
-      if (historic) {
-        for (const h of historic) {
-          if (h.new === 'in_progress' && moment(h.date).isBetween(params.start, params.end)) {
-            tt.push(v.project_id)
-          }
-        }
-      }
-    }
-
-    let total = 0
     const orders = await DB('order_item')
-      .select('order_shop.tax_rate', 'order_item.total', 'order_item.currency_rate')
+      .select(
+        'order_item.project_id',
+        'order_shop.tax_rate',
+        'order_item.total',
+        'order_item.currency_rate'
+      )
       .join('order_shop', 'order_shop.id', 'order_item.order_shop_id')
       .where('order_shop.is_paid', true)
-      .whereIn('order_item.project_id', tt)
+      .whereIn(
+        'order_item.project_id',
+        vod.map((t) => t.project_id)
+      )
       .all()
 
     for (const order of orders) {
       const tax = order.total * order.tax_rate
-      total += (order.total - tax) * order.currency_rate
+      const idx = vod.findIndex((v) => v.project_id === order.project_id)
+
+      if (idx === -1) {
+        console.log('error', order.project_id)
+        continue
+      }
+      if (!vod[idx].turnover) {
+        vod[idx].turnover = 0
+      }
+      vod[idx].turnover += (order.total - tax) * order.currency_rate
     }
-    return total / tt.length
+
+    return Utils.arrayToCsv(
+      [
+        { name: 'Id', index: 'project_id' },
+        { name: 'Artist', index: 'artist_name' },
+        { name: 'Name', index: 'name' },
+        { name: 'Turnover', index: 'turnover' }
+      ],
+      vod
+    )
   }
 
   static async getAveragePublish(params: { start?: string; end?: string }) {
