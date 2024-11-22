@@ -3598,11 +3598,11 @@ class Admin {
     const projectsPromise = DB().execute(query)
 
     query = `
-      select invoice.id, invoice.type, invoice.status, invoice.date_payment, com_id, sub_total, currency_rate
+      select invoice.id, invoice.type, invoice.category, invoice.status, invoice.date_payment, com_id, sub_total, currency_rate
       from vod, invoice
       where invoice.date between '${params.start}' and '${params.end} 23:59'
       AND invoice.project_id = vod.project_id
-      and vod.type != 'direct_pressing'
+      and vod.type = 'direct_pressing'
     `
     if (!admin.includes(params.user_id)) {
       query += `AND vod.com_id = '${params.user_id}' `
@@ -3692,6 +3692,7 @@ class Admin {
     }
 
     for (const item of directPressing) {
+      console.log(item)
       if (!com[item.com_id]) {
         com[item.com_id] = setDefault(item.com_id)
       }
