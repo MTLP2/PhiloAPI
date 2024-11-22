@@ -3692,7 +3692,6 @@ class Admin {
     }
 
     for (const item of directPressing) {
-      console.log(item)
       if (!com[item.com_id]) {
         com[item.com_id] = setDefault(item.com_id)
       }
