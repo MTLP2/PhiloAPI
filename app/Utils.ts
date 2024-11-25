@@ -1449,6 +1449,7 @@ class Utils {
       case 'daudin':
       case 'pias':
       case 'diggers':
+      case 'bigblue':
       case 'sna':
       case 'fnac':
         return 'FR'
