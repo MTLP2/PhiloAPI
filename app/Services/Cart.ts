@@ -1931,7 +1931,6 @@ class Cart {
     set_incomplete?: boolean
   }) => {
     const paymentIntent = await stripe.paymentIntents.retrieve(params.payment_id)
-
     if (paymentIntent.status === 'succeeded') {
       let status = 'confirmed'
       const txn = await stripe.balanceTransactions.retrieve(
@@ -2037,6 +2036,7 @@ class Cart {
       .whereNotNull('payment_id')
       .where('payment_type', 'stripe')
       .whereRaw('created_at < NOW() - INTERVAL 15 MINUTE')
+      .whereRaw('created_at > NOW() - INTERVAL 60 MINUTE')
       .orderBy('created_at', 'desc')
       .all()
 
