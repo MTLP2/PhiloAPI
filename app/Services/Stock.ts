@@ -83,6 +83,38 @@ class Stock {
     return res
   }
 
+  static async byProjects(params: { ids: string[] }) {
+    const stocks = await DB('project_product as pp')
+      .select(
+        'stock.product_id',
+        'stock.reserved',
+        'stock.type',
+        'stock.quantity',
+        'stock.is_distrib'
+      )
+      .leftJoin('stock', 'pp.product_id', 'stock.product_id')
+      .where('stock.is_preorder', false)
+      .whereIn(
+        'stock.product_id',
+        DB('project_product').select('product_id').whereIn('project_id', params.ids).query()
+      )
+      .all()
+
+    const stock = {}
+    for (const s of stocks) {
+      if (!stock[s.type]) {
+        stock[s.type] = {
+          type: s.type,
+          quantity: 0,
+          product_id: s.product_id,
+          is_distrib: s.is_distrib
+        }
+      }
+      stock[s.type].quantity += s.quantity
+    }
+    return Object.values(stock)
+  }
+
   static getHistoric = async (params: {
     product_id?: number
     project_id?: number
