@@ -1854,20 +1854,21 @@ class Project {
       })
       .all()
 
-    const stocksSiteQuery = Stock.byProject({ project_id: +ids[0], is_distrib: false })
-    const stocksDistribQuery = Stock.byProject({ project_id: +ids[0], is_distrib: true })
+    const stocksQuery = Stock.byProjects({
+      ids: ids
+    })
+    // const stocksSiteQuery = Stock.byProject({ project_id: +ids[0], is_distrib: false })
+    // const stocksDistribQuery = Stock.byProject({ project_id: +ids[0], is_distrib: true })
 
-    const [orders, statements, costs, payments, boxes, download, stocksSite, stockDistrib] =
-      await Promise.all([
-        ordersPromise,
-        statementsPromise,
-        costsPromise,
-        paymentsPromise,
-        boxesPromise,
-        downloadPromise,
-        stocksSiteQuery,
-        stocksDistribQuery
-      ])
+    const [orders, statements, costs, payments, boxes, download, stocks] = await Promise.all([
+      ordersPromise,
+      statementsPromise,
+      costsPromise,
+      paymentsPromise,
+      boxesPromise,
+      downloadPromise,
+      stocksQuery
+    ])
 
     let start
     if (orders.length > 0) {
@@ -2195,13 +2196,14 @@ class Project {
       }
     }
 
-    for (const [log, stock] of Object.entries(stocksSite)) {
-      s.setCountry('site', 'stocks', Utils.getCountryStock(log), stock)
-      s.setCountry('site', 'stocks', 'ALL', stock)
-    }
-    for (const [log, stock] of Object.entries(stockDistrib)) {
-      s.setCountry('distrib', 'stocks', Utils.getCountryStock(log), stock)
-      s.setCountry('distrib', 'stocks', 'ALL', stock)
+    for (const stock of stocks) {
+      if (stock.is_distrib) {
+        s.setCountry('distrib', 'stocks', Utils.getCountryStock(stock.type), stock.quantity)
+        s.setCountry('distrib', 'stocks', 'ALL', stock)
+      } else {
+        s.setCountry('site', 'stocks', Utils.getCountryStock(stock.type), stock.quantity)
+        s.setCountry('site', 'stocks', 'ALL', stock.quantity)
+      }
     }
 
     for (const box of boxes) {
