@@ -1132,6 +1132,10 @@ class AdminController {
     return Statement.userDownload2(params)
   }
 
+  importDistribCosts({ params }) {
+    return Statement.importCosts(params)
+  }
+
   exportUserPojects({ params }) {
     return Admin.exportUserPojects(params)
   }

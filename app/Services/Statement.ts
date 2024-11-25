@@ -3440,6 +3440,67 @@ class StatementService {
       }
     ])
   }
+
+  static async importCosts(params: {
+    type: string
+    file: {
+      name: string
+      data: string
+    }
+  }) {
+    switch (params.type) {
+      case 'pias':
+        const lines = Utils.csvToArray(Buffer.from(params.file.data, 'base64').toString())
+
+        let costs = {}
+        for (const line of lines) {
+          if (!line['Catalogue Number']) {
+            continue
+          }
+          if (!costs[line['Catalogue Number']]) {
+            costs[line['Catalogue Number']] = 0
+          }
+          costs[line['Catalogue Number']] += +line['Transaction Amount']
+        }
+
+        const currenciesDB = await Utils.getCurrenciesDb()
+        const currencies = await Utils.getCurrencies('EUR', currenciesDB)
+
+        console.log(Object.keys(costs))
+        const projects = await DB('project')
+          .select('project.id', 'cat_number', 'vod.currency')
+          .join('vod', 'vod.project_id', 'project.id')
+          .whereIn('cat_number', Object.keys(costs))
+          .whereNotNull('cat_number')
+          .all()
+
+        console.log(projects.length)
+        for (const project of projects) {
+          if (!costs[project.cat_number]) {
+            continue
+          }
+          const name = `Pias costs ${params.file.name}`
+          await DB('production_cost').where('project_id', project.id).where('name', name).delete()
+
+          console.log(costs[project.cat_number], project.currency, currencies[project.currency])
+          await DB('production_cost').insert({
+            project_id: project.id,
+            date: moment().format('YYYY-MM-DD'),
+            name: name,
+            type: 'distribution',
+            currency: 'EUR',
+            currency_rate: 1,
+            is_statement: true,
+            cost_real: costs[project.cat_number],
+            cost_real_ttc: costs[project.cat_number],
+            cost_invoiced: costs[project.cat_number],
+            in_statement: costs[project.cat_number] * currencies[project.currency]
+          })
+        }
+        break
+    }
+    return { success: true }
+  }
 }
 
 export default StatementService
