@@ -3466,35 +3466,39 @@ class StatementService {
         const currenciesDB = await Utils.getCurrenciesDb()
         const currencies = await Utils.getCurrencies('EUR', currenciesDB)
 
-        console.log(Object.keys(costs))
         const projects = await DB('project')
-          .select('project.id', 'cat_number', 'vod.currency')
+          .select('project.id', 'cat_number', 'vod.currency', 'is_licence')
           .join('vod', 'vod.project_id', 'project.id')
           .whereIn('cat_number', Object.keys(costs))
           .whereNotNull('cat_number')
           .all()
 
-        console.log(projects.length)
         for (const project of projects) {
           if (!costs[project.cat_number]) {
             continue
           }
-          const name = `Pias costs ${params.file.name}`
-          await DB('production_cost').where('project_id', project.id).where('name', name).delete()
+          await DB('production_cost')
+            .where('project_id', project.id)
+            .where('name', 'PIAS')
+            .where('invoice_number', params.file.name)
+            .delete()
 
-          console.log(costs[project.cat_number], project.currency, currencies[project.currency])
           await DB('production_cost').insert({
             project_id: project.id,
             date: moment().format('YYYY-MM-DD'),
-            name: name,
+            name: 'PIAS',
+            invoice_number: params.file.name,
             type: 'distribution',
             currency: 'EUR',
             currency_rate: 1,
-            is_statement: true,
+            is_statement: project.is_licence ? false : true,
             cost_real: costs[project.cat_number],
             cost_real_ttc: costs[project.cat_number],
-            cost_invoiced: costs[project.cat_number],
-            in_statement: costs[project.cat_number] * currencies[project.currency]
+            margin: project.is_licence ? -costs[project.cat_number] : 0,
+            cost_invoiced: project.is_licence ? 0 : costs[project.cat_number],
+            in_statement: project.is_licence
+              ? 0
+              : costs[project.cat_number] * currencies[project.currency]
           })
         }
         break
