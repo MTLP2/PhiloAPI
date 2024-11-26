@@ -542,7 +542,7 @@ class Box {
         })
         .first()
 
-      if (promo.users) {
+      if (promo && promo.users) {
         const users = promo.users.split(',')
         if (!users.includes(params.user_id.toString())) {
           promo = null
