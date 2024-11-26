@@ -142,9 +142,9 @@ class Cart {
               ? params.boxes[i].country_id
               : params.customer.country_id,
           tax_rate: cart.tax_rate,
-          promo_code: params.promo_code,
           user_id: params.user_id,
           ...params.boxes[i],
+          promo_code: params.promo_code,
           currency: cart.currency
         })
         if (box.error) {

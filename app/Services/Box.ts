@@ -542,6 +542,12 @@ class Box {
         })
         .first()
 
+      if (promo.users) {
+        const users = promo.users.split(',')
+        if (!users.includes(params.user_id.toString())) {
+          promo = null
+        }
+      }
       if (promo) {
         if (promo && params.type === 'one' && !promo.box_one) {
           promo = null
