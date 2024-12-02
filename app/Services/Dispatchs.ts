@@ -16,7 +16,7 @@ import Storage from 'App/Services/Storage'
 import Utils from 'App/Utils'
 import Whiplash from 'App/Services/Whiplash'
 
-class Dispatch {
+class Dispatchs {
   static update = async (params) => {
     if (!params.id) {
       throw new ApiError(400, '`id` is missing')
@@ -53,7 +53,7 @@ class Dispatch {
     }
 
     if (params.status === 'sent') {
-      const res = await Dispatch.setSent({
+      const res = await Dispatchs.setSent({
         id: params.id,
         transporter: params.transporter,
         tracking: params.tracking_number
@@ -63,7 +63,7 @@ class Dispatch {
       }
     }
     if (params.status === 'returned') {
-      const res = await Dispatch.setReturned(params.id)
+      const res = await Dispatchs.setReturned(params.id)
       if (!res) {
         return { succes: false }
       }
@@ -414,7 +414,7 @@ class Dispatch {
     size?: number
   }) => {
     params.size = 9999999
-    const data = await Dispatch.getCosts(params)
+    const data = await Dispatchs.getCosts(params)
 
     const workbook = new Excel.Workbook()
     const worksheet = workbook.addWorksheet('Shippings')
@@ -458,7 +458,7 @@ class Dispatch {
 
       const date = path[path.length - 1]
       const buffer: Buffer = <Buffer>await Storage.get(file.path, true)
-      const dis = await Dispatch.setCost(params.transporter, date, buffer, params.force)
+      const dis = await Dispatchs.setCost(params.transporter, date, buffer, params.force)
 
       dispatchs += dis
     }
@@ -1119,7 +1119,7 @@ class Dispatch {
   }) => {
     const buffer = Buffer.from(params.invoice.data, 'base64')
     const date = `${params.year}-${params.month}`
-    const res = await Dispatch.setCost({
+    const res = await Dispatchs.setCost({
       transporter: params.logistician,
       date: date,
       invoice: {
@@ -1135,8 +1135,8 @@ class Dispatch {
     await DB('shipping_weight').where('partner', 'daudin').delete()
 
     const prices = {
-      ...(await Dispatch.setDaudinPrices2023()),
-      ...(await Dispatch.setDaudinPrices2024())
+      ...(await Dispatchs.setDaudinPrices2023()),
+      ...(await Dispatchs.setDaudinPrices2024())
     }
 
     for (const price of Object.values(prices) as any) {
@@ -1284,4 +1284,4 @@ class Dispatch {
   }
 }
 
-export default Dispatch
+export default Dispatchs

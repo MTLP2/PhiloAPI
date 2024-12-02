@@ -1,5 +1,5 @@
 import Api from 'App/Services/Api'
-import Dispatch from 'App/Services/Dispatch'
+import Dispatchs from 'App/Services/Dispatchs'
 import { schema, validator } from '@ioc:Adonis/Core/Validator'
 
 class DispatchController {
@@ -11,7 +11,7 @@ class DispatchController {
     params.transporter_access = transporter
 
     try {
-      res = await Dispatch.update(params)
+      res = await Dispatchs.update(params)
     } catch (err) {
       throw api.error(err.status, err.message)
     }
@@ -35,7 +35,7 @@ class DispatchController {
     for (const order of params.data) {
       order.transporter_access = transporter
       try {
-        res[order.id] = await Dispatch.update(order)
+        res[order.id] = await Dispatchs.update(order)
       } catch (err) {
         res[order.id] = { error: err.message }
       }
@@ -51,7 +51,7 @@ class DispatchController {
 
     let res
     try {
-      res = await Dispatch.changeStock(params)
+      res = await Dispatchs.changeStock(params)
     } catch (err) {
       throw api.error(err.status, err.message)
     }
@@ -73,18 +73,18 @@ class DispatchController {
         data: request.body()
       })
 
-      return Dispatch.changeStock(payload)
+      return Dispatchs.changeStock(payload)
     } catch (err) {
       return { error: err.message, validation: err.messages }
     }
   }
 
   compareShippingOrder({ params }) {
-    return Dispatch.compareShipping(params)
+    return Dispatchs.compareShipping(params)
   }
 
   getShippingRevenues({ params }) {
-    return Dispatch.getShippingRevenues(params)
+    return Dispatchs.getShippingRevenues(params)
   }
 
   async uploadShippingPrices({ request }) {
@@ -95,7 +95,7 @@ class DispatchController {
       }),
       data: request.body()
     })
-    return Dispatch.uploadShippingPrices(payload)
+    return Dispatchs.uploadShippingPrices(payload)
   }
 }
 

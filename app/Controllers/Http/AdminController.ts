@@ -31,7 +31,7 @@ import Review from 'App/Services/Review'
 import ApiError from 'App/ApiError'
 import ProjectService from 'App/Services/Project'
 import Products from 'App/Services/Products'
-import Dispatch from 'App/Services/Dispatch'
+import Dispatchs from 'App/Services/Dispatchs'
 import ShippingWeight from 'App/Services/ShippingWeight'
 import Log from 'App/Services/Log'
 import Linktree from 'App/Services/Linktree'
@@ -245,7 +245,7 @@ class AdminController {
       }),
       data: params
     })
-    return Dispatch.changeTransporterProject({
+    return Dispatchs.changeTransporterProject({
       project_id: payload.id,
       from: payload.from,
       to: payload.to
@@ -1211,7 +1211,7 @@ class AdminController {
   }
 
   getShippingCosts({ params }) {
-    return Dispatch.getCosts(params)
+    return Dispatchs.getCosts(params)
   }
 
   async importShippingInvoice({ params }) {
@@ -1227,15 +1227,15 @@ class AdminController {
       }),
       data: params
     })
-    return Dispatch.importInvoice(payload)
+    return Dispatchs.importInvoice(payload)
   }
 
   extractShippingCosts({ params }) {
-    return Dispatch.extractCosts(params)
+    return Dispatchs.extractCosts(params)
   }
 
   calculateShipping({ params }) {
-    return Dispatch.calculateShipping(params)
+    return Dispatchs.calculateShipping(params)
   }
 
   deeplTranslate({ params }) {
