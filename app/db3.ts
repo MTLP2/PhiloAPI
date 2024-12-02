@@ -1,9 +1,12 @@
-import Env from '@ioc:Adonis/Core/Env'
 import { DB } from './types'
-import { createPool } from 'mysql2'
-import { sql, Kysely, MysqlDialect, CompiledQuery } from 'kysely'
-
 import Utils from 'App/Utils'
+import Env from '@ioc:Adonis/Core/Env'
+import { sql, Kysely, MysqlDialect, SelectQueryBuilder, CompiledQuery } from 'kysely'
+import { createPool } from 'mysql2'
+
+export { Expression, SqlBool } from 'kysely'
+
+export type { DB }
 
 const dialect = new MysqlDialect({
   pool: createPool({
@@ -12,31 +15,23 @@ const dialect = new MysqlDialect({
     user: Env.get('DB_USER', 'root'),
     password: Env.get('DB_PASSWORD', ''),
     database: Env.get('DB_DATABASE', 'diggersfactory'),
-    connectionLimit: 10
+    connectionLimit: 10,
+    typeCast(field, next) {
+      if (field.type === 'TINY' && field.length === 1) {
+        return field.string() === '1'
+      } else {
+        return next()
+      }
+    }
   })
 })
 
 export const db = new Kysely<DB>({
   dialect,
   log(_event) {
-    /**
-    console.log(_event.query.sql)
-    console.log(_event.query.parameters)
-    **/
     if (_event.level === 'error') {
-      console.error('Query failed : ', {
-        durationMs: _event.queryDurationMillis,
-        error: _event.error,
-        sql: _event.query.sql,
-        params: _event.query.parameters
-      })
+      console.error(toSql(_event.query))
     }
-    /**
-    if (_event.level === 'query') {
-      console.log(_event.query.sql)
-      console.log(_event.query.parameters)
-    }
-    **/
   }
 })
 
@@ -50,7 +45,11 @@ export const toSql = (compiled: CompiledQuery): string => {
   return sql
 }
 
-type Model<T extends keyof DB & string> = DB[T] & {
+export const logSql = (query: SelectQueryBuilder) => {
+  console.log(toSql(query.compile()))
+}
+
+export type Model<T extends keyof DB & string> = DB[T] & {
   values: () => DB[T]
   find: (id: number) => Promise<Model<T>>
   save: () => Promise<Model<T>>
@@ -96,7 +95,7 @@ export const model = <T extends keyof DB & string>(table: T): Model<T> => {
           .insertInto(table)
           .values(changed as any)
           .executeTakeFirst()
-        data.id = insertId as any
+        data.id = Number(insertId)
       }
       changed = {} as DB[T]
       return proxyInstance as any
@@ -131,4 +130,116 @@ export const model = <T extends keyof DB & string>(table: T): Model<T> => {
   return proxyInstance as any
 }
 
+export const getRows = async (params: {
+  query: any
+  count?: string
+  filters?: string | object
+  page?: number
+  size?: number
+  sort?: string
+  order?: string
+}): Promise<{
+  total: number
+  size: number
+  page: number
+  rows: any[]
+}> => {
+  let { query } = params
+
+  let filters
+  try {
+    filters =
+      typeof params.filters === 'object'
+        ? params.filters
+        : params.filters
+        ? JSON.parse(params.filters)
+        : null
+  } catch (e) {
+    filters = []
+  }
+
+  if (filters) {
+    // Turn object filters into array to avoid non-iterable error
+    if (!Array.isArray(filters)) {
+      filters = Object.keys(filters).map((key) => ({ name: key, value: filters[key] }))
+    }
+
+    for (const filter of filters) {
+      if (filter && filter.value) {
+        query = query.where(({ eb, and }) => {
+          const conds: any[] = []
+
+          const values = filter.value.split(',')
+          for (const value of values) {
+            if (value) {
+              const decodedValue = value
+              let column = filter.name
+              let cond
+              if (filter.name && filter.name.includes(' ')) {
+                column = sql`CONCAT(${column
+                  .split(' ')
+                  .map((c) => `COALESCE(TRIM(${c}), '')`)
+                  .join(",' ',")})`
+              }
+              if (decodedValue.indexOf('!=null') !== -1) {
+                cond = eb(column, 'is not', null)
+              } else if (decodedValue.indexOf('=null') !== -1) {
+                cond = eb(column, 'is', null)
+              } else if (decodedValue.indexOf('<=') !== -1) {
+                const f = decodedValue.replace('<=', '')
+                cond = eb(column, '<=', f)
+              } else if (decodedValue.indexOf('>=') !== -1) {
+                const f = decodedValue.replace('>=', '')
+                cond = eb(column, '>=', f)
+              } else if (decodedValue.indexOf('<') !== -1) {
+                const f = decodedValue.replace('<', '')
+                cond = eb(column, '<', f)
+              } else if (decodedValue.indexOf('>') !== -1) {
+                const f = decodedValue.replace('>', '')
+                cond = eb(column, '>', f)
+              } else if (decodedValue.indexOf('=') !== -1) {
+                const f = decodedValue.replace('=', '')
+                cond = eb(column, '=', f)
+              } else {
+                cond = eb(column, 'like', `%${decodedValue}%`)
+              }
+              conds.push(cond)
+            }
+          }
+          return and(conds)
+        })
+      }
+    }
+  }
+
+  const total = query
+    .clearSelect()
+    .clearOrderBy()
+    .select(({ fn }) => [fn.count((params.count || 'id') as any).as('count')])
+
+  const page = params.page && params.page > 0 ? params.page : 1
+  const size = params.size && params.size > 0 ? params.size : 50
+
+  if (params.sort && params.sort !== 'false') {
+    const sorts = params.sort.split(' ')
+    for (const sort of sorts) {
+      query = query.orderBy(sort, params.order?.toLowerCase())
+    }
+  }
+
+  if (params.size !== 0) {
+    query = query.limit(size).offset((page - 1) * size)
+  }
+
+  const [data, count] = await Promise.all([
+    query.execute(),
+    total.executeTakeFirst().then((res) => res?.count)
+  ])
+  return {
+    total: count,
+    size: size,
+    page: page,
+    rows: data
+  }
+}
 export default db
