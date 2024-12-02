@@ -2208,7 +2208,7 @@ class Box {
       .join('project_product', 'project_product.project_id', 'p.id')
       .join('stock', 'project_product.product_id', 'stock.product_id')
       .where('stock.type', 'bigblue')
-      .where('is_shop', true)
+      .where('stock.is_preorder', false)
       .where('stock.quantity', '>', 0)
       .where('is_box', true)
       .where('is_delete', false)
