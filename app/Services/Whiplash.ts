@@ -1099,6 +1099,11 @@ class Whiplash {
 
     return res
   }
+
+  static getDuplicates = async (params: {
+  }) => {
+    return 'duplicates'
+  }
 }
 
 export default Whiplash
