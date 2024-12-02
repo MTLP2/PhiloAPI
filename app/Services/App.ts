@@ -15,7 +15,6 @@ import Charts from 'App/Services/Charts'
 import Statement from 'App/Services/Statement'
 import Cart from 'App/Services/Cart'
 import Production from 'App/Services/Production'
-import Elogik from 'App/Services/Elogik'
 import BigBlue from 'App/Services/BigBlue'
 import Storage from 'App/Services/Storage'
 import MondialRelay from 'App/Services/MondialRelay'
@@ -131,6 +130,7 @@ class App {
       }
       if ([8, 13, 16].includes(hour)) {
         await Production.updateDispatchsStatus()
+        await Whiplash.getDuplicates()
       }
 
       if (hour === 2) {

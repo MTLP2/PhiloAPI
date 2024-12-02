@@ -1133,31 +1133,45 @@ class Whiplash {
         res[key].push({
           id: item.id,
           name: item.shipping_name,
+          item: order.description,
           sku: order.sku,
           date: item.created_at
         })
       }
     }
 
-    const monthDuplicates = {}
-
-    const duplicates: any[] = []
+    const rows: any[] = []
     for (const line of Object.keys(res)) {
       if (res[line].length > 1) {
-        duplicates.push({
-          name: line.split('_')[0],
-          sku: line.split('_')[1],
-          orders: res[line]
-        })
-        const month = line.split('_')[2].substring(0, 7)
-        if (!monthDuplicates[month]) {
-          monthDuplicates[month] = 0
-        }
-        monthDuplicates[month] += res[line].length - 1
+        rows.push(...res[line])
       }
     }
 
-    return duplicates
+    await Notification.sendEmail({
+      to: 'victor@diggersfactory.com',
+      subject: 'Duplicates Whiplash',
+      html: `
+        <p>Duplicates Whiplash</p>
+        <table style="width: 100%;">
+          <tr>
+            <td>Id</td>
+            <td>User</td>
+            <td>SKU</td>
+            <td>Item</td>
+            <td>Date</td>
+          </tr>
+          ${rows.map((r) => `<tr>
+            <td><a href="https://www.getwhiplash.com/orders/${r.id}">${r.id}</a></td>
+            <td>${r.name}</td>
+            <td>${r.sku}</td>
+            <td>${r.item}</td>
+            <td>${r.date}</td>
+          </tr>`).join('')}
+        </table>
+      `
+    })
+
+    return rows
   }
 }
 
