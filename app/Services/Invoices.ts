@@ -239,6 +239,8 @@ class Invoices {
       params.user_id = userId
     }
 
+    const isPayNow = params.status === 'paid' && invoice.status !== 'paid' && !params.date_payment
+
     if (params.id) {
       invoice = await DB('invoice').find(params.id)
     } else {
@@ -276,10 +278,7 @@ class Invoices {
     invoice.order_number = params.order_number
     invoice.name = params.name
     invoice.date = params.date
-    invoice.date_payment = params.date_payment || null
-    if (params.status === 'paid' && invoice.status !== 'paid' && !params.date_payment) {
-      invoice.date_payment = Utils.date()
-    }
+    invoice.date_payment = isPayNow ? Utils.date() : params.date_payment
     invoice.status = params.status
     invoice.client = params.client
     invoice.email = params.email
@@ -311,6 +310,27 @@ class Invoices {
       Storage.upload(`proofs/${file}.jpg`, Buffer.from(params.proof_payment_file, 'base64'))
       invoice.proof_payment = file
       await invoice.save()
+    }
+
+    if (isPayNow && invoice.project_id) {
+      const project = await DB('vod')
+        .select('user.email', 'project.name', 'project.artist_name')
+        .join('project', 'project.id', 'vod.project_id')
+        .join('user', 'user.id', 'vod.resp_prod_id')
+        .where('project_id', invoice.project_id)
+        .first()
+
+      if (project) {
+        await Notification.sendEmail({
+          to: project.email,
+          subject: `${project.name} de ${project.artist_name} - Facture de ${invoice.total} ${invoice.currency} payée`,
+          html: `
+          <p>La facture ${invoice.number} de ${invoice.total} ${invoice.currency} a été payée.</p>
+          <p><a href="https://www.diggersfactory.com/sheraf/project/${invoice.project_id}/invoices">Voir le projet ${project.name} de ${project.artist_name}</a></p>
+          <p><a href="https://www.diggersfactory.com/sheraf/invoice/${invoice.id}">Voir la facture</a></p>
+        `
+        })
+      }
     }
 
     log.save(invoice)
