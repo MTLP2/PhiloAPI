@@ -13,7 +13,7 @@ import Utils from 'App/Utils'
 import request from 'request'
 
 class Whiplash {
-  static api = (endpoint, options = {}) => {
+  static api = (endpoint, options = {}): Promise<any> => {
     return new Promise((resolve, reject) => {
       request(
         {
@@ -1100,9 +1100,64 @@ class Whiplash {
     return res
   }
 
-  static getDuplicates = async (params: {
-  }) => {
-    return 'duplicates'
+  static getDuplicates = async () => {
+    let items: any[] = []
+    const queries: any[] = []
+    for (let i = 1; i < 5; i++) {
+      queries.push(Whiplash.api(`/orders`, {
+        method: 'GET',
+        body: {
+          page: i,
+          per_page: 250
+          }
+        })
+      )
+    }
+    const rr = await Promise.all(queries)
+    for (const r of rr) {
+      items.push(...r)
+    }
+    const res = {}
+
+    console.log('items => ', items.length)
+    for (const item of items) {
+      for (const order of item.order_items) {
+        const date = item.created_at.substring(0, 10)
+        const key = `${item.shipping_name}_${order.sku}_${date}`
+        if (!res[key]) {
+          res[key] = []
+        }
+        if (res[key].find((o: any) => o.id === item.id)) {
+          continue
+        }
+        res[key].push({
+          id: item.id,
+          name: item.shipping_name,
+          sku: order.sku,
+          date: item.created_at
+        })
+      }
+    }
+
+    const monthDuplicates = {}
+
+    const duplicates: any[] = []
+    for (const line of Object.keys(res)) {
+      if (res[line].length > 1) {
+        duplicates.push({
+          name: line.split('_')[0],
+          sku: line.split('_')[1],
+          orders: res[line]
+        })
+        const month = line.split('_')[2].substring(0, 7)
+        if (!monthDuplicates[month]) {
+          monthDuplicates[month] = 0
+        }
+        monthDuplicates[month] += res[line].length - 1
+      }
+    }
+
+    return duplicates
   }
 }
 
