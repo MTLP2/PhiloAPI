@@ -3629,6 +3629,7 @@ class Box {
       const data = {
         ...box,
         id: 'B' + box.id,
+        external_id: box.id.toString(),
         items: items
       }
       dispatchs.push(data)
