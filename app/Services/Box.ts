@@ -2224,8 +2224,8 @@ class Box {
   static getMonths(params) {
     params.query = DB('box_month')
       .select('box_month.*', 'p.name', 'p.artist_name', 'p.picture')
-      .join('project as p', 'p.id', 'project_id')
-      .orderBy('box_month.id', 'desc')
+      .leftJoin('project as p', 'p.id', 'project_id')
+      .orderBy('box_month.date', 'desc')
 
     return Utils.getRows(params)
   }
