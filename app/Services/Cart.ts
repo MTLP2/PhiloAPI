@@ -985,6 +985,7 @@ class Cart {
     partner: string
     country_id: string
     weight: number
+    category?: string
     quantity: number
     insert: number
     is_large: boolean
@@ -1009,6 +1010,10 @@ class Cart {
         }
       })
       .all()
+
+    if (params.category === 'vinyl' && params.weight < 250) {
+      params.weight = 250
+    }
 
     const packageWeight = packageWeights[Cart.getWeightString(params.weight)]
     if (!packageWeight) {
