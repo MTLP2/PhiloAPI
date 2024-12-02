@@ -1147,7 +1147,7 @@ class Production {
         tracking_number: params.tracking
       })
       await Notification.sendEmail({
-        to: 'retail@diggersfactory.com,ferdinand@diggersfactory.com,victor@diggersfactory.com',
+        to: 'retail@diggersfactory.com,ferdinand@diggersfactory.com',
         subject: `${project.artist_name} ${project.name} : Tracking pour un dispatch allant à ${params.customer.name}`,
         text: `
           <p>Le projet ${project.artist_name} ${project.name}  a été envoyé à <strong>${params.customer.name}</strong>.</p>
