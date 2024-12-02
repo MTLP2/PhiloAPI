@@ -1208,6 +1208,80 @@ class BigBlue {
       }
     })
   }
+
+  static getDuplicates = async () => {
+    let orders: any[] = []
+    let pageToken = ''
+    let pages = 5
+
+    do {
+      const res: any = await this.api('ListOrders', {
+        method: 'POST',
+        params: {
+          page_size: 500,
+          page_token: pageToken
+        }
+      })
+      orders.push(...res.orders)
+      if (res.next_page_token) {
+        pageToken = res.next_page_token
+        pages--
+      } else {
+        break
+      }
+    } while (pages > 0)
+
+    const res = {}
+    for (const order of orders) {
+      if (!order.external_id) {
+        continue
+      }
+      if (!res[order.external_id]) {
+        res[order.external_id] = []
+      }
+      console.log(order)
+      res[order.external_id].push({
+        id: order.id,
+        date: order.submit_time
+      })
+    }
+
+    const duplicates: any[] = []
+    for (const [key, value] of Object.entries(res) as [string, { id: string; date: string }[]][]) {
+      if (value.length > 1) {
+        for (const v of value) {
+          duplicates.push({ key, value: v.id, date: v.date })
+        }
+      }
+    }
+
+    await Notification.sendEmail({
+      to: 'victor@diggersfactory.com',
+      subject: 'Duplicates BigBlue',
+      html: `
+        <p>Duplicates BigBlue</p>
+        <table style="width: 100%;">
+          <tr>
+            <td>Id</td>
+            <td>BigBlue Id</td>
+            <td>Date</td>
+          </tr>
+          ${duplicates
+            .sort((a, b) => b.date.localeCompare(a.date))
+            .map(
+              (duplicate) => `<tr>
+            <td>${duplicate.key}</td>
+            <td><a href="https://app.bigblue.co/orders/${duplicate.value}">${duplicate.value}</a></td>
+            <td>${duplicate.date}</td>
+          </tr>`
+            )
+            .join('')}
+        </table>
+      `
+    })
+
+    return duplicates
+  }
 }
 
 export default BigBlue
