@@ -140,6 +140,7 @@ export const getRows = async (params: {
   order?: string
 }): Promise<{
   total: number
+  count: number
   size: number
   page: number
   rows: any[]
@@ -212,7 +213,7 @@ export const getRows = async (params: {
     }
   }
 
-  const total = query
+  const totalQuery = query
     .clearSelect()
     .clearOrderBy()
     .select(({ fn }) => [fn.count((params.count || 'id') as any).as('count')])
@@ -231,12 +232,13 @@ export const getRows = async (params: {
     query = query.limit(size).offset((page - 1) * size)
   }
 
-  const [data, count] = await Promise.all([
+  const [data, total] = await Promise.all([
     query.execute(),
-    total.executeTakeFirst().then((res) => res?.count)
+    totalQuery.executeTakeFirst().then((res) => res?.count)
   ])
   return {
-    total: count,
+    count: total,
+    total: total,
     size: size,
     page: page,
     rows: data
