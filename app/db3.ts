@@ -6,7 +6,7 @@ import { createPool } from 'mysql2'
 
 export { Expression, SqlBool } from 'kysely'
 
-export type { DB }
+// export type { DB }
 
 const dialect = new MysqlDialect({
   pool: createPool({
@@ -143,7 +143,7 @@ export const getRows = async (params: {
   count: number
   size: number
   page: number
-  rows: any[]
+  data: any[]
 }> => {
   let { query } = params
 
@@ -238,10 +238,9 @@ export const getRows = async (params: {
   ])
   return {
     count: total,
-    total: total,
     size: size,
     page: page,
-    rows: data
+    data: data
   }
 }
 export default db
