@@ -101,6 +101,7 @@ type Customer = {
   birthday?: string
   lng?: number
   lat?: number
+  email?: string
   created_at?: Timestamp
   updated_at?: Timestamp
 }
@@ -131,6 +132,28 @@ type Digital = {
     | 'refused'
     | 'in_process'
     | 'uploaded'
+  created_at: Timestamp
+  updated_at: Timestamp
+}
+
+type Dispatch = {
+  id: Generated<number>
+  status: string
+  order_shop_id: number
+  logistician: string
+  date_export: Timestamp
+  user_id: number
+  customer_id: number
+  email: string
+  created_at: Timestamp
+  updated_at: Timestamp
+}
+
+type DispatchItem = {
+  id: Generated<number>
+  dispatch_id: number
+  product_id: number
+  quantity: number
   created_at: Timestamp
   updated_at: Timestamp
 }
@@ -188,6 +211,9 @@ type Order = {
 
 type OrderShop = {
   id: Generated<number>
+  user_id: number
+  customer_id: number
+  transporter: string
   total: number
   currency: string
   tax_rate: number
@@ -310,6 +336,8 @@ export type DB = {
   digital: Digital
   digital_action: DigitalAction
   digital_todo: DigitalTodo
+  dispatch: Dispatch
+  dispatch_item: DispatchItem
   feedback: Feedback
   invoice: Invoice
   label: Label
