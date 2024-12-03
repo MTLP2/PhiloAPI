@@ -139,12 +139,17 @@ type Digital = {
 type Dispatch = {
   id: Generated<number>
   status: string
+  type: string
+  shipping_method: string
   order_shop_id: number
+  address_pickup: string
   logistician: string
   date_export: Timestamp
   user_id: number
   customer_id: number
   email: string
+  logs: string
+  is_unique: Boolean
   created_at: Timestamp
   updated_at: Timestamp
 }
@@ -214,10 +219,13 @@ type OrderShop = {
   user_id: number
   customer_id: number
   transporter: string
+  shipping_type: string
+  address_pickup: string
   total: number
   currency: string
   tax_rate: number
   is_paid: Boolean
+  dispatch_id: number
   created_at: Timestamp
   updated_at: Timestamp
 }
