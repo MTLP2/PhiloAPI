@@ -131,7 +131,7 @@ class App {
       if ([8, 13, 16].includes(hour)) {
         await Production.updateDispatchsStatus()
         await Whiplash.getDuplicates()
-        await BigBlue.getDuplicates()
+        // await BigBlue.getDuplicates()
       }
 
       if (hour === 2) {
