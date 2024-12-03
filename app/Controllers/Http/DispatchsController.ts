@@ -2,7 +2,239 @@ import Api from 'App/Services/Api'
 import Dispatchs from 'App/Services/Dispatchs'
 import { schema, validator } from '@ioc:Adonis/Core/Validator'
 
-class DispatchController {
+class DispatchsController {
+  all({ params }) {
+    return Dispatchs.all(params)
+  }
+
+  async find({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          id: schema.number()
+        }),
+        data: params
+      })
+      return Dispatchs.find(payload)
+    } catch (err) {
+      return { error: err.message, validation: err.messages }
+    }
+  }
+
+  async save({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          id: schema.number.optional(),
+          type: schema.string(),
+          logistician: schema.string(),
+          shipping_method: schema.string(),
+          address_pickup: schema.string.optional(),
+          email: schema.string(),
+          comment: schema.string.optional(),
+          order_shop_id: schema.number.optional(),
+          box_id: schema.number.optional(),
+          tracking_number: schema.string.optional(),
+          cost: schema.number.optional(),
+          purchase_order: schema.string.optional(),
+          invoice_number: schema.string.optional(),
+          missing_items: schema.string.optional(),
+          incoterm: schema.string.optional(),
+          user_id: schema.number.optional(),
+          client_id: schema.number.optional(),
+          step: schema.string.optional(),
+          force: schema.boolean.optional(),
+          items: schema.array().members(
+            schema.object().members({
+              barcode: schema.string(),
+              quantity: schema.number(),
+              product_id: schema.number(),
+              stock: schema.number.optional()
+            })
+          ),
+          customer: schema.object().members({
+            type: schema.string(),
+            name: schema.string.optional(),
+            firstname: schema.string(),
+            lastname: schema.string(),
+            address: schema.string(),
+            zip_code: schema.string(),
+            city: schema.string(),
+            state: schema.string.optional(),
+            country_id: schema.string(),
+            phone: schema.string.optional()
+          })
+        }),
+        data: params
+      })
+      return Dispatchs.save(payload)
+    } catch (err) {
+      return { error: err.message, validation: err.messages }
+    }
+  }
+
+  async export({ params }) {
+    return Dispatchs.export(params)
+  }
+
+  async getInvoiceCo({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          id: schema.number(),
+          type: schema.string.optional(),
+          incoterm: schema.string.optional(),
+          products: schema.array().members(
+            schema.object().members({
+              barcode: schema.number(),
+              quantity: schema.number(),
+              title: schema.string.optional(),
+              price: schema.number()
+            })
+          )
+        }),
+        data: params
+      })
+      return Dispatchs.getInvoiceCo(payload)
+    } catch (err) {
+      return { error: err.message, validation: err.messages }
+    }
+  }
+
+  async importCosts({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          file: schema.string()
+        }),
+        data: params
+      })
+      return Dispatchs.importCosts(payload)
+    } catch (err) {
+      return { error: err.message, validation: err.messages }
+    }
+  }
+
+  async saveInvoice({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          id: schema.number.optional(),
+          order_manual_id: schema.number(),
+          invoice_number: schema.string.optional(),
+          total: schema.number.optional(),
+          date: schema.string.optional(),
+          currency: schema.string.optional(),
+          file: schema.string.optional()
+        }),
+        data: {
+          ...params
+        }
+      })
+      return Dispatchs.saveInvoice(payload)
+    } catch (err) {
+      return { error: err.message, validation: err.messages }
+    }
+  }
+
+  async downloadInvoice({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          id: schema.number()
+        }),
+        data: {
+          id: params.id
+        }
+      })
+      return Dispatchs.downloadInvoice(payload)
+    } catch (err) {
+      return { error: err.message, validation: err.messages }
+    }
+  }
+
+  async removeInvoice({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          id: schema.number()
+        }),
+        data: {
+          id: params.id
+        }
+      })
+      return Dispatchs.removeInvoice(payload)
+    } catch (err) {
+      return { error: err.message, validation: err.messages }
+    }
+  }
+
+  async applyInvoiceCosts({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          id: schema.number()
+        }),
+        data: {
+          id: params.id
+        }
+      })
+      return Dispatchs.applyInvoiceCosts(payload)
+    } catch (err) {
+      return { error: err.message, validation: err.messages }
+    }
+  }
+
+  async orderManuelPackingList({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          id: schema.number(),
+          type: schema.string.optional()
+        }),
+        data: params
+      })
+      return Dispatchs.packingList(payload)
+    } catch (err) {
+      return { error: err.message, validation: err.messages }
+    }
+  }
+
+  cancel({ params }) {
+    return Dispatchs.cancel(params)
+  }
+
+  async import({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          file: schema.string()
+        }),
+        data: params
+      })
+      return Dispatchs.getColumns(payload)
+    } catch (err) {
+      return { error: err.message, validation: err.messages }
+    }
+  }
+
+  async getBarcodes({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          file: schema.string(),
+          barcode: schema.string(),
+          quantity: schema.string()
+        }),
+        data: params
+      })
+      return Dispatchs.getBarcodes(payload)
+    } catch (err) {
+      return { error: err.message, validation: err.messages }
+    }
+  }
+
+  /**
   async update({ params, request, transporter }) {
     const api = new Api(request)
 
@@ -78,6 +310,7 @@ class DispatchController {
       return { error: err.message, validation: err.messages }
     }
   }
+  **/
 
   compareShippingOrder({ params }) {
     return Dispatchs.compareShipping(params)
@@ -99,4 +332,4 @@ class DispatchController {
   }
 }
 
-export default DispatchController
+export default DispatchsController
