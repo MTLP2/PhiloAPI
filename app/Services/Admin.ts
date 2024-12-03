@@ -2726,9 +2726,7 @@ class Admin {
 
     user.styles = user.styles ? JSON.parse(user.styles) : []
     user.digs = await Dig.byUser(id)
-    if (User.getProjects) {
-      user.projects = await User.getProjects(id)
-    }
+    user.projects = await User.getProjects(id)
     user.orders = await Admin.getOrders({ user_id: id })
     user.boxes = await Box.all({ filters: null, user_id: id })
 
