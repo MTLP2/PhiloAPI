@@ -1023,7 +1023,6 @@ class User {
     }
 
     projects = await projects.all()
-    console.log(projects)
     return projects
   }
 
