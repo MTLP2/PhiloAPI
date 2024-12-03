@@ -21,7 +21,7 @@ class DispatchsController {
     }
   }
 
-  async save({ params }) {
+  async save({ params, auth }) {
     try {
       const payload = await validator.validate({
         schema: schema.create({
@@ -42,11 +42,9 @@ class DispatchsController {
           incoterm: schema.string.optional(),
           user_id: schema.number.optional(),
           client_id: schema.number.optional(),
-          step: schema.string.optional(),
-          force: schema.boolean.optional(),
+          auth_id: schema.number.optional(),
           items: schema.array().members(
             schema.object().members({
-              barcode: schema.string(),
               quantity: schema.number(),
               product_id: schema.number(),
               stock: schema.number.optional()

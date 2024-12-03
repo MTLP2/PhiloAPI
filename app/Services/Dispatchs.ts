@@ -17,6 +17,7 @@ import Storage from 'App/Services/Storage'
 import Utils from 'App/Utils'
 import Whiplash from 'App/Services/Whiplash'
 import Customer from 'App/Services/Customer'
+import MondialRelay from './MondialRelay'
 
 class Dispatchs {
   static all = async (params: { filters: string; type?: string; page: number; size: number }) => {
@@ -27,10 +28,11 @@ class Dispatchs {
         'customer.firstname',
         'customer.lastname',
         'customer.country_id',
-        'user.name as user_name'
+        'user.name as user_name',
+        'user.email as user_email'
       )
       .orderBy('dispatch.id', 'desc')
-      .join('customer', 'customer.id', 'dispatch.customer_id')
+      .leftJoin('customer', 'customer.id', 'dispatch.customer_id')
       .leftJoin('user', 'user.id', 'dispatch.user_id')
 
     let filters
@@ -39,14 +41,6 @@ class Dispatchs {
     } catch (e) {
       filters = []
     }
-
-    /**
-    if (params.type === 'b2b') {
-      query.where('dispatch.type', 'b2b')
-    } else {
-      query.where('dispatch.type', '!=', 'b2b')
-    }
-    **/
 
     for (const i in filters) {
       const filter = filters[i]
@@ -71,6 +65,7 @@ class Dispatchs {
       if (filter.name === 'user') {
         query.where((query) => {
           query.whereRaw(`concat(firstname, ' ', lastname) like '%${filter.value}%'`)
+          query.orWhere('dispatch.email', 'like', `%${filter.value}%`)
           query.orWhere('user.name', 'like', `%${filter.value}%`)
           query.orWhere('user.email', 'like', `%${filter.value}%`)
         })
@@ -160,6 +155,7 @@ class Dispatchs {
     tracking_number?: string
     comment?: string
     user_id?: number
+    auth_id?: number
     client_id?: number
     cost?: number
     incoterm?: string
@@ -168,9 +164,8 @@ class Dispatchs {
     missing_items?: string
     step?: string
     items: {
-      barcode: number
       quantity: number
-      stock: number
+      stock?: number
       product_id: number
     }[]
     customer: CustomerDb
@@ -181,50 +176,20 @@ class Dispatchs {
       item = await DB('dispatch').find(params.id)
     } else {
       item.created_at = Utils.date()
+      item.by_id = params.auth_id
+      item.status = 'in_progress'
+      item.logs = JSON.stringify([
+        {
+          message: 'dispatch_created',
+          status: 'in_progress',
+          created_at: Utils.date()
+        }
+      ])
     }
 
     const products = {}
 
     let items = [...params.items]
-
-    if (!item.date_export) {
-      const errors = {}
-      const promises: (() => Promise<void>)[] = [] as any
-
-      for (const item of items) {
-        promises.push(async () => {
-          const product = await DB('product')
-            .select(
-              'product.id',
-              'product.name',
-              'product.bigblue_id',
-              'product.whiplash_id',
-              'product.ekan_id',
-              'product.hs_code',
-              'product.country_id',
-              'product.more',
-              'product.type'
-            )
-            .where('barcode', item.barcode)
-            .first()
-
-          if (!product) {
-            errors[item.barcode] = 'No product'
-            return
-          }
-          products[item.barcode] = product
-        })
-      }
-      await Promise.all(
-        promises.map((p) => {
-          return p()
-        })
-      )
-
-      if (Object.keys(errors).length > 0) {
-        return { errors: errors }
-      }
-    }
 
     const missingItems = params.items
       .filter((i) => !i.stock || i.quantity > i.stock)
@@ -242,17 +207,16 @@ class Dispatchs {
       params.missing_items === 'only_available'
     ) {
       for (const i in items) {
-        if (items[i].stock < items[i].quantity) {
+        if (items[i].stock && items[i].stock < items[i].quantity) {
           items[i].stock = items[i].stock < 0 ? 0 : items[i].stock || 0
           items[i].quantity = items[i].stock
         }
       }
       items = items.filter((i) => i.quantity > 0)
     } else if (params.missing_items === 'without_items') {
-      items = items.filter((i) => i.quantity <= i.stock)
+      items = items.filter((i) => i.quantity <= (i.stock || 0))
     }
 
-    item.status = 'in_progress'
     item.type = params.type
     item.logistician = params.logistician
     item.shipping_method = params.shipping_method
@@ -743,7 +707,6 @@ class Dispatchs {
       item.created_at = Utils.date()
     }
 
-    console.log(params)
     item.dispatch_id = params.dispatch_id
     item.invoice_number = params.invoice_number
     item.total = params.total
@@ -2129,16 +2092,104 @@ class Dispatchs {
     }
   }
 
+  static syncProject = async (params: {
+    id: number
+    logistician: string
+    quantity: number
+    products: number[]
+  }) => {
+    const vod = await DB('vod').where('project_id', params.id).first()
+    if (!vod) {
+      return false
+    }
+
+    const orders = await DB('order_shop as os')
+      .select(
+        'os.id',
+        'os.user_id',
+        'os.order_id',
+        'os.shipping_type',
+        'os.address_pickup',
+        'os.transporter',
+        'oi.quantity'
+      )
+      .join('order_item as oi', 'oi.order_shop_id', 'os.id')
+      .where('os.transporter', params.logistician)
+      .where('oi.project_id', params.id)
+      /**
+      .whereIn('os.id', (query) => {
+        query.select('order_shop_id').from('order_item').where('project_id', params.id)
+      })
+      **/
+      .whereNull('date_export')
+      .whereNull('logistician_id')
+      .whereNull('dispatch_id')
+      .where('is_paid', true)
+      .where('is_paused', false)
+      .orderBy('os.created_at')
+      .all()
+
+    /**
+    const items = await DB()
+      .select('product.id as product_id', 'order_shop_id', 'oi.quantity')
+      .from('order_item as oi')
+      .join('project_product', 'project_product.project_id', 'oi.project_id')
+      .join('product', 'project_product.product_id', 'product.id')
+      .where((query) => {
+        query.whereRaw('product.size like oi.size')
+        query.orWhereRaw(`oi.products LIKE CONCAT('%[',product.id,']%')`)
+        query.orWhere((query) => {
+          query.whereNull('product.size')
+          query.whereNotExists((query) => {
+            query.from('product as child').whereRaw('product.id = child.parent_id')
+          })
+        })
+      })
+      .whereIn(
+        'order_shop_id',
+        orders.map((o) => o.id)
+      )
+      .all()
+    **/
+
+    const dispatchs: any[] = []
+    let qty = 0
+
+    for (const order of orders) {
+      if (qty >= params.quantity) {
+        break
+      }
+      dispatchs.push(order)
+      qty = qty + order.quantity
+    }
+
+    if (dispatchs.length > 0) {
+      for (const dispatch of dispatchs) {
+        await Dispatchs.createFromOrderShop({ order_shop_id: dispatch.id })
+      }
+      if (qty > 0) {
+        await DB('project_export').insert({
+          transporter: params.logistician,
+          project_id: vod.project_id,
+          quantity: qty,
+          date: Utils.date()
+        })
+      }
+    }
+
+    return { sucess: true, orders: dispatchs.length, quantity: qty }
+  }
+
   static createFromOrderShop = async (params: { order_shop_id: number }) => {
     const exists = await db
       .selectFrom('dispatch')
       .select(['id', 'status'])
       .where('order_shop_id', '=', params.order_shop_id)
+      .where('type', '=', 'order')
       .executeTakeFirst()
 
-    if (exists && exists.status === 'pending') {
-      await db.deleteFrom('dispatch').where('id', '=', exists.id).execute()
-      await db.deleteFrom('dispatch_item').where('dispatch_id', '=', exists.id).execute()
+    if (exists) {
+      return { success: false, error: 'dispatch_already_exists' }
     }
 
     const shop = await db
@@ -2149,7 +2200,9 @@ class Dispatchs {
         'order_shop.id',
         'order_shop.transporter',
         'order_shop.user_id',
-        'order_shop.customer_id'
+        'order_shop.customer_id',
+        'order_shop.shipping_type',
+        'order_shop.address_pickup'
       ])
       .where('order_shop.id', '=', params.order_shop_id)
       .executeTakeFirst()
@@ -2175,15 +2228,77 @@ class Dispatchs {
       .where('order_shop_id', shop.id)
       .all()
 
-    const dispatch = model('dispatch')
-    dispatch.status = 'pending'
-    dispatch.logistician = shop.transporter
-    dispatch.customer_id = shop.customer_id
-    dispatch.order_shop_id = shop.id
-    dispatch.user_id = shop.user_id
-    await dispatch.save()
+    await Dispatchs.createOrder({
+      logistician: shop.transporter,
+      customer_id: shop.customer_id,
+      order_shop_id: shop.id,
+      address_pickup: shop.address_pickup,
+      user_id: shop.user_id,
+      shipping_method: shop.shipping_type,
+      items: items
+    })
 
-    for (const item of items) {
+    return { success: true }
+  }
+
+  static createOrder = async (params: {
+    logistician: string
+    customer_id: number
+    order_shop_id: number
+    address_pickup: string
+    user_id: number
+    shipping_method: string
+    items: {
+      product_id: number
+      quantity: number
+    }[]
+  }) => {
+    const exists = await db
+      .selectFrom('dispatch')
+      .select(['id', 'status'])
+      .where('order_shop_id', '=', params.order_shop_id)
+      .executeTakeFirst()
+
+    if (exists && ['pending', 'paused', 'in_progress'].includes(exists.status)) {
+      await db.deleteFrom('dispatch').where('id', '=', exists.id).execute()
+      await db.deleteFrom('dispatch_item').where('dispatch_id', '=', exists.id).execute()
+    }
+
+    const dispatch = model('dispatch')
+    dispatch.status = 'in_progress'
+    dispatch.type = 'order'
+    dispatch.logistician = params.logistician
+    dispatch.customer_id = params.customer_id
+    dispatch.order_shop_id = params.order_shop_id
+    dispatch.address_pickup = params.address_pickup
+    dispatch.shipping_method = params.shipping_method
+    dispatch.user_id = params.user_id
+    dispatch.is_unique = true
+    dispatch.logs = JSON.stringify([
+      {
+        message: 'dispatch_created',
+        status: 'in_progress',
+        created_at: new Date().toISOString()
+      }
+    ])
+
+    try {
+      await dispatch.save()
+    } catch (e) {
+      if (e.code === 'ER_DUP_ENTRY') {
+        return { success: false, error: 'dispatch_already_exists' }
+      }
+    }
+
+    await db
+      .updateTable('order_shop')
+      .set({
+        dispatch_id: Number(dispatch.id)
+      })
+      .where('id', '=', params.order_shop_id)
+      .execute()
+
+    for (const item of params.items) {
       const dis = model('dispatch_item')
       dis.dispatch_id = Number(dispatch.id)
       dis.product_id = item.product_id
@@ -2196,7 +2311,6 @@ class Dispatchs {
 
   static setProducstId = async () => {
     const items = await DB('dispatch_item').select('id', 'barcode').whereNull('product_id').all()
-    console.log(items.length)
 
     for (const item of items) {
       const product = await DB('product').where('barcode', item.barcode).first()

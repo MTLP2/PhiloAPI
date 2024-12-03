@@ -399,6 +399,7 @@ class Admin {
         'size',
         'date_export',
         'logistician_id',
+        'dispatch_id',
         'os.transporter',
         'sending',
         'quantity',
@@ -542,7 +543,7 @@ class Admin {
         project.trans[order.transporter].sizes[order.size] += order.quantity
       }
       project.count += order.quantity
-      if (!order.date_export) {
+      if (!order.date_export && !order.dispatch_id) {
         project.trans[order.transporter].to_send += order.quantity
       }
       if (order.item_id) {
@@ -2018,7 +2019,7 @@ class Admin {
       .belongsTo('customer')
       .all()
 
-    const orderManuals = await DB('order_manual')
+    const dispatchs = await DB('dispatch')
       .whereIn(
         'order_shop_id',
         orderShops.map((s) => s.id)
@@ -2041,7 +2042,7 @@ class Admin {
         (notification) => notification.order_shop_id === shop.id
       )
       shop.payments = payments.filter((p) => p.order_shop_id === shop.id)
-      shop.order_manual = orderManuals.filter((o) => o.order_shop_id === shop.id)
+      shop.dispatchs = dispatchs.filter((o) => o.order_shop_id === shop.id)
 
       shop.items = []
       shop.address_pickup = shop.shipping_type === 'pickup' ? JSON.parse(shop.address_pickup) : {}
@@ -2727,6 +2728,7 @@ class Admin {
     user.styles = user.styles ? JSON.parse(user.styles) : []
     user.digs = await Dig.byUser(id)
     user.projects = await User.getProjects(id)
+
     user.orders = await Admin.getOrders({ user_id: id })
     user.boxes = await Box.all({ filters: null, user_id: id })
 
@@ -5578,6 +5580,7 @@ class Admin {
             .whereRaw('project_id = project.id')
             .whereNull('os.date_export')
             .whereNull('logistician_id')
+            .whereNull('dispatch_id')
             .where('is_paid', true)
             .where('os.transporter', transporter)
             .as('to_sync')

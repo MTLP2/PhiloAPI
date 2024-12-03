@@ -393,17 +393,21 @@ class AdminController {
   async syncProject({ params, user }) {
     params.project_id = params.id
     params.user = user
-    if (params.type === 'daudin') {
-      return Elogik.syncProject(params)
-    } else if (params.type === 'bigblue') {
-      return BigBlue.syncProject(params)
-    } else if (params.type === 'sna') {
-      return Admin.syncProjectSna(params)
-    } else if (params.type === 'whiplash') {
-      return Whiplash.syncProject(params)
-    } else if (params.type === 'whiplash_uk') {
-      return Whiplash.syncProject(params)
-    }
+
+    const payload = await validator.validate({
+      schema: schema.create({
+        id: schema.number(),
+        logistician: schema.string(),
+        quantity: schema.number(),
+        products: schema.array().members(schema.number())
+      }),
+      data: {
+        ...params,
+        logistician: params.type
+      }
+    })
+
+    return Dispatchs.syncProject(payload)
   }
 
   async downloadProject({ params }) {
@@ -477,7 +481,9 @@ class AdminController {
   }
 
   syncOrder({ params }) {
-    return Order.sync(params, true)
+    return Dispatchs.createFromOrderShop({
+      order_shop_id: params.id
+    })
   }
 
   getOrderShopInvoice({ params }) {
