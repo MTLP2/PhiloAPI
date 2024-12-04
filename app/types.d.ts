@@ -149,7 +149,7 @@ type Dispatch = {
   customer_id: number
   email: string
   logs: string
-  is_unique: Boolean
+  is_unique: Boolean | null
   created_at: Timestamp
   updated_at: Timestamp
 }
