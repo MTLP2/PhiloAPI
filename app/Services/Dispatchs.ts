@@ -80,15 +80,15 @@ class Dispatchs {
       query: query
     })
 
-    const products = await DB('product')
-      .join('dispatch_item', 'dispatch_item.product_id', 'product.id')
+    const products = await DB('dispatch_item')
+      .leftJoin('product', 'product.id', 'dispatch_item.product_id')
       .select(
         'dispatch_item.dispatch_id',
         'dispatch_item.quantity',
+        'dispatch_item.barcode',
         'product.id',
         'product.name',
-        'product.type',
-        'product.barcode'
+        'product.type'
       )
       .whereIn(
         'dispatch_id',
@@ -2309,7 +2309,90 @@ class Dispatchs {
     return { success: true }
   }
 
-  static setProducstId = async () => {
+  static convertOldDispatch = async () => {
+    await DB().execute('TRUNCATE TABLE dispatch')
+    await DB().execute('TRUNCATE TABLE dispatch_item')
+
+    /**
+    const ordersManual = await DB('order_manual').select('*').all()
+    const ordersManualItems = await DB('order_manual_item').select('*').all()
+    for (const order of ordersManual) {
+      order.status = order.step
+      order.logistician = order.transporter
+      order.cost = order.shipping_cost
+      order.shipping_method = order.shipping_type
+      delete order.transporter
+      delete order.step
+      delete order.barcode
+      delete order.barcodes
+      delete order.quantity
+      delete order.shipping_cost
+      delete order.shipping_type
+      delete order.transporter_export
+      delete order.whiplash_id
+      await DB('dispatch').insert({
+        ...order
+      })
+
+      for (const item of ordersManualItems.filter((i) => i.order_manual_id === order.id)) {
+        await DB('dispatch_item').insert({
+          dispatch_id: item.order_manual_id,
+          product_id: item.product_id,
+          quantity: item.quantity,
+          barcode: item.barcode,
+          created_at: item.created_at,
+          updated_at: item.updated_at
+        })
+      }
+    }
+    **/
+
+    const boxDispatches = await DB('box_dispatch')
+      .join('box', 'box.id', 'box_dispatch.box_id')
+      .select(
+        'box_dispatch.*',
+        'box.user_id',
+        'box.customer_id',
+        'box.shipping_type',
+        'box.address_pickup'
+      )
+      .limit(10)
+      .all()
+
+    for (const box of boxDispatches) {
+      const res = await DB('dispatch').insert({
+        status: box.step === 'confirmed' && !box.date_export ? 'in_progress' : box.step,
+        type: 'box',
+        logistician: box.transporter || 'daudin',
+        logistician_id: box.logistician_id,
+        box_id: box.box_id,
+        customer_id: box.customer_id,
+        order_shop_id: box.order_shop_id,
+        address_pickup: box.address_pickup,
+        shipping_method: box.shipping_type,
+        date_export: box.date_export,
+        purchase_order: box.id,
+        tracking_link: box.tracking_link,
+        cost: box.shipping_cost,
+        cost_currency: 'EUR',
+        tracking_transporter: box.tracking_transporter,
+        user_id: box.user_id,
+        created_at: box.created_at,
+        updated_at: box.updated_at
+      })
+
+      const barcodes = box.barcodes.split(',')
+      for (const barcode of barcodes) {
+        await DB('dispatch_item').insert({
+          dispatch_id: res,
+          barcode: barcode,
+          quantity: 1,
+          created_at: box.created_at,
+          updated_at: box.updated_at
+        })
+      }
+    }
+
     const items = await DB('dispatch_item').select('id', 'barcode').whereNull('product_id').all()
 
     for (const item of items) {
