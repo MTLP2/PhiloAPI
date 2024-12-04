@@ -4,12 +4,12 @@ import Utils from 'App/Utils'
 import Invoices from 'App/Services/Invoices'
 import Customer from 'App/Services/Customer'
 import Orders from 'App/Services/Order'
-import OrdersManual from 'App/Services/OrdersManual'
 import ApiError from 'App/ApiError'
 import Notification from './Notification'
 import Revolut from 'App/Services/Revolut'
 import Env from '@ioc:Adonis/Core/Env'
 import Stripe from 'stripe'
+import Dispatchs from './Dispatchs'
 
 const stripe = require('stripe')(config.stripe.client_secret)
 
@@ -297,34 +297,8 @@ class Payment {
     }
 
     if (payment.order_shop_id) {
-      const order = await DB('order_shop')
-        .select(
-          'order_shop.transporter',
-          'shipping_type',
-          'address_pickup',
-          'order_shop.customer_id',
-          'user.email'
-        )
-        .join('user', 'user.id', 'order_shop.user_id')
-        .where('order_shop.id', payment.order_shop_id)
-        .belongsTo('customer')
-        .first()
-
-      const items = await DB('order_item')
-        .select('quantity', 'barcode')
-        .join('vod', 'vod.project_id', 'order_item.project_id')
-        .where('order_shop_id', payment.order_shop_id)
-        .all()
-
-      await OrdersManual.save({
-        transporter: order.transporter || 'daudin',
-        type: 'return',
-        order_shop_id: payment.order_shop_id,
-        shipping_type: order.shipping_type === 'pickup' ? 'pickup' : 'standard',
-        address_pickup: order.address_pickup,
-        customer: order.customer,
-        email: order.email,
-        items: items
+      await Dispatchs.createReturn({
+        order_shop_id: payment.order_shop_id
       })
     }
 

@@ -2234,6 +2234,7 @@ class Dispatchs {
       order_shop_id: shop.id,
       address_pickup: shop.address_pickup,
       user_id: shop.user_id,
+      type: 'order',
       shipping_method: shop.shipping_type,
       items: items
     })
@@ -2247,6 +2248,7 @@ class Dispatchs {
     order_shop_id: number
     address_pickup: string
     user_id: number
+    type: string
     shipping_method: string
     items: {
       product_id: number
@@ -2256,24 +2258,26 @@ class Dispatchs {
     const exists = await db
       .selectFrom('dispatch')
       .select(['id', 'status'])
+      .where('type', '=', params.type)
       .where('order_shop_id', '=', params.order_shop_id)
       .executeTakeFirst()
 
-    if (exists && ['pending', 'paused', 'in_progress'].includes(exists.status)) {
-      await db.deleteFrom('dispatch').where('id', '=', exists.id).execute()
-      await db.deleteFrom('dispatch_item').where('dispatch_id', '=', exists.id).execute()
+    if (exists && params.type !== 'return') {
+      return { success: false, error: 'dispatch_already_exists' }
+      // await db.deleteFrom('dispatch').where('id', '=', exists.id).execute()
+      // await db.deleteFrom('dispatch_item').where('dispatch_id', '=', exists.id).execute()
     }
 
     const dispatch = model('dispatch')
     dispatch.status = 'in_progress'
-    dispatch.type = 'order'
+    dispatch.type = params.type
     dispatch.logistician = params.logistician
     dispatch.customer_id = params.customer_id
     dispatch.order_shop_id = params.order_shop_id
     dispatch.address_pickup = params.address_pickup
     dispatch.shipping_method = params.shipping_method
     dispatch.user_id = params.user_id
-    dispatch.is_unique = true
+    dispatch.is_unique = params.type === 'order' ? true : null
     dispatch.logs = JSON.stringify([
       {
         message: 'dispatch_created',
@@ -2285,6 +2289,7 @@ class Dispatchs {
     try {
       await dispatch.save()
     } catch (e) {
+      console.log('dup')
       if (e.code === 'ER_DUP_ENTRY') {
         return { success: false, error: 'dispatch_already_exists' }
       }
@@ -2307,6 +2312,36 @@ class Dispatchs {
     }
 
     return { success: true }
+  }
+
+  static createReturn = async (params: { order_shop_id: number }) => {
+    const dispatch = await db
+      .selectFrom('dispatch')
+      .where('order_shop_id', '=', params.order_shop_id)
+      .where('type', '=', 'order')
+      .selectAll('dispatch')
+      .executeTakeFirst()
+
+    if (!dispatch) {
+      return { success: false, error: 'dispatch_not_found' }
+    }
+
+    const items = await db
+      .selectFrom('dispatch_item')
+      .where('dispatch_id', '=', dispatch.id)
+      .selectAll('dispatch_item')
+      .execute()
+
+    return Dispatchs.createOrder({
+      logistician: dispatch.logistician,
+      customer_id: dispatch.customer_id,
+      order_shop_id: dispatch.order_shop_id,
+      address_pickup: dispatch.address_pickup,
+      shipping_method: dispatch.shipping_method,
+      user_id: dispatch.user_id,
+      type: 'return',
+      items: items
+    })
   }
 
   static convertOldDispatch = async () => {
