@@ -7,6 +7,7 @@ import Storage from 'App/Services/Storage'
 import Env from '@ioc:Adonis/Core/Env'
 import Excel from 'exceljs'
 import OrdersManual from 'App/Services/OrdersManual'
+import { Dispatch } from 'App/types'
 
 class BigBlue {
   static async api(
@@ -430,6 +431,77 @@ class BigBlue {
       default:
         return 'standard'
     }
+  }
+
+  static syncDispatch = async (dispatch: Dispatch) => {
+    for (const i in dispatch.items) {
+      if (process.env.NODE_ENV !== 'production') {
+        dispatch.items[i].bigblue_id = 'DIGG-000000-0001'
+      }
+    }
+
+    const pickup = dispatch.address_pickup ? JSON.parse(dispatch.address_pickup) : null
+
+    const address = Utils.wrapText(dispatch.customer.address, ' ', 35)
+    let address2 = address[1]
+      ? ` ${address[1]} ${dispatch.customer.address2}`
+      : dispatch.customer.address2
+    address2 = address2 ? address2.substring(0, 35) : ''
+
+    const data = {
+      order: {
+        external_id: dispatch.id.toString(),
+        language: 'fr',
+        currency: 'EUR',
+        shipping_method: BigBlue.getShippingType(dispatch.shipping_method),
+        shipping_price: dispatch.cost_invoiced ? dispatch.cost_invoiced.toString() : '1',
+        b2b: dispatch.type === 'b2b' ? true : false,
+        pickup_point:
+          dispatch.shipping_method === 'pickup'
+            ? {
+                id: pickup.number.toString(),
+                display_name: pickup.name,
+                postal: pickup.zip_coe,
+                country: pickup.country_id,
+                carrier_service: 'mondialrelay-relaisl'
+              }
+            : null,
+        shipping_address: {
+          first_name: dispatch.firstname,
+          last_name: dispatch.lastname,
+          company: dispatch.name,
+          phone: dispatch.phone,
+          email: dispatch.customer_email || dispatch.email,
+          line1: address[0],
+          line2: address2,
+          city: dispatch.city,
+          postal: dispatch.zip_code,
+          state: dispatch.state,
+          country: dispatch.country_id
+        },
+        line_items: dispatch.items.map((item: any) => {
+          if (item.bigblue_id === 'DIGG-000006-5357') {
+            item.price = '0'
+            item.quantity = 1
+          }
+          return {
+            product: item.bigblue_id,
+            quantity: item.quantity,
+            unit_price: item.price ? item.price.toString() : '1',
+            unit_tax: '0'
+          }
+        })
+      }
+    }
+
+    console.log(data)
+
+    const res: any = await this.api('CreateOrder', {
+      method: 'POST',
+      params: data
+    })
+
+    return res
   }
 
   static async sync(orders: any[]) {

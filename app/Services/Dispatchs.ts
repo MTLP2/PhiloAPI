@@ -1,6 +1,7 @@
 import Excel from 'exceljs'
 import fs from 'fs'
 import { db, sql, model, getRows } from 'App/db3'
+import { Dispatch } from 'App/types'
 
 import ApiError from 'App/ApiError'
 import Daudin from 'App/Services/Daudin'
@@ -2417,6 +2418,28 @@ class Dispatchs {
       type: 'return',
       items: items
     })
+  }
+
+  static syncDispatchs = async () => {
+    const dispatchs = await db
+      .selectFrom('dispatch')
+      .selectAll('dispatch')
+      .where('status', '=', 'in_progress')
+      .orderBy('created_at', 'asc')
+      .limit(1)
+      .execute()
+
+    for (const dispatch of dispatchs) {
+      await Dispatchs.syncDispatch(dispatch)
+    }
+  }
+
+  static syncDispatch = async (dispatch: Dispatch) => {
+    if (dispatch.logistician === 'bigblue') {
+      await BigBlue.syncDispatch(dispatch)
+    } else if (dispatch.logistician === 'whiplash' || dispatch.logistician === 'whiplash_uk') {
+      await Whiplash.syncDispatch(dispatch)
+    }
   }
 
   static convertOldDispatch = async () => {
