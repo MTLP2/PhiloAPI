@@ -149,7 +149,7 @@ class Dispatchs {
     logistician: string
     shipping_method: string
     address_pickup?: string
-    email: string
+    email?: string
     order_shop_id?: number
     box_id?: number
     tracking_number?: string
@@ -162,13 +162,17 @@ class Dispatchs {
     purchase_order?: string
     invoice_number?: string
     missing_items?: string
+    cost_invoiced?: number
+    cost_currency?: string
+    weight_invoiced?: number
     step?: string
     items: {
       quantity: number
       stock?: number
       product_id: number
     }[]
-    customer: CustomerDb
+    customer?: CustomerDb
+    customer_id?: number
   }) => {
     let item: any = DB('dispatch')
 
@@ -190,7 +194,6 @@ class Dispatchs {
     const products = {}
 
     let items = [...params.items]
-
     const missingItems = params.items
       .filter((i) => !i.stock || i.quantity > i.stock)
       .map((i) => {
@@ -231,12 +234,18 @@ class Dispatchs {
     item.user_id = params.user_id || null
     item.client_id = params.client_id || null
     item.purchase_order = params.purchase_order || null
-    item.cost = params.cost || null
+    item.cost_invoiced = params.cost_invoiced || null
+    item.cost_currency = params.cost_currency || null
+    item.weight_invoiced = params.weight_invoiced || null
     item.invoice_number = params.invoice_number || null
     item.updated_at = Utils.date()
 
-    const customer = await Customer.save(params.customer)
-    item.customer_id = customer.id
+    if (params.customer) {
+      const customer = await Customer.save(params.customer)
+      item.customer_id = customer.id
+    } else {
+      item.customer_id = params.customer_id
+    }
     await item.save()
 
     await DB('dispatch_item').where('dispatch_id', item.id).delete()
@@ -2202,7 +2211,11 @@ class Dispatchs {
         'order_shop.user_id',
         'order_shop.customer_id',
         'order_shop.shipping_type',
-        'order_shop.address_pickup'
+        'order_shop.address_pickup',
+        'order_shop.shipping',
+        'order_shop.currency',
+        'order_shop.currency_rate',
+        'order_shop.weight'
       ])
       .where('order_shop.id', '=', params.order_shop_id)
       .executeTakeFirst()
@@ -2236,6 +2249,10 @@ class Dispatchs {
       user_id: shop.user_id,
       type: 'order',
       shipping_method: shop.shipping_type,
+      weight_invoiced: shop.weight,
+      cost_invoiced: shop.shipping,
+      cost_currency: shop.currency,
+      cost_currency_rate: shop.currency_rate,
       items: items
     })
 
@@ -2250,6 +2267,10 @@ class Dispatchs {
     user_id: number
     type: string
     shipping_method: string
+    weight_invoiced?: number
+    cost_invoiced?: number
+    cost_currency?: string
+    cost_currency_rate?: number
     items: {
       product_id: number
       quantity: number
@@ -2276,6 +2297,10 @@ class Dispatchs {
     dispatch.order_shop_id = params.order_shop_id
     dispatch.address_pickup = params.address_pickup
     dispatch.shipping_method = params.shipping_method
+    dispatch.weight_invoiced = params.weight_invoiced
+    dispatch.cost_invoiced = params.cost_invoiced
+    dispatch.cost_currency = params.cost_currency
+    dispatch.cost_currency_rate = params.cost_currency_rate
     dispatch.user_id = params.user_id
     dispatch.is_unique = params.type === 'order' ? true : null
     dispatch.logs = JSON.stringify([
@@ -2312,6 +2337,61 @@ class Dispatchs {
     }
 
     return { success: true }
+  }
+
+  static createDispatch = async (params: {
+    id?: number
+    box_id?: number
+    order_shop_id?: number
+    user_id: number
+    client_id: number
+    status: string
+    type: string
+    logistician: string
+    customer_id: number
+    address_pickup: string
+    shipping_method: string
+    cost_invoiced: number
+    cost_currency: string
+    weight_invoiced: number
+    items: {
+      product_id: number
+      barcode?: string
+      quantity: number
+    }[]
+  }) => {
+    let dispatch = model('dispatch')
+    if (params.id) {
+      dispatch = await dispatch.find(params.id)
+    }
+    dispatch.status = params.status
+    dispatch.box_id = params.box_id
+    dispatch.order_shop_id = params.order_shop_id
+    dispatch.user_id = params.user_id
+    dispatch.client_id = params.client_id
+    dispatch.type = params.type
+    dispatch.logistician = params.logistician
+    dispatch.customer_id = params.customer_id
+    dispatch.address_pickup = params.address_pickup
+    dispatch.shipping_method = params.shipping_method
+    dispatch.weight_invoiced = params.weight_invoiced
+    dispatch.cost_invoiced = params.cost_invoiced
+    dispatch.cost_currency = params.cost_currency
+    await dispatch.save()
+
+    if (params.id) {
+      await db.deleteFrom('dispatch_item').where('dispatch_id', '=', params.id).execute()
+    }
+
+    for (const item of params.items) {
+      const dis = model('dispatch_item')
+      dis.dispatch_id = dispatch.id
+      dis.product_id = item.product_id
+      dis.quantity = item.quantity
+      await dis.save()
+    }
+
+    return dispatch
   }
 
   static createReturn = async (params: { order_shop_id: number }) => {
