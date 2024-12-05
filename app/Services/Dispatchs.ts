@@ -2112,9 +2112,10 @@ class Dispatchs {
       return false
     }
 
-    const orders = await DB('order_shop as os')
+    const items = await DB('order_shop as os')
       .select(
         'os.id',
+        'pp.product_id',
         'os.user_id',
         'os.order_id',
         'os.shipping_type',
@@ -2123,13 +2124,11 @@ class Dispatchs {
         'oi.quantity'
       )
       .join('order_item as oi', 'oi.order_shop_id', 'os.id')
+      .join('project_product as pp', 'pp.project_id', 'oi.project_id')
       .where('os.transporter', params.logistician)
-      .where('oi.project_id', params.id)
-      /**
       .whereIn('os.id', (query) => {
         query.select('order_shop_id').from('order_item').where('project_id', params.id)
       })
-      **/
       .whereNull('date_export')
       .whereNull('logistician_id')
       .whereNull('dispatch_id')
@@ -2138,35 +2137,30 @@ class Dispatchs {
       .orderBy('os.created_at')
       .all()
 
-    /**
-    const items = await DB()
-      .select('product.id as product_id', 'order_shop_id', 'oi.quantity')
-      .from('order_item as oi')
-      .join('project_product', 'project_product.project_id', 'oi.project_id')
-      .join('product', 'project_product.product_id', 'product.id')
-      .where((query) => {
-        query.whereRaw('product.size like oi.size')
-        query.orWhereRaw(`oi.products LIKE CONCAT('%[',product.id,']%')`)
-        query.orWhere((query) => {
-          query.whereNull('product.size')
-          query.whereNotExists((query) => {
-            query.from('product as child').whereRaw('product.id = child.parent_id')
-          })
-        })
-      })
-      .whereIn(
-        'order_shop_id',
-        orders.map((o) => o.id)
-      )
-      .all()
-    **/
+    const orders = {}
+    for (const item of items) {
+      if (!orders[item.order_id]) {
+        orders[item.order_id] = item
+        orders[item.order_id].products = []
+      }
+      orders[item.order_id].products.push(item.product_id)
+    }
 
     const dispatchs: any[] = []
     let qty = 0
 
-    for (const order of orders) {
+    for (const order of Object.values(orders) as any[]) {
       if (qty >= params.quantity) {
         break
+      }
+      let missingProduct = false
+      for (const product of order.products) {
+        if (!params.products.includes(product)) {
+          missingProduct = true
+        }
+      }
+      if (missingProduct) {
+        continue
       }
       dispatchs.push(order)
       qty = qty + order.quantity
