@@ -140,16 +140,20 @@ type Dispatch = {
   id: Generated<number>
   status: string
   type: string
-  shipping_method: string
-  order_shop_id: number
-  address_pickup: string
-  logistician: string
-  date_export: Timestamp
-  user_id: number
-  customer_id: number
-  email: string
+  shipping_method?: string
+  order_shop_id?: number
+  address_pickup?: string
+  logistician?: string
+  date_export?: Timestamp
+  user_id?: number
+  customer_id?: number
+  weight_invoiced?: number
+  cost_invoiced?: number
+  cost_currency?: string
+  cost_currency_rate?: number
+  email?: string
   logs: string
-  is_unique: Boolean | null
+  is_unique?: Boolean | null
   created_at: Timestamp
   updated_at: Timestamp
 }
@@ -221,6 +225,9 @@ type OrderShop = {
   transporter: string
   shipping_type: string
   address_pickup: string
+  shipping: number
+  weight: number
+  currency_rate: number
   total: number
   currency: string
   tax_rate: number
