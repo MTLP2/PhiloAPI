@@ -185,6 +185,13 @@ class BigBlue {
         is_preorder: false,
         quantity: stock.available || 0
       })
+      await DB('stock')
+        .where('product_id', products[stock.product].id)
+        .where('type', 'bigblue')
+        .where('is_preorder', false)
+        .update({
+          date_check: Utils.date()
+        })
     }
 
     Object.keys(products).forEach((product) => {

@@ -703,6 +703,13 @@ class Whiplash {
             })
           }
         }
+        await DB('stock')
+          .where('product_id', product.id)
+          .where('is_preorder', false)
+          .whereIn('type', ['whiplash', 'whiplash_uk'])
+          .update({
+            date_check: Utils.date()
+          })
       }
     } else {
       const newStocks: any = []
@@ -765,6 +772,14 @@ class Whiplash {
             }
           }
         }
+
+        await DB('stock')
+          .where('product_id', products[item.sku].id)
+          .whereIn('type', ['whiplash', 'whiplash_uk'])
+          .where('is_preorder', 0)
+          .update({
+            date_check: Utils.date()
+          })
       }
 
       if (newStocks.length > 0) {
