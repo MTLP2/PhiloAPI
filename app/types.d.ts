@@ -154,6 +154,8 @@ type Dispatch = {
   email?: string
   logs: string
   is_unique?: Boolean | null
+  customer?: Customer
+  items?: DispatchItem[]
   created_at: Timestamp
   updated_at: Timestamp
 }
