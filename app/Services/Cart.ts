@@ -14,7 +14,6 @@ import DB from 'App/DB'
 import Payments from 'App/Services/Payments'
 import Invoices from 'App/Services/Invoices'
 import Stock from 'App/Services/Stock'
-import Order from 'App/Services/Order'
 import PayPal from 'App/Services/Paypal'
 import cio from 'App/Services/CIO'
 import I18n from '@ioc:Adonis/Addons/I18n'
@@ -22,10 +21,9 @@ import moment from 'moment'
 import Pass from './Pass'
 import Stripe from 'stripe'
 import PromoCode from 'App/Services/PromoCode'
+import Dispatchs from './Dispatchs'
 
 const stripe = require('stripe')(config.stripe.client_secret)
-
-const paypal = require('paypal-rest-sdk')
 
 class Cart {
   static getCart = (userId) => {
@@ -2169,7 +2167,7 @@ class Cart {
 
         if (shop.type === 'shop' && !params.paused) {
           try {
-            Order.sync({ id: shop.id })
+            Dispatchs.createFromOrderShop({ order_shop_id: shop.id })
           } catch (e) {
             console.error(e)
           }
