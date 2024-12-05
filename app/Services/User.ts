@@ -717,6 +717,11 @@ class User {
       const records = await DB('box_project')
         .select(
           'box_project.*',
+          'dispatch.status',
+          'dispatch.tracking_number',
+          'dispatch.tracking_transporter',
+          'dispatch.tracking_link',
+          'dispatch.date_export',
           'p1.name as p1_name',
           'p1.artist_name as p1_artist',
           'p1.picture as p1_picture',
@@ -748,7 +753,8 @@ class User {
           'p6.slug as p6_slug',
           'p6.id as p6'
         )
-        .where('box_id', box.id)
+        .where('box_project.box_id', box.id)
+        .leftJoin('dispatch', 'dispatch.id', 'box_project.dispatch_id')
         .leftJoin('project as p1', 'p1.id', 'project1')
         .leftJoin('project as p2', 'p2.id', 'project2')
         .leftJoin('project as p3', 'p3.id', 'project3')
@@ -760,29 +766,6 @@ class User {
       for (const record of records) {
         record.gifts = JSON.parse(record.gifts)
         box.records[record.date] = record
-      }
-
-      const dispatchs = await DB('box_dispatch')
-        .select('box_dispatch.*', DB.raw("DATE_FORMAT(date_export, '%Y-%m') as date"))
-        .where('box_id', box.id)
-        .all()
-
-      for (const dispatch of dispatchs) {
-        dispatch.date = moment(dispatch.created_at).format('YYYY-MM-01')
-        if (!box.records[dispatch.date]) {
-          box.records[dispatch.date] = {}
-        }
-        if (
-          !dispatch.date_export &&
-          moment(dispatch.created_at).format('YYYY-MM') === moment().format('YYYY-MM')
-        ) {
-          box.dispatch_left++
-        }
-        box.records[dispatch.date].date = dispatch.date
-        box.records[dispatch.date].date_export = dispatch.date_export
-        box.records[dispatch.date].tracking_number = dispatch.tracking_number
-        box.records[dispatch.date].tracking_transporter = dispatch.tracking_transporter
-        box.records[dispatch.date].tracking_link = dispatch.tracking_link
       }
 
       if (box.step === 'confirmed' && box.dispatch_left > 0) {

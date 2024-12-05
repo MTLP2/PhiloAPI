@@ -16,6 +16,7 @@ import Payments from './Payments'
 import config from 'Config/index'
 import View from '@ioc:Adonis/Core/View'
 import I18n from '@ioc:Adonis/Addons/I18n'
+import Dispatchs from 'App/Services/Dispatchs'
 import BigBlue from 'App/Services/BigBlue'
 import Env from '@ioc:Adonis/Core/Env'
 const stripe = require('stripe')(config.stripe.client_secret)
@@ -2318,6 +2319,8 @@ class Box {
 
   static async selectVinyl(params) {
     params.month = moment().format('YYYY-MM-01')
+
+    console.log(params)
     const box = await DB('box')
       .select('box.*', 'user.email', 'user.lang')
       .join('user', 'user.id', 'box.user_id')
@@ -2325,22 +2328,18 @@ class Box {
       .where('user_id', params.user_id)
       .first()
 
-    const dispatchs = (await DB('box_dispatch').where('box_id', box.id).all())
-      .map((b) => b.barcodes)
-      .join(',')
-      .split(',')
-
-    const dispatch = await DB('box_dispatch')
+    let dispatch = await DB('dispatch')
       .where('box_id', box.id)
       .whereRaw("DATE_FORMAT(created_at ,'%Y-%m') = DATE_FORMAT(NOW() ,'%Y-%m')")
       .first()
 
+    console.log(dispatch)
     const goodies = await DB().from('goodie').orderBy('priority').all()
 
     if (!box) {
       return { success: false }
     }
-    if (box.dispatch_left < 1 && dispatch.date_export) {
+    if (box.dispatch_left < 1 && dispatch && dispatch.date_export) {
       return { success: false }
     }
     if (!params.projects || !params.projects[0]) {
@@ -2422,13 +2421,6 @@ class Box {
       return { success: false }
     }
 
-    const products = await DB('project_product')
-      .whereIn(
-        'project_id',
-        [...add, ...sub].filter((p) => p)
-      )
-      .all()
-
     for (const a of add) {
       if (a) {
         await DB('vod')
@@ -2436,6 +2428,7 @@ class Box {
           .update({
             count_box: DB.raw('count_box + 1')
           })
+        /**
         await Stock.save({
           product_id: products.find((p) => p.project_id === a).product_id,
           type: 'bigblue',
@@ -2443,6 +2436,7 @@ class Box {
           diff: true,
           comment: 'box'
         })
+        **/
       }
     }
     for (const s of sub) {
@@ -2452,6 +2446,7 @@ class Box {
           .update({
             count_box: DB.raw('count_box - 1')
           })
+        /**
         await Stock.save({
           product_id: products.find((p) => p.project_id === s).product_id,
           type: 'bigblue',
@@ -2459,12 +2454,22 @@ class Box {
           diff: true,
           comment: 'box'
         })
+        **/
       }
     }
 
     if (dispatch) {
+      const barcodesDispatch = await DB('dispatch_item')
+        .select('product.barcode')
+        .join('product', 'product.id', 'dispatch_item.product_id')
+        .where('dispatch_item.dispatch_id', dispatch.id)
+        .all()
+
       await DB('goodie')
-        .whereIn('barcode', dispatch.barcodes.split(','))
+        .whereIn(
+          'barcode',
+          barcodesDispatch.map((p) => p.barcode)
+        )
         .update({
           stock: DB.raw('stock + 1')
         })
@@ -2504,28 +2509,57 @@ class Box {
     // Flyers Lyon Béton Box Vinyle
     barcodes.push('3760396028442')
 
-    const myGoodies = await Box.getMyGoodie(box, goodies, dispatchs)
-    barcodes.push(...myGoodies.map((g: any) => g.barcode.split(',')))
+    const productsReceived = await DB('dispatch_item')
+      .select('product.barcode')
+      .join('dispatch', 'dispatch.id', 'dispatch_item.dispatch_id')
+      .join('product', 'product.id', 'dispatch_item.product_id')
+      .where('dispatch.box_id', box.id)
+      .all()
 
-    if (dispatch) {
-      dispatch.barcodes = barcodes.join(',')
-      dispatch.updated_at = Utils.date()
-      await dispatch.save()
-    } else {
-      await DB('box_dispatch').insert({
-        box_id: box.id,
-        box_project_id: item.id,
-        barcodes: barcodes.join(','),
-        step: 'confirmed',
-        is_daudin: 1,
-        created_at: Utils.date(),
-        updated_at: Utils.date()
-      })
+    const myGoodies = await Box.getMyGoodie(
+      box,
+      goodies,
+      productsReceived.map((p) => p.barcode)
+    )
+    for (const g of myGoodies) {
+      const b = g.barcode.split(',')
+      for (const bb of b) {
+        barcodes.push(bb)
+      }
+    }
 
+    for (const b in barcodes) {
+      barcodes[b] = Box.getBarcode(barcodes[b])
+    }
+
+    const products = await DB('product').select('id', 'barcode').whereIn('barcode', barcodes).all()
+
+    if (!dispatch) {
       box.dispatchs++
       box.dispatch_left--
       await box.save()
     }
+
+    dispatch = await Dispatchs.save({
+      id: dispatch ? dispatch.id : undefined,
+      box_id: box.id,
+      user_id: params.user_id,
+      type: 'box',
+      logistician: 'bigblue',
+      customer_id: box.customer_id,
+      address_pickup: box.address_pickup,
+      shipping_method: box.shipping_type,
+      cost_invoiced: box.shipping,
+      cost_currency: box.currency,
+      items: barcodes.map((b) => ({
+        quantity: 1,
+        product_id: products.find((p) => p.barcode === Box.getBarcode(b))?.id,
+        barcode: b
+      }))
+    })
+
+    item.dispatch_id = dispatch.id
+    await item.save()
 
     await DB('goodie')
       .whereIn('barcode', barcodes)
@@ -3507,6 +3541,50 @@ class Box {
     return res
   }
 
+  static getBarcode = (barcode: string) => {
+    switch (barcode) {
+      case 'TOTEBAGBLANC':
+        return '3760396029586'
+      case 'BOXDIGGERSV2':
+        return '3760396029562'
+      case 'ADAPTATEUR45T':
+        return '3760155850475'
+      case 'LIVRETENTRETIEN':
+        return '3760396029647'
+      case 'LIVRETDIGGERFR':
+        return '3760396029654'
+      case 'LIVRETDIGGEREN':
+        return '3760396029661'
+      case 'LIVRETPLATINEFR':
+      case 'LIVRETCELLULEFR':
+      case 'LIVRETBEATLESFR':
+        return '3760396029609'
+      case 'LIVRETPLATINEEN':
+        return '3760396029630'
+      case 'LIVRETEQUIPLATINEEN':
+        return '3760396029630'
+      case 'LIVRETCELLULEEN':
+        return '3760396029623'
+      case '0803341553859':
+        return '803341553859'
+      case '0602438261345':
+        return '602438261345'
+      case '760300314807':
+        return '3760300314807'
+      case 'STICKERSDIGGERS':
+        return '3760396029593'
+      case 'POCHETTESOUPLE33TX10':
+        return '3760155850222'
+      case '602445198238':
+        return '0602445567409'
+      case 'LIVRETSONFR':
+      case 'LIVRETSONEN':
+        return null
+      default:
+        return barcode
+    }
+  }
+
   static syncBoxes = async () => {
     const boxes = await DB('box_dispatch')
       .select(
@@ -3533,56 +3611,12 @@ class Box {
       .where('box_dispatch.created_at', '>', '2024-08-01')
       .all()
 
-    console.log('boxes => ', boxes.length)
-
-    const convert = (barcode: string) => {
-      switch (barcode) {
-        case 'TOTEBAGBLANC':
-          return '3760396029586'
-        case 'BOXDIGGERSV2':
-          return '3760396029562'
-        case 'ADAPTATEUR45T':
-          return '3760155850475'
-        case 'LIVRETENTRETIEN':
-          return '3760396029647'
-        case 'LIVRETDIGGERFR':
-          return '3760396029654'
-        case 'LIVRETDIGGEREN':
-          return '3760396029661'
-        case 'LIVRETPLATINEFR':
-        case 'LIVRETCELLULEFR':
-        case 'LIVRETBEATLESFR':
-          return '3760396029609'
-        case 'LIVRETPLATINEEN':
-          return '3760396029630'
-        case 'LIVRETEQUIPLATINEEN':
-          return '3760396029630'
-        case 'LIVRETCELLULEEN':
-          return '3760396029623'
-        case '0803341553859':
-          return '803341553859'
-        case '0602438261345':
-          return '602438261345'
-        case '760300314807':
-          return '3760300314807'
-        case 'STICKERSDIGGERS':
-          return '3760396029593'
-        case 'POCHETTESOUPLE33TX10':
-          return '3760155850222'
-        case '602445198238':
-          return '0602445567409'
-        case 'LIVRETSONFR':
-        case 'LIVRETSONEN':
-          return null
-        default:
-          return barcode
-      }
-    }
+    console.info('boxes => ', boxes.length)
 
     const barcodes = {}
     for (const box of boxes) {
       for (const barcode of box.barcodes.split(',')) {
-        const b = convert(barcode)
+        const b = Box.getBarcode(barcode)
         if (b) {
           barcodes[b] = true
         }
@@ -3607,7 +3641,7 @@ class Box {
       let error = false
       const items: any[] = []
       for (const barcode of box.barcodes.split(',')) {
-        const b = convert(barcode)
+        const b = Box.getBarcode(barcode)
         if (!b) {
           continue
         }
@@ -3635,14 +3669,14 @@ class Box {
       dispatchs.push(data)
     }
 
-    console.log(dispatchs.length)
+    console.info(dispatchs.length)
     if (errors.length > 0) {
       console.log('errors', errors)
       // return errors
     }
 
     const res = await BigBlue.sync(dispatchs)
-    console.log(res)
+    console.info(res)
     return res
   }
 }
