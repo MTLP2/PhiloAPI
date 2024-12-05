@@ -56,6 +56,7 @@ class Dispatchs {
               query
                 .whereRaw(`product.name like '%${filter.value}%'`)
                 .orWhere('product.barcode', 'like', `%${filter.value}%`)
+                .orWhere('product.id', filter.value)
             })
             .query()
         )
