@@ -4,7 +4,7 @@ export type Timestamp = Date | string
 type Boolean = 0 | 1 | true | false | '0' | '1'
 
 type Alert = {
-  id: Generated<number>
+  id: number
   text_en?: string
   text_fr?: string
   link_en?: string
@@ -15,7 +15,7 @@ type Alert = {
 }
 
 type Artist = {
-  id: Generated<number>
+  id: number
   name: string
   description?: string
   country_id: string
@@ -25,7 +25,7 @@ type Artist = {
 }
 
 type Badge = {
-  id: Generated<number>
+  id: number
   description_fr: string
   description_en: string
   title_en: string
@@ -37,7 +37,7 @@ type Badge = {
 }
 
 type Banner = {
-  id: Generated<number>
+  id: number
   title: string
   sub_title: string
   description: string
@@ -59,7 +59,7 @@ type Banner = {
 }
 
 type Chat = {
-  id: Generated<number>
+  id: number
   user_id: number
   cookie_id: string
   destination: string
@@ -71,7 +71,7 @@ type Chat = {
 }
 
 type Client = {
-  id: Generated<number>
+  id: number
   name: string
   email: string
   code: string
@@ -81,18 +81,19 @@ type Client = {
 }
 
 type ClientCustomer = {
-  id: Generated<number>
+  id: number
   client_id: number
   customer_id: number
 }
 
 type Customer = {
-  id?: Generated<number>
+  id?: number
   type?: string
   name?: string
   firstname?: string
   lastname?: string
   address?: string
+  address2?: string
   state?: string
   city?: string
   zip_code?: string
@@ -107,7 +108,7 @@ type Customer = {
 }
 
 type Digital = {
-  id: Generated<number>
+  id: number
   artist_name?: string
   barcode?: string
   checklist?: string
@@ -136,12 +137,30 @@ type Digital = {
   updated_at: Timestamp
 }
 
+type DigitalAction = {
+  id: number
+  type: string
+  created_at: Timestamp
+  updated_at: Timestamp
+}
+
+type DigitalTodo = {
+  id: number
+  action_id: number
+  digital_id: number
+  is_completed: TinyIntBool
+  created_at: Timestamp
+  updated_at: Timestamp
+}
+
 type Dispatch = {
-  id: Generated<number>
+  id: number
   status: string
   type: string
+  logistician_id?: number
   shipping_method?: string
   order_shop_id?: number
+  order_id?: number
   address_pickup?: string
   logistician?: string
   date_export?: Timestamp
@@ -151,17 +170,19 @@ type Dispatch = {
   cost_invoiced?: number
   cost_currency?: string
   cost_currency_rate?: number
+  incoterm?: string
+  purchase_order?: string
+  tracking_number?: string
+  tracking_link?: string
   email?: string
   logs: string
   is_unique?: Boolean | null
-  customer?: Customer
-  items?: DispatchItem[]
   created_at: Timestamp
   updated_at: Timestamp
 }
 
 type DispatchItem = {
-  id: Generated<number>
+  id: number
   dispatch_id: number
   product_id: number
   quantity: number
@@ -169,32 +190,23 @@ type DispatchItem = {
   updated_at: Timestamp
 }
 
+type DispatchLock = {
+  id: number
+  dispatch_id: number
+  created_at: Timestamp
+  updated_at: Timestamp
+}
+
 type Invoice = {
-  id: Generated<number>
+  id: number
   user_id: number
   client_id: number
   created_at: Timestamp
   updated_at: Timestamp
 }
 
-type DigitalAction = {
-  id: Generated<number>
-  type: string
-  created_at: Timestamp
-  updated_at: Timestamp
-}
-
-type DigitalTodo = {
-  id: Generated<number>
-  action_id: number
-  digital_id: number
-  is_completed: TinyIntBool
-  created_at: Timestamp
-  updated_at: Timestamp
-}
-
 type Feedback = {
-  id: Generated<number>
+  id: number
   user_id: number
   order_id: number
   rating: number
@@ -205,7 +217,7 @@ type Feedback = {
 }
 
 type Label = {
-  id: Generated<number>
+  id: number
   name: string
   description?: string
   country_id: string
@@ -215,15 +227,19 @@ type Label = {
 }
 
 type Order = {
-  id: Generated<number>
+  id: number
   created_at: Timestamp
   updated_at: Timestamp
 }
 
 type OrderShop = {
-  id: Generated<number>
+  id: number
   user_id: number
   customer_id: number
+  order_id: number
+  step: string
+  date_export: Timestamp
+  logistician_id: number
   transporter: string
   shipping_type: string
   address_pickup: string
@@ -240,21 +256,31 @@ type OrderShop = {
 }
 
 type OrderItem = {
-  id: Generated<number>
+  id: number
   created_at: Timestamp
   updated_at: Timestamp
 }
 
 type OrderManual = {
-  id: Generated<number>
+  id: number
   user_id: number
   client_id: number
   created_at: Timestamp
   updated_at: Timestamp
 }
 
+type Product = {
+  id: number
+  name: string
+  barcode: string
+  bigblue_id: string
+  whiplash_id: string
+  created_at: Timestamp
+  updated_at: Timestamp
+}
+
 type ShippingWeight = {
-  'id': Generated<number>
+  'id': number
   'country_id': string
   'state'?: string | null
   'partner': 'whiplash_uk' | 'shipehype' | 'daudin'
@@ -301,7 +327,7 @@ type ShippingWeight = {
 }
 
 type Shop = {
-  id: Generated<number>
+  id: number
   code?: string | null
   name?: string | null
   bg_color?: string | null
@@ -323,7 +349,7 @@ type Shop = {
 }
 
 type User = {
-  id: Generated<number>
+  id: number
   name: string
   email: string | null
   customer_id?: number
@@ -355,6 +381,7 @@ export type DB = {
   digital_todo: DigitalTodo
   dispatch: Dispatch
   dispatch_item: DispatchItem
+  dispatch_lock: DispatchLock
   feedback: Feedback
   invoice: Invoice
   label: Label
@@ -364,5 +391,6 @@ export type DB = {
   order_shop: OrderShop
   shipping_weight: ShippingWeight
   shop: Shop
+  product: Product
   user: User
 }
