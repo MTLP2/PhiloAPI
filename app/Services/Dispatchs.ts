@@ -1,7 +1,6 @@
 import Excel from 'exceljs'
 import fs from 'fs'
-import { db, sql, model, getRows } from 'App/db3'
-import { Dispatch } from 'App/types'
+import { db, sql, model, getRows, Expression, SqlBool } from 'App/db3'
 
 import ApiError from 'App/ApiError'
 import Daudin from 'App/Services/Daudin'
@@ -141,6 +140,8 @@ class Dispatchs {
     item.address_pickup = item.address_pickup ? JSON.parse(item.address_pickup) : null
 
     item.invoices = await DB('dispatch_invoice').where('dispatch_id', item.id).all()
+    item.logs = item.logs ? JSON.parse(item.logs) : []
+    item.logs.reverse()
 
     return item
   }
@@ -153,6 +154,7 @@ class Dispatchs {
     address_pickup?: string
     email?: string
     order_shop_id?: number
+    order_id?: number
     box_id?: number
     tracking_number?: string
     comment?: string
@@ -186,9 +188,9 @@ class Dispatchs {
       item.status = 'in_progress'
       item.logs = JSON.stringify([
         {
-          message: 'dispatch_created',
+          action: 'create',
           status: 'in_progress',
-          created_at: Utils.date()
+          date: Utils.date()
         }
       ])
     }
@@ -230,6 +232,7 @@ class Dispatchs {
     item.comment = params.comment
     item.step = params.step
     item.order_shop_id = params.order_shop_id || null
+    item.order_id = params.order_id || null
     item.box_id = params.box_id || null
     item.tracking_number = params.tracking_number || null
     item.incoterm = params.incoterm || null
@@ -2203,6 +2206,7 @@ class Dispatchs {
       .innerJoin('customer', 'customer.id', 'order_shop.customer_id')
       .select([
         'order_shop.id',
+        'order_shop.order_id',
         'order_shop.transporter',
         'order_shop.user_id',
         'order_shop.customer_id',
@@ -2240,6 +2244,7 @@ class Dispatchs {
     await Dispatchs.createOrder({
       logistician: shop.transporter,
       customer_id: shop.customer_id,
+      order_id: shop.order_id,
       order_shop_id: shop.id,
       address_pickup: shop.address_pickup,
       user_id: shop.user_id,
@@ -2258,6 +2263,7 @@ class Dispatchs {
   static createOrder = async (params: {
     logistician: string
     customer_id: number
+    order_id: number
     order_shop_id: number
     address_pickup: string
     user_id: number
@@ -2291,6 +2297,7 @@ class Dispatchs {
     dispatch.logistician = params.logistician
     dispatch.customer_id = params.customer_id
     dispatch.order_shop_id = params.order_shop_id
+    dispatch.order_id = params.order_id
     dispatch.address_pickup = params.address_pickup
     dispatch.shipping_method = params.shipping_method
     dispatch.weight_invoiced = params.weight_invoiced
@@ -2301,9 +2308,9 @@ class Dispatchs {
     dispatch.is_unique = params.type === 'order' ? true : null
     dispatch.logs = JSON.stringify([
       {
-        message: 'dispatch_created',
+        action: 'create',
         status: 'in_progress',
-        created_at: new Date().toISOString()
+        date: Utils.date()
       }
     ])
 
@@ -2420,26 +2427,271 @@ class Dispatchs {
     })
   }
 
-  static syncDispatchs = async () => {
+  static syncDispatchs = async (params?: { id?: number }) => {
     const dispatchs = await db
       .selectFrom('dispatch')
       .selectAll('dispatch')
+      .innerJoin('customer', 'customer.id', 'dispatch.customer_id')
+      .leftJoin('user', 'user.id', 'dispatch.user_id')
+      .select([
+        'customer.firstname',
+        'customer.lastname',
+        'customer.name',
+        'customer.phone',
+        'customer.email as customer_email',
+        'customer.address',
+        'customer.address2',
+        'customer.city',
+        'customer.zip_code',
+        'customer.state',
+        'customer.country_id',
+        'user.email as user_email'
+      ])
       .where('status', '=', 'in_progress')
       .orderBy('created_at', 'asc')
+
+      .where(({ eb, and }) => {
+        const ands: Expression<SqlBool>[] = []
+        if (params?.id) {
+          ands.push(eb('dispatch.id', '=', params.id))
+        }
+        return and(ands)
+      })
       .limit(1)
       .execute()
 
+    if (dispatchs.length === 0) {
+      return { success: true }
+    }
+
+    const items = await db
+      .selectFrom('dispatch_item')
+      .innerJoin('product', 'product.id', 'dispatch_item.product_id')
+      .select(['dispatch_id', 'product_id', 'whiplash_id', 'bigblue_id', 'quantity'])
+      .where(
+        'dispatch_id',
+        'in',
+        dispatchs.map((d) => d.id)
+      )
+      .execute()
+
     for (const dispatch of dispatchs) {
-      await Dispatchs.syncDispatch(dispatch)
+      const itemsDispatch = items.filter((i) => i.dispatch_id === dispatch.id)
+
+      await Dispatchs.syncDispatch({
+        id: dispatch.id,
+        firstname: dispatch.firstname as string,
+        lastname: dispatch.lastname as string,
+        logistician: dispatch.logistician as string,
+        name: dispatch.name as string,
+        phone: dispatch.phone as string,
+        email: (dispatch.email || dispatch.user_email || dispatch.customer_email) as string,
+        address: dispatch.address as string,
+        address2: dispatch.address2 as string,
+        city: dispatch.city as string,
+        zip_code: dispatch.zip_code as string,
+        state: dispatch.state as string,
+        country_id: dispatch.country_id as string,
+        shipping_method: dispatch.shipping_method as string,
+        cost_invoiced: dispatch.cost_invoiced as number,
+        incoterm: dispatch.incoterm as string,
+        purchase_order: dispatch.purchase_order as string,
+        type: dispatch.type as string,
+        address_pickup: dispatch.address_pickup as string,
+        items: itemsDispatch
+      })
     }
   }
 
-  static syncDispatch = async (dispatch: Dispatch) => {
-    if (dispatch.logistician === 'bigblue') {
-      await BigBlue.syncDispatch(dispatch)
-    } else if (dispatch.logistician === 'whiplash' || dispatch.logistician === 'whiplash_uk') {
-      await Whiplash.syncDispatch(dispatch)
+  static syncDispatch = async (params: {
+    id: number
+    firstname: string
+    lastname: string
+    logistician: string
+    name: string
+    phone: string
+    email: string
+    address: string
+    address2: string
+    city: string
+    zip_code: string
+    state: string
+    country_id: string
+    shipping_method: string
+    cost_invoiced: number
+    incoterm: string
+    purchase_order: string
+    type: string
+    address_pickup: string
+    items: { product_id: number; whiplash_id: string; bigblue_id: string; quantity: number }[]
+  }) => {
+    let res: {
+      success: boolean
+      id?: number
+      error?: string
+    } = { success: false }
+
+    const dispatch = await model('dispatch').find(params.id)
+    if (!['in_progress'].includes(dispatch.status)) {
+      return { success: false, error: 'dispatch_already_syncing' }
     }
+    try {
+      await db
+        .insertInto('dispatch_lock')
+        .values({ dispatch_id: params.id, created_at: Utils.date(), updated_at: Utils.date() })
+        .execute()
+    } catch (e) {
+      return { success: false, error: 'dispatch_already_syncing' }
+    }
+
+    dispatch.status = 'syncing'
+    await dispatch.save()
+
+    if (params.logistician === 'bigblue') {
+      res = await BigBlue.syncDispatch(params)
+    } else if (params.logistician === 'whiplash' || params.logistician === 'whiplash_uk') {
+      res = await Whiplash.syncDispatch(params)
+    }
+
+    const logs = dispatch.logs ? JSON.parse(dispatch.logs) : []
+    if (res.success) {
+      dispatch.status = 'in_preparation'
+      dispatch.logistician_id = res.id
+      dispatch.date_export = Utils.date()
+      logs.push({
+        action: 'sync',
+        status: 'in_preparation',
+        date: Utils.date()
+      })
+      dispatch.logs = JSON.stringify(logs)
+      await dispatch.save()
+
+      if (dispatch.order_shop_id) {
+        await db
+          .updateTable('order_shop')
+          .where('id', '=', dispatch.order_shop_id)
+          .set({
+            step: 'in_preparation',
+            date_export: Utils.date(),
+            logistician_id: res.id,
+            updated_at: Utils.date()
+          })
+          .execute()
+
+        await Notification.add({
+          type: 'my_order_in_preparation',
+          user_id: dispatch.user_id as number,
+          order_id: dispatch.order_id as number,
+          order_shop_id: dispatch.order_shop_id as number
+        })
+      }
+
+      return {
+        success: true
+      }
+    } else {
+      dispatch.status = 'error'
+      logs.push({
+        action: 'sync',
+        error: res.error,
+        status: 'error',
+        date: Utils.date()
+      })
+      dispatch.logs = JSON.stringify(logs)
+      await dispatch.save()
+      return {
+        error: res.error,
+        success: false
+      }
+    }
+  }
+
+  static changeStatus = async (params: {
+    id?: number
+    logistician_id?: number
+    logistician?: string
+    status: string
+    tracking_number?: string
+    tracking_link?: string
+  }) => {
+    const dis = await db
+      .selectFrom('dispatch')
+      .selectAll('dispatch')
+      .where(({ eb, and }) => {
+        const ands: Expression<SqlBool>[] = []
+        if (params.id) {
+          ands.push(eb('dispatch.id', '=', params.id))
+        } else if (params.logistician_id) {
+          ands.push(eb('dispatch.logistician_id', '=', params.logistician_id))
+          ands.push(eb('dispatch.logistician', '=', params.logistician))
+        }
+        return and(ands)
+      })
+      .executeTakeFirst()
+
+    if (!dis) {
+      return { success: false }
+    }
+    if (dis.status === params.status) {
+      return { success: false }
+    }
+    const dispatch = model('dispatch').setValues(dis)
+    dispatch.status = params.status
+    dispatch.tracking_number = params.tracking_number
+    dispatch.tracking_link = params.tracking_link
+
+    const logs = JSON.parse(dispatch.logs || '[]')
+    logs.push({
+      date: Utils.date(),
+      action: 'update_tracking',
+      status: params.status
+    })
+    dispatch.logs = JSON.stringify(logs)
+    await dispatch.save()
+
+    console.log(dispatch)
+
+    if (dispatch.order_shop_id) {
+      const orderShop = await DB('order_shop')
+        .where('id', dispatch.order_shop_id)
+        .where('step', '!=', 'delivered')
+        .first()
+
+      if (orderShop) {
+        orderShop.step = params.status
+        orderShop.tracking_number = params.tracking_number
+        orderShop.tracking_link = params.tracking_link
+        await orderShop.save()
+
+        await Notification.add({
+          type: 'my_order_sent',
+          dispatch_id: dispatch.id,
+          user_id: orderShop.user_id,
+          order_id: orderShop.order_id,
+          order_shop_id: orderShop.id
+        })
+      }
+    } else if (dispatch.box_id) {
+      await Notification.add({
+        type: 'my_box_sent',
+        user_id: dispatch.user_id,
+        box_id: dispatch.box_id,
+        dispatch_id: dispatch.id
+      })
+    } else {
+      await Notification.add({
+        type: 'my_order_sent',
+        user_id: dispatch.user_id,
+        dispatch_id: dispatch.id
+      })
+    }
+
+    return { success: true }
+  }
+
+  static checkDispatchs = async () => {
+    const dispatch = await model('dispatch').find(params.id)
+    return dispatch
   }
 
   static convertOldDispatch = async () => {

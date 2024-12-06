@@ -7,7 +7,7 @@ import Storage from 'App/Services/Storage'
 import Env from '@ioc:Adonis/Core/Env'
 import Excel from 'exceljs'
 import OrdersManual from 'App/Services/OrdersManual'
-import { Dispatch } from 'App/types'
+import Dispatchs from './Dispatchs'
 
 class BigBlue {
   static async api(
@@ -433,31 +433,47 @@ class BigBlue {
     }
   }
 
-  static syncDispatch = async (dispatch: Dispatch) => {
-    for (const i in dispatch.items) {
+  static syncDispatch = async (params: {
+    id: number
+    firstname: string
+    lastname: string
+    name: string
+    phone: string
+    email: string
+    address: string
+    address2: string
+    city: string
+    zip_code: string
+    state: string
+    country_id: string
+    shipping_method: string
+    cost_invoiced: number
+    type: string
+    address_pickup: string
+    items: { bigblue_id: string; quantity: number }[]
+  }) => {
+    for (const i in params.items) {
       if (process.env.NODE_ENV !== 'production') {
-        dispatch.items[i].bigblue_id = 'DIGG-000000-0001'
+        params.items[i].bigblue_id = 'DIGG-000000-0001'
       }
     }
 
-    const pickup = dispatch.address_pickup ? JSON.parse(dispatch.address_pickup) : null
+    const pickup = params.address_pickup ? JSON.parse(params.address_pickup) : null
 
-    const address = Utils.wrapText(dispatch.customer.address, ' ', 35)
-    let address2 = address[1]
-      ? ` ${address[1]} ${dispatch.customer.address2}`
-      : dispatch.customer.address2
+    const address = Utils.wrapText(params.address, ' ', 35)
+    let address2 = address[1] ? ` ${address[1]} ${params.address2}` : params.address2
     address2 = address2 ? address2.substring(0, 35) : ''
 
     const data = {
       order: {
-        external_id: dispatch.id.toString(),
+        external_id: params.id.toString(),
         language: 'fr',
         currency: 'EUR',
-        shipping_method: BigBlue.getShippingType(dispatch.shipping_method),
-        shipping_price: dispatch.cost_invoiced ? dispatch.cost_invoiced.toString() : '1',
-        b2b: dispatch.type === 'b2b' ? true : false,
+        shipping_method: BigBlue.getShippingType(params.shipping_method),
+        shipping_price: params.cost_invoiced ? params.cost_invoiced.toString() : '1',
+        b2b: params.type === 'b2b' ? true : false,
         pickup_point:
-          dispatch.shipping_method === 'pickup'
+          params.shipping_method === 'pickup'
             ? {
                 id: pickup.number.toString(),
                 display_name: pickup.name,
@@ -467,19 +483,19 @@ class BigBlue {
               }
             : null,
         shipping_address: {
-          first_name: dispatch.firstname,
-          last_name: dispatch.lastname,
-          company: dispatch.name,
-          phone: dispatch.phone,
-          email: dispatch.customer_email || dispatch.email,
+          first_name: params.firstname,
+          last_name: params.lastname,
+          company: params.name,
+          phone: params.phone,
+          email: params.email,
           line1: address[0],
           line2: address2,
-          city: dispatch.city,
-          postal: dispatch.zip_code,
-          state: dispatch.state,
-          country: dispatch.country_id
+          city: params.city,
+          postal: params.zip_code,
+          state: params.state,
+          country: params.country_id
         },
-        line_items: dispatch.items.map((item: any) => {
+        line_items: params.items.map((item: any) => {
           if (item.bigblue_id === 'DIGG-000006-5357') {
             item.price = '0'
             item.quantity = 1
@@ -494,14 +510,22 @@ class BigBlue {
       }
     }
 
-    console.log(data)
-
     const res: any = await this.api('CreateOrder', {
       method: 'POST',
       params: data
     })
 
-    return res
+    if (res.order) {
+      return {
+        success: true,
+        id: res.order.id
+      }
+    } else {
+      return {
+        success: false,
+        error: res.msg
+      }
+    }
   }
 
   static async sync(orders: any[]) {
@@ -683,73 +707,14 @@ class BigBlue {
     let updated = 0
     for (const order of orders) {
       if (order.tracking_number && order.external_id) {
-        const step = order.status.code === 'DELIVERED' ? 'delivered' : 'sent'
-        if (order.external_id[0] === 'B') {
-          const boxDispatch = await DB('box_dispatch')
-            .where('id', order.external_id.slice(1))
-            .where('step', '!=', 'delivered')
-            .first()
-          if (!boxDispatch) {
-            continue
-          }
-          if (!boxDispatch.tracking_link) {
-            updated++
-          }
-          boxDispatch.step = step
-          boxDispatch.tracking_number = order.tracking_number
-          boxDispatch.tracking_link = order.tracking_url
-          await boxDispatch.save()
-
-          await Notification.add({
-            type: 'my_box_sent',
-            user_id: boxDispatch.user_id,
-            box_id: boxDispatch.box_id,
-            box_dispatch_id: boxDispatch.id
-          })
-        } else if (order.external_id[0] === 'M') {
-          const manual = await DB('order_manual')
-            .where('id', order.external_id.slice(1))
-            .where('step', '!=', 'delivered')
-            .first()
-          if (!manual) {
-            continue
-          }
-          if (!manual.tracking_link) {
-            updated++
-          }
-          manual.step = step
-          manual.tracking_number = order.tracking_number
-          manual.tracking_link = order.tracking_url
-          await manual.save()
-
-          await Notification.add({
-            type: 'my_order_sent',
-            user_id: order.user_id,
-            order_manual_id: order.id
-          })
-        } else {
-          const orderShop = await DB('order_shop')
-            .where('id', order.external_id)
-            .where('step', '!=', 'delivered')
-            .first()
-          if (!orderShop) {
-            continue
-          }
-          if (!orderShop.tracking_link) {
-            updated++
-          }
-          orderShop.step = step
-          orderShop.tracking_number = order.tracking_number
-          orderShop.tracking_link = order.tracking_url
-          await orderShop.save()
-
-          await Notification.add({
-            type: 'my_order_sent',
-            user_id: orderShop.user_id,
-            order_id: orderShop.order_id,
-            order_shop_id: orderShop.id
-          })
-        }
+        const status = order.status.code === 'DELIVERED' ? 'delivered' : 'sent'
+        await Dispatchs.changeStatus({
+          logistician_id: order.id,
+          logistician: 'bigblue',
+          status: status,
+          tracking_number: order.tracking_number,
+          tracking_link: order.tracking_url
+        })
       }
     }
     console.info('updated', updated)

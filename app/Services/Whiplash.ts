@@ -11,6 +11,7 @@ import ApiError from 'App/ApiError'
 import config from 'Config/index'
 import Utils from 'App/Utils'
 import request from 'request'
+import Dispatchs from './Dispatchs'
 
 class Whiplash {
   static api = (endpoint, options = {}): Promise<any> => {
@@ -94,6 +95,78 @@ class Whiplash {
       }
     }
     return list
+  }
+
+
+  static syncDispatch = async (params: {
+    id: number
+    firstname: string
+    lastname: string
+    name: string
+    phone: string
+    email: string
+    address: string
+    address2: string
+    city: string
+    zip_code: string
+    state: string
+    country_id: string
+    shipping_method: string
+    cost_invoiced: number
+    incoterm: string
+    purchase_order: string
+    type: string
+    address_pickup: string
+    logistician: string
+    items: { whiplash_id: string; quantity: number }[]
+  }) => {
+    for (const i in params.items) {
+      if (process.env.NODE_ENV !== 'production') {
+        params.items[i].whiplash_id = '2743163'
+      }
+    }
+
+    const data = {
+      shipping_company: params.name,
+      shipping_name: `${params.firstname} ${params.lastname}`,
+      shipping_address_1: params.address,
+      shipping_address_2: params.address2,
+      shipping_city: params.city,
+      shipping_state: params.state,
+      shipping_country: params.country_id,
+      shipping_zip: params.zip_code,
+      shipping_phone: params.phone,
+      email: params.email,
+      order_type: params.type === 'b2b' ? 'wholesale' : 'direct_to_consumer',
+      incoterm: params.incoterm,
+      purchase_order: params.purchase_order,
+      shop_shipping_method_text: Whiplash.getShippingMethod({
+        country_id: params.country_id,
+        transporter: params.logistician,
+        shipping_type: params.shipping_method
+      }),
+      shop_warehouse_id: params.logistician === 'whiplash_uk' ? 3 : 66,
+      order_items: params.items.map((item) => ({
+        item_id: item.whiplash_id,
+        quantity: item.quantity
+      }))
+    }
+
+
+    const res = await Whiplash.saveOrder(data)
+    
+    console.log(res)
+    if (res.id) {
+      return {
+        success: true,
+        id: res.id
+      }
+    } else {
+      return {
+        success: false,
+        error: JSON.stringify(res.errors)
+      }
+    }
   }
 
   static validOrder = async (shop, items) => {
@@ -355,200 +428,27 @@ class Whiplash {
   }
 
   static setTrackingLinks = async () => {
-    const manuals = await DB('order_manual')
-      .select('order_manual.*', 'customer.country_id')
+    const dispatchs = await DB('dispatch')
+      .select('dispatch.*')
       .whereNotNull('logistician_id')
       .whereNull('tracking_number')
-      .whereIn('transporter', ['whiplash', 'whiplash_uk'])
-      .join('customer', 'customer.id', 'order_manual.customer_id')
-      .orderBy('id', 'asc')
-      .limit(10)
+      .whereIn('logistician', ['whiplash', 'whiplash_uk'])
       .all()
-
-    let shops = await DB('order_shop')
-      .select(
-        'order_shop.*',
-        'customer.country_id',
-        DB.raw(
-          '(SELECT sum(quantity) FROM order_item WHERE order_shop_id = order_shop.id) as quantity'
-        )
-      )
-      .whereNotNull('logistician_id')
-      .whereIn('step', ['confirmed', 'in_preparation'])
-      .whereIn('transporter', ['whiplash', 'whiplash_uk'])
-      .join('customer', 'customer.id', 'order_shop.customer_id')
-      .orderBy('date_export', 'asc')
-      .where('is_paid', 1)
-      .where('is_paused', false)
-      .where('date_export', '>', '2022-01-01')
-      .all()
-
-    shops = shops.concat(
-      manuals.map((m) => {
-        return {
-          ...m,
-          type: 'manual'
-        }
-      })
-    )
-
-    const currenciesDb = await Utils.getCurrenciesDb()
-    const currenciesUSD = Utils.getCurrencies('USD', currenciesDb)
-    const currenciesGBP = Utils.getCurrencies('GBP', currenciesDb)
-
-    const costs: any[] = []
-    const total = {
-      profits: 0,
-      costs: 0,
-      balance: 0
+      
+    for (const dis of dispatchs) {
+      const order: any = await Whiplash.getOrder(dis.logistician_id)
+      if (order.status_name && (order.status_name.toLowerCase() === 'shipped' || order.status_name.toLowerCase() === 'delivered')) {
+        const status = order.status_name.toLowerCase() === 'shipped' ? 'sent' : order.status_name.toLowerCase()
+        await Dispatchs.changeStatus({
+          id: dis.id,
+          logistician_id: dis.logistician_id,
+          logistician: dis.logistician,
+          status: status,
+          tracking_number: order.tracking[0],
+          tracking_link: order.tracking_links[0]
+        })
+      }
     }
-    Promise.all(
-      shops.map(async (shop) => {
-        const order: any = await Whiplash.getOrder(shop.logistician_id)
-        const currencies = shop.transporter === 'whiplash_uk' ? currenciesGBP : currenciesUSD
-
-        const packings = {
-          1: 4.5,
-          2: 4.5,
-          3: 5.2,
-          4: 5.95,
-          5: 6.75,
-          6: 7.5,
-          7: 7.73,
-          8: 11.5
-        }
-
-        if (shop.quantity > 8) {
-          packings[shop.quantity] = shop.quantity
-        }
-
-        if (order.status_name && (order.status_name.toLowerCase() === 'shipped' || order.status_name.toLowerCase() === 'delivered')) {
-          if (shop.type === 'manual') {
-            await DB('order_manual').where('id', shop.id).update({
-              step: 'sent',
-              tracking_number: order.tracking[0],
-              tracking_link: order.tracking_links[0]
-            })
-
-            if (shop.user_id) {
-              /**
-              await Notification.add({
-                type: 'my_order_sent',
-                user_id: shop.user_id,
-                order_manual_id: shop.order_manual_id
-              })
-              **/
-            }
-          } else {
-            const cost: any = {
-              order_id: shop.order_id,
-              order_shop_id: shop.id,
-              logistician_id: shop.logistician_id,
-              type: shop.type,
-              transporter: shop.transporter,
-              currency: shop.transporter === 'whiplash' ? '$' : '£',
-              profits: Utils.round(shop.shipping / currencies[shop.currency]),
-              costs: Utils.round(+order.ship_actual_cost + +packings[shop.quantity]),
-              country_id: shop.country_id,
-              date: shop.created_at
-            }
-            cost.balance = Utils.round(cost.profits - cost.costs)
-            costs.push(cost)
-
-            total.profits += cost.profits
-            total.costs += cost.costs
-            total.balance += cost.balance
-
-            await DB('order_shop').where('id', shop.id).update({
-              step: 'sent',
-              tracking_number: order.tracking[0],
-              tracking_link: order.tracking_links[0]
-            })
-            await Notification.add({
-              type: 'my_order_sent',
-              user_id: shop.user_id,
-              order_id: shop.order_id,
-              order_shop_id: shop.id
-            })
-          }
-        }
-      })
-    ).then(async () => {
-      if (costs.length === 0) {
-        return { success: false }
-      }
-
-      let html = `
-    <style>
-      td {
-        padding: 2px 5px;
-        border-top: 1px solid #F0F0F0;
-      }
-      th {
-        padding: 2px 8px;
-      }
-      .red td {
-        color: red;
-      }
-      .total {
-        font-weight: bold;
-      }
-    </style>
-    <table>
-      <thead>
-      <tr>
-        <th>Order shop ID</th>
-        <th>Type</th>
-        <th>Whiplash ID</th>
-        <th>Transporter</th>
-        <th>Country</th>
-        <th>Profit</th>
-        <th>Costs</th>
-        <th>Diff</th>
-      </tr>
-    </thead>
-    <tbody>`
-      for (const cost of costs) {
-        html += `<tr class="${cost.balance < 0 && 'red'}">`
-        html += `<td><a href="${Env.get('APP_URL')}/sheraf/order/${cost.order_id}">${
-          cost.order_shop_id
-        }</a></td>`
-        html += `<td>${cost.type}</td>`
-        html += `<td>${cost.logistician_id}</td>`
-        html += `<td>${cost.transporter}</td>`
-        html += `<td>${cost.country_id}</td>`
-        html += `<td>${cost.profits}${cost.currency}</td>`
-        html += `<td>${cost.costs}${cost.currency}</td>`
-        html += `<td>${Utils.round(cost.balance)}${cost.currency}</td>`
-        html += '</tr>'
-      }
-
-      html += `<tr class="total ${total.balance < 0 && 'red'}">`
-      html += '<td>Total</td>'
-      html += '<td></td>'
-      html += '<td></td>'
-      html += '<td></td>'
-      html += `<td>${Utils.round(total.profits)}$</td>`
-      html += `<td>${Utils.round(total.costs)}$</td>`
-      html += `<td>${Utils.round(total.balance)}$</td>`
-      html += '</tr>'
-      html += '</tbody></table>'
-
-      await Notification.sendEmail({
-        to: 'alexis@diggersfactory.com,victor@diggersfactory.com',
-        subject: 'Diff shipping whiplash',
-        html: juice(html)
-      })
-    }).catch((e) => {
-      Notification.sendEmail({
-        to: 'victor@diggersfactory.com',
-        subject: 'Problem set tracking whiplash',
-        html: e.toString()
-      })
-      return { success: false }
-    })
-
-    return shops
 
     return { success: true }
   }
