@@ -28,7 +28,7 @@ class Notification {
     prod_id?: number | string
     file_id?: number | string
     order_box_id?: number | string
-    box_dispatch_id?: number | string
+    dispatch_id?: number | string
     payment_id?: number | string
     review_id?: number | string
     invoice_id?: number | string
@@ -61,7 +61,7 @@ class Notification {
     prod_id?: number | string
     file_id?: number | string
     order_box_id?: number | string
-    box_dispatch_id?: number | string
+    dispatch_id?: number | string
     payment_id?: number | string
     review_id?: number | string
     invoice_id?: number | string
@@ -89,7 +89,7 @@ class Notification {
       prod_id: params.prod_id !== undefined ? params.prod_id : null,
       file_id: params.file_id !== undefined ? params.file_id : null,
       order_box_id: params.order_box_id !== undefined ? params.order_box_id : null,
-      box_dispatch_id: params.box_dispatch_id !== undefined ? params.box_dispatch_id : null,
+      dispatch_id: params.dispatch_id !== undefined ? params.dispatch_id : null,
       payment_id: params.payment_id !== undefined ? params.payment_id : null,
       review_id: params.review_id !== undefined ? params.review_id : null,
       invoice_id: params.invoice_id !== undefined ? params.invoice_id : null,
