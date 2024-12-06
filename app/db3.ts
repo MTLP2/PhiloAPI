@@ -52,6 +52,7 @@ export const logSql = (query: SelectQueryBuilder) => {
 export type Model<T extends keyof DB & string> = DB[T] & {
   values: () => DB[T]
   find: (id: number) => Promise<Model<T>>
+  setValues: (model: DB[T]) => Model<T>
   save: () => Promise<Model<T>>
   delete: (id: number) => Promise<boolean>
 }
@@ -74,6 +75,10 @@ export const model = <T extends keyof DB & string>(table: T): Model<T> => {
         throw new Error(`No \`${table}\` found with id \`${id}\``)
       }
       data = res as any
+      return proxyInstance as any
+    },
+    setValues: (model: DB[T]) => {
+      data = model
       return proxyInstance as any
     },
     save: async () => {
