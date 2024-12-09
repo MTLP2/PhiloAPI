@@ -31,6 +31,7 @@ class DispatchsController {
           shipping_method: schema.string(),
           address_pickup: schema.string.optional(),
           email: schema.string(),
+          status: schema.string.optional(),
           comment: schema.string.optional(),
           order_shop_id: schema.number.optional(),
           box_id: schema.number.optional(),
