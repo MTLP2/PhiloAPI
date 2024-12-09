@@ -165,6 +165,7 @@ type Dispatch = {
   address_pickup?: string
   logistician?: string
   date_export?: Timestamp
+  date_inprogress?: Timestamp
   user_id?: number
   customer_id?: number
   weight_invoiced?: number
