@@ -20,7 +20,13 @@ import Customer from 'App/Services/Customer'
 import MondialRelay from './MondialRelay'
 
 class Dispatchs {
-  static all = async (params: { filters: string; type?: string; page: number; size: number }) => {
+  static all = async (params: {
+    filters: string
+    type?: string
+    page: number
+    size: number
+    sort?: string
+  }) => {
     const query = DB('dispatch')
       .select(
         'dispatch.*',
@@ -31,7 +37,6 @@ class Dispatchs {
         'user.name as user_name',
         'user.email as user_email'
       )
-      .orderBy('dispatch.id', 'desc')
       .leftJoin('customer', 'customer.id', 'dispatch.customer_id')
       .leftJoin('user', 'user.id', 'dispatch.user_id')
 
@@ -40,6 +45,10 @@ class Dispatchs {
       filters = params.filters ? JSON.parse(params.filters) : null
     } catch (e) {
       filters = []
+    }
+
+    if (!params.sort) {
+      query.orderBy('dispatch.id', 'desc')
     }
 
     for (const i in filters) {
@@ -158,6 +167,7 @@ class Dispatchs {
     box_id?: number
     tracking_number?: string
     comment?: string
+    status?: string
     user_id?: number
     auth_id?: number
     client_id?: number
@@ -182,17 +192,31 @@ class Dispatchs {
 
     if (params.id) {
       item = await DB('dispatch').find(params.id)
+      item.logs = JSON.parse(item.logs || '[]')
     } else {
+      item.logs = []
       item.created_at = Utils.date()
       item.by_id = params.auth_id
-      item.status = 'in_progress'
-      item.logs = JSON.stringify([
-        {
-          action: 'create',
-          status: 'in_progress',
-          date: Utils.date()
-        }
-      ])
+      item.status = params.status
+      item.logs.push({
+        action: 'create',
+        status: params.status,
+        date: Utils.date()
+      })
+    }
+
+    if (params.status !== item.status) {
+      item.logs.push({
+        action: 'update',
+        status: params.status,
+        date: Utils.date()
+      })
+    }
+    if (
+      params.status === 'in_progress' &&
+      (!item.date_inprogress || params.status !== item.status)
+    ) {
+      item.date_inprogress = Utils.date()
     }
 
     const products = {}
@@ -225,32 +249,38 @@ class Dispatchs {
     }
 
     item.type = params.type
-    item.logistician = params.logistician
-    item.shipping_method = params.shipping_method
-    item.address_pickup = params.address_pickup
-    item.email = params.email
-    item.comment = params.comment
-    item.step = params.step
-    item.order_shop_id = params.order_shop_id || null
-    item.order_id = params.order_id || null
-    item.box_id = params.box_id || null
-    item.tracking_number = params.tracking_number || null
-    item.incoterm = params.incoterm || null
-    item.user_id = params.user_id || null
-    item.client_id = params.client_id || null
+    if (!item.date_export) {
+      item.status = params.status
+      item.logistician = params.logistician
+      item.shipping_method = params.shipping_method
+      item.address_pickup = params.address_pickup
+      item.email = params.email
+      item.comment = params.comment
+      item.step = params.step
+      item.order_shop_id = params.order_shop_id || null
+      item.order_id = params.order_id || null
+      item.box_id = params.box_id || null
+      item.tracking_number = params.tracking_number || null
+      item.incoterm = params.incoterm || null
+      item.user_id = params.user_id || null
+      item.client_id = params.client_id || null
+
+      if (params.customer) {
+        const customer = await Customer.save(params.customer)
+        item.customer_id = customer.id
+      } else {
+        item.customer_id = params.customer_id
+      }
+    }
+
     item.purchase_order = params.purchase_order || null
     item.cost_invoiced = params.cost_invoiced || null
     item.cost_currency = params.cost_currency || null
     item.weight_invoiced = params.weight_invoiced || null
     item.invoice_number = params.invoice_number || null
+    item.logs = JSON.stringify(item.logs)
     item.updated_at = Utils.date()
 
-    if (params.customer) {
-      const customer = await Customer.save(params.customer)
-      item.customer_id = customer.id
-    } else {
-      item.customer_id = params.customer_id
-    }
     await item.save()
 
     await DB('dispatch_item').where('dispatch_id', item.id).delete()
@@ -2294,6 +2324,7 @@ class Dispatchs {
     const dispatch = model('dispatch')
     dispatch.status = 'in_progress'
     dispatch.type = params.type
+    dispatch.date_inprogress = Utils.date()
     dispatch.logistician = params.logistician
     dispatch.customer_id = params.customer_id
     dispatch.order_shop_id = params.order_shop_id
@@ -2448,6 +2479,7 @@ class Dispatchs {
         'user.email as user_email'
       ])
       .where('status', '=', 'in_progress')
+      .where('date_inprogress', '<', sql`NOW() - INTERVAL 2 HOUR`)
       .orderBy('created_at', 'asc')
 
       .where(({ eb, and }) => {
@@ -2460,6 +2492,7 @@ class Dispatchs {
       .limit(1)
       .execute()
 
+    console.log(dispatchs)
     if (dispatchs.length === 0) {
       return { success: true }
     }
@@ -2687,23 +2720,87 @@ class Dispatchs {
     return { success: true }
   }
 
-  static checkDispatchs = async () => {
-    const dispatch = await model('dispatch').find(params.id)
-    return dispatch
-  }
-
   static convertOldDispatch = async () => {
+    console.info('start convert')
     await DB().execute('TRUNCATE TABLE dispatch')
     await DB().execute('TRUNCATE TABLE dispatch_item')
 
-    /**
-    const ordersManual = await DB('order_manual').select('*').all()
+    const dispatchs: any[] = []
+    console.info('start box')
+    const boxDispatches = await DB('box_dispatch')
+      .join('box', 'box.id', 'box_dispatch.box_id')
+      .select(
+        'box_dispatch.*',
+        'box.user_id',
+        'box.customer_id',
+        'box.shipping_type',
+        'box.shipping',
+        'box.currency',
+        'box.address_pickup'
+      )
+      .orderBy('box.created_at', 'asc')
+      .all()
+
+    for (const box of boxDispatches) {
+      const dispatch: any = {
+        data: {
+          status: box.step,
+          type: 'box',
+          logistician: box.transporter || 'daudin',
+          logistician_id: box.logistician_id,
+          box_id: box.box_id,
+          customer_id: box.customer_id,
+          order_shop_id: box.order_shop_id,
+          address_pickup: box.address_pickup,
+          shipping_method: box.shipping_type,
+          date_export: box.date_export,
+          purchase_order: box.id,
+          tracking_link: box.tracking_link,
+          cost_invoiced: box.shipping,
+          cost_currency: box.currency,
+          tracking_transporter: box.tracking_transporter,
+          user_id: box.user_id,
+          created_at: box.created_at,
+          updated_at: box.updated_at
+        },
+        items: []
+      }
+
+      const barcodes = box.barcodes.split(',')
+      for (const barcode of barcodes) {
+        dispatch.items.push({
+          barcode: barcode,
+          quantity: 1,
+          created_at: box.created_at,
+          updated_at: box.updated_at
+        })
+      }
+      dispatchs.push(dispatch)
+    }
+
+    console.info('start manual')
+    const ordersManual = await DB('order_manual')
+      .select('*')
+      .whereNotNull('date_export')
+      .whereNotNull('transporter')
+      .all()
     const ordersManualItems = await DB('order_manual_item').select('*').all()
+
+    const manualItems = {}
+    for (const orderItem of ordersManualItems) {
+      if (!manualItems[orderItem.order_manual_id]) {
+        manualItems[orderItem.order_manual_id] = []
+      }
+      manualItems[orderItem.order_manual_id].push(orderItem)
+    }
+
     for (const order of ordersManual) {
       order.status = order.step
       order.logistician = order.transporter
-      order.cost = order.shipping_cost
+      order.cost_currency = 'EUR'
+      order.cost_logistician = order.shipping_cost
       order.shipping_method = order.shipping_type
+      order.type = order.type || 'other'
       delete order.transporter
       delete order.step
       delete order.barcode
@@ -2713,71 +2810,108 @@ class Dispatchs {
       delete order.shipping_type
       delete order.transporter_export
       delete order.whiplash_id
-      await DB('dispatch').insert({
-        ...order
-      })
 
-      for (const item of ordersManualItems.filter((i) => i.order_manual_id === order.id)) {
-        await DB('dispatch_item').insert({
-          dispatch_id: item.order_manual_id,
-          product_id: item.product_id,
-          quantity: item.quantity,
-          barcode: item.barcode,
-          created_at: item.created_at,
-          updated_at: item.updated_at
-        })
+      const dispatch: any = {
+        data: {
+          ...order,
+          id: undefined
+        },
+        items: []
       }
-    }
-    **/
 
-    const boxDispatches = await DB('box_dispatch')
-      .join('box', 'box.id', 'box_dispatch.box_id')
-      .select(
-        'box_dispatch.*',
-        'box.user_id',
-        'box.customer_id',
-        'box.shipping_type',
-        'box.address_pickup'
-      )
-      .limit(10)
+      if (manualItems[order.id]) {
+        for (const item of manualItems[order.id]) {
+          dispatch.items.push({
+            product_id: item.product_id,
+            quantity: item.quantity,
+            barcode: item.barcode,
+            created_at: item.created_at,
+            updated_at: item.updated_at
+          })
+        }
+      }
+      dispatchs.push(dispatch)
+    }
+
+    const orderShops = await DB('order_shop')
+      .select('*')
+      .whereNotNull('date_export')
+      .whereNotNull('transporter')
       .all()
 
-    for (const box of boxDispatches) {
-      const res = await DB('dispatch').insert({
-        status: box.step === 'confirmed' && !box.date_export ? 'in_progress' : box.step,
-        type: 'box',
-        logistician: box.transporter || 'daudin',
-        logistician_id: box.logistician_id,
-        box_id: box.box_id,
-        customer_id: box.customer_id,
-        order_shop_id: box.order_shop_id,
-        address_pickup: box.address_pickup,
-        shipping_method: box.shipping_type,
-        date_export: box.date_export,
-        purchase_order: box.id,
-        tracking_link: box.tracking_link,
-        cost: box.shipping_cost,
-        cost_currency: 'EUR',
-        tracking_transporter: box.tracking_transporter,
-        user_id: box.user_id,
-        created_at: box.created_at,
-        updated_at: box.updated_at
-      })
+    console.info('start order_shop', orderShops.length)
+    const orderItems = await DB('order_item')
+      .select('order_item.order_shop_id', 'project_product.product_id', 'order_item.quantity')
+      .leftJoin('project_product', 'project_product.project_id', 'order_item.project_id')
+      .all()
 
-      const barcodes = box.barcodes.split(',')
-      for (const barcode of barcodes) {
+    const items = {}
+    for (const orderItem of orderItems) {
+      if (!items[orderItem.order_shop_id]) {
+        items[orderItem.order_shop_id] = []
+      }
+      items[orderItem.order_shop_id].push(orderItem)
+    }
+    for (const shop of orderShops) {
+      const dispatch: any = {
+        data: {
+          logistician: shop.transporter,
+          logistician_id:
+            shop.logistician_id || shop.whiplash_id || shop.daudin_id || shop.bigblue_id,
+          customer_id: shop.customer_id,
+          order_id: shop.order_id,
+          order_shop_id: shop.id,
+          address_pickup: shop.address_pickup,
+          user_id: shop.user_id,
+          type: 'order',
+          status: shop.step === 'delivered' ? 'delivered' : 'sent',
+          shipping_method: shop.shipping_type,
+          tracking_number: shop.tracking_number,
+          tracking_link: shop.tracking_link,
+          tracking_transporter: shop.tracking_transporter,
+          weight_invoiced: shop.weight,
+          cost_invoiced: shop.shipping,
+          cost_currency: shop.currency,
+          cost_logistician: shop.shipping_cost,
+          cost_currency_rate: shop.currency_rate,
+          created_at: shop.created_at,
+          updated_at: shop.updated_at,
+          date_export: shop.date_export
+        },
+        items: items[shop.id].map((i) => {
+          return {
+            product_id: i.product_id,
+            quantity: i.quantity
+          }
+        })
+      }
+      dispatchs.push(dispatch)
+    }
+
+    dispatchs.sort(function (a, b) {
+      // Turn your strings into dates, and then subtract them
+      // to get a value that is either negative, positive, or zero.
+      return new Date(a.data.created_at) - new Date(b.data.created_at)
+    })
+
+    console.log('dispatchs', dispatchs.length)
+    for (const dispatch of dispatchs) {
+      if (dispatch.items.length === 0) {
+        continue
+      }
+      const res = await DB('dispatch').insert(dispatch.data)
+      for (const item of dispatch.items) {
         await DB('dispatch_item').insert({
-          dispatch_id: res,
-          barcode: barcode,
-          quantity: 1,
-          created_at: box.created_at,
-          updated_at: box.updated_at
+          dispatch_id: res[0],
+          ...item
         })
       }
     }
+    console.info('end convert')
 
+    return { success: true, dispatchs: dispatchs.length }
+    /**
     const items = await DB('dispatch_item').select('id', 'barcode').whereNull('product_id').all()
-
     for (const item of items) {
       const product = await DB('product').where('barcode', item.barcode).first()
       if (product) {
@@ -2787,6 +2921,7 @@ class Dispatchs {
           .update({ product_id: product.id })
       }
     }
+    **/
   }
 }
 
