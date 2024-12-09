@@ -161,6 +161,7 @@ type Dispatch = {
   shipping_method?: string
   order_shop_id?: number
   order_id?: number
+  box_id?: number
   address_pickup?: string
   logistician?: string
   date_export?: Timestamp
