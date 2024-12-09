@@ -764,6 +764,10 @@ class App {
       }
       data.comment = orderShop.comment
     }
+    if (n.dispatch_id) {
+      const dispatch = await DB('dispatch').where('id', n.dispatch_id).first()
+      data.tracking_link = Utils.getTransporterLink(dispatch)
+    }
 
     if (n.order_manual_id) {
       const order = await DB('order_manual')
@@ -813,10 +817,6 @@ class App {
           return item
         })
       }
-    }
-    if (n.box_dispatch_id) {
-      const dispatch = await DB('box_dispatch').find(n.box_dispatch_id)
-      data.tracking_link = Utils.getTransporterLink(dispatch)
     }
 
     if (data.order_items) {
@@ -926,18 +926,13 @@ class App {
       }
     }
 
-    console.log('lol')
     if (!test) {
-      await Notification.email(data)
-      send = 2
-      /**
       if (process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'staging') {
         send = 3
       } else {
         await Notification.email(data)
         send = 2
       }
-      **/
       n.email = send
       await n.save()
       return true

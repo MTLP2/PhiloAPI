@@ -2649,8 +2649,6 @@ class Dispatchs {
     dispatch.logs = JSON.stringify(logs)
     await dispatch.save()
 
-    console.log(dispatch)
-
     if (dispatch.order_shop_id) {
       const orderShop = await DB('order_shop')
         .where('id', dispatch.order_shop_id)
@@ -2666,7 +2664,7 @@ class Dispatchs {
         await Notification.add({
           type: 'my_order_sent',
           dispatch_id: dispatch.id,
-          user_id: orderShop.user_id,
+          user_id: orderShop.user_id as number,
           order_id: orderShop.order_id,
           order_shop_id: orderShop.id
         })
@@ -2674,14 +2672,14 @@ class Dispatchs {
     } else if (dispatch.box_id) {
       await Notification.add({
         type: 'my_box_sent',
-        user_id: dispatch.user_id,
+        user_id: dispatch.user_id as number,
         box_id: dispatch.box_id,
         dispatch_id: dispatch.id
       })
     } else {
       await Notification.add({
         type: 'my_order_sent',
-        user_id: dispatch.user_id,
+        user_id: dispatch.user_id as number,
         dispatch_id: dispatch.id
       })
     }

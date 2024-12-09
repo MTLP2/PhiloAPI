@@ -279,19 +279,20 @@ class Notification {
       params.items = `
       <table class="order">
         ${
-          params.order_items &&
-          params.order_items.map(
-            (item) =>
-              `<tr>
+          params.order_items
+            ? params.order_items.map(
+                (item) =>
+                  `<tr>
             <td width="60"><img width="50" src="${item.picture}" alt="${item.name}" /></td>
             <td width="30" class="total">${item.quantity} x</td>
             <td width="100%">
               <a href="${Env.get('APP_URL')}/vinyl/${item.project_id}/${item.slug}"><b>${
-                item.artist_name
-              }</b><br/>${item.name}</a>
+                    item.artist_name
+                  }</b><br/>${item.name}</a>
             </td>
           </tr>`
-          )
+              )
+            : ''
         }
       </table>`
 
