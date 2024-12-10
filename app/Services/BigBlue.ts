@@ -1138,57 +1138,50 @@ class BigBlue {
       }
     }
 
-    const oo = await DB('order_shop')
-      .select('id', 'order_id', 'logistician_id', 'shipping', 'shipping_cost', 'currency')
-      .whereIn('logistician_id', Object.keys(orders))
-      .all()
-
-    for (const order of oo) {
-      i++
-      if (order.shipping_cost && order.shipping_weight) {
-        marge += order.shipping - order.shipping_cost
-        continue
-      }
-      order.shipping_cost = orders[order.logistician_id].price * currencies[order.currency]
-      marge += order.shipping - order.shipping_cost
-
-      await DB('order_shop').where('id', order.id).update({
-        shipping_cost: order.shipping_cost,
-        shipping_weight: orders[order.logistician_id].weight
-      })
-    }
-
     const fileName = `invoices/${Utils.uuid()}`
     Storage.upload(fileName, params.file, true)
 
-    const ooo = await DB('order_manual')
-      .select('id', 'type', 'logistician_id')
+    const dispatchs = await DB('dispatch')
+      .select('id', 'logistician_id', 'cost_invoiced', 'cost_logistician', 'cost_currency')
       .whereIn('logistician_id', Object.keys(orders))
       .all()
 
-    for (const order of ooo) {
-      if (!orders[order.logistician_id]) {
-        continue
+    for (const dispatch of dispatchs) {
+      i++
+      if (!dispatch.cost_currency) {
+        dispatch.cost_currency = 'EUR'
+      }
+      dispatch.cost_logistician =
+        orders[dispatch.logistician_id].price * currencies[dispatch.cost_currency]
+
+      if (dispatch.cost_invoiced) {
+        marge += dispatch.cost_invoiced - dispatch.cost_logistician
       }
 
-      const inStatement = order.type === 'to_artist' || order.type === 'b2b'
-      await DB('order_invoice').where('order_manual_id', order.id).delete()
-      const [id] = await DB('order_invoice')
-        .where('id', order.id)
+      await DB('dispatch').where('id', dispatch.id).update({
+        cost_logistician: dispatch.cost_logistician,
+        cost_currency: dispatch.cost_currency,
+        weight_logistician: orders[dispatch.logistician_id].weight
+      })
+
+      const inStatement = dispatch.type === 'to_artist' || dispatch.type === 'b2b'
+      await DB('dispatch_invoice').where('dispatch_id', dispatch.id).delete()
+      const [id] = await DB('dispatch_invoice')
+        .where('id', dispatch.id)
         .insert({
           date: `${params.date}-01`,
           currency: 'EUR',
           file: fileName,
-          order_manual_id: order.id,
+          dispatch_id: dispatch.id,
           in_statement: inStatement,
           invoice_number: params.invoice_number,
-          total: Utils.round(orders[order.logistician_id].price, 2),
+          total: Utils.round(orders[dispatch.logistician_id].price, 2),
           created_at: Utils.date(),
           updated_at: Utils.date()
         })
 
       if (inStatement) {
-        await OrdersManual.applyInvoiceCosts({
+        await Dispatchs.applyInvoiceCosts({
           id: id
         })
       }

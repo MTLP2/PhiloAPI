@@ -727,95 +727,61 @@ class Whiplash {
       currencies = await Utils.getCurrenciesApi(date, 'EUR,USD,GBP,AUD,CAD,PHP,KRW,JPY,CNY', 'USD')
     }
 
-    let shops = DB('order_shop').whereIn(
+    const dispatchs = await DB('dispatch').whereIn(
       'logistician_id',
       lines.filter((s) => s.creator_id).map((s) => s.creator_id)
-    )
-
-    if (!params.force) {
-      shops.whereNull('shipping_cost')
-    }
-
-    shops = await shops.all()
-
-    const dispatchs: any[] = []
+    ).all()
 
     const fileName = `invoices/${Utils.uuid()}`
 
     Storage.upload(fileName, params.file, true)
 
+    console.log('dispatchs => ', dispatchs.length)
     let marge = 0
-    for (const dispatch of lines) {
-      if (dispatch.creator_id) {
-        const shop = shops.find((s) => {
-          return +s.logistician_id === +dispatch.creator_id
-        })
+    
+    for (const dispatch of dispatchs) {
+      await DB('dispatch_invoice').where('dispatch_id', dispatch.id).delete()
+  
+      const line = lines.find((l) => l.creator_id === dispatch.logistician_id)
 
-        if (!shop) {
-          continue
+      const cost = Math.abs(Number(line['total']))
+
+      if (!dispatch.cost_currency) {
+        dispatch.cost_currency = +line.warehouse_id === 3 ? 'GBP' : 'USD'
+      }
+      const costCurrency = cost * currencies[dispatch.cost_currency]
+      if (dispatch.cost_invoiced) {
+        marge += dispatch.cost_invoiced - costCurrency
+      }
+
+      await DB('dispatch').where('id', dispatch.id).update({
+        cost_logistician: costCurrency,
+        cost_currency: dispatch.cost_currency
+      })
+
+      if (Math.abs(cost) > 0) {
+        const inStatement = dispatch.type === 'to_artist' || dispatch.type === 'b2b'
+        const [id] = await DB('dispatch_invoice')
+          .where('id', dispatch.id)
+          .insert({
+            date: `${params.date}-01`,
+            currency: +line.warehouse_id === 3 ? 'GBP' : 'USD',
+            file: fileName,
+            dispatch_id: dispatch.id,
+            in_statement: inStatement,
+            invoice_number: params.invoice_number,
+            total: Utils.round(Math.abs(cost), 2),
+            created_at: Utils.date(),
+            updated_at: Utils.date()
+          })
+
+        if (inStatement) {
+          await OrdersManual.applyInvoiceCosts({
+            id: id
+          })
         }
-
-        if (+dispatch.warehouse_id === 3 || +dispatch.warehouse_id === 4 || +dispatch.warehouse_id === 66) {
-          const orderShop = await DB('order_shop').where('id', shop.id).first()
-
-          const carrierFees = dispatch['Carrier Fees'] || dispatch['carrier fees']
-          if (carrierFees > 0) {
-            continue
-          }
-          orderShop.shipping_trans = -carrierFees * currencies[shop.currency]
-          orderShop.shipping_cost = -dispatch.total * currencies[shop.currency]
-          orderShop.shipping_quantity = +dispatch.merch_count
-          await orderShop.save()
-
-          marge += (orderShop.shipping - orderShop.shipping_cost) * orderShop.currency_rate
-        } else if (+dispatch.warehouse_id !== 0) {
-          throw new Error('bad_warehouse')
-        }
-
-        dispatchs.push(dispatch)
       }
     }
-
-
-    let i = 0
-    const nbOrders = 100
-    do {
-      const ids = lines.map((l) => l.creator_id).splice(i, nbOrders).filter((id) => !!id)
-      const ooo = await DB('order_manual')
-        .select('id', 'type', 'logistician_id')
-        .whereIn('logistician_id', ids)
-        .all()
-
-      for (const order of ooo) {
-        const inStatement = order.type === 'to_artist' || order.type === 'b2b'
-        await DB('order_invoice').where('order_manual_id', order.id).delete()
-
-        const dispatch = lines.find((l) => l.creator_id === order.logistician_id)
-
-        if (Math.abs(dispatch.total) > 0) {
-          const [id] = await DB('order_invoice')
-            .where('id', order.id)
-            .insert({
-              date: `${params.date}-01`,
-              currency: +lines[0].warehouse_id === 3 ? 'GBP' : 'USD',
-              file: fileName,
-              order_manual_id: order.id,
-              in_statement: inStatement,
-              invoice_number: params.invoice_number,
-              total: Utils.round(Math.abs(dispatch.total), 2),
-              created_at: Utils.date(),
-              updated_at: Utils.date()
-            })
-
-          if (inStatement) {
-            await OrdersManual.applyInvoiceCosts({
-              id: id
-            })
-          }
-        }
-      }
-      i = i + nbOrders
-    } while (i < lines.length)
     
     console.info('marge => ', marge)
     return {

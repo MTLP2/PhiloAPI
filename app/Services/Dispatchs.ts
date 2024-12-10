@@ -807,11 +807,11 @@ class Dispatchs {
     }
 
     const projects = await DB('project')
-      .select('project.id', 'vod.weight', 'omi.quantity', 'is_licence', 'vod.currency')
+      .select('project.id', 'vod.weight', 'di.quantity', 'is_licence', 'vod.currency')
       .join('vod', 'vod.project_id', 'project.id')
       .join('project_product', 'project_product.project_id', 'project.id')
-      .join('order_manual_item as omi', 'omi.product_id', 'project_product.product_id')
-      .where('omi.dispatch_id', invoice.dispatch_id)
+      .join('dispatch_item as di', 'di.product_id', 'project_product.product_id')
+      .where('di.dispatch_id', invoice.dispatch_id)
       .all()
 
     const weight = projects.reduce(
@@ -969,7 +969,7 @@ class Dispatchs {
         type: 'my_box_sent',
         user_id: box.user_id,
         box_id: box.id,
-        box_dispatch_id: dispatch.id
+        dispatch_id: dispatch.id
       })
     } else {
       const orderShop = await DB('order_shop').find(order.id)
@@ -2724,6 +2724,7 @@ class Dispatchs {
     console.info('start convert')
     await DB().execute('TRUNCATE TABLE dispatch')
     await DB().execute('TRUNCATE TABLE dispatch_item')
+    await DB().execute('TRUNCATE TABLE dispatch_invoice')
 
     const dispatchs: any[] = []
     console.info('start box')
@@ -2797,10 +2798,10 @@ class Dispatchs {
     for (const order of ordersManual) {
       order.status = order.step
       order.logistician = order.transporter
-      order.cost_currency = 'EUR'
       order.cost_logistician = order.shipping_cost
       order.shipping_method = order.shipping_type
       order.type = order.type || 'other'
+      order.order_manual_id = order.id
       delete order.transporter
       delete order.step
       delete order.barcode
@@ -2838,7 +2839,6 @@ class Dispatchs {
       .whereNotNull('date_export')
       .whereNotNull('transporter')
       .all()
-
     console.info('start order_shop', orderShops.length)
     const orderItems = await DB('order_item')
       .select('order_item.order_shop_id', 'project_product.product_id', 'order_item.quantity')
@@ -2908,6 +2908,22 @@ class Dispatchs {
       }
     }
     console.info('end convert')
+
+    const invoices = await DB('order_invoice')
+      .select('order_invoice.*', 'dispatch.id as dispatch_id')
+      .join('dispatch', 'dispatch.order_manual_id', 'order_invoice.order_manual_id')
+      .all()
+
+    for (const invoice of invoices) {
+      await DB('production_cost').where('order_manual_id', invoice.order_manual_id).update({
+        dispatch_id: invoice.dispatch_id
+      })
+      delete invoice.order_manual_id
+      await DB('dispatch_invoice').insert({
+        ...invoice,
+        dispatch_id: invoice.dispatch_id
+      })
+    }
 
     return { success: true, dispatchs: dispatchs.length }
     /**
