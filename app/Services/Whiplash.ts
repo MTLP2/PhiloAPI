@@ -740,8 +740,11 @@ class Whiplash {
     let marge = 0
     
     for (const dispatch of dispatchs) {
-      await DB('dispatch_invoice').where('dispatch_id', dispatch.id).delete()
-  
+      await DB('dispatch_invoice')
+        .where('dispatch_id', dispatch.id)
+        .where('invoice_number', params.invoice_number)
+        .delete()
+
       const line = lines.find((l) => l.creator_id === dispatch.logistician_id)
 
       const cost = Math.abs(Number(line['total']))
@@ -776,7 +779,7 @@ class Whiplash {
           })
 
         if (inStatement) {
-          await OrdersManual.applyInvoiceCosts({
+          await Dispatchs.applyInvoiceCosts({
             id: id
           })
         }

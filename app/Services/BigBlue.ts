@@ -1165,7 +1165,12 @@ class BigBlue {
       })
 
       const inStatement = dispatch.type === 'to_artist' || dispatch.type === 'b2b'
-      await DB('dispatch_invoice').where('dispatch_id', dispatch.id).delete()
+
+      await DB('dispatch_invoice')
+        .where('dispatch_id', dispatch.id)
+        .where('invoice_number', params.invoice_number)
+        .delete()
+
       const [id] = await DB('dispatch_invoice')
         .where('id', dispatch.id)
         .insert({
