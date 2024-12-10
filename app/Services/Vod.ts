@@ -161,9 +161,6 @@ class Vod {
     vod.partner_distribution_digit = params.partner_distribution_digit
     vod.design = params.design
     vod.mechanical_right = params.mechanical_right
-    if (!vod.weight_custom) {
-      vod.weight = Vod.calculateWeight(params)
-    }
     vod.factory = params.factory
 
     if (params.currency !== vod.currency) {
@@ -283,22 +280,6 @@ class Vod {
     vod = await vod.save()
 
     return vod
-  }
-
-  static calculateWeight = (params) => {
-    let weight = params.nb_vinyl * ((params.vinyl_weight || 180) + 20 + 10)
-
-    if (params.sleeve === 'double_gatefold') {
-      weight += 133
-    } else if (params.sleeve === 'triple_gatefold') {
-      weight += 192
-    } else if (params.sleeve === 'discobag') {
-      weight += 17
-    } else {
-      weight += 66
-    }
-
-    return weight
   }
 
   static calculateVinyl = async (params) => {
