@@ -17,7 +17,8 @@ import Storage from 'App/Services/Storage'
 import Utils from 'App/Utils'
 import Whiplash from 'App/Services/Whiplash'
 import Customer from 'App/Services/Customer'
-import MondialRelay from './MondialRelay'
+import moment from 'moment'
+import Invoices from './Invoices'
 
 class Dispatchs {
   static all = async (params: {
@@ -185,7 +186,7 @@ class Dispatchs {
       stock?: number
       product_id: number
     }[]
-    customer?: CustomerDb
+    customer?: Customer
     customer_id?: number
   }) => {
     let item: any = DB('dispatch')
@@ -216,6 +217,17 @@ class Dispatchs {
       params.status === 'in_progress' &&
       (!item.date_inprogress || params.status !== item.status)
     ) {
+      if (!item.date_inprogress) {
+        for (const i in params.items) {
+          await Stock.save({
+            product_id: params.items[i].product_id,
+            type: params.logistician,
+            quantity: -params.items[i].quantity,
+            diff: true,
+            comment: params.type
+          })
+        }
+      }
       item.date_inprogress = Utils.date()
     }
 
@@ -614,7 +626,7 @@ class Dispatchs {
       price: number
     }[]
   }) => {
-    const order = await OrdersManual.find({ id: params.id })
+    const order = await Dispatchs.find({ id: params.id })
 
     const total = params.products.reduce((acc, prod) => {
       return acc + prod.quantity * prod.price
@@ -662,7 +674,7 @@ class Dispatchs {
   }
 
   static packingList = async (params: { id: number; type?: string }) => {
-    const order = await OrdersManual.find({ id: params.id })
+    const order = await Dispatchs.find({ id: params.id })
     const items: {
       sender: string
       title: string
@@ -846,7 +858,7 @@ class Dispatchs {
         dispatch_id: invoice.dispatch_id,
         date: invoice.date,
         type: 'logistic',
-        name: `Transport B2B : ${invoice.company}`,
+        name: `Transport B2B : ${invoice.company || invoice.invoice_number}`,
         invoice_number: invoice.invoice_number,
         cost_real: costReel,
         cost_real_ttc: costReel,
@@ -2368,11 +2380,20 @@ class Dispatchs {
       dis.product_id = item.product_id
       dis.quantity = item.quantity
       await dis.save()
+
+      await Stock.save({
+        product_id: item.product_id,
+        type: params.logistician,
+        quantity: -item.quantity,
+        diff: true,
+        comment: params.type
+      })
     }
 
     return { success: true }
   }
 
+  /**
   static createDispatch = async (params: {
     id?: number
     box_id?: number
@@ -2427,6 +2448,7 @@ class Dispatchs {
 
     return dispatch
   }
+  **/
 
   static createReturn = async (params: { order_shop_id: number }) => {
     const dispatch = await db
@@ -2447,12 +2469,13 @@ class Dispatchs {
       .execute()
 
     return Dispatchs.createOrder({
-      logistician: dispatch.logistician,
-      customer_id: dispatch.customer_id,
-      order_shop_id: dispatch.order_shop_id,
-      address_pickup: dispatch.address_pickup,
-      shipping_method: dispatch.shipping_method,
-      user_id: dispatch.user_id,
+      logistician: dispatch.logistician as string,
+      customer_id: dispatch.customer_id as number,
+      order_shop_id: dispatch.order_shop_id as number,
+      order_id: dispatch.order_id as number,
+      address_pickup: dispatch.address_pickup as string,
+      shipping_method: dispatch.shipping_method as string,
+      user_id: dispatch.user_id as number,
       type: 'return',
       items: items
     })
