@@ -2274,15 +2274,16 @@ class Cart {
             sizes = item.size
           }
 
-          await Stock.changeQtyProject({
-            project_id: project.id,
-            order_id: order.id,
-            // size: item.size,
-            sizes: sizes,
-            preorder: shop.type === 'vod',
-            quantity: item.quantity,
-            transporter: shop.transporter
-          })
+          if (shop.type === 'vod') {
+            await Stock.changeQtyProject({
+              project_id: project.id,
+              order_id: order.id,
+              sizes: sizes,
+              preorder: shop.type === 'vod',
+              quantity: item.quantity,
+              transporter: shop.transporter
+            })
+          }
         }
       }
     }
