@@ -19,6 +19,7 @@ import Whiplash from 'App/Services/Whiplash'
 import Customer from 'App/Services/Customer'
 import moment from 'moment'
 import Invoices from './Invoices'
+import Box from './Box'
 
 class Dispatchs {
   static all = async (params: {
@@ -139,6 +140,8 @@ class Dispatchs {
         'dispatch_item.*',
         'product.name',
         'product.hs_code',
+        'product.barcode',
+        'product.catnumber',
         'product.country_id',
         'product.more',
         'product.type'
@@ -480,7 +483,23 @@ class Dispatchs {
     return item
   }
 
-  static export = async (params) => {
+  static export = async (params: {
+    items: {
+      quantity: number
+      product_id: number
+      stock: number
+    }[]
+  }) => {
+    const items = await db
+      .selectFrom('product')
+      .where(
+        'id',
+        'in',
+        params.items.map((i) => i.product_id)
+      )
+      .select(['product.id', 'product.barcode', 'product.name'])
+      .execute()
+
     const workbook = new Excel.Workbook()
     const worksheet = workbook.addWorksheet('Order')
 
@@ -491,7 +510,15 @@ class Dispatchs {
       { header: 'Stock', key: 'stock', width: 10 }
     ]
 
-    worksheet.addRows(params.items)
+    for (const i in params.items) {
+      const item = items.find((item) => item.id === params.items[i].product_id)
+      worksheet.addRow({
+        barcode: item?.barcode,
+        name: item?.name,
+        quantity: params.items[i].quantity,
+        stock: params.items[i].stock
+      })
+    }
 
     return workbook.xlsx.writeBuffer()
   }
@@ -674,7 +701,7 @@ class Dispatchs {
   }
 
   static packingList = async (params: { id: number; type?: string }) => {
-    const order = await Dispatchs.find({ id: params.id })
+    const dispatch = await Dispatchs.find({ id: params.id })
     const items: {
       sender: string
       title: string
@@ -691,22 +718,21 @@ class Dispatchs {
       country_id: string
     }[] = []
 
-    for (const item of order.items) {
-      const product = await DB('product').where('barcode', item.barcode).first()
+    for (const item of dispatch.items) {
       items.push({
         sender: 'Diggers Factory',
-        title: product?.name,
+        title: item.name,
         quantity: item.quantity,
         barcode: item.barcode,
-        catnumber: product?.catnumber,
-        name: order.customer.name,
-        contact: order.customer.firstname + ' ' + order.customer.lastname,
-        email: order.email,
-        phone: order.customer.phone,
-        address: order.customer.address,
-        city: order.customer.city,
-        zip_code: order.customer.zip_code,
-        country_id: order.customer.country_id
+        catnumber: item.catnumber,
+        name: dispatch.customer.name,
+        contact: dispatch.customer.firstname + ' ' + dispatch.customer.lastname,
+        email: dispatch.email,
+        phone: dispatch.customer.phone,
+        address: dispatch.customer.address,
+        city: dispatch.customer.city,
+        zip_code: dispatch.customer.zip_code,
+        country_id: dispatch.customer.country_id
       })
     }
 
@@ -2793,7 +2819,7 @@ class Dispatchs {
       const barcodes = box.barcodes.split(',')
       for (const barcode of barcodes) {
         dispatch.items.push({
-          barcode: barcode,
+          barcode: Box.getBarcode(barcode),
           quantity: 1,
           created_at: box.created_at,
           updated_at: box.updated_at
@@ -2802,6 +2828,7 @@ class Dispatchs {
       dispatchs.push(dispatch)
     }
 
+    console.log(dispatchs.length)
     console.info('start manual')
     const ordersManual = await DB('order_manual')
       .select('*')
@@ -2856,6 +2883,7 @@ class Dispatchs {
       }
       dispatchs.push(dispatch)
     }
+    console.log(dispatchs.length)
 
     const orderShops = await DB('order_shop')
       .select('*')
@@ -2949,18 +2977,35 @@ class Dispatchs {
     }
 
     return { success: true, dispatchs: dispatchs.length }
-    /**
+  }
+
+  static setProductsIds = async () => {
     const items = await DB('dispatch_item').select('id', 'barcode').whereNull('product_id').all()
+
+    const barcodes = {}
     for (const item of items) {
-      const product = await DB('product').where('barcode', item.barcode).first()
-      if (product) {
+      barcodes[item.barcode] = null
+    }
+
+    const products = await DB('product')
+      .select('id', 'barcode')
+      .whereIn('barcode', Object.keys(barcodes))
+      .all()
+
+    for (const product of products) {
+      barcodes[product.barcode] = product.id
+    }
+
+    console.log('barcodes', Object.keys(barcodes).length)
+
+    for (const barcode of Object.keys(barcodes)) {
+      if (barcodes[barcode] !== null) {
         await DB('dispatch_item')
-          .where('barcode', item.barcode)
+          .where('barcode', barcode)
           .whereNull('product_id')
-          .update({ product_id: product.id })
+          .update({ product_id: barcodes[barcode] })
       }
     }
-    **/
   }
 }
 
