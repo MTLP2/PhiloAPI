@@ -329,6 +329,20 @@ class DispatchsController {
     })
     return Dispatchs.uploadShippingPrices(payload)
   }
+
+  async sync({ params }) {
+    const payload = await validator.validate({
+      schema: schema.create({
+        id: schema.number()
+      }),
+      data: {
+        id: params.id
+      }
+    })
+    return Dispatchs.syncDispatchs({
+      id: payload.id
+    })
+  }
 }
 
 export default DispatchsController

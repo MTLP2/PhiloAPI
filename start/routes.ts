@@ -627,6 +627,7 @@ Route.group(() => {
   Route.delete('/dispatchs/invoices', 'DispatchsController.removeInvoice')
   Route.get('/dispatchs/invoices/download', 'DispatchsController.downloadInvoice')
   Route.post('/dispatchs/import-costs', 'DispatchsController.importCosts')
+  Route.post('/dispatchs/:id/sync', 'DispatchsController.sync')
   Route.delete('/dispatchs/:id', 'DispatchsController.cancel')
   Route.post('/shipping-compare', 'DispatchsController.compareShippingOrder')
   Route.get('/shipping-revenues', 'DispatchsController.getShippingRevenues')

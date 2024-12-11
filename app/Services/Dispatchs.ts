@@ -2527,23 +2527,23 @@ class Dispatchs {
         'customer.country_id',
         'user.email as user_email'
       ])
-      .where('status', '=', 'in_progress')
-      .where('date_inprogress', '<', sql`NOW() - INTERVAL 2 HOUR`)
+      .where('logistician_id', 'is', null)
       .orderBy('created_at', 'asc')
-
       .where(({ eb, and }) => {
         const ands: Expression<SqlBool>[] = []
         if (params?.id) {
           ands.push(eb('dispatch.id', '=', params.id))
+        } else {
+          ands.push(eb('dispatch.status', '=', 'in_progress'))
+          ands.push(eb('dispatch.date_inprogress', '<', sql`NOW() - INTERVAL 2 HOUR`))
         }
         return and(ands)
       })
       .limit(1)
       .execute()
 
-    console.log(dispatchs)
     if (dispatchs.length === 0) {
-      return { success: true }
+      return { success: true, count: 0 }
     }
 
     const items = await db
@@ -2583,6 +2583,8 @@ class Dispatchs {
         items: itemsDispatch
       })
     }
+
+    return { success: true, count: dispatchs.length }
   }
 
   static syncDispatch = async (params: {
