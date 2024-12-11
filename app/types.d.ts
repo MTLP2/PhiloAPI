@@ -193,7 +193,7 @@ type DispatchItem = {
 }
 
 type DispatchLock = {
-  id: number
+  id?: number
   dispatch_id: number
   created_at: Timestamp
   updated_at: Timestamp
