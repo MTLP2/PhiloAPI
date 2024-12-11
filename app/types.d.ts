@@ -350,6 +350,15 @@ type Shop = {
   updated_at: Timestamp
 }
 
+type Stock = {
+  id: number
+  product_id: number
+  quantity: number
+  type: string
+  created_at: Timestamp
+  updated_at: Timestamp
+}
+
 type User = {
   id: number
   name: string
@@ -393,6 +402,7 @@ export type DB = {
   order_shop: OrderShop
   shipping_weight: ShippingWeight
   shop: Shop
+  stock: Stock
   product: Product
   user: User
 }
