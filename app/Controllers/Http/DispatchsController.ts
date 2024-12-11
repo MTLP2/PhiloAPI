@@ -184,7 +184,7 @@ class DispatchsController {
     }
   }
 
-  async orderManuelPackingList({ params }) {
+  async packingList({ params }) {
     try {
       const payload = await validator.validate({
         schema: schema.create({
