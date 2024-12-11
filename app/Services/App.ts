@@ -151,7 +151,7 @@ class App {
       } else if (hour === 5) {
         await Charts.uploadChartsGfk()
         await Cio.syncNewsletterNoAccount()
-        await Box.syncBoxes()
+        // await Box.syncBoxes()
       } else if (hour === 6) {
         await Charts.uploadDigitalCharts()
       } else if (hour === 7) {
