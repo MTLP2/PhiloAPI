@@ -3483,6 +3483,11 @@ class StatementService {
             .where('invoice_number', params.file.name)
             .delete()
 
+          params.file.name = params.file.name.replace(/\([^)] *\)/g, '').trim()
+
+          const costReel = Utils.round(costs[project.cat_number], 2)
+          const costInvoiced = project.is_licence ? 0 : Utils.round(costReel * 1.25)
+
           await DB('production_cost').insert({
             project_id: project.id,
             date: moment().format('YYYY-MM-DD'),
@@ -3492,13 +3497,11 @@ class StatementService {
             currency: 'EUR',
             currency_rate: 1,
             is_statement: project.is_licence ? false : true,
-            cost_real: costs[project.cat_number],
-            cost_real_ttc: costs[project.cat_number],
-            margin: project.is_licence ? -costs[project.cat_number] : 0,
-            cost_invoiced: project.is_licence ? 0 : costs[project.cat_number],
-            in_statement: project.is_licence
-              ? 0
-              : costs[project.cat_number] * currencies[project.currency]
+            cost_real: costReel,
+            cost_real_ttc: costReel,
+            margin: project.is_licence ? -costReel : 0,
+            cost_invoiced: costInvoiced,
+            in_statement: costInvoiced
           })
         }
         break
