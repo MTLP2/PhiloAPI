@@ -97,7 +97,6 @@ class Whiplash {
     return list
   }
 
-
   static syncDispatch = async (params: {
     id: number
     firstname: string
@@ -152,9 +151,8 @@ class Whiplash {
       }))
     }
 
-
     const res = await Whiplash.saveOrder(data)
-    
+
     console.log(res)
     if (res.id) {
       return {
@@ -169,6 +167,7 @@ class Whiplash {
     }
   }
 
+  /**
   static validOrder = async (shop, items) => {
     const customer = await DB('customer').find(shop.customer_id)
 
@@ -221,6 +220,7 @@ class Whiplash {
 
     return order
   }
+  **/
 
   static saveOrderItem = (params) => {
     return Whiplash.api('order_items', {
@@ -267,6 +267,7 @@ class Whiplash {
     }
   }
 
+  /**
   static syncProject = async (params: { project_id: number; type: string, products: number[]; quantity: number }) => {{
 
     const orders = await DB('order_shop as os')
@@ -426,6 +427,7 @@ class Whiplash {
 
     return count
   }
+  **/
 
   static setTrackingLinks = async () => {
     const dispatchs = await DB('dispatch')
@@ -434,11 +436,16 @@ class Whiplash {
       .whereNull('tracking_number')
       .whereIn('logistician', ['whiplash', 'whiplash_uk'])
       .all()
-      
+
     for (const dis of dispatchs) {
       const order: any = await Whiplash.getOrder(dis.logistician_id)
-      if (order.status_name && (order.status_name.toLowerCase() === 'shipped' || order.status_name.toLowerCase() === 'delivered')) {
-        const status = order.status_name.toLowerCase() === 'shipped' ? 'sent' : order.status_name.toLowerCase()
+      if (
+        order.status_name &&
+        (order.status_name.toLowerCase() === 'shipped' ||
+          order.status_name.toLowerCase() === 'delivered')
+      ) {
+        const status =
+          order.status_name.toLowerCase() === 'shipped' ? 'sent' : order.status_name.toLowerCase()
         await Dispatchs.changeStatus({
           id: dis.id,
           logistician_id: dis.logistician_id,
@@ -453,6 +460,7 @@ class Whiplash {
     return { success: true }
   }
 
+  /**
   static setDelivered = async () => {
     const shops = await DB('order_shop')
       .whereNotNull('logistician_id')
@@ -468,7 +476,6 @@ class Whiplash {
     for (const shop of shops) {
       // shop.logistician_id = 22888898
       const order: any = await Whiplash.getOrder(shop.logistician_id)
-      /**
       await DB('order_shop')
         .where('id', shop.id)
         .update({
@@ -476,11 +483,11 @@ class Whiplash {
           tracking_number: order.tracking[0],
           tracking_link: order.tracking_links[0]
         })
-      **/
     }
 
     return { success: true }
   }
+  **/
 
   static getTrackingDelivery = async (params) => {
     const shop = await DB('order_shop').where('id', params.id).first()
@@ -689,7 +696,7 @@ class Whiplash {
             'alexis@diggersfactory.com',
             'victor.b@diggersfactory.com',
             'thomas@diggersfactory.com'
-        ].join(','),
+          ].join(','),
           subject: `Whiplash - new stocks`,
           html: `
           ${newStocks
@@ -712,9 +719,9 @@ class Whiplash {
   }
 
   static setCost = async (params: {
-    file: string,
-    force: boolean,
-    date: string,
+    file: string
+    force: boolean
+    date: string
     invoice_number: string
   }) => {
     const lines: any = Utils.csvToArray(params.file)
@@ -727,10 +734,12 @@ class Whiplash {
       currencies = await Utils.getCurrenciesApi(date, 'EUR,USD,GBP,AUD,CAD,PHP,KRW,JPY,CNY', 'USD')
     }
 
-    const dispatchs = await DB('dispatch').whereIn(
-      'logistician_id',
-      lines.filter((s) => s.creator_id).map((s) => s.creator_id)
-    ).all()
+    const dispatchs = await DB('dispatch')
+      .whereIn(
+        'logistician_id',
+        lines.filter((s) => s.creator_id).map((s) => s.creator_id)
+      )
+      .all()
 
     const fileName = `invoices/${Utils.uuid()}`
 
@@ -738,7 +747,7 @@ class Whiplash {
 
     console.log('dispatchs => ', dispatchs.length)
     let marge = 0
-    
+
     for (const dispatch of dispatchs) {
       await DB('dispatch_invoice')
         .where('dispatch_id', dispatch.id)
@@ -785,7 +794,7 @@ class Whiplash {
         }
       }
     }
-    
+
     console.info('marge => ', marge)
     return {
       dispatchs: dispatchs.length,
@@ -988,11 +997,12 @@ class Whiplash {
     let items: any[] = []
     const queries: any[] = []
     for (let i = 1; i < 5; i++) {
-      queries.push(Whiplash.api(`/orders`, {
-        method: 'GET',
-        body: {
-          page: i,
-          per_page: 250
+      queries.push(
+        Whiplash.api(`/orders`, {
+          method: 'GET',
+          body: {
+            page: i,
+            per_page: 250
           }
         })
       )
@@ -1044,13 +1054,17 @@ class Whiplash {
             <td>Item</td>
             <td>Date</td>
           </tr>
-          ${rows.map((r) => `<tr>
+          ${rows
+            .map(
+              (r) => `<tr>
             <td><a href="https://www.getwhiplash.com/orders/${r.id}">${r.id}</a></td>
             <td>${r.name}</td>
             <td>${r.sku}</td>
             <td>${r.item}</td>
             <td>${r.date}</td>
-          </tr>`).join('')}
+          </tr>`
+            )
+            .join('')}
         </table>
       `
     })

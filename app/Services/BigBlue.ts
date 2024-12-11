@@ -204,6 +204,7 @@ class BigBlue {
     return inventories.length
   }
 
+  /**
   static syncProject = async (params: { id: number; quantity: number; products: number[] }) => {
     const vod = await DB('vod').where('project_id', params.id).first()
     if (!vod) {
@@ -358,6 +359,7 @@ class BigBlue {
     return res
   }
 
+
   static syncOrders = async (ids: number[]) => {
     const orders = await DB()
       .select('customer.*', 'customer.email as customer_email', 'os.*', 'user.email')
@@ -417,6 +419,7 @@ class BigBlue {
     const res = await BigBlue.sync(orders)
     return res
   }
+  **/
 
   static getShippingType(type: string) {
     switch (type) {
@@ -528,6 +531,7 @@ class BigBlue {
     }
   }
 
+  /**
   static async sync(orders: any[]) {
     const dispatchs: any[] = []
     for (const order of orders) {
@@ -680,6 +684,7 @@ class BigBlue {
 
     return dispatchs
   }
+  **/
 
   static async setTrackingLinks() {
     const orders: any[] = []
