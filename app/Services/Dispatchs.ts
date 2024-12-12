@@ -2773,9 +2773,13 @@ class Dispatchs {
 
   static convertOldDispatch = async () => {
     console.info('start convert')
+
+    return
+    /**
     await DB().execute('TRUNCATE TABLE dispatch')
     await DB().execute('TRUNCATE TABLE dispatch_item')
     await DB().execute('TRUNCATE TABLE dispatch_invoice')
+    **/
 
     const dispatchs: any[] = []
     console.info('start box')
