@@ -895,10 +895,25 @@ class Stock {
       hh[h.product_id][h.type].push(h)
     }
 
-    const logisitians = {}
+    const logisitians = {
+      daudin: true,
+      whiplash: true,
+      whiplash_uk: true,
+      bigblue: true
+    }
 
     for (const i in refs) {
       refs[i].quantity = 0
+
+      if (!refs[i].stock.find((s) => s.type === 'daudin')) {
+        refs[i].stock.push({
+          type: 'daudin',
+          product_id: refs[i].id,
+          is_preorder: false,
+          quantity: 0
+        })
+        logisitians.daudin = true
+      }
       for (const stock of refs[i].stock) {
         if (stock.type === 'preorder' || stock.is_preorder) {
           continue

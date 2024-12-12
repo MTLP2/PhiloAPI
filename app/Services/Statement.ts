@@ -3349,7 +3349,7 @@ class StatementService {
           .select(DB.raw(1))
           .join('order_item', 'order_item.order_shop_id', 'order_shop.id')
           .whereRaw('order_item.project_id = vod.project_id')
-          .where('order_shop.created_at', '>=', '2023-01-01')
+          .where('order_shop.created_at', '>=', '2022-01-01')
           .query()
       )
       .all()
@@ -3378,11 +3378,13 @@ class StatementService {
       .all()
 
     const res: any[] = []
+
+    const usersData = {}
     for (const project of projects) {
       const statement = await await Project.getDashboard({
         project_id: project.id,
         start: '2001-01-01',
-        end: '2024-06-30',
+        end: '2024-09-30',
         periodicity: 'months',
         cashable: true,
         only_data: true
@@ -3391,7 +3393,7 @@ class StatementService {
       const statement2 = await await Project.getDashboard({
         project_id: project.id,
         start: '2001-01-01',
-        end: '2025-06-30',
+        end: '2025-09-30',
         periodicity: 'months',
         cashable: true,
         only_data: true
@@ -3414,6 +3416,24 @@ class StatementService {
           costs2: Utils.round(statement2.costs.all.total / currencies[project.currency]),
           income: Utils.round(statement.income.all.total / currencies[project.currency])
         }
+
+        if (!usersData[project.user_id]) {
+          usersData[project.user_id] = {
+            id: project.user_id,
+            user_name: project.user_name,
+            balance: 0,
+            balance2: 0,
+            costs: 0,
+            costs2: 0,
+            income: 0
+          }
+        }
+        usersData[project.user_id].balance += data.balance
+        usersData[project.user_id].balance2 += data.balance2
+        usersData[project.user_id].costs += data.costs
+        usersData[project.user_id].costs2 += data.costs2
+        usersData[project.user_id].income += data.income
+
         res.push(data)
 
         if (res.length > 100) {
@@ -3421,6 +3441,22 @@ class StatementService {
         }
       }
     }
+
+    return Utils.arrayToXlsx([
+      {
+        worksheetName: 'Balances',
+        columns: [
+          { header: 'ID', key: 'id', width: 10 },
+          { header: 'User name', key: 'user_name', width: 30 },
+          { header: 'Balance', key: 'balance', width: 10 },
+          { header: 'Balance Now', key: 'balance2', width: 10 },
+          { header: 'Costs', key: 'costs', width: 10 },
+          { header: 'Costs Now', key: 'costs2', width: 10 }
+          // { header: 'Income', key: 'income', width: 10 }
+        ],
+        data: Object.values(usersData) as any[]
+      }
+    ])
 
     return Utils.arrayToXlsx([
       {
