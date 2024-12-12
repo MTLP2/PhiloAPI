@@ -2774,14 +2774,12 @@ class Dispatchs {
   static convertOldDispatch = async () => {
     console.info('start convert')
 
-    return
+    const dispatchs: any[] = []
     /**
     await DB().execute('TRUNCATE TABLE dispatch')
     await DB().execute('TRUNCATE TABLE dispatch_item')
     await DB().execute('TRUNCATE TABLE dispatch_invoice')
-    **/
 
-    const dispatchs: any[] = []
     console.info('start box')
     const boxDispatches = await DB('box_dispatch')
       .join('box', 'box.id', 'box_dispatch.box_id')
@@ -2835,12 +2833,17 @@ class Dispatchs {
     }
 
     console.log(dispatchs.length)
+    **/
     console.info('start manual')
     const ordersManual = await DB('order_manual')
       .select('*')
       .whereNotNull('date_export')
       .whereNotNull('transporter')
+      .whereNotExists(
+        DB('dispatch').select(DB.raw(1)).whereRaw('order_manual_id = order_manual.id').query()
+      )
       .all()
+
     const ordersManualItems = await DB('order_manual_item').select('*').all()
 
     const manualItems = {}
@@ -2895,11 +2898,20 @@ class Dispatchs {
       .select('*')
       .whereNotNull('date_export')
       .whereNotNull('transporter')
+      .where('order_id', '>=', 399140)
+      .whereNotExists(
+        DB('dispatch').select(DB.raw(1)).whereRaw('order_shop_id = order_shop.id').query()
+      )
       .all()
+
     console.info('start order_shop', orderShops.length)
     const orderItems = await DB('order_item')
       .select('order_item.order_shop_id', 'project_product.product_id', 'order_item.quantity')
       .leftJoin('project_product', 'project_product.project_id', 'order_item.project_id')
+      .whereIn(
+        'order_item.order_shop_id',
+        orderShops.map((o) => o.id)
+      )
       .all()
 
     const items = {}
@@ -2945,13 +2957,16 @@ class Dispatchs {
       dispatchs.push(dispatch)
     }
 
+    /**
     dispatchs.sort(function (a, b) {
       // Turn your strings into dates, and then subtract them
       // to get a value that is either negative, positive, or zero.
       return new Date(a.data.created_at) - new Date(b.data.created_at)
     })
+    **/
 
     console.log('dispatchs', dispatchs.length)
+
     for (const dispatch of dispatchs) {
       if (dispatch.items.length === 0) {
         continue
@@ -2966,6 +2981,9 @@ class Dispatchs {
     }
     console.info('end convert')
 
+    return dispatchs.length
+
+    /**
     const invoices = await DB('order_invoice')
       .select('order_invoice.*', 'dispatch.id as dispatch_id')
       .join('dispatch', 'dispatch.order_manual_id', 'order_invoice.order_manual_id')
@@ -2981,6 +2999,7 @@ class Dispatchs {
         dispatch_id: invoice.dispatch_id
       })
     }
+    **/
 
     return { success: true, dispatchs: dispatchs.length }
   }
