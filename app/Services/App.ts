@@ -124,14 +124,12 @@ class App {
 
       await Order.checkNoOrder()
       if ([9, 12, 15, 17].includes(hour)) {
-        // await Elogik.syncStocks()
         await BigBlue.syncStocks()
         await Whiplash.syncStocks()
       }
       if ([8, 13, 16].includes(hour)) {
         await Production.updateDispatchsStatus()
         await Whiplash.getDuplicates()
-        // await BigBlue.getDuplicates()
       }
 
       if (hour === 2) {
@@ -151,7 +149,6 @@ class App {
       } else if (hour === 5) {
         await Charts.uploadChartsGfk()
         await Cio.syncNewsletterNoAccount()
-        // await Box.syncBoxes()
       } else if (hour === 6) {
         await Charts.uploadDigitalCharts()
       } else if (hour === 7) {
@@ -176,7 +173,6 @@ class App {
         if (moment().format('E') === '2') {
           await Charts.uploadCharts()
         }
-        await Box.syncBoxes()
       }
 
       await Storage.cleanTmp('storage')
