@@ -364,6 +364,10 @@ class AdminController {
     return Order.exportSales(params)
   }
 
+  async exportLicences({ params }) {
+    return Admin.exportLicences(params)
+  }
+
   async exportCategories({ params }) {
     const payload = await validator.validate({
       schema: schema.create({
