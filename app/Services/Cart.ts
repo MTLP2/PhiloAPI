@@ -206,7 +206,7 @@ class Cart {
             sizes: item.chosen_sizes
           })
 
-          const weight = item.quantity * (project.weight || Vod.calculateWeight(project))
+          const weight = item.quantity * project.weight
           const shipping: any = await Cart.calculateShipping({
             quantity: item.quantity,
             insert: item.quantity,
@@ -1348,7 +1348,7 @@ class Cart {
     res.grouped_sizes = p.project.grouped_sizes ? p.project.grouped_sizes : []
     res.coefficient = 1
     res.insert = p.quantity * (p.project.barcode ? p.project.barcode.split(',').length : 1)
-    res.weight = p.quantity * (p.project.weight || Vod.calculateWeight(p.project))
+    res.weight = p.quantity * p.project.weight
     res.category = p.project.category
     res.save_shipping = p.project.save_shipping
 
