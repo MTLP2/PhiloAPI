@@ -2060,6 +2060,55 @@ class Admin {
     // )
   }
 
+  static exportLicences = async (params) => {
+    const projects = await DB('project')
+      .select('project.id', 'project.artist_name', 'project.name')
+      .join('vod', 'vod.project_id', 'project.id')
+      .where('is_licence', true)
+      .orderBy('artist_name', 'asc')
+      .orderBy('name', 'asc')
+      .all()
+
+    const stocks = await DB('stock')
+      .select('vod.project_id', 'stock.quantity', 'stock.type')
+      .join('project_product', 'project_product.product_id', 'stock.product_id')
+      .join('vod', 'vod.project_id', 'project_product.project_id')
+      .where('stock.is_preorder', false)
+      .where('is_licence', true)
+      .whereIn('stock.type', ['bigblue', 'whiplash', 'whiplash_uk'])
+      .all()
+
+    const distrib = await DB('statement_distributor')
+      .select('statement.project_id', 'statement_distributor.quantity')
+      .join('statement', 'statement.id', 'statement_distributor.statement_id')
+      .join('vod', 'vod.project_id', 'statement.project_id')
+      .where('vod.is_licence', true)
+      .all()
+
+    for (const project of projects) {
+      project.stock = stocks
+        .filter((s) => s.project_id === project.id)
+        .reduce((acc, s) => acc + s.quantity, 0)
+
+      project.distrib = distrib
+        .filter((d) => d.project_id === project.id)
+        .reduce((acc, d) => acc + d.quantity, 0)
+    }
+    return Utils.arrayToXlsx([
+      {
+        worksheetName: 'Licences',
+        columns: [
+          { header: 'ID', key: 'id', width: 10 },
+          { header: 'Artist', key: 'artist_name', width: 35 },
+          { header: 'Project', key: 'name', width: 35 },
+          { header: 'Stock', key: 'stock', width: 7 },
+          { header: 'Distrib', key: 'distrib', width: 7 }
+        ],
+        data: projects
+      }
+    ])
+  }
+
   static exportReviews = async (params) => {
     params.size = 0
     const data = await Review.all(params)
