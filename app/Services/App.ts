@@ -31,6 +31,7 @@ import Excel from 'exceljs'
 import fs from 'fs'
 import Payments from './Payments'
 import Admin from './Admin'
+import Dispatchs from './Dispatchs'
 
 class App {
   static daily = async () => {
@@ -216,6 +217,7 @@ class App {
       await User.syncCIOs()
       await User.syncEvents()
       await Vod.checkCampaignEnd()
+      await Dispatchs.syncDispatchs()
 
       cron.status = 'complete'
       cron.end = new Date()

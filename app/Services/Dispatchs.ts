@@ -2528,7 +2528,6 @@ class Dispatchs {
         'user.email as user_email'
       ])
       .where('logistician_id', 'is', null)
-      .orderBy('created_at', 'asc')
       .where(({ eb, and }) => {
         const ands: Expression<SqlBool>[] = []
         if (params?.id) {
@@ -2540,6 +2539,7 @@ class Dispatchs {
         return and(ands)
       })
       .limit(1)
+      .orderBy('date_inprogress', 'asc')
       .execute()
 
     if (dispatchs.length === 0) {
