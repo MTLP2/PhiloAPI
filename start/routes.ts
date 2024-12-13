@@ -355,6 +355,7 @@ Route.group(() => {
   Route.get('/projects/balance', 'AdminController.getBalances')
   Route.get('/projects/boxes-export', 'AdminController.exportProjectsBox')
   Route.get('/projects/turnover', 'AdminController.getProjectsTurnover')
+  Route.get('/projects/licences', 'AdminController.exportLicences')
   Route.get('/projects/to-sync', 'AdminController.getProjectsToSync')
   Route.get('/projects/:id', 'AdminController.getProject')
   Route.post('/projects/:id', 'AdminController.saveProject')
