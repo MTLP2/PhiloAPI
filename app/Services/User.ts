@@ -773,7 +773,7 @@ class User {
       }
 
       boxes[i].records = Object.values(box.records).sort((a, b) => (a.date < b.date ? 1 : -1))
-      boxes[i].stoppable = box.monthly && Box.getNbMonths(box.periodicity) <= dispatchs.length
+      // boxes[i].stoppable = box.monthly && Box.getNbMonths(box.periodicity) <= dispatchs.length
 
       const sponsor = await DB('box_sponsor').whereNull('used').where('box_id', box.id).all()
 
