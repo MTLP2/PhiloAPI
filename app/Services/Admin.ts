@@ -4704,7 +4704,7 @@ class Admin {
           })
         })
       })
-      .whereNull('date_export')
+      .whereNull('dispatch_id')
       .where('os.transporter', transporter)
       .where('os.is_paid', 1)
       .whereIn(
@@ -4740,6 +4740,7 @@ class Admin {
       products[shop.product_id].stock = shop.stock
     }
 
+    console.log(products)
     return Object.values(products).sort((a, b) => {
       if (a.quantity < b.quantity) {
         return 1
