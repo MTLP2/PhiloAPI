@@ -41,6 +41,7 @@ class Dispatchs {
       )
       .leftJoin('customer', 'customer.id', 'dispatch.customer_id')
       .leftJoin('user', 'user.id', 'dispatch.user_id')
+      .where('dispatch.status', '!=', 'deleted')
 
     let filters
     try {
@@ -560,15 +561,18 @@ class Dispatchs {
         status: 'cancelled',
         date: Utils.date()
       })
-      dispatch.logs = JSON.stringify(dispatch.logs)
-
-      await dispatch.save()
-      return { success: true }
     } else {
-      await DB('dispatch_item').where('dispatch_id', params.id).delete()
-      await DB('dispatch').where('id', params.id).delete()
-      return { success: true }
+      dispatch.status = 'deleted'
+      dispatch.logs = dispatch.logs ? JSON.parse(dispatch.logs) : []
+      dispatch.logs.push({
+        action: 'delete',
+        status: 'deleted',
+        date: Utils.date()
+      })
     }
+    dispatch.logs = JSON.stringify(dispatch.logs)
+    await dispatch.save()
+    return { success: true }
   }
 
   static importCosts = async (params: { file: any }) => {
