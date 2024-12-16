@@ -58,7 +58,18 @@ class Dispatchs {
       const filter = filters[i]
       filter.value = decodeURIComponent(filters[i].value)
 
-      if (filter.name === 'product') {
+      if (filter.name === 'product_id') {
+        query.whereExists(
+          DB('dispatch_item')
+            .select('product.id')
+            .whereRaw('dispatch_item.dispatch_id = dispatch.id')
+            .join('product', 'product.id', 'dispatch_item.product_id')
+            .where('product.id', filter.value)
+            .query()
+        )
+        filters.splice(i, 1)
+        filters = JSON.stringify(filters)
+      } else if (filter.name === 'product') {
         query.whereExists(
           DB('dispatch_item')
             .select('product.id')
