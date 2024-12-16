@@ -550,11 +550,19 @@ class Dispatchs {
   }
 
   static cancel = async (params: { id: number }) => {
-    const order = await DB('dispatch').find(params.id)
+    const dispatch = await DB('dispatch').find(params.id)
 
-    if (order.date_export) {
-      order.step = 'cancelled'
-      await order.save()
+    if (dispatch.date_export) {
+      dispatch.status = 'cancelled'
+      dispatch.logs = dispatch.logs ? JSON.parse(dispatch.logs) : []
+      dispatch.logs.push({
+        action: 'cancel',
+        status: 'cancelled',
+        date: Utils.date()
+      })
+      dispatch.logs = JSON.stringify(dispatch.logs)
+
+      await dispatch.save()
       return { success: true }
     } else {
       await DB('dispatch_item').where('dispatch_id', params.id).delete()
@@ -2395,6 +2403,7 @@ class Dispatchs {
     await db
       .updateTable('order_shop')
       .set({
+        step: 'in_progress',
         dispatch_id: Number(dispatch.id)
       })
       .where('id', '=', params.order_shop_id)
@@ -2833,7 +2842,6 @@ class Dispatchs {
     }
 
     console.log(dispatchs.length)
-    **/
     console.info('start manual')
     const ordersManual = await DB('order_manual')
       .select('*')
@@ -2894,25 +2902,78 @@ class Dispatchs {
     }
     console.log(dispatchs.length)
 
+    **/
+
     const orderShops = await DB('order_shop')
       .select('*')
       .whereNotNull('date_export')
       .whereNotNull('transporter')
-      .where('order_id', '>=', 399140)
+      // .where('order_id', '=', 360897)
+      .whereIn(
+        'order_shop.id',
+        DB('order_item').select('order_shop_id').where('size', '!=', '').query()
+      )
+      .where('order_shop.id', '=', 225090)
+      /**
       .whereNotExists(
         DB('dispatch').select(DB.raw(1)).whereRaw('order_shop_id = order_shop.id').query()
       )
+      **/
       .all()
 
     console.info('start order_shop', orderShops.length)
+
     const orderItems = await DB('order_item')
-      .select('order_item.order_shop_id', 'project_product.product_id', 'order_item.quantity')
+      .select(
+        'order_shop.dispatch_id',
+        'order_item.order_shop_id',
+        'project_product.product_id',
+        'order_item.quantity',
+        'order_item.created_at',
+        'order_item.updated_at'
+      )
+      .leftJoin('order_shop', 'order_shop.id', 'order_item.order_shop_id')
       .leftJoin('project_product', 'project_product.project_id', 'order_item.project_id')
+      .leftJoin('product', 'product.id', 'project_product.product_id')
+      .where((query) => {
+        query.whereRaw('product.size like order_item.size')
+        query.orWhereRaw(`order_item.products LIKE CONCAT('%[',product.id,']%')`)
+        query.orWhere((query) => {
+          query.whereNull('product.size')
+          query.whereNotExists((query) => {
+            query.from('product as child').whereRaw('product.id = child.parent_id')
+          })
+        })
+      })
       .whereIn(
         'order_item.order_shop_id',
         orderShops.map((o) => o.id)
       )
       .all()
+
+    const ooo = {}
+
+    for (const item of orderItems) {
+      if (!ooo[item.dispatch_id]) {
+        ooo[item.dispatch_id] = []
+      }
+      ooo[item.dispatch_id].push(item)
+    }
+
+    for (const dispatch of Object.keys(ooo)) {
+      await DB('dispatch_item').where('dispatch_id', dispatch).delete()
+      for (const item of ooo[dispatch]) {
+        await DB('dispatch_item').insert({
+          dispatch_id: dispatch,
+          product_id: item.product_id,
+          quantity: item.quantity,
+          created_at: item.created_at,
+          updated_at: item.updated_at
+        })
+      }
+    }
+    return ooo
+    console.log(ooo)
 
     const items = {}
     for (const orderItem of orderItems) {
@@ -2957,6 +3018,7 @@ class Dispatchs {
       dispatchs.push(dispatch)
     }
 
+    return dispatchs
     /**
     dispatchs.sort(function (a, b) {
       // Turn your strings into dates, and then subtract them
