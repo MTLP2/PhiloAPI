@@ -2358,7 +2358,6 @@ class Box {
       .where('user_id', params.user_id)
       .first()
 
-    console.log('item', item)
     if (!item) {
       item = {}
     }
@@ -2443,15 +2442,6 @@ class Box {
           .update({
             count_box: DB.raw('count_box - 1')
           })
-        /**
-        await Stock.save({
-          product_id: products.find((p) => p.project_id === s).product_id,
-          type: 'bigblue',
-          quantity: +1,
-          diff: true,
-          comment: 'box'
-        })
-        **/
       }
     }
 
@@ -2470,7 +2460,7 @@ class Box {
         created_at: Utils.date(),
         updated_at: Utils.date()
       })
-      item.id = id[0]
+      item = await DB('box_project').where('id', id[0]).first()
     } else {
       item.project1 = params.projects[0] || null
       item.project2 = params.projects[1] || null
@@ -3330,8 +3320,14 @@ class Box {
   }
 
   static async getGoodieBox(params: { box_id: number; lang: string; lastBox: boolean }) {
-    const listGoodies = await DB('box_goodie').orderBy('priority').all()
+    const listGoodies = await DB('box_goodie')
+      .select('box_goodie.*', 'product.barcode')
+      .join('product', 'product.id', 'box_goodie.product_id')
+      .orderBy('priority')
+      .all()
+
     const dispatchs = await DB('dispatch_item')
+      .select('dispatch_item.barcode')
       .join('dispatch', 'dispatch.id', 'dispatch_item.dispatch_id')
       .where('dispatch.box_id', params.box_id)
       .whereNotNull('date_export')
@@ -3347,12 +3343,10 @@ class Box {
       }
     }
 
-    console.log(goodies)
-
     for (const m of Object.keys(goodies)) {
       let month = true
       for (const goodie of goodies[m]) {
-        if (dispatchs.indexOf(goodie.barcode) > -1) {
+        if (dispatchs.map((d) => d.barcode).indexOf(goodie.barcode) > -1) {
           month = false
         }
       }
@@ -3363,25 +3357,6 @@ class Box {
 
     return null
   }
-
-  /**
-  static async getMyGoodie(box, goodies, dispatchs) {
-    const gg: any = []
-
-    for (let i = 0; i < 1; i++) {
-      for (const goodie of goodies
-        .filter((g) => gg.indexOf(g.barcode) === -1)
-        .filter((g) => g.lang === 'all' || g.lang === box.lang)) {
-        if (goodie.stock > 0 && dispatchs.indexOf(goodie.barcode) === -1) {
-          gg.push(goodie)
-          break
-        }
-      }
-    }
-
-    return gg
-  }
-  **/
 
   static async refreshBoxDispatch(params: { id: string }) {
     await Box.setDispatchLeft({ boxId: +params.id })
