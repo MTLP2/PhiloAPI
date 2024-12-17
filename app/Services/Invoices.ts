@@ -335,7 +335,6 @@ class Invoices {
 
     log.save(invoice)
 
-    /**
     if (invoice.date_payment) {
       const payments = await DB('payment')
         .where('invoice_id', invoice.id)
@@ -367,7 +366,6 @@ class Invoices {
         })
       }
     }
-    **/
 
     return invoice
   }
