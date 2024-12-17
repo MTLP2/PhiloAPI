@@ -385,14 +385,18 @@ class Notification {
         </tr>`
             : ''
         }
-        <tr class="small">
+        ${
+          params.order && params.order.shipping > 0
+            ? `<tr class="small">
           <td class="right" colspan="3">${t('invoice.shipping_costs')}</td>
           <td  class="total">
             ${params.order.shipping} ${cur[params.order.currency]}
           </td>
-        </tr>
+        </tr>`
+            : ''
+        }
         ${
-          params.order.discount > 0
+          params.order && params.order.discount > 0
             ? `<tr class="small">
           <td class="right" colspan="3">${t('invoice.discount')}</td>
           <td class="total">
@@ -402,7 +406,7 @@ class Notification {
             : ''
         }
         ${
-          params.order.tips > 0
+          params.order && params.order.tips > 0
             ? `<tr class="small">
           <td class="right" colspan="3">${t('invoice.tips')}</td>
           <td class="total">
@@ -412,7 +416,7 @@ class Notification {
             : ''
         }
         ${
-          params.order.service_charge > 0
+          params.order && params.order.service_charge > 0
             ? `<tr class="small">
           <td class="right" colspan="3">${t('invoice.service_charge')}</td>
           <td class="total">
@@ -431,12 +435,16 @@ class Notification {
         </tr>`
             : ''
         }
-        <tr>
+        ${
+          params.order && params.order.total > 0
+            ? `<tr>
           <td class="right" colspan="3">${t('invoice.total_with_tax')}</td>
           <td class="total">
             ${params.order.total} ${cur[params.order.currency]}
           </td>
-        </tr>
+        </tr>`
+            : ''
+        }
       </table>
         ${
           preorder
