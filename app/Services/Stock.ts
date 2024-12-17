@@ -861,7 +861,14 @@ class Stock {
         'product.barcode',
         'vod.type',
         'vod.unit_cost',
-        'vod.is_licence'
+        'vod.is_licence',
+        DB('production')
+          .select('date_prod')
+          .whereRaw('project_id = vod.project_id')
+          .limit(1)
+          .orderBy('date_prod', 'desc')
+          .as('date_prod')
+          .query()
       )
       .join('project_product', 'project_product.product_id', 'product.id')
       .join('vod', 'vod.project_id', 'project_product.project_id')
@@ -943,7 +950,8 @@ class Stock {
       { header: 'Barcode', key: 'barcode', width: 16 },
       { header: 'Name', key: 'name', width: 30 },
       { header: 'Type', key: 'type', width: 15 },
-      { header: 'Licence', key: 'is_licence', width: 7 }
+      { header: 'Licence', key: 'is_licence', width: 7 },
+      { header: 'Date prod', key: 'date_prod', width: 7 }
     ]
 
     for (const l of Object.keys(logisitians)) {
