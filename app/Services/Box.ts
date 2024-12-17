@@ -1010,8 +1010,7 @@ class Box {
             stock: DB.raw(`stock + ${bb[b]}`)
           })
       } else {
-        console.info('goodie =>', bb[b], b)
-        await DB('goodie')
+        await DB('box_goodie')
           .where('barcode', b)
           .update({
             stock: DB.raw(`stock + ${bb[b]}`)
@@ -1070,7 +1069,7 @@ class Box {
       users[p.user_id].push(p.project_id)
     }
 
-    const goodies = await DB().from('goodie').orderBy('priority').all()
+    const goodies = await DB().from('box_goodie').orderBy('priority').all()
 
     const goods = {}
     const boxDispatchs = {}
@@ -1308,7 +1307,7 @@ class Box {
     console.info('// Goodies', goods)
 
     for (const g of Object.keys(goods)) {
-      await DB('goodie')
+      await DB('box_goodie')
         .where('id', g)
         .update({
           stock: DB.raw(`stock - ${goods[g]}`)
@@ -1450,7 +1449,7 @@ class Box {
   static async removeDispatchs() {
     const date = moment()
 
-    await DB('goodie')
+    await DB('box_goodie')
       .where('month', date.format('MM'))
       .where('year', date.format('YYYY'))
       .update({
@@ -2333,9 +2332,6 @@ class Box {
       .whereRaw("DATE_FORMAT(created_at ,'%Y-%m') = DATE_FORMAT(NOW() ,'%Y-%m')")
       .first()
 
-    console.log(dispatch)
-    const goodies = await DB().from('goodie').orderBy('priority').all()
-
     if (!box) {
       return { success: false }
     }
@@ -2362,6 +2358,7 @@ class Box {
       .where('user_id', params.user_id)
       .first()
 
+    console.log('item', item)
     if (!item) {
       item = {}
     }
@@ -2458,23 +2455,6 @@ class Box {
       }
     }
 
-    if (dispatch) {
-      const barcodesDispatch = await DB('dispatch_item')
-        .select('product.barcode')
-        .join('product', 'product.id', 'dispatch_item.product_id')
-        .where('dispatch_item.dispatch_id', dispatch.id)
-        .all()
-
-      await DB('goodie')
-        .whereIn(
-          'barcode',
-          barcodesDispatch.map((p) => p.barcode)
-        )
-        .update({
-          stock: DB.raw('stock + 1')
-        })
-    }
-
     if (!item.id) {
       const id = await DB('box_project').insert({
         date: params.month,
@@ -2504,33 +2484,20 @@ class Box {
     }
     await Box.checkStock(params.month)
 
-    barcodes.push('BOXDIGGERSV2')
+    // Carton Box Digger V2
+    barcodes.push('3760396029562')
 
     // Flyers Lyon Béton Box Vinyle
     barcodes.push('3760396028442')
 
-    const productsReceived = await DB('dispatch_item')
-      .select('product.barcode')
-      .join('dispatch', 'dispatch.id', 'dispatch_item.dispatch_id')
-      .join('product', 'product.id', 'dispatch_item.product_id')
-      .where('dispatch.box_id', box.id)
-      .all()
+    const goodiesBox = await Box.getGoodieBox({
+      box_id: box.id,
+      lang: box.lang,
+      lastBox: false
+    })
 
-    const myGoodies = await Box.getMyGoodie(
-      box,
-      goodies,
-      productsReceived.map((p) => p.barcode)
-    )
-    for (const g of myGoodies) {
-      const b = g.barcode.split(',')
-      for (const bb of b) {
-        barcodes.push(bb)
-      }
-    }
-
-    for (const b in barcodes) {
-      barcodes[b] = Box.getBarcode(barcodes[b])
-    }
+    console.log('goodie_box', goodiesBox)
+    barcodes.push(...goodiesBox)
 
     const products = await DB('product').select('id', 'barcode').whereIn('barcode', barcodes).all()
 
@@ -2543,6 +2510,7 @@ class Box {
     dispatch = await Dispatchs.save({
       id: dispatch ? dispatch.id : undefined,
       box_id: box.id,
+      status: 'in_progress',
       user_id: params.user_id,
       type: 'box',
       logistician: 'bigblue',
@@ -2560,12 +2528,6 @@ class Box {
 
     item.dispatch_id = dispatch.id
     await item.save()
-
-    await DB('goodie')
-      .whereIn('barcode', barcodes)
-      .update({
-        stock: DB.raw('stock - 1')
-      })
 
     const n = {
       type: 'my_box_selection',
@@ -3367,6 +3329,42 @@ class Box {
     return selects
   }
 
+  static async getGoodieBox(params: { box_id: number; lang: string; lastBox: boolean }) {
+    const listGoodies = await DB('box_goodie').orderBy('priority').all()
+    const dispatchs = await DB('dispatch_item')
+      .join('dispatch', 'dispatch.id', 'dispatch_item.dispatch_id')
+      .where('dispatch.box_id', params.box_id)
+      .whereNotNull('date_export')
+      .all()
+
+    const goodies = {}
+    for (const goodie of listGoodies) {
+      if (!goodies[goodie.priority]) {
+        goodies[goodie.priority] = []
+      }
+      if (goodie.lang === 'all' || goodie.lang === params.lang) {
+        goodies[goodie.priority].push(goodie)
+      }
+    }
+
+    console.log(goodies)
+
+    for (const m of Object.keys(goodies)) {
+      let month = true
+      for (const goodie of goodies[m]) {
+        if (dispatchs.indexOf(goodie.barcode) > -1) {
+          month = false
+        }
+      }
+      if (month) {
+        return goodies[m].map((g) => g.barcode)
+      }
+    }
+
+    return null
+  }
+
+  /**
   static async getMyGoodie(box, goodies, dispatchs) {
     const gg: any = []
 
@@ -3383,6 +3381,7 @@ class Box {
 
     return gg
   }
+  **/
 
   static async refreshBoxDispatch(params: { id: string }) {
     await Box.setDispatchLeft({ boxId: +params.id })
@@ -3519,7 +3518,7 @@ class Box {
       }
     }
 
-    const goodies = await DB('goodie')
+    const goodies = await DB('box_goodie')
       .select('barcode', 'price')
       .whereIn('barcode', Object.keys(barcodes))
       .all()
@@ -3678,6 +3677,62 @@ class Box {
     const res = await BigBlue.sync(dispatchs)
     console.info(res)
     return res
+  }
+
+  static allGoodies(params: { sort?: string } = {}) {
+    let query = DB('box_goodie')
+      .leftJoin('product', 'product.id', 'box_goodie.product_id')
+      .select(
+        'box_goodie.id',
+        'box_goodie.lang',
+        'box_goodie.priority',
+        'box_goodie.name',
+        'product.name as product_name',
+        'product.type',
+        'product.barcode',
+        DB.raw(
+          '(SELECT quantity FROM stock WHERE product_id = product.id AND type = "bigblue" AND is_preorder = 0) as stock'
+        )
+      )
+
+    if (!params.sort) {
+      query.orderBy('box_goodie.priority', 'asc')
+    }
+    return Utils.getRows({
+      query: query,
+      ...params
+    })
+  }
+
+  static async saveGoodie(params: {
+    id?: number
+    product_id: number
+    lang: string
+    priority: number
+  }) {
+    let item
+
+    if (!params.id) {
+      item = DB('box_goodie')
+      item.created_at = Utils.date()
+    } else {
+      item = await DB('box_goodie').where('id', params.id).first()
+    }
+
+    item.product_id = params.product_id
+    item.lang = params.lang
+    item.priority = params.priority
+    item.updated_at = Utils.date()
+
+    await item.save()
+
+    return { sucess: true }
+  }
+
+  static async deleteGoodie(params: { id: number }) {
+    await DB('box_goodie').where('id', params.id).delete()
+
+    return { sucess: true }
   }
 }
 

@@ -807,18 +807,6 @@ class AdminController {
     return PromoCode.saveByItem({ codes: params.codes, itemId: params.itemId, type: params.type })
   }
 
-  getGoodies({ params }) {
-    return Goodie.all(params)
-  }
-
-  saveGoodie({ params }) {
-    return Goodie.save(params)
-  }
-
-  deleteGoodie({ params }) {
-    return Goodie.delete(params)
-  }
-
   getEmails({ params }) {
     return Admin.getEmails(params)
   }

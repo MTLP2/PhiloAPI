@@ -69,6 +69,11 @@ class Dispatchs {
         )
         filters.splice(i, 1)
         filters = JSON.stringify(filters)
+      }
+      if (filter.name === 'box_id') {
+        query.where('dispatch.box_id', filter.value)
+        filters.splice(i, 1)
+        filters = JSON.stringify(filters)
       } else if (filter.name === 'product') {
         query.whereExists(
           DB('dispatch_item')

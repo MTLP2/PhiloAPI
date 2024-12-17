@@ -117,6 +117,18 @@ class BoxController {
     params.user = user
     return Box.saveCode(params)
   }
+
+  getGoodies({ params }) {
+    return Box.allGoodies(params)
+  }
+
+  saveGoodie({ params }) {
+    return Box.saveGoodie(params)
+  }
+
+  deleteGoodie({ params }) {
+    return Box.deleteGoodie(params)
+  }
 }
 
 export default BoxController
