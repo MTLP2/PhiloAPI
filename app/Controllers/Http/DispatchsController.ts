@@ -119,7 +119,7 @@ class DispatchsController {
       const payload = await validator.validate({
         schema: schema.create({
           id: schema.number.optional(),
-          order_manual_id: schema.number(),
+          dispatch_id: schema.number(),
           invoice_number: schema.string.optional(),
           total: schema.number.optional(),
           date: schema.string.optional(),
