@@ -278,7 +278,7 @@ class Invoices {
     invoice.order_number = params.order_number
     invoice.name = params.name
     invoice.date = params.date
-    invoice.date_payment = isPayNow ? Utils.date() : params.date_payment
+    invoice.date_payment = isPayNow ? Utils.date() : params.date_payment || null
     invoice.status = params.status
     invoice.client = params.client
     invoice.email = params.email
@@ -334,6 +334,8 @@ class Invoices {
     }
 
     log.save(invoice)
+
+    /**
     if (invoice.date_payment) {
       const payments = await DB('payment')
         .where('invoice_id', invoice.id)
@@ -365,6 +367,7 @@ class Invoices {
         })
       }
     }
+    **/
 
     return invoice
   }
