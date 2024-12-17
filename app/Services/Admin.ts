@@ -2086,6 +2086,16 @@ class Admin {
       .all()
 
     for (const project of projects) {
+      project.bigblue = stocks
+        .filter((s) => s.project_id === project.id && s.type === 'bigblue')
+        .reduce((acc, s) => acc + s.quantity, 0)
+      project.whiplash = stocks
+        .filter((s) => s.project_id === project.id && s.type === 'whiplash')
+        .reduce((acc, s) => acc + s.quantity, 0)
+      project.whiplash_uk = stocks
+        .filter((s) => s.project_id === project.id && s.type === 'whiplash_uk')
+        .reduce((acc, s) => acc + s.quantity, 0)
+
       project.stock = stocks
         .filter((s) => s.project_id === project.id)
         .reduce((acc, s) => acc + s.quantity, 0)
@@ -2101,8 +2111,11 @@ class Admin {
           { header: 'ID', key: 'id', width: 10 },
           { header: 'Artist', key: 'artist_name', width: 35 },
           { header: 'Project', key: 'name', width: 35 },
-          { header: 'Stock', key: 'stock', width: 7 },
-          { header: 'Distrib', key: 'distrib', width: 7 }
+          { header: 'Bigblue', key: 'bigblue', width: 10 },
+          { header: 'Whiplash', key: 'whiplash', width: 10 },
+          { header: 'Whiplash UK', key: 'whiplash_uk', width: 10 },
+          { header: 'Stock', key: 'stock', width: 10 },
+          { header: 'Sales Distrib', key: 'distrib', width: 10 }
         ],
         data: projects
       }
