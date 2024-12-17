@@ -870,11 +870,13 @@ class Stock {
           .as('date_prod')
           .query(),
         DB('order_item')
-          .select(DB.raw('DATE_FORMAT(created_at, "%Y-%m-%d") as date_order'))
+          .join('order_shop', 'order_shop.id', 'order_item.order_shop_id')
+          .select(DB.raw('DATE_FORMAT(order_shop.date_export, "%Y-%m-%d") as date_export'))
           .whereRaw('project_id = vod.project_id')
-          .orderBy('created_at', 'asc')
+          .orderBy('order_shop.date_export', 'asc')
+          .whereNotNull('order_shop.date_export')
           .limit(1)
-          .as('date_order')
+          .as('date_export')
           .query()
       )
       .join('project_product', 'project_product.product_id', 'product.id')
@@ -959,7 +961,7 @@ class Stock {
       { header: 'Type', key: 'type', width: 15 },
       { header: 'Licence', key: 'is_licence', width: 7 },
       { header: 'Date prod', key: 'date_prod', width: 12 },
-      { header: 'Date order', key: 'date_order', width: 12 }
+      { header: 'Date export', key: 'date_export', width: 12 }
     ]
 
     for (const l of Object.keys(logisitians)) {
