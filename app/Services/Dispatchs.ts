@@ -2227,8 +2227,19 @@ class Dispatchs {
       .join('order_item as oi', 'oi.order_shop_id', 'os.id')
       .join('project_product as pp', 'pp.project_id', 'oi.project_id')
       .where('os.transporter', params.logistician)
+      .join('product', 'product.id', 'pp.product_id')
       .whereIn('os.id', (query) => {
         query.select('order_shop_id').from('order_item').where('project_id', params.id)
+      })
+      .where((query) => {
+        query.whereRaw('product.size like oi.size')
+        query.orWhereRaw(`oi.products LIKE CONCAT('%[',product.id,']%')`)
+        query.orWhere((query) => {
+          query.whereNull('product.size')
+          query.whereNotExists((query) => {
+            query.from('product as child').whereRaw('product.id = child.parent_id')
+          })
+        })
       })
       .whereNull('date_export')
       .whereNull('logistician_id')
@@ -2257,6 +2268,7 @@ class Dispatchs {
       let missingProduct = false
       for (const product of order.products) {
         if (!params.products.includes(product)) {
+          console.log('missing product', product)
           missingProduct = true
         }
       }
