@@ -1208,10 +1208,6 @@ class AdminController {
     return Quote.exportAll(params)
   }
 
-  getShippingCosts({ params }) {
-    return Dispatchs.getCosts(params)
-  }
-
   async importShippingInvoice({ params }) {
     const payload = await validator.validate({
       schema: schema.create({
@@ -1226,10 +1222,6 @@ class AdminController {
       data: params
     })
     return Dispatchs.importInvoice(payload)
-  }
-
-  extractShippingCosts({ params }) {
-    return Dispatchs.extractCosts(params)
   }
 
   calculateShipping({ params }) {
