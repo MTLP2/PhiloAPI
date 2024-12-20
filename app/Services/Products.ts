@@ -90,6 +90,23 @@ class Products {
 
     const items = await Utils.getRows<any>({ ...params, query: query })
 
+    const stocks = await DB('stock')
+      .select('type', 'product_id', 'quantity')
+      .whereIn(
+        'product_id',
+        items.data.map((i) => i.id)
+      )
+      .where('is_preorder', false)
+      .whereIn('type', ['bigblue', 'whiplash', 'whiplash_uk'])
+      .all()
+
+    for (const stock of stocks) {
+      const item = items.data.findIndex((i) => i.id === stock.product_id)
+      if (item > -1) {
+        items.data[item]['stock_' + stock.type] = stock.quantity
+      }
+    }
+
     return items
   }
 
