@@ -17,7 +17,7 @@ import Song from 'App/Services/Song'
 import Utils from 'App/Utils'
 import PaymentArtist from 'App/Services/PaymentArtist'
 import Statement from 'App/Services/Statement'
-import Feedback from 'App/Services/Feedback'
+import Feedbacks from 'App/Services/Feedbacks'
 import Storage from 'App/Services/Storage'
 import Category from 'App/Services/Category'
 import Banners from 'App/Services/Banners'
@@ -562,11 +562,11 @@ class AdminController {
   }
 
   getFeedbacks({ params }) {
-    return Feedback.all(params)
+    return Feedbacks.all(params)
   }
 
   getPendingFeedbacks() {
-    return Feedback.getPendingFeedbacks()
+    return Feedbacks.getPendingFeedbacks()
   }
 
   async toggleFeedbackContactStatus({ params }) {
@@ -579,18 +579,18 @@ class AdminController {
         data: params
       })
 
-      return Feedback.toggleFeedbackContactStatus(payload)
+      return Feedbacks.toggleFeedbackContactStatus(payload)
     } catch (err) {
       return { error: err.message }
     }
   }
 
   exportFeedbacks({ params }) {
-    return Feedback.exportAll(params)
+    return Feedbacks.exportAll(params)
   }
 
   getMonthlyFeedbackStats() {
-    return Feedback.getMonthlyStats()
+    return Feedbacks.getMonthlyStats()
   }
 
   getNewsletters() {

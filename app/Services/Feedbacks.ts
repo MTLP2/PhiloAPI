@@ -1,7 +1,7 @@
 import DB from 'App/DB'
 import Utils from 'App/Utils'
 
-class Feedback {
+class Feedbacks {
   static all(params) {
     params.query = DB('feedback')
       .select(
@@ -113,4 +113,4 @@ class Feedback {
   }
 }
 
-export default Feedback
+export default Feedbacks

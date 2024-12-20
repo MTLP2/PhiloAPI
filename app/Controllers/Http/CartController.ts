@@ -1,6 +1,6 @@
 import Cart from 'App/Services/Cart'
 import Auth from 'App/Services/Auth'
-import Feedback from 'App/Services/Feedback'
+import Feedbacks from 'App/Services/Feedbacks'
 import Box from 'App/Services/Box'
 import DB from 'App/DB'
 const parser = require('ua-parser-js')
@@ -79,7 +79,7 @@ class CartController {
     } else {
       params.user_id = user.id
     }
-    return Feedback.save(params)
+    return Feedbacks.save(params)
   }
 
   checkBoxCode({ params }) {
