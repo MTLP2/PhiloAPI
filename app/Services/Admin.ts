@@ -4693,6 +4693,8 @@ class Admin {
         'product.name',
         'product.barcode',
         'project.id',
+        'os.order_id',
+        'os.dispatch_id',
         'os.transporter',
         'stock.quantity as stock'
       )
@@ -4753,7 +4755,6 @@ class Admin {
       products[shop.product_id].stock = shop.stock
     }
 
-    console.log(products)
     return Object.values(products).sort((a, b) => {
       if (a.quantity < b.quantity) {
         return 1
