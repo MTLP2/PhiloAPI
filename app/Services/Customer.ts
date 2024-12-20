@@ -120,6 +120,106 @@ class Customer {
 
     return address
   }
+
+  static validAddress = async (params: {
+    address: string
+    zip_code: string
+    city: string
+    country_id: string
+    state?: string
+  }) => {
+    const url = `https://addressvalidation.googleapis.com/v1:validateAddress?key=${Env.get(
+      'GOOGLE_API_MAPS'
+    )}`
+    const res = (await Utils.request(url, {
+      method: 'POST',
+      json: true,
+      body: {
+        address: {
+          regionCode: params.country_id,
+          locality: params.city,
+          postalCode: params.zip_code,
+          administrativeArea: params.state,
+          addressLines: params.address
+        }
+      }
+    })) as any
+
+    if (res.result) {
+      if (res.result.verdict.hasUnconfirmedComponents) {
+        return { valid: false }
+      } else {
+        return { valid: true }
+      }
+    } else {
+      return { valid: null }
+    }
+  }
+
+  /**
+  static validAddress2 = async (params: {
+    address: string
+    address2: string
+    zip_code: string
+    city: string
+    country_id: string
+  }) => {
+    const authId = '86c00fef-0dd5-d06c-fc60-bf35ccc3edb0'
+    const authToken = '1VsVzovm1183ckdx72is'
+
+    const address = params.address + ' ' + (params.address2 || '')
+
+    const url = `https://international-street.api.smarty.com/verify?auth-id=${authId}&auth-token=${authToken}&country=${params.country_id}&address1=${address}&locality=${params.city}&postal_code=${params.zip_code}`
+    const res: any = await Utils.request(url, { json: true })
+
+    if (res[0]) {
+      let verified = false
+      if (res[0].analysis && res[0].analysis.verification_status === 'Verified') {
+        verified = true
+      }
+      return { valid: verified }
+    } else {
+      return { valid: null }
+    }
+  }
+  **/
+  /**
+  static validAddress3 = async (params: {
+    address: string
+    address2: string
+    zip_code: string
+    city: string
+    country_id: string
+    state: string
+  }) => {
+    const url = 'https://api.easypost.com/v2/addresses'
+    const testKey = 'v2KzHIGKRXUt2vPVPLkXJA'
+    const liveKey = 'UbSUeHALSg3DW854czlCbw'
+
+    params.country_id = 'UK'
+    const res = await Utils.request(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${liveKey}`
+      },
+      json: true,
+      body: {
+        address: {
+          street1: params.address,
+          street2: params.address2,
+          city: params.city,
+          zip: params.zip_code,
+          state: params.state,
+          country: params.country_id
+        },
+        verify_strict: true
+      }
+    })
+
+    console.log(res)
+    return res
+  }
+    **/
 }
 
 export default Customer

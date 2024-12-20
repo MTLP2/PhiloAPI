@@ -31,8 +31,7 @@ Route.get('/daily', 'AppController.daily')
 Route.get('/socket.io/', () => '')
 Route.post('/socket.io/', () => '')
 Route.get('/favicon.ico', () => '')
-Route.get('/search-address', 'AppController.searchAddress')
-Route.get('/detail-address', 'AppController.detailAddress')
+Route.post('/valid-address', 'AppController.validAddress')
 
 Route.get('/robots.txt', ({ response }) => {
   response.header('Content-type', 'text/plain')

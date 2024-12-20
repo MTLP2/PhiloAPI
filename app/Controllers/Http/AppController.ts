@@ -163,6 +163,20 @@ class AppController {
     return address
   }
 
+  async validAddress({ params }) {
+    const payload = await validator.validate({
+      schema: schema.create({
+        address: schema.string(),
+        zip_code: schema.string(),
+        city: schema.string(),
+        state: schema.string.optional(),
+        country_id: schema.string()
+      }),
+      data: params
+    })
+    return Customer.validAddress(payload)
+  }
+
   async convertPictureItem() {
     const items = await DB('item')
       // .limit(10)
