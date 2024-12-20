@@ -1147,7 +1147,7 @@ class BigBlue {
     Storage.upload(fileName, params.file, true)
 
     const dispatchs = await DB('dispatch')
-      .select('id', 'logistician_id', 'cost_invoiced', 'cost_logistician', 'cost_currency')
+      .select('id', 'type', 'logistician_id', 'cost_invoiced', 'cost_logistician', 'cost_currency')
       .whereIn('logistician_id', Object.keys(orders))
       .all()
 
@@ -1191,6 +1191,7 @@ class BigBlue {
         })
 
       if (inStatement) {
+        console.log('applyInvoiceCosts', id)
         await Dispatchs.applyInvoiceCosts({
           id: id
         })
