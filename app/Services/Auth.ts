@@ -220,7 +220,7 @@ class Auth {
         birthday: params.birthday ? params.birthday : null,
         password: params.password ? UserService.convertPassword(params.password.toString()) : null,
         sponsor: params.sponsor ? params.sponsor : null,
-        country_id: params.country_id ? params.country_id : null,
+        country_id: params.country_id ? params.country_id.toUpperCase() : null,
         facebook_id: params.facebook_id ? params.facebook_id : null,
         google_id: params.google_id ? params.google_id : null,
         soundcloud_id: params.soundcloud_id || null,
