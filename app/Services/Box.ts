@@ -841,6 +841,73 @@ class Box {
   }
 
   static async setDispatchLeft(params?: { boxId: number }) {
+    const dispatchs = await DB('dispatch')
+      .select('box_id')
+      .whereNotNull('box_id')
+      .where('type', 'box')
+      .where('status', '!=', 'cancelled')
+      .orderBy('created_at', 'asc')
+      .all()
+
+    const dd = {}
+    for (const d of dispatchs) {
+      dd[d.box_id] = (dd[d.box_id] || 0) + 1
+    }
+
+    const payments = await DB('order_box')
+      .select('box_id', 'created_at', 'periodicity', 'monthly')
+      .where('is_paid', 1)
+      .all()
+
+    const pp = {}
+    for (const p of payments) {
+      const months = Box.getNbMonths(p.periodicity, p.monthly)
+      pp[p.box_id] = (pp[p.box_id] || 0) + months
+    }
+
+    const boxes = await DB('box')
+      .whereNotIn('step', ['refunded', 'creating', 'cancelled'])
+      .where((query) => {
+        if (params?.boxId) {
+          query.where('id', params.boxId)
+        }
+        return query
+      })
+      .all()
+
+    for (const box of boxes) {
+      let monthsPaid = pp[box.id] || 0
+      if (box.partner) {
+        monthsPaid = Box.getNbMonths(box.periodicity, box.monthly)
+      }
+
+      const dispatchs = dd[box.id] || 0
+      const monthsLeft = monthsPaid - dispatchs + box.dispatch_gift
+
+      if (monthsLeft === 0 && box.step === 'confirmed' && !box.monthly) {
+        box.step = 'finished'
+        box.end = Utils.date()
+
+        await Notification.new({
+          type: 'my_box_finished',
+          user_id: box.user_id,
+          box_id: box.id,
+          date: box.end
+        })
+      }
+
+      await DB('box').where('id', box.id).update({
+        dispatchs: dispatchs,
+        months: monthsPaid,
+        dispatch_left: monthsLeft,
+        step: box.step,
+        end: box.end
+      })
+    }
+  }
+
+  /**
+  static async setDispatchLeft(params?: { boxId: number }) {
     let finished = 0
     const query = DB('box')
       .select('box.*', 'box_code.periodicity as code_periodicity')
@@ -850,6 +917,13 @@ class Box {
     if (params?.boxId) query.where('box.id', params.boxId)
 
     const boxes = await query.all()
+
+    const dispatchs = await DB('dispatch').whereNotNull('box_id').all()
+
+    const dd = {}
+    for (const d of dispatchs) {
+      dd[d.box_id] = (dd[d.box_id] || 0) + 1
+    }
 
     for (const box of boxes) {
       let left = 0
@@ -969,55 +1043,12 @@ class Box {
     }
     console.info('finished', finished)
   }
+  **/
 
   static async cleanDispatchs() {
-    const dispatchs = await DB('box_dispatch')
-      .whereNull('date_export')
-      .where('is_generate', true)
-      .all()
+    const dispatchs = await DB('dispatch').whereNull('date_export').where('type', 'box').all()
 
-    const bb = {}
-
-    for (const dispatch of dispatchs) {
-      const barcodes = dispatch.barcodes.split(',')
-
-      for (const barcode of barcodes) {
-        if (!bb[barcode]) {
-          bb[barcode] = 0
-        }
-        bb[barcode]++
-      }
-    }
-
-    for (const b of Object.keys(bb)) {
-      const vod = await DB('vod')
-        .select('vod.project_id', 'project_product.product_id')
-        .join('project_product', 'project_product.project_id', 'vod.project_id')
-        .where('barcode', b)
-        .first()
-
-      if (vod) {
-        console.info('vod =>', bb[b], b)
-        Stock.save({
-          product_id: vod.product_id,
-          type: 'bigblue',
-          quantity: +bb[b],
-          comment: 'boxes'
-        })
-        await DB('box_month')
-          .where('project_id', vod.project_id)
-          .update({
-            stock: DB.raw(`stock + ${bb[b]}`)
-          })
-      } else {
-        await DB('box_goodie')
-          .where('barcode', b)
-          .update({
-            stock: DB.raw(`stock + ${bb[b]}`)
-          })
-      }
-    }
-    await DB('box_dispatch')
+    await DB('dispatch')
       .whereIn(
         'id',
         dispatchs.map((d) => d.id)
@@ -1026,7 +1057,188 @@ class Box {
   }
 
   static async setDispatchs() {
-    await Box.cleanDispatchs()
+    await Box.setDispatchLeft()
+
+    const styles = await DB('style').all()
+    const ss = {}
+    for (const style of styles) {
+      ss[style.id] = style.genre_id
+    }
+
+    const boxes = await DB('box')
+      .where('step', 'confirmed')
+      .where('dispatchs', '>=', 1)
+      .whereNotExists((query) => {
+        return query
+          .select('id')
+          .from('dispatch')
+          .whereRaw('box_id = box.id')
+          .whereRaw('DATE_FORMAT(created_at, "%Y-%m") = DATE_FORMAT(NOW(), "%Y-%m")')
+      })
+      .all()
+
+    const projects = await DB('project')
+      .join('vod', 'vod.project_id', 'project.id')
+      .select(
+        'project_product.product_id',
+        'project.name',
+        'project.id',
+        'project.styles',
+        'project.artist_name',
+        'stock.quantity',
+        'vod.is_licence'
+      )
+      .join('project_product', 'project_product.project_id', 'vod.project_id')
+      .join('stock', 'stock.product_id', 'project_product.product_id')
+      .where('stock.type', 'bigblue')
+      .where('vod.is_box', true)
+      .where('stock.is_preorder', false)
+      .orderBy('vod.is_licence', 'desc')
+      .orderBy('stock.quantity', 'desc')
+      .all()
+
+    for (const p of projects) {
+      p.genres = p.styles.split(',').map((s) => ss[s])
+    }
+
+    const products: number[] = []
+    for (const box of boxes) {
+      const dispatchs = await DB('dispatch_item')
+        .select('dispatch_item.product_id')
+        .join('dispatch', 'dispatch.id', 'dispatch_item.dispatch_id')
+        .where('user_id', box.user_id)
+        .all()
+
+      for (const d of dispatchs) {
+        products.push(d.product_id)
+      }
+
+      const pp: any[] = []
+
+      let hiphop = 0
+      for (const p of projects) {
+        if (p.genres.some((g) => [6].includes(g))) {
+          hiphop++
+        }
+      }
+
+      const findVinyl = (params: { styles: number[] }) => {
+        for (const p of projects) {
+          if (products.includes(p.product_id)) {
+            continue
+          }
+          if (p.quantity < 1) {
+            continue
+          }
+          if (p.genres.some((g) => params.styles.includes(g))) {
+            const idx = projects.findIndex((pp) => pp.product_id === p.product_id)
+            projects[idx].quantity--
+            return p
+          }
+        }
+      }
+
+      const styles = box.styles ? box.styles.split(',').map((s) => parseInt(s) || 0) : []
+      const stylesAll = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+
+      if (box.type === 'one' || box.type === 'two') {
+        let choice = findVinyl({ styles: styles })
+        if (!choice) {
+          choice = findVinyl({ styles: stylesAll })
+        }
+        pp[0] = choice
+      }
+      if (!pp[0]) {
+        console.info('not enough projects', b.id)
+      }
+      if (box.type === 'two') {
+        let choice = findVinyl({ styles: styles.filter((s) => !pp[0].genres.includes(s)) })
+        if (!choice) {
+          choice = findVinyl({ styles: styles })
+        }
+        if (!choice) {
+          choice = findVinyl({ styles: stylesAll.filter((s) => !pp[0].genres.includes(s)) })
+        }
+        pp[1] = choice
+      }
+
+      if (box.type === 'two' && pp.length < 2) {
+        console.info('not enough projects', box.id)
+      } else if (box.type === 'one' && pp.length < 1) {
+        console.info('not enough projects', box.id)
+      }
+
+      const items: {
+        quantity: number
+        product_id: number
+      }[] = []
+
+      // Carton Box Digger V2
+      items.push({
+        quantity: 1,
+        product_id: 65794
+      })
+
+      // Flyers Lyon Béton Box Vinyle
+      items.push({
+        quantity: 1,
+        product_id: 65694
+      })
+
+      const goodiesBox = await Box.getGoodieBox({
+        box_id: box.id,
+        lang: box.lang,
+        lastBox: false,
+        productId: true
+      })
+      for (const g of goodiesBox) {
+        items.push({
+          quantity: 1,
+          product_id: g
+        })
+      }
+      if (pp[0]) {
+        items.push({
+          quantity: 1,
+          product_id: pp[0].product_id
+        })
+      }
+      if (pp[1]) {
+        items.push({
+          quantity: 1,
+          product_id: pp[1].product_id
+        })
+      }
+      await Dispatchs.save({
+        id: undefined,
+        box_id: box.id,
+        status: 'in_progress',
+        user_id: box.user_id,
+        type: 'box',
+        logistician: 'bigblue',
+        customer_id: box.customer_id,
+        address_pickup: box.address_pickup,
+        shipping_method: box.shipping_type,
+        cost_invoiced: box.shipping,
+        cost_currency: box.currency,
+        items: items
+      })
+      console.log('box.id', box.id)
+    }
+    console.log('boxes', boxes.length)
+    await Box.setDispatchLeft()
+
+    await Notification.sendEmail({
+      to: 'box@diggersfactory.com,victor@diggersfactory.com',
+      subject: 'Box - Dispatch',
+      html: `
+        <p>${boxes.length} dispatch créés.</p>
+      `
+    })
+  }
+
+  static async setDispatchsOld() {
+    // await Box.cleanDispatchs()
     await Box.setDispatchLeft()
 
     const boxes = await DB().execute(`
@@ -2483,7 +2695,8 @@ class Box {
     const goodiesBox = await Box.getGoodieBox({
       box_id: box.id,
       lang: box.lang,
-      lastBox: false
+      lastBox: false,
+      productId: false
     })
 
     console.log('goodie_box', goodiesBox)
@@ -2527,7 +2740,7 @@ class Box {
       date: moment().toISOString()
     }
     await Notification.add(n)
-
+    await Box.setDispatchLeft(params.box_id)
     return { success: true }
   }
 
@@ -3319,7 +3532,12 @@ class Box {
     return selects
   }
 
-  static async getGoodieBox(params: { box_id: number; lang: string; lastBox: boolean }) {
+  static async getGoodieBox(params: {
+    box_id: number
+    lang: string
+    lastBox: boolean
+    productId: boolean
+  }) {
     const listGoodies = await DB('box_goodie')
       .select('box_goodie.*', 'product.barcode')
       .join('product', 'product.id', 'box_goodie.product_id')
@@ -3351,6 +3569,9 @@ class Box {
         }
       }
       if (month) {
+        if (params.productId) {
+          return goodies[m].map((g) => g.product_id)
+        }
         return goodies[m].map((g) => g.barcode)
       }
     }
