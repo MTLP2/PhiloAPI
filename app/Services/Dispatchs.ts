@@ -3040,6 +3040,215 @@ class Dispatchs {
       }
     }
   }
+
+  static importDispatchs = async (params: {
+    file: string
+    action: string
+    transporters: string[]
+  }) => {
+    const file = Buffer.from(params.file, 'base64')
+    const workbook = new Excel.Workbook()
+    await workbook.xlsx.load(file)
+
+    const worksheet = workbook.getWorksheet(1)
+
+    const barcodes: { [key: number]: boolean } = {}
+    const orders: any[] = []
+
+    worksheet.eachRow((row) => {
+      const email = (row.getCell('E').value as any)?.text
+        ? (row.getCell('E').value as any)?.text.richText[0].text.toString()
+        : row.getCell('E').value?.toString()
+
+      const data = {
+        barcode: row.getCell('A').value,
+        quantity: row.getCell('B').value,
+        firstname: row.getCell('C').value,
+        lastname: row.getCell('D').value,
+        email: email,
+        phone: row.getCell('F').value,
+        address: row.getCell('G').value,
+        city: row.getCell('H').value,
+        state: row.getCell('I').value,
+        zip_code: row.getCell('J').value,
+        country: row.getCell('K').value,
+        error: false
+      }
+
+      if (data.country === 'UK') {
+        data.country = 'GB'
+      }
+      if (!data.barcode || !+data.barcode || !data.quantity || !+data.quantity) return
+
+      if (
+        !data.firstname ||
+        !data.lastname ||
+        !data.email ||
+        !data.country ||
+        (data.country as string).length !== 2 ||
+        !data.address ||
+        !data.city ||
+        !data.zip_code
+      ) {
+        data.error = true
+      }
+      barcodes[data.barcode as number] = true
+      orders.push(data)
+    })
+
+    const projects = await DB('project')
+      .select('project_id', 'artist_name', 'name', 'picture', 'barcode', 'picture_project')
+      .join('vod', 'vod.project_id', 'project.id')
+      .whereIn('barcode', Object.keys(barcodes))
+      .all()
+
+    const ordersExists = await DB('order_shop')
+      .select(
+        'order_item.project_id',
+        'customer.firstname',
+        'customer.lastname',
+        'customer.email',
+        'customer.address'
+      )
+      .join('order_item', 'order_item.order_shop_id', 'order_shop.id')
+      .join('customer', 'customer.id', 'order_shop.customer_id')
+      .whereIn(
+        'project_id',
+        projects.map((p) => p.project_id)
+      )
+      .where('is_external', true)
+      .all()
+
+    const tt = {}
+    let countExists = 0
+    let shipping = 0
+
+    for (const d in orders) {
+      const order = orders[d]
+      if (!tt[order.country]) {
+        tt[order.country] = {}
+      }
+      if (!tt[order.country][order.quantity]) {
+        const trans: any = await Cart.calculateShipping({
+          weight: order.quantity * 300,
+          quantity: 1,
+          insert: order.quantity,
+          currency: 'EUR',
+          country_id: order.country,
+          stocks: params.transporters.reduce((acc, t) => {
+            acc[t] = null
+            return acc
+          }, {}),
+          transporters: params.transporters.reduce((acc, t) => {
+            acc[t] = true
+            return acc
+          }, {})
+        })
+        tt[order.country][order.quantity] = {
+          shipping: trans.standard,
+          trans: trans.transporter
+        }
+      }
+
+      const project = projects.find((p: { barcode: string }) => +p.barcode === +orders[d].barcode)
+      if (
+        ordersExists.find(
+          (o) =>
+            o.project_id === project.project_id &&
+            o.email === order.email &&
+            o.firstname === order.firstname &&
+            o.lastname === order.lastname &&
+            o.address === order.address
+        )
+      ) {
+        countExists++
+      }
+
+      if (order.quantity > 20 || !tt[order.country][order.quantity].shipping) {
+        orders[d].error = true
+      }
+      shipping += tt[order.country][order.quantity].shipping
+      orders[d] = {
+        ...orders[d],
+        ...project,
+        shipping: tt[order.country][order.quantity].shipping,
+        transporter: tt[order.country][order.quantity].trans
+      }
+    }
+
+    if (countExists > 0) {
+      return { error: 'already_imported', count: countExists, shipping: shipping, success: false }
+    }
+
+    const userId = params.user_id || 182080
+
+    let i = 0
+    if (params.action === 'import') {
+      for (const item of orders) {
+        const order = await DB('order').insert({
+          user_id: userId,
+          status: 'external',
+          currency: 'EUR',
+          total: 0,
+          sub_total: 0,
+          created_at: Utils.date(),
+          updated_at: Utils.date()
+        })
+
+        const customer = await DB('customer').insert({
+          type: 'individual',
+          firstname: item.firstname,
+          lastname: item.lastname,
+          address: item.address,
+          city: item.city,
+          zip_code: item.zip_code,
+          state: item.state,
+          country_id: item.country,
+          phone: item.phone,
+          email: item.email,
+          created_at: Utils.date(),
+          updated_at: Utils.date()
+        })
+        const orderShop = await DB('order_shop').insert({
+          user_id: userId,
+          step: 'confirmed',
+          type: 'vod',
+          order_id: order,
+          customer_id: customer,
+          is_paid: true,
+          is_external: true,
+          total: 0,
+          sub_total: 0,
+          shipping: 0,
+          shipping_type: 'standard',
+          transporter: item.transporter,
+          currency: 'EUR',
+          currency_rate: 1,
+          created_at: Utils.date(),
+          updated_at: Utils.date()
+        })
+
+        await DB('order_item').insert({
+          order_id: order,
+          order_shop_id: orderShop,
+          project_id: item.project_id,
+          quantity: item.quantity,
+          price: 0,
+          currency: 'EUR',
+          currency_rate: 1,
+          created_at: Utils.date(),
+          updated_at: Utils.date()
+        })
+        i++
+      }
+      return { count: i, shipping: shipping, success: true }
+    }
+
+    return {
+      orders: orders,
+      shipping: shipping
+    }
+  }
 }
 
 export default Dispatchs
