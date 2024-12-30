@@ -623,6 +623,7 @@ Route.group(() => {
   Route.post('/dispatchs/:id/invoice-co', 'DispatchsController.getInvoiceCo')
   Route.get('/dispatchs/:id/packing-list', 'DispatchsController.packingList')
   Route.post('/dispatchs/invoices', 'DispatchsController.saveInvoice')
+  Route.post('/dispatchs/import', 'DispatchsController.importDispatchs')
   Route.post('/dispatchs/invoices/costs', 'DispatchsController.applyInvoiceCosts')
   Route.delete('/dispatchs/invoices', 'DispatchsController.removeInvoice')
   Route.get('/dispatchs/invoices/download', 'DispatchsController.downloadInvoice')
