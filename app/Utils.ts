@@ -61,8 +61,11 @@ class Utils {
     return array
   }
 
-  static slugify = (text: string): string =>
-    text
+  static slugify = (text: string): string => {
+    if (!text) {
+      return ''
+    }
+    return text
       .toString()
       .toLowerCase()
       .normalize('NFD')
@@ -72,6 +75,7 @@ class Utils {
       .replace(/--+/g, '-') // Replace multiple - with single -
       .replace(/^-+/, '') // Trim - from start of text
       .replace(/-+$/, '') // Trim - from end of text
+  }
 
   static toTime = (seconds) => {
     let s1 = seconds
