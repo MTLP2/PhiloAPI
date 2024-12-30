@@ -233,6 +233,10 @@ class DispatchsController {
     }
   }
 
+  async importDispatchs({ params }) {
+    return Dispatchs.importDispatchs(params)
+  }
+
   /**
   async update({ params, request, transporter }) {
     const api = new Api(request)
