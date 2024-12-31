@@ -1714,7 +1714,7 @@ class Box {
         .orderBy('created_at', 'desc')
         .first()
 
-      const dispatch = await DB('box_dispatch')
+      const dispatch = await DB('dispatch')
         .where('box_id', box.id)
         .whereNotNull('date_export')
         .orderBy('created_at', 'desc')
