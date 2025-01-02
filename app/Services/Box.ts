@@ -877,11 +877,15 @@ class Box {
 
     for (const box of boxes) {
       let monthsPaid = pp[box.id] || 0
-      monthsPaid = Box.getNbMonths(box.periodicity, box.monthly)
+
+      if (monthsPaid === 0) {
+        monthsPaid = Box.getNbMonths(box.periodicity, box.monthly)
+      }
 
       const dispatchs = dd[box.id] || 0
       const monthsLeft = monthsPaid - dispatchs + box.dispatch_gift
 
+      console.log(dispatchs, monthsPaid, box.monthly)
       if (monthsLeft === 0 && box.step === 'confirmed' && !box.monthly) {
         box.step = 'finished'
         box.end = Utils.date()
