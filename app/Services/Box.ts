@@ -877,9 +877,7 @@ class Box {
 
     for (const box of boxes) {
       let monthsPaid = pp[box.id] || 0
-      if (box.partner) {
-        monthsPaid = Box.getNbMonths(box.periodicity, box.monthly)
-      }
+      monthsPaid = Box.getNbMonths(box.periodicity, box.monthly)
 
       const dispatchs = dd[box.id] || 0
       const monthsLeft = monthsPaid - dispatchs + box.dispatch_gift
