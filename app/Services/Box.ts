@@ -3159,49 +3159,55 @@ class Box {
   }
 
   static async statsDispatchs() {
-    const dispatchs = await DB('box_dispatch').orderBy('created_at', 'desc').all()
-
-    const res = {}
-    const bb: any = []
-    for (const dispatch of dispatchs) {
-      const barcodes = dispatch.barcodes.split(',').map((b) => b.trim())
-      bb.push(...barcodes)
-
-      const d = dispatch.created_at.substr(0, 7)
-      if (!res[d]) {
-        res[d] = {}
-      }
-      for (const barcode of barcodes) {
-        if (!res[d][barcode]) {
-          res[d][barcode] = 0
-        }
-        res[d][barcode]++
-      }
-    }
-
-    const vod = await DB('vod')
-      .select('project.id', 'project.artist_name', 'project.name', 'barcode', 'payback_box')
-      .join('project', 'project.id', 'vod.project_id')
-      .whereIn('barcode', bb)
+    const dispatchs = await DB('dispatch')
+      .select(
+        'project.id',
+        'project.artist_name',
+        'project.name',
+        'vod.barcode',
+        'dispatch_item.product_id',
+        'payback_box',
+        'dispatch.created_at'
+      )
+      .join('dispatch_item', 'dispatch_item.dispatch_id', 'dispatch.id')
+      .leftJoin('project_product', 'project_product.product_id', 'dispatch_item.product_id')
+      .leftJoin('vod', 'vod.project_id', 'project_product.project_id')
+      .leftJoin('project', 'project.id', 'vod.project_id')
+      .where('dispatch.type', 'box')
+      .orderBy('dispatch.created_at', 'desc')
       .all()
 
-    const projects = {}
-    for (const v of vod) {
-      projects[v.barcode] = v
+    const months = {}
+    for (const dispatch of dispatchs) {
+      const d = dispatch.created_at.substr(0, 7)
+      if (!months[d]) {
+        months[d] = {}
+      }
+      if (!months[d][dispatch.id]) {
+        months[d][dispatch.id] = {
+          ...dispatch,
+          quantity: 0
+        }
+      }
+      months[d][dispatch.id].quantity++
     }
 
     const lines: any[] = []
-    for (const d of Object.keys(res)) {
-      for (const b of Object.keys(res[d])) {
+    for (const d of Object.keys(months)) {
+      for (const b of Object.keys(months[d])) {
         lines.push({
           date: d,
-          barcode: b,
-          ref: projects[b] ? `${projects[b].artist_name} - ${projects[b].name}` : '',
-          payback_box: projects[b] ? projects[b].payback_box : '',
-          quantity: res[d][b]
+          barcode: months[d][b].barcode,
+          ref: months[d][b].artist_name + ' - ' + months[d][b].name,
+          payback_box: months[d][b].payback_box,
+          quantity: months[d][b].quantity
         })
       }
     }
+
+    lines.sort((a, b) => {
+      return moment(b.date).diff(moment(a.date))
+    })
 
     return Utils.arrayToCsv(
       [
@@ -3583,10 +3589,10 @@ class Box {
   }
 
   static async exportDispatchs() {
-    const dispatchs = await DB('box_dispatch')
-      .select('box.id', 'box.type', 'box.periodicity', 'box_dispatch.created_at')
-      .join('box', 'box.id', 'box_dispatch.box_id')
-      .orderBy('box_dispatch.id', 'desc')
+    const dispatchs = await DB('dispatch')
+      .select('box.id', 'box.type', 'box.periodicity', 'dispatch.created_at')
+      .join('box', 'box.id', 'dispatch.box_id')
+      .orderBy('dispatch.id', 'desc')
       .all()
 
     return Utils.arrayToCsv(
