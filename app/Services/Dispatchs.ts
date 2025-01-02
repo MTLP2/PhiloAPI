@@ -3249,6 +3249,26 @@ class Dispatchs {
       shipping: shipping
     }
   }
+
+  static deleteDispatchs = async () => {
+    const dispatchs = await DB('dispatch')
+      .select('dispatch.id')
+      .join('dispatch_item', 'dispatch_item.dispatch_id', 'dispatch.id')
+      .where('dispatch_item.product_id', 65404)
+      .where('dispatch.status', 'in_progress')
+      .all()
+
+    console.log(dispatchs.length)
+    for (const dispatch of dispatchs) {
+      console.log(dispatch.id)
+      await DB('order_shop').where('dispatch_id', dispatch.id).update({
+        step: 'check_address',
+        dispatch_id: null
+      })
+      await DB('dispatch').where('id', dispatch.id).delete()
+      await DB('dispatch_item').where('dispatch_id', dispatch.id).delete()
+    }
+  }
 }
 
 export default Dispatchs
