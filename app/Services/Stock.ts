@@ -17,65 +17,34 @@ class Stock {
     sizes?: { [key: string]: string }
     color?: string
   }) {
-    const stocks = await DB('project_product as pp')
-      .select('pp.product_id', 'product.parent_id', 'stock.reserved', 'stock.type', 'quantity')
+    const products = await DB('project_product as pp')
+      .select('pp.product_id', 'product.parent_id')
       .join('product', 'product.id', 'pp.product_id')
-      .leftJoin('stock', 'pp.product_id', 'stock.product_id')
+      .where('product.parent_id', null)
       .where('pp.project_id', params.project_id)
-      .where('stock.is_preorder', params.is_preorder || false)
-      .where((query) => {
-        if (params.is_distrib !== undefined) {
-          query.where('is_distrib', params.is_distrib)
-        }
-        if (params.sizes) {
-          query.where((query) => {
-            query.whereNull('size').orWhereIn('pp.product_id', Object.values(params.sizes))
-          })
-        } else {
-          query.whereNull('parent_id')
-        }
-      })
       .all()
 
+    const stocks = await DB('stock')
+      .select('stock.product_id', 'stock.reserved', 'stock.type', 'quantity')
+      .whereIn(
+        'product_id',
+        products.map((p) => p.product_id)
+      )
+      .where('is_preorder', params.is_preorder || false)
+      .where('is_distrib', params.is_distrib || false)
+      .all()
+
+    const res = {}
+
     const trans = <string[]>[...new Set(stocks.filter((p) => p.type).map((p) => p.type))]
-    const products = <string[]>[...new Set(stocks.map((p) => p.parent_id || p.product_id))]
 
-    const res: {
-      [key: string]: number | null
-    } = {}
     for (const t of trans) {
-      for (const p of products) {
-        let qty: number | null = 0
-        for (const s of stocks) {
-          if ((s.parent_id === p || s.product_id === p) && s.type === t) {
-            if (s.quantity === null) {
-              qty = null
-              break
-            }
-            qty += s.quantity
-            if (s.reserved !== null) {
-              qty -= s.reserved
-            }
-          }
-        }
-
-        if (qty !== null && (isNaN(qty) || qty === undefined)) {
+      for (const product of products.filter((p) => !p.parent_id)) {
+        const stock = stocks.find((s) => s.product_id === product.product_id && s.type === t)
+        if (!stock) {
           res[t] = 0
-        }
-        if (
-          res[t] === undefined ||
-          (qty !== null && res[t] === null) ||
-          (qty !== null && qty < res[t])
-        ) {
-          res[t] = qty
-        }
-      }
-    }
-
-    if (params.is_preorder && res.preorder !== null) {
-      for (const t of trans) {
-        if (res[t] === null || res.preorder < (res[t] || 0)) {
-          res[t] = res.preorder
+        } else if (res[t] === undefined || stock.quantity < res[t]) {
+          res[t] = stock.quantity
         }
       }
     }
@@ -282,6 +251,7 @@ class Stock {
       return false
     }
 
+    console.log('listProjects', listProjects)
     const listProducts = await DB('product')
       .select(
         'product.id',
@@ -349,6 +319,7 @@ class Stock {
         }
       }
     }
+
     for (const p of Object.keys(projects)) {
       if (!projects[p].is_shop && projects[p].preorder_preorder !== undefined) {
         projects[p] = projects[p].preorder_preorder
