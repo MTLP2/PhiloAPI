@@ -313,7 +313,7 @@ class Dispatchs {
     item.weight_invoiced = params.weight_invoiced || null
     item.invoice_number = params.invoice_number || null
     item.logs = JSON.stringify(item.logs)
-    item.updated_at = Utils.date()
+    item.updated_at = new Date()
 
     await item.save()
 
