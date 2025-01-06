@@ -36,6 +36,7 @@ class DispatchsController {
           order_shop_id: schema.number.optional(),
           box_id: schema.number.optional(),
           tracking_number: schema.string.optional(),
+          tracking_link: schema.string.optional(),
           cost: schema.number.optional(),
           purchase_order: schema.string.optional(),
           invoice_number: schema.string.optional(),
@@ -343,9 +344,7 @@ class DispatchsController {
         id: params.id
       }
     })
-    return Dispatchs.syncDispatchs({
-      id: payload.id
-    })
+    return Dispatchs.forceSyncDispatch(payload)
   }
 }
 

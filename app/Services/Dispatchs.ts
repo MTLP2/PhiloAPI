@@ -187,6 +187,7 @@ class Dispatchs {
     order_id?: number
     box_id?: number
     tracking_number?: string
+    tracking_link?: string
     comment?: string
     status?: string
     user_id?: number
@@ -293,6 +294,7 @@ class Dispatchs {
       item.order_id = params.order_id || null
       item.box_id = params.box_id || null
       item.tracking_number = params.tracking_number || null
+      item.tracking_link = params.tracking_link || null
       item.incoterm = params.incoterm || null
       item.user_id = params.user_id || null
       item.client_id = params.client_id || null
@@ -2460,6 +2462,26 @@ class Dispatchs {
       type: 'return',
       items: items
     })
+  }
+
+  static forceSyncDispatch = async (params: { id: number }) => {
+    const dispatch = await model('dispatch').find(params.id)
+    if (!dispatch) {
+      return { success: false, error: 'dispatch_not_found' }
+    }
+    if (dispatch.status !== 'in_progress') {
+      dispatch.status = 'in_progress'
+      const logs = dispatch.logs ? JSON.parse(dispatch.logs) : []
+      logs.push({
+        action: 'sync',
+        status: 'in_progress',
+        date: Utils.date()
+      })
+      dispatch.logs = JSON.stringify(logs)
+      await dispatch.save()
+      await db.deleteFrom('dispatch_lock').where('dispatch_id', '=', params.id).execute()
+    }
+    return Dispatchs.syncDispatchs({ id: params.id })
   }
 
   static syncDispatchs = async (params?: { id?: number }) => {
