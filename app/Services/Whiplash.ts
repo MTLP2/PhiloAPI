@@ -152,8 +152,6 @@ class Whiplash {
     }
 
     const res = await Whiplash.saveOrder(data)
-
-    console.log(res)
     if (res.id) {
       return {
         success: true,
