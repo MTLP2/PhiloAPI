@@ -488,13 +488,13 @@ class BigBlue {
         shipping_address: {
           first_name: params.firstname,
           last_name: params.lastname,
-          company: params.name,
+          company: params.name ? params.name.substring(0, 35) : '',
           phone: params.phone,
           email: params.email,
           line1: address[0],
           line2: address2,
           city: params.city,
-          postal: params.zip_code,
+          postal: params.zip_code.substring(0, 12),
           state: params.state,
           country: params.country_id
         },
