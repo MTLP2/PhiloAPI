@@ -885,7 +885,6 @@ class Box {
       const dispatchs = dd[box.id] || 0
       const monthsLeft = monthsPaid - dispatchs + box.dispatch_gift
 
-      console.log(dispatchs, monthsPaid, box.monthly)
       if (monthsLeft === 0 && box.step === 'confirmed' && !box.monthly) {
         box.step = 'finished'
         box.end = Utils.date()
@@ -1225,9 +1224,7 @@ class Box {
         cost_currency: box.currency,
         items: items
       })
-      console.log('box.id', box.id)
     }
-    console.log('boxes', boxes.length)
     await Box.setDispatchLeft()
 
     await Notification.sendEmail({
@@ -2701,7 +2698,6 @@ class Box {
       productId: false
     })
 
-    console.log('goodie_box', goodiesBox)
     barcodes.push(...goodiesBox)
 
     const products = await DB('product').select('id', 'barcode').whereIn('barcode', barcodes).all()
