@@ -594,6 +594,7 @@ class App {
             .add(80, 'days')
             .format('MMMM YYYY')
         }
+        /**
         if (order.is_gift && data.type === 'my_order_confirmed') {
           const html = await View.render('gift', {
             artist: item.artist_name.substring(0, 30),
@@ -609,6 +610,7 @@ class App {
             content: await Utils.toPdf(html)
           })
         }
+        **/
       }
 
       if (items.length > 0) {
