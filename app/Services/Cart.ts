@@ -72,7 +72,9 @@ class Cart {
       total: 0
     }
 
+    let noCountryId = false
     if (!params.customer.country_id) {
+      noCountryId = true
       params.customer.country_id = 'fr'
     }
     if (!params.country_id) {
@@ -339,6 +341,10 @@ class Cart {
     }
     if (cart.has_gift) {
       cart.gift = cart.gifts.find((g: any) => g.id === +params.gift)
+    }
+
+    if (noCountryId) {
+      params.customer.country_id = null
     }
 
     if (params.user_id && params.save) {
