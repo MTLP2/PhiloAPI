@@ -2492,6 +2492,49 @@ class Cart {
     }
     return res
   }
+
+  static checkDifferencePayment = async () => {
+    const orders = await DB('order')
+      .whereNotNull('date_payment')
+      .where('payment_type', 'stripe')
+      .whereRaw('created_at >= Date(NOW()) - INTERVAL 1 DAY')
+      .all()
+
+    const stripe = require('stripe')(config.stripe.client_secret)
+
+    const data: any[] = []
+    let i = 0
+    for (const order of orders) {
+      i++
+      if (i % 100 === 0) {
+        console.log(i)
+      }
+      const paymentIntent = await stripe.paymentIntents.retrieve(order.payment_id)
+
+      let amount = order.total
+      if (!['KRW', 'JPY'].includes(order.currency)) {
+        amount = Math.round(amount * 100)
+      }
+
+      if (paymentIntent.amount !== amount || paymentIntent.status !== 'succeeded') {
+        data.push({
+          id: order.id,
+          payment_id: order.payment_id,
+          status: paymentIntent.status,
+          amount: paymentIntent.amount,
+          amount_order: amount
+        })
+      }
+    }
+
+    await Notification.sendEmail({
+      to: 'victor@diggersfactory.com',
+      subject: 'Stripe payment diff',
+      html: `<p>${data.length}/${orders.length} orders with payment diff</p>
+      <pre>${JSON.stringify(data, null, 2)}</pre>`
+    })
+    return data
+  }
 }
 
 export default Cart

@@ -126,7 +126,9 @@ class App {
         await Whiplash.getDuplicates()
       }
 
-      if (hour === 2) {
+      if (hour === 1) {
+        await Cart.checkDifferencePayment()
+      } else if (hour === 2) {
         await Charts.uploadOfficialCharts({
           country: 'GB'
         })
