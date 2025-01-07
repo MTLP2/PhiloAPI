@@ -1679,6 +1679,20 @@ class Stats {
         business: { total: 0, dates: { ...dates } },
         organic: { total: 0, dates: { ...dates } }
       },
+      products: {
+        'vinyl': { total: 0, dates: { ...dates } },
+        'cd': { total: 0, dates: { ...dates } },
+        'tape': { total: 0, dates: { ...dates } },
+        'merch': { total: 0, dates: { ...dates } },
+        't-shirt': { total: 0, dates: { ...dates } },
+        'goodie': { total: 0, dates: { ...dates } },
+        'cap': { total: 0, dates: { ...dates } },
+        'book': { total: 0, dates: { ...dates } },
+        'poster': { total: 0, dates: { ...dates } },
+        'hoodie': { total: 0, dates: { ...dates } },
+        'accessory': { total: 0, dates: { ...dates } },
+        'other': { total: 0, dates: { ...dates } }
+      },
       quantity: {
         all: { total: 0, dates: { ...dates } },
         total: { total: 0, dates: { ...dates } },
@@ -1788,6 +1802,26 @@ class Stats {
     }
 
     const currenciesPromise = DB('currency').all()
+
+    const productsPromise = DB('order_shop as os')
+      .select('product.type', 'oi.quantity', 'os.created_at')
+      .join('order', 'order.id', 'os.order_id')
+      .join('order_item as oi', 'oi.order_shop_id', 'os.id')
+      .join('project_product as pp', 'pp.project_id', 'oi.project_id')
+      .join('product', 'product.id', 'pp.product_id')
+      .whereNotIn('order.status', [
+        'creating',
+        'failed',
+        'card_declined',
+        'requires_action',
+        'requires_source_action',
+        'external',
+        'pending',
+        'card_declined'
+      ])
+      .where('is_external', false)
+      .whereBetween('os.created_at', [params.start, params.end])
+      .all()
 
     const quantityPromise = DB('order_shop as os')
       .select(
@@ -1974,6 +2008,7 @@ class Stats {
 
     const [
       quantity,
+      products,
       sentShop,
       sentItem,
       invoices,
@@ -1991,6 +2026,7 @@ class Stats {
       currenciesDb
     ] = await Promise.all([
       quantityPromise,
+      productsPromise,
       sentShopPromise,
       sentItemPromise,
       invoicesPromise,
@@ -2265,6 +2301,16 @@ class Stats {
       if (date < start) {
         d.outstanding_delayed += total
       }
+    }
+
+    for (const product of products) {
+      const date = moment(product.created_at).format(format)
+      if (!d.products[product.type]) {
+        console.log(product.type)
+        product.type = 'other'
+      }
+      d.products[product.type].total += product.quantity
+      d.products[product.type].dates[date] += product.quantity
     }
 
     const u = {}
