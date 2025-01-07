@@ -1809,6 +1809,7 @@ class Stats {
       .join('order_item as oi', 'oi.order_shop_id', 'os.id')
       .join('project_product as pp', 'pp.project_id', 'oi.project_id')
       .join('product', 'product.id', 'pp.product_id')
+      .whereNull('product.parent_id')
       .whereNotIn('order.status', [
         'creating',
         'failed',
