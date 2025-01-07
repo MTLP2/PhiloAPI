@@ -2607,7 +2607,6 @@ class Production {
           continue
         }
         await DB('production_dispatch').where('id', dispatch.id).update({
-          logistician_id: res.inbound_shipment.supplier_shipment_id,
           quantity_received: res.inbound_shipment.status.line_progresses[0].offloaded_count,
           status: res.inbound_shipment.status.code.toLowerCase()
         })
