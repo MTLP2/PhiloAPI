@@ -160,6 +160,9 @@ class Quote {
         ...params,
         factory: f
       })
+      if (factories[f].error) {
+        delete factories[f]
+      }
     }
 
     const disableFactories = {}
@@ -1732,7 +1735,21 @@ class Quote {
     quote.prices.sticker.sticker = false
 
     // quote.cutting = getCost({ l: 6, type: 'cutting', option: '', active: true })
-    quote.prices.sleeve.discobag = 0
+    if (
+      ['discobag', 'triple_gatefold'].includes(params.sleeve) ||
+      [
+        'splatter',
+        'marble',
+        'cloudy',
+        'asidebside',
+        'colorincolor',
+        'halfandhalf',
+        'picture_disc'
+      ].includes(params.type_vinyl)
+    ) {
+      quote.error = true
+      return quote
+    }
     if (params.nb_vinyl === 1) {
       quote.prices.sleeve.color = getCost({
         l: 5,
