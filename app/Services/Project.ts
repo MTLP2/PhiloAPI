@@ -2366,7 +2366,7 @@ class Project {
     for (const stock of stocks) {
       if (stock.is_distrib) {
         s.setCountry('distrib', 'stocks', Utils.getCountryStock(stock.type), stock.quantity)
-        s.setCountry('distrib', 'stocks', 'ALL', stock)
+        s.setCountry('distrib', 'stocks', 'ALL', stock.quantity)
       } else {
         s.setCountry('site', 'stocks', Utils.getCountryStock(stock.type), stock.quantity)
         s.setCountry('site', 'stocks', 'ALL', stock.quantity)
