@@ -3887,6 +3887,8 @@ class Box {
         'box_goodie.lang',
         'box_goodie.priority',
         'box_goodie.name',
+        'box_goodie.price',
+        'box_goodie.product_id',
         'product.name as product_name',
         'product.type',
         'product.barcode',
@@ -3907,6 +3909,7 @@ class Box {
   static async saveGoodie(params: {
     id?: number
     product_id: number
+    price?: number
     lang: string
     priority: number
   }) {
@@ -3922,8 +3925,10 @@ class Box {
     item.product_id = params.product_id
     item.lang = params.lang
     item.priority = params.priority
+    item.price = params.price
     item.updated_at = Utils.date()
 
+    console.log(params)
     await item.save()
 
     return { sucess: true }
