@@ -51,7 +51,7 @@ class ProductsController {
           id: schema.number.optional(),
           name: schema.string(),
           type: schema.string.optional(),
-          barcode: schema.string.optional(),
+          barcode: schema.number.optional(),
           catnumber: schema.string.optional(),
           isrc: schema.string.optional(),
           country_id: schema.string.optional(),
@@ -59,10 +59,11 @@ class ProductsController {
           hs_code: schema.string.optional(),
           parent_id: schema.number.optional(),
           bigblue_id: schema.string.optional(),
-          whiplash_id: schema.number.optional(),
+          whiplash_id: schema.string.optional(),
           size: schema.string.optional(),
           color: schema.string.optional(),
-          weight: schema.number.optional()
+          weight: schema.number.optional(),
+          picture: schema.string.optional()
         }),
         data: request.body()
       })

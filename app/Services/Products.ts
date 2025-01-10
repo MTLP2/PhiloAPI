@@ -4,6 +4,7 @@ import Stock from 'App/Services/Stock'
 import Whiplash from 'App/Services/Whiplash'
 import Elogik from 'App/Services/Elogik'
 import BigBlue from 'App/Services/BigBlue'
+import Storage from './Storage'
 
 class Products {
   static async all(params: {
@@ -233,6 +234,7 @@ class Products {
     country_id?: string
     bigblue_id?: string
     whiplash_id?: string
+    picture?: string
     more?: string
     color?: string
     weight?: number
@@ -274,6 +276,19 @@ class Products {
 
     await item.save()
 
+    if (params.picture) {
+      if (item.picture) {
+        await Storage.deleteImage(`products/${item.picture}`)
+      }
+      const file = Utils.uuid()
+      await Storage.uploadImage(`products/${file}`, Buffer.from(params.picture, 'base64'), {
+        type: 'png',
+        width: 1000,
+        quality: 100
+      })
+      item.picture = file
+      await item.save()
+    }
     const projects = await DB('project_product').where('product_id', item.id).all()
     for (const project of projects) {
       Products.setBarcodes({ project_id: project.project_id })
