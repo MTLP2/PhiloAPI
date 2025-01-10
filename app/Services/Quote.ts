@@ -214,7 +214,7 @@ class Quote {
             cheapFac = f
           }
         }
-        if (cheapPrice === null) {
+        if (cheapPrice === null || !factories[params.factory || cheaperFactory]) {
           continue
         }
         prices[p][o] = {
