@@ -698,8 +698,6 @@ Route.group(() => {
   .middleware(['auth', 'admin'])
 
 Route.group(() => {
-  Route.post('/dispatch', 'DispatchsController.update')
-  Route.post('/dispatchs', 'DispatchsController.batch')
-  Route.post('/stock', 'DispatchsController.updateStock')
-  Route.post('/stocks', 'DispatchsController.updateStocks')
+  Route.post('/dispatchs/order', 'DispatchsController.updateOrder')
+  Route.post('/dispatchs/stock', 'DispatchsController.updateStock')
 })

@@ -1,6 +1,7 @@
 import Api from 'App/Services/Api'
 import Dispatchs from 'App/Services/Dispatchs'
 import { schema, validator } from '@ioc:Adonis/Core/Validator'
+import Notification from 'App/Services/Notification'
 
 class DispatchsController {
   all({ params }) {
@@ -345,6 +346,26 @@ class DispatchsController {
       }
     })
     return Dispatchs.forceSyncDispatch(payload)
+  }
+
+  async updateOrder({ params, request }) {
+    await Notification.sendEmail({
+      to: `victor@diggersfactory.com`,
+      subject: 'updateOrder',
+      html: `<pre>${JSON.stringify(request.body(), null, 2)}</pre>`
+    })
+
+    return { success: true }
+  }
+
+  async updateStock({ params, request }) {
+    await Notification.sendEmail({
+      to: `victor@diggersfactory.com`,
+      subject: 'updateStock',
+      html: `<pre>${JSON.stringify(request.body(), null, 2)}</pre>`
+    })
+
+    return { success: true }
   }
 }
 

@@ -938,6 +938,7 @@ class Dispatchs {
     return { success: true }
   }
 
+  /** 
   static update = async (params) => {
     if (!params.id) {
       throw new ApiError(400, '`id` is missing')
@@ -992,6 +993,7 @@ class Dispatchs {
 
     return { success: true }
   }
+  **/
 
   static setSent = async (order) => {
     if (order.id[0] === 'M') {
@@ -1188,6 +1190,7 @@ class Dispatchs {
     return orders
   }
 
+  /**
   static changeStock = async (params) => {
     if (!params.barcode) {
       throw new ApiError(400, '`barcode` is missing')
@@ -1217,6 +1220,7 @@ class Dispatchs {
 
     return { success: true }
   }
+  **/
 
   static getCountriesForDispatch = async () => {
     const orders = await DB('order')
