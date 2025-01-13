@@ -112,6 +112,7 @@ Route.group(() => {
   Route.post('/contact', 'AppController.contact')
   Route.get('/boxes', 'BoxController.getLastBoxes')
   Route.get('/boxes/prices', 'BoxController.getBoxesPrices')
+  Route.get('/boxes/goodies', 'BoxController.getGoodies')
   Route.post('/boxes/sponsor', 'BoxController.checkSponsor').middleware(['auth:optional'])
   Route.post('/quote', 'AppController.sendQuote')
   Route.post('/quote/calculate', 'AppController.calculateQuote')
