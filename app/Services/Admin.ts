@@ -4393,7 +4393,7 @@ class Admin {
         'count_distrib',
         'date_shipping',
         'product.barcode',
-        'picture',
+        'project.picture',
         'picture_project',
         'project.cat_number',
         'product.catnumber',
