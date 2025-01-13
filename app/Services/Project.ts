@@ -575,7 +575,11 @@ class Project {
         } else if (filter.type === 'currency') {
           projects.where('currency', filter.value)
         } else if (filter.type === 'category') {
-          categories.push(filter.value)
+          if (+filter.value === 153) {
+            projects.where('v.is_box', true)
+          } else {
+            categories.push(filter.value)
+          }
         }
       }
 
@@ -944,169 +948,6 @@ class Project {
       .where('p.is_delete', false)
       .first()
 
-    console.log(
-      DB()
-        .select(
-          'p.id',
-          'p.name',
-          'p.label_id',
-          'p.artist_id',
-          'p.slug',
-          'p.artist_bio',
-          'p.artist_picture',
-          'v.edition',
-          'artist.name as artist_name',
-          'artist.description as artist_desc',
-          'artist.picture as artist_picture',
-          'artist.country_id as artist_country',
-          'label.name as label_name',
-          'label.description as label_desc',
-          'label.picture as label_picture',
-          'label.country_id as label_country',
-          'u.id as user_id',
-          'u.name as user_name',
-          'u.slug as user_slug',
-          'u.color as user_color',
-          'u.country_id as user_country_id',
-          'u.facebook as user_facebook',
-          'u.soundcloud as user_soundcloud',
-          'u.twitter as user_twitter',
-          'u.instagram as user_instagram',
-          'u.about_me as user_about_me',
-          'u.picture as user_picture',
-          DB.raw(`(
-      select count(*)
-      from \`follower\`
-      where user_id = u.id and follower = ${params.user_id}
-    ) as user_followed
-    `),
-          'w.id as wishlist_id',
-          'w.step as wishlist_step',
-          'v.id as vod_id',
-          'artist_name',
-          'artist_website',
-          'p.label_name',
-          'p.label_website',
-          'p.cat_number',
-          'p.category',
-          'p.tags',
-          'v.is_large',
-          'numbered',
-          'year',
-          'v.description',
-          'v.description_fr_long',
-          'p.inverse_name',
-          'p.color',
-          'v.splatter1',
-          'v.splatter2',
-          'v.sleeve',
-          'v.is_shop',
-          'v.color_vinyl',
-          'v.color_vinyl_str',
-          'v.picture_project',
-          'v.text_bellow_button',
-          'vinyl_weight',
-          'v.weight',
-          'v.barcode',
-          'url_vinyl',
-          'picture_disc',
-          'p.bg',
-          'p.hide',
-          'youtube',
-          'p.format',
-          'p.country_id',
-          'cat_number',
-          'p.nb_vinyl',
-          'p.gatefold',
-          'type_vinyl',
-          'signed_id',
-          'v.type',
-          'v.show_stock',
-          'v.show_prod',
-          'v.sizes',
-          'v.is_size',
-          'p.is_3d',
-          'count',
-          'show_countdown',
-          'show_count',
-          'v.bonus',
-          // DB.raw('GROUP_CONCAT(ps.style_id SEPARATOR \',\') as styles'),
-          DB.raw("DATE_FORMAT(end, '%Y-%m-%d %H:%i') as end"),
-          DB.raw("DATE_FORMAT(start, '%Y-%m-%d %H:%i') as start"),
-          'goal',
-          DB.raw('ceil((v.count / v.goal)*100) as progress'),
-          'diggers',
-          'price',
-          'prices',
-          'discount',
-          'date_shipping',
-          'disabled_cover',
-          'paypal as pa',
-          'v.stripe as st',
-          'price_distribution',
-          'partner_distribution',
-          'quantity_distribution',
-          'v.currency',
-          'p.dark',
-          'p.picture',
-          'p.video',
-          'p.banner',
-          'cu.value as currencyRate',
-          'v.partner_transport',
-          'v.transporter',
-          'v.transporters',
-          'likes',
-          DB.raw(`(
-      select count(*)
-      from \`like\`
-      where project_id = p.id and user_id = ${params.user_id}
-    ) as liked
-    `),
-          DB.raw(`(
-      select count(*)
-      from \`wishlist_user\`
-      where project_id = p.id and user_id = ${params.user_id}
-    ) as wished
-    `),
-          DB.raw(`(
-      select round(avg(rate),1)
-      from \`review\`
-      where project_id = p.id AND is_visible = 1
-    ) as rating
-    `),
-          DB.raw(`(
-      select count(rate)
-      from \`review\`
-      where project_id = p.id AND is_visible = 1
-    ) as nb_rating
-    `),
-          DB.raw(`(
-      select rate
-      from \`review\`
-      where project_id = p.id AND user_id = ${params.user_id}
-    ) as my_rate
-    `),
-          'stock',
-          'only_country',
-          'exclude_country',
-          'limit_user_quantity',
-          'v.step',
-          'v.is_label_bside',
-          'v.shipping_discount',
-          'v.save_shipping'
-        )
-        .from('project as p')
-        .leftJoin('vod as v', 'p.id', 'v.project_id')
-        .leftJoin('user as u', 'u.id', 'v.user_id')
-        .leftJoin('wishlist as w', 'p.id', 'w.project_id')
-        .leftOuterJoin('label', 'p.label_id', 'label.id')
-        .leftOuterJoin('artist', 'p.artist_id', 'artist.id')
-        .leftOuterJoin('customer as c', 'c.id', 'v.customer_id')
-        .leftOuterJoin('currency as cu', 'cu.id', 'v.currency')
-        .where('p.id', related)
-        .where('p.is_delete', false)
-        .toString()
-    )
     const stylesPromise = DB()
       .select('*')
       .from('project_style')
@@ -1234,7 +1075,6 @@ class Project {
       p.bid = await Bid.find(p.id)
     }
 
-    console.log(p.step, 'sisi')
     if (
       ![
         'in_progress',
@@ -1246,7 +1086,6 @@ class Project {
         'failed'
       ].includes(p.step)
     ) {
-      console.log('lol')
       if (params.user_id !== p.user_id && !(await Utils.isTeam(params.user_id))) {
         return {
           id: p.id,
