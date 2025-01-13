@@ -233,7 +233,7 @@ class Products {
     hs_code?: string
     country_id?: string
     bigblue_id?: string
-    whiplash_id?: string
+    whiplash_id?: number
     picture?: string
     more?: string
     color?: string
