@@ -349,6 +349,7 @@ class DispatchsController {
   }
 
   async updateOrder({ params, request }) {
+    return { success: true }
     await Notification.sendEmail({
       to: `victor@diggersfactory.com`,
       subject: 'updateOrder',
@@ -361,6 +362,7 @@ class DispatchsController {
   }
 
   async updateStock({ params, request }) {
+    return { success: true }
     await Notification.sendEmail({
       to: `victor@diggersfactory.com`,
       subject: 'updateStock',
