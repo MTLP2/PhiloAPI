@@ -1174,18 +1174,6 @@ class Box {
         product_id: number
       }[] = []
 
-      // Carton Box Digger V2
-      items.push({
-        quantity: 1,
-        product_id: 65794
-      })
-
-      // Flyers Lyon Béton Box Vinyle
-      items.push({
-        quantity: 1,
-        product_id: 65694
-      })
-
       const goodiesBox = await Box.getGoodieBox({
         box_id: box.id,
         lang: box.lang,
@@ -2685,12 +2673,6 @@ class Box {
     }
     await Box.checkStock(params.month)
 
-    // Carton Box Digger V2
-    barcodes.push('3760396029562')
-
-    // Flyers Lyon Béton Box Vinyle
-    barcodes.push('3760396028442')
-
     const goodiesBox = await Box.getGoodieBox({
       box_id: box.id,
       lang: box.lang,
@@ -3565,7 +3547,18 @@ class Box {
       }
     }
 
+    const items: any[] = []
+
+    if (params.productId) {
+      items.push(...goodies[0].map((g) => g.product_id))
+    } else {
+      items.push(...goodies[0].map((g) => g.barcode))
+    }
+
     for (const m of Object.keys(goodies)) {
+      if (m === '0') {
+        continue
+      }
       let month = true
       for (const goodie of goodies[m]) {
         if (dispatchs.map((d) => d.barcode).indexOf(goodie.barcode) > -1) {
@@ -3574,13 +3567,16 @@ class Box {
       }
       if (month) {
         if (params.productId) {
-          return goodies[m].map((g) => g.product_id)
+          items.push(...goodies[m].map((g) => g.product_id))
+          return items
+        } else {
+          items.push(...goodies[m].map((g) => g.barcode))
+          return items
         }
-        return goodies[m].map((g) => g.barcode)
       }
     }
 
-    return null
+    return items
   }
 
   static async refreshBoxDispatch(params: { id: string }) {
@@ -3892,6 +3888,7 @@ class Box {
         'product.name as product_name',
         'product.type',
         'product.barcode',
+        'product.picture',
         DB.raw(
           '(SELECT quantity FROM stock WHERE product_id = product.id AND type = "bigblue" AND is_preorder = 0) as stock'
         )
