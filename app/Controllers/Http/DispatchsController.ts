@@ -355,6 +355,8 @@ class DispatchsController {
       html: `<pre>${JSON.stringify(request.body(), null, 2)}</pre>`
     })
 
+    return { challenge: params.challenge }
+
     return { success: true }
   }
 
@@ -365,7 +367,7 @@ class DispatchsController {
       html: `<pre>${JSON.stringify(request.body(), null, 2)}</pre>`
     })
 
-    return { success: true }
+    return { challenge: params.challenge }
   }
 }
 
