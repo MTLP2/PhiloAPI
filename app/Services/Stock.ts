@@ -251,7 +251,6 @@ class Stock {
       return false
     }
 
-    console.log('listProjects', listProjects)
     const listProducts = await DB('product')
       .select(
         'product.id',
