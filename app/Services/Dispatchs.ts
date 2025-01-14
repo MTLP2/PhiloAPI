@@ -2673,7 +2673,7 @@ class Dispatchs {
 
   static changeStatus = async (params: {
     id?: number
-    logistician_id?: number
+    logistician_id?: string
     logistician?: string
     status: string
     tracking_number?: string
@@ -3293,6 +3293,27 @@ class Dispatchs {
       })
       await DB('dispatch').where('id', dispatch.id).delete()
       await DB('dispatch_item').where('dispatch_id', dispatch.id).delete()
+    }
+  }
+
+  static updateStockBigblue = async (params: {
+    inventories: {
+      product: string
+      available: number
+      reserved: number
+    }[]
+  }) => {
+    for (const inventory of params.inventories) {
+      const product = await DB('product').where('bigblue_id', inventory.product).first()
+      if (!product) {
+        continue
+      }
+      await Stock.save({
+        product_id: product.id,
+        type: 'bigblue',
+        comment: 'api_webhook',
+        quantity: inventory.available
+      })
     }
   }
 }

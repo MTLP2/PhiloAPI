@@ -1,7 +1,6 @@
-import Api from 'App/Services/Api'
 import Dispatchs from 'App/Services/Dispatchs'
 import { schema, validator } from '@ioc:Adonis/Core/Validator'
-import Notification from 'App/Services/Notification'
+import BigBlue from 'App/Services/BigBlue'
 
 class DispatchsController {
   all({ params }) {
@@ -348,31 +347,44 @@ class DispatchsController {
     return Dispatchs.forceSyncDispatch(payload)
   }
 
-  async updateOrder({ params, request }) {
-    return { success: true }
-    await Notification.sendEmail({
-      to: `victor@diggersfactory.com`,
-      subject: 'updateOrder',
-      html: `<pre>${JSON.stringify(request.body(), null, 2)}</pre>`
-    })
-
-    return { challenge: params.challenge }
-
-    return { success: true }
+  async updateOrder({ request }) {
+    if (request.headers()['x-bigblue-event-type'] === 'ORDER_STATUS_UPDATE') {
+      const payload = await validator.validate({
+        schema: schema.create({
+          order_status: schema.object().members({
+            id: schema.string(),
+            code: schema.string(),
+            tracking_number: schema.string(),
+            tracking_url: schema.string()
+          })
+        }),
+        data: request.body()
+      })
+      return BigBlue.updateStatusWebhook(payload)
+    } else {
+      return { success: false }
+    }
   }
 
-  async updateStock({ params, request }) {
-    await Notification.sendEmail({
-      to: `victor@diggersfactory.com`,
-      subject: 'updateStock',
-      html: `<pre>${JSON.stringify(request.headers(), null, 2)}</pre><pre>${JSON.stringify(
-        request.body(),
-        null,
-        2
-      )}</pre>`
-    })
-
-    return { challenge: params.challenge }
+  async updateStock({ request }) {
+    if (request.headers()['x-bigblue-event-type'] === 'INVENTORY_UPDATE') {
+      const payload = await validator.validate({
+        schema: schema.create({
+          inventories: schema.array().members(
+            schema.object().members({
+              warehouse: schema.string(),
+              product: schema.string(),
+              available: schema.number(),
+              reserved: schema.number()
+            })
+          )
+        }),
+        data: request.body()
+      })
+      return BigBlue.updateStockWebhook(payload)
+    } else {
+      return { success: false }
+    }
   }
 }
 

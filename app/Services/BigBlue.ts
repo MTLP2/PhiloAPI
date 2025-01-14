@@ -1330,6 +1330,63 @@ class BigBlue {
 
     return duplicates
   }
+
+  static updateStockWebhook = async (params: {
+    inventories: {
+      product: string
+      available: number
+      reserved: number
+    }[]
+  }) => {
+    for (const inventory of params.inventories) {
+      const product = await DB('product').where('bigblue_id', inventory.product).first()
+      if (!product) {
+        continue
+      }
+      await Stock.save({
+        product_id: product.id,
+        type: 'bigblue',
+        comment: 'api_webhook',
+        quantity: inventory.available,
+        is_preorder: false
+      })
+    }
+
+    return { success: true }
+  }
+
+  /**
+   *  **BACKORDER:** inventory is missing to fulfil this order
+- **EXCEPTION:** order cannot be shipped because the data is insufficient or the order shipment is in an error state (invalid address, held at customs, lost, ...)
+- **PENDING:** order is ready to be fulfilled
+- **IN_PREPARATION:** parcel is being prepared
+- **HANDED_OVER:** parcel handed over to carrier (in case the carrier is not tracked by Bigblue) - tracking number is available (if exists)
+- **SHIPPED:** parcel shipped - tracking number is available
+- **DELIVERED:** parcel has been delivered
+- **RETURNED:** parcel returned at warehouse
+- **CANCELLED:** order has been cancelled
+   */
+  static updateStatusWebhook = async (params: {
+    order_status: {
+      id: string
+      code: string
+      tracking_number: string
+      tracking_url: string
+    }
+  }) => {
+    let status = params.order_status.code.toLowerCase()
+    if (status === 'shipped') {
+      status = 'sent'
+    }
+    await Dispatchs.changeStatus({
+      logistician_id: params.order_status.id,
+      logistician: 'bigblue',
+      status: status,
+      tracking_number: params.order_status.tracking_number,
+      tracking_link: params.order_status.tracking_url
+    })
+    return { success: true }
+  }
 }
 
 export default BigBlue
