@@ -1,6 +1,7 @@
 import Dispatchs from 'App/Services/Dispatchs'
 import { schema, validator } from '@ioc:Adonis/Core/Validator'
 import BigBlue from 'App/Services/BigBlue'
+import Notification from 'App/Services/Notification'
 
 class DispatchsController {
   all({ params }) {
@@ -362,6 +363,15 @@ class DispatchsController {
       })
       return BigBlue.updateStatusWebhook(payload)
     } else {
+      await Notification.sendEmail({
+        to: `victor@diggersfactory.com`,
+        subject: 'updateOrder',
+        html: `<pre>${JSON.stringify(request.headers(), null, 2)}</pre><pre>${JSON.stringify(
+          request.body(),
+          null,
+          2
+        )}</pre>`
+      })
       return { success: false }
     }
   }
@@ -383,6 +393,15 @@ class DispatchsController {
       })
       return BigBlue.updateStockWebhook(payload)
     } else {
+      await Notification.sendEmail({
+        to: `victor@diggersfactory.com`,
+        subject: 'updateStock',
+        html: `<pre>${JSON.stringify(request.headers(), null, 2)}</pre><pre>${JSON.stringify(
+          request.body(),
+          null,
+          2
+        )}</pre>`
+      })
       return { success: false }
     }
   }
