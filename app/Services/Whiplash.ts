@@ -560,7 +560,7 @@ class Whiplash {
     }
 
     const existing = await DB('stock')
-      .where('stock.type', 'whiplash')
+      .whereIn('stock.type', ['whiplash', 'whiplash_uk'])
       .select('stock.*')
       .join('product', 'product.id', 'stock.product_id')
       .where('is_preorder', false)
@@ -629,12 +629,13 @@ class Whiplash {
       const newStocks: any = []
       const items: any = await Whiplash.getAllItems()
       for (const item of items) {
-        if (!products[item.sku]) {
+        if (item.sku === '' || !products[item.sku]) {
           continue
         }
-        const idx = existing.findIndex((s) => s.product_id === products[item.sku].id)
-        if (idx > -1) {
-          existing[idx].checked = true
+        for (const s in existing) {
+          if (existing[s].product_id === products[item.sku].id) {
+            existing[s].checked = true
+          }
         }
         if (
           item.updated_at.substring(0, 10) === moment().format('YYYY-MM-DD') ||
