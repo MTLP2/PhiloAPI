@@ -154,6 +154,14 @@ class BigBlue {
 
     let pageToken = ''
 
+    const existing = await DB('stock')
+      .where('stock.type', 'bigblue')
+      .select('stock.*')
+      .join('product', 'product.id', 'stock.product_id')
+      .where('is_preorder', false)
+      .where('quantity', '>', 0)
+      .all()
+
     do {
       const res: any = await this.api('ListInventories', {
         method: 'POST',
@@ -178,6 +186,11 @@ class BigBlue {
       if (!products[stock.product]) {
         continue
       }
+      const idx = existing.findIndex((s) => s.product_id === products[stock.product].id)
+      if (idx > -1) {
+        existing[idx].checked = true
+      }
+
       products[stock.product].qty = stock.available
       await Stock.save({
         product_id: products[stock.product].id,
@@ -200,6 +213,18 @@ class BigBlue {
         console.info('product', product)
       }
     })
+
+    if (!params.productIds) {
+      for (const stock of existing.filter((s) => !s.checked)) {
+        await Stock.save({
+          product_id: stock.product_id,
+          type: 'bigblue',
+          quantity: 0,
+          comment: 'api_not_found',
+          is_preorder: false
+        })
+      }
+    }
 
     return inventories.length
   }

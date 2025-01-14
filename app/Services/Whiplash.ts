@@ -559,6 +559,14 @@ class Whiplash {
       products[product.barcode] = product
     }
 
+    const existing = await DB('stock')
+      .where('stock.type', 'whiplash')
+      .select('stock.*')
+      .join('product', 'product.id', 'stock.product_id')
+      .where('is_preorder', false)
+      .where('quantity', '>', 0)
+      .all()
+
     if (params?.productIds) {
       for (const product of listProducts) {
         if (product.whiplash_id === -1) {
@@ -624,6 +632,10 @@ class Whiplash {
         if (!products[item.sku]) {
           continue
         }
+        const idx = existing.findIndex((s) => s.product_id === products[item.sku].id)
+        if (idx > -1) {
+          existing[idx].checked = true
+        }
         if (
           item.updated_at.substring(0, 10) === moment().format('YYYY-MM-DD') ||
           products[item.sku].stock_whiplash + products[item.sku].stock_whiplash_uk !== item.quantity
@@ -686,6 +698,18 @@ class Whiplash {
           .update({
             date_check: Utils.date()
           })
+      }
+
+      if (!params?.productIds) {
+        for (const stock of existing.filter((s) => !s.checked)) {
+          await Stock.save({
+            product_id: stock.product_id,
+            type: stock.type,
+            quantity: 0,
+            comment: 'api_not_found',
+            is_preorder: false
+          })
+        }
       }
 
       if (newStocks.length > 0) {
