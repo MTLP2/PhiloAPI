@@ -2679,6 +2679,7 @@ class Dispatchs {
     tracking_number?: string
     tracking_link?: string
   }) => {
+    console.log(params)
     const dis = await db
       .selectFrom('dispatch')
       .selectAll('dispatch')

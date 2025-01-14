@@ -1069,6 +1069,58 @@ class Whiplash {
 
     return rows
   }
+
+  static updateStockWebhook = async (params: {
+    item: { id: number }
+    warehouse_quantities: { id: number; quantity: number; sellable_quantity: number }[]
+  }) => {
+    for (const warehouse of params.warehouse_quantities) {
+      const product = await DB('product').where('whiplash_id', params.item.id).first()
+      if (!product) {
+        continue
+      }
+      if (warehouse.id === 3) {
+        await Stock.save({
+          product_id: product.id,
+          type: 'whiplash_uk',
+          comment: 'api_webhook',
+          quantity: warehouse.sellable_quantity,
+          is_preorder: false
+        })
+      } else if (warehouse.id === 4 || warehouse.id === 66) {
+        await Stock.save({
+          product_id: product.id,
+          type: 'whiplash',
+          comment: 'api_webhook',
+          quantity: warehouse.sellable_quantity,
+          is_preorder: false
+        })
+      }
+    }
+  }
+
+  static updateStatusWebhook = async (params: {
+    id: number
+    status: number
+    status_name: string
+    warehouse_id: number
+    tracking?: string[]
+    tracking_links?: string[]
+  }) => {
+    let status = params.status_name.toLowerCase()
+    if (status === 'shipped') {
+      status = 'sent'
+    }
+    console.log(params)
+    await Dispatchs.changeStatus({
+      logistician_id: params.id.toString(),
+      logistician: params.warehouse_id === 3 ? 'whiplash_uk' : 'whiplash',
+      status: status,
+      tracking_number: params.tracking?.[0],
+      tracking_link: params.tracking_links?.[0]
+    })
+    return { success: true }
+  }
 }
 
 export default Whiplash

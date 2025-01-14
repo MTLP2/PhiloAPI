@@ -2,6 +2,7 @@ import Dispatchs from 'App/Services/Dispatchs'
 import { schema, validator } from '@ioc:Adonis/Core/Validator'
 import BigBlue from 'App/Services/BigBlue'
 import Notification from 'App/Services/Notification'
+import Whiplash from 'App/Services/Whiplash'
 
 class DispatchsController {
   all({ params }) {
@@ -362,6 +363,30 @@ class DispatchsController {
         data: request.body()
       })
       return BigBlue.updateStatusWebhook(payload)
+    } else if (request.headers()['x-whiplash-signature']) {
+      await Notification.sendEmail({
+        to: `victor@diggersfactory.com`,
+        subject: 'updateOrder',
+        html: `<pre>${JSON.stringify(request.headers(), null, 2)}</pre><pre>${JSON.stringify(
+          request.body(),
+          null,
+          2
+        )}</pre>`
+      })
+      const payload = await validator.validate({
+        schema: schema.create({
+          order: schema.object().members({
+            id: schema.number(),
+            status: schema.number(),
+            status_name: schema.string(),
+            warehouse_id: schema.number(),
+            tracking: schema.array.optional().members(schema.string()),
+            tracking_links: schema.array.optional().members(schema.string())
+          })
+        }),
+        data: request.body()
+      })
+      return Whiplash.updateStatusWebhook(payload.order)
     } else {
       await Notification.sendEmail({
         to: `victor@diggersfactory.com`,
@@ -392,10 +417,36 @@ class DispatchsController {
         data: request.body()
       })
       return BigBlue.updateStockWebhook(payload)
+    } else if (request.headers()['x-whiplash-signature']) {
+      await Notification.sendEmail({
+        to: `victor@diggersfactory.com`,
+        subject: 'updateOrder',
+        html: `<pre>${JSON.stringify(request.headers(), null, 2)}</pre><pre>${JSON.stringify(
+          request.body(),
+          null,
+          2
+        )}</pre>`
+      })
+      const payload = await validator.validate({
+        schema: schema.create({
+          item: schema.object().members({
+            id: schema.number()
+          }),
+          warehouse_quantities: schema.array().members(
+            schema.object().members({
+              id: schema.number(),
+              quantity: schema.number(),
+              sellable_quantity: schema.number()
+            })
+          )
+        }),
+        data: request.body()
+      })
+      return Whiplash.updateStockWebhook(payload)
     } else {
       await Notification.sendEmail({
         to: `victor@diggersfactory.com`,
-        subject: 'updateStock',
+        subject: 'updateOrder',
         html: `<pre>${JSON.stringify(request.headers(), null, 2)}</pre><pre>${JSON.stringify(
           request.body(),
           null,
