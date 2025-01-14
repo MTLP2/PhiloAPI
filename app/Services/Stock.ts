@@ -707,6 +707,12 @@ class Stock {
       }
     })
 
+    const existing = await DB('stock')
+      .where('type', params.distributor)
+      .where('quantity', '>', 0)
+      .where('is_preorder', false)
+      .all()
+
     const products = await DB('product')
       .select('product.id', 'name', 'product.type', 'product.barcode', 'catnumber')
       .whereIn(
@@ -723,6 +729,10 @@ class Stock {
       stocks[i].product = products.find(
         (p) => +p.barcode === +stock.barcode || p.catnumber === stock.barcode
       )
+      const idx = existing.findIndex((p) => stocks[i].product.id === p.product_id)
+      if (idx > -1) {
+        existing[idx].checked = true
+      }
     }
 
     if (params.type === 'save') {
@@ -738,6 +748,18 @@ class Stock {
               is_distrib: true
             })
           }
+        }
+
+        for (const stock of existing.filter((s) => !s.checked)) {
+          await Stock.save({
+            product_id: stock.product_id,
+            type: params.distributor,
+            quantity: 0,
+            comment: 'upload_not_found',
+            user_id: params.user_id,
+            is_preorder: false,
+            is_distrib: true
+          })
         }
 
         const user = await DB('user').where('id', params.user_id).first()
@@ -1124,6 +1146,20 @@ class Stock {
       }
     }
     return transporters
+  }
+
+  static async clearType(params: { type: string }) {
+    const stocks = await DB('stock').where('type', params.type).whereNotNull('product_id').all()
+    for (const stock of stocks) {
+      await Stock.save({
+        id: stock.id,
+        product_id: stock.product_id,
+        type: params.type,
+        comment: 'clear',
+        is_preorder: false,
+        quantity: 0
+      })
+    }
   }
 }
 
