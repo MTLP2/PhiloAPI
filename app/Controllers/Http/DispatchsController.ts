@@ -362,11 +362,14 @@ class DispatchsController {
   }
 
   async updateStock({ params, request }) {
-    return { success: true }
     await Notification.sendEmail({
       to: `victor@diggersfactory.com`,
       subject: 'updateStock',
-      html: `<pre>${JSON.stringify(request.body(), null, 2)}</pre>`
+      html: `<pre>${JSON.stringify(request.headers(), null, 2)}</pre><pre>${JSON.stringify(
+        request.body(),
+        null,
+        2
+      )}</pre>`
     })
 
     return { challenge: params.challenge }
