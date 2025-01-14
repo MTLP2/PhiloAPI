@@ -364,15 +364,6 @@ class DispatchsController {
       })
       return BigBlue.updateStatusWebhook(payload)
     } else if (request.headers()['x-whiplash-signature']) {
-      await Notification.sendEmail({
-        to: `victor@diggersfactory.com`,
-        subject: 'updateOrder',
-        html: `<pre>${JSON.stringify(request.headers(), null, 2)}</pre><pre>${JSON.stringify(
-          request.body(),
-          null,
-          2
-        )}</pre>`
-      })
       const payload = await validator.validate({
         schema: schema.create({
           order: schema.object().members({
@@ -380,8 +371,8 @@ class DispatchsController {
             status: schema.number(),
             status_name: schema.string(),
             warehouse_id: schema.number(),
-            tracking: schema.array.optional().members(schema.string()),
-            tracking_links: schema.array.optional().members(schema.string())
+            tracking: schema.array.optional().members(schema.string.optional()),
+            tracking_links: schema.array.optional().members(schema.string.optional())
           })
         }),
         data: request.body()

@@ -12,6 +12,7 @@ import config from 'Config/index'
 import Utils from 'App/Utils'
 import request from 'request'
 import Dispatchs from './Dispatchs'
+import moment from 'moment'
 
 class Whiplash {
   static api = (endpoint, options = {}): Promise<any> => {
@@ -624,8 +625,8 @@ class Whiplash {
           continue
         }
         if (
-          products[item.sku].stock_whiplash + products[item.sku].stock_whiplash_uk !==
-          item.quantity
+          item.updated_at.substring(0, 10) === moment().format('YYYY-MM-DD') ||
+          products[item.sku].stock_whiplash + products[item.sku].stock_whiplash_uk !== item.quantity
         ) {
           const warehouses: any = await Whiplash.api(`items/${item.id}/warehouse_quantities`)
 
@@ -660,7 +661,7 @@ class Whiplash {
               })
             }
             if (us !== products[item.sku].stock_whiplash) {
-              Stock.save({
+              await Stock.save({
                 product_id: products[item.sku].id,
                 type: 'whiplash',
                 comment: 'api',
@@ -668,7 +669,7 @@ class Whiplash {
               })
             }
             if (uk !== products[item.sku].stock_whiplash_uk) {
-              Stock.save({
+              await Stock.save({
                 product_id: products[item.sku].id,
                 type: 'whiplash_uk',
                 comment: 'api',
@@ -1104,14 +1105,13 @@ class Whiplash {
     status: number
     status_name: string
     warehouse_id: number
-    tracking?: string[]
-    tracking_links?: string[]
+    tracking?: (string | undefined)[]
+    tracking_links?: (string | undefined)[]
   }) => {
     let status = params.status_name.toLowerCase()
     if (status === 'shipped') {
       status = 'sent'
     }
-    console.log(params)
     await Dispatchs.changeStatus({
       logistician_id: params.id.toString(),
       logistician: params.warehouse_id === 3 ? 'whiplash_uk' : 'whiplash',
