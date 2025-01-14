@@ -157,7 +157,7 @@ type Dispatch = {
   id: number
   status: string
   type: string
-  logistician_id?: number
+  logistician_id?: string
   shipping_method?: string
   order_shop_id?: number
   order_id?: number
@@ -241,7 +241,7 @@ type OrderShop = {
   order_id: number
   step: string
   date_export: Timestamp
-  logistician_id: number
+  logistician_id: string
   transporter: string
   shipping_type: string
   address_pickup: string
