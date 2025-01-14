@@ -729,9 +729,11 @@ class Stock {
       stocks[i].product = products.find(
         (p) => +p.barcode === +stock.barcode || p.catnumber === stock.barcode
       )
-      const idx = existing.findIndex((p) => stocks[i].product.id === p.product_id)
-      if (idx > -1) {
-        existing[idx].checked = true
+      if (stocks[i].product) {
+        const idx = existing.findIndex((p) => stocks[i].product.id === p.product_id)
+        if (idx > -1) {
+          existing[idx].checked = true
+        }
       }
     }
 
