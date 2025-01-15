@@ -32,6 +32,7 @@ import fs from 'fs'
 import Payments from './Payments'
 import Admin from './Admin'
 import Dispatchs from './Dispatchs'
+import Stock from './Stock'
 
 class App {
   static daily = async () => {
@@ -171,6 +172,7 @@ class App {
       } else if (hour === 5) {
         await Charts.uploadChartsGfk()
         await Cio.syncNewsletterNoAccount()
+        await Stock.setStockProject()
       } else if (hour === 6) {
         await Charts.uploadDigitalCharts()
       } else if (hour === 7) {
