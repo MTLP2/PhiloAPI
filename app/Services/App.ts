@@ -48,6 +48,19 @@ class App {
     }
 
     try {
+      const lastDate = moment().subtract(1, 'day').format('YYYY-MM-DD')
+      const last = await DB('cronjobs').where('type', 'daily').where('date', lastDate).first()
+      if (!last || last.status !== 'complete') {
+        const status = last?.status || 'not completed'
+        await Notification.sendEmail({
+          to: 'victor@diggersfactory.com',
+          subject: `Cronjob daily - ${lastDate} - ${status}`,
+          html: `<p>Last cronjob status : ${status}</p>
+          <p>Last cronjob date : ${lastDate}</p>
+          <p>Last cronjob type : daily</p>`
+        })
+      }
+
       await DB('cronjobs')
         .whereRaw('start < date_sub(now(), interval 15 day)')
         .orderBy('start', 'desc')
@@ -114,6 +127,19 @@ class App {
     }
 
     try {
+      const lastDate = moment().subtract(1, 'hour').format('YYYY-MM-DD HH')
+      const last = await DB('cronjobs').where('type', 'hourly').where('date', lastDate).first()
+      if (!last || last.status !== 'complete') {
+        const status = last?.status || 'not completed'
+        await Notification.sendEmail({
+          to: 'victor@diggersfactory.com',
+          subject: `Cronjob hourly - ${lastDate} - ${status}`,
+          html: `<p>Last cronjob status : ${status}</p>
+          <p>Last cronjob date : ${lastDate}</p>
+          <p>Last cronjob type : hourly</p>`
+        })
+      }
+
       const hour = new Date().getHours()
 
       await Order.checkNoOrder()
@@ -202,6 +228,19 @@ class App {
     }
 
     try {
+      const lastDate = moment().subtract(1, 'minute').format('YYYY-MM-DD HH:mm')
+      const last = await DB('cronjobs').where('type', 'minutely').where('date', lastDate).first()
+      if (!last || last.status !== 'complete') {
+        const status = last?.status || 'not completed'
+        await Notification.sendEmail({
+          to: 'victor@diggersfactory.com',
+          subject: `Cronjob minutely - ${lastDate} - ${status}`,
+          html: `<p>Last cronjob status : ${status}</p>
+          <p>Last cronjob date : ${lastDate}</p>
+          <p>Last cronjob type : minutely</p>`
+        })
+      }
+
       await App.checkNotifications()
       await Cart.checkIncompleteCart()
       await Invoices.setNumbers()
