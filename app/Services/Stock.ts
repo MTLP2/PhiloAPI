@@ -242,6 +242,8 @@ class Stock {
           query.whereIn('p2.product_id', params.productIds)
         } else if (params?.projectIds) {
           query.whereIn('p2.project_id', params.projectIds)
+        } else {
+          query.where('vod.step', 'in_progress')
         }
       })
       .whereNull('product.parent_id')
@@ -292,7 +294,13 @@ class Stock {
     }
 
     const projects = {}
+
+    let i = 0
     for (const p of listProjects) {
+      i++
+      if (i % 100 === 0) {
+        console.log(i)
+      }
       if (!projects[p.project_id]) {
         projects[p.project_id] = {}
       }
