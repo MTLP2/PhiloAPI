@@ -2725,6 +2725,7 @@ class Dispatchs {
         orderShop.step = params.status
         orderShop.tracking_number = params.tracking_number
         orderShop.tracking_link = params.tracking_link
+        orderShop.updated_at = Utils.date()
         await orderShop.save()
 
         await Notification.add({
