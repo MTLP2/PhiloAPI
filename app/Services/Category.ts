@@ -262,21 +262,23 @@ class Category {
       }
     }
     if (params.new_project_id.length) {
-      await Promise.all(
-        params.new_project_id.map((id: number) => {
-          if (isNaN(id) || params.projects?.find((project: any) => project.project_id === id)) {
-            return
-          }
+      for (const id of params.new_project_id) {
+        if (isNaN(id) || params.projects?.find((project: any) => project.project_id === id)) {
+          continue
+        }
 
-          DB('category_project').insert({
+        try {
+          await DB('category_project').insert({
             project_id: id,
             category_id: item.id,
             position: params.new_position,
             created_at: Utils.date(),
             updated_at: Utils.date()
           })
-        })
-      )
+        } catch (error) {
+          console.error(error)
+        }
+      }
     }
 
     // If staff picks we set `home` field to true on projects
