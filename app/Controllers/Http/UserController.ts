@@ -248,7 +248,7 @@ class UserController {
 
   async getProjectReviews({ user, params }) {
     params.user_id = user.id
-    return Reviews.getUserProjectReview(params)
+    return Reviews.getUserProjectReviews(params)
   }
 
   async getReviews({ user, params }) {
