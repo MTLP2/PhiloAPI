@@ -433,7 +433,7 @@ class Invoices {
     invoice.created_at = Utils.date()
 
     invoice.name = order.order_box_id
-      ? `Refund Box ${order.box_id}-${order.id}`
+      ? `Refund Boxes ${order.box_id}-${order.id}`
       : `Refund ${order.id ? order.id : 'partial'}`
     invoice.type = 'credit_note'
     invoice.year = year
@@ -503,7 +503,7 @@ class Invoices {
 
         invoice.lines = JSON.stringify([
           {
-            name: `Box ${box.type} - ${box.periodicity}`,
+            name: `Boxes ${box.type} - ${box.periodicity}`,
             price: box.total,
             quantity: 1
           }

@@ -58,7 +58,7 @@ type Banner = {
   updated_at: Timestamp
 }
 
-type Chat = {
+type Chats = {
   id: number
   user_id: number
   cookie_id: string

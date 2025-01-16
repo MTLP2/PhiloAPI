@@ -3,7 +3,7 @@ import Dig from 'App/Services/Dig'
 import Order from 'App/Services/Order'
 import Payments from 'App/Services/Payments'
 import Whiplash from 'App/Services/Whiplash'
-import Box from 'App/Services/Box'
+import Boxes from 'App/Services/Boxes'
 import Reviews from 'App/Services/Reviews'
 import Pass from 'App/Services/Pass'
 import DB from 'App/DB'
@@ -156,33 +156,33 @@ class UserController {
 
   changeBox({ user, params }) {
     params.user_id = user.id
-    return Box.changeBox(params)
+    return Boxes.changeBox(params)
   }
 
   async boxInvoice({ user, params }) {
     params.user_id = user.id
-    const invoice = await Box.invoice(params)
+    const invoice = await Boxes.invoice(params)
     return invoice.data
   }
 
   selectBoxVinyl({ user, params }) {
     params.user_id = user.id
-    return Box.selectVinyl(params)
+    return Boxes.selectVinyl(params)
   }
 
   changeBoxPayment({ user, params }) {
     params.user_id = user.id
-    return Box.changePayment(params)
+    return Boxes.changePayment(params)
   }
 
   changeBoxAddress({ user, params }) {
     params.user_id = user.id
-    return Box.changeAddress(params)
+    return Boxes.changeAddress(params)
   }
 
   cancelBox({ user, params }) {
     params.user_id = user.id
-    return Box.stop(params)
+    return Boxes.stop(params)
   }
 
   getCard({ user, params }) {

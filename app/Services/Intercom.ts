@@ -434,7 +434,7 @@ const translate: (key: string, lang?: 'FR' | 'EN', payload?: string) => string |
     box_period_6_months: lang === 'EN' ? '6 months' : '6 mois',
     box_period_12_months: lang === 'EN' ? '12 months' : '12 mois',
     box_period_monthly: lang === 'EN' ? 'Monthly' : 'Mensuel',
-    box_step_confirmed: lang === 'EN' ? '🟢 Box activated' : '🟢 Box activée',
+    box_step_confirmed: lang === 'EN' ? '🟢 Boxes activated' : '🟢 Boxes activée',
     box_step_delivered: lang === 'EN' ? '🟢 Delivered' : '🟢 Livrée',
     box_step_stopped: lang === 'EN' ? '🔴 Stopped' : '🔴 Arrêtée',
     box_step_finished: lang === 'EN' ? '🔴 Finished' : '🔴 Terminée',
@@ -460,7 +460,7 @@ const translate: (key: string, lang?: 'FR' | 'EN', payload?: string) => string |
     box_renew_button: lang === 'EN' ? 'I wish to renew my box' : 'Je souhaite renouveler ma box',
     box_help_header:
       lang === 'EN'
-        ? '📝 We’re sorry if you’re having issues with your Box. In order to help you, please contact us by clicking on “I wish to talk to the customer support” button below and type your request with the box ID reference. We will come back to you soon!'
+        ? '📝 We’re sorry if you’re having issues with your Boxes. In order to help you, please contact us by clicking on “I wish to talk to the customer support” button below and type your request with the box ID reference. We will come back to you soon!'
         : '📝 Nous sommes navrés d’apprendre que vous avez des difficultés. Merci de cliquer sur “J’ai besoin d’échanger avec le service client” si dessous et effectuez votre demande en mentionnant votre ID de box. Nous reviendrons vers vous dans les plus brefs délais !'
   }
 
@@ -1558,11 +1558,11 @@ const generateBoxListItems = ({ boxes, lang }) => {
   return boxes.map((box) => ({
     type: 'item',
     id: `box-card-${box.id}`,
-    title: `Box ${translate(`box_type_${box.type}`, lang)} - ${translate(
+    title: `Boxes ${translate(`box_type_${box.type}`, lang)} - ${translate(
       `box_period_${box.periodicity}`,
       lang
     )}`,
-    subtitle: `Box N°${box.id}`,
+    subtitle: `Boxes N°${box.id}`,
     tertiary_text: translate(`box_step_${box.step}`, lang),
     image: 'https://storage.diggersfactory.com/assets/images/icons/streamline/gift-box-1.svg',
     image_height: 36,
@@ -1597,7 +1597,7 @@ const generateBoxCard = ({ box, lang, genres }) => {
   return [
     {
       type: 'text',
-      text: `Box ${translate(`box_type_${box.type}`, lang)} - ${translate(
+      text: `Boxes ${translate(`box_type_${box.type}`, lang)} - ${translate(
         `box_period_${box.periodicity}`,
         lang
       )}`,
@@ -1788,7 +1788,7 @@ const replyWithBoxHelp = async ({ lang, botData, boxId }) => {
           },
           {
             type: 'text',
-            text: `Box ID: ${boxId}`,
+            text: `Boxes ID: ${boxId}`,
             style: 'header'
           }
         ]

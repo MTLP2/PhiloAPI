@@ -5,7 +5,7 @@ import { SitemapStream, streamToPromise } from 'sitemap'
 import DB from 'App/DB'
 import config from 'Config/index'
 import Project from './Project'
-import Box from 'App/Services/Box'
+import Boxes from 'App/Services/Boxes'
 import Notifications from './Notifications'
 import User from './User'
 import Order from './Order'
@@ -68,7 +68,7 @@ class App {
         .delete()
 
       if (+moment().format('D') === 1) {
-        await Box.checkPayments()
+        await Boxes.checkPayments()
       }
       if (+moment().format('D') === 2) {
         await Admin.exportMonthlyClientsStats()
@@ -88,14 +88,14 @@ class App {
         await App.sendTeamSummaryProjects()
       }
       if (+moment().format('D') === 25) {
-        await Box.checkReminderSelection()
+        await Boxes.checkReminderSelection()
         await Statement.setStorageCosts()
       }
       if (+moment().format('D') === 28) {
         await Statement.sendStatements()
       }
       if (moment().endOf('month').format('YYYY-MM-DD') === moment().format('YYYY-MM-DD')) {
-        // await Box.setDispatchs()
+        // await Boxes.setDispatchs()
       }
 
       cron.status = 'complete'
@@ -179,7 +179,7 @@ class App {
         await App.checkFinishedProjects()
         await Vod.checkDateShipping()
       } else if (hour === 8) {
-        await Box.checkReminder()
+        await Boxes.checkReminder()
         await Production.checkNotif()
         await Production.checkProductionToBeCompleted()
       } else if (hour === 9) {
@@ -702,7 +702,7 @@ class App {
     }
     if (n.box_id) {
       data.box = await DB('box').where('id', n.box_id).first()
-      data.box.type = data.box.jazz ? 'Jazz Box' : 'Discovery'
+      data.box.type = data.box.jazz ? 'Jazz Boxes' : 'Discovery'
       data.box.months = data.box.periodicity.split('_')[0]
     }
     if (n.payment_id) {
@@ -728,10 +728,10 @@ class App {
         .first()
 
       if (data.boxGift) {
-        const card = await Box.giftCard(data.boxGift)
+        const card = await Boxes.giftCard(data.boxGift)
         data.attachments = [
           {
-            filename: data.lang === 'fr' ? 'LaBoxVinyle.pdf' : 'TheVinylBox.pdf',
+            filename: data.lang === 'fr' ? 'LaBoxVinyle.pdf' : 'TheVinylBoxes.pdf',
             content: card
           }
         ]

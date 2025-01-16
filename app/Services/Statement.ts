@@ -1048,7 +1048,7 @@ class StatementService {
     })
     if (data.quantity.box.all > 0) {
       addLine({
-        label: 'Box - Total',
+        label: 'Boxes - Total',
         dates: data.quantity.box.dates,
         font: { size: 13 }
       })
@@ -1088,7 +1088,7 @@ class StatementService {
     })
     if (data.income.box.all > 0) {
       addLine({
-        label: 'Box - Total',
+        label: 'Boxes - Total',
         dates: data.income.box.dates,
         currency: currency,
         font: { size: 13 }
@@ -2837,8 +2837,8 @@ class StatementService {
     }
 
     if (boxes.length > 0) {
-      data.box_quantity = { name: 'Box - Quantity', type: 'income', currency: false }
-      data.box_total = { name: 'Box - Total', type: 'income' }
+      data.box_quantity = { name: 'Boxes - Quantity', type: 'income', currency: false }
+      data.box_total = { name: 'Boxes - Total', type: 'income' }
     }
     data.distrib_quantity = { name: 'Retail - Quantity', currency: false }
     data.distrib_returned = { name: 'Returned - Quantity', currency: false }

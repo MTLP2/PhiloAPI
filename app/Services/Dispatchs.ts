@@ -19,7 +19,7 @@ import Whiplash from 'App/Services/Whiplash'
 import Customer from 'App/Services/Customer'
 import moment from 'moment'
 import Invoices from './Invoices'
-import Box from './Box'
+import Boxes from './Boxes'
 
 class Dispatchs {
   static all = async (params: {
@@ -2806,7 +2806,7 @@ class Dispatchs {
       const barcodes = box.barcodes.split(',')
       for (const barcode of barcodes) {
         dispatch.items.push({
-          barcode: Box.getBarcode(barcode),
+          barcode: Boxes.getBarcode(barcode),
           quantity: 1,
           created_at: box.created_at,
           updated_at: box.updated_at

@@ -8,7 +8,7 @@ import Customer from 'App/Services/Customer'
 import Dig from 'App/Services/Dig'
 import Utils from 'App/Utils'
 import User from 'App/Services/User'
-import Box from 'App/Services/Box'
+import Boxes from 'App/Services/Boxes'
 import Whiplash from 'App/Services/Whiplash'
 import Invoices from 'App/Services/Invoices'
 import Project from 'App/Services/Project'
@@ -2134,7 +2134,7 @@ class Admin {
         { name: 'Email', index: 'user_email' },
         { name: 'Project ID', index: 'project_id' },
         { name: 'Project Name', index: 'name' },
-        { name: 'Box ID', index: 'box_id' },
+        { name: 'Boxes ID', index: 'box_id' },
         { name: 'Status', index: 'is_visible' },
         { name: 'Complaint Status', index: 'complaint_status' },
         { name: 'Rate', index: 'rate' },
@@ -2523,7 +2523,7 @@ class Admin {
 
     const rows = await Utils.getRows<any>(params)
 
-    const haveBox = await DB('box')
+    const haveBoxes = await DB('box')
       .select('id', 'user_id', 'step')
       .whereIn(
         'user_id',
@@ -2532,7 +2532,7 @@ class Admin {
       .all()
 
     for (const user of rows.data) {
-      user.have_box = haveBox.find((box) => box.user_id === user.id)?.step || ''
+      user.have_box = haveBoxes.find((box) => box.user_id === user.id)?.step || ''
     }
 
     return rows
@@ -2558,7 +2558,7 @@ class Admin {
     user.projects = await User.getProjects(id)
 
     user.orders = await Admin.getOrders({ user_id: id })
-    user.boxes = await Box.all({ filters: null, user_id: id })
+    user.boxes = await Boxes.all({ filters: null, user_id: id })
 
     user.statements = await DB('statement_history')
       .where('user_id', user.id)
@@ -4097,7 +4097,7 @@ class Admin {
         { name: 'Country', index: 'country_id' },
         { name: 'Type', index: 'type' },
         { name: 'Pro', index: 'is_pro' },
-        { name: 'Box', index: 'have_box' },
+        { name: 'Boxes', index: 'have_box' },
         { name: 'Guest', index: 'is_guest' },
         { name: 'Unsubscribed', index: 'unsubscribed' },
         { name: 'Orders', index: 'orders' },
@@ -4561,7 +4561,7 @@ class Admin {
     csv += params.lang === 'FR' ? 'A partir de 20€/mois;' : `From £18 per month;`
     csv += 'new;'
     csv += params.lang === 'FR'
-      ? `-25% sur la Box Vinyle;`
+      ? `-25% sur la Boxes Vinyle;`
       : `Enjoy 25% off the Vinyl Box;`
     csv += 'in stock;'
     csv += params.lang === 'FR' ? `20 EUR;` : `18 GBP;`
@@ -4576,7 +4576,7 @@ class Admin {
     csv += params.lang === 'FR' ? 'A partir de 18€/mois;' : `From £17 per month;`
     csv += 'new;'
     csv += params.lang === 'FR'
-      ? `-25% sur la Box Vinyle;`
+      ? `-25% sur la Boxes Vinyle;`
       : `Enjoy 25% off the Vinyl Box;`
     csv += 'in stock;'
     csv += params.lang === 'FR' ? `18 EUR;` : `17 GBP;`
@@ -4591,7 +4591,7 @@ class Admin {
     csv += params.lang === 'FR' ? 'A partir de 17€/mois;' : `From £15 per month;`
     csv += 'new;'
     csv += params.lang === 'FR'
-      ? `-25% sur la Box Vinyle;`
+      ? `-25% sur la Boxes Vinyle;`
       : `Enjoy 25% off the Vinyl Box;`
     csv += 'in stock;'
     csv += params.lang === 'FR' ? `17 EUR;` : `15 GBP;`
@@ -4606,7 +4606,7 @@ class Admin {
     csv += params.lang === 'FR' ? 'A partir de 16€/mois;' : `From £14 per month;`
     csv += 'new;'
     csv += params.lang === 'FR'
-      ? `-25% sur la Box Vinyle;`
+      ? `-25% sur la Boxes Vinyle;`
       : `Enjoy 25% off the Vinyl Box;`
     csv += 'in stock;'
     csv += params.lang === 'FR' ? `16 EUR;` : `14 GBP;`
@@ -4621,7 +4621,7 @@ class Admin {
     csv += params.lang === 'FR' ? 'A partir de 20€/mois;' : `From £18 per month;`
     csv += 'new;'
     csv += params.lang === 'FR'
-      ? `-25% sur la Box Vinyle;`
+      ? `-25% sur la Boxes Vinyle;`
       : `Enjoy 25% off the Vinyl Box;`
     csv += 'in stock;'
     csv += params.lang === 'FR' ? `20 EUR;` : `18 GBP;`
@@ -4636,7 +4636,7 @@ class Admin {
     csv += params.lang === 'FR' ? 'A partir de 18€/mois;' : `From £17 per month;`
     csv += 'new;'
     csv += params.lang === 'FR'
-      ? `-25% sur la Box Vinyle;`
+      ? `-25% sur la Boxes Vinyle;`
       : `Enjoy 25% off the Vinyl Box;`
     csv += 'in stock;'
     csv += params.lang === 'FR' ? `18 EUR;` : `17 GBP;`
@@ -4651,7 +4651,7 @@ class Admin {
     csv += params.lang === 'FR' ? 'A partir de 17€/mois;' : `From £15 per month;`
     csv += 'new;'
     csv += params.lang === 'FR'
-      ? `-25% sur la Box Vinyle;`
+      ? `-25% sur la Boxes Vinyle;`
       : `Enjoy 25% off the Vinyl Box;`
     csv += 'in stock;'
     csv += params.lang === 'FR' ? `17 EUR;` : `15 GBP;`
@@ -4666,7 +4666,7 @@ class Admin {
     csv += params.lang === 'FR' ? 'A partir de 16€/mois;' : `From £14 per month;`
     csv += 'new;'
     csv += params.lang === 'FR'
-      ? `-25% sur la Box Vinyle;`
+      ? `-25% sur la Boxes Vinyle;`
       : `Enjoy 25% off the Vinyl Box;`
     csv += 'in stock;'
     csv += params.lang === 'FR' ? `16 EUR;` : `14 GBP;`
@@ -4907,7 +4907,7 @@ class Admin {
         { name: 'Order ID', index: 'order_id' },
         { name: 'User ID', index: 'user_id' },
         { name: 'OShop ID', index: 'order_shop_id' },
-        { name: 'OBox ID', index: 'order_box_id' },
+        { name: 'OBoxes ID', index: 'order_box_id' },
         { name: 'Payment Type', index: 'payment_type' },
         { name: 'Transporter', index: 'transporter' },
         { name: 'Date', index: 'created_at' },
@@ -4986,8 +4986,8 @@ class Admin {
     ])
   }
 
-  static exportProjectsBox = async () => {
-    const projectsIsBox = await DB('vod')
+  static exportProjectsBoxes = async () => {
+    const projectsIsBoxes = await DB('vod')
       .select('project.id', 'project.name', 'project.artist_name')
       .join('project', 'project.id', 'vod.project_id')
       .where('is_box', 1)

@@ -1,5 +1,5 @@
 const soap = require('soap')
-import Box from 'App/Services/Box'
+import Boxes from 'App/Services/Boxes'
 import DB from 'App/DB'
 
 const barcodes = {
@@ -81,7 +81,7 @@ class OnePrepaid {
   static async generate(params) {
     const datas = []
     let data = {
-      code: await Box.generateCode(),
+      code: await Boxes.generateCode(),
       step: 'pending',
       barcode: barcodes['1_1'],
       type: 'one',
@@ -93,7 +93,7 @@ class OnePrepaid {
     await DB().table('box_code').insert(data)
 
     data = {
-      code: await Box.generateCode(),
+      code: await Boxes.generateCode(),
       step: 'pending',
       barcode: barcodes['1_2'],
       type: 'two',
@@ -105,7 +105,7 @@ class OnePrepaid {
     await DB().table('box_code').insert(data)
 
     data = {
-      code: await Box.generateCode(),
+      code: await Boxes.generateCode(),
       step: 'pending',
       barcode: barcodes['3_1'],
       type: 'one',
@@ -117,7 +117,7 @@ class OnePrepaid {
     await DB().table('box_code').insert(data)
 
     data = {
-      code: await Box.generateCode(),
+      code: await Boxes.generateCode(),
       step: 'pending',
       barcode: barcodes['3_2'],
       type: 'two',
@@ -129,7 +129,7 @@ class OnePrepaid {
     await DB().table('box_code').insert(data)
 
     data = {
-      code: await Box.generateCode(),
+      code: await Boxes.generateCode(),
       step: 'pending',
       barcode: barcodes['6_1'],
       type: 'one',
@@ -141,7 +141,7 @@ class OnePrepaid {
     await DB().table('box_code').insert(data)
 
     data = {
-      code: await Box.generateCode(),
+      code: await Boxes.generateCode(),
       step: 'pending',
       barcode: barcodes['6_2'],
       type: 'two',
@@ -153,7 +153,7 @@ class OnePrepaid {
     await DB().table('box_code').insert(data)
 
     data = {
-      code: await Box.generateCode(),
+      code: await Boxes.generateCode(),
       step: 'pending',
       barcode: barcodes['12_1'],
       type: 'one',
@@ -165,7 +165,7 @@ class OnePrepaid {
     await DB().table('box_code').insert(data)
 
     data = {
-      code: await Box.generateCode(),
+      code: await Boxes.generateCode(),
       step: 'pending',
       barcode: barcodes['12_2'],
       type: 'two',

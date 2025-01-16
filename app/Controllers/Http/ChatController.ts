@@ -1,4 +1,4 @@
-import Chat from 'App/Services/Chat'
+import Chats from 'App/Services/Chats'
 import ApiError from 'App/ApiError'
 
 class ChatController {
@@ -6,7 +6,7 @@ class ChatController {
     if (params.user_id !== user.id && !user.is_admin) {
       throw new ApiError(403)
     }
-    const messages = await Chat.getInbox(params.user_id)
+    const messages = await Chats.getInbox(params.user_id)
     return messages.slice(0, 50)
   }
 
@@ -14,12 +14,12 @@ class ChatController {
     if (params.user_id !== user.id && !user.is_admin) {
       throw new ApiError(403)
     }
-    Chat.seeMessages({
+    Chats.seeMessages({
       user_id: params.user_id,
       destination: params.destination
     })
 
-    const messages = await Chat.getMessagesByUser(params.user_id, params.destination)
+    const messages = await Chats.getMessagesByUser(params.user_id, params.destination)
     if (params.destination === '1') {
       messages.unshift({
         id: 0,
@@ -35,7 +35,7 @@ class ChatController {
     if (params.user_id !== user.id && !user.is_admin) {
       throw new ApiError(403)
     }
-    await Chat.addMessage(params)
+    await Chats.addMessage(params)
     return { success: true }
   }
 
@@ -43,7 +43,7 @@ class ChatController {
     if (params.user_id !== user.id && !user.is_admin) {
       throw new ApiError(403)
     }
-    await Chat.deleteMessage(params)
+    await Chats.deleteMessage(params)
     return { success: true }
   }
 }

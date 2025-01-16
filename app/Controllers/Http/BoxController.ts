@@ -1,4 +1,4 @@
-import Box from 'App/Services/Box'
+import Boxes from 'App/Services/Boxes'
 import { validator, schema } from '@ioc:Adonis/Core/Validator'
 class BoxController {
   async getLastBoxes({ params }) {
@@ -8,70 +8,70 @@ class BoxController {
       }),
       data: params
     })
-    return Box.getLastBoxes(payload)
+    return Boxes.getLastBoxes(payload)
   }
 
   getBoxesPrices() {
-    return Box.getPrices()
+    return Boxes.getPrices()
   }
 
   checkSponsor({ params }) {
-    return Box.checkSponsor(params)
+    return Boxes.checkSponsor(params)
   }
 
   getBoxes({ params }) {
-    return Box.all(params)
+    return Boxes.all(params)
   }
 
   saveBox({ params }) {
-    return Box.save(params)
+    return Boxes.save(params)
   }
 
   exportBoxes() {
-    return Box.export()
+    return Boxes.export()
   }
 
   async getBoxCard({ params }) {
-    return Box.giftCard({
+    return Boxes.giftCard({
       lang: params.lang,
       box_id: params.id
     })
   }
 
   getBoxMonths({ params }) {
-    return Box.getMonths(params)
+    return Boxes.getMonths(params)
   }
 
   saveBoxMonth({ params }) {
-    return Box.saveBoxMonth(params)
+    return Boxes.saveBoxMonth(params)
   }
 
   removeBoxMonth({ params }) {
-    return Box.removeBoxMonth(params)
+    return Boxes.removeBoxMonth(params)
   }
 
   statsDispatchs() {
-    return Box.statsDispatchs()
+    return Boxes.statsDispatchs()
   }
 
   exportDispatchs() {
-    return Box.exportDispatchs()
+    return Boxes.exportDispatchs()
   }
 
   getBoxesStats({ params }) {
-    return Box.getStats(params)
+    return Boxes.getStats(params)
   }
 
   getBox({ params }) {
-    return Box.find(params.id)
+    return Boxes.find(params.id)
   }
 
   checkPayments({ params }) {
-    return Box.checkPayments(params)
+    return Boxes.checkPayments(params)
   }
 
   refundBoxPayment({ params }) {
-    return Box.refund(params)
+    return Boxes.refund(params)
   }
 
   async saveDispatch({ params }) {
@@ -87,7 +87,7 @@ class BoxController {
       }),
       data: params
     })
-    return Box.saveDispatch(payload)
+    return Boxes.saveDispatch(payload)
   }
 
   async refreshBoxDispatch({ params }) {
@@ -97,37 +97,37 @@ class BoxController {
       }),
       data: params
     })
-    return Box.refreshBoxDispatch(payload)
+    return Boxes.refreshBoxDispatch(payload)
   }
 
   removeDispatch({ params }) {
-    return Box.removeDispatch(params)
+    return Boxes.removeDispatch(params)
   }
 
   invoiceDispatch({ params }) {
-    return Box.invoiceDispatch(params)
+    return Boxes.invoiceDispatch(params)
   }
 
   getBoxCodes({ params, user }) {
     params.user = user
-    return Box.getBoxCodes(params)
+    return Boxes.getBoxCodes(params)
   }
 
   saveBoxCode({ params, user }) {
     params.user = user
-    return Box.saveCode(params)
+    return Boxes.saveCode(params)
   }
 
   getGoodies({ params }) {
-    return Box.allGoodies(params)
+    return Boxes.allGoodies(params)
   }
 
   saveGoodie({ params }) {
-    return Box.saveGoodie(params)
+    return Boxes.saveGoodie(params)
   }
 
   deleteGoodie({ params }) {
-    return Box.deleteGoodie(params)
+    return Boxes.deleteGoodie(params)
   }
 }
 

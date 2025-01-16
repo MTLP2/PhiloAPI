@@ -450,8 +450,8 @@ class BigBlue {
     switch (type) {
       case 'pickup':
         return 'pickup'
-      case 'B2B Box':
-        return 'B2B Box'
+      case 'B2B Boxes':
+        return 'B2B Boxes'
       case 'B2B pallet':
         return 'B2B pallet'
       case 'B2B removal':

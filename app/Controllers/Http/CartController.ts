@@ -1,7 +1,7 @@
 import Cart from 'App/Services/Cart'
 import Auth from 'App/Services/Auth'
 import Feedbacks from 'App/Services/Feedbacks'
-import Box from 'App/Services/Box'
+import Boxes from 'App/Services/Boxes'
 import DB from 'App/DB'
 const parser = require('ua-parser-js')
 
@@ -83,12 +83,12 @@ class CartController {
   }
 
   checkBoxCode({ params }) {
-    return Box.checkCode(params)
+    return Boxes.checkCode(params)
   }
 
   confirmBoxCode({ params, user }) {
     params.user_id = user.id
-    return Box.confirmCode(params)
+    return Boxes.confirmCode(params)
   }
 }
 

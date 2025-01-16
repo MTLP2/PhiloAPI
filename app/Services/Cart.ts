@@ -8,7 +8,7 @@ import User from 'App/Services/User'
 import Notifications from 'App/Services/Notifications'
 import Dig from 'App/Services/Dig'
 import Vod from 'App/Services/Vod'
-import Box from 'App/Services/Box'
+import Boxes from 'App/Services/Boxes'
 import Customer from 'App/Services/Customer'
 import DB from 'App/DB'
 import Payments from 'App/Services/Payments'
@@ -136,7 +136,7 @@ class Cart {
     if (params.boxes) {
       for (let i = 0; i < params.boxes.length; i++) {
         cart.count++
-        const box = await Box.calculate({
+        const box = await Boxes.calculate({
           country_id:
             params.boxes[i].gift && params.boxes[i].country_id
               ? params.boxes[i].country_id
@@ -1584,7 +1584,7 @@ class Cart {
     if (calculate.boxes) {
       for (let i = 0; i < calculate.boxes.length; i++) {
         const box = calculate.boxes[i]
-        await Box.createBox({
+        await Boxes.createBox({
           box: box,
           user_id: params.user_id,
           origin: params.origin,
@@ -1770,7 +1770,7 @@ class Cart {
       }
     }
 
-    const hasBox = params.calculate.boxes && params.calculate.boxes.length > 0
+    const hasBoxes = params.calculate.boxes && params.calculate.boxes.length > 0
 
     const paymentMethods = ['card']
 
@@ -2326,19 +2326,19 @@ class Cart {
       .where('order.id', params.order_id)
       .all()
 
-    await Box.confirmBox({
+    await Boxes.confirmBox({
       order_id: params.order_id
     })
 
-    const orderBox = await DB('order_box')
+    const orderBoxes = await DB('order_box')
       .where('order_id', params.order_id)
       .select('order_box.*', 'box.price', 'box.currency', 'box.type', 'box.periodicity')
       .leftJoin('box', 'box.id', 'order_box.box_id')
       .first()
 
     if (orderBox) {
-      customerId = orderBox.customer_id
-      order.order_box_id = orderBox.id
+      customerId = orderBoxes.customer_id
+      order.order_box_id = orderBoxes.id
       boxes.push(orderBox)
     }
 
@@ -2356,7 +2356,7 @@ class Cart {
       items.push({
         ...box,
         id: `box_${box.type}_${box.periodicity}`,
-        name: `Box ${box.periodicity} - ${box.type} vinyl`,
+        name: `Boxes ${box.periodicity} - ${box.type} vinyl`,
         category: 'box',
         quantity: 1
       })

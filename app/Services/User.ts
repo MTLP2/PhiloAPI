@@ -7,7 +7,7 @@ import Customer from './Customer'
 import Order from './Order'
 import Artwork from './Artwork'
 import Songs from './Songs'
-import Box from './Box'
+import Boxes from './Boxes'
 import DB from 'App/DB'
 import Utils from 'App/Utils'
 import request from 'request'
@@ -684,7 +684,7 @@ class User {
       updated_at: Utils.date()
     })
 
-  static getBox = ({ id, user_id: userId }) => {
+  static getBoxes = ({ id, user_id: userId }) => {
     return DB('box').where('id', id).where('user_id', userId).first()
   }
 
@@ -773,7 +773,7 @@ class User {
       }
 
       boxes[i].records = Object.values(box.records).sort((a, b) => (a.date < b.date ? 1 : -1))
-      // boxes[i].stoppable = box.monthly && Box.getNbMonths(box.periodicity) <= dispatchs.length
+      // boxes[i].stoppable = box.monthly && Boxes.getNbMonths(box.periodicity) <= dispatchs.length
 
       const sponsor = await DB('box_sponsor').whereNull('used').where('box_id', box.id).all()
 
@@ -783,7 +783,7 @@ class User {
     return boxes
   }
 
-  static checkUserHasReviewedBox = async ({ uid, bid }) => {
+  static checkUserHasReviewedBoxes = async ({ uid, bid }) => {
     return Reviews.getUserBoxReview({ userId: uid, boxId: bid })
   }
 
@@ -801,7 +801,7 @@ class User {
         .first()
 
       if (code) {
-        return Box.giftCard({
+        return Boxes.giftCard({
           lang: user.lang,
           ...code
         })

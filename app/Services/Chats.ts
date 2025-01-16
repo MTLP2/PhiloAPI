@@ -3,7 +3,7 @@ import Notifications from 'App/Services/Notifications'
 import Utils from 'App/Utils'
 import moment from 'moment'
 
-class Chat {
+class Chats {
   static isAvailable = () => {
     const hour = moment().hour()
     const day = moment().day()
@@ -38,7 +38,7 @@ class Chat {
       if (params.destination === 1 && process.env.NODE_ENV === 'production') {
         Notifications.sendEmail({
           to: 'louise.k@diggersfactory.com,alexis@diggersfactory.com',
-          subject: `Chat Diggers [${userStr}]`,
+          subject: `Chats Diggers [${userStr}]`,
           text: params.message
         }).then()
       } else if (user) {
@@ -62,7 +62,7 @@ class Chat {
         }
       }
 
-      if (params.destination === '1' && !Chat.isAvailable()) {
+      if (params.destination === '1' && !Chats.isAvailable()) {
         const last = await DB('chat')
           .select('created_at')
           .where('destination', params.user_id)
@@ -71,7 +71,7 @@ class Chat {
           .first()
 
         if (!last) {
-          await Chat.addMessage({
+          await Chats.addMessage({
             user_id: 1,
             destination: params.user_id,
             message: 'chat_not_available'
@@ -164,4 +164,4 @@ class Chat {
   }
 }
 
-export default Chat
+export default Chats
