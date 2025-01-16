@@ -1,5 +1,4 @@
 import Songs from './Songs'
-import Comment from './Comment'
 import ApiError from 'App/ApiError'
 import DB from 'App/DB'
 import PromoCode from 'App/Services/PromoCode'
@@ -1128,15 +1127,6 @@ class Project {
     }
 
     return p
-  }
-
-  static getMore = async (id) => {
-    const comments = Comment.byProject(id)
-    return Promise.all([comments]).then((data) => {
-      return {
-        comments: data[0]
-      }
-    })
   }
 
   static getGroupShipment = async (id: number) => {
