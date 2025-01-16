@@ -3318,6 +3318,10 @@ class Dispatchs {
       })
     }
   }
+
+  static async setTrackingLinks() {
+    await Promise.all([BigBlue.setTrackingLinks(), Whiplash.setTrackingLinks()])
+  }
 }
 
 export default Dispatchs

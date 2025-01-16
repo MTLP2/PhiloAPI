@@ -166,9 +166,8 @@ class App {
         await App.currencies()
         await App.generateSitemap()
         await App.exportProductReviewFeed()
-        await BigBlue.setTrackingLinks()
       } else if (hour === 4) {
-        await Whiplash.setTrackingLinks()
+        await Dispatchs.setTrackingLinks()
       } else if (hour === 5) {
         await Charts.uploadChartsGfk()
         await Cio.syncNewsletterNoAccount()
@@ -189,7 +188,6 @@ class App {
       } else if (hour === 12) {
         await Invoices.reminder()
         await Invoices.checkIncorrectInvoices()
-        await BigBlue.setTrackingLinks()
       } else if (hour === 16) {
         if (moment().format('E') === '4') {
           await Charts.uploadChartsAria()
