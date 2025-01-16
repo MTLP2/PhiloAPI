@@ -8,7 +8,7 @@ const ffmpeg = require('fluent-ffmpeg')
 
 class Songs {
   static find = (id) => {
-    return DB('Songs').find(id)
+    return DB('song').find(id)
   }
 
   static all = (params) => {
@@ -32,7 +32,7 @@ class Songs {
       ) as liked
       `)
       )
-      .from('Songs as s')
+      .from('song as s')
       .join('project as p', 'p.id', 's.project_id')
       .join('vod as v', 'p.id', 'v.project_id')
       .where('p.is_delete', '!=', 1)
@@ -70,7 +70,7 @@ class Songs {
       ) as liked
       `)
       )
-      .from('Songs as s')
+      .from('song as s')
       .join('project as p', 'p.id', 's.project_id')
       .where('p.id', params.project_id)
       .orderBy('disc')
@@ -97,7 +97,7 @@ class Songs {
     user_id?: number
     cookie_id?: string
   }) => {
-    const Songs = await DB('Songs').where('id', params.song_id).first()
+    const song = await DB('song').where('id', params.song_id).first()
     if (song) {
       return DB('song_play').insert({
         song_id: params.song_id,
@@ -121,7 +121,7 @@ class Songs {
     }
 
     const songs = await DB()
-      .table('Songs')
+      .table('song')
       .where('project_id', id)
       .orderByRaw("LPAD(position, 5, '0') asc")
       .all()
@@ -144,7 +144,7 @@ class Songs {
 
     await Storage.upload(`songs/${id}.mp3`, track.buffer)
     const seconds = moment.duration(track.duration).asSeconds()
-    await DB('Songs')
+    await DB('song')
       .where('id', id)
       .update({
         listenable: true,
@@ -196,7 +196,7 @@ class Songs {
     await Utils.checkProjectOwner({ project_id: params.project_id, user: params.user })
 
     await DB('song_play').where('song_id', params.id).delete()
-    await DB('Songs').where('id', params.id).delete()
+    await DB('song').where('id', params.id).delete()
 
     Storage.delete(`songs/${params.id}.mp3`)
 
@@ -236,7 +236,7 @@ class Songs {
   static saveTracks = async (tracks) => {
     for (const track of tracks) {
       if (track.id) {
-        await DB('Songs').where('id', track.id).update({
+        await DB('song').where('id', track.id).update({
           disc: track.disc,
           side: track.side,
           position: track.position
