@@ -2,7 +2,7 @@ import Digital from 'App/Services/Digital'
 import { validator, schema, rules } from '@ioc:Adonis/Core/Validator'
 import ApiError from 'App/ApiError'
 import Utils from 'App/Utils'
-import Song from 'App/Services/Song'
+import Songs from 'App/Services/Songs'
 
 class DigitalController {
   async saveTrackNew({ params, user }) {
@@ -36,7 +36,7 @@ class DigitalController {
   }
 
   async encodeTrack({ params }) {
-    return await Song.setInfo(params.tid)
+    return await Songs.setInfo(params.tid)
   }
 
   async getArtwork({ params }) {
@@ -45,8 +45,8 @@ class DigitalController {
 
   async deleteTrack({ params, user }) {
     params.user = user
-    const song = await Song.find(params.id)
-    await Utils.checkProjectOwner({ project_id: song.project_id, user: user, type: 'digital' })
+    const Songs = await Songs.find(params.id)
+    await Utils.checkProjectOwner({ project_id: Songs.project_id, user: user, type: 'digital' })
     return Digital.deleteDigitalTrack(params)
   }
 

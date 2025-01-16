@@ -1,4 +1,4 @@
-import Song from './Song'
+import Songs from './Songs'
 import Comment from './Comment'
 import ApiError from 'App/ApiError'
 import DB from 'App/DB'
@@ -955,7 +955,11 @@ class Project {
       .where('project_style.project_id', id)
       .all()
 
-    const songsPromise = Song.byProject({ project_id: id, user_id: params.user_id, disabled: true })
+    const songsPromise = Songs.byProject({
+      project_id: id,
+      user_id: params.user_id,
+      disabled: true
+    })
 
     const productsPromise = DB()
       .select(
@@ -1362,7 +1366,7 @@ class Project {
         updated_at: Utils.date()
       })
 
-    const url = await Song.downloadProject(params.project_id, false)
+    const url = await Songs.downloadProject(params.project_id, false)
 
     return { url: url }
   }
@@ -2528,10 +2532,10 @@ class Project {
       })
     }
 
-    const tracks = await DB('song').where('project_id', id).all()
+    const tracks = await DB('Songs').where('project_id', id).all()
 
     for (const track of tracks) {
-      const t = await DB('song').insert({
+      const t = await DB('Songs').insert({
         ...track,
         id: null,
         project_id: project.id

@@ -6,7 +6,7 @@ import ApiError from 'App/ApiError'
 import Customer from './Customer'
 import Order from './Order'
 import Artwork from './Artwork'
-import Song from './Song'
+import Songs from './Songs'
 import Box from './Box'
 import DB from 'App/DB'
 import Utils from 'App/Utils'
@@ -959,7 +959,7 @@ class User {
     if (!project) {
       throw new ApiError(404)
     } else {
-      const url = await Song.downloadProject(project.project_id)
+      const url = await Songs.downloadProject(project.project_id)
       return { url: url }
     }
   }

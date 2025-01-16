@@ -4,7 +4,7 @@ import Utils from 'App/Utils'
 import Storage from 'App/Services/Storage'
 import File from 'App/Services/File'
 import { integer } from 'aws-sdk/clients/cloudfront'
-import Song from './Song'
+import Songs from './Songs'
 import User from './User'
 import moment from 'moment'
 
@@ -450,7 +450,7 @@ class Digital {
       await Storage.delete(`songs/${params.uuid}.mp3`)
     }
     const uuid = Utils.uuid()
-    const track: any = await Song.compressSong(buffer)
+    const track: any = await Songs.compressSong(buffer)
     await Storage.upload(`songs/${uuid}.mp3`, track.buffer)
 
     await User.event({

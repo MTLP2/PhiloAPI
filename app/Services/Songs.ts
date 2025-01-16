@@ -6,9 +6,9 @@ import JSZip from 'jszip'
 import moment from 'moment'
 const ffmpeg = require('fluent-ffmpeg')
 
-class Song {
+class Songs {
   static find = (id) => {
-    return DB('song').find(id)
+    return DB('Songs').find(id)
   }
 
   static all = (params) => {
@@ -32,7 +32,7 @@ class Song {
       ) as liked
       `)
       )
-      .from('song as s')
+      .from('Songs as s')
       .join('project as p', 'p.id', 's.project_id')
       .join('vod as v', 'p.id', 'v.project_id')
       .where('p.is_delete', '!=', 1)
@@ -70,7 +70,7 @@ class Song {
       ) as liked
       `)
       )
-      .from('song as s')
+      .from('Songs as s')
       .join('project as p', 'p.id', 's.project_id')
       .where('p.id', params.project_id)
       .orderBy('disc')
@@ -97,7 +97,7 @@ class Song {
     user_id?: number
     cookie_id?: string
   }) => {
-    const song = await DB('song').where('id', params.song_id).first()
+    const Songs = await DB('Songs').where('id', params.song_id).first()
     if (song) {
       return DB('song_play').insert({
         song_id: params.song_id,
@@ -121,15 +121,15 @@ class Song {
     }
 
     const songs = await DB()
-      .table('song')
+      .table('Songs')
       .where('project_id', id)
       .orderByRaw("LPAD(position, 5, '0') asc")
       .all()
 
     const zip = new JSZip()
-    for (const song of songs) {
-      const buffer = await Storage.get(`songs/${song.id}.mp3`)
-      zip.file(`${song.position} - ${project.artist_name} - ${song.title}.mp3`, buffer)
+    for (const Songs of songs) {
+      const buffer = await Storage.get(`songs/${Songs.id}.mp3`)
+      zip.file(`${Songs.position} - ${project.artist_name} - ${Songs.title}.mp3`, buffer)
     }
 
     const buffer = await zip.generateAsync({ type: 'nodebuffer' })
@@ -140,11 +140,11 @@ class Song {
 
   static setInfo = async (id) => {
     const buffer = await Storage.get(`songs/${id}.mp3`)
-    const track: any = await Song.compressSong(buffer)
+    const track: any = await Songs.compressSong(buffer)
 
     await Storage.upload(`songs/${id}.mp3`, track.buffer)
     const seconds = moment.duration(track.duration).asSeconds()
-    await DB('song')
+    await DB('Songs')
       .where('id', id)
       .update({
         listenable: true,
@@ -156,7 +156,7 @@ class Song {
     return { success: true }
   }
 
-  static compressSong = (buffer) => {
+  static compressSongs = (buffer) => {
     return new Promise((resolve, reject) => {
       const uuid = Utils.uuid()
       const input = `storage/${uuid}.mp3`
@@ -196,7 +196,7 @@ class Song {
     await Utils.checkProjectOwner({ project_id: params.project_id, user: params.user })
 
     await DB('song_play').where('song_id', params.id).delete()
-    await DB('song').where('id', params.id).delete()
+    await DB('Songs').where('id', params.id).delete()
 
     Storage.delete(`songs/${params.id}.mp3`)
 
@@ -214,16 +214,16 @@ class Song {
 
   static generateCode = async () => {
     for (let i = 0; i < 200; i++) {
-      await Song.createCodeProject(579)
+      await Songs.createCodeProject(579)
     }
     return true
   }
 
   static createCodeProject = async (id) => {
-    const code = Song.makeCode()
+    const code = Songs.makeCode()
     const exist = await DB('download').where('code', code).first()
     if (exist) {
-      return Song.createCodeProject(id)
+      return Songs.createCodeProject(id)
     }
     return DB('download').insert({
       project_id: id,
@@ -236,7 +236,7 @@ class Song {
   static saveTracks = async (tracks) => {
     for (const track of tracks) {
       if (track.id) {
-        await DB('song').where('id', track.id).update({
+        await DB('Songs').where('id', track.id).update({
           disc: track.disc,
           side: track.side,
           position: track.position
@@ -248,4 +248,4 @@ class Song {
   }
 }
 
-export default Song
+export default Songs

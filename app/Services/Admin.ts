@@ -27,6 +27,7 @@ import cio from 'App/Services/CIO'
 import Env from '@ioc:Adonis/Core/Env'
 import UserService from 'App/Services/User'
 import Pass from './Pass'
+import Songs from './Songs'
 
 class Admin {
   static getProjects = async (params: {
@@ -1308,7 +1309,7 @@ class Admin {
     }
 
     if (params.songs) {
-      await Song.uploadSongs(params)
+      await Songs.uploadSongs(params)
     }
 
     const status: { [index: string]: string } = {}

@@ -2,7 +2,7 @@ import Project from 'App/Services/Project'
 import ProjectEdit from 'App/Services/ProjectEdit'
 import Artwork from 'App/Services/Artwork'
 import Vod from 'App/Services/Vod'
-import Song from 'App/Services/Song'
+import Songs from 'App/Services/Songs'
 import Category from 'App/Services/Category'
 import Statement from 'App/Services/Statement'
 import ApiError from 'App/ApiError'
@@ -76,7 +76,7 @@ class ProjectsController {
   getSongs({ params, user }) {
     params.user = user
     params.project_id = params.id
-    return Song.byProject(params)
+    return Songs.byProject(params)
   }
 
   like({ params, user }) {
@@ -126,9 +126,9 @@ class ProjectsController {
 
   async saveTrack({ params, user }) {
     params.user = user
-    const song = await DB('song').where('id', params.id).first()
+    const Songs = await DB('Songs').where('id', params.id).first()
     if (song) {
-      params.project_id = song.project_id
+      params.project_id = Songs.project_id
     }
     await Utils.checkProjectOwner({ project_id: params.project_id, user: user })
 
@@ -140,9 +140,9 @@ class ProjectsController {
       })
       if (res.success) {
         if (params.skipEncoding) {
-          Song.setInfo(track.id)
+          Songs.setInfo(track.id)
         } else {
-          await Song.setInfo(track.id)
+          await Songs.setInfo(track.id)
         }
       }
       return {
@@ -170,12 +170,12 @@ class ProjectsController {
       })
       if (res.success) {
         if (params.skipEncoding) {
-          await DB('song').where('id', params.id).update({
+          await DB('Songs').where('id', params.id).update({
             listenable: true
           })
-          Song.setInfo(params.id)
+          Songs.setInfo(params.id)
         } else {
-          await Song.setInfo(params.id)
+          await Songs.setInfo(params.id)
         }
       }
       return {
@@ -190,18 +190,18 @@ class ProjectsController {
   }
 
   async saveTracks({ params }) {
-    return Song.saveTracks(params.tracks)
+    return Songs.saveTracks(params.tracks)
   }
 
   async encodeTrack({ params }) {
-    return await Song.setInfo(params.tid)
+    return await Songs.setInfo(params.tid)
   }
 
   async deleteTrack({ params, user }) {
     params.user = user
-    const song = await Song.find(params.id)
-    await Utils.checkProjectOwner({ project_id: song.project_id, user: user })
-    return Song.deleteTrack(params)
+    const Songs = await Songs.find(params.id)
+    await Utils.checkProjectOwner({ project_id: Songs.project_id, user: user })
+    return Songs.deleteTrack(params)
   }
 
   calculateVod({ params, user }) {

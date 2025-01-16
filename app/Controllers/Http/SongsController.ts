@@ -1,10 +1,10 @@
-import Song from 'App/Services/Song'
+import Songs from 'App/Services/Songs'
 import { validator, schema } from '@ioc:Adonis/Core/Validator'
 
 class SongsController {
   all({ params, user }) {
     params.userId = user.id
-    return Song.all(params)
+    return Songs.all(params)
   }
 
   async addPlay({ params, user, request }) {
@@ -21,7 +21,7 @@ class SongsController {
       data: params
     })
 
-    return Song.addPlay(payload)
+    return Songs.addPlay(payload)
   }
 }
 

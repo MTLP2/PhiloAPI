@@ -13,7 +13,7 @@ import Customer from 'App/Services/Customer'
 import Quote from 'App/Services/Quote'
 import Stock from 'App/Services/Stock'
 import Whiplash from 'App/Services/Whiplash'
-import Song from 'App/Services/Song'
+import Songs from 'App/Services/Songs'
 import Utils from 'App/Utils'
 import PaymentArtist from 'App/Services/PaymentArtist'
 import Statement from 'App/Services/Statement'
@@ -415,7 +415,7 @@ class AdminController {
   }
 
   async downloadProject({ params }) {
-    const url = await Song.downloadProject(params.id, false)
+    const url = await Songs.downloadProject(params.id, false)
     return { url: url }
   }
 
