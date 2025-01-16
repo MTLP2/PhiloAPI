@@ -63,6 +63,7 @@ class Invoices {
         'invoice.*',
         'user.name as user_name',
         'user.email as user_email',
+        'client.name as client_name',
         'project.name as project_name',
         'project.artist_name',
         'production.name as prod_name',
@@ -71,6 +72,7 @@ class Invoices {
       )
       .from('invoice')
       .leftJoin('user', 'user.id', 'invoice.user_id')
+      .leftJoin('client', 'client.id', 'invoice.client_id')
       .leftJoin('project', 'project.id', 'invoice.project_id')
       .leftJoin('production', 'production.id', 'invoice.production_id')
       .leftJoin('vod', 'vod.project_id', 'invoice.project_id')
@@ -185,6 +187,7 @@ class Invoices {
     id?: number
     user_id?: number
     auth_id?: number
+    client_id?: number
     customer?: any
     customer_id?: number
     type?: string
@@ -275,6 +278,7 @@ class Invoices {
     invoice.type = params.type
     invoice.category = params.category
     invoice.user_id = params.user_id || null
+    invoice.client_id = params.client_id || null
     invoice.project_id = params.project_id || null
     invoice.production_id = params.production_id || null
     invoice.order_number = params.order_number
