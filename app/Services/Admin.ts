@@ -1739,8 +1739,8 @@ class Admin {
         'user.name',
         'user.email',
         'user.points',
-        'Notifications.id as notification_id',
-        'Notifications.type as notification_type',
+        'notification.id as notification_id',
+        'notification.type as notification_type',
         'feedback.rating as feedback_rating',
         'feedback.id as feedback_id',
         'feedback.comment as feedback_comment',
@@ -1749,7 +1749,7 @@ class Admin {
       )
       .leftJoin('user', 'user.id', 'order.user_id')
       .leftJoin('customer', 'customer.id', 'user.customer_id')
-      .leftJoin('notification', 'Notifications.order_id', 'order.id')
+      .leftJoin('notification', 'notification.order_id', 'order.id')
       .leftJoin('feedback', 'feedback.order_id', 'order.id')
       .where('order.id', id)
       .first()
@@ -1765,12 +1765,12 @@ class Admin {
 
     const orderNotifications = await DB('notification')
       .select(
-        'Notifications.type',
-        'Notifications.project_id',
-        'Notifications.project_name',
-        'Notifications.email',
-        'Notifications.created_at',
-        'Notifications.order_shop_id'
+        'notification.type',
+        'notification.project_id',
+        'notification.project_name',
+        'notification.email',
+        'notification.created_at',
+        'notification.order_shop_id'
       )
       .where('order_id', id)
       .orderBy('project_id', 'asc')
