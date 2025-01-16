@@ -96,6 +96,8 @@ class Invoices {
       }
     }
 
+    invoice.notifs = await DB('notification').where('invoice_id', invoice.id).all()
+
     return invoice
   }
 
