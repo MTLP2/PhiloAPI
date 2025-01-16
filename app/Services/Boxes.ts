@@ -1174,7 +1174,7 @@ class Boxes {
         product_id: number
       }[] = []
 
-      const goodiesBoxes = await Boxes.getGoodieBox({
+      const goodiesBox = await Boxes.getGoodieBox({
         box_id: box.id,
         lang: box.lang,
         lastBox: false,
@@ -2676,7 +2676,7 @@ class Boxes {
     }
     await Boxes.checkStock(params.month)
 
-    const goodiesBoxes = await Boxes.getGoodieBox({
+    const goodiesBox = await Boxes.getGoodieBox({
       box_id: box.id,
       lang: box.lang,
       lastBox: false,
