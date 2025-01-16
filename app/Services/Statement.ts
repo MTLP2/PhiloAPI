@@ -4,7 +4,7 @@ import Utils from 'App/Utils'
 import Storage from 'App/Services/Storage'
 import Project from 'App/Services/Project'
 import Stock from 'App/Services/Stock'
-import Notification from 'App/Services/Notification'
+import Notifications from 'App/Services/Notifications'
 import Log from 'App/Services/Log'
 import DB from 'App/DB'
 import I18n from '@ioc:Adonis/Addons/I18n'
@@ -2501,7 +2501,7 @@ class StatementService {
 
       if (isActive) {
         res.push(project)
-        await Notification.add({
+        await Notifications.add({
           user_id: project.user_id,
           date: moment().format('YYYY-MM-DD'),
           type: 'statement'
@@ -2509,7 +2509,7 @@ class StatementService {
       }
     }
 
-    await Notification.sendEmail({
+    await Notifications.sendEmail({
       to: 'victor@diggersfactory.com,alexis@diggersfactory.com',
       subject: `${res.length} projects for statement on ${moment().format('YYYY-MM')}`,
       html: `<table>

@@ -2,7 +2,7 @@ import DB from 'App/DB'
 import Utils from 'App/Utils'
 import Stripe from 'App/Services/Stripe'
 import Customer from 'App/Services/Customer'
-import Notification from 'App/Services/Notification'
+import Notifications from 'App/Services/Notifications'
 import I18n from '@ioc:Adonis/Addons/I18n'
 import Invoices from 'App/Services/Invoices'
 import request from 'request'
@@ -276,7 +276,7 @@ class Bid {
           updated_at: Utils.date()
         })
       } else {
-        await Notification.add({
+        await Notifications.add({
           type: 'my_bid_not_best',
           project_id: b.project_id,
           user_id: b.user_id,
@@ -287,7 +287,7 @@ class Bid {
       }
     }
 
-    await Notification.add({
+    await Notifications.add({
       type: 'my_bid_confirmed',
       project_id: bid.project_id,
       user_id: bid.user_id,
@@ -325,7 +325,7 @@ class Bid {
       bid.updated_at = Utils.date()
       await bid.save()
 
-      await Notification.add({
+      await Notifications.add({
         type: 'my_bid_win',
         project_id: bid.project_id,
         user_id: bid.user_id,
@@ -368,7 +368,7 @@ class Bid {
     bid.updated_at = Utils.date()
     await bid.save()
 
-    await Notification.add({
+    await Notifications.add({
       type: 'my_bid_cancelled',
       project_id: bid.project_id,
       user_id: bid.user_id,

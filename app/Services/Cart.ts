@@ -5,7 +5,7 @@ import ApiError from 'App/ApiError'
 import Utils from 'App/Utils'
 import Project from 'App/Services/Project'
 import User from 'App/Services/User'
-import Notification from 'App/Services/Notification'
+import Notifications from 'App/Services/Notifications'
 import Dig from 'App/Services/Dig'
 import Vod from 'App/Services/Vod'
 import Box from 'App/Services/Box'
@@ -222,7 +222,7 @@ class Cart {
             state: params.customer.state
           })
           if (shipping.error === 'no_shipping' && process.env.NODE_ENV === 'production') {
-            await Notification.sendEmail({
+            await Notifications.sendEmail({
               to: Env.get('DEBUG_EMAIL'),
               subject: `No Shipping: ${project.artist_name} - ${project.name}`,
               html: `<div>
@@ -1910,7 +1910,7 @@ class Cart {
     if (order.status === 'CREATED') {
       return { id: order.id, order_id: params.order_id }
     } else {
-      await Notification.sendEmail({
+      await Notifications.sendEmail({
         to: 'victor@diggersfactory.com',
         subject: `Paypal creation order error`,
         html: `${JSON.stringify(data)}`
@@ -2012,7 +2012,7 @@ class Cart {
           net_currency: net && net.net_amount.currency_code
         })
       if (payment.status !== 'COMPLETED') {
-        await Notification.sendEmail({
+        await Notifications.sendEmail({
           to: 'victor@diggersfactory.com',
           subject: `Paypal order not completed`,
           html: `<p>Order: https://www.diggersfactory.com/sheraf/order/${params.order_id}</p>`
@@ -2110,7 +2110,7 @@ class Cart {
       .all()
 
     if (user.is_guest) {
-      await Notification.add({
+      await Notifications.add({
         type: 'sign_up_confirm',
         user_id: order.user_id
       })
@@ -2121,7 +2121,7 @@ class Cart {
       order_id: params.order_id,
       alert: 0
     }
-    await Notification.add(n)
+    await Notifications.add(n)
 
     const genress = await DB('genre').all()
     const genres = {}
@@ -2254,7 +2254,7 @@ class Cart {
             })
           }
 
-          await Notification.add({
+          await Notifications.add({
             type: 'my_project_new_order',
             user_id: project.user_id,
             person_id: user.id,
@@ -2527,7 +2527,7 @@ class Cart {
       }
     }
 
-    await Notification.sendEmail({
+    await Notifications.sendEmail({
       to: 'victor@diggersfactory.com',
       subject: 'Stripe payment diff',
       html: `<p>${data.length}/${orders.length} orders with payment diff</p>

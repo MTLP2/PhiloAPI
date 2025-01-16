@@ -1,6 +1,6 @@
 import DB from 'App/DB'
 import Utils from 'App/Utils'
-import Notification from 'App/Services/Notification'
+import Notifications from 'App/Services/Notifications'
 import MondialRelay from 'App/Services/MondialRelay'
 import Stock from 'App/Services/Stock'
 import Storage from 'App/Services/Storage'
@@ -336,7 +336,7 @@ class BigBlue {
                 address_pickup: JSON.stringify(around)
               })
 
-            await Notification.add({
+            await Notifications.add({
               type: 'my_order_pickup_changed',
               order_id: order.order_id,
               order_shop_id: order.id,
@@ -698,7 +698,7 @@ class BigBlue {
           date_export: Utils.date(),
           sending: false
         })
-        await Notification.add({
+        await Notifications.add({
           type: 'my_order_in_preparation',
           user_id: order.user_id,
           order_id: order.order_id,
@@ -1328,7 +1328,7 @@ class BigBlue {
       }
     }
 
-    await Notification.sendEmail({
+    await Notifications.sendEmail({
       to: 'victor@diggersfactory.com',
       subject: 'Duplicates BigBlue',
       html: `

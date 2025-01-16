@@ -1,6 +1,6 @@
 import DB from 'App/DB'
 import Utils from 'App/Utils'
-import Notification from './Notification'
+import Notifications from './Notifications'
 import Excel from 'exceljs'
 import View from '@ioc:Adonis/Core/View'
 import I18n from '@ioc:Adonis/Addons/I18n'
@@ -2243,7 +2243,7 @@ class Quote {
     }
     html += '</table>'
 
-    await Notification.sendEmail({
+    await Notifications.sendEmail({
       to: 'kendale@diggersfactory.com',
       subject: `Quote - ${params.type} - ${params.email}`,
       html: html

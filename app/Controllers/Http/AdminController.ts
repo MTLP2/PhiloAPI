@@ -3,7 +3,7 @@ import { schema, rules, validator } from '@ioc:Adonis/Core/Validator'
 
 import Admin from 'App/Services/Admin'
 import DB from 'App/DB'
-import Notification from 'App/Services/Notification'
+import Notifications from 'App/Services/Notifications'
 import Order from 'App/Services/Order'
 import OrdersManual from 'App/Services/OrdersManual'
 import PromoCode from 'App/Services/PromoCode'
@@ -598,7 +598,7 @@ class AdminController {
   }
 
   async getNewsletterTemplate({ params }) {
-    const template = await Notification.template(params)
+    const template = await Notifications.template(params)
     return { template }
   }
 

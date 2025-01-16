@@ -4,7 +4,7 @@ import JSZip from 'jszip'
 import DB from 'App/DB'
 import Utils from 'App/Utils'
 import Customer from 'App/Services/Customer'
-import Notification from 'App/Services/Notification'
+import Notifications from 'App/Services/Notifications'
 import Admin from 'App/Services/Admin'
 import ApiError from 'App/ApiError'
 import I18n from '@ioc:Adonis/Addons/I18n'
@@ -321,7 +321,7 @@ class Invoices {
         .first()
 
       if (project) {
-        await Notification.sendEmail({
+        await Notifications.sendEmail({
           to: project.email,
           subject: `${project.name} de ${project.artist_name} - Facture de ${invoice.total} ${invoice.currency} payée`,
           html: `
@@ -618,7 +618,7 @@ class Invoices {
       .where('invoice.date', '>=', '2024-04-01')
       .all()
 
-    await Notification.sendEmail({
+    await Notifications.sendEmail({
       to: 'invoicing@diggersfactory.com,victor@diggersfactory.com',
       subject: 'Factures incorrect',
       html: `
@@ -1127,101 +1127,52 @@ class Invoices {
   }
 
   static async reminder() {
-    // const first = await DB('invoice')
-    //   .select('*')
-    //   .whereNotNull('email')
-    //   .where('status', 'invoiced')
-    //   .whereRaw('DATE_ADD(date, INTERVAL (payment_days + 7) DAY) < NOW()')
-    //   .whereNotExists((query) =>
-    //     query
-    //       .from('notification')
-    //       .where('type', 'like', 'invoice_reminder%')
-    //       .whereRaw('invoice_id = invoice.id')
-    //   )
-    //   .all()
-
-    // for (const f of first) {
-    //   await Notification.add({
-    //     type: 'invoice_reminder_first',
-    //     date: Utils.date({ time: false }),
-    //     invoice_id: f.id
-    //   })
-    // }
-
-    // const second = await DB('invoice')
-    //   .select('*')
-    //   .whereNotNull('email')
-    //   .where('status', 'invoiced')
-    //   .whereExists((query) =>
-    //     query
-    //       .from('notification')
-    //       .where('type', 'like', 'invoice_reminder%')
-    //       .whereRaw('invoice_id = invoice.id')
-    //   )
-    //   .whereNotExists((query) =>
-    //     query
-    //       .from('notification')
-    //       .where('type', 'like', 'invoice_reminder%')
-    //       .whereRaw('invoice_id = invoice.id')
-    //       .whereRaw('DATE_ADD(date, INTERVAL 7 DAY) > NOW()')
-    //   )
-    //   .whereRaw('DATE_ADD(date, INTERVAL (payment_days + 7) DAY) < NOW()')
-    //   .all()
-
-    // for (const f of second) {
-    //   await Notification.add({
-    //     type: 'invoice_reminder_second',
-    //     date: Utils.date({ time: false }),
-    //     invoice_id: f.id
-    //   })
-    // }
-
-    const first = await DB('payment')
-      .select('*')
-      .join('invoice', 'invoice.id', 'payment.invoice_id')
+    const first = await DB('invoice')
+      .whereIn('status', ['invoiced', 'prepaid'])
       .whereNotNull('email')
-      .where('payment.status', 'unpaid')
-      .whereRaw('DATE_ADD(payment.date, INTERVAL (payment.payment_days + 7) DAY) < NOW()')
+      .whereRaw('created_at < DATE_SUB(NOW(), INTERVAL 60 DAY)')
+      .where('compatibility', 1)
       .whereNotExists((query) =>
         query
           .from('notification')
           .where('type', 'like', 'invoice_reminder%')
-          .whereRaw('payment.invoice_id = invoice.id')
+          .whereRaw('invoice.id = Notifications.invoice_id')
       )
       .all()
 
     for (const f of first) {
-      await Notification.add({
+      await Notifications.add({
         type: 'invoice_reminder_first',
+        user_id: f.user_id,
         date: Utils.date({ time: false }),
         invoice_id: f.id
       })
     }
 
-    const second = await DB('payment')
-      .select('*')
-      .leftJoin('invoice', 'invoice.id', 'payment.invoice_id')
+    const seconds = await DB('invoice')
+      .whereIn('status', ['invoiced', 'prepaid'])
       .whereNotNull('email')
-      .where('payment.status', 'unpaid')
+      .whereRaw('created_at < DATE_SUB(NOW(), INTERVAL 60 DAY)')
+      .where('compatibility', 1)
       .whereExists((query) =>
         query
           .from('notification')
-          .where('type', 'like', 'invoice_reminder%')
-          .whereRaw('payment.invoice_id = invoice.id')
+          .where('type', 'like', 'invoice_reminder_first')
+          .whereRaw('invoice.id = Notifications.invoice_id')
       )
       .whereNotExists((query) =>
         query
           .from('notification')
-          .where('type', 'like', 'invoice_reminder%')
-          .whereRaw('payment.invoice_id = invoice.id')
-          .whereRaw('DATE_ADD(payment.date, INTERVAL 7 DAY) > NOW()')
+          .where('type', 'like', 'invoice_reminder_second')
+          .whereRaw('invoice.id = Notifications.invoice_id')
+          .whereRaw('Notifications.created_at > DATE_SUB(NOW(), INTERVAL 15 DAY)')
       )
-      .whereRaw('DATE_ADD(payment.date, INTERVAL (payment.payment_days + 7) DAY) < NOW()')
       .all()
 
-    for (const f of second) {
-      await Notification.add({
+    for (const f of seconds) {
+      await Notifications.add({
         type: 'invoice_reminder_second',
+        user_id: f.user_id,
         date: Utils.date({ time: false }),
         invoice_id: f.id
       })

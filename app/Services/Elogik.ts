@@ -1,7 +1,7 @@
 import request from 'request'
 import DB from 'App/DB'
 import Utils from 'App/Utils'
-import Notification from 'App/Services/Notification'
+import Notifications from 'App/Services/Notifications'
 import MondialRelay from 'App/Services/MondialRelay'
 import Invoices from 'App/Services/Invoices'
 import Stock from 'App/Services/Stock'
@@ -258,7 +258,7 @@ class Elogik {
                 address_pickup: JSON.stringify(around)
               })
 
-            await Notification.add({
+            await Notifications.add({
               type: 'my_order_pickup_changed',
               order_id: order.order_id,
               order_shop_id: order.id,
@@ -539,7 +539,7 @@ class Elogik {
           date_export: Utils.date(),
           sending: false
         })
-        await Notification.add({
+        await Notifications.add({
           type: 'my_order_in_preparation',
           user_id: order.user_id,
           order_id: order.order_id,
@@ -589,7 +589,7 @@ class Elogik {
             tracking_number: pack.numeroTracking,
             tracking_link: pack.urlTracking
           })
-          await Notification.add({
+          await Notifications.add({
             type: 'my_order_sent',
             user_id: order.user_id,
             order_id: order.order_id,
@@ -628,7 +628,7 @@ class Elogik {
             tracking_number: pack.numeroTracking,
             tracking_link: pack.urlTracking
           })
-          await Notification.add({
+          await Notifications.add({
             type: 'my_order_sent',
             user_id: order.user_id,
             order_manual_id: order.id
@@ -667,7 +667,7 @@ class Elogik {
             tracking_number: pack.numeroTracking,
             tracking_link: pack.urlTracking
           })
-          await Notification.add({
+          await Notifications.add({
             type: 'my_box_sent',
             user_id: order.user_id,
             box_id: order.box_id,
@@ -743,7 +743,7 @@ class Elogik {
         }
       }
       if (newStocks.length > 0) {
-        await Notification.sendEmail({
+        await Notifications.sendEmail({
           to: [
             'ismail@diggersfactory.com',
             'alexis@diggersfactory.com',
@@ -848,7 +848,7 @@ class Elogik {
 
     html += `<ul>`
 
-    await Notification.sendEmail({
+    await Notifications.sendEmail({
       to: 'victor@diggersfactory.com,support@diggersfactory.com',
       subject: `Elogik : Commandes bloquées`,
       html: html

@@ -6,7 +6,7 @@ import ApiError from 'App/ApiError'
 import Daudin from 'App/Services/Daudin'
 import DB from 'App/DB'
 import Dig from 'App/Services/Dig'
-import Notification from 'App/Services/Notification'
+import Notifications from 'App/Services/Notifications'
 import Order from 'App/Services/Order'
 import Payments from 'App/Services/Payments'
 import BigBlue from 'App/Services/BigBlue'
@@ -480,7 +480,7 @@ class Dispatchs {
       }
 
       if (item.user_id) {
-        await Notification.add({
+        await Notifications.add({
           type: 'my_order_in_preparation',
           user_id: item.user_id,
           dispatch_id: item.id
@@ -1016,7 +1016,7 @@ class Dispatchs {
       }
 
       if (manual.user_id) {
-        await Notification.add({
+        await Notifications.add({
           type: 'my_order_sent',
           user_id: manual.user_id,
           dispatch_id: manual.id
@@ -1035,7 +1035,7 @@ class Dispatchs {
       await dispatch.save()
       const box = await DB('box').find(dispatch.box_id)
 
-      await Notification.add({
+      await Notifications.add({
         type: 'my_box_sent',
         user_id: box.user_id,
         box_id: box.id,
@@ -1065,7 +1065,7 @@ class Dispatchs {
         })
       }
 
-      await Notification.add({
+      await Notifications.add({
         type: 'my_order_sent',
         user_id: orderShop.user_id,
         order_id: orderShop.order_id,
@@ -1116,7 +1116,7 @@ class Dispatchs {
         total: order.shipping,
         currency: order.currency
       })
-      await Notification.add({
+      await Notifications.add({
         type: 'my_order_returned',
         user_id: order.user_id,
         order_id: order.order_id,
@@ -2643,7 +2643,7 @@ class Dispatchs {
           })
           .execute()
 
-        await Notification.add({
+        await Notifications.add({
           type: 'my_order_in_preparation',
           user_id: dispatch.user_id as number,
           order_id: dispatch.order_id as number,
@@ -2728,7 +2728,7 @@ class Dispatchs {
         orderShop.updated_at = Utils.date()
         await orderShop.save()
 
-        await Notification.add({
+        await Notifications.add({
           type: 'my_order_sent',
           dispatch_id: dispatch.id,
           user_id: orderShop.user_id as number,
@@ -2737,14 +2737,14 @@ class Dispatchs {
         })
       }
     } else if (dispatch.box_id) {
-      await Notification.add({
+      await Notifications.add({
         type: 'my_box_sent',
         user_id: dispatch.user_id as number,
         box_id: dispatch.box_id,
         dispatch_id: dispatch.id
       })
     } else {
-      await Notification.add({
+      await Notifications.add({
         type: 'my_order_sent',
         user_id: dispatch.user_id as number,
         dispatch_id: dispatch.id

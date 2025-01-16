@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs'
 import sharp from 'sharp'
 import moment from 'moment'
-import Notification from './Notification'
+import Notifications from './Notifications'
 import ApiError from 'App/ApiError'
 import Customer from './Customer'
 import Order from './Order'
@@ -398,7 +398,7 @@ class User {
     if (params.type === 'record_shop' || params.type === 'distributor') {
       const user = await DB('user').select('type').where('id', userId).first()
       if (user.type !== params.type) {
-        await Notification.sendEmail({
+        await Notifications.sendEmail({
           to: config.emails.commercial,
           subject: `User : "${params.name}" / ${params.type}`,
           html: `
@@ -882,7 +882,7 @@ class User {
         })
 
       if (order.date_export && order.pickup_not_found) {
-        await Notification.sendEmail({
+        await Notifications.sendEmail({
           to: 'support@diggersfactory.com,victor@diggersfactory.com',
           subject: 'Changmenet point relais effectué',
           html: `Order Shop Id: ${params.shop_id}<br /><br />
@@ -932,7 +932,7 @@ class User {
           ask_cancel: 1,
           sending: 0
         })
-        await Notification.sendEmail({
+        await Notifications.sendEmail({
           to: 'support@diggersfactory.com',
           subject: `Demande de remboursement - Commande N°${order.id}`,
           html: `<p>Utilisateur : ${order.user_name}</p>

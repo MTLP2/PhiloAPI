@@ -4,7 +4,7 @@ import config from 'Config/index'
 import Utils from 'App/Utils'
 import DB from 'App/DB'
 import Stock from 'App/Services/Stock'
-import Notification from 'App/Services/Notification'
+import Notifications from 'App/Services/Notifications'
 import Invoices from 'App/Services/Invoices'
 import Whiplash from 'App/Services/Whiplash'
 import Elogik from 'App/Services/Elogik'
@@ -486,7 +486,7 @@ static toJuno = async (params) => {
       .count()
 
     if (orders === 0) {
-      await Notification.sendEmail({
+      await Notifications.sendEmail({
         to: 'victor@diggersfactory.com',
         subject: 'No order',
         html: `No order found in the last 2 hours`
@@ -795,7 +795,7 @@ static toJuno = async (params) => {
     }
 
     if (type === 'cancel' || (params && params.cancel_notification === 'true')) {
-      await Notification.new({
+      await Notifications.new({
         type: 'my_order_canceled',
         user_id: order.user_id,
         order_id: order.order_id,
@@ -941,7 +941,7 @@ static toJuno = async (params) => {
       .all()
 
     if (items.length === 0) {
-      await Notification.sendEmail({
+      await Notifications.sendEmail({
         to: 'victor@diggersfactory.com',
         subject: `Problem with order : ${shop.id}`,
         html: `<ul>
@@ -966,7 +966,7 @@ static toJuno = async (params) => {
           throw err
         } else {
           console.error(err)
-          await Notification.sendEmail({
+          await Notifications.sendEmail({
             to: 'victor@diggersfactory.com',
             subject: `Problem with Elogik : ${shop.id}`,
             html: `<ul>
@@ -990,7 +990,7 @@ static toJuno = async (params) => {
           throw err
         } else {
           console.error(err)
-          await Notification.sendEmail({
+          await Notifications.sendEmail({
             to: 'victor@diggersfactory.com',
             subject: `Problem with BigBlue : ${shop.id}`,
             html: `<ul>
@@ -1010,7 +1010,7 @@ static toJuno = async (params) => {
           throw err
         } else {
           console.error(err)
-          await Notification.sendEmail({
+          await Notifications.sendEmail({
             to: 'victor@diggersfactory.com',
             subject: `Problem with Whiplash : ${shop.id}`,
             html: `<ul>
@@ -1045,7 +1045,7 @@ static toJuno = async (params) => {
           throw err
         } else {
           console.error(err)
-          await Notification.sendEmail({
+          await Notifications.sendEmail({
             to: 'victor@diggersfactory.com',
             subject: `Problem with SNA : ${shop.id}`,
             html: `<ul>
@@ -1060,7 +1060,7 @@ static toJuno = async (params) => {
     }
 
     if (params.notification) {
-      await Notification.add({
+      await Notifications.add({
         type: 'my_order_in_preparation',
         user_id: shop.user_id,
         order_id: shop.order_id,
@@ -1203,7 +1203,7 @@ static toJuno = async (params) => {
       }
     ])
 
-    await Notification.email({
+    await Notifications.email({
       to: 'support@diggersfactory.com',
       type: 'order_exported_without_tracking',
       lang: 'en',
@@ -1493,7 +1493,7 @@ static toJuno = async (params) => {
       await o.save()
 
       if (order.tracking_link) {
-        await Notification.add({
+        await Notifications.add({
           type: 'my_order_sent',
           user_id: o.user_id,
           order_id: o.order_id,

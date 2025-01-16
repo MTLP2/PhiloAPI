@@ -3,7 +3,7 @@ import Utils from 'App/Utils'
 import Elogik from 'App/Services/Elogik'
 import Whiplash from 'App/Services/Whiplash'
 import BigBlue from 'App/Services/BigBlue'
-import Notification from 'App/Services/Notification'
+import Notifications from 'App/Services/Notifications'
 import Excel from 'exceljs'
 import moment from 'moment'
 import fs from 'fs'
@@ -541,7 +541,7 @@ class Stock {
         stock.alert < stock.quantity &&
         stock.alert >= stock.quantity - params.quantity
       ) {
-        await Notification.sendEmail({
+        await Notifications.sendEmail({
           to: 'bl@diggersfactory.com',
           subject: `Alert Stock : ${product.name}`,
           html: `<ul>
@@ -774,7 +774,7 @@ class Stock {
 
         const user = await DB('user').where('id', params.user_id).first()
 
-        await Notification.sendEmail({
+        await Notifications.sendEmail({
           to: user.email,
           subject: `Stock ${params.distributor} updated`,
           html: `<p>${stocks.length} products updated</p>`

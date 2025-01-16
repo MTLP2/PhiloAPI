@@ -3,7 +3,7 @@ import moment from 'moment'
 import fs from 'fs'
 
 import DB from 'App/DB'
-import Notification from 'App/Services/Notification'
+import Notifications from 'App/Services/Notifications'
 import Customer from 'App/Services/Customer'
 import Dig from 'App/Services/Dig'
 import Utils from 'App/Utils'
@@ -1066,7 +1066,7 @@ class Admin {
       data.wishlist_id = wishlist.id
       data.alert = 1
 
-      await Notification.new(data)
+      await Notifications.new(data)
     }
 
     wishlist.step = params.step
@@ -1299,7 +1299,7 @@ class Admin {
       vod.end = end
 
       if (vod.type === 'limited_edition') {
-        await Notification.sendEmail({
+        await Notifications.sendEmail({
           to: config.emails.compatibility,
           subject: `Le projet en étition limité "${project.name}" commence`,
           text: `Le projet en étition limité "${project.name}" commence`
@@ -1420,9 +1420,9 @@ class Admin {
               pickupNotFound = true
             }
           }
-          const exist = await Notification.exist(data)
+          const exist = await Notifications.exist(data)
           if (!exist) {
-            await Notification.new(data)
+            await Notifications.new(data)
           }
         }
 
@@ -1444,7 +1444,7 @@ class Admin {
     vod.step = params.step
 
     if (notification) {
-      await Notification.new({
+      await Notifications.new({
         type: notification,
         user_id: vod.user_id,
         project_id: project.id,
@@ -1521,9 +1521,9 @@ class Admin {
           data.type = 'my_order_refunded'
         }
 
-        const exist = await Notification.exist(data)
+        const exist = await Notifications.exist(data)
         if (!exist) {
-          await Notification.new(data)
+          await Notifications.new(data)
         }
         return true
       })
@@ -1738,8 +1738,8 @@ class Admin {
         'user.name',
         'user.email',
         'user.points',
-        'notification.id as notification_id',
-        'notification.type as notification_type',
+        'Notifications.id as notification_id',
+        'Notifications.type as notification_type',
         'feedback.rating as feedback_rating',
         'feedback.id as feedback_id',
         'feedback.comment as feedback_comment',
@@ -1748,7 +1748,7 @@ class Admin {
       )
       .leftJoin('user', 'user.id', 'order.user_id')
       .leftJoin('customer', 'customer.id', 'user.customer_id')
-      .leftJoin('notification', 'notification.order_id', 'order.id')
+      .leftJoin('notification', 'Notifications.order_id', 'order.id')
       .leftJoin('feedback', 'feedback.order_id', 'order.id')
       .where('order.id', id)
       .first()
@@ -1764,12 +1764,12 @@ class Admin {
 
     const orderNotifications = await DB('notification')
       .select(
-        'notification.type',
-        'notification.project_id',
-        'notification.project_name',
-        'notification.email',
-        'notification.created_at',
-        'notification.order_shop_id'
+        'Notifications.type',
+        'Notifications.project_id',
+        'Notifications.project_name',
+        'Notifications.email',
+        'Notifications.created_at',
+        'Notifications.order_shop_id'
       )
       .where('order_id', id)
       .orderBy('project_id', 'asc')
@@ -1804,7 +1804,7 @@ class Admin {
     order.shipping = 0
     for (const shop of orderShops) {
       shop.notifications = orderNotifications.filter(
-        (notification) => notification.order_shop_id === shop.id
+        (notification) => Notifications.order_shop_id === shop.id
       )
       shop.payments = payments.filter((p) => p.order_shop_id === shop.id)
       shop.dispatchs = dispatchs.filter((o) => o.order_shop_id === shop.id)
@@ -2208,7 +2208,7 @@ class Admin {
   static pickupMustChange = async (params) => {
     const shop = await DB('order_shop').find(params.id)
 
-    await Notification.add({
+    await Notifications.add({
       type: 'my_order_pickup_must_change',
       order_id: shop.order_id,
       order_shop_id: shop.id,
@@ -2319,7 +2319,7 @@ class Admin {
         })
 
         if (params.cancel_notification) {
-          await Notification.new({
+          await Notifications.new({
             type: 'my_order_canceled',
             user_id: order.user_id,
             order_id: params.id,
@@ -2331,7 +2331,7 @@ class Admin {
 
       // Special notification in case of unavailable item (rest)
       if (params.reason === 'rest') {
-        await Notification.add({
+        await Notifications.add({
           type: 'order_unavailable_item',
           order_id: params.id,
           order_shop_id: params.order_shop_id,
@@ -3170,7 +3170,7 @@ class Admin {
         } else {
           html = html.replace(':firstname', '')
         }
-        const send = await Notification.sendEmail({
+        const send = await Notifications.sendEmail({
           to: email.email,
           subject: newsletter.subject,
           html,
@@ -3200,7 +3200,7 @@ class Admin {
   static sendNewsletterTest = async (id, email) => {
     const newsletter = await DB('newsletter').find(id)
 
-    await Notification.sendEmail({
+    await Notifications.sendEmail({
       to: email,
       subject: newsletter.subject,
       html: newsletter.content,
@@ -5172,9 +5172,9 @@ class Admin {
           pickupNotFound = true
         }
       }
-      const exist = await Notification.exist(data)
+      const exist = await Notifications.exist(data)
       if (!exist) {
-        await Notification.new(data)
+        await Notifications.new(data)
       }
 
       // Update step of order
@@ -5328,7 +5328,7 @@ class Admin {
         .first()
     ])
 
-    await Notification.sendEmail({
+    await Notifications.sendEmail({
       to: 'robin@diggersfactory.com,jeremy.r@diggersfactory.com',
       subject: `Export clients mensuel - ${previousMonth}/${thisYear}`,
       html: `Bonjour,

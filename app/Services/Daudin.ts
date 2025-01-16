@@ -5,7 +5,7 @@ import moment from 'moment'
 import DB from 'App/DB'
 import Dig from 'App/Services/Dig'
 import Invoices from 'App/Services/Invoices'
-import Notification from 'App/Services/Notification'
+import Notifications from 'App/Services/Notifications'
 import Payments from './Payments'
 import Storage from 'App/Services/Storage'
 import Utils from 'App/Utils'
@@ -123,7 +123,7 @@ class Daudin {
         }
 
         if (manual.user_id) {
-          await Notification.add({
+          await Notifications.add({
             type: 'my_order_sent',
             user_id: manual.user_id,
             order_manual_id: manual.id
@@ -146,7 +146,7 @@ class Daudin {
         const box = await DB('box').find(dispatch.box_id)
 
         if (params.email) {
-          await Notification.add({
+          await Notifications.add({
             type: 'my_box_sent',
             user_id: box.user_id,
             box_id: box.id,
@@ -181,7 +181,7 @@ class Daudin {
         }
 
         if (params.email) {
-          await Notification.add({
+          await Notifications.add({
             type: 'my_order_sent',
             user_id: orderShop.user_id,
             order_id: orderShop.order_id,
@@ -339,7 +339,7 @@ class Daudin {
         }
 
         if (!(item.item_barcode || item.barcode)) {
-          await Notification.sendEmail({
+          await Notifications.sendEmail({
             to: 'victor@diggersfactory.com',
             subject: `Problem with Daudin : ${order.id}`,
             html: `<ul>
@@ -634,7 +634,7 @@ class Daudin {
       updated_at: Utils.date()
     })
 
-    await Notification.sendEmail({
+    await Notifications.sendEmail({
       to: 'victor@diggersfactory.com,alexis@diggersfactory.com,romain@diggersfactory.com,serviceclient@daudin.fr',
       subject: `Export Daudin jour le jour ${d}`,
       html:
@@ -874,7 +874,7 @@ class Daudin {
         order.updated_at = Utils.date()
         await order.save()
 
-        await Notification.add({
+        await Notifications.add({
           type: 'my_order_in_preparation',
           user_id: order.user_id,
           order_id: order.order_id,
@@ -1120,7 +1120,7 @@ class Daudin {
           total: order.shipping,
           currency: order.currency
         })
-        await Notification.add({
+        await Notifications.add({
           type: 'my_order_returned',
           user_id: order.user_id,
           order_id: order.order_id,
@@ -1149,7 +1149,7 @@ class Daudin {
         orders[i].message = 'ok'
         /**
         if (order.user_id) {
-          await Notification.add({
+          await Notifications.add({
             type: 'my_order_returned',
             user_id: order.user_id,
             order_manual_id: order.id
@@ -1179,7 +1179,7 @@ class Daudin {
 
         orders[i].message = 'ok'
         /**
-        await Notification.add({
+        await Notifications.add({
           type: 'my_order_returned',
           user_id: dispatch.user_id,
           box_id: dispatch.box_id,

@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
 import config from 'Config/index'
 import request from 'request'
-import Notification from 'App/Services/Notification'
+import Notifications from 'App/Services/Notifications'
 import Dig from 'App/Services/Dig'
 import DB from 'App/DB'
 import Env from '@ioc:Adonis/Core/Env'
@@ -145,7 +145,7 @@ class Auth {
         user_id: params.sponsor,
         friend_id: userId
       })
-      await Notification.new({
+      await Notifications.new({
         user_id: params.sponsor,
         type: 'new_sponsored_member',
         person_name: params.name,
@@ -242,7 +242,7 @@ class Auth {
       }
 
       if (params.type === 'distributor' || params.type === 'record_shop') {
-        await Notification.sendEmail({
+        await Notifications.sendEmail({
           to: config.emails.distribution,
           subject: `User : "${params.name}" / ${params.type}`,
           html: `
@@ -259,7 +259,7 @@ class Auth {
         user.token_date.setDate(user.token_date.getDate() + 1)
         await user.save()
 
-        await Notification.email({
+        await Notifications.email({
           to: user.email,
           type: 'sign_up_confirm',
           user,
@@ -332,7 +332,7 @@ class Auth {
     user.token_date.setDate(user.token_date.getDate() + 1)
     await user.save()
 
-    await Notification.email({
+    await Notifications.email({
       to: user.email,
       type: 'forget_password',
       user,

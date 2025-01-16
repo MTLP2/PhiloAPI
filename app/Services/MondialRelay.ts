@@ -4,7 +4,7 @@ import { XMLParser } from 'fast-xml-parser'
 import request from 'request'
 import Utils from 'App/Utils'
 import DB from 'App/DB'
-import Notification from 'App/Services/Notification'
+import Notifications from 'App/Services/Notifications'
 
 const url = 'https://api.mondialrelay.com/Web_Services.asmx?wsdl'
 const codeEnseigne = 'XXELOGIK'
@@ -161,7 +161,7 @@ class MondialRelay {
       const status = await MondialRelay.getStatus(dispatch.tracking_number, address.zip_code)
 
       if (status === 'available') {
-        await Notification.add({
+        await Notifications.add({
           type: 'my_order_pickup_available',
           user_id: dispatch.user_id,
           order_shop_id: dispatch.id,
@@ -178,7 +178,7 @@ class MondialRelay {
         })
       } else {
         if (status === 'not_found') {
-          await Notification.sendEmail({
+          await Notifications.sendEmail({
             to: 'victor@diggersfactory.com,romain@diggersfactory.com',
             subject: `MondialRelay not found : ${dispatch.tracking_number}`,
             html: `<ul>
@@ -220,7 +220,7 @@ class MondialRelay {
         dispatch.step === 'pickup_available' &&
         moment().diff(moment(dispatch.date_export), 'days') >= 7
       ) {
-        await Notification.add({
+        await Notifications.add({
           type: 'my_order_pickup_still_available',
           user_id: dispatch.user_id,
           order_id: dispatch.order_id,

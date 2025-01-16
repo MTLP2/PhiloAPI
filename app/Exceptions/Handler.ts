@@ -19,7 +19,7 @@ import Logger from '@ioc:Adonis/Core/Logger'
 import HttpExceptionHandler from '@ioc:Adonis/Core/HttpExceptionHandler'
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import Env from '@ioc:Adonis/Core/Env'
-import Notification from 'App/Services/Notification'
+import Notifications from 'App/Services/Notifications'
 import View from '@ioc:Adonis/Core/View'
 
 const options = {
@@ -70,7 +70,7 @@ export default class ExceptionHandler extends HttpExceptionHandler {
 
       const html = await View.render('emails/error', data)
 
-      await Notification.sendEmail({
+      await Notifications.sendEmail({
         to: Env.get('DEBUG_EMAIL'),
         subject: `Error: ${error.message.substring(0, 900)}`,
         html: html

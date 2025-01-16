@@ -11,7 +11,7 @@ const { APIClient, SendEmailRequest, RegionEU } = require('customerio-node')
 
 const api = new APIClient(Env.get('CIO_APP_KEY'), { region: RegionEU })
 
-class Notification {
+class Notifications {
   static add = async (params: {
     type: string
     user_id: number | string
@@ -37,9 +37,9 @@ class Notification {
     email?: 0 | 1
     data?: any
   }) => {
-    const exist = await Notification.exist(params)
+    const exist = await Notifications.exist(params)
     if (!exist) {
-      return Notification.new(params)
+      return Notifications.new(params)
     } else {
       return false
     }
@@ -146,7 +146,7 @@ class Notification {
       p.html = template.body
 
       p.url = config.app.url
-      p.html = Notification.template(p)
+      p.html = Notifications.template(p)
 
       p.attachments = params.attachments || []
 
@@ -201,13 +201,13 @@ class Notification {
     if (!send) {
       return p
     } else {
-      return Notification.sendEmail(p)
+      return Notifications.sendEmail(p)
     }
   }
 
   static sendEmail = async (params) => {
     if (params.template === 'default') {
-      params.html = Notification.template(params)
+      params.html = Notifications.template(params)
     }
 
     if (!params.from_address) {
@@ -727,4 +727,4 @@ class Notification {
   }
 }
 
-export default Notification
+export default Notifications

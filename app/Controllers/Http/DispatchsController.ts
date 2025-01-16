@@ -1,7 +1,7 @@
 import Dispatchs from 'App/Services/Dispatchs'
 import { schema, validator } from '@ioc:Adonis/Core/Validator'
 import BigBlue from 'App/Services/BigBlue'
-import Notification from 'App/Services/Notification'
+import Notifications from 'App/Services/Notifications'
 import Whiplash from 'App/Services/Whiplash'
 
 class DispatchsController {
@@ -379,7 +379,7 @@ class DispatchsController {
       })
       return Whiplash.updateStatusWebhook(payload.order)
     } else {
-      await Notification.sendEmail({
+      await Notifications.sendEmail({
         to: `victor@diggersfactory.com`,
         subject: 'updateOrder',
         html: `<pre>${JSON.stringify(request.headers(), null, 2)}</pre><pre>${JSON.stringify(
@@ -426,7 +426,7 @@ class DispatchsController {
       })
       return Whiplash.updateStockWebhook(payload)
     } else {
-      await Notification.sendEmail({
+      await Notifications.sendEmail({
         to: `victor@diggersfactory.com`,
         subject: 'updateOrder',
         html: `<pre>${JSON.stringify(request.headers(), null, 2)}</pre><pre>${JSON.stringify(

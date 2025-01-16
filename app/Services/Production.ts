@@ -1,7 +1,7 @@
 import DB from 'App/DB'
 import Utils from 'App/Utils'
 import ProjectEdit from 'App/Services/ProjectEdit'
-import Notification from 'App/Services/Notification'
+import Notifications from 'App/Services/Notifications'
 import MondialRelay from 'App/Services/MondialRelay'
 import Customer from 'App/Services/Customer'
 import Invoices from 'App/Services/Invoices'
@@ -521,7 +521,7 @@ class Production {
           .join('project', 'project.id', 'vod.project_id')
           .first()
         if (project.is_distrib === 1) {
-          await Notification.sendEmail({
+          await Notifications.sendEmail({
             to: 'retail@diggersfacory.com',
             subject: `Project ${project.name} is in production`,
             html: `<ul>
@@ -796,7 +796,7 @@ class Production {
 
           // Send notif check
           if (params.notif) {
-            await Notification.add(data)
+            await Notifications.add(data)
           }
 
           await DB('order_shop')
@@ -837,7 +837,7 @@ class Production {
       <p>Please click on the link below for production status :</p>
       <p><a href="https://www.diggersfactory.com/sheraf/project/${prod.project_id}/prod?prod=${item.production_id}">Link to the project</a></p>`
 
-        await Notification.sendEmail({
+        await Notifications.sendEmail({
           to: params.type === 'payment' ? `${prod.resp_email},${prod.com_email}` : prod.resp_email,
           subject: `The ${actionType} for project ${prod.project_name} - ${prod.artist_name} has been validated`,
           html: html
@@ -1081,7 +1081,7 @@ class Production {
     }
 
     // Notification for PS resp when action changes from to check to pending team
-    await Notification.add({
+    await Notifications.add({
       type: params.test_pressing
         ? 'production_pending_test_pressing_delivery'
         : params.is_direct_pressing
@@ -1127,7 +1127,7 @@ class Production {
           status: 'to_check'
         })
 
-      await Notification.sendEmail({
+      await Notifications.sendEmail({
         to: 'jeanne@diggersfactory.com',
         subject: `TP reçu pour la production ${project.artist_name} - ${project.name}`,
         text: `TP reçu pour la production ${project.artist_name} - ${project.name}`
@@ -1146,7 +1146,7 @@ class Production {
         tracking_transporter: params.transporter,
         tracking_number: params.tracking
       })
-      await Notification.sendEmail({
+      await Notifications.sendEmail({
         to: 'retail@diggersfactory.com,ferdinand@diggersfactory.com',
         subject: `${project.artist_name} ${project.name} : Tracking pour un dispatch allant à ${params.customer.name}`,
         text: `
@@ -1631,7 +1631,7 @@ class Production {
 
     // Bypass Production.notif for resp
     if (params.resp) {
-      await Notification.add({
+      await Notifications.add({
         type: params.type,
         user_id: prod.resp_id,
         data: params.data,
@@ -1643,7 +1643,7 @@ class Production {
 
     if (!user.is_admin || params.type === 'production_step_changed') {
       // prod
-      await Notification.add({
+      await Notifications.add({
         type: params.type,
         user_id: prod.resp_id,
         data: params.data,
@@ -1653,7 +1653,7 @@ class Production {
 
       // design
       if (params.action === 'artwork') {
-        await Notification.add({
+        await Notifications.add({
           type: params.type,
           user_id: 97118,
           data: params.data,
@@ -1665,7 +1665,7 @@ class Production {
     }
 
     if (params.action === 'pressing_proof') {
-      await Notification.add({
+      await Notifications.add({
         type: params.type,
         user_id: 97118,
         data: params.data,
@@ -1675,7 +1675,7 @@ class Production {
     }
     // bl
     /**
-    await Notification.add({
+    await Notifications.add({
       type: params.type,
       user_id: 107450,
       data: params.data,
@@ -1686,7 +1686,7 @@ class Production {
 
     // commercial
     if (params.type === 'production_step_changed' && prod.com_id) {
-      await Notification.add({
+      await Notifications.add({
         type: params.type,
         user_id: prod.com_id,
         data: params.data,
@@ -1696,7 +1696,7 @@ class Production {
     }
 
     if (params.artist && prod.notif) {
-      await Notification.add({
+      await Notifications.add({
         type: params.type,
         user_id: prod.user_id,
         data: params.data,
@@ -1745,7 +1745,7 @@ class Production {
     // Send notif if notif si activated in prod or method is called with overrideNotif.
     // Recipient is the user linked to the production, or userId value for override.
     if (prod.notif || overrideNotif) {
-      await Notification.add({
+      await Notifications.add({
         type: `production_${type}`,
         prod_id: prod.id,
         user_id: userId || prod.user_id,
@@ -1901,7 +1901,7 @@ class Production {
       .all()
 
     for (const prod of prodOneMonth) {
-      await Notification.add({
+      await Notifications.add({
         type: 'production_preprod_month_alert',
         user_id: prod.resp_id,
         project_id: prod.project_id
@@ -1909,7 +1909,7 @@ class Production {
 
       // Production can be missing com_id
       if (prod.com_id) {
-        await Notification.add({
+        await Notifications.add({
           type: 'production_preprod_month_alert',
           user_id: prod.com_id,
           project_id: prod.project_id
@@ -2383,7 +2383,7 @@ class Production {
     log.save(item)
 
     if (item.check_status === 'incomplete' || item.check_status === 'tuiled') {
-      await Notification.sendEmail({
+      await Notifications.sendEmail({
         to: 'invoicing@diggersfactory.com',
         subject: `${project.artist_name} ${project.name} - Problem with cost : ${item.check_status}`,
         html: `
@@ -2406,7 +2406,7 @@ class Production {
 
     if (resp) {
       const project = await DB('project').where('id', item.project_id).first()
-      await Notification.sendEmail({
+      await Notifications.sendEmail({
         to: params.user_id === resp.resp_id ? 'invoicing@diggersfactory.com' : resp.email,
         subject: `${project.artist_name} ${project.name} - ${item.type} - ${
           params.id ? 'Cost changed' : 'New cost'
@@ -2477,7 +2477,7 @@ class Production {
       .where('type', `my_order_${params.tid}`)
       .first()
 
-    return { date: notification ? notification.created_at : false }
+    return { date: notification ? Notifications.created_at : false }
   }
 
   static async checkProductionToBeCompleted() {

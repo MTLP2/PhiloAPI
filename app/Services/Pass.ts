@@ -1,6 +1,6 @@
 import DB from 'App/DB'
 import Utils from 'App/Utils'
-import Notification from './Notification'
+import Notifications from './Notifications'
 
 type TinyIntBool = 0 | 1
 
@@ -806,7 +806,7 @@ export default class Pass {
   // --- TESTING
   static errorNotification = async (quest: string, userId: number, err: any) => {
     return
-    await Notification.sendEmail({
+    await Notifications.sendEmail({
       to: 'robin@diggersfactory.com',
       subject: `Err in gamification [${quest}]`,
       html: `

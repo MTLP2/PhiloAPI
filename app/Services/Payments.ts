@@ -5,7 +5,7 @@ import Invoices from 'App/Services/Invoices'
 import Customer from 'App/Services/Customer'
 import Orders from 'App/Services/Order'
 import ApiError from 'App/ApiError'
-import Notification from './Notification'
+import Notifications from './Notifications'
 import Revolut from 'App/Services/Revolut'
 import Env from '@ioc:Adonis/Core/Env'
 import Stripe from 'stripe'
@@ -311,7 +311,7 @@ class Payment {
         .first()
 
       if (resp) {
-        await Notification.sendEmail({
+        await Notifications.sendEmail({
           to: `${resp.email},invoicing@diggersfactory.com`,
           subject: `Paiement de ${payment.total} ${payment.currency}`,
           text: `https://www.diggersfactory.com/sheraf/invoice/${payment.invoice_id}`
@@ -319,7 +319,7 @@ class Payment {
       }
     }
 
-    await Notification.add({
+    await Notifications.add({
       type: 'payment_confirmed',
       payment_id: payment.id,
       user_id: params.user_id as number
@@ -493,19 +493,19 @@ class Payment {
 
     // Group notifications by resp_accounting or resp_payment.
     const groupedNotifications = notifications.reduce((acc, notification) => {
-      if (!acc[notification.email_accounting]) {
-        acc[notification.email_accounting] = []
+      if (!acc[Notifications.email_accounting]) {
+        acc[Notifications.email_accounting] = []
       }
-      if (!acc[notification.email_commercial]) {
-        acc[notification.email_commercial] = []
+      if (!acc[Notifications.email_commercial]) {
+        acc[Notifications.email_commercial] = []
       }
 
       // Check if the date is passed after date + payment_days.
-      const date = new Date(notification.date)
-      date.setDate(date.getDate() + notification.payment_days || 0)
+      const date = new Date(Notifications.date)
+      date.setDate(date.getDate() + Notifications.payment_days || 0)
       if (date < new Date()) {
-        acc[notification.email_accounting].push(notification)
-        acc[notification.email_commercial].push(notification)
+        acc[Notifications.email_accounting].push(notification)
+        acc[Notifications.email_commercial].push(notification)
       }
 
       return acc
@@ -545,7 +545,7 @@ class Payment {
       }
       html += '</tbody></table>'
 
-      await Notification.sendEmail({
+      await Notifications.sendEmail({
         to: email,
         subject: `Export unpaid payments ${new Date().toLocaleDateString()}`,
         html: html

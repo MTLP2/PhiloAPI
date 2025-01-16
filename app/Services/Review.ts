@@ -1,6 +1,6 @@
 import DB from 'App/DB'
 import Utils from 'App/Utils'
-import Notification from 'App/Services/Notification'
+import Notifications from 'App/Services/Notifications'
 import Pass from './Pass'
 
 class Review {
@@ -25,7 +25,7 @@ class Review {
       .all()
 
     for (const order of ordersToReview) {
-      await Notification.add({
+      await Notifications.add({
         type: 'review_request',
         order_shop_id: order.id,
         order_id: order.order_id,
@@ -45,7 +45,7 @@ class Review {
       .all()
 
     for (const box of boxesToReview) {
-      await Notification.add({
+      await Notifications.add({
         type: 'box_review_request',
         box_id: box.id,
         user_id: box.user_id
@@ -117,7 +117,7 @@ class Review {
 
     // If bad review
     if (params.is_bad_review) {
-      await Notification.add({
+      await Notifications.add({
         type: 'user_bad_review',
         review_id: reviewRes[0],
         order_id: params.order_id,

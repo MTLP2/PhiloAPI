@@ -7,7 +7,7 @@ import Utils from 'App/Utils'
 import Order from 'App/Services/Order'
 import Dig from 'App/Services/Dig'
 import config from 'Config/index'
-import Notification from './Notification'
+import Notifications from './Notifications'
 import Artwork from './Artwork'
 import Excel from 'exceljs'
 import fs from 'fs'
@@ -435,7 +435,7 @@ class Marketplace {
           updated_at: Utils.date()
         })
   
-      await Notification.sendEmail({
+      await Notifications.sendEmail({
         to: 'alexis@diggersfactory.com,victor@diggersfactory.com',
         subject: `Marketplace : "${params.user_id}"`,
         html: `
@@ -500,7 +500,7 @@ class Marketplace {
         })
 
         if (process.env.NODE_ENV === 'production') {
-          await Notification.sendEmail({
+          await Notifications.sendEmail({
             to: config.emails.distribution,
             subject: `Marketplace : "${params.user_id}"`,
             html: `User : ${params.user_id}`
@@ -770,7 +770,7 @@ class Marketplace {
           })
         }
 
-        await Notification.new({
+        await Notifications.new({
           type: 'marketplace_confirm_buyer',
           user_id: orderShop.user_id,
           person_id: orderShop.shop_id,
@@ -786,7 +786,7 @@ class Marketplace {
           comment: params.comment,
           step: params.status
         })
-        await Notification.new({
+        await Notifications.new({
           type: 'marketplace_refuse_buyer',
           user_id: orderShop.user_id,
           person_id: orderShop.shop_id,
@@ -801,7 +801,7 @@ class Marketplace {
           is_paid: 0,
           step: params.status
         })
-        await Notification.new({
+        await Notifications.new({
           type: 'marketplace_refund_buyer',
           user_id: orderShop.user_id,
           person_id: orderShop.shop_id,
@@ -833,7 +833,7 @@ class Marketplace {
           step: params.status,
           comment: params.comment
         })
-        await Notification.new({
+        await Notifications.new({
           type: 'marketplace_sent_buyer',
           user_id: orderShop.user_id,
           person_id: orderShop.shop_id,
@@ -891,7 +891,7 @@ class Marketplace {
           sales: result.count
         })
 
-      await Notification.new({
+      await Notifications.new({
         type: 'marketplace_rate_seller',
         user_id: order.shop_id,
         person_id: order.user_id,
@@ -1503,7 +1503,7 @@ class Marketplace {
         status: 'finished',
         updated_at: Utils.date()
       })
-      await Notification.new({
+      await Notifications.new({
         user_id: imp.marketplace_id,
         type: 'marketplace_import_finished',
         person_id: imp.marketplace_id

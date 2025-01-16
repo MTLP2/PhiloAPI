@@ -6,7 +6,7 @@ import DB from 'App/DB'
 import config from 'Config/index'
 import Project from './Project'
 import Box from 'App/Services/Box'
-import Notification from './Notification'
+import Notifications from './Notifications'
 import User from './User'
 import Order from './Order'
 import Customer from './Customer'
@@ -53,7 +53,7 @@ class App {
       const last = await DB('cronjobs').where('type', 'daily').where('date', lastDate).first()
       if (!last || last.status !== 'complete') {
         const status = last?.status || 'not completed'
-        await Notification.sendEmail({
+        await Notifications.sendEmail({
           to: 'victor@diggersfactory.com',
           subject: `Cronjob daily - ${lastDate} - ${status}`,
           html: `<p>Last cronjob status : ${status}</p>
@@ -105,7 +105,7 @@ class App {
     } catch (err) {
       cron.status = 'error'
       await cron.save()
-      await Notification.sendEmail({
+      await Notifications.sendEmail({
         to: 'victor@diggersfactory.com',
         subject: 'Error daily task',
         html: err.stack.replace(/\n/g, '<br />')
@@ -132,7 +132,7 @@ class App {
       const last = await DB('cronjobs').where('type', 'hourly').where('date', lastDate).first()
       if (!last || last.status !== 'complete') {
         const status = last?.status || 'not completed'
-        await Notification.sendEmail({
+        await Notifications.sendEmail({
           to: 'victor@diggersfactory.com',
           subject: `Cronjob hourly - ${lastDate} - ${status}`,
           html: `<p>Last cronjob status : ${status}</p>
@@ -206,7 +206,7 @@ class App {
     } catch (err) {
       cron.status = 'error'
       await cron.save()
-      await Notification.sendEmail({
+      await Notifications.sendEmail({
         to: 'victor@diggersfactory.com',
         subject: 'Error hourly task',
         html: err.stack.replace(/\n/g, '<br />')
@@ -232,7 +232,7 @@ class App {
       const last = await DB('cronjobs').where('type', 'minutely').where('date', lastDate).first()
       if (!last || last.status !== 'complete') {
         const status = last?.status || 'not completed'
-        await Notification.sendEmail({
+        await Notifications.sendEmail({
           to: 'victor@diggersfactory.com',
           subject: `Cronjob minutely - ${lastDate} - ${status}`,
           html: `<p>Last cronjob status : ${status}</p>
@@ -260,7 +260,7 @@ class App {
     } catch (err) {
       cron.status = 'error'
       await cron.save()
-      await Notification.sendEmail({
+      await Notifications.sendEmail({
         to: 'victor@diggersfactory.com',
         subject: 'Error minutely task',
         html: err.stack.replace(/\n/g, '<br />')
@@ -279,7 +279,7 @@ class App {
 
   static contact = async (params) => {
     if (params.type === 'green_vinyl') {
-      await Notification.sendEmail({
+      await Notifications.sendEmail({
         to: 'green-pressing@diggersfactory.com',
         subject: `Ecological Vinyl Pressing : ${params.email}`,
         html: `<p>
@@ -306,7 +306,7 @@ class App {
       if (params.type === 'cd' || params.type === 'merch' || params.type === 'tape') {
         to = 'kendale@diggersfactory.com'
       }
-      await Notification.sendEmail({
+      await Notifications.sendEmail({
         to: to,
         subject: `${params.email} : ${params.type}`,
         html: `<p>
@@ -421,7 +421,7 @@ class App {
           await App.notification(notif)
         } catch (err) {
           if (e < 2) {
-            await Notification.sendEmail({
+            await Notifications.sendEmail({
               to: 'victor@diggersfactory.com',
               subject: `Problem with email : ${notif.id}`,
               html: `<ul>
@@ -964,14 +964,14 @@ class App {
       if (process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'staging') {
         send = 3
       } else {
-        await Notification.email(data)
+        await Notifications.email(data)
         send = 2
       }
       n.email = send
       await n.save()
       return true
     } else {
-      return Notification.email(data, false)
+      return Notifications.email(data, false)
     }
   }
 
@@ -1022,7 +1022,7 @@ class App {
     }
     html += '</tbody></table>'
 
-    await Notification.sendEmail({
+    await Notifications.sendEmail({
       to: `${config.emails.commercial}`,
       subject: 'Liste des projets finis',
       html: html
@@ -1052,9 +1052,9 @@ class App {
         data.project_name = p.name
         data.vod_id = p.vod_id
 
-        const exist = await Notification.exist(data)
+        const exist = await Notifications.exist(data)
         if (!exist) {
-          await Notification.new(data)
+          await Notifications.new(data)
         }
         return true
       })
@@ -1084,11 +1084,11 @@ class App {
         data.project_name = p.name
         data.vod_id = p.vod_id
 
-        await Notification.new(data)
+        await Notifications.new(data)
         data.user_id = 6140
-        await Notification.new(data)
+        await Notifications.new(data)
         data.user_id = 29173
-        await Notification.new(data)
+        await Notifications.new(data)
 
         const q = `
         SELECT U.id FROM user U, \`like\` L WHERE U.id = L.user_id AND L.project_id = '${p.id}'
@@ -1104,9 +1104,9 @@ class App {
             data.project_name = p.name
             data.vod_id = p.vod_id
 
-            const exist = await Notification.exist(data)
+            const exist = await Notifications.exist(data)
             if (!exist) {
-              await Notification.new(data)
+              await Notifications.new(data)
             }
             return true
           })
@@ -1139,9 +1139,9 @@ class App {
         data.project_name = p.name
         data.vod_id = p.vod_id
 
-        const exist = await Notification.exist(data)
+        const exist = await Notifications.exist(data)
         if (!exist) {
-          await Notification.new(data)
+          await Notifications.new(data)
         }
         return true
       })
@@ -1161,7 +1161,7 @@ class App {
     const projects = await DB().execute(query)
     await Promise.all(
       projects.map(async (p) => {
-        await Notification.sendEmail({
+        await Notifications.sendEmail({
           to: p.email,
           subject: `${p.name} finish in 5 days`,
           html: `<p>
@@ -1189,7 +1189,7 @@ class App {
 
     await Promise.all(
       projects.map(async (p) => {
-        await Notification.sendEmail({
+        await Notifications.sendEmail({
           to: `${config.emails.commercial}`,
           subject: `Le projet "${p.artist_name} - ${p.name}" est commencé depuis 5 mois`,
           text: `Le projet "${p.artist_name} - ${p.name}" est commencé depuis 5 mois`
@@ -1784,7 +1784,7 @@ class App {
       const file = await workbook.xlsx.writeBuffer()
 
       usersNotif.push(users[u].email)
-      await Notification.sendEmail({
+      await Notifications.sendEmail({
         to: users[u].email || 'alexis@diggersfactory.com',
         subject: 'Summary projects',
         html: `<p>Summary projects in attachment</p>`,

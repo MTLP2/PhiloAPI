@@ -4,7 +4,7 @@ import moment from 'moment'
 
 import DB from 'App/DB'
 import Utils from 'App/Utils'
-import Notification from 'App/Services/Notification'
+import Notifications from 'App/Services/Notifications'
 import Invoices from 'App/Services/Invoices'
 import Project from 'App/Services/Project'
 import Customer from 'App/Services/Customer'
@@ -765,7 +765,7 @@ class Box {
         order_box_id: orderBox.id,
         alert: 0
       }
-      await Notification.add(n)
+      await Notifications.add(n)
 
       await DB('order_box').where('order_id', params.order_id).update({
         is_paid: 1,
@@ -794,7 +794,7 @@ class Box {
           created_at: Utils.date(),
           updated_at: Utils.date()
         })
-        await Notification.add({
+        await Notifications.add({
           type: 'my_box_sponsor_used',
           user_id: sponsorBox.user_id,
           box_id: sponsorBox.id
@@ -889,7 +889,7 @@ class Box {
         box.step = 'finished'
         box.end = Utils.date()
 
-        await Notification.new({
+        await Notifications.new({
           type: 'my_box_finished',
           user_id: box.user_id,
           box_id: box.id,
@@ -1012,7 +1012,7 @@ class Box {
         }
 
         if (box.step === 'confirmed' && left < 1) {
-          await Notification.add({
+          await Notifications.add({
             type: 'my_box_last_dispatch',
             user_id: box.user_id,
             box_id: box.id,
@@ -1215,7 +1215,7 @@ class Box {
     }
     await Box.setDispatchLeft()
 
-    await Notification.sendEmail({
+    await Notifications.sendEmail({
       to: 'box@diggersfactory.com,victor@diggersfactory.com',
       subject: 'Box - Dispatch',
       html: `
@@ -1537,7 +1537,7 @@ class Box {
 
     console.info(errors)
 
-    await Notification.sendEmail({
+    await Notifications.sendEmail({
       to: 'box@diggersfactory.com,victor@diggersfactory.com',
       subject: 'Box - Dispatch',
       html: `
@@ -1818,7 +1818,7 @@ class Box {
           })
         } else {
           errors.push({ id: box.id, type: JSON.stringify(pay) })
-          await Notification.add({
+          await Notifications.add({
             type: 'my_box_payment_refused',
             user_id: box.buy_id
           })
@@ -1834,7 +1834,7 @@ class Box {
       } catch (e) {
         console.error(e)
         errors.push({ id: box.id, type: JSON.stringify(e.code) })
-        await Notification.add({
+        await Notifications.add({
           type: 'my_box_payment_refused',
           box_id: box.id,
           user_id: box.buy_id
@@ -1850,7 +1850,7 @@ class Box {
       }
     }
 
-    await Notification.sendEmail({
+    await Notifications.sendEmail({
       to: 'box@diggersfactory.com,victor@diggersfactory.com',
       subject: 'Box - Payments',
       html: `
@@ -1953,7 +1953,7 @@ class Box {
     orderBox.updated_at = Utils.date()
     await orderBox.save()
 
-    await Notification.sendEmail({
+    await Notifications.sendEmail({
       to: Env.get('DEBUG_EMAIL'),
       subject: 'Error Stripe Box',
       html: `
@@ -2101,7 +2101,7 @@ class Box {
     for (const box of boxes) {
       const link = `${config.app.url}/sheraf/box/${box.id}`
 
-      await Notification.sendEmail({
+      await Notifications.sendEmail({
         to: config.emails.commercial,
         subject: `A box must be sent for ${box.email}`,
         html: `<p>
@@ -2132,9 +2132,9 @@ class Box {
       data.box_id = box.id
       data.date = box.end
 
-      const exist = await Notification.exist(data)
+      const exist = await Notifications.exist(data)
       if (!exist) {
-        await Notification.new(data)
+        await Notifications.new(data)
       }
     }
 
@@ -2161,9 +2161,9 @@ class Box {
       data.box_id = box.id
       data.date = box.end
 
-      const exist = await Notification.exist(data)
+      const exist = await Notifications.exist(data)
       if (!exist) {
-        await Notification.new(data)
+        await Notifications.new(data)
       }
     }
 
@@ -2190,9 +2190,9 @@ class Box {
       data.box_id = box.id
       data.date = date
 
-      const exist = await Notification.exist(data)
+      const exist = await Notifications.exist(data)
       if (!exist) {
-        await Notification.new(data)
+        await Notifications.new(data)
       }
     }
 
@@ -2217,9 +2217,9 @@ class Box {
       data.box_id = box.id
       data.date = box.end
 
-      const exist = await Notification.exist(data)
+      const exist = await Notifications.exist(data)
       if (!exist) {
-        await Notification.new(data)
+        await Notifications.new(data)
       }
     }
 
@@ -2497,7 +2497,7 @@ class Box {
 
       const newBox = await DB('box').where('id', params.id).where('user_id', params.user_id).first()
       if (newBox.step === 'confirmed') {
-        await Notification.sendEmail({
+        await Notifications.sendEmail({
           to: 'box@diggersfactory.com,victor@diggersfactory.com',
           subject: 'Box - Box en erreur à envoyer',
           html: `
@@ -2719,7 +2719,7 @@ class Box {
       data: params.projects,
       date: moment().toISOString()
     }
-    await Notification.add(n)
+    await Notifications.add(n)
     await Box.setDispatchLeft(params.box_id)
     return { success: true }
   }
@@ -2843,7 +2843,7 @@ class Box {
       user_id: params.user_id,
       box_id: box.id
     }
-    await Notification.add(n)
+    await Notifications.add(n)
 
     return { success: true }
   }

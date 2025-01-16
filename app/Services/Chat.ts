@@ -1,5 +1,5 @@
 import DB from 'App/DB'
-import Notification from 'App/Services/Notification'
+import Notifications from 'App/Services/Notifications'
 import Utils from 'App/Utils'
 import moment from 'moment'
 
@@ -36,7 +36,7 @@ class Chat {
       }
 
       if (params.destination === 1 && process.env.NODE_ENV === 'production') {
-        Notification.sendEmail({
+        Notifications.sendEmail({
           to: 'louise.k@diggersfactory.com,alexis@diggersfactory.com',
           subject: `Chat Diggers [${userStr}]`,
           text: params.message
@@ -52,7 +52,7 @@ class Chat {
         if (!exist) {
           const person = await DB('user').select('name').where('id', params.user_id).first()
 
-          await Notification.new({
+          await Notifications.new({
             type: 'new_message',
             user_id: params.destination,
             person_id: params.user_id,

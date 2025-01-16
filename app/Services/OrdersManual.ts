@@ -6,7 +6,7 @@ import Elogik from 'App/Services/Elogik'
 import BigBlue from 'App/Services/BigBlue'
 import Stock from 'App/Services/Stock'
 import Invoices from 'App/Services/Invoices'
-import Notification from 'App/Services/Notification'
+import Notifications from 'App/Services/Notifications'
 import Storage from 'App/Services/Storage'
 import moment from 'moment'
 import Excel from 'exceljs'
@@ -413,7 +413,7 @@ class OrdersManual {
       }
 
       if (item.user_id) {
-        await Notification.add({
+        await Notifications.add({
           type: 'my_order_in_preparation',
           user_id: item.user_id,
           order_manual_id: item.id

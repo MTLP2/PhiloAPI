@@ -1,6 +1,6 @@
 import DB from 'App/DB'
 import Customer from 'App/Services/Customer'
-import Notification from 'App/Services/Notification'
+import Notifications from 'App/Services/Notifications'
 import Utils from 'App/Utils'
 import config from 'Config/index'
 import User from './User'
@@ -59,7 +59,7 @@ class Vod {
           client: params.customer.email || user.email
         })
 
-        await Notification.sendEmail({
+        await Notifications.sendEmail({
           from_address: 'kendale@diggersfactory.com',
           from_name: 'Kendale Rice',
           to: (params.customer.email || user.email) + ',kendale@diggersfactory.com',
@@ -252,10 +252,10 @@ class Vod {
       data.project_id = pp.id
       data.project_name = pp.name
       data.alert = 0
-      await Notification.new(data)
+      await Notifications.new(data)
 
       const user = await DB('user').where('id', vod.user_id).first()
-      await Notification.sendEmail({
+      await Notifications.sendEmail({
         to: config.emails.commercial,
         subject: `Project Publish : "${params.artist_name} - ${params.name}"`,
         html: `
@@ -1011,7 +1011,7 @@ class Vod {
       .all()
 
     for (const vod of vodLateDateShipping) {
-      await Notification.add({
+      await Notifications.add({
         user_id: vod.resp_prod_id,
         type: 'vod_late_date_shipping',
         project_id: vod.project_id,

@@ -3,7 +3,7 @@ import Excel from 'exceljs'
 import DB from 'App/DB'
 import Env from '@ioc:Adonis/Core/Env'
 import Order from 'App/Services/Order'
-import Notification from 'App/Services/Notification'
+import Notifications from 'App/Services/Notifications'
 import OrdersManual from 'App/Services/OrdersManual'
 import Storage from 'App/Services/Storage'
 import Stock from 'App/Services/Stock'
@@ -193,7 +193,7 @@ class Whiplash {
     for (const item of items) {
       const whiplashItem = await Whiplash.findItem(item.barcode)
       if (whiplashItem.error) {
-        await Notification.sendEmail({
+        await Notifications.sendEmail({
           to: 'victor@diggersfactory.com,logistic@diggersfactory.com',
           subject: `Error Whiplash : ${item.error} - ${item.barcode}`,
           html: `<ul>
@@ -406,7 +406,7 @@ class Whiplash {
           date_export: Utils.date(),
           logistician_id: whiplash.id
         })
-        await Notification.add({
+        await Notifications.add({
           type: 'my_order_in_preparation',
           user_id: order.user_id,
           order_id: order.order_id,
@@ -714,7 +714,7 @@ class Whiplash {
       }
 
       if (newStocks.length > 0) {
-        await Notification.sendEmail({
+        await Notifications.sendEmail({
           to: [
             'ismail@diggersfactory.com',
             'alexis@diggersfactory.com',
@@ -1065,7 +1065,7 @@ class Whiplash {
       }
     }
 
-    await Notification.sendEmail({
+    await Notifications.sendEmail({
       to: 'victor@diggersfactory.com',
       subject: 'Duplicates Whiplash',
       html: `
