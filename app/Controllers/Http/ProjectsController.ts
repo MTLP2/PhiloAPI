@@ -126,9 +126,9 @@ class ProjectsController {
 
   async saveTrack({ params, user }) {
     params.user = user
-    const Songs = await DB('Songs').where('id', params.id).first()
+    const song = await DB('song').where('id', params.id).first()
     if (song) {
-      params.project_id = Songs.project_id
+      params.project_id = song.project_id
     }
     await Utils.checkProjectOwner({ project_id: params.project_id, user: user })
 
@@ -170,7 +170,7 @@ class ProjectsController {
       })
       if (res.success) {
         if (params.skipEncoding) {
-          await DB('Songs').where('id', params.id).update({
+          await DB('song').where('id', params.id).update({
             listenable: true
           })
           Songs.setInfo(params.id)
@@ -199,8 +199,8 @@ class ProjectsController {
 
   async deleteTrack({ params, user }) {
     params.user = user
-    const Songs = await Songs.find(params.id)
-    await Utils.checkProjectOwner({ project_id: Songs.project_id, user: user })
+    const song = await Songs.find(params.id)
+    await Utils.checkProjectOwner({ project_id: song.project_id, user: user })
     return Songs.deleteTrack(params)
   }
 
