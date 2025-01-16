@@ -5,7 +5,7 @@ import PromoCode from 'App/Services/PromoCode'
 import Storage from 'App/Services/Storage'
 import ApiError from 'App/ApiError'
 
-class Category {
+class Categories {
   static async all(params) {
     params.query = DB('category')
       .select('id', 'name_en', 'name_fr', 'sub_title_fr', 'sub_title_en', 'is_visible')
@@ -299,7 +299,7 @@ class Category {
     const categoryToDuplicate = await DB('category').find(params.id)
 
     if (!categoryToDuplicate) {
-      throw new ApiError(404, 'Category not found')
+      throw new ApiError(404, 'Categories not found')
     }
 
     // Insert new category
@@ -348,4 +348,4 @@ class Category {
   }
 }
 
-export default Category
+export default Categories

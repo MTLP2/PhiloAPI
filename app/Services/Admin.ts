@@ -3639,7 +3639,7 @@ class Admin {
         } else if (type === 'byMonth') {
           dimensions = 'ga:yearMonth'
         } else if (type === 'device') {
-          dimensions = 'ga:deviceCategory'
+          dimensions = 'ga:deviceCategories'
         }
         analytics.data.ga.get(
           {
@@ -4350,7 +4350,7 @@ class Admin {
           { key: 'resp_prod', header: 'Resp. prod', width: 15 },
           { key: 'com', header: 'Resp. com', width: 15 },
           { key: 'type', header: 'Type', width: 15 },
-          { key: 'category', header: 'Category', width: 15 },
+          { key: 'category', header: 'Categories', width: 15 },
           { key: 'barcode', header: 'Barcode', width: 10 },
           { key: 'price', header: 'price', width: 15 },
           { key: 'currency', header: 'currency', width: 15 },
@@ -4978,7 +4978,7 @@ class Admin {
           { key: 'step', header: 'Step' },
           { key: 'status', header: 'Status' },
           { key: 'type', header: 'Type' },
-          { key: 'category', header: 'Category' },
+          { key: 'category', header: 'Categories' },
           { key: 'historic', header: 'Previous steps' }
         ],
         data: projects

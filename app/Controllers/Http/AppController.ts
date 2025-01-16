@@ -2,7 +2,7 @@ import App from 'App/Services/App'
 import Press from 'App/Services/Press'
 import Storage from 'App/Services/Storage'
 import Blog from 'App/Services/Blog'
-import Category from 'App/Services/Category'
+import Categories from 'App/Services/Categories'
 import Banners from 'App/Services/Banners'
 import Quote from 'App/Services/Quote'
 import Customer from 'App/Services/Customer'
@@ -87,7 +87,7 @@ class AppController {
       params.lang = 'en'
     }
     const banners: any = Banners.getHome({ lang: params.lang })
-    const categories = Category.getHome()
+    const categories = Categories.getHome()
 
     const articles = params.all ? Blog.all({ lang: params.lang, limit: 3 }) : null
 

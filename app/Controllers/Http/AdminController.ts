@@ -19,7 +19,7 @@ import PaymentArtist from 'App/Services/PaymentArtist'
 import Statement from 'App/Services/Statement'
 import Feedbacks from 'App/Services/Feedbacks'
 import Storage from 'App/Services/Storage'
-import Category from 'App/Services/Category'
+import Categories from 'App/Services/Categories'
 import Banners from 'App/Services/Banners'
 import Daudin from 'App/Services/Daudin'
 import Elogik from 'App/Services/Elogik'
@@ -627,15 +627,15 @@ class AdminController {
   }
 
   getCategories({ params }) {
-    return Category.all(params)
+    return Categories.all(params)
   }
 
   getCategory({ params }) {
-    return Category.find(params)
+    return Categories.find(params)
   }
 
   saveCategory({ params }) {
-    return Category.save(params)
+    return Categories.save(params)
   }
 
   async duplicateCategory({ params }) {
@@ -647,22 +647,22 @@ class AdminController {
         data: params
       })
 
-      return Category.duplicate(payload)
+      return Categories.duplicate(payload)
     } catch {
       return new ApiError(500, 'Invalid category')
     }
   }
 
   populateProjectsCategory({ params }) {
-    return Category.populateProjects(params)
+    return Categories.populateProjects(params)
   }
 
   deleteCategory({ params }) {
-    return Category.delete(params)
+    return Categories.delete(params)
   }
 
   deleteAllProjectsCategory({ params }) {
-    return Category.deleteAllProjects(params)
+    return Categories.deleteAllProjects(params)
   }
 
   getBanners({ params }) {

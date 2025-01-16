@@ -3,7 +3,7 @@ import ProjectEdit from 'App/Services/ProjectEdit'
 import Artwork from 'App/Services/Artwork'
 import Vod from 'App/Services/Vod'
 import Songs from 'App/Services/Songs'
-import Category from 'App/Services/Category'
+import Categories from 'App/Services/Categories'
 import Statement from 'App/Services/Statement'
 import ApiError from 'App/ApiError'
 import DB from 'App/DB'
@@ -16,7 +16,7 @@ import { schema, validator } from '@ioc:Adonis/Core/Validator'
 class ProjectsController {
   async getProjects({ params }) {
     return {
-      categories: (await Category.all({})).data,
+      categories: (await Categories.all({})).data,
       data: await Project.findAll(params)
     }
   }
