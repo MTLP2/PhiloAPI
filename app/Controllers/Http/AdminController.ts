@@ -1391,7 +1391,7 @@ class AdminController {
         'id': schema.number(),
         'country_id': schema.string(),
         'state': schema.string.nullableAndOptional(),
-        'partner': schema.enum(['daudin', 'shipehype', 'whiplash', 'whiplash_uk'] as const),
+        'partner': schema.string(),
         'transporter': schema.string.nullable(),
         'currency': schema.enum(['EUR', 'GBP', 'USD', 'AUD'] as const),
         'packing': schema.number.nullableAndOptional(),
