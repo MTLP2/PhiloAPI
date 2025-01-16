@@ -18,7 +18,7 @@ import Production from 'App/Services/Production'
 import BigBlue from 'App/Services/BigBlue'
 import Storage from 'App/Services/Storage'
 import MondialRelay from 'App/Services/MondialRelay'
-import Review from 'App/Services/Review'
+import Reviews from 'App/Services/Reviews'
 import Invoices from 'App/Services/Invoices'
 import Blog from 'App/Services/Blog'
 import Vod from 'App/Services/Vod'
@@ -183,7 +183,7 @@ class App {
         await Production.checkNotif()
         await Production.checkProductionToBeCompleted()
       } else if (hour === 9) {
-        await Review.checkNotif()
+        await Reviews.checkNotif()
         // await Elogik.checkBlockedOrders()
       } else if (hour === 12) {
         await Invoices.reminder()

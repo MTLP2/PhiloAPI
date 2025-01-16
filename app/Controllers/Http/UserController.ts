@@ -4,7 +4,7 @@ import Order from 'App/Services/Order'
 import Payments from 'App/Services/Payments'
 import Whiplash from 'App/Services/Whiplash'
 import Box from 'App/Services/Box'
-import Review from 'App/Services/Review'
+import Reviews from 'App/Services/Reviews'
 import Pass from 'App/Services/Pass'
 import DB from 'App/DB'
 import Utils from 'App/Utils'
@@ -191,7 +191,7 @@ class UserController {
   }
 
   checkUserHasReviewedBox({ user, params }) {
-    return Review.getUserBoxReview({ userId: user.id, boxId: params.bid })
+    return Reviews.getUserBoxReview({ userId: user.id, boxId: params.bid })
   }
 
   getTrackingDelivery({ user, params }) {
@@ -248,12 +248,12 @@ class UserController {
 
   async getProjectReviews({ user, params }) {
     params.user_id = user.id
-    return Review.getUserProjectReview(params)
+    return Reviews.getUserProjectReview(params)
   }
 
   async getReviews({ user, params }) {
     params.userId = user.id
-    return Review.getUserReviews(params)
+    return Reviews.getUserReviews(params)
   }
 
   async postReview({ user, params, response }) {
@@ -284,12 +284,12 @@ class UserController {
     **/
 
     params.user_id = user.id
-    return Review.save(params)
+    return Reviews.save(params)
   }
 
   async postReviewStat({ user, params }) {
     params.userId = user.id
-    return Review.saveStat(params)
+    return Reviews.saveStat(params)
   }
 
   getPass({ user }) {

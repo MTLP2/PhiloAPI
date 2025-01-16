@@ -3,10 +3,10 @@ import Utils from 'App/Utils'
 import Notifications from 'App/Services/Notifications'
 import Pass from './Pass'
 
-class Review {
+class Reviews {
   static checkNotif = async () => {
     // Check product review
-    const ordersToReview = await DB('order_shop as os')
+    const ordersToReviews = await DB('order_shop as os')
       .select('os.id', 'os.order_id', 'os.user_id', 'os.date_export', 'os.step')
       .where('os.is_paid', 1)
       .where((query) => {
@@ -34,7 +34,7 @@ class Review {
     }
 
     // Check box review
-    const boxesToReview = await DB('box as b')
+    const boxesToReviews = await DB('box as b')
       .select('b.id', 'b.end', 'b.user_id', 'b.customer_id', 'b.step')
       .whereIn('b.step', ['stoped', 'finished'])
       .whereRaw('DATEDIFF(now(), b.end) = 21')
@@ -52,7 +52,7 @@ class Review {
       })
     }
 
-    return { count: ordersToReview.length, ordersToReview }
+    return { count: ordersToReviews.length, ordersToReviews }
   }
 
   static all = async (params: any) => {
@@ -201,7 +201,7 @@ class Review {
 
   static update = async (params) => {
     // If a review is -2 / complaint, admin can't change its status
-    const review = await Review.find({ reviewId: +params.rid })
+    const review = await Reviews.find({ reviewId: +params.rid })
 
     // Admin must choose a lang and put translation if is_visible is 1|public
     if (params.is_visible === 1 && ((!params.lang && !review.lang) || !params.title_trad))
@@ -245,13 +245,13 @@ class Review {
     return await DB('review').where('id', id).delete()
   }
 
-  static getUserProjectReview = async ({ user_id: userId, pid }) => {
+  static getUserProjectReviews = async ({ user_id: userId, pid }) => {
     const reviewExist = await DB('review').where('user_id', userId).where('project_id', pid).first()
 
     return { reviewExist }
   }
 
-  static getUserBoxReview = async ({ userId, boxId }) => {
+  static getUserBoxReviews = async ({ userId, boxId }) => {
     const reviewExist = await DB('review')
       .where('user_id', userId)
       .where('box_id', +boxId)
@@ -320,4 +320,4 @@ class Review {
   }
 }
 
-export default Review
+export default Reviews

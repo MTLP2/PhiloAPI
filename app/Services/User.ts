@@ -13,7 +13,7 @@ import Utils from 'App/Utils'
 import request from 'request'
 import cio from 'App/Services/CIO'
 import config from 'Config/index'
-import Review from './Review'
+import Reviews from './Reviews'
 import Storage from 'App/Services/Storage'
 import View from '@ioc:Adonis/Core/View'
 import Env from '@ioc:Adonis/Core/Env'
@@ -784,7 +784,7 @@ class User {
   }
 
   static checkUserHasReviewedBox = async ({ uid, bid }) => {
-    return Review.getUserBoxReview({ userId: uid, boxId: bid })
+    return Reviews.getUserBoxReview({ userId: uid, boxId: bid })
   }
 
   static downloadCard = async (params: {

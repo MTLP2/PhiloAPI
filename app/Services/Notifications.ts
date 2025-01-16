@@ -355,7 +355,7 @@ class Notifications {
                 ? `<br /><br />
               <a class="button" href="${Env.get('APP_URL')}/review/${
                     item.project_id
-                  }" target="_blank">Review this item</a>`
+                  }" target="_blank">Reviews this item</a>`
                 : ''
             }
             ${

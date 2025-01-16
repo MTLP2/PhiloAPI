@@ -27,7 +27,7 @@ import BigBlue from 'App/Services/BigBlue'
 import Artwork from 'App/Services/Artwork'
 import Stats from 'App/Services/Stats'
 import MailJet from 'App/Services/MailJet'
-import Review from 'App/Services/Review'
+import Reviews from 'App/Services/Reviews'
 import ApiError from 'App/ApiError'
 import ProjectService from 'App/Services/Project'
 import Products from 'App/Services/Products'
@@ -1147,37 +1147,37 @@ class AdminController {
   }
 
   getProjectsReviews({ params }) {
-    return Review.all({
+    return Reviews.all({
       ...params,
       type: 'project'
     })
   }
 
   getBoxesReviews({ params }) {
-    return Review.all({
+    return Reviews.all({
       ...params,
       type: 'box'
     })
   }
 
   getProjectReviews({ params }) {
-    return Review.find({ projectId: params.id, onlyVisible: false })
+    return Reviews.find({ projectId: params.id, onlyVisible: false })
   }
 
   getPendingReviews({ params }) {
-    return Review.getPending(params)
+    return Reviews.getPending(params)
   }
 
   updateReview({ params }) {
-    return Review.update(params)
+    return Reviews.update(params)
   }
 
   deleteReview({ params }) {
-    return Review.delete({ id: params.rid })
+    return Reviews.delete({ id: params.rid })
   }
 
   getReviewsStats({ params }) {
-    return Review.getStats(params)
+    return Reviews.getStats(params)
   }
 
   getDispatchs({ params }) {

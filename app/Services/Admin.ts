@@ -17,7 +17,7 @@ import config from 'Config/index'
 import ApiError from 'App/ApiError'
 import Storage from 'App/Services/Storage'
 import Order from 'App/Services/Order'
-import Review from 'App/Services/Review'
+import Reviews from 'App/Services/Reviews'
 import Vod from 'App/Services/Vod'
 import Stock from 'App/Services/Stock'
 import Sna from 'App/Services/Sna'
@@ -424,7 +424,7 @@ class Admin {
 
     const exportsQuery = DB('project_export').where('project_id', id).all()
 
-    const reviewsQuery = Review.find({ projectId: id, onlyVisible: false })
+    const reviewsQuery = Reviews.find({ projectId: id, onlyVisible: false })
 
     const [
       project,
@@ -1838,7 +1838,7 @@ class Admin {
       const shop = order.shops.find((shop) => shop.id === item.order_shop_id)
 
       if (shop) {
-        const review = await Review.find({
+        const review = await Reviews.find({
           projectId: item.project_id,
           userId: order.user_id,
           onlyVisible: false
@@ -2125,7 +2125,7 @@ class Admin {
 
   static exportReviews = async (params) => {
     params.size = 0
-    const data = await Review.all(params)
+    const data = await Reviews.all(params)
 
     return Utils.arrayToCsv(
       [
@@ -2546,7 +2546,7 @@ class Admin {
       .belongsTo('customer')
       .first()
 
-    const reviews = await Review.find({ userId: id, onlyVisible: false })
+    const reviews = await Reviews.find({ userId: id, onlyVisible: false })
     if (reviews.length) {
       user.reviews = reviews
     }
@@ -4858,11 +4858,11 @@ class Admin {
   }
 
   static getReviews = async (params) => {
-    return await Review.all(params)
+    return await Reviews.all(params)
   }
 
-  static deleteReview = async (params) => {
-    await Review.delete({ id: params.rid })
+  static deleteReviews = async (params) => {
+    await Reviews.delete({ id: params.rid })
     return { success: true }
   }
 

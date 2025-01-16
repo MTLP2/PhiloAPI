@@ -7,7 +7,7 @@ import Storage from 'App/Services/Storage'
 import Stock from 'App/Services/Stock'
 import Statement from 'App/Services/Statement'
 import Bid from 'App/Services/Bid'
-import Review from 'App/Services/Review'
+import Reviews from 'App/Services/Reviews'
 import Utils from 'App/Utils'
 import moment from 'moment'
 import JSZip from 'jszip'
@@ -1009,7 +1009,7 @@ class Project {
 
     const salesPromise = PromoCode.getSales({ vod: true })
     const currenciesPromise = Utils.getCurrenciesDb()
-    const reviewPromise = Review.find({ projectId: id })
+    const reviewPromise = Reviews.find({ projectId: id })
     const projectImagesPromise = Project.getProjectImages({ projectId: id })
 
     const [project, products, songs, styles, sales, items, currencies, reviews, projectImages] =
