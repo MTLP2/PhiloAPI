@@ -9,7 +9,7 @@ import request from 'request'
 import ApiError from 'App/ApiError'
 import moment from 'moment'
 
-class Bid {
+class Bids {
   static async find(id: number, params: { for?: string } = {}) {
     const project = await DB('vod')
       .select('price', 'currency', 'bid_step', 'end', 'category', 'step')
@@ -75,7 +75,7 @@ class Bid {
     customer_id?: string
     user_agent?: any
   }) {
-    const project = await Bid.find(params.id)
+    const project = await Bids.find(params.id)
 
     if (project.finished) {
       return {
@@ -159,7 +159,7 @@ class Bid {
     order.updated_at = Utils.date()
 
     if (intent.status === 'requires_capture') {
-      return Bid.confirmCapture({ order, bid })
+      return Bids.confirmCapture({ order, bid })
     } else if (intent.status === 'requires_action') {
       bid.is_paid = null
       await bid.save()
@@ -187,7 +187,7 @@ class Bid {
 
   static async payConfirm(params: { id: number; payment_intent_id: string }) {
     if (params.payment_intent_id) {
-      const project = await Bid.find(params.id)
+      const project = await Bids.find(params.id)
       const order = await DB('order').where('payment_id', params.payment_intent_id).first()
 
       if (!order) {
@@ -237,7 +237,7 @@ class Bid {
         }
       }
       if (confirm.status === 'requires_capture') {
-        return Bid.confirmCapture({ bid, order })
+        return Bids.confirmCapture({ bid, order })
       } else {
         return {
           error: 'payment_ko',
@@ -479,4 +479,4 @@ class Bid {
   }
 }
 
-export default Bid
+export default Bids

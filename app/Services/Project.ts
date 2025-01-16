@@ -6,7 +6,7 @@ import PromoCode from 'App/Services/PromoCode'
 import Storage from 'App/Services/Storage'
 import Stock from 'App/Services/Stock'
 import Statement from 'App/Services/Statement'
-import Bid from 'App/Services/Bid'
+import Bids from 'App/Services/Bids'
 import Reviews from 'App/Services/Reviews'
 import Utils from 'App/Utils'
 import moment from 'moment'
@@ -1076,7 +1076,7 @@ class Project {
     }
 
     if (p && p.category === 'bid') {
-      p.bid = await Bid.find(p.id)
+      p.bid = await Bids.find(p.id)
     }
 
     if (

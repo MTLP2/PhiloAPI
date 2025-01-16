@@ -1,4 +1,4 @@
-import Bid from 'App/Services/Bid'
+import Bids from 'App/Services/Bids'
 import Utils from 'App/Utils'
 import { validator, schema } from '@ioc:Adonis/Core/Validator'
 import ApiError from 'App/ApiError'
@@ -11,7 +11,7 @@ class BidController {
         throw new ApiError(401)
       }
     }
-    return Bid.find(params.id, { for: params.for })
+    return Bids.find(params.id, { for: params.for })
   }
 
   async pay({ request, params, user }) {
@@ -39,7 +39,7 @@ class BidController {
         }),
         data: params
       })
-      return Bid.pay(payload)
+      return Bids.pay(payload)
     } catch (err) {
       return { error: err.message, validation: err.messages }
     }
@@ -54,7 +54,7 @@ class BidController {
         }),
         data: params
       })
-      return Bid.payConfirm(payload)
+      return Bids.payConfirm(payload)
     } catch (err) {
       return { error: err.message, validation: err.messages }
     }
@@ -71,7 +71,7 @@ class BidController {
         }),
         data: params
       })
-      return Bid.valid(payload)
+      return Bids.valid(payload)
     } catch (err) {
       return { error: err.message, validation: err.messages }
     }
@@ -87,7 +87,7 @@ class BidController {
         }),
         data: params
       })
-      return Bid.cancel(payload)
+      return Bids.cancel(payload)
     } catch (err) {
       return { error: err.message, validation: err.messages }
     }
@@ -119,7 +119,7 @@ class BidController {
         }),
         data: params
       })
-      return Bid.editAddress(payload)
+      return Bids.editAddress(payload)
     } catch (err) {
       return { error: err.message, validation: err.messages }
     }
