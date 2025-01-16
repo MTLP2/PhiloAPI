@@ -1770,7 +1770,7 @@ class Cart {
       }
     }
 
-    const hasBoxes = params.calculate.boxes && params.calculate.boxes.length > 0
+    const hasBox = params.calculate.boxes && params.calculate.boxes.length > 0
 
     const paymentMethods = ['card']
 
@@ -2330,15 +2330,15 @@ class Cart {
       order_id: params.order_id
     })
 
-    const orderBoxes = await DB('order_box')
+    const orderBox = await DB('order_box')
       .where('order_id', params.order_id)
       .select('order_box.*', 'box.price', 'box.currency', 'box.type', 'box.periodicity')
       .leftJoin('box', 'box.id', 'order_box.box_id')
       .first()
 
     if (orderBox) {
-      customerId = orderBoxes.customer_id
-      order.order_box_id = orderBoxes.id
+      customerId = orderBox.customer_id
+      order.order_box_id = orderBox.id
       boxes.push(orderBox)
     }
 

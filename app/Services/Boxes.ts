@@ -702,7 +702,7 @@ class Boxes {
     }
 
     const currencyRate = await Utils.getCurrency(box.currency)
-    const orderBoxes = await DB('order_box').save({
+    const orderBox = await DB('order_box').save({
       order_id: params.order.id,
       box_id: b.id,
       user_id: params.user_id,
@@ -727,7 +727,7 @@ class Boxes {
 
     if (box.gift) {
       await DB('box_code').where('id', gift.id).update({
-        order_box_id: orderBoxes.id
+        order_box_id: orderBox.id
       })
     }
 
@@ -745,24 +745,24 @@ class Boxes {
   }
 
   static async confirmBox(params) {
-    const orderBoxes = await DB('order_box')
+    const orderBox = await DB('order_box')
       .where('order_id', params.order_id)
       .select('order_box.*', 'box.step', 'box.is_gift')
       .leftJoin('box', 'box.id', 'order_box.box_id')
       .first()
 
     if (orderBox) {
-      const box = await DB('box').find(orderBoxes.box_id)
+      const box = await DB('box').find(orderBox.box_id)
       const n = {
         type: box.sponsor_id
           ? 'my_box_sponsor_confirmed'
-          : orderBoxes.is_gift
+          : orderBox.is_gift
           ? 'my_box_gift_confirmed'
           : 'my_box_confirmed',
-        user_id: orderBoxes.user_id,
+        user_id: orderBox.user_id,
         order_id: params.order_id,
-        box_id: orderBoxes.box_id,
-        order_box_id: orderBoxes.id,
+        box_id: orderBox.box_id,
+        order_box_id: orderBox.id,
         alert: 0
       }
       await Notifications.add(n)
@@ -775,8 +775,8 @@ class Boxes {
         step: 'confirmed'
       })
 
-      box.step = box.start ? 'confirmed' : orderBoxes.is_gift ? 'not_activated' : 'confirmed'
-      box.months = box.months + Boxes.getNbMonths(orderBoxes.periodicity, orderBoxes.monthly)
+      box.step = box.start ? 'confirmed' : orderBox.is_gift ? 'not_activated' : 'confirmed'
+      box.months = box.months + Boxes.getNbMonths(orderBox.periodicity, orderBox.monthly)
       box.dispatch_left = box.months - box.dispatchs
       if (!box.is_gift) {
         box.end = moment(box.start).add(box.dispatch_left, 'months').format('YYYY-MM-DD')
@@ -789,8 +789,8 @@ class Boxes {
         DB('box_sponsor').insert({
           box_id: box.id,
           box_sponsored: box.sponsor_id,
-          order_id: orderBoxes.order_id,
-          order_box_id: orderBoxes.id,
+          order_id: orderBox.order_id,
+          order_box_id: orderBox.id,
           created_at: Utils.date(),
           updated_at: Utils.date()
         })
@@ -802,8 +802,8 @@ class Boxes {
         DB('box_sponsor').insert({
           box_id: box.sponsor_id,
           box_sponsored: box.id,
-          order_id: orderBoxes.order_id,
-          order_box_id: orderBoxes.id,
+          order_id: orderBox.order_id,
+          order_box_id: orderBox.id,
           created_at: Utils.date(),
           updated_at: Utils.date()
         })
@@ -1753,7 +1753,7 @@ class Boxes {
         updated_at: Utils.date()
       })
 
-      const orderBoxes = await DB('order_box').save({
+      const orderBox = await DB('order_box').save({
         order_id: order.id,
         box_id: box.id,
         user_id: box.buy_id,
@@ -1783,7 +1783,7 @@ class Boxes {
           off_session: true,
           customer: box.stripe_customer,
           payment_method: cards.data[0].id,
-          description: `Boxes N°${box.id}-${orderBoxes.id}`
+          description: `Boxes N°${box.id}-${orderBox.id}`
         }
         if (process.env.NODE_ENV !== 'production') {
           intent.customer = 'cus_KJiRI5dzm4Ll1C'
@@ -1806,15 +1806,15 @@ class Boxes {
           order.updated_at = Utils.date()
           await order.save()
 
-          orderBoxes.step = 'confirmed'
-          orderBoxes.is_paid = 1
-          orderBoxes.updated_at = Utils.date()
-          await orderBoxes.save()
+          orderBox.step = 'confirmed'
+          orderBox.is_paid = 1
+          orderBox.updated_at = Utils.date()
+          await orderBox.save()
 
           await Invoices.insertOrder({
             ...order,
             customer_id: box.customer_id,
-            order_box_id: orderBoxes.id
+            order_box_id: orderBox.id
           })
         } else {
           errors.push({ id: box.id, type: JSON.stringify(pay) })
@@ -1937,7 +1937,7 @@ class Boxes {
     return { success: true }
   }
 
-  static async errorCheck({ status, payment, error, box, order, orderBoxes }) {
+  static async errorCheck({ status, payment, error, box, order, orderBox }) {
     const b = await DB('box').find(box.id)
     b.step = 'error'
     b.updated_at = Utils.date()
@@ -1949,9 +1949,9 @@ class Boxes {
     order.updated_at = Utils.date()
     await order.save()
 
-    orderBoxes.step = 'failed'
-    orderBoxes.updated_at = Utils.date()
-    await orderBoxes.save()
+    orderBox.step = 'failed'
+    orderBox.updated_at = Utils.date()
+    await orderBox.save()
 
     await Notifications.sendEmail({
       to: Env.get('DEBUG_EMAIL'),
