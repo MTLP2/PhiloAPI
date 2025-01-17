@@ -1219,6 +1219,15 @@ class Admin {
       vod.comment = params.comment
     }
     if (params.edit_price) {
+      if (params.price !== vod.price) {
+        vod.historic.push({
+          type: 'price',
+          user_id: params.user.id,
+          old: vod.price,
+          new: params.price,
+          date: Utils.date()
+        })
+      }
       vod.price = params.price || null
       const currencies = await Utils.getCurrenciesDb()
       vod.prices = JSON.stringify(
