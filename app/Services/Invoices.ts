@@ -1073,120 +1073,6 @@ class Invoices {
     ])
   }
 
-  static async getPaymentReminders(params: { id: number }) {
-    const res = DB('payment_reminder as pr')
-      .select('pr.*', 'u.name')
-      .join('user as u', 'u.id', 'pr.user_id')
-      .join('payment as p', 'p.id', 'pr.payment_id')
-      .join('invoice as i', 'i.id', 'p.invoice_id')
-      .where('i.id', params.id)
-
-    return await Utils.getRows({ query: res })
-  }
-
-  static async putPaymentReminder(params: {
-    id: number
-    prid: number
-    user_id: number
-    status: 'pending' | 'paid'
-    payment_id: number
-    comment: string
-  }) {
-    if (!params.prid) {
-      return await this.createPaymentReminder(params)
-    }
-    const paymentReminder = await DB('payment_reminder').find(params.prid)
-    if (!paymentReminder) {
-      return await this.createPaymentReminder(params)
-    }
-
-    return await paymentReminder.save({
-      user_id: params.user_id,
-      status: params.status,
-      payment_id: params.payment_id,
-      comment: params.comment,
-      updated_at: new Date()
-    })
-  }
-
-  static async createPaymentReminder(params: {
-    id: number
-    prid: number
-    user_id: number
-    status: 'pending' | 'paid'
-    payment_id: number
-    comment: string
-  }) {
-    const paymentReminder = await DB('payment_reminder').insert({
-      user_id: params.user_id,
-      status: params.status,
-      payment_id: params.payment_id,
-      comment: params.comment
-    })
-
-    return paymentReminder
-  }
-
-  static async deletePaymentReminder(params: { id: number; prid: number }) {
-    await DB('payment_reminder').where('id', params.prid).delete()
-    return { success: true }
-  }
-
-  static async reminder() {
-    const first = await DB('invoice')
-      .whereIn('status', ['invoiced', 'prepaid'])
-      .whereNotNull('email')
-      .whereRaw('created_at < DATE_SUB(NOW(), INTERVAL 60 DAY)')
-      .where('compatibility', 1)
-      .whereNotExists((query) =>
-        query
-          .from('notification')
-          .where('type', 'like', 'invoice_reminder%')
-          .whereRaw('invoice.id = Notifications.invoice_id')
-      )
-      .all()
-
-    for (const f of first) {
-      await Notifications.add({
-        type: 'invoice_reminder_first',
-        user_id: f.user_id,
-        date: Utils.date({ time: false }),
-        invoice_id: f.id
-      })
-    }
-
-    const seconds = await DB('invoice')
-      .whereIn('status', ['invoiced', 'prepaid'])
-      .whereNotNull('email')
-      .whereRaw('created_at < DATE_SUB(NOW(), INTERVAL 60 DAY)')
-      .where('compatibility', 1)
-      .whereExists((query) =>
-        query
-          .from('notification')
-          .where('type', 'like', 'invoice_reminder_first')
-          .whereRaw('invoice.id = notification.invoice_id')
-      )
-      .whereNotExists((query) =>
-        query
-          .from('notification')
-          .where('type', 'like', 'invoice_reminder_second')
-          .whereRaw('invoice.id = notification.invoice_id')
-          .whereRaw('notification.created_at > DATE_SUB(NOW(), INTERVAL 15 DAY)')
-      )
-      .all()
-
-    for (const f of seconds) {
-      await Notifications.add({
-        type: 'invoice_reminder_second',
-        user_id: f.user_id,
-        date: Utils.date({ time: false }),
-        invoice_id: f.id
-      })
-    }
-
-    return { success: true }
-  }
-
   static async zip(params) {
     const invoices = await DB('invoice')
       .whereBetween('date', [params.start, params.end])
@@ -1443,7 +1329,70 @@ class Invoices {
     ])
   }
 
-  static async getUnpaidInvoicesByTeam(params?: { category?: string }) {
+  static async sendUnpaidInvoicesReminders() {
+    const first = await DB('invoice')
+      .whereIn('status', ['invoiced', 'prepaid'])
+      .whereNotNull('email')
+      .whereRaw('invoice.date < DATE_SUB(NOW(), INTERVAL payment_days + 15 DAY)')
+      .where('compatibility', 1)
+      .whereNotExists((query) =>
+        query
+          .from('notification')
+          .where('type', 'like', 'invoice_reminder%')
+          .whereRaw('invoice.id = notification.invoice_id')
+      )
+      .all()
+
+    for (const f of first) {
+      await Notifications.add({
+        type: 'invoice_reminder_first',
+        user_id: f.user_id,
+        date: Utils.date({ time: false }),
+        invoice_id: f.id
+      })
+    }
+
+    const seconds = await DB('invoice')
+      .whereIn('status', ['invoiced', 'prepaid'])
+      .whereNotNull('email')
+      .whereRaw('invoice.date < DATE_SUB(NOW(), INTERVAL payment_days + 15 DAY)')
+      .where('compatibility', 1)
+      .whereExists((query) =>
+        query
+          .from('notification')
+          .where('type', 'like', 'invoice_reminder_first')
+          .whereRaw('invoice.id = notification.invoice_id')
+      )
+      .whereNotExists((query) =>
+        query
+          .from('notification')
+          .where('type', 'like', 'invoice_reminder_first')
+          .whereRaw('invoice.id = notification.invoice_id')
+          .whereRaw('notification.created_at > DATE_SUB(NOW(), INTERVAL 15 DAY)')
+      )
+      .whereNotExists(
+        (query) =>
+          query
+            .from('notification')
+            .where('type', 'like', 'invoice_reminder_second')
+            .whereRaw('invoice.id = notification.invoice_id')
+        // .whereRaw('notification.created_at > DATE_SUB(NOW(), INTERVAL 15 DAY)')
+      )
+      .all()
+
+    for (const f of seconds) {
+      await Notifications.add({
+        type: 'invoice_reminder_second',
+        user_id: f.user_id,
+        date: Utils.date({ time: false }),
+        invoice_id: f.id
+      })
+    }
+
+    return { success: true }
+  }
+
+  static async getUnpaidInvoices(params?: { category?: string }) {
     const invoices = await DB('invoice')
       .select(
         'invoice.*',
@@ -1462,13 +1411,81 @@ class Invoices {
       .leftJoin('user', 'user.id', 'vod.com_id')
       .leftJoin('user as user2', 'user2.id', 'vod.resp_prod_id')
       .where('compatibility', true)
-      .where('invoice.status', '!=', 'paid')
+      .whereIn('invoice.status', ['invoiced', 'prepaid'])
+      .where('invoice.date', '>=', '2021-01-01')
       .where((query) => {
         if (params?.category) {
           query.where('invoice.category', params.category)
         }
       })
       .all()
+
+    const reminders = await DB('notification')
+      .where('type', 'like', 'invoice_reminder%')
+      .whereIn(
+        'invoice_id',
+        invoices.map((i) => i.id)
+      )
+      .all()
+
+    console.log(reminders.length)
+
+    for (const i in invoices) {
+      invoices[i].first_reminder = reminders.find(
+        (r) => r.invoice_id === invoices[i].id && r.type === 'invoice_reminder_first'
+      )?.created_at
+      invoices[i].second_reminder = reminders.find(
+        (r) => r.invoice_id === invoices[i].id && r.type === 'invoice_reminder_second'
+      )?.created_at
+    }
+
+    return invoices
+  }
+
+  static async exportUnpaidInvoices() {
+    const invoices = await Invoices.getUnpaidInvoices()
+
+    for (const i in invoices) {
+      invoices[i].days = Math.abs(moment(invoices[i].date).diff(moment(), 'days'))
+      invoices[i].project = invoices[i].project
+        ? `${invoices[i].project} - ${invoices[i].artist_name}`
+        : ''
+      invoices[i].is_licence = invoices[i].is_licence ? 'yes' : 'no'
+      invoices[i].first_reminder = invoices[i].first_reminder
+        ? invoices[i].first_reminder.substring(0, 10)
+        : null
+      invoices[i].second_reminder = invoices[i].second_reminder
+        ? invoices[i].second_reminder.substring(0, 10)
+        : null
+    }
+
+    return Utils.arrayToXlsx([
+      {
+        columns: [
+          { key: 'id', header: 'id', width: 10 },
+          { key: 'code', header: 'code', width: 13 },
+          { key: 'status', header: 'status', width: 10 },
+          { key: 'total', header: 'total', width: 10 },
+          { key: 'currency', header: 'currency', width: 10 },
+          { key: 'project', header: 'project', width: 40 },
+          { key: 'is_licence', header: 'licence', width: 10 },
+          { key: 'user', header: 'user', width: 15 },
+          { key: 'prod_user', header: 'prod_user', width: 15 },
+          { key: 'date', header: 'date', width: 13 },
+          { key: 'payment_days', header: 'payment_days', width: 13 },
+          { key: 'days', header: 'days', width: 13 },
+          { key: 'first_reminder', header: 'first_reminder', width: 13 },
+          { key: 'second_reminder', header: 'second_reminder', width: 13 }
+        ],
+        data: invoices
+      }
+    ])
+  }
+
+  static async getUnpaidInvoicesByTeam(params?: { category?: string }) {
+    const invoices = await Invoices.getUnpaidInvoices({
+      category: params?.category
+    })
 
     const com = {
       0: {
