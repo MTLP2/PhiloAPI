@@ -1138,6 +1138,10 @@ class Admin {
     vod.description_en = params.description_en
     vod.description_fr = params.description_fr
 
+    if (params.comment_costs !== undefined) {
+      vod.comment_costs = params.comment_costs
+    }
+
     if (params.signed_id !== undefined) {
       vod.signed_id = params.signed_id || null
     }
