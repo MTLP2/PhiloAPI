@@ -171,6 +171,7 @@ class App {
       } else if (hour === 5) {
         await Charts.uploadChartsGfk()
         await Cio.syncNewsletterNoAccount()
+        await Stock.syncApi({})
         await Stock.setStockProject()
       } else if (hour === 6) {
         await Charts.uploadDigitalCharts()
