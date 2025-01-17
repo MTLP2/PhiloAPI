@@ -1335,6 +1335,7 @@ class Invoices {
       .whereNotNull('email')
       .whereRaw('invoice.date < DATE_SUB(NOW(), INTERVAL payment_days + 15 DAY)')
       .where('compatibility', 1)
+      .where('invoice.date', '>=', '2021-01-01')
       .whereNotExists((query) =>
         query
           .from('notification')
@@ -1357,6 +1358,7 @@ class Invoices {
       .whereNotNull('email')
       .whereRaw('invoice.date < DATE_SUB(NOW(), INTERVAL payment_days + 15 DAY)')
       .where('compatibility', 1)
+      .where('invoice.date', '>=', '2021-01-01')
       .whereExists((query) =>
         query
           .from('notification')
