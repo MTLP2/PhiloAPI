@@ -2522,10 +2522,10 @@ class Project {
       })
     }
 
-    const tracks = await DB('Songs').where('project_id', id).all()
+    const tracks = await DB('song').where('project_id', id).all()
 
     for (const track of tracks) {
-      const t = await DB('Songs').insert({
+      const t = await DB('song').insert({
         ...track,
         id: null,
         project_id: project.id
