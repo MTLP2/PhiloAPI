@@ -1,5 +1,6 @@
 import Invoices from 'App/Services/Invoices'
 import PennyLane from 'App/Services/PennyLane'
+import PaymentsReminder from 'App/Services/PaymentsReminder'
 import { schema, validator } from '@ioc:Adonis/Core/Validator'
 
 class InvoicesController {
@@ -12,15 +13,15 @@ class InvoicesController {
   }
 
   getPaymentReminders({ params }) {
-    return Invoices.getPaymentReminders(params)
+    return PaymentsReminder.getPaymentReminders(params)
   }
 
   putPaymentReminder({ params }) {
-    return Invoices.putPaymentReminder(params)
+    return PaymentsReminder.putPaymentReminder(params)
   }
 
   deletePaymentReminder({ params }) {
-    return Invoices.deletePaymentReminder(params)
+    return PaymentsReminder.deletePaymentReminder(params)
   }
 
   removeInvoice({ params }) {
@@ -63,6 +64,10 @@ class InvoicesController {
 
   exportB2C({ params }) {
     return Invoices.exportB2C(params)
+  }
+
+  exportUnpaidInvoices() {
+    return Invoices.exportUnpaidInvoices()
   }
 
   async exportPennylane({ params }) {
