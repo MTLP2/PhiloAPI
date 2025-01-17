@@ -1164,14 +1164,14 @@ class Invoices {
         query
           .from('notification')
           .where('type', 'like', 'invoice_reminder_first')
-          .whereRaw('invoice.id = Notifications.invoice_id')
+          .whereRaw('invoice.id = notification.invoice_id')
       )
       .whereNotExists((query) =>
         query
           .from('notification')
           .where('type', 'like', 'invoice_reminder_second')
-          .whereRaw('invoice.id = Notifications.invoice_id')
-          .whereRaw('Notifications.created_at > DATE_SUB(NOW(), INTERVAL 15 DAY)')
+          .whereRaw('invoice.id = notification.invoice_id')
+          .whereRaw('notification.created_at > DATE_SUB(NOW(), INTERVAL 15 DAY)')
       )
       .all()
 

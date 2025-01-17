@@ -769,7 +769,6 @@ class Whiplash {
 
     Storage.upload(fileName, params.file, true)
 
-    console.log('dispatchs => ', dispatchs.length)
     let marge = 0
 
     for (const dispatch of dispatchs) {
@@ -1037,7 +1036,6 @@ class Whiplash {
     }
     const res = {}
 
-    console.log('items => ', items.length)
     for (const item of items) {
       for (const order of item.order_items) {
         const date = item.created_at.substring(0, 10)

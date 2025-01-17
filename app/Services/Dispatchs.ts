@@ -2346,7 +2346,6 @@ class Dispatchs {
     try {
       await dispatch.save()
     } catch (e) {
-      console.log('dup')
       if (e.code === 'ER_DUP_ENTRY') {
         return { success: false, error: 'dispatch_already_exists' }
       }
@@ -2679,7 +2678,6 @@ class Dispatchs {
     tracking_number?: string
     tracking_link?: string
   }) => {
-    console.log(params)
     const dis = await db
       .selectFrom('dispatch')
       .selectAll('dispatch')
@@ -2754,292 +2752,6 @@ class Dispatchs {
     return { success: true }
   }
 
-  static convertOldDispatch = async () => {
-    console.info('start convert')
-
-    const dispatchs: any[] = []
-    /**
-    await DB().execute('TRUNCATE TABLE dispatch')
-    await DB().execute('TRUNCATE TABLE dispatch_item')
-    await DB().execute('TRUNCATE TABLE dispatch_invoice')
-
-    console.info('start box')
-    const boxDispatches = await DB('box_dispatch')
-      .join('box', 'box.id', 'box_dispatch.box_id')
-      .select(
-        'box_dispatch.*',
-        'box.user_id',
-        'box.customer_id',
-        'box.shipping_type',
-        'box.shipping',
-        'box.currency',
-        'box.address_pickup'
-      )
-      .orderBy('box.created_at', 'asc')
-      .all()
-
-    for (const box of boxDispatches) {
-      const dispatch: any = {
-        data: {
-          status: box.step,
-          type: 'box',
-          logistician: box.transporter || 'daudin',
-          logistician_id: box.logistician_id,
-          box_id: box.box_id,
-          customer_id: box.customer_id,
-          order_shop_id: box.order_shop_id,
-          address_pickup: box.address_pickup,
-          shipping_method: box.shipping_type,
-          date_export: box.date_export,
-          purchase_order: box.id,
-          tracking_link: box.tracking_link,
-          cost_invoiced: box.shipping,
-          cost_currency: box.currency,
-          tracking_transporter: box.tracking_transporter,
-          user_id: box.user_id,
-          created_at: box.created_at,
-          updated_at: box.updated_at
-        },
-        items: []
-      }
-
-      const barcodes = box.barcodes.split(',')
-      for (const barcode of barcodes) {
-        dispatch.items.push({
-          barcode: Boxes.getBarcode(barcode),
-          quantity: 1,
-          created_at: box.created_at,
-          updated_at: box.updated_at
-        })
-      }
-      dispatchs.push(dispatch)
-    }
-
-    console.log(dispatchs.length)
-    console.info('start manual')
-    const ordersManual = await DB('order_manual')
-      .select('*')
-      .whereNotNull('date_export')
-      .whereNotNull('transporter')
-      .whereNotExists(
-        DB('dispatch').select(DB.raw(1)).whereRaw('order_manual_id = order_manual.id').query()
-      )
-      .all()
-
-    const ordersManualItems = await DB('order_manual_item').select('*').all()
-
-    const manualItems = {}
-    for (const orderItem of ordersManualItems) {
-      if (!manualItems[orderItem.order_manual_id]) {
-        manualItems[orderItem.order_manual_id] = []
-      }
-      manualItems[orderItem.order_manual_id].push(orderItem)
-    }
-
-    for (const order of ordersManual) {
-      order.status = order.step
-      order.logistician = order.transporter
-      order.cost_logistician = order.shipping_cost
-      order.shipping_method = order.shipping_type
-      order.type = order.type || 'other'
-      order.order_manual_id = order.id
-      delete order.transporter
-      delete order.step
-      delete order.barcode
-      delete order.barcodes
-      delete order.quantity
-      delete order.shipping_cost
-      delete order.shipping_type
-      delete order.transporter_export
-      delete order.whiplash_id
-
-      const dispatch: any = {
-        data: {
-          ...order,
-          id: undefined
-        },
-        items: []
-      }
-
-      if (manualItems[order.id]) {
-        for (const item of manualItems[order.id]) {
-          dispatch.items.push({
-            product_id: item.product_id,
-            quantity: item.quantity,
-            barcode: item.barcode,
-            created_at: item.created_at,
-            updated_at: item.updated_at
-          })
-        }
-      }
-      dispatchs.push(dispatch)
-    }
-    console.log(dispatchs.length)
-
-    **/
-
-    const orderShops = await DB('order_shop')
-      .select('*')
-      .whereNotNull('date_export')
-      .whereNotNull('transporter')
-      // .where('order_id', '=', 360897)
-      .whereIn(
-        'order_shop.id',
-        DB('order_item').select('order_shop_id').where('size', '!=', '').query()
-      )
-      .where('order_shop.id', '=', 225090)
-      /**
-      .whereNotExists(
-        DB('dispatch').select(DB.raw(1)).whereRaw('order_shop_id = order_shop.id').query()
-      )
-      **/
-      .all()
-
-    console.info('start order_shop', orderShops.length)
-
-    const orderItems = await DB('order_item')
-      .select(
-        'order_shop.dispatch_id',
-        'order_item.order_shop_id',
-        'project_product.product_id',
-        'order_item.quantity',
-        'order_item.created_at',
-        'order_item.updated_at'
-      )
-      .leftJoin('order_shop', 'order_shop.id', 'order_item.order_shop_id')
-      .leftJoin('project_product', 'project_product.project_id', 'order_item.project_id')
-      .leftJoin('product', 'product.id', 'project_product.product_id')
-      .where((query) => {
-        query.whereRaw('product.size like order_item.size')
-        query.orWhereRaw(`order_item.products LIKE CONCAT('%[',product.id,']%')`)
-        query.orWhere((query) => {
-          query.whereNull('product.size')
-          query.whereNotExists((query) => {
-            query.from('product as child').whereRaw('product.id = child.parent_id')
-          })
-        })
-      })
-      .whereIn(
-        'order_item.order_shop_id',
-        orderShops.map((o) => o.id)
-      )
-      .all()
-
-    const ooo = {}
-
-    for (const item of orderItems) {
-      if (!ooo[item.dispatch_id]) {
-        ooo[item.dispatch_id] = []
-      }
-      ooo[item.dispatch_id].push(item)
-    }
-
-    for (const dispatch of Object.keys(ooo)) {
-      await DB('dispatch_item').where('dispatch_id', dispatch).delete()
-      for (const item of ooo[dispatch]) {
-        await DB('dispatch_item').insert({
-          dispatch_id: dispatch,
-          product_id: item.product_id,
-          quantity: item.quantity,
-          created_at: item.created_at,
-          updated_at: item.updated_at
-        })
-      }
-    }
-    return ooo
-    console.log(ooo)
-
-    const items = {}
-    for (const orderItem of orderItems) {
-      if (!items[orderItem.order_shop_id]) {
-        items[orderItem.order_shop_id] = []
-      }
-      items[orderItem.order_shop_id].push(orderItem)
-    }
-    for (const shop of orderShops) {
-      const dispatch: any = {
-        data: {
-          logistician: shop.transporter,
-          logistician_id:
-            shop.logistician_id || shop.whiplash_id || shop.daudin_id || shop.bigblue_id,
-          customer_id: shop.customer_id,
-          order_id: shop.order_id,
-          order_shop_id: shop.id,
-          address_pickup: shop.address_pickup,
-          user_id: shop.user_id,
-          type: 'order',
-          status: shop.step === 'delivered' ? 'delivered' : 'sent',
-          shipping_method: shop.shipping_type,
-          tracking_number: shop.tracking_number,
-          tracking_link: shop.tracking_link,
-          tracking_transporter: shop.tracking_transporter,
-          weight_invoiced: shop.weight,
-          cost_invoiced: shop.shipping,
-          cost_currency: shop.currency,
-          cost_logistician: shop.shipping_cost,
-          cost_currency_rate: shop.currency_rate,
-          created_at: shop.created_at,
-          updated_at: shop.updated_at,
-          date_export: shop.date_export
-        },
-        items: items[shop.id].map((i) => {
-          return {
-            product_id: i.product_id,
-            quantity: i.quantity
-          }
-        })
-      }
-      dispatchs.push(dispatch)
-    }
-
-    return dispatchs
-    /**
-    dispatchs.sort(function (a, b) {
-      // Turn your strings into dates, and then subtract them
-      // to get a value that is either negative, positive, or zero.
-      return new Date(a.data.created_at) - new Date(b.data.created_at)
-    })
-    **/
-
-    console.log('dispatchs', dispatchs.length)
-
-    for (const dispatch of dispatchs) {
-      if (dispatch.items.length === 0) {
-        continue
-      }
-      const res = await DB('dispatch').insert(dispatch.data)
-      for (const item of dispatch.items) {
-        await DB('dispatch_item').insert({
-          dispatch_id: res[0],
-          ...item
-        })
-      }
-    }
-    console.info('end convert')
-
-    return dispatchs.length
-
-    /**
-    const invoices = await DB('order_invoice')
-      .select('order_invoice.*', 'dispatch.id as dispatch_id')
-      .join('dispatch', 'dispatch.order_manual_id', 'order_invoice.order_manual_id')
-      .all()
-
-    for (const invoice of invoices) {
-      await DB('production_cost').where('order_manual_id', invoice.order_manual_id).update({
-        dispatch_id: invoice.dispatch_id
-      })
-      delete invoice.order_manual_id
-      await DB('dispatch_invoice').insert({
-        ...invoice,
-        dispatch_id: invoice.dispatch_id
-      })
-    }
-    **/
-
-    return { success: true, dispatchs: dispatchs.length }
-  }
-
   static setProductsIds = async () => {
     const items = await DB('dispatch_item').select('id', 'barcode').whereNull('product_id').all()
 
@@ -3056,8 +2768,6 @@ class Dispatchs {
     for (const product of products) {
       barcodes[product.barcode] = product.id
     }
-
-    console.log('barcodes', Object.keys(barcodes).length)
 
     for (const barcode of Object.keys(barcodes)) {
       if (barcodes[barcode] !== null) {
@@ -3286,9 +2996,7 @@ class Dispatchs {
       .where('dispatch.status', 'in_progress')
       .all()
 
-    console.log(dispatchs.length)
     for (const dispatch of dispatchs) {
-      console.log(dispatch.id)
       await DB('order_shop').where('dispatch_id', dispatch.id).update({
         step: 'check_address',
         dispatch_id: null

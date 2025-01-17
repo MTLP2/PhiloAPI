@@ -322,7 +322,6 @@ class OrdersManual {
               created_at: item.created_at,
               email: item.email,
               items: items.map((b) => {
-                console.log(b)
                 return {
                   barcode: b.barcode,
                   product: products[b.barcode].id,
@@ -717,7 +716,6 @@ class OrdersManual {
       item.created_at = Utils.date()
     }
 
-    console.log(params)
     item.order_manual_id = params.order_manual_id
     item.invoice_number = params.invoice_number
     item.total = params.total

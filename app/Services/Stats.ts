@@ -2307,7 +2307,6 @@ class Stats {
     for (const product of products) {
       const date = moment(product.created_at).format(format)
       if (!d.products[product.type]) {
-        console.log(product.type)
         product.type = 'other'
       }
       d.products[product.type].total += product.quantity
@@ -3055,8 +3054,6 @@ class Stats {
       })
       .all()
 
-    console.log(vod.length)
-
     const orders = await DB('order_item')
       .select(
         'order_item.project_id',
@@ -3077,7 +3074,6 @@ class Stats {
       const idx = vod.findIndex((v) => v.project_id === order.project_id)
 
       if (idx === -1) {
-        console.log('error', order.project_id)
         continue
       }
       if (!vod[idx].turnover) {

@@ -2521,7 +2521,6 @@ class Boxes {
   static async selectVinyl(params) {
     params.month = moment().format('YYYY-MM-01')
 
-    console.log(params)
     const box = await DB('box')
       .select('box.*', 'user.email', 'user.lang')
       .join('user', 'user.id', 'box.user_id')
@@ -3928,7 +3927,6 @@ class Boxes {
     item.price = params.price
     item.updated_at = Utils.date()
 
-    console.log(params)
     await item.save()
 
     return { sucess: true }

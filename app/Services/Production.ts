@@ -1141,7 +1141,6 @@ class Production {
       params.logistician &&
       !['whiplash', 'whiplash_uk', 'bigblue'].includes(params.logistician)
     ) {
-      console.log('lien')
       const link = Utils.getTransporterLink({
         tracking_transporter: params.transporter,
         tracking_number: params.tracking

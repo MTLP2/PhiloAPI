@@ -1216,7 +1216,6 @@ class BigBlue {
         })
 
       if (inStatement) {
-        console.log('applyInvoiceCosts', id)
         await Dispatchs.applyInvoiceCosts({
           id: id
         })

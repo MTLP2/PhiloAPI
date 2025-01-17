@@ -662,7 +662,7 @@ class Charts {
   }
 
   static async uploadChartsAria() {
-    const date = moment().subtract(1, 'days').format('YYYYMMDD')
+    const date = moment().subtract(2, 'days').format('YYYYMMDD')
     const charts = await Charts.getChartsAria()
 
     let client = new SftpClient()
