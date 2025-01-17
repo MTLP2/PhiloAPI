@@ -1160,8 +1160,7 @@ class Cart {
     if (transporters.all || transporters.diggers) {
       const diggers = await Cart.calculateShippingByTransporter({
         ...params,
-        mode: 'DPD',
-        partner: 'daudin',
+        partner: 'bigblue',
         transporter: 'diggers'
       })
       if (diggers) {
