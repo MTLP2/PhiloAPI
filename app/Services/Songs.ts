@@ -156,7 +156,7 @@ class Songs {
     return { success: true }
   }
 
-  static compressSongs = (buffer) => {
+  static compressSong = (buffer) => {
     return new Promise((resolve, reject) => {
       const uuid = Utils.uuid()
       const input = `storage/${uuid}.mp3`
