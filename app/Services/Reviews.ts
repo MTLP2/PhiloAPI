@@ -6,7 +6,7 @@ import Pass from './Pass'
 class Reviews {
   static checkNotif = async () => {
     // Check product review
-    const ordersToReviews = await DB('order_shop as os')
+    const ordersToReview = await DB('order_shop as os')
       .select('os.id', 'os.order_id', 'os.user_id', 'os.date_export', 'os.step')
       .where('os.is_paid', 1)
       .where((query) => {
@@ -34,7 +34,7 @@ class Reviews {
     }
 
     // Check box review
-    const boxesToReviews = await DB('box as b')
+    const boxesToReview = await DB('box as b')
       .select('b.id', 'b.end', 'b.user_id', 'b.customer_id', 'b.step')
       .whereIn('b.step', ['stoped', 'finished'])
       .whereRaw('DATEDIFF(now(), b.end) = 21')
@@ -52,7 +52,7 @@ class Reviews {
       })
     }
 
-    return { count: ordersToReviews.length, ordersToReviews }
+    return { count: ordersToReview.length, ordersToReview }
   }
 
   static all = async (params: any) => {
