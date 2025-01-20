@@ -2285,6 +2285,8 @@ class Cart {
               quantity: item.quantity,
               transporter: shop.transporter
             })
+          } else {
+            Project.countSales(project.id).then(() => {})
           }
         }
       }

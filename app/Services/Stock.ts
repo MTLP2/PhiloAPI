@@ -7,6 +7,7 @@ import Notifications from 'App/Services/Notifications'
 import Excel from 'exceljs'
 import moment from 'moment'
 import fs from 'fs'
+import Project from './Project'
 
 class Stock {
   static async byProject(params: {
@@ -528,11 +529,7 @@ class Stock {
       })
       .all()
 
-    await DB('vod')
-      .where('project_id', params.project_id)
-      .update({
-        count: DB.raw(`count + ${params.quantity}`)
-      })
+    Project.countSales(params.project_id).then(() => {})
 
     for (const product of pp) {
       const stock = await DB('stock')

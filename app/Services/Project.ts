@@ -1129,6 +1129,23 @@ class Project {
     return p
   }
 
+  static countSales = async (projectId: number) => {
+    const sales = await DB('order_item')
+      .select(DB.raw('sum(quantity) as quantity'))
+      .join('order_shop', 'order_shop.id', 'order_item.order_shop_id')
+      .where('order_item.project_id', projectId)
+      .where('order_shop.is_paid', true)
+      .first()
+
+    if (!sales || !sales.quantity) {
+      return 0
+    }
+    await DB('vod').where('project_id', projectId).update({
+      count: sales.quantity
+    })
+    return sales.quantity
+  }
+
   static getGroupShipment = async (id: number) => {
     const res: any = []
     const items = await DB('item')
