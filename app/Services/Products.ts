@@ -16,19 +16,7 @@ class Products {
     is_preorder?: boolean
   }) {
     const query = DB('product')
-      .select(
-        'product.*',
-        'p2.name as parent',
-        'projects',
-        'daudin.quantity as stock_daudin',
-        'daudin.sales as sales_daudin',
-        'whiplash.quantity as stock_whiplash',
-        'whiplash.sales as sales_whiplash',
-        'whiplash_uk.quantity as stock_whiplash_uk',
-        'whiplash_uk.sales as sales_whiplash_uk',
-        'diggers.quantity as stock_diggers',
-        'diggers.sales as sales_diggers'
-      )
+      .select('product.*', 'p2.name as parent', 'projects')
       .leftJoin('product as p2', 'p2.id', 'product.parent_id')
       .leftJoin(
         DB('project_product')
@@ -37,46 +25,6 @@ class Products {
           .as('projects')
           .query(),
         'projects.product_id',
-        'product.id'
-      )
-      .leftJoin(
-        DB('stock')
-          .select('sales', 'quantity', 'product_id')
-          .where('type', 'daudin')
-          .where('is_preorder', params.is_preorder || false)
-          .as('daudin')
-          .query(),
-        'daudin.product_id',
-        'product.id'
-      )
-      .leftJoin(
-        DB('stock')
-          .select('sales', 'quantity', 'product_id')
-          .where('type', 'whiplash')
-          .as('whiplash')
-          .where('is_preorder', params.is_preorder || false)
-          .query(),
-        'whiplash.product_id',
-        'product.id'
-      )
-      .leftJoin(
-        DB('stock')
-          .select('sales', 'quantity', 'product_id')
-          .where('type', 'whiplash_uk')
-          .where('is_preorder', params.is_preorder || false)
-          .as('whiplash_uk')
-          .query(),
-        'whiplash_uk.product_id',
-        'product.id'
-      )
-      .leftJoin(
-        DB('stock')
-          .select('sales', 'quantity', 'product_id')
-          .where('is_preorder', params.is_preorder || false)
-          .where('type', 'diggers')
-          .as('diggers')
-          .query(),
-        'diggers.product_id',
         'product.id'
       )
 
@@ -98,7 +46,7 @@ class Products {
         items.data.map((i) => i.id)
       )
       .where('is_preorder', false)
-      .whereIn('type', ['bigblue', 'whiplash', 'whiplash_uk'])
+      .whereIn('type', ['bigblue', 'cbip', 'whiplash', 'whiplash_uk'])
       .all()
 
     for (const stock of stocks) {
