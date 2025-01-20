@@ -57,7 +57,6 @@ class Dispatchs {
     for (const i in filters) {
       const filter = filters[i]
       filter.value = decodeURIComponent(filters[i].value)
-
       if (filter.name === 'product_id') {
         query.whereExists(
           DB('dispatch_item')
@@ -67,13 +66,11 @@ class Dispatchs {
             .where('product.id', filter.value)
             .query()
         )
-        filters.splice(i, 1)
-        filters = JSON.stringify(filters)
+        delete filters[i]
       }
       if (filter.name === 'box_id') {
         query.where('dispatch.box_id', filter.value)
         filters.splice(i, 1)
-        filters = JSON.stringify(filters)
       } else if (filter.name === 'product') {
         query.whereExists(
           DB('dispatch_item')
@@ -88,8 +85,7 @@ class Dispatchs {
             })
             .query()
         )
-        filters.splice(i, 1)
-        filters = JSON.stringify(filters)
+        delete filters[i]
       }
       if (filter.name === 'user') {
         query.where((query) => {
@@ -98,10 +94,10 @@ class Dispatchs {
           query.orWhere('user.name', 'like', `%${filter.value}%`)
           query.orWhere('user.email', 'like', `%${filter.value}%`)
         })
-        filters.splice(i, 1)
-        filters = JSON.stringify(filters)
+        delete filters[i]
       }
     }
+    filters = JSON.stringify(filters)
 
     const rows: any = await Utils.getRows({
       ...params,
