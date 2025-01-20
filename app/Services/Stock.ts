@@ -197,15 +197,21 @@ class Stock {
     }
   }
 
-  static async syncApi(params: { productIds?: number[]; projectIds?: number[] }) {
+  static async syncStocks() {
+    await Stock.syncApi()
+    await Stock.setStockProject()
+    return { success: true }
+  }
+
+  static async syncApi(params?: { productIds?: number[]; projectIds?: number[] }) {
     const products = await DB('product')
       .select(DB.raw('distinct product.id, product.barcode, product.parent_id'))
       .join('project_product as pp', 'pp.product_id', 'product.id')
       .where((query) => {
-        if (params.productIds) {
+        if (params?.productIds) {
           query.whereIn('pp.product_id', params.productIds)
           query.orWhereIn('product.parent_id', params.productIds)
-        } else if (params.projectIds) {
+        } else if (params?.projectIds) {
           query.whereIn('pp.project_id', params.projectIds)
         }
       })

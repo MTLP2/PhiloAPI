@@ -144,13 +144,8 @@ class App {
       const hour = new Date().getHours()
 
       await Order.checkNoOrder()
-      if ([9, 12, 15, 17].includes(hour)) {
-        await BigBlue.syncStocks()
-        await Whiplash.syncStocks()
-      }
       if ([8, 13, 16].includes(hour)) {
         await Production.updateDispatchsStatus()
-        await Whiplash.getDuplicates()
       }
 
       if (hour === 1) {
@@ -166,13 +161,13 @@ class App {
         await App.currencies()
         await App.generateSitemap()
         await App.exportProductReviewFeed()
+        await Whiplash.getDuplicates()
       } else if (hour === 4) {
         await Dispatchs.setTrackingLinks()
       } else if (hour === 5) {
         await Charts.uploadChartsGfk()
         await Cio.syncNewsletterNoAccount()
-        await Stock.syncApi({})
-        await Stock.setStockProject()
+        await Stock.syncStocks()
       } else if (hour === 6) {
         await Charts.uploadDigitalCharts()
       } else if (hour === 7) {

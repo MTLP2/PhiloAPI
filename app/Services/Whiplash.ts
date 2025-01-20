@@ -548,6 +548,7 @@ class Whiplash {
         query.on('stock_uk.is_preorder', DB.raw('?', ['0']))
       })
       .whereNotNull('barcode')
+      .whereNull('parent_id')
       .where((query: any) => {
         if (params && params.productIds) {
           query.whereIn('product.id', params.productIds)
@@ -564,6 +565,7 @@ class Whiplash {
       .select('stock.*')
       .join('product', 'product.id', 'stock.product_id')
       .where('is_preorder', false)
+      .whereNull('parent_id')
       .where('quantity', '>', 0)
       .all()
 
