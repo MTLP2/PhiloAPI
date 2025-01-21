@@ -446,8 +446,11 @@ class BigBlue {
   }
   **/
 
-  static getShippingType(type: string) {
-    switch (type) {
+  static getShippingType(params: { type: string; shipping_method: string }) {
+    if (params.type === 'box') {
+      return 'Vinyl Box'
+    }
+    switch (params.shipping_method) {
       case 'pickup':
         return 'pickup'
       case 'B2B Boxes':
@@ -497,7 +500,10 @@ class BigBlue {
         external_id: params.id.toString(),
         language: 'fr',
         currency: 'EUR',
-        shipping_method: BigBlue.getShippingType(params.shipping_method),
+        shipping_method: BigBlue.getShippingType({
+          type: params.type,
+          shipping_method: params.shipping_method
+        }),
         shipping_price: params.cost_invoiced ? params.cost_invoiced.toString() : '1',
         b2b: params.type === 'b2b' ? true : false,
         pickup_point:
