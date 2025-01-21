@@ -1479,6 +1479,7 @@ class Invoices {
           { key: 'is_licence', header: 'licence', width: 10 },
           { key: 'user', header: 'user', width: 15 },
           { key: 'email', header: 'email', width: 15 },
+          { key: 'com_user', header: 'com_user', width: 15 },
           { key: 'prod_user', header: 'prod_user', width: 15 },
           { key: 'date', header: 'date', width: 13 },
           { key: 'payment_days', header: 'payment_days', width: 13 },
