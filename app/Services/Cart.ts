@@ -1050,14 +1050,15 @@ class Cart {
         cost = transporter.packing + transporter.picking * params.insert
       }
 
+      if (!transporter[weight]) {
+        continue
+      }
+
       if (transporter.oil) {
         transporter[weight] = transporter[weight] + (transporter.oil / 100) * transporter[weight]
       }
       if (transporter.security) {
         transporter[weight] = transporter[weight] + transporter.security
-      }
-      if (!transporter[weight]) {
-        continue
       }
 
       transporter[weight] = transporter[weight] + cost
