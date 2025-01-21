@@ -1404,6 +1404,7 @@ class Invoices {
         'vod.resp_prod_id',
         'vod.is_licence',
         'user.email',
+        'client.email as client_email',
         'user.name as user',
         'user2.email as prod_email',
         'user2.name as prod_user'
@@ -1412,6 +1413,7 @@ class Invoices {
       .leftJoin('vod', 'vod.project_id', 'invoice.project_id')
       .leftJoin('user', 'user.id', 'vod.com_id')
       .leftJoin('user as user2', 'user2.id', 'vod.resp_prod_id')
+      .leftJoin('client', 'client.id', 'invoice.client_id')
       .where('compatibility', true)
       .whereIn('invoice.status', ['invoiced', 'prepaid'])
       .where('invoice.date', '>=', '2021-01-01')
@@ -1429,8 +1431,6 @@ class Invoices {
         invoices.map((i) => i.id)
       )
       .all()
-
-    console.log(reminders.length)
 
     for (const i in invoices) {
       invoices[i].first_reminder = reminders.find(
@@ -1459,6 +1459,7 @@ class Invoices {
       invoices[i].second_reminder = invoices[i].second_reminder
         ? invoices[i].second_reminder.substring(0, 10)
         : null
+      invoices[i].email = invoices[i].client_email || invoices[i].email
     }
 
     return Utils.arrayToXlsx([
@@ -1472,6 +1473,7 @@ class Invoices {
           { key: 'project', header: 'project', width: 40 },
           { key: 'is_licence', header: 'licence', width: 10 },
           { key: 'user', header: 'user', width: 15 },
+          { key: 'email', header: 'email', width: 15 },
           { key: 'prod_user', header: 'prod_user', width: 15 },
           { key: 'date', header: 'date', width: 13 },
           { key: 'payment_days', header: 'payment_days', width: 13 },
