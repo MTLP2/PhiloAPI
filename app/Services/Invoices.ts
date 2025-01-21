@@ -1403,16 +1403,20 @@ class Invoices {
         'vod.com_id',
         'vod.resp_prod_id',
         'vod.is_licence',
-        'user.email',
+        'user.email as user_email',
+        'user.name as user_name',
         'client.email as client_email',
         'user.name as user',
-        'user2.email as prod_email',
-        'user2.name as prod_user'
+        'user_prod.email as prod_email',
+        'user_prod.name as prod_user',
+        'user_com.email as com_email',
+        'user_com.name as com_user'
       )
       .leftJoin('project', 'project.id', 'invoice.project_id')
       .leftJoin('vod', 'vod.project_id', 'invoice.project_id')
-      .leftJoin('user', 'user.id', 'vod.com_id')
-      .leftJoin('user as user2', 'user2.id', 'vod.resp_prod_id')
+      .leftJoin('user', 'user.id', 'invoice.user_id')
+      .leftJoin('user as user_com', 'user_com.id', 'vod.com_id')
+      .leftJoin('user as user_prod', 'user_prod.id', 'vod.resp_prod_id')
       .leftJoin('client', 'client.id', 'invoice.client_id')
       .where('compatibility', true)
       .whereIn('invoice.status', ['invoiced', 'prepaid'])
@@ -1459,7 +1463,8 @@ class Invoices {
       invoices[i].second_reminder = invoices[i].second_reminder
         ? invoices[i].second_reminder.substring(0, 10)
         : null
-      invoices[i].email = invoices[i].client_email || invoices[i].email
+
+      invoices[i].email = invoices[i].email || invoices[i].client_email || invoices[i].user_email
     }
 
     return Utils.arrayToXlsx([
