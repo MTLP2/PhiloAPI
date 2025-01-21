@@ -948,12 +948,48 @@ class Vod {
   }
 
   static checkCampaignStart = async () => {
-    const vodToStart = await DB('vod').where('step', 'coming_soon').whereRaw(`start <= NOW()`).all()
+    const vodToStart = await DB('vod')
+      .select(
+        'vod.id',
+        'vod.step',
+        'vod.start',
+        'vod.project_id',
+        'vod.historic',
+        'user.email',
+        'project.name',
+        'project.artist_name'
+      )
+      .join('project', 'project.id', 'vod.project_id')
+      .leftJoin('user', 'user.id', 'vod.com_id')
+      .where('step', 'coming_soon')
+      .whereRaw(`start <= NOW()`)
+      .all()
 
     for (const vod of vodToStart) {
-      await DB('vod').where('id', vod.id).update({
-        step: 'in_progress'
+      const historic = vod.historic ? JSON.parse(vod.historic) : []
+      historic.push({
+        type: 'step',
+        user_id: 'api',
+        old: vod.step,
+        new: 'in_progress',
+        date: Utils.date()
       })
+      await Notifications.sendEmail({
+        to: vod.email,
+        subject: `Project in progress : ${vod.artist_name} - ${vod.name}`,
+        html: `
+        <p>Artist : ${vod.artist_name}</p>
+        <p>Project : ${vod.name}</p>
+        <p>Start date : ${vod.start}</p>
+        <p>https://www.diggersfactory.com/project/${vod.project_id}</p>`
+      })
+      await DB('vod')
+        .where('id', vod.id)
+        .update({
+          step: 'in_progress',
+          historic: JSON.stringify(historic),
+          updated_at: Utils.date()
+        })
     }
 
     return { success: true }
