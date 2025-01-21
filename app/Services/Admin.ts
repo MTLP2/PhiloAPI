@@ -532,11 +532,14 @@ class Admin {
       if (!project.trans[order.transporter]) {
         project.trans[order.transporter] = {
           orders: 0,
+          quantity: 0,
           to_send: 0,
+          to_send_orders: 0,
           sizes: {}
         }
       }
-      project.trans[order.transporter].orders += order.quantity
+      project.trans[order.transporter].orders++
+      project.trans[order.transporter].quantity += order.quantity
       if (order.size) {
         if (!project.trans[order.transporter].sizes[order.size]) {
           project.trans[order.transporter].sizes[order.size] = 0
@@ -546,6 +549,7 @@ class Admin {
       project.count += order.quantity
       if (!order.date_export && !order.dispatch_id) {
         project.trans[order.transporter].to_send += order.quantity
+        project.trans[order.transporter].to_send_orders++
       }
       if (order.item_id) {
         if (!order.item_barcode) {
@@ -587,6 +591,8 @@ class Admin {
         }
       }
     }
+
+    console.log(project.trans)
 
     project.barcodes = barcodes
     project.historic = JSON.parse(project.historic)
