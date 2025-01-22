@@ -1241,7 +1241,7 @@ class Cart {
     }
 
     if (shippings.length === 0) {
-      return { error: 'no_tg' }
+      return { error: 'no_shipping' }
     }
 
     let shipping
