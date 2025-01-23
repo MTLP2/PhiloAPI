@@ -1779,6 +1779,7 @@ class Stats {
         licence: {
           total: { total: 0, dates: { ...dates } },
           invoiced: { total: 0, dates: { ...dates } },
+          invoiced_total: { total: 0, dates: { ...dates } },
           cost: { total: 0, dates: { ...dates } },
           pourcent: { total: 0, dates: { ...dates } }
         },
@@ -1790,9 +1791,14 @@ class Stats {
           total: { total: 0, dates: { ...dates } },
           invoiced: { total: 0, dates: { ...dates } },
           cost: { total: 0, dates: { ...dates } },
+          cost_project: { total: 0, dates: { ...dates } },
+          cost_licence: { total: 0, dates: { ...dates } },
           project: { total: 0, dates: { ...dates } },
           licence: { total: 0, dates: { ...dates } },
-          pourcent: { total: 0, dates: { ...dates } }
+          pourcent: { total: 0, dates: { ...dates } },
+          pourcent_project: { total: 0, dates: { ...dates } },
+          pourcent_licence: { total: 0, dates: { ...dates } },
+          marge: { total: 0, dates: { ...dates } }
         },
         direct_shop: { total: 0, dates: { ...dates } },
         direct_pressing: { total: 0, dates: { ...dates } },
@@ -2254,12 +2260,14 @@ class Stats {
             }
             let total = (item.total * order.currency_rate) / (1 + order.tax_rate)
             let marge
+            let costArtist = 0
             if (item.payback_site) {
-              marge = total - item.payback_site * item.quantity
+              costArtist = item.payback_site * item.quantity
             } else if (item.fee_date) {
               const fee = Utils.getFee(JSON.parse(item.fee_date), date) / 100
-              marge = total * fee
+              costArtist = total * (1 - fee)
             }
+            marge = total - costArtist
             if (order.type === 'box') {
               total = (item.total - item.shipping) / (1 + order.tax_rate)
               addTurnover(invoice.type, 'box', 'site', date, total)
@@ -2271,7 +2279,8 @@ class Stats {
                 addTurnover(invoice.type, 'direct_shop', 'project', date, total)
               }
             } else if (item.is_licence) {
-              addMarge('licence', 'invoiced', date, marge)
+              addMarge('licence', 'invoiced', date, total)
+              addMarge('licence', 'cost', date, costArtist)
               if (!item.unit_cost) {
                 item.unit_cost = 8
               }
@@ -2480,21 +2489,6 @@ class Stats {
       d.sent.direct_pressing.dates[date] += prod.sub_total * prod.currency_rate
     }
 
-    for (const date of Object.keys(d.margin.licence.total.dates)) {
-      d.margin.licence.pourcent.dates[date] = Math.round(
-        ((d.margin.licence.invoiced.dates[date] - d.margin.licence.cost.dates[date]) /
-          d.margin.licence.invoiced.dates[date]) *
-          100
-      )
-    }
-    for (const date of Object.keys(d.margin.distrib.invoiced.dates)) {
-      d.margin.distrib.pourcent.dates[date] = Math.round(
-        ((d.margin.distrib.invoiced.dates[date] - d.margin.distrib.cost.dates[date]) /
-          d.margin.distrib.invoiced.dates[date]) *
-          100
-      )
-    }
-
     d.cart.avg_total =
       <number>Object.values(cart).reduce((prev: number, cur: any) => prev + cur.total, 0) /
       Object.values(cart).length
@@ -2557,24 +2551,37 @@ class Stats {
         }
 
         let marge
+        let costArtist = 0
         if (stat.payback_distrib) {
-          marge = dis.total / currencies[stat.currency] - stat.payback_distrib * dis.quantity
+          costArtist = stat.payback_distrib * dis.quantity
         } else {
           const fee = Utils.getFee(JSON.parse(stat.fee_distrib_date), stat.date) / 100
-          marge = (dis.total / currencies[stat.currency]) * fee
+          costArtist = (dis.total / currencies[stat.currency]) * (1 - fee)
         }
+        marge = dis.total / currencies[stat.currency] - costArtist
 
         d.sent.distrib.dates[date] += dis.total / currencies[stat.currency]
         d.sent.total.dates[date] += dis.total / currencies[stat.currency]
 
-        addMarge('distrib', stat.is_licence ? 'licence' : 'project', date, marge)
+        addMarge(
+          'distrib',
+          stat.is_licence ? 'licence' : 'project',
+          date,
+          dis.total / currencies[stat.currency]
+        )
         if (stat.is_licence) {
           if (!stat.unit_cost && stat.category !== 'digital') {
             stat.unit_cost = 8
           }
           addMarge('distrib', 'cost', date, stat.unit_cost * dis.quantity)
+          addMarge('distrib', 'cost_licence', date, stat.unit_cost * dis.quantity)
+          addMarge('distrib', 'cost_licence', date, costArtist)
+        } else {
+          addMarge('distrib', 'cost_project', date, costArtist)
         }
-        addMarge('distrib', 'invoiced', date, marge)
+        addMarge('distrib', 'cost', date, costArtist)
+        addMarge('distrib', 'invoiced', date, dis.total / currencies[stat.currency])
+        addMarge('distrib', 'marge', date, marge)
 
         addTurnover(stat.type, 'distrib', null, date, dis.total / currencies[stat.currency])
 
@@ -2698,6 +2705,30 @@ class Stats {
       }
     }
 
+    for (const date of Object.keys(d.margin.licence.invoiced.dates)) {
+      d.margin.licence.pourcent.dates[date] = Math.round(
+        ((d.margin.licence.invoiced.dates[date] - d.margin.licence.cost.dates[date]) /
+          d.margin.licence.invoiced.dates[date]) *
+          100
+      )
+    }
+    for (const date of Object.keys(d.margin.distrib.invoiced.dates)) {
+      d.margin.distrib.pourcent.dates[date] = Math.round(
+        ((d.margin.distrib.invoiced.dates[date] - d.margin.distrib.cost.dates[date]) /
+          d.margin.distrib.invoiced.dates[date]) *
+          100
+      )
+      d.margin.distrib.pourcent_project.dates[date] = Math.round(
+        ((d.margin.distrib.project.dates[date] - d.margin.distrib.cost_project.dates[date]) /
+          d.margin.distrib.project.dates[date]) *
+          100
+      )
+      d.margin.distrib.pourcent_licence.dates[date] = Math.round(
+        ((d.margin.distrib.licence.dates[date] - d.margin.distrib.cost_licence.dates[date]) /
+          d.margin.distrib.licence.dates[date]) *
+          100
+      )
+    }
     for (const user of users) {
       const date = moment(user.created_at).format(format)
 
