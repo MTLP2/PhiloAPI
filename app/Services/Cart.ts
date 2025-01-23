@@ -228,6 +228,7 @@ class Cart {
               html: `<div>
                 <p>${params.country_id}</p>
                 <p>http://diggersfactory.com/sheraf/project/${project.project_id}/stocks</p>
+                <pre>${JSON.stringify(params, null, 2)}</pre>
               </div>`
             })
           }
