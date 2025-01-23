@@ -205,7 +205,11 @@ class Boxes {
     box.step = params.step
     box.comment = params.comment
     box.dispatch_gift = params.dispatch_gift
+    box.shipping_type = params.shipping_type
     box.is_promo = params.is_promo
+    if (params.address_pickup) {
+      box.address_pickup = JSON.stringify(params.address_pickup)
+    }
     box.updated_at = Utils.date()
 
     await box.save()
