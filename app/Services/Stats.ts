@@ -1779,7 +1779,8 @@ class Stats {
         licence: {
           total: { total: 0, dates: { ...dates } },
           invoiced: { total: 0, dates: { ...dates } },
-          cost: { total: 0, dates: { ...dates } }
+          cost: { total: 0, dates: { ...dates } },
+          pourcent: { total: 0, dates: { ...dates } }
         },
         shipping: { total: 0, dates: { ...dates } },
         tips: { total: 0, dates: { ...dates } },
@@ -1787,8 +1788,11 @@ class Stats {
         service_charge: { total: 0, dates: { ...dates } },
         distrib: {
           total: { total: 0, dates: { ...dates } },
+          invoiced: { total: 0, dates: { ...dates } },
+          cost: { total: 0, dates: { ...dates } },
           project: { total: 0, dates: { ...dates } },
-          licence: { total: 0, dates: { ...dates } }
+          licence: { total: 0, dates: { ...dates } },
+          pourcent: { total: 0, dates: { ...dates } }
         },
         direct_shop: { total: 0, dates: { ...dates } },
         direct_pressing: { total: 0, dates: { ...dates } },
@@ -1899,6 +1903,8 @@ class Stats {
         'vod.fee_distrib_date',
         'vod.payback_distrib',
         'vod.is_licence',
+        'vod.unit_cost',
+        'project.category',
         'vod.currency',
         'vod.project_id',
         'project.name',
@@ -2088,6 +2094,7 @@ class Stats {
 
     const projectsList = await DB('vod')
       .select(
+        'vod.project_id',
         'order_shop_id',
         'order_id',
         'order_item.total',
@@ -2095,6 +2102,7 @@ class Stats {
         'fee_date',
         'fee_change',
         'payback_site',
+        'unit_cost',
         'is_licence'
       )
       .join('order_item', 'order_item.project_id', 'vod.project_id')
@@ -2181,11 +2189,14 @@ class Stats {
       }
       if (cat) {
         d.margin[type][cat].dates[date] += value
-        d.margin[type].total.dates[date] += value
+        if (cat === 'cost') {
+          d.margin[type].total.dates[date] -= value
+        } else {
+          d.margin[type].total.dates[date] += value
+        }
       } else {
         d.margin[type].dates[date] += value
       }
-      d.margin.total.dates[date] += value
     }
 
     for (const invoice of invoices) {
@@ -2261,6 +2272,10 @@ class Stats {
               }
             } else if (item.is_licence) {
               addMarge('licence', 'invoiced', date, marge)
+              if (!item.unit_cost) {
+                item.unit_cost = 8
+              }
+              addMarge('licence', 'cost', date, item.unit_cost * item.quantity)
               addTurnover(invoice.type, 'licence', null, date, total)
             } else {
               addMarge('project', null, date, marge)
@@ -2465,6 +2480,21 @@ class Stats {
       d.sent.direct_pressing.dates[date] += prod.sub_total * prod.currency_rate
     }
 
+    for (const date of Object.keys(d.margin.licence.total.dates)) {
+      d.margin.licence.pourcent.dates[date] = Math.round(
+        ((d.margin.licence.invoiced.dates[date] - d.margin.licence.cost.dates[date]) /
+          d.margin.licence.invoiced.dates[date]) *
+          100
+      )
+    }
+    for (const date of Object.keys(d.margin.distrib.invoiced.dates)) {
+      d.margin.distrib.pourcent.dates[date] = Math.round(
+        ((d.margin.distrib.invoiced.dates[date] - d.margin.distrib.cost.dates[date]) /
+          d.margin.distrib.invoiced.dates[date]) *
+          100
+      )
+    }
+
     d.cart.avg_total =
       <number>Object.values(cart).reduce((prev: number, cur: any) => prev + cur.total, 0) /
       Object.values(cart).length
@@ -2538,6 +2568,15 @@ class Stats {
         d.sent.total.dates[date] += dis.total / currencies[stat.currency]
 
         addMarge('distrib', stat.is_licence ? 'licence' : 'project', date, marge)
+        if (stat.is_licence) {
+          if (!stat.unit_cost && stat.category !== 'digital') {
+            stat.unit_cost = 8
+          }
+          addMarge('distrib', 'cost', date, stat.unit_cost * dis.quantity)
+        }
+        addMarge('distrib', 'invoiced', date, marge)
+
+        addTurnover(stat.type, 'distrib', null, date, dis.total / currencies[stat.currency])
 
         if (!d.distrib.list[dis.name]) {
           d.distrib.list[dis.name] = {
@@ -2593,7 +2632,7 @@ class Stats {
       const date = moment(cost.date).format(format)
 
       if (cost.is_licence) {
-        addMarge('licence', 'cost', date, cost.margin / currencies[cost.currency])
+        // addMarge('licence', 'cost', date, cost.margin / currencies[cost.currency])
       } else if (cost.project_type === 'direct_pressing') {
         addMarge('direct_pressing', null, date, cost.margin / currencies[cost.currency])
       } else {
