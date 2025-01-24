@@ -844,8 +844,8 @@ class Invoices {
     invoice.number = null
     invoice.name =
       invoice.type === 'invoice'
-        ? `Credit note for N°${invoice.code}`
-        : `Invoice for N°${invoice.code}`
+        ? `${invoice.name} / Credit note for N°${invoice.code}`
+        : `${invoice.name} / Invoice for N°${invoice.code}`
     invoice.code = null
     invoice.inc = 1
     invoice.year = moment().format('YY')
