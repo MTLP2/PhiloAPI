@@ -1340,6 +1340,9 @@ class Cart {
     res.chosen_sizes = p.chosen_sizes
     res.is_large = p.project.is_large
 
+    if (p.project_id === 324508 && !p.comment) {
+      res.error = 'no_comment'
+    }
     if (p.project.step !== 'in_progress' && p.project.step !== 'private') {
       res.error = 'project_not_available'
     }
