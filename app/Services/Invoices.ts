@@ -32,7 +32,11 @@ class Invoices {
       .leftJoin('customer as c', 'c.id', 'invoice.customer_id')
       .leftJoin('vod', 'vod.project_id', 'invoice.project_id')
       .leftJoin('order', 'order.id', 'invoice.order_id')
-      .leftJoin('payment', 'payment.invoice_id', 'invoice.id')
+      .leftJoin('payment', (query) => {
+        query.on('payment.invoice_id', 'invoice.id')
+        query.on('payment.status', '=', DB.raw('?', 'paid'))
+        query.on(DB.raw('payment.payment_id is not null'))
+      })
 
     if (!params.sort) {
       query.orderBy('invoice.id', 'desc')
