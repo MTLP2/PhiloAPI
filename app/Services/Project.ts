@@ -576,6 +576,10 @@ class Project {
         } else if (filter.type === 'category') {
           if (+filter.value === 153) {
             projects.where('v.is_box', true)
+          } else if (+filter.value === 155) {
+            projects.where('v.price_distribution', '>', 0)
+            projects.where('v.price', '!=', 'v.price_distribution')
+            projects.where('v.step', '=', 'in_progress')
           } else {
             categories.push(filter.value)
           }
