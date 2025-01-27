@@ -222,6 +222,7 @@ class Cart {
             state: params.customer.state
           })
           if (shipping.error === 'no_shipping' && process.env.NODE_ENV === 'production') {
+            /**
             await Notifications.sendEmail({
               to: Env.get('DEBUG_EMAIL'),
               subject: `No Shipping: ${project.artist_name} - ${project.name}`,
@@ -248,6 +249,7 @@ class Cart {
                 <pre>${JSON.stringify(params, null, 2)}</pre>
               </div>`
             })
+            **/
           }
           if (shipping.error) {
             cart.error = shipping.error
