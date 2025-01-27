@@ -227,6 +227,22 @@ class Cart {
               subject: `No Shipping: ${project.artist_name} - ${project.name}`,
               html: `<div>
                 <p>${params.country_id}</p>
+                <p>${JSON.stringify(
+                  {
+                    quantity: item.quantity,
+                    insert: item.quantity,
+                    is_large: project.is_large,
+                    currency: project.currency,
+                    is_shop: item.type === 'shop',
+                    stock: true,
+                    stocks: stocks,
+                    weight: weight,
+                    country_id: params.country_id,
+                    state: params.customer.state
+                  },
+                  null,
+                  2
+                )}</p>
                 <p>${JSON.stringify(shipping, null, 2)}</p>
                 <p>http://diggersfactory.com/sheraf/project/${project.project_id}/stocks</p>
                 <pre>${JSON.stringify(params, null, 2)}</pre>
