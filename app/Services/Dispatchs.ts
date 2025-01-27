@@ -2510,7 +2510,7 @@ class Dispatchs {
           ands.push(eb('dispatch.id', '=', params.id))
         } else {
           ands.push(eb('dispatch.status', '=', 'in_progress'))
-          ands.push(eb('dispatch.date_inprogress', '<', sql`NOW() - INTERVAL 2 HOUR`))
+          // ands.push(eb('dispatch.date_inprogress', '<', sql`NOW() - INTERVAL 2 HOUR`))
         }
         return and(ands)
       })
