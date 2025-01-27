@@ -1588,7 +1588,14 @@ class StatementService {
       params.end = moment().format('YYYY-MM-DD')
     }
     let projects: any = DB()
-      .select(DB.raw('distinct(project.id)'), 'vod.barcode', 'currency', 'artist_name', 'name')
+      .select(
+        DB.raw('distinct(project.id)'),
+        'vod.barcode',
+        'project.cat_number',
+        'currency',
+        'artist_name',
+        'name'
+      )
       .table('project')
       .join('vod', 'vod.project_id', 'project.id')
       .join('project_user as pu', 'pu.project_id', 'project.id')
@@ -1789,6 +1796,8 @@ class StatementService {
         columns: [
           { header: 'Artist', key: 'artist_name', width: 30 },
           { header: 'Project', key: 'name', width: 40 },
+          { header: 'Barcode', key: 'barcode', width: 20 },
+          { header: 'Catnumber', key: 'cat_number', width: 20 },
           { header: 'Quantity sold', key: 'quantity', width: 20, alignement: 'right' },
           { header: 'Revenues', key: 'income', width: 15, alignement: 'right', currency: true },
           { header: 'Costs', key: 'costs', width: 15, alignement: 'right', currency: true },
