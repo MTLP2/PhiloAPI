@@ -393,6 +393,7 @@ class DispatchsController {
   }
 
   async updateStock({ request }) {
+    return { success: true }
     if (request.headers()['x-bigblue-event-type'] === 'INVENTORY_UPDATE') {
       const payload = await validator.validate({
         schema: schema.create({
