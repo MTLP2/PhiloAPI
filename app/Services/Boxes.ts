@@ -1127,8 +1127,11 @@ class Boxes {
         }
       }
 
-      const findVinyl = (params: { styles: number[] }) => {
+      const findVinyl = (params: { styles: number[]; not?: number }) => {
         for (const p of projects) {
+          if (params.not === p.product_id) {
+            continue
+          }
           if (products.includes(p.product_id)) {
             continue
           }
@@ -1154,15 +1157,21 @@ class Boxes {
         pp[0] = choice
       }
       if (!pp[0]) {
-        console.info('not enough projects', b.id)
+        console.info('not enough projects', box.id)
       }
       if (box.type === 'two') {
-        let choice = findVinyl({ styles: styles.filter((s) => !pp[0].genres.includes(s)) })
+        let choice = findVinyl({
+          styles: styles.filter((s) => !pp[0].genres.includes(s)),
+          not: pp[0]?.product_id
+        })
         if (!choice) {
-          choice = findVinyl({ styles: styles })
+          choice = findVinyl({ styles: styles, not: pp[0]?.product_id })
         }
         if (!choice) {
-          choice = findVinyl({ styles: stylesAll.filter((s) => !pp[0].genres.includes(s)) })
+          choice = findVinyl({
+            styles: stylesAll.filter((s) => !pp[0].genres.includes(s)),
+            not: pp[0]?.product_id
+          })
         }
         pp[1] = choice
       }
@@ -1226,6 +1235,8 @@ class Boxes {
         <p>${boxes.length} dispatch créés.</p>
       `
     })
+
+    return boxes.length
   }
 
   static async setDispatchsOld() {
