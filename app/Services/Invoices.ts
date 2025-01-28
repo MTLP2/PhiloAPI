@@ -23,10 +23,11 @@ class Invoices {
         'c.firstname',
         'c.lastname',
         'c.country_id',
-        'payment.payment_id as payment_id',
         'order.payment_id as order_payment_id',
         'order.payment_type as order_payment_type',
-        'order.transaction_id as order_transaction_id'
+        'order.transaction_id as order_transaction_id',
+        'payment.payment_id as payment_id',
+        'payment.payment_type as payment_type'
       )
       .from('invoice')
       .leftJoin('customer as c', 'c.id', 'invoice.customer_id')
