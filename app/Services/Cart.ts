@@ -1754,7 +1754,11 @@ class Cart {
       }
     }
 
-    if (params.payment_type === 'stripe') {
+    if (params.payment_type === 'free' && order.total === 0) {
+      return {
+        order_id: order.id
+      }
+    } else if (params.payment_type === 'stripe') {
       return Cart.createStripePayment({
         user_id: params.user_id,
         order_id: order.id,
@@ -1938,7 +1942,14 @@ class Cart {
 
   static confirm = async (params: { id: number; paypal_order_id?: string }) => {
     const order = await DB('order').where('id', params.id).first()
-    if (order.payment_type === 'stripe') {
+    if (!order) {
+      return { success: false }
+    }
+    if (order.payment_type === 'free' && order.total === 0) {
+      return Cart.validPayment({
+        order_id: order.id
+      })
+    } else if (order.payment_type === 'stripe') {
       return Cart.confirmStripePayment({
         order_id: order.id,
         payment_id: order.payment_id
