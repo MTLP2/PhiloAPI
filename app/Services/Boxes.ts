@@ -2688,6 +2688,17 @@ class Boxes {
 
     barcodes.push(...goodiesBox)
 
+    const hasDuplicateBarcode = new Set(barcodes).size !== barcodes.length
+    if (hasDuplicateBarcode) {
+      await Notifications.sendEmail({
+        to: 'victor@diggersfactory.com',
+        subject: `Boxes - Duplicate barcode`,
+        html: `<pre>${JSON.stringify(barcodes, null, 2)}</pre>
+        <pre>${JSON.stringify(params, null, 2)}</pre>`
+      })
+      return { success: false }
+    }
+
     const products = await DB('product').select('id', 'barcode').whereIn('barcode', barcodes).all()
 
     if (!dispatch) {
