@@ -2336,7 +2336,7 @@ class StatementService {
     return users
   }
 
-  static async getSalesLicences() {
+  static async getAllSalesLicences() {
     const projects = await DB()
       .from('project')
       .select('project.id', 'project.name', 'vod.barcode', 'artist_name', 'unit_cost')
@@ -2472,6 +2472,217 @@ class StatementService {
       )
       start.add(1, 'month')
     }
+
+    return Utils.arrayToXlsx([
+      {
+        worksheetName: 'Licenes',
+        columns: columns,
+        data: Object.values(pp).filter((p: { show: boolean }) => p.show) as any
+      }
+    ])
+  }
+
+  static async getSalesLicences(params: { start?: string; end?: string }) {
+    const projects = await DB()
+      .from('project')
+      .select('project.id', 'project.name', 'vod.barcode', 'artist_name', 'unit_cost')
+      .join('vod', 'vod.project_id', 'project.id')
+      .where('is_licence', true)
+      .all()
+
+    const pp = {}
+    for (const project of projects) {
+      project.site = {}
+      project.retail = {}
+      project.show = false
+      pp[project.id] = project
+    }
+
+    const orders = await DB('order_item as oi')
+      .select(
+        'os.currency_rate',
+        'oi.project_id',
+        'os.tax_rate',
+        'oi.quantity',
+        'oi.price',
+        'oi.currency',
+        'vod.unit_cost',
+        'vod.price',
+        'vod.fee_date',
+        'vod.payback_site',
+        'oi.created_at'
+      )
+      .join('order_shop as os', 'os.id', 'oi.order_shop_id')
+      .join('vod', 'vod.project_id', 'oi.project_id')
+      .where('os.is_paid', true)
+      .where((query) => {
+        if (params.start) {
+          query.where('oi.created_at', '>=', params.start)
+        } else {
+          query.where('oi.created_at', '>=', '2023-01-01')
+        }
+        if (params.end) {
+          query.where('oi.created_at', '<=', params.end)
+        }
+      })
+      .whereIn(
+        'oi.project_id',
+        projects.map((p) => p.id)
+      )
+      .all()
+
+    for (const order of orders) {
+      const date = moment(order.created_at).format('YYYY-MM')
+
+      if (!pp[order.project_id].site_turnover) {
+        pp[order.project_id].site_turnover = 0
+        pp[order.project_id].site_margin = 0
+        pp[order.project_id].site_quantity = 0
+      }
+
+      let turnover = (order.price * order.quantity * order.currency_rate) / (1 + order.tax_rate)
+      turnover = turnover / (1 + order.tax_rate)
+      pp[order.project_id].show = true
+      pp[order.project_id].site_turnover += turnover
+      pp[order.project_id].site_quantity += order.quantity
+
+      let marge
+      if (order.payback_site) {
+        marge = turnover - order.payback_site * order.quantity
+      } else {
+        const fee = Utils.getFee(JSON.parse(order.fee_date), date) / 100
+        marge = turnover * fee
+      }
+      pp[order.project_id].site_margin += marge - order.unit_cost * order.quantity
+    }
+
+    console.log(params)
+    const statements = await DB('statement')
+      .select(
+        'statement.id',
+        'statement.project_id',
+        'statement.date',
+        'vod.unit_cost',
+        'vod.price',
+        'vod.is_licence',
+        'vod.fee_distrib_date',
+        'vod.payback_distrib'
+      )
+      .whereIn(
+        'statement.project_id',
+        projects.map((p) => p.id)
+      )
+      .hasMany('statement_distributor', 'distributors')
+      .join('vod', 'vod.project_id', 'statement.project_id')
+      .orderBy('date')
+      .where((query) => {
+        if (params.start) {
+          query.where(DB.raw(`DATE_FORMAT(concat(date, '-01'), '%Y-%m-%d') >= '${params.start}'`))
+        } else {
+          query.where(DB.raw("DATE_FORMAT(concat(date, '-01'), '%Y-%m-%d') >= 2023-01-01"))
+        }
+        if (params.end) {
+          query.where(DB.raw(`DATE_FORMAT(concat(date, '-01'), '%Y-%m-%d') <= '${params.end}'`))
+        }
+      })
+      .all()
+
+    for (const stat of statements) {
+      for (const dist of stat.distributors) {
+        if (dist.quantity > 0) {
+          pp[stat.project_id].show = true
+        }
+        const returned = dist.returned ? Math.abs(dist.returned) : 0
+
+        let marge
+        if (stat.payback_distrib) {
+          marge = dist.total - stat.payback_distrib * dist.quantity
+        } else {
+          const fee = Utils.getFee(JSON.parse(stat.fee_distrib_date), stat.date) / 100
+          marge = dist.total * fee
+        }
+        marge = marge - stat.unit_cost * dist.quantity
+
+        if (!pp[stat.project_id].retail_turnover) {
+          pp[stat.project_id].retail_margin = 0
+          pp[stat.project_id].retail_turnover = 0
+          pp[stat.project_id].retail_quantity = 0
+        }
+        pp[stat.project_id].retail_margin += marge
+        pp[stat.project_id].retail_turnover += dist.total
+        pp[stat.project_id].retail_quantity += dist.quantity - returned
+      }
+    }
+
+    for (const p of Object.keys(pp)) {
+      if (pp[p].site_quantity > 0) {
+        pp[p].site_turnover = Math.round(pp[p].site_turnover)
+        pp[p].site_margin = Math.round(pp[p].site_margin)
+        pp[p].site_margin_percent = Math.round((pp[p].site_margin / pp[p].site_turnover) * 100)
+      }
+      if (pp[p].retail_quantity > 0) {
+        pp[p].retail_turnover = Math.round(pp[p].retail_turnover)
+        pp[p].retail_margin = Math.round(pp[p].retail_margin)
+        pp[p].retail_margin_percent = Math.round(
+          (pp[p].retail_margin / pp[p].retail_turnover) * 100
+        )
+      }
+    }
+
+    const start = moment('2023-01-01')
+    const end = moment()
+
+    const columns = [
+      { header: 'id', key: 'id', width: 10 },
+      { header: 'Artist', key: 'artist_name', width: 30 },
+      { header: 'Project', key: 'name', width: 30 },
+      { header: 'Barcode', key: 'barcode', width: 15 },
+      { header: 'Unit cost', key: 'unit_cost', width: 15 },
+      { header: 'Site Quantity', key: 'site_quantity', width: 15 },
+      { header: 'Site Turnover', key: 'site_turnover', width: 15 },
+      { header: 'Site margin', key: 'site_margin', width: 15 },
+      { header: 'Site margin %', key: 'site_margin_percent', width: 15 },
+      { header: 'Retail Quantity', key: 'retail_quantity', width: 15 },
+      { header: 'Retail Turnover', key: 'retail_turnover', width: 15 },
+      { header: 'Retail margin', key: 'retail_margin', width: 15 },
+      { header: 'Retail margin %', key: 'retail_margin_percent', width: 15 }
+    ]
+
+    /**
+    while (start.isSameOrBefore(end, 'month')) {
+      columns.push(
+        ...[
+          {
+            header: `${start.format('YYYY-MM')} s qty`,
+            key: `${start.format('YYYY-MM')}_site_qty`,
+            cast: (v) => (v ? Utils.round(v, 2) : ''),
+            width: 10
+          },
+          {
+            header: `${start.format('YYYY-MM')} s tur`,
+            key: `${start.format('YYYY-MM')}_site_tur`,
+            cast: (v) => (v ? Utils.round(v, 2) : ''),
+            round: true,
+            width: 10
+          },
+          {
+            header: `${start.format('YYYY-MM')} r qty`,
+            key: `${start.format('YYYY-MM')}_retail_qty`,
+            cast: (v) => (v ? Utils.round(v, 2) : ''),
+            round: true,
+            width: 10
+          },
+          {
+            header: `${start.format('YYYY-MM')} r tur`,
+            key: `${start.format('YYYY-MM')}_retail_tur`,
+            cast: (v) => (v ? Utils.round(v, 2) : ''),
+            width: 10
+          }
+        ]
+      )
+      start.add(1, 'month')
+    }
+    **/
 
     return Utils.arrayToXlsx([
       {
