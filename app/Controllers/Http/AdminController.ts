@@ -319,8 +319,8 @@ class AdminController {
     return Statement.getSalesByCountry(params)
   }
 
-  getSalesLicences() {
-    return Statement.getSalesLicences()
+  getSalesLicences({ params }) {
+    return Statement.getSalesLicences(params)
   }
 
   uploadStocks({ params, user }) {
