@@ -147,7 +147,9 @@ class App {
       if ([8, 13, 16].includes(hour)) {
         await Production.updateDispatchsStatus()
       }
-
+      if ([3, 13].includes(hour)) {
+        await Stock.syncStocks()
+      }
       if (hour === 1) {
         await Cart.checkDifferencePayment()
       } else if (hour === 2) {
@@ -167,7 +169,6 @@ class App {
       } else if (hour === 5) {
         await Charts.uploadChartsGfk()
         await Cio.syncNewsletterNoAccount()
-        await Stock.syncStocks()
       } else if (hour === 6) {
         await Charts.uploadDigitalCharts()
       } else if (hour === 7) {
