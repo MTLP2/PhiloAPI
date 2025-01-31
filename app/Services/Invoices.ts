@@ -25,19 +25,21 @@ class Invoices {
         'c.country_id',
         'order.payment_id as order_payment_id',
         'order.payment_type as order_payment_type',
-        'order.transaction_id as order_transaction_id',
-        'payment.payment_id as payment_id',
-        'payment.payment_type as payment_type'
+        'order.transaction_id as order_transaction_id'
+        // 'payment.payment_id as payment_id',
+        // 'payment.payment_type as payment_type'
       )
       .from('invoice')
       .leftJoin('customer as c', 'c.id', 'invoice.customer_id')
       .leftJoin('vod', 'vod.project_id', 'invoice.project_id')
       .leftJoin('order', 'order.id', 'invoice.order_id')
+    /**
       .leftJoin('payment', (query) => {
         query.on('payment.invoice_id', 'invoice.id')
         query.on('payment.status', '=', DB.raw('?', 'paid'))
         query.on(DB.raw('payment.payment_id is not null'))
       })
+      **/
 
     if (!params.sort) {
       query.orderBy('invoice.id', 'desc')
