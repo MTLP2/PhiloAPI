@@ -372,7 +372,7 @@ class Charts {
   }
 
   static async getOfficialCharts(params: { country: 'FR' | 'GB'; date?: string }) {
-    const date = moment(params.date) || moment().subtract(1, 'days')
+    const date = params.date ? moment(params.date) : moment().subtract(1, 'days')
     const orders = await Charts.getOrders({
       country_id: params.country,
       date: date.format('YYYY-MM-DD')
@@ -449,9 +449,10 @@ class Charts {
   }
 
   static async uploadOfficialCharts(params: { country: 'FR' | 'GB'; date?: string }) {
-    const date = moment(params.date) || moment().subtract(1, 'days')
+    const date = params.date ? moment(params.date) : moment().subtract(1, 'days')
     const file = await Charts.getOfficialCharts({
-      date: date.format('YYYY-MM-DD'),
+      // date: date.format('YYYY-MM-DD'),
+      date: '2025-02-07',
       country: params.country
     })
 
