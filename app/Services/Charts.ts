@@ -66,7 +66,8 @@ class Charts {
           query.whereIn('product.type', ['vinyl', 'cd', 'tape'])
           query.where((query) => {
             if (params.date) {
-              query.whereRaw(`DATE_FORMAT(os.date_export, "%Y-%m-%d") = '${params.date}'`)
+              query.where('oi.project_id', 323096)
+              query.orWhereRaw(`DATE_FORMAT(os.date_export, "%Y-%m-%d") = '${params.date}'`)
             } else if (params.date_start && params.date_end) {
               query.whereRaw(
                 `os.date_export BETWEEN '${params.date_start}' AND '${params.date_end}'`
@@ -416,6 +417,7 @@ class Charts {
 
     let file: string = ''
     if (params.country === 'FR') {
+      console.log(orders)
       file = Utils.arrayToCsv(
         [
           { name: 'date', index: 'date_fr' },
@@ -451,8 +453,7 @@ class Charts {
   static async uploadOfficialCharts(params: { country: 'FR' | 'GB'; date?: string }) {
     const date = params.date ? moment(params.date) : moment().subtract(1, 'days')
     const file = await Charts.getOfficialCharts({
-      // date: date.format('YYYY-MM-DD'),
-      date: '2025-02-07',
+      date: date.format('YYYY-MM-DD'),
       country: params.country
     })
 
