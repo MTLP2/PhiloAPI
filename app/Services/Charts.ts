@@ -66,7 +66,7 @@ class Charts {
           query.whereIn('product.type', ['vinyl', 'cd', 'tape'])
           query.where((query) => {
             if (params.date) {
-              query.orWhereRaw(`DATE_FORMAT(os.date_export, "%Y-%m-%d") = '${params.date}'`)
+              query.where(`DATE_FORMAT(os.date_export, "%Y-%m-%d") = '${params.date}'`)
             } else if (params.date_start && params.date_end) {
               query.whereRaw(
                 `os.date_export BETWEEN '${params.date_start}' AND '${params.date_end}'`
