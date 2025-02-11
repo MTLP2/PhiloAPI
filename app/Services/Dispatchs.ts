@@ -156,6 +156,8 @@ class Dispatchs {
         'product.barcode',
         'product.catnumber',
         'product.country_id',
+        'product.whiplash_id',
+        'product.bigblue_id',
         'product.more',
         'product.type'
       )

@@ -816,10 +816,18 @@ class Products {
     const logisticians = ['whiplash', 'whiplash_uk', 'bigblue']
 
     const stocks = await DB('stock')
-      .select('product_id', 'quantity', 'reserved', 'type')
-      .whereIn('product_id', params.products.split(','))
-      .where('is_preorder', false)
-      .where('quantity', '!=', '0')
+      .select(
+        'stock.product_id',
+        'product.whiplash_id',
+        'product.bigblue_id',
+        'stock.quantity',
+        'stock.reserved',
+        'stock.type'
+      )
+      .join('product', 'product.id', 'stock.product_id')
+      .whereIn('stock.product_id', params.products.split(','))
+      .where('stock.is_preorder', false)
+      .where('stock.quantity', '!=', '0')
       .all()
 
     for (const stock of stocks) {
