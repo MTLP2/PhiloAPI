@@ -66,7 +66,6 @@ class Charts {
           query.whereIn('product.type', ['vinyl', 'cd', 'tape'])
           query.where((query) => {
             if (params.date) {
-              query.where('oi.project_id', 323096)
               query.orWhereRaw(`DATE_FORMAT(os.date_export, "%Y-%m-%d") = '${params.date}'`)
             } else if (params.date_start && params.date_end) {
               query.whereRaw(
