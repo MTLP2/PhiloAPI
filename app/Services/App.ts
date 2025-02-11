@@ -225,19 +225,6 @@ class App {
     }
 
     try {
-      const lastDate = moment().subtract(1, 'minute').format('YYYY-MM-DD HH:mm')
-      const last = await DB('cronjobs').where('type', 'minutely').where('date', lastDate).first()
-      if (!last || last.status !== 'complete') {
-        const status = last?.status || 'not completed'
-        await Notifications.sendEmail({
-          to: 'victor@diggersfactory.com',
-          subject: `Cronjob minutely - ${lastDate} - ${status}`,
-          html: `<p>Last cronjob status : ${status}</p>
-          <p>Last cronjob date : ${lastDate}</p>
-          <p>Last cronjob type : minutely</p>`
-        })
-      }
-
       await App.checkNotifications()
       await Cart.checkIncompleteCart()
       await Invoices.setNumbers()
