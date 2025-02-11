@@ -873,11 +873,19 @@ class Dispatchs {
     }
 
     const projects = await DB('project')
-      .select('project.id', 'vod.weight', 'di.quantity', 'is_licence', 'vod.currency')
+      .select(
+        'project.id',
+        'project_product.product_id',
+        'vod.weight',
+        'di.quantity',
+        'is_licence',
+        'vod.currency'
+      )
       .join('vod', 'vod.project_id', 'project.id')
       .join('project_product', 'project_product.project_id', 'project.id')
       .join('dispatch_item as di', 'di.product_id', 'project_product.product_id')
       .where('di.dispatch_id', invoice.dispatch_id)
+      .orderByRaw('CHAR_LENGTH(vod.barcode) ASC')
       .all()
 
     const weight = projects.reduce(
@@ -901,7 +909,13 @@ class Dispatchs {
     const currenciesDb = await Utils.getCurrenciesDb()
     const currencies = await Utils.getCurrencies(invoice.currency, currenciesDb)
 
+    let productInvoiced = {}
+
     for (const project of projects) {
+      if (productInvoiced[project.product_id]) {
+        continue
+      }
+      productInvoiced[project.product_id] = true
       const weightProject = project.weight * project.quantity
       const ratio = weightProject / weight
       const costReel = Utils.round(invoice.total * ratio, 2)
