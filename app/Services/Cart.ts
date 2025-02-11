@@ -19,7 +19,7 @@ import cio from 'App/Services/CIO'
 import I18n from '@ioc:Adonis/Addons/I18n'
 import moment from 'moment'
 import Pass from './Pass'
-import Stripe from 'stripe'
+import Stripe from 'App/Services/Stripe'
 import PromoCode from 'App/Services/PromoCode'
 import Dispatchs from './Dispatchs'
 
@@ -1804,10 +1804,7 @@ class Cart {
     }
 
     const intent: any = {
-      amount:
-        params.calculate.currency === 'KRW' || params.calculate.currency === 'JPY'
-          ? Math.round(params.calculate.total)
-          : Math.round(params.calculate.total * 100),
+      amount: Stripe.getAmount(params.calculate.total, params.calculate.currency),
       currency: params.calculate.currency,
       payment_method_types: paymentMethods,
       transfer_group: `{ORDER_${params.order_id}}`,
@@ -1820,7 +1817,7 @@ class Cart {
     const customer = await Payments.getCustomer(params.user_id)
     intent.customer = customer.id
 
-    const paymentIntent: Stripe.PaymentIntent = await stripe.paymentIntents.create(intent)
+    const paymentIntent = await stripe.paymentIntents.create(intent)
 
     await DB('order').where('id', params.order_id).update({
       paying: true,
@@ -2541,10 +2538,7 @@ class Cart {
       }
       const paymentIntent = await stripe.paymentIntents.retrieve(order.payment_id)
 
-      let amount = order.total
-      if (!['KRW', 'JPY'].includes(order.currency)) {
-        amount = Math.round(amount * 100)
-      }
+      let amount = Stripe.getAmount(order.total, order.currency)
 
       if (paymentIntent.amount !== amount || paymentIntent.status !== 'succeeded') {
         data.push({

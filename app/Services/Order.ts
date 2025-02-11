@@ -12,6 +12,7 @@ import BigBlue from 'App/Services/BigBlue'
 import Cart from 'App/Services/Cart'
 import Sna from 'App/Services/Sna'
 import ApiError from 'App/ApiError'
+import Stripe from 'App/Services/Stripe'
 const paypal = require('paypal-rest-sdk')
 const stripe = require('stripe')(config.stripe.client_secret)
 
@@ -834,7 +835,7 @@ static toJuno = async (params) => {
       }
       const refund = await stripe.refunds.create({
         charge: order.payment_id,
-        amount: order.currency === 'KRW' ? Math.round(order.total) : Math.round(order.total * 100)
+        amount: Stripe.getAmount(order.total, order.currency)
       })
       return refund
     }

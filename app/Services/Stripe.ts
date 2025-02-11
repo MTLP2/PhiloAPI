@@ -25,6 +25,13 @@ Stripe.getCustomer = async (userId) => {
   return customer
 }
 
+Stripe.getAmount = (amount: number, currency: string) => {
+  if (currency === 'KRW' || currency === 'JPY') {
+    return Math.round(amount)
+  }
+  return Math.round(amount * 100)
+}
+
 Stripe.findDispute = async (paymentIntent) => {
   const disputes = await stripe.disputes.list()
   return disputes.data.find((d) => d.payment_intent === paymentIntent)

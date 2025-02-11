@@ -8,7 +8,7 @@ import ApiError from 'App/ApiError'
 import Notifications from './Notifications'
 import Revolut from 'App/Services/Revolut'
 import Env from '@ioc:Adonis/Core/Env'
-import Stripe from 'stripe'
+import Stripe from 'App/Services/Stripe'
 import Dispatchs from './Dispatchs'
 
 const stripe = require('stripe')(config.stripe.client_secret)
@@ -257,8 +257,7 @@ class Payment {
     **/
 
     const paymentIntent = await stripe.paymentIntents.create({
-      amount:
-        payment.currency === 'KRW' ? Math.round(payment.total) : Math.round(payment.total * 100),
+      amount: Stripe.getAmount(payment.total, payment.currency),
       currency: payment.currency
     })
 
@@ -362,7 +361,7 @@ class Payment {
       user.stripe_customer = 'cus_KJiRI5dzm4Ll1C'
     }
 
-    let customer: Stripe.Customer
+    let customer
     if (user.stripe_customer) {
       customer = await stripe.customers.retrieve(user.stripe_customer)
     } else {
