@@ -447,7 +447,7 @@ class BigBlue {
   **/
 
   static getShippingType(params: { type: string; shipping_method: string }) {
-    if (params.type === 'box') {
+    if (params.type === 'box' && params.shipping_method !== 'pickup') {
       return 'Vinyl Box'
     }
     switch (params.shipping_method) {
