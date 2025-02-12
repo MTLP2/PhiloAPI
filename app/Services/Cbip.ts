@@ -1,8 +1,153 @@
 import Utils from 'App/Utils'
 import Excel from 'exceljs'
 import DB from 'App/DB'
-
+import Env from '@ioc:Adonis/Core/Env'
 class Cbip {
+  static async api(
+    url: string,
+    params: {
+      method: string
+      params?: Record<string, any> | null
+    } = { method: 'GET', params: null }
+  ): Promise<any> {
+    return Utils.request({
+      method: params.method,
+      url: `${Env.get('CBIP_API_URL')}/${url}`,
+      json: true,
+      headers: {
+        'x-api-key': Env.get('CBIP_API_KEY')
+      },
+      body: params.params
+    })
+  }
+
+  static async getInventory(params?: {}) {
+    const res: {
+      data: {
+        inventory: {
+          sku: string
+          uuid: string
+        }[]
+      }
+    } = await this.api(`warehouse-api/open/warehouses/${Env.get('CBIP_API_WAREHOUSE')}/inventory`, {
+      method: 'GET'
+    })
+
+    return res.data
+  }
+
+  static async setIds() {
+    const items = await this.getInventory()
+    for (const item of items) {
+      await DB('product').where('barcode', item.sku).update({
+        cbip_id: item.uuid
+      })
+    }
+    return items.length
+  }
+
+  static syncDispatch = async (params: {
+    id: number
+    firstname: string
+    lastname: string
+    name: string
+    phone: string
+    email: string
+    address: string
+    address2: string
+    city: string
+    zip_code: string
+    state: string
+    country_id: string
+    shipping_method: string
+    cost_invoiced: number
+    incoterm: string
+    type: string
+    address_pickup: string
+    currency: string
+    shipping_price: number
+    total: number
+    items: { cbip_id: string; name: string; barcode: string; quantity: number }[]
+  }) => {
+    const address = Utils.wrapText(params.address, ' ', 35)
+    let address2 = address[1] ? ` ${address[1]} ${params.address2}` : params.address2
+    address2 = address2 ? address2.substring(0, 35) : ''
+
+    const adr = {
+      first_name: params.firstname,
+      last_name: params.lastname,
+      company: params.name ? params.name.substring(0, 35) : '',
+      phone: params.phone,
+      email: params.email,
+      address1: address[0],
+      address2: address2,
+      city: params.city,
+      zip: params.zip_code.substring(0, 12),
+      state: params.state,
+      country_code: params.country_id
+    }
+
+    if (!params.total) {
+      params.total = 0
+      params.shipping_price = 0
+    }
+
+    const data = {
+      currency: params.currency,
+      incoterms: params.type === 'B2B' ? 'DDP' : 'DAP',
+      reference: params.id.toString(),
+      source_identifier: params.id.toString(),
+      source_name: 'Diggers Factory',
+      shipping_preference: params.shipping_method === 'no_tracking' ? 'no_tracking' : 'tracking',
+      subtotal_price: params.total,
+      tax_lines: [],
+      total_discounts: 0,
+      total_order_lines_price: params.total - params.shipping_price,
+      shipping_price: params.shipping_price,
+      total_price: params.total,
+      total_tax: 0,
+      shipping_address: adr,
+      billing_address: adr,
+      order_lines: params.items.map((item: any) => {
+        return {
+          reference_id: item.cbip_id,
+          sku: item.barcode,
+          title: item.name,
+          quantity: item.quantity
+        }
+      })
+    }
+
+    console.log(data)
+
+    const res: any = await this.api('orders-api/open/orders', {
+      method: 'POST',
+      params: data
+    })
+
+    console.log(res)
+
+    if (res.data) {
+      return {
+        success: true,
+        id: res.data.uuid
+      }
+    } else {
+      return {
+        success: false,
+        error: res.msg
+      }
+    }
+  }
+
+  static async getDispatch(params: { id: string }) {
+    const res: any = await this.api(`orders-api/open/orders/${params.id}`, {
+      method: 'GET'
+    })
+
+    return res.data
+  }
+
   static async setCost(params: { date: string; file: Buffer }) {
     const workbook = new Excel.Workbook()
     await workbook.xlsx.load(params.file)

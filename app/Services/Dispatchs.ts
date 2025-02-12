@@ -2531,6 +2531,7 @@ class Dispatchs {
       .selectAll('dispatch')
       .innerJoin('customer', 'customer.id', 'dispatch.customer_id')
       .leftJoin('user', 'user.id', 'dispatch.user_id')
+      .leftJoin('order_shop', 'order_shop.id', 'dispatch.order_shop_id')
       .select([
         'customer.firstname',
         'customer.lastname',
@@ -2543,9 +2544,12 @@ class Dispatchs {
         'customer.zip_code',
         'customer.state',
         'customer.country_id',
-        'user.email as user_email'
+        'user.email as user_email',
+        'order_shop.currency',
+        'order_shop.shipping',
+        'order_shop.total'
       ])
-      .where('logistician_id', 'is', null)
+      .where('dispatch.logistician_id', 'is', null)
       .where(({ eb, and }) => {
         const ands: Expression<SqlBool>[] = []
         if (params?.id) {
@@ -2557,7 +2561,7 @@ class Dispatchs {
         return and(ands)
       })
       .limit(5)
-      .orderBy('date_inprogress', 'asc')
+      .orderBy('dispatch.date_inprogress', 'asc')
       .execute()
 
     if (dispatchs.length === 0) {
@@ -2567,7 +2571,16 @@ class Dispatchs {
     const items = await db
       .selectFrom('dispatch_item')
       .innerJoin('product', 'product.id', 'dispatch_item.product_id')
-      .select(['dispatch_id', 'product_id', 'whiplash_id', 'bigblue_id', 'quantity'])
+      .select([
+        'dispatch_id',
+        'product.name',
+        'product.barcode',
+        'product_id',
+        'whiplash_id',
+        'bigblue_id',
+        'cbip_id',
+        'quantity'
+      ])
       .where(
         'dispatch_id',
         'in',
@@ -2598,6 +2611,9 @@ class Dispatchs {
         purchase_order: dispatch.purchase_order as string,
         type: dispatch.type as string,
         address_pickup: dispatch.address_pickup as string,
+        currency: dispatch.currency as string,
+        shipping_price: dispatch.shipping as number,
+        total: dispatch.total as number,
         items: itemsDispatch
       })
     }
@@ -2625,7 +2641,18 @@ class Dispatchs {
     purchase_order: string
     type: string
     address_pickup: string
-    items: { product_id: number; whiplash_id: string; bigblue_id: string; quantity: number }[]
+    currency?: string
+    shipping_price?: number
+    total?: number
+    items: {
+      product_id: number
+      name: string
+      barcode: string
+      whiplash_id: string
+      bigblue_id: string
+      cbip_id: string
+      quantity: number
+    }[]
   }) => {
     let res: {
       success: boolean
@@ -2653,6 +2680,8 @@ class Dispatchs {
       res = await BigBlue.syncDispatch(params)
     } else if (params.logistician === 'whiplash' || params.logistician === 'whiplash_uk') {
       res = await Whiplash.syncDispatch(params)
+    } else if (params.logistician === 'cbip') {
+      res = await Cbip.syncDispatch(params)
     }
 
     const logs = dispatch.logs ? JSON.parse(dispatch.logs) : []
