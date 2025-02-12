@@ -816,15 +816,7 @@ class Products {
     const logisticians = ['whiplash', 'whiplash_uk', 'bigblue']
 
     const stocks = await DB('stock')
-      .select(
-        'stock.product_id',
-        'product.whiplash_id',
-        'product.bigblue_id',
-        'stock.quantity',
-        'stock.reserved',
-        'stock.type'
-      )
-      .join('product', 'product.id', 'stock.product_id')
+      .select('stock.product_id', 'stock.quantity', 'stock.reserved', 'stock.type')
       .whereIn('stock.product_id', params.products.split(','))
       .where('stock.is_preorder', false)
       .where('stock.quantity', '!=', '0')
