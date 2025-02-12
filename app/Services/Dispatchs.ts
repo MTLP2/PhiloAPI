@@ -156,8 +156,6 @@ class Dispatchs {
         'product.barcode',
         'product.catnumber',
         'product.country_id',
-        'product.whiplash_id',
-        'product.bigblue_id',
         'product.more',
         'product.type'
       )
@@ -209,6 +207,34 @@ class Dispatchs {
     customer_id?: number
   }) => {
     let item: any = DB('dispatch')
+
+    const pp = await DB('product')
+      .whereIn(
+        'id',
+        params.items.map((i) => i.product_id)
+      )
+      .all()
+
+    if (params.logistician === 'whiplash' || params.logistician === 'whiplash_uk') {
+      const notFound = pp.filter((i) => !i.whiplash_id)
+      console.log(notFound)
+      if (notFound.length > 0) {
+        return {
+          error: `Whiplash not found for ${notFound.map((i) => i.id).join(', ')}: ${notFound
+            .map((i) => i.name)
+            .join(', ')}`
+        }
+      }
+    } else if (params.logistician === 'bigblue') {
+      const notFound = pp.filter((i) => !i.bigblue_id)
+      if (notFound.length > 0) {
+        return {
+          error: `BigBlue not found for ${notFound.map((i) => i.id).join(', ')}: ${notFound
+            .map((i) => i.name)
+            .join(', ')}`
+        }
+      }
+    }
 
     if (params.id) {
       item = await DB('dispatch').find(params.id)
