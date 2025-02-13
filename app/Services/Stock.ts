@@ -199,8 +199,14 @@ class Stock {
   }
 
   static async syncStocks() {
-    await Stock.syncApi()
+    await Stock.syncAllApi()
     await Stock.setStockProject()
+    return { success: true }
+  }
+
+  static async syncAllApi() {
+    await Promise.all([Whiplash.syncStocks(), BigBlue.syncStocks()])
+    await Stock.setStockParents()
     return { success: true }
   }
 
@@ -356,7 +362,7 @@ class Stock {
     return projects
   }
 
-  static async setStockParents(params: { ids: number[] }) {
+  static async setStockParents(params?: { ids: number[] }) {
     const stocks = await DB('stock')
       .select(
         'stock.id',
@@ -367,7 +373,13 @@ class Stock {
         'stock.quantity'
       )
       .join('product', 'product.id', 'stock.product_id')
-      .whereIn('product.parent_id', params.ids)
+      .where((query) => {
+        if (params && params.ids) {
+          query.whereIn('product.parent_id', params.ids)
+        } else {
+          query.whereNotNull('product.parent_id')
+        }
+      })
       .all()
 
     const ss = {}
