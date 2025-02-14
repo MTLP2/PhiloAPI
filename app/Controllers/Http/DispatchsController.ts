@@ -356,6 +356,7 @@ class DispatchsController {
           order_status: schema.object().members({
             id: schema.string(),
             code: schema.string(),
+            message: schema.string(),
             tracking_number: schema.string(),
             tracking_url: schema.string()
           })
