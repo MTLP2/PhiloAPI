@@ -17,7 +17,6 @@ import Cart from 'App/Services/Cart'
 import Production from 'App/Services/Production'
 import BigBlue from 'App/Services/BigBlue'
 import Storage from 'App/Services/Storage'
-import MondialRelay from 'App/Services/MondialRelay'
 import Reviews from 'App/Services/Reviews'
 import Invoices from 'App/Services/Invoices'
 import Blog from 'App/Services/Blog'
@@ -229,8 +228,6 @@ class App {
       await Cart.checkIncompleteCart()
       await Invoices.setNumbers()
       await Project.deleteDownload()
-      await MondialRelay.checkSent()
-      await MondialRelay.checkDelivered()
       await Vod.checkCampaignStart()
       await User.syncCIOs()
       await User.syncEvents()
