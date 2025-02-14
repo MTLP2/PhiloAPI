@@ -142,11 +142,11 @@ class MondialRelay {
   }
 
   static async checkSent() {
-    const dispatchs = await DB('order_shop')
-      .where('shipping_type', 'pickup')
+    const dispatchs = await DB('dispatch')
+      .where('shipping_method', 'pickup')
       .where('date_export', '>', '2022-05-01')
       .whereNotNull('tracking_number')
-      .where('step', 'sent')
+      .where('status', 'sent')
       .where((query) => {
         query.whereNull('step_check')
         query.orWhere(DB.raw('step_check < (NOW() - INTERVAL 6 HOUR)'))
@@ -196,11 +196,11 @@ class MondialRelay {
   }
 
   static async checkDelivered() {
-    const dispatchs = await DB('order_shop')
-      .where('shipping_type', 'pickup')
+    const dispatchs = await DB('dispatch')
+      .where('shipping_method', 'pickup')
       .where('date_export', '>', '2022-05-01')
       .whereNotNull('tracking_number')
-      .whereIn('step', ['pickup_available', 'pickup_still_available'])
+      .whereIn('status', ['pickup_available', 'pickup_still_available'])
       .where((query) => {
         query.whereNull('step_check')
         query.orWhere(DB.raw('step_check < (NOW() - INTERVAL 6 HOUR)'))
