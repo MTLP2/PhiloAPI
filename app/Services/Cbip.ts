@@ -96,6 +96,7 @@ class Cbip {
       currency: params.currency,
       incoterms: params.type === 'B2B' ? 'DDP' : 'DAP',
       reference: params.id.toString(),
+      status: 'pending',
       source_identifier: params.id.toString(),
       source_name: 'Diggers Factory',
       shipping_preference: params.shipping_method === 'no_tracking' ? 'no_tracking' : 'tracking',
