@@ -44,7 +44,7 @@ class Stock {
         const stock = stocks.find((s) => s.product_id === product.product_id && s.type === t)
         if (!stock) {
           res[t] = 0
-        } else if (res[t] === undefined || stock.quantity < res[t]) {
+        } else if (res[t] === undefined || (stock.quantity !== null && stock.quantity < res[t])) {
           res[t] = stock.quantity
         }
       }
@@ -285,7 +285,7 @@ class Stock {
       .whereNull('parent_id')
       .all()
 
-    const products = {}
+    let products = {}
     const trans = {}
 
     for (const product of listProducts) {
@@ -306,6 +306,8 @@ class Stock {
       }
     }
 
+    console.log(products)
+
     const projects = {}
 
     let i = 0
@@ -325,8 +327,11 @@ class Stock {
           continue
         }
         p.product_id = p.parent_id || p.product_id
+
         if (products[p.product_id] && products[p.product_id][t] === null) {
-          projects[p.project_id][t] = null
+          if (projects[p.project_id][t] === undefined) {
+            projects[p.project_id][t] = null
+          }
           continue
         }
         if (!products[p.product_id] || !products[p.product_id][t]) {
@@ -339,6 +344,8 @@ class Stock {
         }
       }
     }
+
+    console.log(projects)
 
     for (const p of Object.keys(projects)) {
       if (!projects[p].is_shop && projects[p].preorder_preorder !== undefined) {
