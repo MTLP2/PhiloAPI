@@ -8,6 +8,7 @@ import Env from '@ioc:Adonis/Core/Env'
 import Excel from 'exceljs'
 import OrdersManual from 'App/Services/OrdersManual'
 import Dispatchs from './Dispatchs'
+import moment from 'moment'
 
 class BigBlue {
   static async api(
@@ -721,29 +722,36 @@ class BigBlue {
     const orders: any[] = []
 
     let pageToken = ''
-
     do {
       const res: any = await this.api('ListOrders', {
         method: 'POST',
         params: {
           page_size: 500,
+          date_range: {
+            from: moment().subtract(3, 'weeks').format('YYYY-MM-DDT00:00:00') + 'Z',
+            to: moment().format('YYYY-MM-DDT23:59:59') + 'Z'
+          },
           page_token: pageToken
         }
       })
       orders.push(...res.orders)
       if (res.next_page_token) {
         pageToken = res.next_page_token
+        console.log(pageToken)
       } else {
         break
       }
     } while (pageToken)
 
-    console.info('orders bigblue', orders.length)
+    console.log(orders.length)
 
     let updated = 0
     for (const order of orders) {
       if (order.tracking_number && order.external_id) {
-        const status = order.status.code === 'DELIVERED' ? 'delivered' : 'sent'
+        let status = order.status.code.toLowerCase()
+        if (order.status.message.includes('available for pickup')) {
+          status = 'pickup_available'
+        }
         await Dispatchs.changeStatus({
           logistician_id: order.id,
           logistician: 'bigblue',
@@ -751,10 +759,10 @@ class BigBlue {
           tracking_number: order.tracking_number,
           tracking_link: order.tracking_url
         })
+        updated++
       }
     }
     console.info('updated', updated)
-
     return updated
   }
 
@@ -1400,6 +1408,7 @@ class BigBlue {
     order_status: {
       id: string
       code: string
+      message: string
       tracking_number: string
       tracking_url: string
     }
@@ -1407,6 +1416,9 @@ class BigBlue {
     let status = params.order_status.code.toLowerCase()
     if (status === 'shipped') {
       status = 'sent'
+    }
+    if (params.order_status.message.includes('available for pickup')) {
+      status = 'pickup_available'
     }
     await Dispatchs.changeStatus({
       logistician_id: params.order_status.id,

@@ -2801,6 +2801,15 @@ class Dispatchs {
           order_shop_id: orderShop.id
         })
       }
+      if (params.status === 'pickup_available') {
+        await Notifications.add({
+          type: 'my_order_pickup_available',
+          user_id: dispatch.user_id as number,
+          order_id: dispatch.order_id as number,
+          order_shop_id: dispatch.order_shop_id as number,
+          dispatch_id: dispatch.id
+        })
+      }
     } else if (dispatch.box_id) {
       await Notifications.add({
         type: 'my_box_sent',
@@ -2808,6 +2817,14 @@ class Dispatchs {
         box_id: dispatch.box_id,
         dispatch_id: dispatch.id
       })
+      if (params.status === 'pickup_available') {
+        await Notifications.add({
+          type: 'my_box_pickup_available',
+          user_id: dispatch.user_id as number,
+          box_id: dispatch.box_id as number,
+          dispatch_id: dispatch.id
+        })
+      }
     } else {
       await Notifications.add({
         type: 'my_order_sent',
