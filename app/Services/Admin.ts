@@ -2000,6 +2000,10 @@ class Admin {
     params.with_products = true
     const data = await Admin.getOrders(params)
 
+    for (const order of data.data) {
+      order.device = order.user_agent ? JSON.parse(order.user_agent).device.type || 'desktop' : null
+    }
+
     return Utils.arrayToXlsx([
       {
         worksheetName: 'Orders',
@@ -2018,6 +2022,7 @@ class Admin {
           { header: 'Promo', key: 'promo_code' },
           { header: 'Sales', key: 'discount_code' },
           { header: 'Origin', key: 'origin' },
+          { header: 'Device', key: 'device' },
           { header: 'Email', key: 'user_email' },
           { header: 'Name', key: 'user_name' },
           { header: 'Phone', key: 'phone' },
