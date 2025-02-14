@@ -768,13 +768,6 @@ class App {
         }
       }
 
-      data.order_items = items.map((item) => {
-        item.picture = `${config.app.storage_url}/projects/${
-          item.picture || item.project_id
-        }/cover.jpg`
-        return item
-      })
-
       data.refused_vinyl = refusedItems.length > 0
       data.order_refused_items = refusedItems
       if (customer && !data.address) {
