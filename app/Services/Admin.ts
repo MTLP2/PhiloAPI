@@ -592,8 +592,6 @@ class Admin {
       }
     }
 
-    console.log(project.trans)
-
     project.barcodes = barcodes
     project.historic = JSON.parse(project.historic)
 
@@ -745,8 +743,11 @@ class Admin {
 
     if (filteredBarcodes && !isNaN(project.barcode)) {
       const boxes = await DB()
-        .from('box_dispatch')
-        .where('barcodes', 'like', `%${project.barcode}%`)
+        .from('dispatch')
+        .where('dispatch.type', 'box')
+        .join('dispatch_item', 'dispatch_item.dispatch_id', 'dispatch.id')
+        .join('product', 'product.id', 'dispatch_item.product_id')
+        .where('product.barcode', 'like', project.barcode)
         .all()
 
       for (const box of boxes) {

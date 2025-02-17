@@ -1863,14 +1863,16 @@ class Project {
       .orderBy('date')
       .all()
 
-    const boxesPromise = DB('box_dispatch')
-      .select('barcodes', 'customer.country_id', 'box_dispatch.created_at')
-      .from('box_dispatch')
-      .join('box', 'box_dispatch.box_id', 'box.id')
+    const boxesPromise = DB('dispatch')
+      .select('product.barcode', 'customer.country_id', 'dispatch.created_at')
+      .join('dispatch_item', 'dispatch_item.dispatch_id', 'dispatch.id')
+      .join('product', 'product.id', 'dispatch_item.product_id')
+      .join('box', 'dispatch.box_id', 'box.id')
       .join('customer', 'customer.id', 'box.customer_id')
+      .where('dispatch.type', 'box')
       .where((query) => {
         for (const p of <any>Object.values(projects)) {
-          query.orWhere('barcodes', 'like', `%${p.barcode}%`)
+          query.orWhere('product.barcode', 'like', `%${p.barcode}%`)
         }
       })
       .all()
@@ -2231,7 +2233,7 @@ class Project {
       const date = moment(box.created_at).format(format)
       const project: any = Object.values(projects).find((p: any) => {
         if (!isNaN(p.barcode)) {
-          return box.barcodes.split(',').includes(p.barcode)
+          return box.barcode.split(',').includes(p.barcode)
         } else {
           return false
         }
