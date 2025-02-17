@@ -52,11 +52,15 @@ class Invoices {
     if (params.resp) {
       query.leftJoin('user as com', 'com.id', 'vod.com_id')
     }
-    if (params.invoice_co) {
+    if (params.type === 'order_form') {
+      query.where('invoice.type', 'order_form')
+    } else if (params.invoice_co) {
+      query.where('invoice.type', '!=', 'order_form')
       query.where((query) => {
         query.where('compatibility', false).orWhere('invoice.name', 'like', `Commercial invoice%`)
       })
     } else {
+      query.where('invoice.type', '!=', 'order_form')
       query.where('compatibility', true)
     }
 
@@ -299,6 +303,9 @@ class Invoices {
     invoice.email = params.email
     invoice.payment_days = params.payment_days || 0
     invoice.compatibility = params.compatibility
+    if (params.type === 'order_form') {
+      invoice.compatibility = false
+    }
     invoice.sub_total = params.sub_total || 0
     invoice.margin = params.margin || 0
     invoice.tax = params.tax || 0
@@ -696,9 +703,15 @@ class Invoices {
           code = `C${invoice.year}${incC}`
         }
       } else {
-        incCo++
-        number = incCo
-        code = `COM${incCo}`
+        if (invoice.type === 'order_form') {
+          incCo++
+          number = incCo
+          code = `OF${incCo}`
+        } else {
+          incCo++
+          number = incCo
+          code = `COM${incCo}`
+        }
       }
 
       await DB('invoice').where('id', invoice.id).update({

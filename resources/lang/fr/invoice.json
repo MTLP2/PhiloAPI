@@ -1,6 +1,7 @@
 {
   "invoice": "Facture",
   "credit_note": "Avoir",
+  "order_form": "Bon de commande",
   "number": "N° Facture",
   "eori_number": "N° EORI",
   "order_number": "N° de Commande",

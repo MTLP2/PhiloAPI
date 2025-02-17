@@ -1,6 +1,7 @@
 {
   "invoice": "Invoice",
   "credit_note": "Credit Note",
+  "order_form": "Order Form",
   "number": "N° Invoice",
   "eori_number": "N° EORI",
   "order_number": "N° Order",
