@@ -2766,6 +2766,9 @@ class Dispatchs {
     if (dis.status === params.status) {
       return { success: false }
     }
+    if (params.status === 'pickup_available' && dis.shipping_method !== 'pickup') {
+      return { success: false }
+    }
     const dispatch = model('dispatch').setValues(dis)
     dispatch.status = params.status
     dispatch.tracking_number = params.tracking_number
