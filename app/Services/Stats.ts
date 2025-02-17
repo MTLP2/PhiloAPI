@@ -1790,6 +1790,8 @@ class Stats {
         distrib: {
           total: { total: 0, dates: { ...dates } },
           invoiced: { total: 0, dates: { ...dates } },
+          invoiced_project: { total: 0, dates: { ...dates } },
+          invoiced_licence: { total: 0, dates: { ...dates } },
           cost: { total: 0, dates: { ...dates } },
           cost_project: { total: 0, dates: { ...dates } },
           cost_licence: { total: 0, dates: { ...dates } },
@@ -2565,10 +2567,11 @@ class Stats {
 
         addMarge(
           'distrib',
-          stat.is_licence ? 'licence' : 'project',
+          stat.is_licence ? 'invoiced_licence' : 'invoiced_project',
           date,
           dis.total / currencies[stat.currency]
         )
+        addMarge('distrib', stat.is_licence ? 'licence' : 'project', date, marge)
         if (stat.is_licence) {
           if (!stat.unit_cost && stat.category !== 'digital') {
             stat.unit_cost = 8
@@ -2576,6 +2579,9 @@ class Stats {
           addMarge('distrib', 'cost', date, stat.unit_cost * dis.quantity)
           addMarge('distrib', 'cost_licence', date, stat.unit_cost * dis.quantity)
           addMarge('distrib', 'cost_licence', date, costArtist)
+          addMarge('distrib', 'licence', date, -stat.unit_cost * dis.quantity)
+
+          marge -= stat.unit_cost * dis.quantity
         } else {
           addMarge('distrib', 'cost_project', date, costArtist)
         }
@@ -2719,13 +2725,15 @@ class Stats {
           100
       )
       d.margin.distrib.pourcent_project.dates[date] = Math.round(
-        ((d.margin.distrib.project.dates[date] - d.margin.distrib.cost_project.dates[date]) /
-          d.margin.distrib.project.dates[date]) *
+        ((d.margin.distrib.invoiced_project.dates[date] -
+          d.margin.distrib.cost_project.dates[date]) /
+          d.margin.distrib.invoiced_project.dates[date]) *
           100
       )
       d.margin.distrib.pourcent_licence.dates[date] = Math.round(
-        ((d.margin.distrib.licence.dates[date] - d.margin.distrib.cost_licence.dates[date]) /
-          d.margin.distrib.licence.dates[date]) *
+        ((d.margin.distrib.invoiced_licence.dates[date] -
+          d.margin.distrib.cost_licence.dates[date]) /
+          d.margin.distrib.invoiced_licence.dates[date]) *
           100
       )
     }

@@ -3697,13 +3697,18 @@ class Boxes {
   }
 
   static async getCosts(params: { start?: string; end?: string } = {}) {
-    const dispatchs = await DB('box_dispatch')
-      .orWhere((query) => {
+    const dispatchs = await DB('dispatch')
+      .select('dispatch.created_at', 'product.barcode')
+      .join('dispatch_item', 'dispatch_item.dispatch_id', 'dispatch.id')
+      .join('box_dispatch', 'box_dispatch.id', 'dispatch.box_id')
+      .join('product', 'product.id', 'dispatch_item.product_id')
+      .where('dispatch.type', 'box')
+      .where((query) => {
         if (params.start) {
-          query.where('created_at', '>=', params.start)
+          query.where('dispatch.created_at', '>=', params.start)
         }
         if (params.end) {
-          query.where('created_at', '<=', `${params.end} 23:59`)
+          query.where('dispatch.created_at', '<=', `${params.end} 23:59`)
         }
       })
       .all()
@@ -3712,7 +3717,7 @@ class Boxes {
       [key: string]: null | number
     } = {}
     for (const dispatch of dispatchs) {
-      for (const barcode of dispatch.barcodes.replace(/\t/g, '').split(',')) {
+      for (const barcode of dispatch.barcode.replace(/\t/g, '').split(',')) {
         barcodes[barcode] = null
       }
     }
@@ -3753,7 +3758,7 @@ class Boxes {
 
     const res = {}
     for (const dispatch of dispatchs) {
-      for (const barcode of dispatch.barcodes.replace(/\t/g, '').split(',')) {
+      for (const barcode of dispatch.barcode.replace(/\t/g, '').split(',')) {
         const date = dispatch.created_at.substring(0, 7)
         if (!res[date]) {
           res[date] = 0
