@@ -3601,11 +3601,13 @@ class StatementService {
     const res: any[] = []
 
     const usersData = {}
+    let i = 0
     for (const project of projects) {
+      i++
       const statement = await await Project.getDashboard({
         project_id: project.id,
         start: '2001-01-01',
-        end: '2024-09-30',
+        end: '2024-12-31',
         periodicity: 'months',
         cashable: true,
         only_data: true
@@ -3614,11 +3616,13 @@ class StatementService {
       const statement2 = await await Project.getDashboard({
         project_id: project.id,
         start: '2001-01-01',
-        end: '2025-09-30',
+        end: '2025-02-18',
         periodicity: 'months',
         cashable: true,
         only_data: true
       })
+
+      console.log(i)
 
       if (statement) {
         if (!statement.outstanding) {
