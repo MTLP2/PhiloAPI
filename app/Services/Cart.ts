@@ -1457,7 +1457,7 @@ class Cart {
     ) {
       res.error = 'project_not_available'
     }
-    if (p.project.type === 'limited_edition' && p.project.is_shop && p.project.copies_left < 1) {
+    if (p.project.is_shop && p.project.copies_left < 1) {
       res.error = 'project_not_available'
     }
     if (p.project.copies_left !== null && p.project.copies_left < p.quantity) {
