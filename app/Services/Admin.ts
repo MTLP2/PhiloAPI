@@ -483,9 +483,7 @@ class Admin {
         return { type: key, quantity: value }
       })
     )
-    if (!project.is_shop && project.type === 'funding') {
-      project.stock = '∞'
-    }
+
     project.stocks.unshift({
       type: 'project',
       is_distrib: false,
