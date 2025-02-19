@@ -4250,6 +4250,7 @@ class Admin {
     for (const type of ['limited_edition', 'funding']) {
       const projects = await DB('project')
         .select(
+          'project.id',
           'artist_name',
           'project.name',
           'email',
@@ -4298,6 +4299,7 @@ class Admin {
       const worksheet = workbook.addWorksheet(type)
 
       worksheet.columns = [
+        { header: 'ID', key: 'id', width: 10 },
         { header: 'Artiste', key: 'artist_name', width: 30 },
         { header: 'Projet', key: 'name', width: 30 },
         { header: 'Email', key: 'email', width: 30 },
