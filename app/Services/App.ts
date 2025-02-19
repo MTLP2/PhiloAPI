@@ -1457,8 +1457,8 @@ class App {
         priority: 0.7,
         lastmod: project.updated_at,
         links: [
-          { lang: 'en', url: `/vinyl/${project.id}/${project.slug}` },
-          { lang: 'fr', url: `/fr/vinyl/${project.id}/${project.slug}` }
+          { lang: 'en', url: `/vinyl/${Utils.urlProject(project)}` },
+          { lang: 'fr', url: `/fr/vinyl/${Utils.urlProject(project)}` }
         ]
       })
     }
