@@ -1346,6 +1346,21 @@ class Utils {
     }
   }
 
+  static urlProject = (params: { id: string | number; category?: string; slug?: string }) => {
+    let category = params.category
+    if (
+      !category ||
+      !['vinyl', 'cd', 'tape', 'bundle', 'project', 't-shirt', 'hoodie', 'merch'].includes(category)
+    ) {
+      category = 'project'
+    }
+    let url = `/${category}/${params.id}`
+    if (params.slug) {
+      url += `/${params.slug}`
+    }
+    return url
+  }
+
   static getTaxRate = async (customer) => {
     const country = await DB('country').where('lang', 'en').where('id', customer.country_id).first()
 
