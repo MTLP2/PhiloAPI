@@ -2545,6 +2545,7 @@ class Boxes {
 
     let dispatch = await DB('dispatch')
       .where('box_id', box.id)
+      .where('type', 'box')
       .whereRaw("DATE_FORMAT(created_at ,'%Y-%m') = DATE_FORMAT(NOW() ,'%Y-%m')")
       .first()
 
