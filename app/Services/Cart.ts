@@ -700,7 +700,7 @@ class Cart {
       return shop
     }
 
-    if (shop.weight > 29000) {
+    if (shop.weight > 50000) {
       shop.error = 'shipping_limit_weight'
     }
 
@@ -998,6 +998,8 @@ class Cart {
       weightString = '500g'
     } else if (weight < 750) {
       weightString = '750g'
+    } else if (weight > 30000 && weight < 50000) {
+      weightString = '50kg'
     } else {
       weightString = Math.ceil(weight / 1000) + 'kg'
     }
