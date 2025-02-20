@@ -54,15 +54,15 @@ class Stock {
   }
 
   static async byProjects(params: { ids: string[] }) {
-    const stocks = await DB('project_product as pp')
+    const stocks = await DB('stock')
       .select(
+        'stock.id',
         'stock.product_id',
         'stock.reserved',
         'stock.type',
         'stock.quantity',
         'stock.is_distrib'
       )
-      .leftJoin('stock', 'pp.product_id', 'stock.product_id')
       .where('stock.is_preorder', false)
       .whereIn(
         'stock.product_id',
