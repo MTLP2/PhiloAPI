@@ -408,7 +408,10 @@ class Cart {
         shop.currency = params.currency
 
         cart.shops[s] = await Cart.calculateShop(shop)
-
+        if (cart.shops[s].items.length === 0) {
+          delete cart.shops[s]
+          return
+        }
         if (cart.shops[s].shipping_type === 'pickup') {
           cart.hasPickup = true
         }
@@ -653,7 +656,9 @@ class Cart {
       item.currency = p.currency
       item.shipping_discount = p.shipping_discount
       const calculatedItem = await Cart.calculateItem(item)
-
+      if (calculatedItem.error === 'project_not_available') {
+        continue
+      }
       shop.is_large = calculatedItem.is_large
       if (calculatedItem.error) {
         shop.error = calculatedItem.error
@@ -1354,6 +1359,12 @@ class Cart {
     p.quantity = p.quantity < 1 || isNaN(p.quantity) ? 1 : p.quantity
     p.tips = params.tips < 0 ? 0 : parseFloat(params.tips || 0)
     p.project = await Project.find(params.project_id, { currency: params.currency, user_id: 0 })
+    if (
+      (params.type === 'vod' && p.project.is_shop) ||
+      (params.type === 'shop' && !p.project.is_shop)
+    ) {
+      res.error = 'project_not_available'
+    }
     res.type = p.type
     res.is_shop = p.is_shop
     res.size = p.size
@@ -1460,7 +1471,7 @@ class Cart {
       res.error = 'project_not_available'
     }
     if (p.project.is_shop && p.project.copies_left < 1) {
-      res.error = 'project_not_available'
+      res.error = 'project_insufficient_quantity'
     }
     if (p.project.copies_left !== null && p.project.copies_left < p.quantity) {
       res.error = 'project_insufficient_quantity'
