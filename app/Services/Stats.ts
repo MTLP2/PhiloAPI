@@ -1697,6 +1697,7 @@ class Stats {
         all: { total: 0, dates: { ...dates } },
         total: { total: 0, dates: { ...dates } },
         site: { total: 0, dates: { ...dates } },
+        orders: { total: 0, dates: { ...dates } },
         project: { total: 0, dates: { ...dates } },
         licence: { total: 0, dates: { ...dates } },
         refund: { total: 0, dates: { ...dates } },
@@ -1715,6 +1716,7 @@ class Stats {
         total: { total: 0, dates: { ...dates } },
         all: { total: 0, dates: { ...dates } },
         credit_note: { total: 0, dates: { ...dates } },
+        site: { total: 0, dates: { ...dates } },
         project: {
           total: { total: 0, dates: { ...dates } },
           all: { total: 0, dates: { ...dates } },
@@ -2080,6 +2082,7 @@ class Stats {
         'order.status',
         'order_shop.currency',
         'order_shop.currency_rate',
+        'order.created_at',
         'user.is_pro'
       )
       .join('user', 'user.id', 'order_shop.user_id')
@@ -2207,6 +2210,14 @@ class Stats {
       }
     }
 
+    for (const order of Object.values(orders)) {
+      const date = moment(order[0].created_at).format(format)
+      if (!order[0].created_at || d.quantity.orders.dates[date] === undefined) {
+        continue
+      }
+      d.quantity.orders.dates[date]++
+    }
+
     for (const invoice of invoices) {
       const total = invoice.sub_total * invoice.currency_rate
       const date = moment(invoice.date).format(format)
@@ -2254,6 +2265,9 @@ class Stats {
             addMarge('shipping', null, date, shipping - shippingCost)
           }
 
+          if (order.sub_total) {
+            d.turnover.site.dates[date] += order.sub_total * order.currency_rate
+          }
           addTurnover(invoice.type, 'shipping', 'site', date, shipping)
 
           for (const item of order.items) {
