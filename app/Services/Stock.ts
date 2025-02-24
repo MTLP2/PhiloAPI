@@ -396,10 +396,18 @@ class Stock {
       if (!ss[stock.parent_id]) {
         ss[stock.parent_id] = {}
       }
+
+      if (ss[stock.parent_id][stock.type] === null) {
+        continue
+      }
       if (!ss[stock.parent_id][stock.type]) {
         ss[stock.parent_id][stock.type] = 0
       }
-      ss[stock.parent_id][stock.type] += stock.quantity
+      if (stock.is_preorder && stock.quantity === null) {
+        ss[stock.parent_id][stock.type] = null
+      } else {
+        ss[stock.parent_id][stock.type] += stock.quantity
+      }
     }
 
     for (const parent of Object.keys(ss)) {
