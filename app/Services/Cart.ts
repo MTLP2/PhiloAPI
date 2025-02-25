@@ -1304,7 +1304,7 @@ class Cart {
       }
       if (
         !shipping ||
-        (ship.no_tracking > 0 && ship.no_tracking < shipping.standard) ||
+        // (ship.no_tracking > 0 && ship.no_tracking < shipping.standard) ||
         (ship.standard2 > 0 && ship.standard2 < shipping.standard)
       ) {
         shipping = ship
