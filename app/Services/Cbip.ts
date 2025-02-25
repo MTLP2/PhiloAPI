@@ -66,9 +66,9 @@ class Cbip {
     incoterm: string
     type: string
     address_pickup: string
-    currency: string
-    shipping_price: number
-    total: number
+    currency?: string
+    shipping_price?: number
+    total?: number
     items: { cbip_id: string; name: string; barcode: string; quantity: number }[]
   }) => {
     const address = Utils.wrapText(params.address, ' ', 35)

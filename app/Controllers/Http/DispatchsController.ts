@@ -337,6 +337,20 @@ class DispatchsController {
     return Dispatchs.uploadShippingPrices(payload)
   }
 
+  getShippingMethods() {
+    return Dispatchs.getShippingMethods()
+  }
+
+  async uploadShippingMethods({ request }) {
+    const payload = await validator.validate({
+      schema: schema.create({
+        file: schema.string()
+      }),
+      data: request.body()
+    })
+    return Dispatchs.uploadShippingMethods(payload)
+  }
+
   async sync({ params }) {
     const payload = await validator.validate({
       schema: schema.create({

@@ -635,6 +635,8 @@ Route.group(() => {
   Route.post('/shipping-compare', 'DispatchsController.compareShippingOrder')
   Route.get('/shipping-revenues', 'DispatchsController.getShippingRevenues')
   Route.post('/shipping-price', 'DispatchsController.uploadShippingPrices')
+  Route.post('/shipping-method', 'DispatchsController.uploadShippingMethods')
+  Route.get('/shipping-method', 'DispatchsController.getShippingMethods')
 
   Route.get('/contests', 'ContestController.all')
   Route.post('/contests', 'ContestController.save')

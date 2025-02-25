@@ -1497,6 +1497,73 @@ class Dispatchs {
     return prices
   }
 
+  static getShippingMethods = async () => {
+    const methods = await DB('shipping_method').all()
+    return methods
+  }
+
+  static uploadShippingMethods = async (params: { file: string }) => {
+    const workbook = new Excel.Workbook()
+    const file = Buffer.from(params.file, 'base64')
+    await workbook.xlsx.load(file)
+    const worksheet = workbook.getWorksheet(1)
+
+    await DB().execute('truncate table shipping_method')
+
+    const methods: any[] = []
+
+    worksheet.eachRow((row, rowNumber) => {
+      if (rowNumber < 2) {
+        return
+      }
+      methods.push(row)
+    })
+
+    for (const row of methods) {
+      const item: any = DB('shipping_method')
+      item.country_id = row.getCell('A').text
+      item.logistician = 'bigblue'
+      item['250g'] = row.getCell('B').text
+      item['500g'] = row.getCell('C').text
+      item['750g'] = row.getCell('D').text
+      item['1kg'] = row.getCell('E').text
+      item['2kg'] = row.getCell('F').text
+      item['3kg'] = row.getCell('G').text
+      item['4kg'] = row.getCell('H').text
+      item['5kg'] = row.getCell('I').text
+      item['6kg'] = row.getCell('J').text
+      item['7kg'] = row.getCell('K').text
+      item['8kg'] = row.getCell('L').text
+      item['9kg'] = row.getCell('M').text
+      item['10kg'] = row.getCell('N').text
+      item['11kg'] = row.getCell('O').text
+      item['12kg'] = row.getCell('P').text
+      item['13kg'] = row.getCell('Q').text
+      item['14kg'] = row.getCell('R').text
+      item['15kg'] = row.getCell('S').text
+      item['16kg'] = row.getCell('T').text
+      item['17kg'] = row.getCell('U').text
+      item['18kg'] = row.getCell('V').text
+      item['19kg'] = row.getCell('W').text
+      item['20kg'] = row.getCell('X').text
+      item['21kg'] = row.getCell('Y').text
+      item['22kg'] = row.getCell('Z').text
+      item['23kg'] = row.getCell('AA').text
+      item['24kg'] = row.getCell('AB').text
+      item['25kg'] = row.getCell('AC').text
+      item['26kg'] = row.getCell('AD').text
+      item['27kg'] = row.getCell('AE').text
+      item['28kg'] = row.getCell('AF').text
+      item['29kg'] = row.getCell('AG').text
+      item['30kg'] = row.getCell('AH').text
+      item['50kg'] = row.getCell('AI').text
+      item.updated_at = Utils.date()
+      await item.save()
+    }
+
+    return methods
+  }
+
   static calculateShipping = (params: {
     quantity: number
     currency: string
@@ -2545,6 +2612,7 @@ class Dispatchs {
         'customer.state',
         'customer.country_id',
         'user.email as user_email',
+        'order_shop.weight',
         'order_shop.currency',
         'order_shop.shipping',
         'order_shop.total'
@@ -2611,6 +2679,7 @@ class Dispatchs {
         purchase_order: dispatch.purchase_order as string,
         type: dispatch.type as string,
         address_pickup: dispatch.address_pickup as string,
+        weight: dispatch.weight as number,
         currency: dispatch.currency as string,
         shipping_price: dispatch.shipping as number,
         total: dispatch.total as number,
@@ -2644,6 +2713,7 @@ class Dispatchs {
     currency?: string
     shipping_price?: number
     total?: number
+    weight?: number
     items: {
       product_id: number
       name: string

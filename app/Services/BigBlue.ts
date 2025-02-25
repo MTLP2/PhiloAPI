@@ -9,6 +9,7 @@ import Excel from 'exceljs'
 import OrdersManual from 'App/Services/OrdersManual'
 import Dispatchs from './Dispatchs'
 import moment from 'moment'
+import Cart from './Cart'
 
 class BigBlue {
   static async api(
@@ -447,13 +448,27 @@ class BigBlue {
   }
   **/
 
-  static getShippingType(params: { type: string; shipping_method: string }) {
-    if (params.type === 'box' && params.shipping_method !== 'pickup') {
+  static async getShippingType(params: {
+    type: string
+    shipping_method: string
+    weight?: number
+    country_id?: string
+  }) {
+    if (params.shipping_method === 'pickup') {
+      return 'pickup'
+    } else if (params.type === 'box') {
       return 'Vinyl Box'
+    } else if (params.weight) {
+      const shippingMehods = await DB('shipping_method')
+        .where('logistician', 'bigblue')
+        .where('country_id', params.country_id)
+        .first()
+      const weight = shippingMehods[Cart.getWeightString(params.weight * 1000)]
+      if (weight) {
+        return weight
+      }
     }
     switch (params.shipping_method) {
-      case 'pickup':
-        return 'pickup'
       case 'B2B Boxes':
         return 'B2B Boxes'
       case 'B2B pallet':
@@ -480,6 +495,7 @@ class BigBlue {
     country_id: string
     shipping_method: string
     cost_invoiced: number
+    weight?: number
     type: string
     address_pickup: string
     items: { bigblue_id: string; quantity: number }[]
@@ -501,9 +517,11 @@ class BigBlue {
         external_id: params.id.toString(),
         language: 'fr',
         currency: 'EUR',
-        shipping_method: BigBlue.getShippingType({
+        shipping_method: await BigBlue.getShippingType({
           type: params.type,
-          shipping_method: params.shipping_method
+          shipping_method: params.shipping_method,
+          country_id: params.country_id,
+          weight: params.weight
         }),
         shipping_price: params.cost_invoiced ? params.cost_invoiced.toString() : '1',
         b2b: params.type === 'b2b' ? true : false,
