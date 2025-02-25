@@ -2,6 +2,8 @@ import Utils from 'App/Utils'
 import Excel from 'exceljs'
 import DB from 'App/DB'
 import Env from '@ioc:Adonis/Core/Env'
+import Dispatchs from './Dispatchs'
+
 class Cbip {
   static async api(
     url: string,
@@ -210,6 +212,29 @@ class Cbip {
       dispatchs: i,
       marge: marge
     }
+  }
+
+  static async setTrackingLinks() {
+    const res: any = await this.api('orders-api/open/orders', {
+      method: 'GET'
+    })
+
+    let updated = 0
+    for (const order of res.data) {
+      const shipment = order.shipments[0]
+      if (shipment && shipment.courier_tracking_number) {
+        await Dispatchs.changeStatus({
+          logistician_id: order.uuid,
+          logistician: 'cbip',
+          status: 'sent',
+          tracking_number: shipment.courier_tracking_number,
+          tracking_link: shipment.courier_tracking_url
+        })
+        updated++
+      }
+    }
+
+    return updated
   }
 }
 

@@ -3115,7 +3115,11 @@ class Dispatchs {
   }
 
   static async setTrackingLinks() {
-    await Promise.all([BigBlue.setTrackingLinks(), Whiplash.setTrackingLinks()])
+    await Promise.all([
+      Cbip.setTrackingLinks(),
+      BigBlue.setTrackingLinks(),
+      Whiplash.setTrackingLinks()
+    ])
   }
 }
 
