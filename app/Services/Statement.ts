@@ -2766,10 +2766,12 @@ class StatementService {
         DB.raw('SUM(stock.quantity) as stock')
       )
       .join('project_product', 'project_product.project_id', 'project.id')
+      .join('product', 'product.id', 'project_product.product_id')
       .join('stock', 'project_product.product_id', 'stock.product_id')
       .join('vod', 'project.id', 'vod.project_id')
       .where('stock.is_distrib', false)
       .where('stock.is_preorder', false)
+      .whereNull('product.parent_id')
       .where('stock.type', '!=', 'diggers')
       .where('stock.type', '!=', 'preorder')
       .where('vod.barcode', 'not like', '%,%')
@@ -2780,8 +2782,7 @@ class StatementService {
       .groupBy('vod.type')
       .groupBy('vod.currency')
       .groupBy('vod.stock_price')
-      // .whereIn('project.id', [226728, 299489])
-      // .whereIn('project.id', [247230])
+      .groupBy('vod.barcode')
       .where((query) => {
         if (params.projectIds) {
           query.whereIn('project.id', params.projectIds)
@@ -2819,7 +2820,7 @@ class StatementService {
           change[h.project_id] = 0
         }
         if (data.old.quantity !== undefined && data.new.quantity !== undefined) {
-          change[h.project_id] += +data.old.quantity - +data.new.quantity
+          change[h.project_id] = +data.new.quantity
         }
       }
     }
@@ -2865,9 +2866,12 @@ class StatementService {
       } catch (e) {}
       const unitPrice: number = p.category === 'vinyl' ? price : 0.05
 
+      /**
+      console.log(change)
       if (change[p.id]) {
         p.stock = p.stock + change[p.id]
       }
+      **/
       cost.is_statement = true
       cost.currency = 'EUR'
       cost.in_statement = (p.stock * unitPrice) / currencies.EUR
