@@ -2611,6 +2611,7 @@ class Dispatchs {
         'customer.zip_code',
         'customer.state',
         'customer.country_id',
+        'customer.tax_id',
         'user.email as user_email',
         'order_shop.weight',
         'order_shop.currency',
@@ -2658,6 +2659,12 @@ class Dispatchs {
 
     for (const dispatch of dispatchs) {
       const itemsDispatch = items.filter((i) => i.dispatch_id === dispatch.id)
+      if (dispatch.total && dispatch.shipping) {
+        const quantity = itemsDispatch.reduce((acc, i) => acc + i.quantity, 0)
+        for (const i in itemsDispatch) {
+          itemsDispatch[i].price = Utils.round((dispatch.total - dispatch.shipping) / quantity, 2)
+        }
+      }
 
       await Dispatchs.syncDispatch({
         id: dispatch.id,
@@ -2672,6 +2679,7 @@ class Dispatchs {
         city: dispatch.city as string,
         zip_code: dispatch.zip_code as string,
         state: dispatch.state as string,
+        tax_id: dispatch.tax_id as string,
         country_id: dispatch.country_id as string,
         shipping_method: dispatch.shipping_method as string,
         cost_invoiced: dispatch.cost_invoiced as number,
@@ -2754,6 +2762,7 @@ class Dispatchs {
       res = await Cbip.syncDispatch(params)
     }
 
+    return true
     const logs = dispatch.logs ? JSON.parse(dispatch.logs) : []
     if (res.success) {
       dispatch.status = 'in_preparation'
