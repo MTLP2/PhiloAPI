@@ -60,6 +60,7 @@ class Cbip {
     city: string
     zip_code: string
     state: string
+    tax_id?: string
     country_id: string
     shipping_method: string
     cost_invoiced: number
@@ -69,7 +70,7 @@ class Cbip {
     currency?: string
     shipping_price?: number
     total?: number
-    items: { cbip_id: string; name: string; barcode: string; quantity: number }[]
+    items: { cbip_id: string; name: string; barcode: string; quantity: number; price?: number }[]
   }) => {
     const address = Utils.wrapText(params.address, ' ', 35)
     let address2 = address[1] ? ` ${address[1]} ${params.address2}` : params.address2
@@ -111,24 +112,24 @@ class Cbip {
       total_tax: 0,
       shipping_address: adr,
       billing_address: adr,
+      metadata: {
+        tax_id: params.tax_id
+      },
       order_lines: params.items.map((item: any) => {
         return {
           reference_id: item.cbip_id,
           sku: item.barcode,
           title: item.name,
-          quantity: item.quantity
+          quantity: item.quantity,
+          price: item.price
         }
       })
     }
-
-    console.log(data)
 
     const res: any = await this.api('orders-api/open/orders', {
       method: 'POST',
       params: data
     })
-
-    console.log(res)
 
     if (res.data) {
       return {
