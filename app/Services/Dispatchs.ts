@@ -2762,7 +2762,6 @@ class Dispatchs {
       res = await Cbip.syncDispatch(params)
     }
 
-    return true
     const logs = dispatch.logs ? JSON.parse(dispatch.logs) : []
     if (res.success) {
       dispatch.status = 'in_preparation'
