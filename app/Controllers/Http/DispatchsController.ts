@@ -64,7 +64,8 @@ class DispatchsController {
             city: schema.string(),
             state: schema.string.optional(),
             country_id: schema.string(),
-            phone: schema.string.optional()
+            phone: schema.string.optional(),
+            tax_id: schema.string.optional()
           })
         }),
         data: params

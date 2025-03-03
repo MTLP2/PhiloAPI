@@ -38,7 +38,7 @@ class ChargeTest {
             birthday: null,
             ssn: null,
             ssn_last_4: null,
-            personal_id_number: null,
+            tax_id: null,
             registration_number: null,
             eori_number: null,
             tax_intra: null,

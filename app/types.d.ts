@@ -103,6 +103,7 @@ type Customer = {
   lng?: number
   lat?: number
   email?: string
+  tax_id?: string
   created_at?: Timestamp
   updated_at?: Timestamp
 }

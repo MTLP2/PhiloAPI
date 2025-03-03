@@ -23,7 +23,7 @@ class Customer {
       birthday: params.birthday ? new Date(params.birthday) : null,
       ssn_last_4: params.ssn_last_4 ? params.ssn_last_4 : null,
       email: params.email ? params.email : null,
-      personal_id_number: params.personal_id_number ? params.personal_id_number : null,
+      tax_id: params.tax_id ? params.tax_id : null,
       vat_rate: params.vat_rate ? params.vat_rate : null,
       tax_intra: params.tax_intra ? params.tax_intra : null,
       registration_number: params.registration_number ? params.registration_number : null,
