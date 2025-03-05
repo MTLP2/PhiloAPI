@@ -2644,6 +2644,9 @@ class Dispatchs {
         'dispatch_id',
         'product.name',
         'product.barcode',
+        'product.hs_code',
+        'product.country_id as origin',
+        'product.type',
         'product_id',
         'whiplash_id',
         'bigblue_id',
@@ -2664,6 +2667,14 @@ class Dispatchs {
         for (const i in itemsDispatch) {
           itemsDispatch[i].price = Utils.round((dispatch.total - dispatch.shipping) / quantity, 2)
         }
+      }
+
+      if (
+        dispatch.logistician === 'cbip' &&
+        ['KR', 'TW'].includes(dispatch.country_id as string) &&
+        !dispatch.tax_id
+      ) {
+        continue
       }
 
       await Dispatchs.syncDispatch({
