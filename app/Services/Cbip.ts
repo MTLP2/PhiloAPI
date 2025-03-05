@@ -228,6 +228,7 @@ class Cbip {
   }
 
   static async setTrackingLinks() {
+    return
     const res: any = await this.api('orders-api/open/orders', {
       method: 'GET'
     })
