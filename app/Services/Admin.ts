@@ -1614,6 +1614,7 @@ class Admin {
       'user.is_pro',
       'user.facebook_id',
       'user.soundcloud_id',
+      'c.type as user_type',
       'c.country_id',
       'c.name',
       'c.firstname',
@@ -1624,6 +1625,7 @@ class Admin {
       'c.state',
       'c.phone',
       'c.email as customer_email',
+      'c.tax_id',
       DB.raw("CONCAT(c.firstname, ' ', c.lastname) AS user_infos")
     ]
     const orders = DB('order_shop as os')
@@ -2038,6 +2040,7 @@ class Admin {
           { header: 'Tracking', key: 'tracking_number' },
           { header: 'Paid?', key: 'is_paid' },
           { header: 'Date', key: 'created_at' },
+          { header: 'User Type', key: 'user_type' },
           { header: 'Firstname', key: 'firstname' },
           { header: 'Lastanme', key: 'lastname' },
           { header: 'Name', key: 'name' },
@@ -2045,7 +2048,8 @@ class Admin {
           { header: 'City', key: 'city' },
           { header: 'Zip code', key: 'zip_code' },
           { header: 'State', key: 'state' },
-          { header: 'Country', key: 'country_id' }
+          { header: 'Country', key: 'country_id' },
+          { header: 'Tax ID', key: 'tax_id' }
         ],
         data: data.data
       }
