@@ -351,178 +351,6 @@ class Dispatchs {
       })
     }
 
-    /**
-    if (params.step !== 'pending' && !item.date_export) {
-      if (['daudin'].includes(params.transporter)) {
-        if (!item.logistician_id) {
-          const dispatch: any = await Elogik.sync([
-            {
-              ...customer,
-              id: 'M' + item.id,
-              user_id: item.user_id || 'M' + item.id,
-              sub_total: '40',
-              currency: 'EUR',
-              shipping_type: params.shipping_type,
-              address_pickup: params.address_pickup,
-              incoterm: params.incoterm,
-              created_at: item.created_at,
-              email: item.email,
-              items: items.map((b) => {
-                return {
-                  barcode: b.barcode,
-                  name: products[b.barcode].name,
-                  hs_code: products[b.barcode].hs_code,
-                  country_id: products[b.barcode].country_id,
-                  more: products[b.barcode].more,
-                  type: products[b.barcode].type,
-                  quantity: b.quantity
-                }
-              })
-            }
-          ])
-          if (dispatch[0] && dispatch[0].status === 'error') {
-            return {
-              error: dispatch[0].status_detail
-            }
-          }
-          item.step = 'in_preparation'
-          await item.save()
-          if (item.order_shop_id) {
-            await DB('order_shop').where('id', item.order_shop_id).update({
-              logistician_id: dispatch.id,
-              tracking_number: null,
-              tracking_transporter: null,
-              updated_at: Utils.date()
-            })
-          }
-        }
-      }
-
-      if (['bigblue'].includes(params.transporter)) {
-        if (!item.logistician_id) {
-          const dispatch: any = await BigBlue.sync([
-            {
-              ...customer,
-              id: 'M' + item.id,
-              user_id: item.user_id || 'M' + item.id,
-              sub_total: '40',
-              currency: 'EUR',
-              b2b: item.type === 'b2b',
-              shipping_type: params.shipping_type,
-              address_pickup: params.address_pickup,
-              created_at: item.created_at,
-              email: item.email,
-              items: items.map((b) => {
-                console.log(b)
-                return {
-                  barcode: b.barcode,
-                  product: products[b.barcode].id,
-                  bigblue_id: products[b.barcode].bigblue_id,
-                  quantity: b.quantity
-                }
-              })
-            }
-          ])
-          if (dispatch[0] && dispatch[0].status === 'error') {
-            return {
-              error: dispatch[0].status_detail
-            }
-          }
-          item.step = 'in_preparation'
-          await item.save()
-          if (item.order_shop_id) {
-            await DB('order_shop').where('id', item.order_shop_id).update({
-              logistician_id: dispatch.id,
-              tracking_number: null,
-              tracking_transporter: null,
-              updated_at: Utils.date()
-            })
-          }
-        }
-      }
-      if (['whiplash', 'whiplash_uk'].includes(params.transporter) && !item.logistician_id) {
-        const pp: any = {
-          shipping_name: `${customer.firstname} ${customer.lastname}`,
-          shipping_address_1: customer.address,
-          shipping_city: customer.city,
-          shipping_state: customer.state,
-          shipping_country: customer.country_id,
-          shipping_zip: customer.zip_code,
-          shipping_phone: customer.phone,
-          order_type: params.type === 'b2b' ? 'wholesale' : 'direct_to_consumer',
-          incoterm: params.incoterm,
-          purchase_order: params.purchase_order,
-          shop_warehouse_id: params.transporter === 'whiplash_uk' ? 3 : 66,
-          shop_shipping_method_text: Whiplash.getShippingMethod({
-            transporter: params.transporter,
-            country_id: customer.country_id,
-            shipping_type: params.shipping_type
-          }),
-          email: item.email,
-          order_items: []
-        }
-
-        for (const b of items) {
-          const item = await Whiplash.findItem(b.barcode)
-          if (item.error) {
-            return { error: `Whiplash error for ${b.barcode}: ${item.error}` }
-          }
-          pp.order_items.push({
-            item_id: item.id,
-            quantity: b.quantity
-          })
-        }
-
-        const order: any = await Whiplash.saveOrder(pp)
-        if (order.id) {
-          item.step = 'in_preparation'
-          item.logistician_id = order.id
-          item.date_export = Utils.date()
-          await item.save()
-
-          if (item.order_shop_id) {
-            await DB('order_shop').where('id', item.order_shop_id).update({
-              logistician_id: order.id,
-              tracking_number: null,
-              tracking_transporter: null,
-              updated_at: Utils.date()
-            })
-          }
-        }
-      }
-
-      for (const b of items) {
-        if (products[b.barcode]) {
-          await Stock.save({
-            product_id: products[b.barcode].id,
-            type: params.transporter,
-            quantity: -b.quantity,
-            diff: true,
-            comment: 'manual'
-          })
-        }
-      }
-
-      if (item.user_id) {
-        await Notifications.add({
-          type: 'my_order_in_preparation',
-          user_id: item.user_id,
-          dispatch_id: item.id
-        })
-      }
-
-      if (params.missing_items === 'another_order_with_items') {
-        await OrdersManual.save({
-          ...params,
-          id: undefined,
-          step: 'pending',
-          missing_items: undefined,
-          items: missingItems
-        })
-      }
-    }
-    **/
-
     return item
   }
 
@@ -2628,7 +2456,6 @@ class Dispatchs {
         'order_shop.shipping',
         'order_shop.total'
       ])
-      .where('dispatch.logistician_id', 'is', null)
       .where(({ eb, and }) => {
         const ands: Expression<SqlBool>[] = []
         if (params?.id) {
@@ -2639,6 +2466,7 @@ class Dispatchs {
         }
         return and(ands)
       })
+      .where('dispatch.logistician_id', 'is', null)
       .limit(5)
       .orderBy('dispatch.date_inprogress', 'asc')
       .execute()
@@ -2692,6 +2520,7 @@ class Dispatchs {
         firstname: dispatch.firstname as string,
         lastname: dispatch.lastname as string,
         logistician: dispatch.logistician as string,
+        logistician_id: dispatch.logistician_id as string,
         name: dispatch.name as string,
         phone: dispatch.phone as string,
         email: (dispatch.email || dispatch.user_email || dispatch.customer_email) as string,
@@ -2724,6 +2553,7 @@ class Dispatchs {
     firstname: string
     lastname: string
     logistician: string
+    logistician_id: string
     name: string
     phone: string
     email: string
