@@ -278,6 +278,9 @@ type Product = {
   barcode: string
   bigblue_id: string
   whiplash_id: string
+  hs_code: string
+  country_id: string
+  type: string
   created_at: Timestamp
   updated_at: Timestamp
 }
