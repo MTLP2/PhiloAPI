@@ -86,7 +86,7 @@ class Cbip {
       address2: address2,
       city: params.city,
       zip: params.zip_code.substring(0, 12),
-      state: params.state,
+      province: params.state,
       country_code: params.country_id
     }
 
