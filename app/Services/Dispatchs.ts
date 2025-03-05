@@ -2348,13 +2348,23 @@ class Dispatchs {
         'order_shop.shipping',
         'order_shop.currency',
         'order_shop.currency_rate',
-        'order_shop.weight'
+        'order_shop.weight',
+        'customer.tax_id',
+        'customer.country_id'
       ])
       .where('order_shop.id', '=', params.order_shop_id)
       .executeTakeFirst()
 
     if (!shop) {
       return false
+    }
+
+    if (
+      shop.transporter === 'cbip' &&
+      ['KR', 'TW'].includes(shop.country_id as string) &&
+      !shop.tax_id
+    ) {
+      return { success: false, error: 'tax_id_required' }
     }
 
     const items = await DB('order_item')
