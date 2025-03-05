@@ -112,16 +112,19 @@ class Cbip {
       total_tax: 0,
       shipping_address: adr,
       billing_address: adr,
-      metadata: {
-        tax_id: params.tax_id
-      },
+      special_instructions: params.tax_id,
       order_lines: params.items.map((item: any) => {
         return {
           reference_id: item.cbip_id,
           sku: item.barcode,
           title: item.name,
           quantity: item.quantity,
-          price: item.price
+          price: item.price,
+          metadata: {
+            hs_code: item.hs_code,
+            origin: item.origin,
+            product_type: item.type
+          }
         }
       })
     }
