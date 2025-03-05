@@ -50,6 +50,7 @@ class Cbip {
 
   static syncDispatch = async (params: {
     id: number
+    logistician_id: string
     firstname: string
     lastname: string
     name: string
@@ -129,10 +130,18 @@ class Cbip {
       })
     }
 
-    const res: any = await this.api('orders-api/open/orders', {
-      method: 'POST',
-      params: data
-    })
+    let res: any
+    if (params.logistician_id) {
+      res = await this.api(`orders-api/open/orders/${params.logistician_id}`, {
+        method: 'PATCH',
+        params: data
+      })
+    } else {
+      res = await this.api('orders-api/open/orders', {
+        method: 'POST',
+        params: data
+      })
+    }
 
     if (res.data) {
       return {
