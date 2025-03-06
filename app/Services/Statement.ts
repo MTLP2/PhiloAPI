@@ -2701,6 +2701,14 @@ class StatementService {
       .join('project_user as pu', 'pu.project_id', 'project.id')
       .where('send_statement', 1)
       .where((query) => {
+        query.where(
+          'vod.active_statement',
+          '<=',
+          moment().subtract(2, 'months').format('YYYY-MM-DD')
+        )
+        query.orWhere('vod.active_statement', null)
+      })
+      .where((query) => {
         query.where('project.category', 'digital')
         query.orWhere((query) => {
           query.whereIn('vod.status', ['sent', 'preparation'])

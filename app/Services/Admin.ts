@@ -28,6 +28,7 @@ import Env from '@ioc:Adonis/Core/Env'
 import UserService from 'App/Services/User'
 import Pass from './Pass'
 import Songs from './Songs'
+import Statement from './Statement'
 
 class Admin {
   static getProjects = async (params: {
@@ -1259,6 +1260,30 @@ class Admin {
       vod.unit_cost = params.unit_cost || null
     }
     if (params.edit_statement) {
+      if (params.send_statement && !vod.send_statement) {
+        const balance = await Statement.getBalance({
+          id: vod.project_id
+        })
+        vod.active_statement = moment().format('YYYY-MM-DD')
+
+        if (balance.balance < 0) {
+          const emails = await DB('user')
+            .select('email')
+            .whereIn('id', [vod.com_id, vod.resp_prod_id])
+            .all()
+
+          await Notifications.sendEmail({
+            to: [
+              'alexis@diggersfactory.com',
+              'invoicing@diggersfactory.com',
+              ...emails.map((e) => e.email)
+            ].join(','),
+            subject: `Satement activé négatif pour le project ${project.name}`,
+            text: `<p>Le statement a été activé pour le projet ${project.name} est négatif.</p>
+            <p>https://www.diggersfactory.com/sheraf/project/${project.id}</p>`
+          })
+        }
+      }
       vod.send_statement = params.send_statement
       vod.storage_costs = params.storage_costs
       vod.balance_followup = params.balance_followup
