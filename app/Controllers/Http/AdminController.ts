@@ -420,8 +420,7 @@ class AdminController {
   }
 
   async downloadPromoKit({ params }) {
-    const url = await ProjectService.downloadPromoKit(params.id, false)
-    return { url: url }
+    return ProjectService.downloadPromoKit(params.id)
   }
 
   duplicateProject({ params }) {

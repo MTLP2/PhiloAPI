@@ -2582,11 +2582,6 @@ class Project {
 
     const project = await DB().table('project').where('id', id).first()
 
-    const fileExists = await Storage.fileExists(path, true)
-    if (fileExists) {
-      return Storage.url(path, `Promokit (${project.artist_name} - ${project.name}).zip`)
-    }
-
     const storageList: any = await Storage.list(`projects/${project.picture || project.id}`)
     // Keep only jpg/png files and excluse mini&low images
     const imagesToZip = storageList.filter(
@@ -2600,10 +2595,7 @@ class Project {
       zip.file(fileName, buffer)
     }
 
-    const buffer = await zip.generateAsync({ type: 'nodebuffer' })
-    await Storage.upload(`promo-kit/${id}.zip`, buffer, true)
-
-    return Storage.url(path, `Promokit (${project.artist_name} - ${project.name}).zip`)
+    return zip.generateAsync({ type: 'nodebuffer' })
   }
 
   static getDispatchs = async (params) => {
