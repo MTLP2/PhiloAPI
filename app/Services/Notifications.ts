@@ -217,31 +217,26 @@ class Notifications {
     if (process.env.NODE_ENV === 'development') {
       params.to = Env.get('DEBUG_EMAIL')
     }
-    for (let to of params.to.split(',')) {
-      if (process.env.NODE_ENV === 'staging') {
-        const domain = to.split('@')
-        if (domain[1] !== 'diggersfactory.com') {
-          to = Env.get('DEBUG_EMAIL')
-        }
+    if (process.env.NODE_ENV === 'staging') {
+      const domain = params.to.split('@')
+      if (domain[1] !== 'diggersfactory.com') {
+        params.to = Env.get('DEBUG_EMAIL')
       }
-      if (!to) {
-        continue
-      }
-
-      const request = new SendEmailRequest({
-        from: `${params.from_name} <${params.from_address}>`,
-        to: to,
-        identifiers: { email: to },
-        subject: params.subject,
-        body: params.html || params.text
-      })
-
-      for (const attachment of params.attachments || []) {
-        request.attach(attachment.filename, attachment.content)
-      }
-
-      await api.sendEmail(request)
     }
+
+    const request = new SendEmailRequest({
+      from: `${params.from_name} <${params.from_address}>`,
+      to: params.to,
+      identifiers: { email: params.to },
+      subject: params.subject,
+      body: params.html || params.text
+    })
+
+    for (const attachment of params.attachments || []) {
+      request.attach(attachment.filename, attachment.content)
+    }
+
+    await api.sendEmail(request)
 
     return { success: true }
   }
