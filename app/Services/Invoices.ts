@@ -1442,7 +1442,7 @@ class Invoices {
       .leftJoin('client', 'client.id', 'invoice.client_id')
       .where('compatibility', true)
       .whereIn('invoice.status', ['invoiced', 'prepaid'])
-      .where('invoice.date', '>=', '2021-01-01')
+      .where('invoice.date', '>=', '2022-01-01')
       .where((query) => {
         if (params?.category) {
           query.where('invoice.category', params.category)
@@ -1474,7 +1474,8 @@ class Invoices {
     const invoices = await Invoices.getUnpaidInvoices()
 
     for (const i in invoices) {
-      invoices[i].days = Math.abs(moment(invoices[i].date).diff(moment(), 'days'))
+      invoices[i].days =
+        Math.abs(moment(invoices[i].date).diff(moment(), 'days')) - invoices[i].payment_days
       invoices[i].project = invoices[i].project
         ? `${invoices[i].project} - ${invoices[i].artist_name}`
         : ''
@@ -1509,7 +1510,7 @@ class Invoices {
           { key: 'first_reminder', header: 'first_reminder', width: 13 },
           { key: 'second_reminder', header: 'second_reminder', width: 13 }
         ],
-        data: invoices
+        data: invoices.filter((i) => i.days > 0)
       }
     ])
   }
