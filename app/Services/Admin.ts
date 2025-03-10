@@ -1264,6 +1264,14 @@ class Admin {
         const balance = await Statement.getBalance({
           id: vod.project_id
         })
+
+        await Notifications.add({
+          type: 'check_statement_balance',
+          user_id: vod.user_id,
+          sending_at: moment().add(1, 'hours').format('YYYY-MM-DD HH:mm'),
+          date: moment().format('YYYY-MM-DD')
+        })
+
         vod.active_statement = moment().format('YYYY-MM-DD')
 
         if (balance.balance < 0) {

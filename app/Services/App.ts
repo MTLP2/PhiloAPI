@@ -379,10 +379,14 @@ class App {
   static checkNotifications = async () => {
     const notifications = await DB('notification')
       .where('email', 1)
-      .orWhere((query) => {
+      .where((query) => {
         query
           .where('email', -1)
           .whereRaw(`sending_at <= '${moment().subtract(3, 'hours').format('YYYY-MM-DD HH:mm')}'`)
+      })
+      .where((query) => {
+        query.whereNull('sending_at')
+        query.orWhere('sending_at', '<', moment().format('YYYY-MM-DD HH:mm'))
       })
       .limit(500)
       .all()
@@ -716,6 +720,45 @@ class App {
             content: card
           }
         ]
+      }
+    }
+    if (n.type === 'check_statement_balance') {
+      const statement = await Statement.userDownload2({
+        id: n.user_id,
+        end: moment().format('YYYY-MM-DD'),
+        return_data: true,
+        auto: true
+      })
+
+      let balance = 0
+      let projectId: number | null = null
+      for (const currency of Object.keys(statement)) {
+        for (const project of Object.keys(statement[currency])) {
+          projectId = statement[currency][project].project.id as number
+          balance += statement[currency][project].data.balance.all
+        }
+      }
+      console.log('---', balance)
+      if (balance < 0) {
+        n.email = 0
+        await n.save()
+        return false
+      } else {
+        const project = await DB('vod')
+          .select('com.email as com_email', 'prod.email as prod_email')
+          .leftJoin('user as com', 'com.id', 'vod.com_id')
+          .leftJoin('user as prod', 'prod.id', 'vod.resp_prod_id')
+          .where('vod.project_id', projectId)
+          .first()
+
+        data.user.email = [
+          'alexis@diggersfactory.com',
+          'invocing@diggersfactory.com',
+          project.com_email,
+          project.prod_email
+        ].join(',')
+
+        await Notifications.email(data)
       }
     }
     if (n.order_shop_id) {
