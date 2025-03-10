@@ -27,10 +27,17 @@ class TracklistController {
     return Tracklist.saveTrack(payload.tracks)
   }
 
-  public async test({}: HttpContextContract) {
-    console.log('Test controller log')
-    return { log: 'Test controller log' }
+  public async all({ response }: HttpContextContract) {
+    try {
+      const tracks = await Tracklist.all()
+      console.log('Tracks dans le contrôleur :', tracks)
+      return response.status(200).json(tracks)
+    } catch (error) {
+      console.error('Erreur lors de la récupération des tracks :', error)
+      return response.status(500).json({ error: error.message })
+    }
   }
+  
 }
 
 export default TracklistController

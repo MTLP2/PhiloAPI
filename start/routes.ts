@@ -708,6 +708,6 @@ Route.group(() => {
 
 Route.group(() => {
   Route.post('/tracklist', 'TracklistController.save')
-  Route.put('/tracklist/:id', 'TracklistController.updateTracklist')
+  Route.get('/tracklist', 'TracklistController.all')
   Route.delete('/tracklist/:id', 'TracklistController.deleteTracklist')
 })
