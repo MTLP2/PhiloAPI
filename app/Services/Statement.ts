@@ -1583,6 +1583,7 @@ class StatementService {
     start?: string
     end: string
     send_statement?: boolean
+    return_data?: boolean
   }) {
     if (!params.end) {
       params.end = moment().format('YYYY-MM-DD')
@@ -1647,6 +1648,10 @@ class StatementService {
         project: project,
         data: data
       })
+    }
+
+    if (params.return_data) {
+      return datas
     }
 
     const setSummary = (params: {
@@ -2556,7 +2561,6 @@ class StatementService {
       pp[order.project_id].site_margin += marge - order.unit_cost * order.quantity
     }
 
-    console.log(params)
     const statements = await DB('statement')
       .select(
         'statement.id',
