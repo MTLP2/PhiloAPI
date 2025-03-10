@@ -8,7 +8,7 @@ import ApiError from 'App/ApiError'
 class Categories {
   static async all(params) {
     params.query = DB('category')
-      .select('id', 'name_en', 'name_fr', 'sub_title_fr', 'sub_title_en', 'is_visible')
+      .select('id', 'code', 'name_en', 'name_fr', 'sub_title_fr', 'sub_title_en', 'is_visible')
       .orderBy('position', 'asc')
     params.size = 0
     return Utils.getRows(params)
@@ -96,6 +96,7 @@ class Categories {
           position: item.position,
           name_en: item.name_en,
           name_fr: item.name_fr,
+          code: item.code,
           sub_title_en: item.sub_title_en,
           sub_title_fr: item.sub_title_fr,
           description_fr: item.description_fr,
@@ -206,7 +207,24 @@ class Categories {
     return { id: params.categoryId, count }
   }
 
-  static async save(params) {
+  static async save(params: {
+    id: number
+    name_en: string
+    name_fr: string
+    code: string
+    sub_title_en: string
+    sub_title_fr: string
+    description_en: string
+    description_fr: string
+    position: number
+    is_visible: number
+    is_banner: number
+    banner_picture: string
+    projects: any[]
+    new_project_id: number[]
+    new_position: number
+    banner: boolean
+  }) {
     let item: any = DB('category')
 
     if (params.id) {
@@ -216,6 +234,7 @@ class Categories {
     }
     item.name_en = params.name_en
     item.name_fr = params.name_fr
+    item.code = params.code
     item.sub_title_en = params.sub_title_en
     item.sub_title_fr = params.sub_title_fr
     item.description_en = params.description_en
