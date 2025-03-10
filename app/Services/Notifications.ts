@@ -35,6 +35,7 @@ class Notifications {
     date?: string
     alert?: 0 | 1
     email?: 0 | 1
+    sending_at?: string
     data?: any
   }) => {
     const exist = await Notifications.exist(params)
@@ -65,6 +66,7 @@ class Notifications {
     payment_id?: number | string
     review_id?: number | string
     invoice_id?: number | string
+    sending_at?: string
     date?: string
     alert?: 0 | 1
     email?: 0 | 1
@@ -97,6 +99,7 @@ class Notifications {
       alert: params.alert !== undefined ? params.alert : 1,
       email: params.email !== undefined ? params.email : 1,
       data: params.data !== undefined ? JSON.stringify(params.data) : null,
+      sending_at: params.sending_at !== undefined ? params.sending_at : null,
       created_at: Utils.date(),
       updated_at: Utils.date(),
       new: 1
