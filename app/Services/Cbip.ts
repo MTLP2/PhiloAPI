@@ -228,7 +228,6 @@ class Cbip {
   }
 
   static async setTrackingLinks() {
-    return
     const res: any = await this.api('orders-api/open/orders', {
       method: 'GET'
     })
@@ -236,7 +235,11 @@ class Cbip {
     let updated = 0
     for (const order of res.data) {
       const shipment = order.shipments[0]
-      if (shipment && shipment.courier_tracking_number) {
+
+      if (!shipment) {
+        continue
+      }
+      if (shipment.status === 'in_transit' && shipment.courier_tracking_number) {
         await Dispatchs.changeStatus({
           logistician_id: order.uuid,
           logistician: 'cbip',
