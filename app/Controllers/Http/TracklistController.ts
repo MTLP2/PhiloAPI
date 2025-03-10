@@ -17,7 +17,9 @@ class TracklistController {
             position: schema.number(),
             artist: schema.string(),
             title: schema.string(),
-            duration: schema.number()
+            duration: schema.number(),
+            disc: schema.number(),
+            side: schema.string(),
           })
         )
       })
@@ -32,13 +34,26 @@ class TracklistController {
       // Récupère le paramètre 'project' depuis l'URL
       const { id } = params
 
-
-      
       // Passe le paramètre à la méthode all() pour filtrer les données si besoin
-      const tracks = await Tracklist.all({ id })
+      const tracks = await Tracklist.all({ project: id })
       return response.status(200).json(tracks)
     } catch (error) {
       console.error('Erreur dans TracklistController:', error)
+      return response.status(500).json({ error: error.message })
+    }
+  }
+
+  public async delete({ params, response }: HttpContextContract) {
+    try {
+      // On suppose que l'id de la track est passé dans l'URL, ex: /tracklist/:id
+      const { id } = params
+
+      // Appel de la méthode de suppression qui met aussi à jour les positions
+      const result = await Tracklist.deleteTrack({ id })
+
+      return response.status(200).json(result)
+    } catch (error) {
+      console.error('Erreur lors de la suppression de la track :', error)
       return response.status(500).json({ error: error.message })
     }
   }
