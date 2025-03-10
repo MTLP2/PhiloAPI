@@ -12,7 +12,7 @@ class TracklistController {
         // On suppose que "tracks" est un tableau d'objets track
         tracks: schema.array().members(
           schema.object().members({
-            id: schema.number(),
+            id: schema.number.optional(),
             project: schema.number.optional(),
             position: schema.number(),
             artist: schema.string(),
@@ -27,17 +27,21 @@ class TracklistController {
     return Tracklist.saveTrack(payload.tracks)
   }
 
-  public async all({ response }: HttpContextContract) {
+  public async index({ params, response }: HttpContextContract) {
     try {
-      const tracks = await Tracklist.all()
-      console.log('Tracks dans le contrôleur :', tracks)
+      // Récupère le paramètre 'project' depuis l'URL
+      const { id } = params
+
+
+      
+      // Passe le paramètre à la méthode all() pour filtrer les données si besoin
+      const tracks = await Tracklist.all({ id })
       return response.status(200).json(tracks)
     } catch (error) {
-      console.error('Erreur lors de la récupération des tracks :', error)
+      console.error('Erreur dans TracklistController:', error)
       return response.status(500).json({ error: error.message })
     }
   }
-  
 }
 
 export default TracklistController
