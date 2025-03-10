@@ -42,6 +42,7 @@ class Stock {
     for (const t of trans) {
       for (const product of products.filter((p) => !p.parent_id)) {
         const stock = stocks.find((s) => s.product_id === product.product_id && s.type === t)
+        stock.quantity = stock.quantity - (stock.reserved || 0)
         if (!stock) {
           res[t] = 0
         } else if (res[t] === undefined || (stock.quantity !== null && stock.quantity < res[t])) {
