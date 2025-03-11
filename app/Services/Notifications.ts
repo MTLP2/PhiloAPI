@@ -229,21 +229,20 @@ class Notifications {
       }
     }
 
-    params.to = params.to.split(',').filter(Boolean).join(',')
-
-    const request = new SendEmailRequest({
-      from: `${params.from_name} <${params.from_address}>`,
-      to: params.to,
-      identifiers: { email: params.to },
-      subject: params.subject,
-      body: params.html || params.text
-    })
-
-    for (const attachment of params.attachments || []) {
-      request.attach(attachment.filename, attachment.content)
+    for (const email of params.to.split(',')) {
+      const data = {
+        from: `${params.from_name} <${params.from_address}>`,
+        to: email,
+        identifiers: { email: email },
+        subject: params.subject,
+        body: params.html || params.text
+      }
+      const request = new SendEmailRequest(data)
+      for (const attachment of params.attachments || []) {
+        request.attach(attachment.filename, attachment.content)
+      }
+      await api.sendEmail(request)
     }
-
-    await api.sendEmail(request)
 
     return { success: true }
   }
