@@ -14,9 +14,7 @@ export type SaveTrackParams = {
 }[]
 
 class Tracklist {
-  static async saveTrack(
-    params: SaveTrackParams
-  ): Promise<{ message: string; tracks: SaveTrackParams }> {
+  static async saveTrack(params: SaveTrackParams): Promise<{ success: boolean }> {
     if (!params || !Array.isArray(params)) {
       throw new Error('Missing required field: tracks')
     }
@@ -84,7 +82,7 @@ class Tracklist {
       .where({ production_id: projectId, type: 'tracklisting' })
       .update({ status: 'pending' })
 
-    return { message: 'Les pistes ont été mises à jour ou insérées avec succès.', tracks: params }
+    return { success: true }
   }
 
   static async all({ project }: { project?: number }) {
