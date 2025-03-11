@@ -20,6 +20,9 @@ class TracklistController {
             duration: schema.number(),
             disc: schema.number(),
             side: schema.string(),
+            silence: schema.number.optional(),
+            speed: schema.number(),
+
           })
         )
       })

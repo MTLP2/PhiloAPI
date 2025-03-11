@@ -7,7 +7,7 @@ class Tracklist {
       throw new Error('Missing required field: tracks')
     }
 
-    const requiredFields = ['artist', 'title', 'duration', 'position', 'project']
+    const requiredFields = ['artist', 'title', 'duration', 'position', 'project', 'disc', 'side', 'speed']
     for (const track of payload) {
       const missingFields = requiredFields.filter(
         (field) => track[field] === undefined || track[field] === null
@@ -29,7 +29,10 @@ class Tracklist {
         position: track.position,
         project_id: track.project,
         disc: track.disc, // Ajout du disque
-        side: track.side // Ajout du côté
+        side: track.side, // Ajout du côté
+        speed: track.speed,
+        silence: track.silence || 0
+
       }
 
       if (track.id !== undefined && track.id !== null) {
