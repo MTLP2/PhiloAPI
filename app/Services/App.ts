@@ -378,15 +378,17 @@ class App {
 
   static checkNotifications = async () => {
     const notifications = await DB('notification')
-      .where('email', 1)
-      .where((query) => {
-        query
-          .where('email', -1)
-          .whereRaw(`sending_at <= '${moment().subtract(3, 'hours').format('YYYY-MM-DD HH:mm')}'`)
-      })
       .where((query) => {
         query.whereNull('sending_at')
         query.orWhere('sending_at', '<', moment().format('YYYY-MM-DD HH:mm'))
+      })
+      .where((query) => {
+        query.where('email', 1)
+        query.orWhere((query) => {
+          query
+            .where('email', -1)
+            .whereRaw(`sending_at <= '${moment().subtract(3, 'hours').format('YYYY-MM-DD HH:mm')}'`)
+        })
       })
       .limit(500)
       .all()
