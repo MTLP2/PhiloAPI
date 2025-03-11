@@ -1,4 +1,4 @@
-import DB from 'App/DB'
+import { db } from 'App/db3'
 
 export type SaveTrackParams = {
   id?: number
@@ -42,89 +42,118 @@ class Tracklist {
       }
     }
 
+    console.log(params)
     for (const track of params) {
-      const data = {
-        artist: track.artist,
-        title: track.title,
-        duration: track.duration,
-        position: track.position,
-        project_id: track.project,
-        disc: track.disc, // Ajout du disque
-        side: track.side, // Ajout du côté
-        speed: track.speed,
-        silence: track.silence || 0
-      }
-
       if (track.id !== undefined && track.id !== null) {
-        const existingTrack = await DB('tracklist').where({ id: track.id }).first()
+        const existingTrack = await db
+          .selectFrom('tracklist' as any)
+          .selectAll()
+          .where('id', '=', track.id)
+          .executeTakeFirst()
         if (existingTrack) {
-          await DB('tracklist').where({ id: track.id }).update(data)
+          await db
+            .updateTable('tracklist' as any)
+            .set({
+              artist: track.artist,
+              title: track.title,
+              duration: track.duration,
+              position: track.position,
+              project_id: track.project,
+              disc: track.disc,
+              side: track.side,
+              speed: track.speed,
+              silence: track.silence
+            })
+            .where('id', '=', track.id)
+            .execute()
         } else {
-          let insertedIds = await DB('tracklist').insert(data)
-          if (!insertedIds || !insertedIds[0]) {
-            const result = await DB.raw('select LAST_INSERT_ID() as id')
-            insertedIds = [result[0].id]
-          }
-          track.id = insertedIds[0]
+          const result = await db
+            .insertInto('tracklist' as any)
+            .values({
+              artist: track.artist,
+              title: track.title,
+              duration: track.duration,
+              position: track.position,
+              project_id: track.project,
+              disc: track.disc,
+              side: track.side,
+              speed: track.speed,
+              silence: track.silence
+            })
+            .executeTakeFirst()
+          track.id = Number(result.insertId)
         }
       } else {
-        let insertedIds = await DB('tracklist').insert(data)
-        if (!insertedIds || !insertedIds[0]) {
-          const result = await DB.raw('select LAST_INSERT_ID() as id')
-          insertedIds = [result[0].id]
-        }
-        track.id = insertedIds[0]
+        const result = await db
+          .insertInto('tracklist' as any)
+          .values({
+            artist: track.artist,
+            title: track.title,
+            duration: track.duration,
+            position: track.position,
+            project_id: track.project,
+            disc: track.disc,
+            side: track.side,
+            speed: track.speed,
+            silence: track.silence
+          })
+          .executeTakeFirst()
+        track.id = Number(result.insertId)
       }
     }
 
     const projectId = params[0].project
-    await DB('production_action')
-      .where({ production_id: projectId, type: 'tracklisting' })
-      .update({ status: 'pending' })
+    await db
+      .updateTable('production_action' as any)
+      .set({ status: 'pending' })
+      .where('production_id', '=', projectId)
+      .where('type', '=', 'tracklisting')
+      .execute()
 
     return { success: true }
   }
 
   static async all({ project }: { project?: number }) {
-    let query = DB('tracklist').select('*')
+    let query = db.selectFrom('tracklist' as any).selectAll()
     if (project) {
-      query = query.where('project_id', project)
+      query = query.where('project_id', '=', project)
     }
-    query = query
-      .orderBy('disc', 'asc')
-      .orderBy('side', 'asc') // Assurez-vous que 'A' vient avant 'B'
-      .orderBy('position', 'asc')
-    const items = await query.all()
+    query = query.orderBy('disc', 'asc').orderBy('side', 'asc').orderBy('position', 'asc')
+    const items = await query.execute()
     return items
   }
 
   static async deleteTrack(params: { id: number }) {
-    // Vérifier que le payload contient bien un id
     if (!params || !params.id) {
       throw new Error('Missing required field: id')
     }
 
-    // Récupérer la piste à supprimer pour obtenir son project_id
-    const trackToDelete = await DB('tracklist').where({ id: params.id }).first()
+    const trackToDelete = await db
+      .selectFrom('tracklist' as any)
+      .selectAll()
+      .where('id', '=', params.id)
+      .executeTakeFirst()
     if (!trackToDelete) {
       throw new Error(`Track with id ${params.id} not found.`)
     }
     const projectId = trackToDelete.project_id
 
-    // Supprimer la piste
-    const deletedCount = await DB('tracklist').where({ id: params.id }).delete()
+    const deletedCount = await db
+      .deleteFrom('tracklist' as any)
+      .where('id', '=', params.id)
+      .execute()
 
-    // Récupérer toutes les pistes restantes du projet, triées par disc, side et position
-    const remainingTracks = await DB('tracklist')
-      .where({ project_id: projectId })
+    const remainingTracks = await db
+      .selectFrom('tracklist' as any)
+      .selectAll()
+      .where('project_id', '=', projectId)
       .orderBy('disc', 'asc')
       .orderBy('side', 'asc')
       .orderBy('position', 'asc')
-      .all()
+      .execute()
 
     console.log(remainingTracks)
 
-    // Regrouper par disque et côté en créant une map dont la clé est "disc-side"
     const groupsMap: { [key: string]: any[] } = {}
     for (const track of remainingTracks) {
       const key = `${track.disc}-${track.side}`
@@ -134,13 +163,16 @@ class Tracklist {
       groupsMap[key].push(track)
     }
 
-    // Pour chaque groupe, réattribuer les positions de 1 à n
     for (const key in groupsMap) {
       const groupTracks = groupsMap[key]
       for (let i = 0; i < groupTracks.length; i++) {
         const newPosition = i + 1
         if (groupTracks[i].position !== newPosition) {
-          await DB('tracklist').where({ id: groupTracks[i].id }).update({ position: newPosition })
+          await db
+            .updateTable('tracklist' as any)
+            .set({ position: newPosition })
+            .where('id', '=', groupTracks[i].id)
+            .execute()
         }
       }
     }
