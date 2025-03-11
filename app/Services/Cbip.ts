@@ -1,3 +1,4 @@
+import { References } from '@/components/References'
 import Utils from 'App/Utils'
 import Excel from 'exceljs'
 import DB from 'App/DB'
@@ -228,22 +229,39 @@ class Cbip {
   }
 
   static async setTrackingLinks() {
-    const res: any = await this.api('orders-api/open/orders', {
-      method: 'GET'
-    })
+    const data: any[] = []
+
+    let page = 0
+    let next = true
+    do {
+      page++
+      const res: any = await this.api('orders-api/open/orders?page=' + page, {
+        method: 'GET'
+      })
+      console.log(page)
+      data.push(...res.data)
+
+      next = res.meta.totalPages > page
+    } while (next)
 
     let updated = 0
-    for (const order of res.data) {
+    for (const order of data) {
       const shipment = order.shipments[0]
-
       if (!shipment) {
         continue
       }
-      if (shipment.status === 'in_transit' && shipment.courier_tracking_number) {
+
+      if (
+        ['in_transit', 'delivered'].includes(shipment.status) &&
+        shipment.courier_tracking_number
+      ) {
+        if (shipment.status === 'in_transit') {
+          shipment.status = 'sent'
+        }
         await Dispatchs.changeStatus({
           logistician_id: order.uuid,
           logistician: 'cbip',
-          status: 'sent',
+          status: shipment.status,
           tracking_number: shipment.courier_tracking_number,
           tracking_link: shipment.courier_tracking_url
         })
