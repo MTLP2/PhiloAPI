@@ -1,14 +1,37 @@
 import DB from 'App/DB'
 
+export type SaveTrackParams = {
+  id?: number
+  project: number
+  position: number
+  artist: string
+  title: string
+  duration: number
+  disc: number
+  side: string
+  silence?: number
+  speed: number
+}[]
+
 class Tracklist {
-  static async saveTrack(payload: any) {
-    console.log('Payload:', payload)
-    if (!payload || !Array.isArray(payload)) {
+  static async saveTrack(
+    params: SaveTrackParams
+  ): Promise<{ message: string; tracks: SaveTrackParams }> {
+    if (!params || !Array.isArray(params)) {
       throw new Error('Missing required field: tracks')
     }
 
-    const requiredFields = ['artist', 'title', 'duration', 'position', 'project', 'disc', 'side', 'speed']
-    for (const track of payload) {
+    const requiredFields = [
+      'artist',
+      'title',
+      'duration',
+      'position',
+      'project',
+      'disc',
+      'side',
+      'speed'
+    ]
+    for (const track of params) {
       const missingFields = requiredFields.filter(
         (field) => track[field] === undefined || track[field] === null
       )
@@ -21,7 +44,7 @@ class Tracklist {
       }
     }
 
-    for (const track of payload) {
+    for (const track of params) {
       const data = {
         artist: track.artist,
         title: track.title,
@@ -32,7 +55,6 @@ class Tracklist {
         side: track.side, // Ajout du côté
         speed: track.speed,
         silence: track.silence || 0
-
       }
 
       if (track.id !== undefined && track.id !== null) {
@@ -57,12 +79,12 @@ class Tracklist {
       }
     }
 
-    const projectId = payload[0].project
+    const projectId = params[0].project
     await DB('production_action')
       .where({ production_id: projectId, type: 'tracklisting' })
       .update({ status: 'pending' })
 
-    return { message: 'Les pistes ont été mises à jour ou insérées avec succès.', tracks: payload }
+    return { message: 'Les pistes ont été mises à jour ou insérées avec succès.', tracks: params }
   }
 
   static async all({ project }: { project?: number }) {
