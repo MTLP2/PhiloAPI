@@ -229,6 +229,8 @@ class Notifications {
       }
     }
 
+    params.to = params.to.split(',').filter(Boolean).join(',')
+
     const request = new SendEmailRequest({
       from: `${params.from_name} <${params.from_address}>`,
       to: params.to,
