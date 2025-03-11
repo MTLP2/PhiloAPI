@@ -98,21 +98,21 @@ class Tracklist {
     return items
   }
 
-  static async deleteTrack(payload: any) {
+  static async deleteTrack(params: { id: number }) {
     // Vérifier que le payload contient bien un id
-    if (!payload || !payload.id) {
+    if (!params || !params.id) {
       throw new Error('Missing required field: id')
     }
 
     // Récupérer la piste à supprimer pour obtenir son project_id
-    const trackToDelete = await DB('tracklist').where({ id: payload.id }).first()
+    const trackToDelete = await DB('tracklist').where({ id: params.id }).first()
     if (!trackToDelete) {
-      throw new Error(`Track with id ${payload.id} not found.`)
+      throw new Error(`Track with id ${params.id} not found.`)
     }
     const projectId = trackToDelete.project_id
 
     // Supprimer la piste
-    const deletedCount = await DB('tracklist').where({ id: payload.id }).delete()
+    const deletedCount = await DB('tracklist').where({ id: params.id }).delete()
 
     // Récupérer toutes les pistes restantes du projet, triées par disc, side et position
     const remainingTracks = await DB('tracklist')

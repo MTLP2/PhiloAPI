@@ -13,7 +13,7 @@ class TracklistController {
         tracks: schema.array().members(
           schema.object().members({
             id: schema.number.optional(),
-            project: schema.number.optional(),
+            project: schema.number(),
             position: schema.number(),
             artist: schema.string(),
             title: schema.string(),
@@ -21,8 +21,7 @@ class TracklistController {
             disc: schema.number(),
             side: schema.string(),
             silence: schema.number.optional(),
-            speed: schema.number(),
-
+            speed: schema.number()
           })
         )
       })
@@ -34,9 +33,11 @@ class TracklistController {
 
   public async index({ params, response }: HttpContextContract) {
     try {
-      // Récupère le paramètre 'project' depuis l'URL
-      const { id } = params
-
+      // Récupère le paramètre 'id' depuis l'URL et le convertit en nombre
+      const id = Number(params.id)
+      if (isNaN(id)) {
+        return response.status(400).json({ error: "L'ID doit être un nombre." })
+      }
       // Passe le paramètre à la méthode all() pour filtrer les données si besoin
       const tracks = await Tracklist.all({ project: id })
       return response.status(200).json(tracks)
@@ -49,7 +50,10 @@ class TracklistController {
   public async delete({ params, response }: HttpContextContract) {
     try {
       // On suppose que l'id de la track est passé dans l'URL, ex: /tracklist/:id
-      const { id } = params
+      const id = Number(params.id)
+      if (isNaN(id)) {
+        return response.status(400).json({ error: "L'ID doit être un nombre." })
+      }
 
       // Appel de la méthode de suppression qui met aussi à jour les positions
       const result = await Tracklist.deleteTrack({ id })
