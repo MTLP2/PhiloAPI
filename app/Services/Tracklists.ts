@@ -1,4 +1,4 @@
-import { db } from 'App/db3'
+import { db, model } from 'App/db3'
 
 export type SaveTrackParams = {
   id?: number
@@ -42,79 +42,37 @@ class Tracklist {
       }
     }
 
-    console.log(params)
     for (const track of params) {
-      if (track.id !== undefined && track.id !== null) {
-        const existingTrack = await db
-          .selectFrom('tracklist' as any)
-          .selectAll()
-          .where('id', '=', track.id)
-          .executeTakeFirst()
-        if (existingTrack) {
-          await db
-            .updateTable('tracklist' as any)
-            .set({
-              artist: track.artist,
-              title: track.title,
-              duration: track.duration,
-              position: track.position,
-              project_id: track.project,
-              disc: track.disc,
-              side: track.side,
-              speed: track.speed,
-              silence: track.silence
-            })
-            .where('id', '=', track.id)
-            .execute()
-        } else {
-          const result = await db
-            .insertInto('tracklist' as any)
-            .values({
-              artist: track.artist,
-              title: track.title,
-              duration: track.duration,
-              position: track.position,
-              project_id: track.project,
-              disc: track.disc,
-              side: track.side,
-              speed: track.speed,
-              silence: track.silence
-            })
-            .executeTakeFirst()
-          track.id = Number(result.insertId)
-        }
-      } else {
-        const result = await db
-          .insertInto('tracklist' as any)
-          .values({
-            artist: track.artist,
-            title: track.title,
-            duration: track.duration,
-            position: track.position,
-            project_id: track.project,
-            disc: track.disc,
-            side: track.side,
-            speed: track.speed,
-            silence: track.silence
-          })
-          .executeTakeFirst()
-        track.id = Number(result.insertId)
+      let item = model('tracklist')
+
+      if (track.id) {
+        item = await item.find(track.id)
       }
+
+      item.artist = track.artist
+      item.title = track.title
+      item.duration = track.duration
+      item.position = track.position
+      item.project_id = track.project
+      item.disc = track.disc
+      item.side = track.side
+      item.speed = track.speed
+      item.silence = track.silence
+      await item.save()
+
+      const projectId = params[0].project
+      await db
+        .updateTable('production_action' as any)
+        .set({ status: 'pending' })
+        .where('production_id', '=', projectId)
+        .where('type', '=', 'tracklisting')
+        .execute()
     }
-
-    const projectId = params[0].project
-    await db
-      .updateTable('production_action' as any)
-      .set({ status: 'pending' })
-      .where('production_id', '=', projectId)
-      .where('type', '=', 'tracklisting')
-      .execute()
-
     return { success: true }
   }
 
   static async all({ project }: { project?: number }) {
-    let query = db.selectFrom('tracklist' as any).selectAll()
+    let query = db.selectFrom('tracklist').selectAll()
     if (project) {
       query = query.where('project_id', '=', project)
     }
@@ -129,7 +87,7 @@ class Tracklist {
     }
 
     const trackToDelete = await db
-      .selectFrom('tracklist' as any)
+      .selectFrom('tracklist')
       .selectAll()
       .where('id', '=', params.id)
       .executeTakeFirst()
@@ -138,10 +96,7 @@ class Tracklist {
     }
     const projectId = trackToDelete.project_id
 
-    const deletedCount = await db
-      .deleteFrom('tracklist' as any)
-      .where('id', '=', params.id)
-      .execute()
+    const deletedCount = await model('tracklist').delete(params.id)
 
     const remainingTracks = await db
       .selectFrom('tracklist' as any)
@@ -151,8 +106,6 @@ class Tracklist {
       .orderBy('side', 'asc')
       .orderBy('position', 'asc')
       .execute()
-
-    console.log(remainingTracks)
 
     const groupsMap: { [key: string]: any[] } = {}
     for (const track of remainingTracks) {
