@@ -246,6 +246,11 @@ class Cbip {
 
     let updated = 0
     for (const order of data) {
+      let lastShipment: {
+        status: string
+        courier_tracking_number: string
+        courier_tracking_url: string
+      } | null = null
       for (const shipment of order.shipments) {
         if (
           ['in_transit', 'delivered'].includes(shipment.status) &&
@@ -254,12 +259,15 @@ class Cbip {
           if (shipment.status === 'in_transit') {
             shipment.status = 'sent'
           }
+          lastShipment = shipment
+        }
+        if (lastShipment) {
           await Dispatchs.changeStatus({
             logistician_id: order.uuid,
             logistician: 'cbip',
-            status: shipment.status,
-            tracking_number: shipment.courier_tracking_number,
-            tracking_link: shipment.courier_tracking_url
+            status: lastShipment.status,
+            tracking_number: lastShipment.courier_tracking_number,
+            tracking_link: lastShipment.courier_tracking_url
           })
           updated++
         }
