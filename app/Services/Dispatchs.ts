@@ -2695,6 +2695,9 @@ class Dispatchs {
     if (dis.status === params.status) {
       return { success: false }
     }
+    if (dis.status === 'delivered' && params.status === 'sent') {
+      return { success: false }
+    }
     if (params.status === 'pickup_available' && dis.shipping_method !== 'pickup') {
       return { success: false }
     }
