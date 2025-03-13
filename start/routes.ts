@@ -705,6 +705,8 @@ Route.group(() => {
   Route.post('/dispatchs/stock', 'DispatchsController.updateStock')
 })
 
-Route.post('/tracklist', 'TracklistsController.saveTracklist')
-Route.get('/tracklist/:id', 'TracklistsController.getTracklist')
-Route.delete('/tracklist/:id', 'TracklistsController.deleteTrack')
+Route.group(() => {
+  Route.post('/tracklists', 'TracklistsController.saveTracklist')
+  Route.get('/tracklists/:id', 'TracklistsController.getTracklist')
+  Route.delete('/tracklists/:id', 'TracklistsController.deleteTrack')
+}).middleware(['auth'])
