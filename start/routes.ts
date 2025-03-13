@@ -704,3 +704,8 @@ Route.group(() => {
   Route.post('/dispatchs/order', 'DispatchsController.updateOrder')
   Route.post('/dispatchs/stock', 'DispatchsController.updateStock')
 })
+
+Route.group(() => {
+  Route.get('/', 'ProductionController.getTable')
+  Route.post('/table/:id', 'ProductionController.saveTable')
+}).prefix('productions')

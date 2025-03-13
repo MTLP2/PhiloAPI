@@ -211,10 +211,18 @@ class ProductionController {
   }
 
   async saveTable({ params }) {
+    console.log(params)
+
     const payload = await validator.validate({
       schema: schema.create({
         project_id: schema.number(),
-        table: schema.array()
+        table: schema.array().members(
+          schema.object().members({
+            rowNumber: schema.number(),
+            columnNumber: schema.number(),
+            value: schema.string()
+          })
+        )
       }),
       data: params
     })
