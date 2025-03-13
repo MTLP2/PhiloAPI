@@ -925,6 +925,7 @@ class App {
       ]
     }
     if (n.invoice_id) {
+      data.from_name = 'Diggers Factory'
       data.from_address = 'invoicing@diggersfactory.com'
       data.invoice = await DB('invoice').where('id', n.invoice_id).first()
       data.lang = data.invoice.lang
