@@ -379,7 +379,7 @@ const enum Currencies {
   KRW = 'KRW'
 }
 
-type Tracklist = {
+type Track = {
   id: number
   project_id: number
   position: number
@@ -408,7 +408,7 @@ type ProductionAction = {
 }
 
 export type DB = {
-  tracklist: Tracklist
+  track: Track
   production_action: ProductionAction
   alert: Alert
   artist: Artist

@@ -43,7 +43,7 @@ class Tracklist {
     }
 
     for (const track of params) {
-      let item = model('tracklist')
+      let item = model('track')
 
       if (track.id) {
         item = await item.find(track.id)
@@ -72,7 +72,7 @@ class Tracklist {
   }
 
   static async all({ project }: { project?: number }) {
-    let query = db.selectFrom('tracklist').selectAll()
+    let query = db.selectFrom('track').selectAll()
     if (project) {
       query = query.where('project_id', '=', project)
     }
@@ -87,7 +87,7 @@ class Tracklist {
     }
 
     const trackToDelete = await db
-      .selectFrom('tracklist')
+      .selectFrom('track')
       .selectAll()
       .where('id', '=', params.id)
       .executeTakeFirst()
@@ -96,10 +96,10 @@ class Tracklist {
     }
     const projectId = trackToDelete.project_id
 
-    const deletedCount = await model('tracklist').delete(params.id)
+    const deletedCount = await model('track').delete(params.id)
 
     const remainingTracks = await db
-      .selectFrom('tracklist' as any)
+      .selectFrom('track' as any)
       .selectAll()
       .where('project_id', '=', projectId)
       .orderBy('disc', 'asc')
@@ -122,7 +122,7 @@ class Tracklist {
         const newPosition = i + 1
         if (groupTracks[i].position !== newPosition) {
           await db
-            .updateTable('tracklist' as any)
+            .updateTable('track' as any)
             .set({ position: newPosition })
             .where('id', '=', groupTracks[i].id)
             .execute()

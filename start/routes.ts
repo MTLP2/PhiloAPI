@@ -705,8 +705,6 @@ Route.group(() => {
   Route.post('/dispatchs/stock', 'DispatchsController.updateStock')
 })
 
-Route.group(() => {
-  Route.post('/tracklist', 'TracklistController.saveTracklist')
-  Route.get('/tracklist/:id', 'TracklistController.getTracklist')
-  Route.delete('/tracklist/:id', 'TracklistController.deleteTrack')
-})
+Route.post('/tracklist', 'TracklistsController.saveTracklist')
+Route.get('/tracklist/:id', 'TracklistsController.getTracklist')
+Route.delete('/tracklist/:id', 'TracklistsController.deleteTrack')

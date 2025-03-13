@@ -31,38 +31,25 @@ class TracklistController {
     return Tracklist.saveTrack(payload.tracks)
   }
 
-  public async getTracklist({ params, response }: HttpContextContract) {
-    try {
-      const payload = await validator.validate({
-        data: { id: params.id },
-        schema: schema.create({
-          id: schema.number()
-        })
+  public async getTracklist({ params }: HttpContextContract) {
+    const payload = await validator.validate({
+      data: { id: params.id },
+      schema: schema.create({
+        id: schema.number()
       })
-      const tracks = await Tracklist.all({ project: payload.id })
-      return response.status(200).json(tracks)
-    } catch (error) {
-      console.error('Erreur Serveur:', error)
-      return response.status(500).json({ error: error.message })
-    }
+    })
+    return await Tracklist.all({ project: payload.id })
   }
 
-  public async deleteTrack({ params, response }: HttpContextContract) {
-    try {
-      const payload = await validator.validate({
-        data: { id: params.id },
-        schema: schema.create({
-          id: schema.number()
-        })
+  public async deleteTrack({ params }: HttpContextContract) {
+    const payload = await validator.validate({
+      data: { id: params.id },
+      schema: schema.create({
+        id: schema.number()
       })
+    })
 
-      const result = await Tracklist.deleteTrack({ id: payload.id })
-
-      return response.status(200).json(result)
-    } catch (error) {
-      console.error('Erreur lors de la suppression de la track :', error)
-      return response.status(500).json({ error: error.message })
-    }
+    return await Tracklist.deleteTrack({ id: payload.id })
   }
 }
 
