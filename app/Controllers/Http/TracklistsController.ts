@@ -31,14 +31,14 @@ class TracklistController {
     return Tracklist.saveTrack(payload.tracks)
   }
 
-  public async getTracklist({ params }: HttpContextContract) {
+  public async getTracklist({ params, response }: HttpContextContract) {
     const payload = await validator.validate({
-      data: { id: params.id },
+      data: { project_id: params.id },
       schema: schema.create({
-        id: schema.number()
+        project_id: schema.number()
       })
     })
-    return await Tracklist.all({ project: payload.id })
+    return await Tracklist.all({ project_id: payload.project_id })
   }
 
   public async deleteTrack({ params }: HttpContextContract) {

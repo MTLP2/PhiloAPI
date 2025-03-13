@@ -71,10 +71,10 @@ class Tracklist {
     return { success: true }
   }
 
-  static async all({ project }: { project?: number }) {
+  static async all(params: { project_id?: number }) {
     let query = db.selectFrom('track').selectAll()
-    if (project) {
-      query = query.where('project_id', '=', project)
+    if (params.project_id) {
+      query = query.where('project_id', '=', params.project_id)
     }
     query = query.orderBy('disc', 'asc').orderBy('side', 'asc').orderBy('position', 'asc')
     const items = await query.execute()
