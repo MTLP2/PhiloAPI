@@ -2633,6 +2633,7 @@ class Production {
       item.rowNumber = row.rowNumber
       item.columnNumber = row.columnNumber
       item.value = row.value
+      item.save()
     }
 
     await item.save()
