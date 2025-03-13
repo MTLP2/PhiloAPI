@@ -234,7 +234,7 @@ class Categories {
     }
     item.name_en = params.name_en
     item.name_fr = params.name_fr
-    item.code = params.code
+    item.code = params.code || null
     item.sub_title_en = params.sub_title_en
     item.sub_title_fr = params.sub_title_fr
     item.description_en = params.description_en
