@@ -31,7 +31,7 @@ class TracklistController {
     return Tracklist.saveTrack(payload.tracks)
   }
 
-  public async getTracklist({ params, response }: HttpContextContract) {
+  public async getTracklist({ params }: HttpContextContract) {
     const payload = await validator.validate({
       data: { project_id: params.id },
       schema: schema.create({
