@@ -126,7 +126,7 @@ class Notifications {
   static email = async (params, send = true) => {
     const p = params
 
-    if (p.user.email) {
+    if (p.user.email && Utils.isEmail(p.user.email)) {
       p.to = p.user.email
     }
     if (p.user.emails) {
