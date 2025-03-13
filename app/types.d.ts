@@ -382,7 +382,37 @@ const enum Currencies {
   KRW = 'KRW'
 }
 
+type Track = {
+  id: number
+  project_id: number
+  position: number
+  artist: string
+  title: string
+  duration: number
+  disc: number
+  side: string
+  silence?: number
+  speed: number
+}
+
+type ProductionAction = {
+  id: number
+  production_id?: number
+  type?: string
+  category?: string
+  for?: string
+  status?: string
+  text?: string
+  check_user_id?: number
+  check_date?: Timestamp
+  comment?: string
+  created_at?: Timestamp
+  updated_at?: Timestamp
+}
+
 export type DB = {
+  track: Track
+  production_action: ProductionAction
   alert: Alert
   artist: Artist
   badge: Badge
