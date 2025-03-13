@@ -1,13 +1,14 @@
 import { validator, schema } from '@ioc:Adonis/Core/Validator'
 import Tracklist from 'App/Services/Tracklists'
-import type { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
-
+import Utils from 'App/Utils'
 class TracklistController {
-  public async saveTracklist({ request }: HttpContextContract) {
+  public async saveTracklist({ params, user }) {
     // Récupérer les données du body
 
+    await Utils.checkProjectOwner({ project_id: params.id, user: user })
+
     const payload = await validator.validate({
-      data: request.only(['tracks']),
+      data: params,
       schema: schema.create({
         // On suppose que "tracks" est un tableau d'objets track
         tracks: schema.array().members(
@@ -31,7 +32,9 @@ class TracklistController {
     return Tracklist.saveTrack(payload.tracks)
   }
 
-  public async getTracklist({ params }: HttpContextContract) {
+  public async getTracklist({ params, user }) {
+    await Utils.checkProjectOwner({ project_id: params.id, user: user })
+
     const payload = await validator.validate({
       data: { project_id: params.id },
       schema: schema.create({
@@ -41,7 +44,9 @@ class TracklistController {
     return await Tracklist.all({ project_id: payload.project_id })
   }
 
-  public async deleteTrack({ params }: HttpContextContract) {
+  public async deleteTrack({ params, user }) {
+    await Utils.checkProjectOwner({ project_id: params.id, user: user })
+
     const payload = await validator.validate({
       data: { id: params.id },
       schema: schema.create({
