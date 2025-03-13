@@ -285,6 +285,16 @@ type Product = {
   updated_at: Timestamp
 }
 
+type ProductionTable = {
+  id: number
+  project_id: number
+  rowNumber: number
+  columnNumber: number
+  value: string
+  created_at: Timestamp
+  updated_at: Timestamp
+}
+
 type ShippingWeight = {
   'id': number
   'country_id': string
@@ -383,6 +393,7 @@ const enum Currencies {
 }
 
 export type DB = {
+  production_table: ProductionTable
   alert: Alert
   artist: Artist
   badge: Badge

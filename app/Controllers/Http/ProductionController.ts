@@ -197,6 +197,29 @@ class ProductionController {
     })
     return Production.createShipNotice(payload)
   }
+
+  async getTable({ params }) {
+    const payload = await validator.validate({
+      schema: schema.create({
+        project_id: schema.number()
+      }),
+      data: {
+        project_id: params.project_id
+      }
+    })
+    return Production.getTable(payload)
+  }
+
+  async saveTable({ params }) {
+    const payload = await validator.validate({
+      schema: schema.create({
+        project_id: schema.number(),
+        table: schema.array()
+      }),
+      data: params
+    })
+    return Production.saveTable(payload)
+  }
 }
 
 export default ProductionController

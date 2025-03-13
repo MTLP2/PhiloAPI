@@ -15,6 +15,7 @@ import Storage from 'App/Services/Storage'
 import View from '@ioc:Adonis/Core/View'
 import I18n from '@ioc:Adonis/Addons/I18n'
 import moment from 'moment'
+import { db, model } from 'App/db3'
 
 class Production {
   static async all(params) {
@@ -2611,6 +2612,30 @@ class Production {
         })
       }
     }
+  }
+
+  static async getTable(params: { project_id: number }) {
+    return db
+      .selectFrom('production_table')
+      .selectAll()
+      .where('project_id', '=', params.project_id)
+      .executeTakeFirst()
+  }
+
+  static async saveTable(params: { project_id: number; table: Array<any> }) {
+    let item = model('production_table')
+
+    if (params.project_id) {
+      item = await item.find(params.project_id)
+    }
+
+    for (const row of params.table) {
+      item.rowNumber = row.rowNumber
+      item.columnNumber = row.columnNumber
+      item.value = row.value
+    }
+
+    await item.save()
   }
 }
 
