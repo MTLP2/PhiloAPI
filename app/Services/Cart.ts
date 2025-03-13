@@ -1392,6 +1392,12 @@ class Cart {
     res.save_shipping = p.project.save_shipping
 
     if (p.project.grouped_sizes) {
+      const qtySize = p.project.grouped_sizes[Object.keys(params.chosen_sizes)[0]]?.sizes.find(
+        (s) => s.id.toString() === Object.values(params.chosen_sizes)[0]
+      )?.quantity
+      if (qtySize) {
+        p.project.copies_left = qtySize
+      }
       for (const s of Object.keys(p.project.grouped_sizes)) {
         if (!params.chosen_sizes || !params.chosen_sizes[s]) {
           res.error = 'no_size_selected'
