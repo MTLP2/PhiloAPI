@@ -2633,6 +2633,11 @@ class Production {
         item = await item.find(row.id)
       }
 
+      if (!row.value) {
+        console.log('test')
+        return item.delete(row.id)
+      }
+
       item.project_id = row.project_id
       item.rowIndex = row.rowIndex
       item.colIndex = row.colIndex
