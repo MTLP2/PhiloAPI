@@ -98,7 +98,7 @@ class Cbip {
     }
 
     const data = {
-      currency: params.currency,
+      currency: params.currency || 'USD',
       incoterms: params.type === 'B2B' ? 'DDP' : 'DAP',
       reference: params.id.toString(),
       status: 'pending',

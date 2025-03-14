@@ -351,6 +351,37 @@ class Dispatchs {
       })
     }
 
+    if (item.logistician === 'cbip' && item.logistician_id) {
+      const items = await DB('dispatch_item')
+        .select(
+          'product.id',
+          'product.name',
+          'product.barcode',
+          'product.cbip_id',
+          'product.hs_code',
+          'product.country_id',
+          'product.type',
+          'dispatch_item.quantity'
+        )
+        .leftJoin('product', 'product.id', 'dispatch_item.product_id')
+        .where('dispatch_id', item.id)
+        .all()
+
+      await Cbip.syncDispatch({
+        ...params.customer,
+        ...item,
+        items: items.map((i) => ({
+          cbip_id: i.cbip_id,
+          name: i.name,
+          barcode: i.barcode,
+          quantity: i.quantity,
+          hs_code: i.hs_code,
+          origin: i.country_id,
+          type: i.type
+        }))
+      })
+    }
+
     return item
   }
 
