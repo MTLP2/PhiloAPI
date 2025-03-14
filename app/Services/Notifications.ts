@@ -137,11 +137,11 @@ class Notifications {
       p.to = params.to
     }
 
-    p.to = p.to.split(',').filter(Boolean).join(',')
-
     if (!p.to) {
       return false
     }
+    p.to = p.to.split(',').filter(Boolean).join(',')
+
     if (p.type) {
       if (p.lang !== 'fr') {
         p.lang = 'en'
