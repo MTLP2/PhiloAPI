@@ -1391,7 +1391,7 @@ class Cart {
     res.category = p.project.category
     res.save_shipping = p.project.save_shipping
 
-    if (p.project.grouped_sizes) {
+    if (p.project.grouped_sizes && params.chosen_sizes) {
       const qtySize = p.project.grouped_sizes[Object.keys(params.chosen_sizes)[0]]?.sizes.find(
         (s) => s.id.toString() === Object.values(params.chosen_sizes)[0]
       )?.quantity
