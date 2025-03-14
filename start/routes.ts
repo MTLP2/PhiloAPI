@@ -253,7 +253,7 @@ Route.group(() => {
     'ProductionController.checkIfActionHasNotifications'
   )
 
-  Route.get('/productions/table', 'ProductionController.getTable')
+  Route.get('/productions/table/:id', 'ProductionController.getTable')
   Route.post('/productions/table/:id', 'ProductionController.saveTable')
 
   Route.get('/shops', 'ShopController.getShops')

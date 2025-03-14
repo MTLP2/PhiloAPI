@@ -201,10 +201,10 @@ class ProductionController {
   async getTable({ params }) {
     const payload = await validator.validate({
       schema: schema.create({
-        project_id: schema.number()
+        id: schema.number()
       }),
       data: {
-        project_id: params.project_id
+        id: params.id
       }
     })
     return Production.getTable(payload)
@@ -218,9 +218,11 @@ class ProductionController {
         id: schema.number(),
         cells: schema.array().members(
           schema.object().members({
+            id: schema.number.optional(),
+            project_id: schema.number(),
             rowIndex: schema.number(),
             colIndex: schema.number(),
-            value: schema.string()
+            value: schema.string.optional()
           })
         )
       }),

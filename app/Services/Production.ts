@@ -2614,34 +2614,31 @@ class Production {
     }
   }
 
-  static async getTable(params: { project_id: number }) {
-    return db
+  static async getTable(params: { id: number }) {
+    console.log(params)
+    let item = db
       .selectFrom('production_table')
       .selectAll()
-      .where('project_id', '=', params.project_id)
-      .executeTakeFirst()
+      .where('project_id', '=', params.id)
+      .execute()
+
+    return item
   }
 
-  static async saveTable(params: { id: number; cells: Array<any> }) {
-    console.log('test')
-    let item = model('production_table')
-
-    if (params.id) {
-      try {
-        item = await item.find(params.id)
-      } catch (error) {}
-    }
-
+  static async saveTable(params: { id?: number; cells: Array<any> }) {
     for (const row of params.cells) {
       console.log('row', row)
-      item.project_id = params.id
+      let item = model('production_table')
+      if (row.id) {
+        item = await item.find(row.id)
+      }
+
+      item.project_id = row.project_id
       item.rowIndex = row.rowIndex
       item.colIndex = row.colIndex
       item.value = row.value
-      item.save()
+      await item.save()
     }
-
-    await item.save()
   }
 }
 
