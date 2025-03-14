@@ -253,6 +253,9 @@ Route.group(() => {
     'ProductionController.checkIfActionHasNotifications'
   )
 
+  Route.get('/productions/table', 'ProductionController.getTable')
+  Route.post('/productions/table/:id', 'ProductionController.saveTable')
+
   Route.get('/shops', 'ShopController.getShops')
   Route.get('/shop', 'ShopController.getShop')
   Route.post('/shop', 'ShopController.updateShop')
@@ -704,8 +707,3 @@ Route.group(() => {
   Route.post('/dispatchs/order', 'DispatchsController.updateOrder')
   Route.post('/dispatchs/stock', 'DispatchsController.updateStock')
 })
-
-Route.group(() => {
-  Route.get('/', 'ProductionController.getTable')
-  Route.post('/table/:id', 'ProductionController.saveTable')
-}).prefix('productions')

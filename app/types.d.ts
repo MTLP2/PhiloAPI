@@ -288,8 +288,8 @@ type Product = {
 type ProductionTable = {
   id: number
   project_id: number
-  rowNumber: number
-  columnNumber: number
+  rowIndex: number
+  colIndex: number
   value: string
   created_at: Timestamp
   updated_at: Timestamp

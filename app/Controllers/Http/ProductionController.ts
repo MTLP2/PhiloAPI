@@ -215,11 +215,11 @@ class ProductionController {
 
     const payload = await validator.validate({
       schema: schema.create({
-        project_id: schema.number(),
-        table: schema.array().members(
+        id: schema.number(),
+        cells: schema.array().members(
           schema.object().members({
-            rowNumber: schema.number(),
-            columnNumber: schema.number(),
+            rowIndex: schema.number(),
+            colIndex: schema.number(),
             value: schema.string()
           })
         )

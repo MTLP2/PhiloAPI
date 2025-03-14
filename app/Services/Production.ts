@@ -2622,16 +2622,21 @@ class Production {
       .executeTakeFirst()
   }
 
-  static async saveTable(params: { project_id: number; table: Array<any> }) {
+  static async saveTable(params: { id: number; cells: Array<any> }) {
+    console.log('test')
     let item = model('production_table')
 
-    if (params.project_id) {
-      item = await item.find(params.project_id)
+    if (params.id) {
+      try {
+        item = await item.find(params.id)
+      } catch (error) {}
     }
 
-    for (const row of params.table) {
-      item.rowNumber = row.rowNumber
-      item.columnNumber = row.columnNumber
+    for (const row of params.cells) {
+      console.log('row', row)
+      item.project_id = params.id
+      item.rowIndex = row.rowIndex
+      item.colIndex = row.colIndex
       item.value = row.value
       item.save()
     }
