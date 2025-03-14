@@ -367,6 +367,20 @@ class Dispatchs {
         .where('dispatch_id', item.id)
         .all()
 
+      if (item.order_shop_id) {
+        const orderShop = await DB('order_shop').find(item.order_shop_id)
+
+        if (orderShop.total && orderShop.shipping) {
+          item.total = orderShop.total
+          item.shipping_price = orderShop.shipping
+          item.currency = orderShop.currency
+          const quantity = items.reduce((acc, i) => acc + i.quantity, 0)
+          for (const i in items) {
+            items[i].price = Utils.round((orderShop.total - orderShop.shipping) / quantity, 2)
+          }
+        }
+      }
+
       await Cbip.syncDispatch({
         ...params.customer,
         ...item,
@@ -377,7 +391,8 @@ class Dispatchs {
           quantity: i.quantity,
           hs_code: i.hs_code,
           origin: i.country_id,
-          type: i.type
+          type: i.type,
+          price: i.price
         }))
       })
     }
