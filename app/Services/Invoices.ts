@@ -889,6 +889,12 @@ class Invoices {
   static async duplicate(params) {
     const invoice = await DB('invoice').belongsTo('customer').find(params.id)
 
+    if (
+      invoice.type === 'order_form' &&
+      (params.type === 'invoice' || params.type === 'credit_note')
+    ) {
+      invoice.compatibility = true
+    }
     invoice.id = null
     invoice.number = null
     invoice.code = null
