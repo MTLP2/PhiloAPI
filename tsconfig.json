@@ -15,7 +15,8 @@
       "@adonisjs/core",
       "@adonisjs/i18n",
       "@adonisjs/view",
-      "@japa/preset-adonis/build/adonis-typings"
+      "@japa/preset-adonis/build/adonis-typings",
+      "jest"
     ]
   }
 }
