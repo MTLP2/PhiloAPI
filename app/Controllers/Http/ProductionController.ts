@@ -198,7 +198,9 @@ class ProductionController {
     return Production.createShipNotice(payload)
   }
 
-  async getTable({ params }) {
+  async getTable({ params, user }) {
+    await Utils.checkProjectOwner({ project_id: params.id, user: user })
+
     const payload = await validator.validate({
       schema: schema.create({
         id: schema.number()
@@ -210,8 +212,8 @@ class ProductionController {
     return Production.getTable(payload)
   }
 
-  async saveTable({ params }) {
-    console.log(params)
+  async saveTable({ params, user }) {
+    await Utils.checkProjectOwner({ project_id: params.id, user: user })
 
     const payload = await validator.validate({
       schema: schema.create({
