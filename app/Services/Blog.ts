@@ -62,7 +62,7 @@ class Blog {
     article.slug = Utils.slugify(params.title)
     article.tags = params.tags
     article.description = params.description
-    article.text = params.text
+    article.text = Blog.cleanHtml(params.text)
     article.lang = params.lang
     article.online = params.online
     article.visible = params.visible
@@ -90,6 +90,23 @@ class Blog {
 
   static async delete(id: number) {
     return DB('article').where('id', id).delete()
+  }
+
+  static async cleanHtmls() {
+    const articles = await DB('article').all()
+
+    for (const article of articles) {
+      article.text = this.cleanHtml(article.text)
+      await DB('article').where('id', article.id).update({ text: article.text })
+    }
+
+    return { success: true }
+  }
+
+  static cleanHtml(html: string) {
+    html = html.replace(/<title.*?>.*?<\/title>/gi, '')
+    html = html.replace(/<\/?(!DOCTYPE|body|html|head|meta|title|h1)\b[^<>]*>/g, '')
+    return html
   }
 }
 
