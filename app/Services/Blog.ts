@@ -105,6 +105,7 @@ class Blog {
 
   static cleanHtml(html: string) {
     html = html.replace(/<title.*?>.*?<\/title>/gi, '')
+    html = html.replace(/http:\/\//g, 'https://')
     html = html.replace(/<\/?(!DOCTYPE|body|html|head|meta|title|h1)\b[^<>]*>/g, '')
     return html
   }
