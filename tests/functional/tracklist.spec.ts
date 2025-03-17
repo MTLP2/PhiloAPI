@@ -57,6 +57,7 @@ test.group('Tracklist Routes', (group) => {
     assert.isArray(getResponse.body)
     // We assume that the first element is the one to delete
     createdTrackId = getResponse.body[0].id
+    console.log(createdTrackId)
   })
 
   //Add tests for invalid payloads
@@ -89,6 +90,34 @@ test.group('Tracklist Routes', (group) => {
       },
       status: 422
     })
+  })
+
+  //Update track
+  test('POST /tracklists => Update a track', async ({ assert }) => {
+    const payload = {
+      tracks: [
+        {
+          id: createdTrackId,
+          position: 1,
+          artist: 'Updated Artist',
+          title: 'Updated Title',
+          duration: 180,
+          disc: 1,
+          side: 'A',
+          speed: 33,
+          project: 3205
+        }
+      ]
+    }
+
+    const response = await supertest(BASE_URL)
+      .post(`/tracklists`)
+      .set('Authorization', `Bearer ${authToken}`)
+      .send(payload)
+
+    assert.equal(response.status, 200)
+    assert.deepEqual(response.body, { success: true })
+    console.log(response.body)
   })
 
   test('GET /tracklists/:id => Get an existing tracklist', async ({ assert }) => {
