@@ -20,10 +20,6 @@ class Tracklist {
       throw new Error('Missing required field: tracks')
     }
 
-    const userId = 82
-    const token = Auth.getToken({ id: userId })
-    console.log('token', token)
-
     const requiredFields = [
       'artist',
       'title',
