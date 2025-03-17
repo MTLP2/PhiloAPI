@@ -3,14 +3,11 @@ import Tracklist from 'App/Services/Tracklists'
 import Utils from 'App/Utils'
 class TracklistController {
   public async saveTracklist({ params, user }) {
-    // Récupérer les données du body
-
     await Utils.checkProjectOwner({ project_id: params.id, user: user })
 
     const payload = await validator.validate({
       data: params,
       schema: schema.create({
-        // On suppose que "tracks" est un tableau d'objets track
         tracks: schema.array().members(
           schema.object().members({
             id: schema.number.optional(),
@@ -28,7 +25,6 @@ class TracklistController {
       })
     })
 
-    // Appeler le service avec les données validées
     return Tracklist.saveTrack(payload.tracks)
   }
 
