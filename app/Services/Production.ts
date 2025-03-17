@@ -2615,7 +2615,6 @@ class Production {
   }
 
   static async getTable(params: { id: number }) {
-    console.log(params)
     let item = db
       .selectFrom('production_table')
       .selectAll()
@@ -2627,14 +2626,12 @@ class Production {
 
   static async saveTable(params: { id?: number; cells: Array<any> }) {
     for (const row of params.cells) {
-      console.log('row', row)
       let item = model('production_table')
       if (row.id) {
         item = await item.find(row.id)
       }
 
       if (!row.value) {
-        console.log('test')
         return item.delete(row.id)
       }
 
