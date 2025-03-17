@@ -2178,21 +2178,40 @@ class Dispatchs {
       qty = qty + order.quantity
     }
 
+    const synched = {
+      quantity: 0,
+      orders: 0
+    }
+    const errors: {
+      order_id: number
+      order_shop_id: number
+      error: string
+    }[] = []
     if (dispatchs.length > 0) {
       for (const dispatch of dispatchs) {
-        await Dispatchs.createFromOrderShop({ order_shop_id: dispatch.id })
+        const res = await Dispatchs.createFromOrderShop({ order_shop_id: dispatch.id })
+        if (res.success) {
+          synched.quantity += dispatch.quantity
+          synched.orders += 1
+        } else {
+          errors.push({
+            order_id: dispatch.order_id,
+            order_shop_id: dispatch.id,
+            error: res.error || 'unknown_error'
+          })
+        }
       }
-      if (qty > 0) {
+      if (synched.orders > 0) {
         await DB('project_export').insert({
           transporter: params.logistician,
           project_id: vod.project_id,
-          quantity: qty,
+          quantity: synched.quantity,
           date: Utils.date()
         })
       }
     }
 
-    return { sucess: true, orders: dispatchs.length, quantity: qty }
+    return { success: true, orders: synched.orders, quantity: synched.quantity, errors: errors }
   }
 
   static createFromOrderShop = async (params: { order_shop_id: number }) => {
@@ -2230,7 +2249,7 @@ class Dispatchs {
       .executeTakeFirst()
 
     if (!shop) {
-      return false
+      return { success: false, error: 'order_shop_not_found' }
     }
 
     if (
