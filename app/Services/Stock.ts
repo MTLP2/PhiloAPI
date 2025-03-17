@@ -309,8 +309,6 @@ class Stock {
       }
     }
 
-    console.log(products)
-
     const projects = {}
 
     let i = 0
@@ -347,8 +345,6 @@ class Stock {
         }
       }
     }
-
-    console.log(projects)
 
     for (const p of Object.keys(projects)) {
       if (!projects[p].is_shop && projects[p].preorder_preorder !== undefined) {

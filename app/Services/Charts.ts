@@ -416,7 +416,6 @@ class Charts {
 
     let file: string = ''
     if (params.country === 'FR') {
-      console.log(orders)
       file = Utils.arrayToCsv(
         [
           { name: 'date', index: 'date_fr' },

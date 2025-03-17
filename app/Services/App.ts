@@ -740,7 +740,6 @@ class App {
           balance += statement[currency][project].data.balance.all
         }
       }
-      console.log('---', balance)
       if (balance < 0) {
         n.email = 0
         await n.save()
