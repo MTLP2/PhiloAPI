@@ -706,7 +706,7 @@ Route.group(() => {
 })
 
 Route.group(() => {
-  Route.post('/tracklists', 'TracklistsController.saveTracklist')
+  Route.post('/tracklists/:id', 'TracklistsController.saveTracklist')
   Route.get('/tracklists/:id', 'TracklistsController.getTracklist')
   Route.delete('/tracklists/:id', 'TracklistsController.deleteTrack')
 }).middleware(['auth'])

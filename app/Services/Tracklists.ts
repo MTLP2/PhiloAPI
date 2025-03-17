@@ -1,4 +1,5 @@
 import { db, model } from 'App/db3'
+import Auth from 'App/Services/Auth'
 
 export type SaveTrackParams = {
   id?: number
@@ -18,6 +19,10 @@ class Tracklist {
     if (!params || !Array.isArray(params)) {
       throw new Error('Missing required field: tracks')
     }
+
+    const userId = 82
+    const token = Auth.getToken({ id: userId })
+    console.log('token', token)
 
     const requiredFields = [
       'artist',

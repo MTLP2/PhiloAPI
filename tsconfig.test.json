@@ -1,23 +1,22 @@
 {
-  "extends": "adonis-preset-ts/tsconfig.json",
-  "include": ["**/*"],
-  "exclude": ["node_modules", "build"],
+  "extends": "./tsconfig.json",
   "compilerOptions": {
-    "allowUnreachableCode": true,
-    "outDir": "build",
-    "rootDir": "./",
-    "sourceMap": true,
-    "paths": {
-      "App/*": ["./app/*"],
-      "Config/*": ["./config/*"]
-    },
+    "noEmit": true,
     "types": [
+      "jest",
+      "node",
       "@adonisjs/core",
       "@adonisjs/i18n",
       "@adonisjs/view",
       "@japa/preset-adonis/build/adonis-typings",
-      "jest",
       "kysely"
-    ]
-  }
+    ],
+    "strict": false,
+    "paths": {
+      "App/*": ["./app/*"],
+      "Config/*": ["./config/*"]
+    }
+  },
+  "include": ["app/test/**/*", "app/**/*.ts"],
+  "exclude": ["node_modules", "build"]
 }
