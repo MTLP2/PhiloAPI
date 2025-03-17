@@ -27,14 +27,15 @@ class Cbip {
   static async getInventory(params?: {}) {
     const res: {
       data: {
-        inventory: {
-          sku: string
-          uuid: string
-        }[]
+        sku: string
+        uuid: string
+      }[]
+    } = await this.api(
+      `warehouse-api/open/warehouses/${Env.get('CBIP_API_WAREHOUSE')}/inventory?limit=99999`,
+      {
+        method: 'GET'
       }
-    } = await this.api(`warehouse-api/open/warehouses/${Env.get('CBIP_API_WAREHOUSE')}/inventory`, {
-      method: 'GET'
-    })
+    )
 
     return res.data
   }
@@ -47,6 +48,25 @@ class Cbip {
       })
     }
     return items.length
+  }
+
+  static async createItem(params: { id: number; barcode: string }) {
+    const inventory = await this.getInventory()
+    const item = inventory.find((i) => i.sku.toString() === params.barcode.toString())
+
+    if (!item) {
+      return {
+        success: false,
+        error: 'Item not found'
+      }
+    }
+    await DB('product').where('id', params.id).update({
+      cbip_id: item.uuid
+    })
+    return {
+      success: true,
+      id: item.uuid
+    }
   }
 
   static syncDispatch = async (params: {
@@ -238,7 +258,6 @@ class Cbip {
       const res: any = await this.api('orders-api/open/orders?page=' + page, {
         method: 'GET'
       })
-      console.log(page)
       data.push(...res.data)
 
       next = res.meta.totalPages > page
