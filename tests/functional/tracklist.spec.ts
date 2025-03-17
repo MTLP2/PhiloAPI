@@ -59,6 +59,38 @@ test.group('Tracklist Routes', (group) => {
     createdTrackId = getResponse.body[0].id
   })
 
+  //Add tests for invalid payloads
+  test('POST /tracklists => Create an invalid tracklist', async ({ assert }) => {
+    const payload = {
+      tracks: [
+        {
+          // missing position
+          artist: 'Test Artist',
+          title: 'Test Title',
+          duration: 180,
+          disc: 1,
+          side: 'A',
+          speed: 33,
+          project: 3205
+        }
+      ]
+    }
+
+    const response = await supertest(BASE_URL)
+      .post('/tracklists')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send(payload)
+
+    assert.equal(response.status, 422)
+    assert.deepEqual(response.body, {
+      error: 'Validation Failed',
+      errors: {
+        'tracks.0.position': ['required validation failed on tracks.0.position']
+      },
+      status: 422
+    })
+  })
+
   test('GET /tracklists/:id => Get an existing tracklist', async ({ assert }) => {
     const response = await supertest(BASE_URL)
       .get(`/tracklists/${projectId}`)
