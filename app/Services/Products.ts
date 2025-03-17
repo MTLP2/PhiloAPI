@@ -5,6 +5,7 @@ import Whiplash from 'App/Services/Whiplash'
 import Elogik from 'App/Services/Elogik'
 import BigBlue from 'App/Services/BigBlue'
 import Storage from './Storage'
+import Cbip from './Cbip'
 
 class Products {
   static async all(params: {
@@ -182,6 +183,7 @@ class Products {
     country_id?: string
     bigblue_id?: string
     whiplash_id?: number
+    cbip_id?: string
     picture?: string
     more?: string
     color?: string
@@ -217,6 +219,7 @@ class Products {
     item.parent_id = params.parent_id || null
     item.bigblue_id = params.bigblue_id || null
     item.whiplash_id = params.whiplash_id || null
+    item.cbip_id = params.cbip_id || null
     item.size = params.size || null
     item.color = params.color || null
     item.weight = params.weight || null
@@ -251,6 +254,9 @@ class Products {
       }
       if (!item.ekan_id) {
         await Elogik.createItem(item)
+      }
+      if (!item.cbip_id) {
+        Cbip.createItem(item)
       }
     }
     if (!item.bigblue_id) {
