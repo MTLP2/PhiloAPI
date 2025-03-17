@@ -196,7 +196,6 @@ class Notifications {
       data.subject = p.subject
       p.html = _.template(p.html)(data)
     }
-    p.type = 'newsletter'
 
     if (!p.from_address) {
       p.from_name = 'Diggers Factory'
