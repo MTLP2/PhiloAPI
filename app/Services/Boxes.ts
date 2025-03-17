@@ -2781,6 +2781,9 @@ class Boxes {
   }
 
   static getNbMonths(periodicity: string, monthly?: 0 | 1) {
+    if (!periodicity) {
+      return 0
+    }
     const p = periodicity.split('_')
     if (periodicity === 'monthly' || monthly) {
       return 1
