@@ -253,11 +253,12 @@ class Notifications {
               })),
               Subject: params.subject,
               HTMLPart: params.text,
-              Attachments: params.attachments.map((attachment) => ({
-                // ContentType: attachment.contentType,
-                Filename: attachment.filename,
-                Base64Content: attachment.content
-              }))
+              Attachments: params.attachments
+                ? params.attachments.map((attachment) => ({
+                    Filename: attachment.filename,
+                    Base64Content: attachment.content
+                  }))
+                : []
             }
           ]
         }
