@@ -3,27 +3,30 @@ import { test } from '@japa/runner'
 import supertest from 'supertest'
 import Auth from 'App/Services/Auth'
 
+// Test user
 const userId = 82
+// Production project
 const projectId = 3205
+
 const token = Auth.getToken({ id: userId })
 
-// Remplacez cette URL par celle de votre application (par exemple http://localhost:3333)
+// Replace with your application URL (e.g. http://localhost:3333)
 const BASE_URL = 'http://127.0.0.1:3000'
 
 test.group('Tracklist Routes', (group) => {
   let authToken = ''
   let createdTrackId: number
 
-  // Avant de lancer les tests, on récupère le token d'authentification
+  // Before running the tests, retrieve the authentication token
   group.setup(async () => {
     authToken = token
   })
 
-  test("POST /tracklists => Création d'une tracklist valide", async ({ assert }) => {
+  test('POST /tracklists => Create a valid tracklist', async ({ assert }) => {
     const payload = {
       tracks: [
         {
-          // id n'est pas fourni pour créer une nouvelle entrée
+          // id is not provided to create a new entry
           position: 1,
           artist: 'Test Artist',
           title: 'Test Title',
@@ -32,7 +35,7 @@ test.group('Tracklist Routes', (group) => {
           side: 'A',
           speed: 33,
           project: 3205
-          // silence est optionnel
+          // silence is optional
         }
       ]
     }
@@ -43,38 +46,38 @@ test.group('Tracklist Routes', (group) => {
       .send(payload)
 
     assert.equal(response.status, 200)
-    // On s'attend à recevoir un objet { success: true }
+    // We expect to receive an object { success: true }
     assert.deepEqual(response.body, { success: true })
 
-    // Récupérer la tracklist créée pour obtenir l'id d'une track
+    // Get the created tracklist to get the id of a track
     const getResponse = await supertest(BASE_URL)
       .get(`/tracklists/${projectId}`)
       .set('Authorization', `Bearer ${authToken}`)
     assert.equal(getResponse.status, 200)
     assert.isArray(getResponse.body)
-    // On suppose que le premier élément est celui à supprimer
+    // We assume that the first element is the one to delete
     createdTrackId = getResponse.body[0].id
   })
 
-  test('GET /tracklists/:id => Récupérer une tracklist existante', async ({ assert }) => {
+  test('GET /tracklists/:id => Get an existing tracklist', async ({ assert }) => {
     const response = await supertest(BASE_URL)
       .get(`/tracklists/${projectId}`)
       .set('Authorization', `Bearer ${authToken}`)
 
     assert.equal(response.status, 200)
-    // Par exemple, on s'attend à un tableau de tracks
+    // We expect an array of tracks
     assert.isArray(response.body)
     console.log(response.body)
   })
 
-  test('DELETE /tracklists/:id => Supprimer la tracklist créée', async ({ assert }) => {
-    // Utilisation de l'id récupéré lors du test de création
+  test('DELETE /tracklists/:id => Delete the created tracklist', async ({ assert }) => {
+    // Use the id retrieved from the creation test
     const response = await supertest(BASE_URL)
       .delete(`/tracklists/${createdTrackId}`)
       .set('Authorization', `Bearer ${authToken}`)
 
     assert.equal(response.status, 200)
-    // La réponse doit contenir un message, le nombre de suppressions et le projectId
+    // The response must contain a message, the number of deletions and the projectId
     assert.property(response.body, 'deletedCount')
     assert.property(response.body, 'projectId')
   })
