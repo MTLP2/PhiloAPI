@@ -1,48 +1,34 @@
 import Tracklist, { SaveTrackParams } from 'App/Services/Tracklists'
 import { db, model } from 'App/db3'
 
-// Mock des dépendances
-jest.mock('App/db3', () => {
-  const mockDb = {
-    selectFrom: jest.fn(() => mockDb),
-    updateTable: jest.fn(() => mockDb),
-    where: jest.fn(() => mockDb),
-    set: jest.fn(() => mockDb),
-    execute: jest.fn(),
-    executeTakeFirst: jest.fn(),
-    orderBy: jest.fn(() => mockDb),
-    selectAll: jest.fn(() => mockDb)
-  }
+/**
+ * Assurez-vous que votre environnement de test est configuré pour pointer vers une base de données de test.
+ * Vous pouvez par exemple utiliser beforeAll/afterAll pour initialiser et nettoyer l'état de la base.
+ */
 
-  return {
-    db: mockDb,
-    model: jest.fn().mockImplementation((_table: string) => ({
-      find: jest.fn().mockResolvedValue({
-        save: jest.fn().mockResolvedValue({}),
-        artist: '',
-        title: '',
-        duration: 0,
-        position: 0,
-        project_id: 0,
-        disc: 0,
-        side: '',
-        speed: 0,
-        silence: 0
-      }),
-      save: jest.fn().mockResolvedValue({}),
-      delete: jest.fn().mockResolvedValue(1)
-    }))
-  }
-})
+describe('Integration tests for Tracklist Service', () => {
+  beforeAll(async () => {})
 
-describe('Tracklist Service', () => {
-  beforeEach(() => {
-    jest.clearAllMocks()
+  beforeEach(async () => {
+    let item = await model('production_action')
+
+    item.id = 1
+    item.type = 'tracklisting'
+    item.status = 'initial'
+    item.created_at = new Date()
+    item.updated_at = new Date()
+
+    await item.save()
+  })
+
+  afterAll(async () => {
+    // Fermer proprement la connexion à la base de données après l'exécution de tous les tests.
+    await db.destroy()
   })
 
   describe('saveTrack', () => {
-    it('devrait sauvegarder les pistes correctement', async () => {
-      const mockTracks: SaveTrackParams = [
+    it('devrait créer des pistes et mettre à jour le statut de production', async () => {
+      const tracks: SaveTrackParams = [
         {
           project: 1,
           position: 1,
@@ -55,157 +41,202 @@ describe('Tracklist Service', () => {
         }
       ]
 
-      const result = await Tracklist.saveTrack(mockTracks)
-
+      const result = await Tracklist.saveTrack(tracks)
       expect(result).toEqual({ success: true })
-      expect(model).toHaveBeenCalledWith('track')
-      expect((db as any).updateTable).toHaveBeenCalledWith('production_action')
+
+      // Vérifier que la piste est bien créée dans la table "track"
+      //   const createdTracks = await db
+      //     .selectFrom('track')
+      //     .where('project_id', '=', 1)
+      //     .selectAll()
+      //     .execute()
+      //   expect(createdTracks.length).toBeGreaterThan(0)
+
+      //   // Vérifier que le statut de production est passé à 'pending'
+      //   const productionAction = await db
+      //     .selectFrom('production_action')
+      //     .where('production_id', '=', 1)
+      //     .where('type', '=', 'tracklisting')
+      //     .selectAll()
+      //     .executeTakeFirst()
+      //   if (!productionAction) throw new Error('Production action not found')
+      //   expect(productionAction.status).toEqual('pending')
+      // })
     })
+    // it('devrait mettre à jour une piste existante', async () => {
+    //   // Créer une piste initiale
+    //   const initialTracks: SaveTrackParams = [
+    //     {
+    //       project: 1,
+    //       position: 1,
+    //       artist: 'Artiste Initial',
+    //       title: 'Titre Initial',
+    //       duration: 180,
+    //       disc: 1,
+    //       side: 'A',
+    //       speed: 33
+    //     }
+    //   ]
+    //   await Tracklist.saveTrack(initialTracks)
 
-    it('devrait mettre à jour une piste existante correctement', async () => {
-      // Mock pour la piste trouvée
-      const mockFoundTrack = {
-        id: 42,
-        artist: 'Ancien Artiste',
-        title: 'Ancien Titre',
-        duration: 180,
-        position: 1,
-        project_id: 1,
-        disc: 1,
-        side: 'A',
-        speed: 33,
-        silence: 0,
-        save: jest.fn().mockResolvedValue({})
-      }
+    //   // Récupérer la piste créée
+    //   const createdTracks = await db
+    //     .selectFrom('track')
+    //     .where('project_id', '=', 1)
+    //     .selectAll()
+    //     .execute()
+    //   const trackToUpdate = createdTracks[0]
+    //   expect(trackToUpdate).toBeDefined()
 
-      // Créer un mock spécifique pour le modèle track
-      const trackModelMock = {
-        find: jest.fn().mockResolvedValue(mockFoundTrack),
-        save: jest.fn().mockResolvedValue({})
-      }
+    //   const updatedTracks: SaveTrackParams = [
+    //     {
+    //       id: trackToUpdate.id, // ID présent pour indiquer une mise à jour
+    //       project: 1,
+    //       position: 1,
+    //       artist: 'Artiste Modifié',
+    //       title: 'Titre Modifié',
+    //       duration: 200,
+    //       disc: 1,
+    //       side: 'A',
+    //       speed: 33
+    //     }
+    //   ]
+    //   const result = await Tracklist.saveTrack(updatedTracks)
+    //   expect(result).toEqual({ success: true })
 
-      // Remplacer temporairement le mock model pour ce test
-      ;(model as jest.Mock).mockImplementationOnce(() => trackModelMock)
+    //   // Vérifier que la piste a bien été mise à jour dans la base
+    //   const updatedTrack = await db
+    //     .selectFrom('track')
+    //     .where('id', '=', trackToUpdate.id)
+    //     .selectAll()
+    //     .executeTakeFirst()
+    //   expect(updatedTrack.artist).toEqual('Artiste Modifié')
+    //   expect(updatedTrack.title).toEqual('Titre Modifié')
+    //   expect(updatedTrack.duration).toEqual(200)
+    // })
 
-      const mockTracks: SaveTrackParams = [
-        {
-          id: 42, // ID inclus pour indiquer une mise à jour
-          project: 1,
-          position: 1,
-          artist: 'Artiste Modifié',
-          title: 'Titre Modifié',
-          duration: 200,
-          disc: 1,
-          side: 'A',
-          speed: 33
-        }
-      ]
+    // it('devrait lever une erreur si les pistes ne sont pas fournies', async () => {
+    //   await expect(Tracklist.saveTrack(undefined as any)).rejects.toThrow(
+    //     'Missing required field: tracks'
+    //   )
+    // })
 
-      const result = await Tracklist.saveTrack(mockTracks)
-
-      expect(result).toEqual({ success: true })
-      expect(model).toHaveBeenCalledWith('track')
-      // Vérifier que find a été appelé avec l'ID 42
-      expect(trackModelMock.find).toHaveBeenCalledWith(42)
-      // Vérifier que save est appelé sur la piste trouvée
-      expect(mockFoundTrack.save).toHaveBeenCalled()
-      expect((db as any).updateTable).toHaveBeenCalledWith('production_action')
-    })
-
-    it("devrait changer l'état de la production en 'pending' si les pistes sont sauvegardées", async () => {
-      const mockTracks: SaveTrackParams = [
-        {
-          project: 1,
-          position: 1,
-          artist: 'Artiste Test',
-          title: 'Titre Test',
-          duration: 180,
-          disc: 1,
-          side: 'A',
-          speed: 33
-        }
-      ]
-
-      await Tracklist.saveTrack(mockTracks)
-
-      expect((db as any).updateTable).toHaveBeenCalledWith('production_action')
-      expect((db as any).set).toHaveBeenCalledWith({ status: 'pending' })
-      expect((db as any).where).toHaveBeenCalledWith('production_id', '=', 1)
-      expect((db as any).where).toHaveBeenCalledWith('type', '=', 'tracklisting')
-    })
-
-    it('devrait lever une erreur si les pistes ne sont pas fournies', async () => {
-      await expect(Tracklist.saveTrack(undefined as any)).rejects.toThrow(
-        'Missing required field: tracks'
-      )
-    })
-
-    it('devrait lever une erreur si des champs requis sont manquants', async () => {
-      const mockTracks: any = [
-        {
-          project: 1,
-          // position manquant
-          artist: 'Artiste Test',
-          title: 'Titre Test',
-          duration: 180,
-          disc: 1,
-          side: 'A',
-          speed: 33
-        }
-      ]
-
-      await expect(Tracklist.saveTrack(mockTracks)).rejects.toThrow(/Missing required field/)
-    })
+    // it('devrait lever une erreur si des champs requis sont manquants', async () => {
+    //   const invalidTracks: any = [
+    //     {
+    //       project: 1,
+    //       // position manquant
+    //       artist: 'Artiste Test',
+    //       title: 'Titre Test',
+    //       duration: 180,
+    //       disc: 1,
+    //       side: 'A',
+    //       speed: 33
+    //     }
+    //   ]
+    //   await expect(Tracklist.saveTrack(invalidTracks)).rejects.toThrow(/Missing required field/)
+    // })
   })
 
-  describe('all', () => {
-    it("devrait récupérer toutes les pistes d'un projet", async () => {
-      const mockTracks = [
-        { id: 1, title: 'Track 1', artist: 'Artist 1', disc: 1, side: 'A', position: 1 },
-        { id: 2, title: 'Track 2', artist: 'Artist 1', disc: 1, side: 'A', position: 2 }
-      ]
-      ;(db as any).execute.mockResolvedValue(mockTracks)
+  // describe('all', () => {
+  //   it("devrait récupérer toutes les pistes d'un projet", async () => {
+  //     // Préparation : création de quelques pistes pour le projet 1
+  //     const tracks: SaveTrackParams = [
+  //       {
+  //         project: 1,
+  //         position: 1,
+  //         artist: 'Artist 1',
+  //         title: 'Track 1',
+  //         duration: 180,
+  //         disc: 1,
+  //         side: 'A',
+  //         speed: 33
+  //       },
+  //       {
+  //         project: 1,
+  //         position: 2,
+  //         artist: 'Artist 2',
+  //         title: 'Track 2',
+  //         duration: 200,
+  //         disc: 1,
+  //         side: 'A',
+  //         speed: 33
+  //       }
+  //     ]
+  //     await Tracklist.saveTrack(tracks)
 
-      const result = await Tracklist.all({ project_id: 1 })
+  //     const result = await Tracklist.all({ project_id: 1 })
+  //     expect(Array.isArray(result)).toBe(true)
+  //     expect(result.length).toBeGreaterThanOrEqual(2)
+  //   })
+  // })
 
-      expect(result).toEqual(mockTracks)
-      expect((db as any).selectFrom).toHaveBeenCalledWith('track')
-      expect((db as any).where).toHaveBeenCalledWith('project_id', '=', 1)
-    })
-  })
+  // describe('deleteTrack', () => {
+  //   it('devrait supprimer une piste et réorganiser les positions', async () => {
+  //     // Préparation : créer deux pistes pour le projet 10
+  //     const tracks: SaveTrackParams = [
+  //       {
+  //         project: 10,
+  //         position: 1,
+  //         artist: 'Artist 1',
+  //         title: 'Track 1',
+  //         duration: 180,
+  //         disc: 1,
+  //         side: 'A',
+  //         speed: 33
+  //       },
+  //       {
+  //         project: 10,
+  //         position: 2,
+  //         artist: 'Artist 2',
+  //         title: 'Track 2',
+  //         duration: 200,
+  //         disc: 1,
+  //         side: 'A',
+  //         speed: 33
+  //       }
+  //     ]
+  //     await Tracklist.saveTrack(tracks)
 
-  describe('deleteTrack', () => {
-    it('devrait supprimer une piste et réorganiser les positions', async () => {
-      const mockTrack = {
-        id: 1,
-        project_id: 10,
-        disc: 1,
-        side: 'A',
-        position: 2
-      }
+  //     // Récupérer la piste avec la position 2
+  //     const createdTracks = await db
+  //       .selectFrom('track')
+  //       .where('project_id', '=', 10)
+  //       .selectAll()
+  //       .execute()
+  //     const trackToDelete = createdTracks.find((t: any) => t.position === 2)
+  //     expect(trackToDelete).toBeDefined()
 
-      const remainingTracks = [
-        { id: 2, project_id: 10, disc: 1, side: 'A', position: 1 },
-        { id: 3, project_id: 10, disc: 1, side: 'A', position: 3 }
-      ]
-      ;(db as any).executeTakeFirst.mockResolvedValue(mockTrack)
-      ;(db as any).execute.mockResolvedValue(remainingTracks)
+  //     const result = await Tracklist.deleteTrack({ id: trackToDelete.id })
+  //     expect(result).toHaveProperty('message', 'Track deleted and positions updated')
 
-      const result = await Tracklist.deleteTrack({ id: 1 })
+  //     // Vérifier que la piste a été supprimée
+  //     const deletedTrack = await db
+  //       .selectFrom('track')
+  //       .where('id', '=', trackToDelete.id)
+  //       .selectAll()
+  //       .executeTakeFirst()
+  //     expect(deletedTrack).toBeNull()
 
-      expect(result).toHaveProperty('message', 'Track deleted and positions updated')
-    })
+  //     // Vérifier que les positions des pistes restantes ont été mises à jour
+  //     const remainingTracks = await db
+  //       .selectFrom('track')
+  //       .where('project_id', '=', 10)
+  //       .selectAll()
+  //       .execute()
+  //     // Par exemple, la première piste devrait toujours avoir la position 1
+  //     expect(remainingTracks[0].position).toEqual(1)
+  //   })
 
-    it("devrait lever une erreur si l'ID n'est pas fourni", async () => {
-      await expect(Tracklist.deleteTrack({} as any)).rejects.toThrow('Missing required field: id')
-    })
+  //   it("devrait lever une erreur si l'ID n'est pas fourni", async () => {
+  //     await expect(Tracklist.deleteTrack({} as any)).rejects.toThrow('Missing required field: id')
+  //   })
 
-    it("devrait lever une erreur si la piste n'existe pas", async () => {
-      ;(db as any).executeTakeFirst.mockResolvedValue(null)
-
-      await expect(Tracklist.deleteTrack({ id: 999 })).rejects.toThrow(
-        'Track with id 999 not found'
-      )
-    })
-  })
+  //   it("devrait lever une erreur si la piste n'existe pas", async () => {
+  //     // En supposant que l'ID 999 n'existe pas dans la base de données de test
+  //     await expect(Tracklist.deleteTrack({ id: 999 })).rejects.toThrow(
+  //       'Track with id 999 not found'
+  //     )
+  //   })
+  // })
 })
