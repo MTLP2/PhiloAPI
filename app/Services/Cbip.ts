@@ -172,7 +172,7 @@ class Cbip {
     } else {
       return {
         success: false,
-        error: res.msg
+        error: res.errors ? JSON.stringify(res.errors) : res.msg
       }
     }
   }
