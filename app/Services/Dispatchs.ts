@@ -2277,7 +2277,7 @@ class Dispatchs {
       .where('order_shop_id', shop.id)
       .all()
 
-    await Dispatchs.createOrder({
+    return await Dispatchs.createOrder({
       logistician: shop.transporter,
       customer_id: shop.customer_id,
       order_id: shop.order_id,
@@ -2292,8 +2292,6 @@ class Dispatchs {
       cost_currency_rate: shop.currency_rate,
       items: items
     })
-
-    return { success: true }
   }
 
   static createOrder = async (params: {
