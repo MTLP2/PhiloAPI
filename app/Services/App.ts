@@ -1493,6 +1493,21 @@ class App {
       ]
     })
 
+    const categories = await DB('category').where('is_visible', true).all()
+    for (const category of categories) {
+      console.log(`/vinyl-shop/${category.id}/${category.code}`)
+      sitemap.write({
+        url: `/vinyl-shop/${category.id}/${category.code}`,
+        lang: 'en',
+        changefreq: 'weekly',
+        priority: 0.7,
+        links: [
+          { lang: 'en', url: `/vinyl-shop/${category.id}/${category.code}` },
+          { lang: 'fr', url: `/fr/vinyl-shop/${category.id}/${category.code}` }
+        ]
+      })
+    }
+
     const projects = await Project.findAll({ type: 'all', limit: 99999999 })
     for (const project of projects) {
       sitemap.write({
