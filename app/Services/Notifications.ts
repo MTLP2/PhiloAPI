@@ -718,7 +718,7 @@ class Notifications {
             <p style="padding: 0; margin: 3px;">Mot de passe oublié ? <a href="${config.app.url}/fr/forgot-password">Suivez les instructions.</a></p>
             <p style="padding: 0; margin: 3px;">Vous pouvez vous <a href="${config.app.url}/fr/unsubscribe-newsletter?id=${params.to}&t=${hash}">désabonner de ces mails</a>.</p>
             <p style="padding: 0; margin: 3px;">Télécharger nos <a href="${config.app.url}/fr/terms">Conditions Générales d’Utilisation.</a></p>
-            <p style="padding: 0; margin: 3px;">Diggers Factory, 4 bis rue du Dahomey, 75011, Paris, France</p>
+            <p style="padding: 0; margin: 3px;">Diggers Factory, 78 quai de Jemmapes, 75010, Paris, France</p>
           </td>
       </tr>
     </table>
@@ -749,7 +749,7 @@ class Notifications {
           <p style="padding: 0; margin: 3px;">Forgotten password ? <a href="${config.app.url}/forgot-password">Follow the instructions.</a></p>
           <p style="padding: 0; margin: 3px;">You can <a href="${config.app.url}/unsubscribe-newsletter?id=${params.to}&t=${hash}">unsubscribe from these emails </a>.</p>
           <p style="padding: 0; margin: 3px;">Download our <a href="${config.app.url}/terms">Terms of Service.</a></p>
-          <p style="padding: 0; margin: 3px;">Diggers Factory, 4 bis rue du Dahomey, 75011, Paris, France</p>
+          <p style="padding: 0; margin: 3px;">Diggers Factory, 78 quai de Jemmapes, 75010, Paris, France</p>
         </td>
       </tr>
       </table>
