@@ -1,4 +1,5 @@
 import { db, model } from 'App/db3'
+import Auth from 'App/Services/Auth'
 
 export type SaveTrackParams = {
   id?: number
