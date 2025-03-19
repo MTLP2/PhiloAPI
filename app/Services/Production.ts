@@ -2614,7 +2614,7 @@ class Production {
     }
   }
 
-  static async getTable(params: { id: number }) {
+  static async getOptions(params: { id: number }) {
     let item = db
       .selectFrom('production_option')
       .selectAll()
@@ -2624,7 +2624,7 @@ class Production {
     return item
   }
 
-  static async saveTable(params: { id?: number; cells: Array<any> }) {
+  static async saveOptions(params: { id?: number; cells: Array<any> }) {
     for (const row of params.cells) {
       let item = model('production_option')
       if (row.id) {
