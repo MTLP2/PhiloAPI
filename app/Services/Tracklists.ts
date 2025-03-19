@@ -3,7 +3,7 @@ import Auth from 'App/Services/Auth'
 
 export type SaveTrackParams = {
   id?: number
-  production: number
+  production_id: number
   position: number
   artist: string
   title: string
@@ -20,12 +20,14 @@ class Tracklist {
       throw new Error('Missing required field: tracks')
     }
 
+    console.log('params', params)
+
     const requiredFields = [
       'artist',
       'title',
       'duration',
       'position',
-      'production',
+      'production_id',
       'disc',
       'side',
       'speed'
@@ -54,14 +56,14 @@ class Tracklist {
       item.title = track.title
       item.duration = track.duration
       item.position = track.position
-      item.production_id = track.production
+      item.production_id = track.production_id
       item.disc = track.disc
       item.side = track.side
       item.speed = track.speed
       item.silence = track.silence
       await item.save()
 
-      const productionId = params[0].production
+      const productionId = params[0].production_id
       await db
         .updateTable('production_action' as any)
         .set({ status: 'pending' })

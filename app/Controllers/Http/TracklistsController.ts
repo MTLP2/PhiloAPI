@@ -4,6 +4,7 @@ import Utils from 'App/Utils'
 class TracklistController {
   public async saveTracklist({ params, user }) {
     await Utils.checkProjectOwner({ project_id: params.id, user: user })
+    console.log(params)
 
     const payload = await validator.validate({
       data: params,
@@ -11,7 +12,7 @@ class TracklistController {
         tracks: schema.array().members(
           schema.object().members({
             id: schema.number.optional(),
-            production: schema.number(),
+            production_id: schema.number(),
             position: schema.number(),
             artist: schema.string(),
             title: schema.string(),
