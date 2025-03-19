@@ -1603,6 +1603,15 @@ class Cart {
         origin: params.origin,
         is_gift: params.is_gift,
         user_agent: JSON.stringify(params.user_agent),
+        location: params.location
+          ? JSON.stringify({
+              country_id: params.location.country_code,
+              city: params.location.city,
+              latitude: params.location.latitude,
+              longitude: params.location.longitude,
+              is_vpn: params.location.security.is_vpn
+            })
+          : null,
         created_at: Utils.date(),
         updated_at: Utils.date()
       })
