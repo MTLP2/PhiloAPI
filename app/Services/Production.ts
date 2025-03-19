@@ -2616,7 +2616,7 @@ class Production {
 
   static async getTable(params: { id: number }) {
     let item = db
-      .selectFrom('production_table')
+      .selectFrom('production_option')
       .selectAll()
       .where('project_id', '=', params.id)
       .execute()
@@ -2626,7 +2626,7 @@ class Production {
 
   static async saveTable(params: { id?: number; cells: Array<any> }) {
     for (const row of params.cells) {
-      let item = model('production_table')
+      let item = model('production_option')
       if (row.id) {
         item = await item.find(row.id)
       }

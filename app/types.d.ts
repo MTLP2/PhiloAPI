@@ -285,7 +285,7 @@ type Product = {
   updated_at: Timestamp
 }
 
-type ProductionTable = {
+type ProductionOption = {
   id: number
   project_id: number
   rowIndex: number
@@ -393,7 +393,7 @@ const enum Currencies {
 }
 
 export type DB = {
-  production_table: ProductionTable
+  production_option: ProductionOption
   alert: Alert
   artist: Artist
   badge: Badge
