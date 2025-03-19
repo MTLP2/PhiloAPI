@@ -22,6 +22,7 @@ import Pass from './Pass'
 import Stripe from 'App/Services/Stripe'
 import PromoCode from 'App/Services/PromoCode'
 import Dispatchs from './Dispatchs'
+import Google from './Google'
 
 const stripe = require('stripe')(config.stripe.client_secret)
 
@@ -1580,6 +1581,15 @@ class Cart {
       customerInvoiceId = cus.id
     }
 
+    try {
+      const verifyCaptcha = await Google.verifyCaptcha(params.captcha)
+      if (verifyCaptcha.score) {
+        params.captcha_score = verifyCaptcha.score
+      }
+    } catch (e) {
+      console.error(e)
+    }
+
     const currencyRate = await Utils.getCurrency(params.currency)
     let order
     try {
@@ -1612,6 +1622,7 @@ class Cart {
               is_vpn: params.location.security.is_vpn
             })
           : null,
+        captcha_score: params.captcha_score,
         created_at: Utils.date(),
         updated_at: Utils.date()
       })
