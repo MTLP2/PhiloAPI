@@ -3,7 +3,7 @@ import Auth from 'App/Services/Auth'
 
 export type SaveTrackParams = {
   id?: number
-  project: number
+  production: number
   position: number
   artist: string
   title: string
@@ -25,7 +25,7 @@ class Tracklist {
       'title',
       'duration',
       'position',
-      'project',
+      'production',
       'disc',
       'side',
       'speed'
@@ -44,7 +44,7 @@ class Tracklist {
     }
 
     for (const track of params) {
-      let item = model('track')
+      let item = model('production_track')
 
       if (track.id) {
         item = await item.find(track.id)
@@ -54,28 +54,28 @@ class Tracklist {
       item.title = track.title
       item.duration = track.duration
       item.position = track.position
-      item.project_id = track.project
+      item.production_id = track.production
       item.disc = track.disc
       item.side = track.side
       item.speed = track.speed
       item.silence = track.silence
       await item.save()
 
-      const projectId = params[0].project
+      const productionId = params[0].production
       await db
         .updateTable('production_action' as any)
         .set({ status: 'pending' })
-        .where('production_id', '=', projectId)
+        .where('production_id', '=', productionId)
         .where('type', '=', 'tracklisting')
         .execute()
     }
     return { success: true }
   }
 
-  static async all(params: { project_id?: number }) {
-    let query = db.selectFrom('track').selectAll()
-    if (params.project_id) {
-      query = query.where('project_id', '=', params.project_id)
+  static async all(params: { production_id?: number }) {
+    let query = db.selectFrom('production_track').selectAll()
+    if (params.production_id) {
+      query = query.where('production_id', '=', params.production_id)
     }
     query = query.orderBy('disc', 'asc').orderBy('side', 'asc').orderBy('position', 'asc')
     const items = await query.execute()
@@ -88,21 +88,21 @@ class Tracklist {
     }
 
     const trackToDelete = await db
-      .selectFrom('track')
+      .selectFrom('production_track')
       .selectAll()
       .where('id', '=', params.id)
       .executeTakeFirst()
     if (!trackToDelete) {
       throw new Error(`Track with id ${params.id} not found.`)
     }
-    const projectId = trackToDelete.project_id
+    const productionId = trackToDelete.production_id
 
-    const deletedCount = await model('track').delete(params.id)
+    const deletedCount = await model('production_track').delete(params.id)
 
     const remainingTracks = await db
-      .selectFrom('track' as any)
+      .selectFrom('production_track' as any)
       .selectAll()
-      .where('project_id', '=', projectId)
+      .where('production_id', '=', productionId)
       .orderBy('disc', 'asc')
       .orderBy('side', 'asc')
       .orderBy('position', 'asc')
@@ -123,7 +123,7 @@ class Tracklist {
         const newPosition = i + 1
         if (groupTracks[i].position !== newPosition) {
           await db
-            .updateTable('track' as any)
+            .updateTable('production_track' as any)
             .set({ position: newPosition })
             .where('id', '=', groupTracks[i].id)
             .execute()
@@ -134,7 +134,7 @@ class Tracklist {
     return {
       message: 'Track deleted and positions updated',
       deletedCount,
-      projectId
+      productionId
     }
   }
 }
