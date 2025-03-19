@@ -1126,6 +1126,16 @@ class Admin {
       }
     }
 
+    vod.historic = vod.historic ? JSON.parse(vod.historic) : []
+    if (vod.type !== params.type) {
+      vod.historic.push({
+        type: 'type',
+        user_id: params.user.id,
+        old: vod.type,
+        new: params.type,
+        date: Utils.date()
+      })
+    }
     vod.type = params.type
     vod.edition = params.edition
     vod.com_id = params.com_id || 0
@@ -1174,7 +1184,6 @@ class Admin {
     vod.save_shipping = params.save_shipping
     vod.organic = params.organic
 
-    vod.historic = vod.historic ? JSON.parse(vod.historic) : []
     if (params.edit_stock) {
       const transporters: { [key in Transporters]?: boolean } = {}
       if (params.transporter_daudin) {
