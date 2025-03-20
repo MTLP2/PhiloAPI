@@ -301,13 +301,16 @@ class Payment {
         .where('invoice.id', payment.invoice_id)
         .first()
 
+      let emails = 'invoicing@diggersfactory.com'
       if (resp) {
-        await Notifications.sendEmail({
-          to: `${resp.email},invoicing@diggersfactory.com`,
-          subject: `Paiement de ${payment.total} ${payment.currency}`,
-          text: `https://www.diggersfactory.com/sheraf/invoice/${payment.invoice_id}`
-        })
+        emails += `,${resp.email}`
       }
+
+      await Notifications.sendEmail({
+        to: emails,
+        subject: `Paiement de ${payment.total} ${payment.currency}`,
+        text: `https://www.diggersfactory.com/sheraf/invoice/${payment.invoice_id}`
+      })
     }
 
     await Notifications.add({
