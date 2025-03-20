@@ -5,8 +5,8 @@ import Auth from 'App/Services/Auth'
 
 // Test user
 const userId = 82
-// Production project
-const projectId = 3205
+// Production
+const productionId = 3205
 
 const token = Auth.getToken({ id: userId })
 
@@ -34,7 +34,7 @@ test.group('Tracklist Routes', (group) => {
           disc: 1,
           side: 'A',
           speed: 33,
-          project: 3205
+          production: 3205
           // silence is optional
         }
       ]
@@ -51,7 +51,7 @@ test.group('Tracklist Routes', (group) => {
 
     // Get the created tracklist to get the id of a track
     const getResponse = await supertest(BASE_URL)
-      .get(`/tracklists/${projectId}`)
+      .get(`/tracklists/${productionId}`)
       .set('Authorization', `Bearer ${authToken}`)
     assert.equal(getResponse.status, 200)
     assert.isArray(getResponse.body)
@@ -72,7 +72,7 @@ test.group('Tracklist Routes', (group) => {
           disc: 1,
           side: 'A',
           speed: 33,
-          project: 3205
+          production: 3205
         }
       ]
     }
@@ -105,7 +105,7 @@ test.group('Tracklist Routes', (group) => {
           disc: 1,
           side: 'A',
           speed: 33,
-          project: 3205
+          production: 3205
         }
       ]
     }
@@ -122,7 +122,7 @@ test.group('Tracklist Routes', (group) => {
 
   test('GET /tracklists/:id => Get an existing tracklist', async ({ assert }) => {
     const response = await supertest(BASE_URL)
-      .get(`/tracklists/${projectId}`)
+      .get(`/tracklists/${productionId}`)
       .set('Authorization', `Bearer ${authToken}`)
 
     assert.equal(response.status, 200)
@@ -138,8 +138,8 @@ test.group('Tracklist Routes', (group) => {
       .set('Authorization', `Bearer ${authToken}`)
 
     assert.equal(response.status, 200)
-    // The response must contain a message, the number of deletions and the projectId
+    // The response must contain a message, the number of deletions and the productionId
     assert.property(response.body, 'deletedCount')
-    assert.property(response.body, 'projectId')
+    assert.property(response.body, 'productionId')
   })
 })

@@ -4,6 +4,7 @@ import Utils from 'App/Utils'
 class TracklistController {
   public async saveTracklist({ params, user }) {
     await Utils.checkProjectOwner({ project_id: params.id, user: user })
+    console.log(params)
 
     const payload = await validator.validate({
       data: params,
@@ -11,7 +12,7 @@ class TracklistController {
         tracks: schema.array().members(
           schema.object().members({
             id: schema.number.optional(),
-            project: schema.number(),
+            production_id: schema.number(),
             position: schema.number(),
             artist: schema.string(),
             title: schema.string(),
@@ -32,12 +33,12 @@ class TracklistController {
     await Utils.checkProjectOwner({ project_id: params.id, user: user })
 
     const payload = await validator.validate({
-      data: { project_id: params.id },
+      data: { production_id: params.id },
       schema: schema.create({
-        project_id: schema.number()
+        production_id: schema.number()
       })
     })
-    return await Tracklist.all({ project_id: payload.project_id })
+    return await Tracklist.all({ production_id: payload.production_id })
   }
 
   public async deleteTrack({ params, user }) {
