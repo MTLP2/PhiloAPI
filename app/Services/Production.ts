@@ -2618,7 +2618,7 @@ class Production {
     let item = db
       .selectFrom('production_option')
       .selectAll()
-      .where('project_id', '=', params.id)
+      .where('production_id', '=', params.id)
       .execute()
 
     return item
@@ -2635,7 +2635,7 @@ class Production {
         return item.delete(row.id)
       }
 
-      item.project_id = row.project_id
+      item.production_id = row.production_id
       item.rowIndex = row.rowIndex
       item.colIndex = row.colIndex
       item.value = row.value
