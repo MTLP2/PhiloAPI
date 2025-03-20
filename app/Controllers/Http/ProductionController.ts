@@ -222,8 +222,8 @@ class ProductionController {
           schema.object().members({
             id: schema.number.optional(),
             production_id: schema.number(),
-            rowIndex: schema.number(),
-            colIndex: schema.number(),
+            row_index: schema.number(),
+            col_index: schema.number(),
             value: schema.string.optional()
           })
         )
