@@ -2160,10 +2160,16 @@ class Cart {
     })
 
     const user = await DB()
-      .select('id', 'name', 'email', 'is_guest', 'sponsor')
+      .select('id', 'name', 'email', 'is_guest', 'sponsor', 'email_score')
       .from('user')
       .where('id', order.user_id)
       .first()
+
+    if (user.email_score === null) {
+      User.setEmailScore({ email: user.email }).then((score) => {
+        user.email_score = score
+      })
+    }
 
     const boxes = []
     const allItems = []
