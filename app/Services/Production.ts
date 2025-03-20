@@ -15,6 +15,7 @@ import Storage from 'App/Services/Storage'
 import View from '@ioc:Adonis/Core/View'
 import I18n from '@ioc:Adonis/Addons/I18n'
 import moment from 'moment'
+import { db, model } from 'App/db3'
 
 class Production {
   static async all(params) {
@@ -2610,6 +2611,35 @@ class Production {
           status: res.inbound_shipment.status.code.toLowerCase()
         })
       }
+    }
+  }
+
+  static async getOptions(params: { id: number }) {
+    let item = db
+      .selectFrom('production_option')
+      .selectAll()
+      .where('project_id', '=', params.id)
+      .execute()
+
+    return item
+  }
+
+  static async saveOptions(params: { id?: number; cells: Array<any> }) {
+    for (const row of params.cells) {
+      let item = model('production_option')
+      if (row.id) {
+        item = await item.find(row.id)
+      }
+
+      if (!row.value) {
+        return item.delete(row.id)
+      }
+
+      item.project_id = row.project_id
+      item.rowIndex = row.rowIndex
+      item.colIndex = row.colIndex
+      item.value = row.value
+      await item.save()
     }
   }
 }

@@ -285,6 +285,16 @@ type Product = {
   updated_at: Timestamp
 }
 
+type ProductionOption = {
+  id: number
+  project_id: number
+  rowIndex: number
+  colIndex: number
+  value: string
+  created_at: Timestamp
+  updated_at: Timestamp
+}
+
 type ShippingWeight = {
   'id': number
   'country_id': string
@@ -411,6 +421,7 @@ type ProductionAction = {
 }
 
 export type DB = {
+  production_option: ProductionOption
   production_track: ProductionTrack
   production_action: ProductionAction
   alert: Alert

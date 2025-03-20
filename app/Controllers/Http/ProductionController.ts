@@ -197,6 +197,41 @@ class ProductionController {
     })
     return Production.createShipNotice(payload)
   }
+
+  async getOptions({ params, user }) {
+    await Utils.checkProjectOwner({ project_id: params.id, user: user })
+
+    const payload = await validator.validate({
+      schema: schema.create({
+        id: schema.number()
+      }),
+      data: {
+        id: params.id
+      }
+    })
+    return Production.getOptions(payload)
+  }
+
+  async saveOptions({ params, user }) {
+    await Utils.checkProjectOwner({ project_id: params.id, user: user })
+
+    const payload = await validator.validate({
+      schema: schema.create({
+        id: schema.number(),
+        cells: schema.array().members(
+          schema.object().members({
+            id: schema.number.optional(),
+            project_id: schema.number(),
+            rowIndex: schema.number(),
+            colIndex: schema.number(),
+            value: schema.string.optional()
+          })
+        )
+      }),
+      data: params
+    })
+    return Production.saveOptions(payload)
+  }
 }
 
 export default ProductionController
