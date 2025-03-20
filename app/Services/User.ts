@@ -1570,7 +1570,12 @@ static extractProjectOrders = async (params) => {
     if (email.quality_score === null) {
       return null
     }
-    await DB('user').where('email', params.email).update({ email_score: email.quality_score })
+    if (email.quality_score) {
+      await DB('user').where('email', params.email).update({
+        email_score: email.quality_score,
+        updated_at: Utils.date()
+      })
+    }
     return email.quality_score
   }
 }
