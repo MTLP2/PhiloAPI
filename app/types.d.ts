@@ -420,8 +420,58 @@ type ProductionAction = {
   updated_at?: Timestamp
 }
 
+type Production = {
+  id: number
+  project_id?: number
+  step?: string
+  name?: string
+  factory?: string
+  quantity?: number
+  quantity_pressed?: number
+  quantity_personal?: number
+  date_preprod?: Timestamp
+  date_prod?: Timestamp
+  date_postprod?: Timestamp
+  date_factory?: Timestamp
+  date_shipping?: Timestamp
+  date_sync?: Timestamp
+  resp_id?: number
+  quote_price?: number
+  form_price?: number
+  final_price?: number
+  shipping_estimation?: number
+  shipping_final?: number
+  order_form?: number
+  quote_total?: number
+  shipping_total?: number
+  form_total?: number
+  prod_price?: number
+  rest_pay_preprod?: number
+  rest_pay_prod?: number
+  sub_total?: number
+  tax_rate?: number
+  tax?: number
+  total?: number
+  currency?: string
+  notif?: number
+  auto?: number
+  comment?: string
+  form_com?: number
+  is_delete?: number
+  shipping_com?: number
+  quantity_dispatch?: number
+  cost_comment?: string
+  costs_option?: string
+  quote_com?: number
+  is_auto: number
+  is_billing: number
+  created_at?: Timestamp
+  updated_at?: Timestamp
+}
+
 export type DB = {
   production_option: ProductionOption
+  production: Production
   production_track: ProductionTrack
   production_action: ProductionAction
   alert: Alert
