@@ -755,13 +755,10 @@ class BigBlue {
       orders.push(...res.orders)
       if (res.next_page_token) {
         pageToken = res.next_page_token
-        console.log(pageToken)
       } else {
         break
       }
     } while (pageToken)
-
-    console.log(orders.length)
 
     let updated = 0
     for (const order of orders) {
@@ -1343,7 +1340,6 @@ class BigBlue {
       if (!res[order.external_id]) {
         res[order.external_id] = []
       }
-      console.log(order)
       res[order.external_id].push({
         id: order.id,
         date: order.submit_time

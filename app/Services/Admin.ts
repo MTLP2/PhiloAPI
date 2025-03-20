@@ -1126,6 +1126,16 @@ class Admin {
       }
     }
 
+    vod.historic = vod.historic ? JSON.parse(vod.historic) : []
+    if (vod.type !== params.type) {
+      vod.historic.push({
+        type: 'type',
+        user_id: params.user.id,
+        old: vod.type,
+        new: params.type,
+        date: Utils.date()
+      })
+    }
     vod.type = params.type
     vod.edition = params.edition
     vod.com_id = params.com_id || 0
@@ -1174,7 +1184,6 @@ class Admin {
     vod.save_shipping = params.save_shipping
     vod.organic = params.organic
 
-    vod.historic = vod.historic ? JSON.parse(vod.historic) : []
     if (params.edit_stock) {
       const transporters: { [key in Transporters]?: boolean } = {}
       if (params.transporter_daudin) {
@@ -1261,37 +1270,15 @@ class Admin {
     }
     if (params.edit_statement) {
       if (params.send_statement && !vod.send_statement) {
-        const balance = await Statement.getBalance({
-          id: vod.project_id
-        })
-
         await Notifications.add({
           type: 'check_statement_balance',
           user_id: vod.user_id,
-          sending_at: moment().add(1, 'hours').format('YYYY-MM-DD HH:mm'),
+          sending_at: moment().add(2, 'hours').format('YYYY-MM-DD HH:mm'),
           date: moment().format('YYYY-MM-DD')
         })
-
         vod.active_statement = moment().format('YYYY-MM-DD')
-
-        if (balance.balance < 0) {
-          const emails = await DB('user')
-            .select('email')
-            .whereIn('id', [vod.com_id, vod.resp_prod_id])
-            .all()
-
-          await Notifications.sendEmail({
-            to: [
-              'alexis@diggersfactory.com',
-              'invoicing@diggersfactory.com',
-              ...emails.map((e) => e.email)
-            ].join(','),
-            subject: `Satement activé négatif pour le project ${project.name}`,
-            text: `<p>Le statement a été activé pour le projet ${project.name} est négatif.</p>
-            <p>https://www.diggersfactory.com/sheraf/project/${project.id}</p>`
-          })
-        }
       }
+
       vod.send_statement = params.send_statement
       vod.storage_costs = params.storage_costs
       vod.balance_followup = params.balance_followup

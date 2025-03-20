@@ -5,6 +5,7 @@ import I18n from '@ioc:Adonis/Addons/I18n'
 import Env from '@ioc:Adonis/Core/Env'
 import View from '@ioc:Adonis/Core/View'
 import User from 'App/Services/User'
+import request from 'request'
 
 const _ = require('underscore')
 const { APIClient, SendEmailRequest, RegionEU } = require('customerio-node')
@@ -126,7 +127,7 @@ class Notifications {
   static email = async (params, send = true) => {
     const p = params
 
-    if (p.user.email) {
+    if (p.user.email && Utils.isEmail(p.user.email)) {
       p.to = p.user.email
     }
     if (p.user.emails) {
@@ -136,11 +137,11 @@ class Notifications {
       p.to = params.to
     }
 
-    p.to = p.to.split(',').filter(Boolean).join(',')
-
     if (!p.to) {
       return false
     }
+    p.to = p.to.split(',').filter(Boolean).join(',')
+
     if (p.type) {
       if (p.lang !== 'fr') {
         p.lang = 'en'
@@ -195,7 +196,6 @@ class Notifications {
       data.subject = p.subject
       p.html = _.template(p.html)(data)
     }
-    p.type = 'newsletter'
 
     if (!p.from_address) {
       p.from_name = 'Diggers Factory'
@@ -219,9 +219,11 @@ class Notifications {
       params.from_name = 'Diggers Factory'
       params.from_address = 'contact@diggersfactory.com'
     }
+    /**
     if (process.env.NODE_ENV === 'development') {
       params.to = Env.get('DEBUG_EMAIL')
     }
+    **/
     if (process.env.NODE_ENV === 'staging') {
       const domain = params.to.split('@')
       if (domain[1] !== 'diggersfactory.com') {
@@ -229,11 +231,42 @@ class Notifications {
       }
     }
 
-    for (const email of params.to.split(',')) {
+    if (params.to.split(',').length > 1) {
+      await request({
+        method: 'POST',
+        url: ' https://api.mailjet.com/v3.1/send',
+        json: true,
+        auth: {
+          user: Env.get('MAILJET_API_KEY'),
+          pass: Env.get('MAILJET_API_SECRET')
+        },
+        body: {
+          Messages: [
+            {
+              From: {
+                Email: params.from_address,
+                Name: params.from_name
+              },
+              To: params.to.split(',').map((email) => ({
+                Email: email
+              })),
+              Subject: params.subject,
+              HTMLPart: params.text,
+              Attachments: params.attachments
+                ? params.attachments.map((attachment) => ({
+                    Filename: attachment.filename,
+                    Base64Content: attachment.content
+                  }))
+                : []
+            }
+          ]
+        }
+      })
+    } else {
       const data = {
         from: `${params.from_name} <${params.from_address}>`,
-        to: email,
-        identifiers: { email: email },
+        to: params.to,
+        identifiers: { email: params.to },
         subject: params.subject,
         body: params.html || params.text
       }
@@ -685,7 +718,7 @@ class Notifications {
             <p style="padding: 0; margin: 3px;">Mot de passe oublié ? <a href="${config.app.url}/fr/forgot-password">Suivez les instructions.</a></p>
             <p style="padding: 0; margin: 3px;">Vous pouvez vous <a href="${config.app.url}/fr/unsubscribe-newsletter?id=${params.to}&t=${hash}">désabonner de ces mails</a>.</p>
             <p style="padding: 0; margin: 3px;">Télécharger nos <a href="${config.app.url}/fr/terms">Conditions Générales d’Utilisation.</a></p>
-            <p style="padding: 0; margin: 3px;">Diggers Factory, 4 bis rue du Dahomey, 75011, Paris, France</p>
+            <p style="padding: 0; margin: 3px;">Diggers Factory, 78 quai de Jemmapes, 75010, Paris, France</p>
           </td>
       </tr>
     </table>
@@ -716,7 +749,7 @@ class Notifications {
           <p style="padding: 0; margin: 3px;">Forgotten password ? <a href="${config.app.url}/forgot-password">Follow the instructions.</a></p>
           <p style="padding: 0; margin: 3px;">You can <a href="${config.app.url}/unsubscribe-newsletter?id=${params.to}&t=${hash}">unsubscribe from these emails </a>.</p>
           <p style="padding: 0; margin: 3px;">Download our <a href="${config.app.url}/terms">Terms of Service.</a></p>
-          <p style="padding: 0; margin: 3px;">Diggers Factory, 4 bis rue du Dahomey, 75011, Paris, France</p>
+          <p style="padding: 0; margin: 3px;">Diggers Factory, 78 quai de Jemmapes, 75010, Paris, France</p>
         </td>
       </tr>
       </table>

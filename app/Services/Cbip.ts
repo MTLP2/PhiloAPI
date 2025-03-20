@@ -27,14 +27,15 @@ class Cbip {
   static async getInventory(params?: {}) {
     const res: {
       data: {
-        inventory: {
-          sku: string
-          uuid: string
-        }[]
+        sku: string
+        uuid: string
+      }[]
+    } = await this.api(
+      `warehouse-api/open/warehouses/${Env.get('CBIP_API_WAREHOUSE')}/inventory?limit=99999`,
+      {
+        method: 'GET'
       }
-    } = await this.api(`warehouse-api/open/warehouses/${Env.get('CBIP_API_WAREHOUSE')}/inventory`, {
-      method: 'GET'
-    })
+    )
 
     return res.data
   }
@@ -47,6 +48,25 @@ class Cbip {
       })
     }
     return items.length
+  }
+
+  static async createItem(params: { id: number; barcode: string }) {
+    const inventory = await this.getInventory()
+    const item = inventory.find((i) => i.sku.toString() === params.barcode.toString())
+
+    if (!item) {
+      return {
+        success: false,
+        error: 'Item not found'
+      }
+    }
+    await DB('product').where('id', params.id).update({
+      cbip_id: item.uuid
+    })
+    return {
+      success: true,
+      id: item.uuid
+    }
   }
 
   static syncDispatch = async (params: {
@@ -98,7 +118,7 @@ class Cbip {
     }
 
     const data = {
-      currency: params.currency,
+      currency: params.currency || 'USD',
       incoterms: params.type === 'B2B' ? 'DDP' : 'DAP',
       reference: params.id.toString(),
       status: 'pending',
@@ -152,7 +172,7 @@ class Cbip {
     } else {
       return {
         success: false,
-        error: res.msg
+        error: res.errors ? JSON.stringify(res.errors) : res.msg
       }
     }
   }
@@ -238,7 +258,6 @@ class Cbip {
       const res: any = await this.api('orders-api/open/orders?page=' + page, {
         method: 'GET'
       })
-      console.log(page)
       data.push(...res.data)
 
       next = res.meta.totalPages > page
@@ -251,26 +270,28 @@ class Cbip {
         courier_tracking_number: string
         courier_tracking_url: string
       } | null = null
-      for (const shipment of order.shipments) {
-        if (
-          ['in_transit', 'delivered'].includes(shipment.status) &&
-          shipment.courier_tracking_number
-        ) {
-          if (shipment.status === 'in_transit') {
-            shipment.status = 'sent'
-          }
-          lastShipment = shipment
+
+      const shipment = order.shipments.find((s) => s.supplier_identifier === 'SS_HK')
+
+      if (
+        shipment &&
+        ['in_transit', 'delivered'].includes(shipment.status) &&
+        shipment.courier_tracking_number
+      ) {
+        if (shipment.status === 'in_transit') {
+          shipment.status = 'sent'
         }
-        if (lastShipment) {
-          await Dispatchs.changeStatus({
-            logistician_id: order.uuid,
-            logistician: 'cbip',
-            status: lastShipment.status,
-            tracking_number: lastShipment.courier_tracking_number,
-            tracking_link: lastShipment.courier_tracking_url
-          })
-          updated++
-        }
+        lastShipment = shipment
+      }
+      if (lastShipment) {
+        await Dispatchs.changeStatus({
+          logistician_id: order.uuid,
+          logistician: 'cbip',
+          status: lastShipment.status,
+          tracking_number: lastShipment.courier_tracking_number,
+          tracking_link: lastShipment.courier_tracking_url
+        })
+        updated++
       }
     }
 

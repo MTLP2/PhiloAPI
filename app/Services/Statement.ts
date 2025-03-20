@@ -2878,12 +2878,6 @@ class StatementService {
       } catch (e) {}
       const unitPrice: number = p.category === 'vinyl' ? price : 0.05
 
-      /**
-      console.log(change)
-      if (change[p.id]) {
-        p.stock = p.stock + change[p.id]
-      }
-      **/
       cost.is_statement = true
       cost.currency = 'EUR'
       cost.in_statement = (p.stock * unitPrice) / currencies.EUR
@@ -3637,8 +3631,6 @@ class StatementService {
         cashable: true,
         only_data: true
       })
-
-      console.log(i)
 
       if (statement) {
         if (!statement.outstanding) {
