@@ -1695,7 +1695,8 @@ class Production {
       })
     }
 
-    if (params.artist && prod.notif) {
+    const notifications = await DB('notifications').where('user_id', prod.user_id).first()
+    if (params.artist && notifications.my_project_production && prod.notif) {
       await Notifications.add({
         type: params.type,
         user_id: prod.user_id,
