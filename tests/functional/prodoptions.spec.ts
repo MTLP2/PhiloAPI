@@ -5,7 +5,7 @@ import DB from 'App/DB'
 
 // Test user
 const userId = 82
-// Production project
+// Production
 const productionId = 3205
 
 const token = Auth.getToken({ id: userId })
@@ -19,7 +19,7 @@ test.group('Production table information management', () => {
       cells: [
         {
           value: 'test',
-          project_id: productionId,
+          production_id: productionId,
           rowIndex: 1,
           colIndex: 1
         }
@@ -33,17 +33,17 @@ test.group('Production table information management', () => {
 
     assert.equal(response.status, 200)
 
-    const DBTable = await DB('production_option').where('project_id', productionId).first()
+    const DBTable = await DB('production_option').where('production_id', productionId).first()
 
     assert.equal(DBTable.value, 'test')
-    assert.equal(DBTable.project_id, productionId)
+    assert.equal(DBTable.production_id, productionId)
     assert.equal(DBTable.rowIndex, 1)
     assert.equal(DBTable.colIndex, 1)
     assert.isNotNull(DBTable.created_at)
     assert.isNotNull(DBTable.updated_at)
 
     // supprimer l'entrée
-    await DB('production_option').where('project_id', productionId).delete()
+    await DB('production_option').where('production_id', productionId).delete()
   })
 
   // Modify an entry
@@ -51,7 +51,7 @@ test.group('Production table information management', () => {
     // Create an entry
     const [id] = await DB('production_option').insert({
       value: 'test2',
-      project_id: productionId,
+      production_id: productionId,
       rowIndex: 1,
       colIndex: 1
     })
@@ -63,7 +63,7 @@ test.group('Production table information management', () => {
         {
           id: id,
           value: 'test3',
-          project_id: productionId,
+          production_id: productionId,
           rowIndex: 1,
           colIndex: 1
         }
@@ -77,11 +77,11 @@ test.group('Production table information management', () => {
 
     assert.equal(response.status, 200)
 
-    const DBTable = await DB('production_option').where('project_id', productionId).first()
+    const DBTable = await DB('production_option').where('production_id', productionId).first()
     assert.equal(DBTable.value, 'test3')
 
     // supprimer l'entrée
-    await DB('production_option').where('project_id', productionId).delete()
+    await DB('production_option').where('production_id', productionId).delete()
   })
 
   //Get a table
@@ -89,7 +89,7 @@ test.group('Production table information management', () => {
     // Create a table entry
     await DB('production_option').insert({
       value: 'test4',
-      project_id: productionId,
+      production_id: productionId,
       rowIndex: 1,
       colIndex: 1
     })
@@ -107,12 +107,12 @@ test.group('Production table information management', () => {
     assert.equal(response.status, 200)
 
     // Verify that the table exists in the database
-    const DBTable = await DB('production_option').where('project_id', productionId).first()
+    const DBTable = await DB('production_option').where('production_id', productionId).first()
     assert.isNotNull(DBTable)
     assert.equal(DBTable.value, 'test4')
 
     // supprimer l'entrée
-    await DB('production_option').where('project_id', productionId).delete()
+    await DB('production_option').where('production_id', productionId).delete()
   })
 
   // Delete a table
@@ -120,7 +120,7 @@ test.group('Production table information management', () => {
     // Create a table entry
     const [id] = await DB('production_option').insert({
       value: 'test5',
-      project_id: productionId,
+      production_id: productionId,
       rowIndex: 1,
       colIndex: 1
     })
@@ -131,7 +131,7 @@ test.group('Production table information management', () => {
         {
           id: id,
           value: '',
-          project_id: productionId,
+          production_id: productionId,
           rowIndex: 1,
           colIndex: 1
         }
@@ -146,7 +146,7 @@ test.group('Production table information management', () => {
     assert.equal(response.status, 200)
 
     // Verify that the table does not exist in the database
-    const DBTable = await DB('production_option').where('project_id', productionId).first()
+    const DBTable = await DB('production_option').where('production_id', productionId).first()
     assert.isNull(DBTable)
   })
 })

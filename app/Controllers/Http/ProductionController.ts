@@ -221,7 +221,7 @@ class ProductionController {
         cells: schema.array().members(
           schema.object().members({
             id: schema.number.optional(),
-            project_id: schema.number(),
+            production_id: schema.number(),
             rowIndex: schema.number(),
             colIndex: schema.number(),
             value: schema.string.optional()

@@ -287,7 +287,7 @@ type Product = {
 
 type ProductionOption = {
   id: number
-  project_id: number
+  production_id: number
   rowIndex: number
   colIndex: number
   value: string
