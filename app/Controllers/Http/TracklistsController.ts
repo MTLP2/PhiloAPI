@@ -3,8 +3,7 @@ import Tracklist from 'App/Services/Tracklists'
 import Utils from 'App/Utils'
 class TracklistController {
   public async saveTracklist({ params, user }) {
-    await Utils.checkProjectOwner({ project_id: params.id, user: user })
-    console.log(params)
+    await Utils.checkProjectOwner({ project_id: params.project_id, user: user })
 
     const payload = await validator.validate({
       data: params,
@@ -30,7 +29,7 @@ class TracklistController {
   }
 
   public async getTracklist({ params, user }) {
-    await Utils.checkProjectOwner({ project_id: params.id, user: user })
+    await Utils.checkProjectOwner({ project_id: params.project_id, user: user })
 
     const payload = await validator.validate({
       data: { production_id: params.id },
@@ -42,7 +41,7 @@ class TracklistController {
   }
 
   public async deleteTrack({ params, user }) {
-    await Utils.checkProjectOwner({ project_id: params.id, user: user })
+    await Utils.checkProjectOwner({ project_id: params.project_id, user: user })
 
     const payload = await validator.validate({
       data: { id: params.id },
