@@ -2607,6 +2607,8 @@ class Admin {
     user.orders = await Admin.getOrders({ user_id: id })
     user.boxes = await Boxes.all({ filters: null, user_id: id })
 
+    user.notifications = await DB('notifications').where('user_id', user.id).first()
+
     user.statements = await DB('statement_history')
       .where('user_id', user.id)
       .orderBy('date', 'desc')
@@ -2638,6 +2640,18 @@ class Admin {
     for_project: number
     newsletter: number
     image: string
+    my_project_production: number
+    my_project_level_up: number
+    new_follower: number
+    new_message: number
+    my_project_new_comment: number
+    new_like: number
+    following_create_project: number
+    my_project_new_order: number
+    my_project_order_cancel: number
+    project_follow_cancel: number
+    project_follow_3_days_left: number
+    my_project_7_days_left: number
   }) => {
     let user: any = DB('user')
     if (params.id) {
@@ -2706,11 +2720,21 @@ class Admin {
         })
       }
     }
-    if (params.newsletter !== undefined) {
-      await DB('notifications').where('user_id', user.id).update({
-        newsletter: params.newsletter
-      })
-    }
+    await DB('notifications').where('user_id', user.id).update({
+      newsletter: params.newsletter,
+      new_follower: params.new_follower,
+      new_message: params.new_message,
+      my_project_new_comment: params.my_project_new_comment,
+      new_like: params.new_like,
+      following_create_project: params.following_create_project,
+      my_project_new_order: params.my_project_new_order,
+      my_project_order_cancel: params.my_project_order_cancel,
+      project_follow_cancel: params.project_follow_cancel,
+      project_follow_3_days_left: params.project_follow_3_days_left,
+      my_project_7_days_left: params.my_project_7_days_left,
+      my_project_level_up: params.my_project_level_up,
+      my_project_production: params.my_project_production
+    })
     return { success: true }
   }
 
