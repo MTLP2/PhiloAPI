@@ -2637,8 +2637,8 @@ class Production {
       }
 
       item.production_id = row.production_id
-      item.rowIndex = row.rowIndex
-      item.colIndex = row.colIndex
+      item.row_index = row.row_index
+      item.col_index = row.col_index
       item.value = row.value
       await item.save()
     }

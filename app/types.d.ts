@@ -288,8 +288,8 @@ type Product = {
 type ProductionOption = {
   id: number
   production_id: number
-  rowIndex: number
-  colIndex: number
+  row_index: number
+  col_index: number
   value: string
   created_at: Timestamp
   updated_at: Timestamp
