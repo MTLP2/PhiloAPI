@@ -1571,8 +1571,6 @@ static extractProjectOrders = async (params) => {
       return null
     }
     await DB('user').where('email', params.email).update({ email_score: email.quality_score })
-
-    console.log(params.email, email.quality_score)
     return email.quality_score
   }
 }
