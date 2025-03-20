@@ -889,6 +889,12 @@ class Invoices {
   static async duplicate(params) {
     const invoice = await DB('invoice').belongsTo('customer').find(params.id)
 
+    if (
+      invoice.type === 'order_form' &&
+      (params.type === 'invoice' || params.type === 'credit_note')
+    ) {
+      invoice.compatibility = true
+    }
     invoice.id = null
     invoice.number = null
     invoice.code = null
@@ -1036,7 +1042,12 @@ class Invoices {
         project_name: cost.project_name,
         total: cost.cost_real,
         currency: cost.currency,
-        total_eur: cost.cost_real * cost.currency_rate
+        total_eur: cost.cost_real * cost.currency_rate,
+        cost_real_ttc: cost.cost_real_ttc,
+        margin:
+          cost.cost_invoiced && cost.cost_real
+            ? ((cost.cost_invoiced / cost.cost_real - 1) * 100).toFixed(2)
+            : ''
       })
     }
 
@@ -1045,6 +1056,8 @@ class Invoices {
         'payment_artist_project.*',
         'payment_artist.date',
         'payment_artist.currency as payment_currency',
+        'payment_artist.name',
+        'payment_artist.invoice_number',
         'project.name as project_name',
         'project.artist_name',
         'project.id as project_id'
@@ -1065,12 +1078,12 @@ class Invoices {
       lines.push({
         date: payment.date,
         type: 'payment',
-        name: '',
+        name: payment.name,
         project_id: payment.project_id,
         artist_name: payment.artist_name,
         project_name: payment.project_name,
         total: payment.total,
-        invoice: payment.invoice,
+        invoice: payment.invoice_number,
         currency: payment.currency,
         total_eur: payment.total / currencies[payment.currency]
       })
@@ -1088,7 +1101,9 @@ class Invoices {
           { key: 'project_name', header: 'project_name', width: 20 },
           { key: 'total', header: 'total', width: 10 },
           { key: 'currency', header: 'currency', width: 5 },
-          { key: 'total_eur', header: 'total_eur', width: 10 }
+          { key: 'total_eur', header: 'total_eur', width: 10 },
+          { key: 'margin', header: 'margin', width: 10 },
+          { key: 'cost_real_ttc', header: 'cost_real_ttc', width: 10 }
         ],
         data: lines
       }

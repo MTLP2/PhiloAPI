@@ -351,6 +351,52 @@ class Dispatchs {
       })
     }
 
+    if (item.logistician === 'cbip' && item.logistician_id) {
+      const items = await DB('dispatch_item')
+        .select(
+          'product.id',
+          'product.name',
+          'product.barcode',
+          'product.cbip_id',
+          'product.hs_code',
+          'product.country_id',
+          'product.type',
+          'dispatch_item.quantity'
+        )
+        .leftJoin('product', 'product.id', 'dispatch_item.product_id')
+        .where('dispatch_id', item.id)
+        .all()
+
+      if (item.order_shop_id) {
+        const orderShop = await DB('order_shop').find(item.order_shop_id)
+
+        if (orderShop.total && orderShop.shipping) {
+          item.total = orderShop.total
+          item.shipping_price = orderShop.shipping
+          item.currency = orderShop.currency
+          const quantity = items.reduce((acc, i) => acc + i.quantity, 0)
+          for (const i in items) {
+            items[i].price = Utils.round((orderShop.total - orderShop.shipping) / quantity, 2)
+          }
+        }
+      }
+
+      await Cbip.syncDispatch({
+        ...params.customer,
+        ...item,
+        items: items.map((i) => ({
+          cbip_id: i.cbip_id,
+          name: i.name,
+          barcode: i.barcode,
+          quantity: i.quantity,
+          hs_code: i.hs_code,
+          origin: i.country_id,
+          type: i.type,
+          price: i.price
+        }))
+      })
+    }
+
     return item
   }
 
@@ -2132,21 +2178,40 @@ class Dispatchs {
       qty = qty + order.quantity
     }
 
+    const synched = {
+      quantity: 0,
+      orders: 0
+    }
+    const errors: {
+      order_id: number
+      order_shop_id: number
+      error: string
+    }[] = []
     if (dispatchs.length > 0) {
       for (const dispatch of dispatchs) {
-        await Dispatchs.createFromOrderShop({ order_shop_id: dispatch.id })
+        const res = await Dispatchs.createFromOrderShop({ order_shop_id: dispatch.id })
+        if (res.success) {
+          synched.quantity += dispatch.quantity
+          synched.orders += 1
+        } else {
+          errors.push({
+            order_id: dispatch.order_id,
+            order_shop_id: dispatch.id,
+            error: res.error || 'unknown_error'
+          })
+        }
       }
-      if (qty > 0) {
+      if (synched.orders > 0) {
         await DB('project_export').insert({
           transporter: params.logistician,
           project_id: vod.project_id,
-          quantity: qty,
+          quantity: synched.quantity,
           date: Utils.date()
         })
       }
     }
 
-    return { sucess: true, orders: dispatchs.length, quantity: qty }
+    return { success: true, orders: synched.orders, quantity: synched.quantity, errors: errors }
   }
 
   static createFromOrderShop = async (params: { order_shop_id: number }) => {
@@ -2184,7 +2249,7 @@ class Dispatchs {
       .executeTakeFirst()
 
     if (!shop) {
-      return false
+      return { success: false, error: 'order_shop_not_found' }
     }
 
     if (
@@ -2212,7 +2277,7 @@ class Dispatchs {
       .where('order_shop_id', shop.id)
       .all()
 
-    await Dispatchs.createOrder({
+    return await Dispatchs.createOrder({
       logistician: shop.transporter,
       customer_id: shop.customer_id,
       order_id: shop.order_id,
@@ -2227,8 +2292,6 @@ class Dispatchs {
       cost_currency_rate: shop.currency_rate,
       items: items
     })
-
-    return { success: true }
   }
 
   static createOrder = async (params: {

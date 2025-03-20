@@ -1,0 +1,22 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": [
+      "jest",
+      "node",
+      "@adonisjs/core",
+      "@adonisjs/i18n",
+      "@adonisjs/view",
+      "@japa/preset-adonis/build/adonis-typings",
+      "kysely"
+    ],
+    "strict": false,
+    "paths": {
+      "App/*": ["./app/*"],
+      "Config/*": ["./config/*"]
+    }
+  },
+  "include": ["app/test/**/*", "app/**/*.ts"],
+  "exclude": ["node_modules", "build"]
+}

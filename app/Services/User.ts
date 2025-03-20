@@ -18,6 +18,7 @@ import Storage from 'App/Services/Storage'
 import View from '@ioc:Adonis/Core/View'
 import Env from '@ioc:Adonis/Core/Env'
 import Pass from './Pass'
+import fetch from 'node-fetch'
 
 class User {
   static me = (id) => {
@@ -1547,6 +1548,31 @@ static extractProjectOrders = async (params) => {
       .delete()
 
     return true
+  }
+
+  static validEmail = async (
+    email: string
+  ): Promise<{
+    quality_score: number
+  }> => {
+    const response = await fetch(
+      `https://emailvalidation.abstractapi.com/v1/?api_key=${Env.get(
+        'ABSTRACT_API'
+      )}&email=${email}`
+    )
+    const data = await response.json()
+    return data
+  }
+
+  static setEmailScore = async (params: { email: string }) => {
+    const email = await User.validEmail(params.email)
+    if (email.quality_score === null) {
+      return null
+    }
+    await DB('user').where('email', params.email).update({ email_score: email.quality_score })
+
+    console.log(params.email, email.quality_score)
+    return email.quality_score
   }
 }
 

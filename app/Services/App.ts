@@ -740,7 +740,6 @@ class App {
           balance += statement[currency][project].data.balance.all
         }
       }
-      console.log('---', balance)
       if (balance < 0) {
         n.email = 0
         await n.save()
@@ -925,6 +924,7 @@ class App {
       ]
     }
     if (n.invoice_id) {
+      data.from_name = 'Diggers Factory'
       data.from_address = 'invoicing@diggersfactory.com'
       data.invoice = await DB('invoice').where('id', n.invoice_id).first()
       data.lang = data.invoice.lang
@@ -1492,6 +1492,21 @@ class App {
         { lang: 'fr', url: '/fr/contact' }
       ]
     })
+
+    const categories = await DB('category').where('is_visible', true).all()
+    for (const category of categories) {
+      console.log(`/vinyl-shop/${category.id}/${category.code}`)
+      sitemap.write({
+        url: `/vinyl-shop/${category.id}/${category.code}`,
+        lang: 'en',
+        changefreq: 'weekly',
+        priority: 0.7,
+        links: [
+          { lang: 'en', url: `/vinyl-shop/${category.id}/${category.code}` },
+          { lang: 'fr', url: `/fr/vinyl-shop/${category.id}/${category.code}` }
+        ]
+      })
+    }
 
     const projects = await Project.findAll({ type: 'all', limit: 99999999 })
     for (const project of projects) {

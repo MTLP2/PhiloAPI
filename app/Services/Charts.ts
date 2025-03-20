@@ -4,6 +4,7 @@ import SftpClient from 'ssh2-sftp-client'
 import moment from 'moment'
 const { XMLBuilder } = require('fast-xml-parser')
 import fs from 'fs'
+import User from './User'
 
 class Charts {
   static getOrders = async (params: {
@@ -28,6 +29,8 @@ class Charts {
         'c.state',
         'c.zip_code',
         'v.start',
+        'o.captcha_score',
+        'o.location',
         'p.name as project_name',
         'p.artist_name as artist_name',
         'v.is_licence',
@@ -38,14 +41,18 @@ class Charts {
         'product.barcode',
         'os.created_at',
         'os.date_export',
-        'invoice.code as invoice'
+        'invoice.code as invoice',
+        'user.email',
+        'user.email_score'
       )
-      .join('customer as c', 'os.customer_id', 'c.id')
+      .join('order as o', 'o.id', 'os.order_id')
       .join('order_item as oi', 'oi.order_shop_id', 'os.id')
+      .join('customer as c', 'os.customer_id', 'c.id')
       .join('project as p', 'p.id', 'oi.project_id')
       .join('vod as v', 'v.project_id', 'p.id')
       .join('project_product', 'project_product.project_id', 'p.id')
       .join('product', 'product.id', 'project_product.product_id')
+      .join('user', 'user.id', 'os.user_id')
       .leftJoin('label', 'label.id', 'p.label_id')
       .leftJoin('artist', 'artist.id', 'p.artist_id')
       .leftJoin('invoice', 'invoice.order_id', 'os.order_id')
@@ -80,16 +87,22 @@ class Charts {
       .where('c.country_id', params.country_id)
       .all()
 
-    return orders.map((o) => {
-      o.title = o.name.split(' - ')[1]
-      if (!o.title) {
-        o.title = o.name
+    for (const o in orders) {
+      orders[o].title = orders[o].name.split(' - ')[1]
+      if (!orders[o].title) {
+        orders[o].title = orders[o].name
       }
-      o.artist = o.artist || o.artist_name
-      o.label = o.label || o.label_name || o.artist
-      o.licensor = o.is_licence ? 'Diggers Factory' : o.label
-      return o
-    })
+      orders[o].artist = orders[o].artist || orders[o].artist_name
+      orders[o].label = orders[o].label || orders[o].label_name || orders[o].artist
+      orders[o].licensor = orders[o].is_licence ? 'Diggers Factory' : orders[o].label
+
+      if (orders[o].email_score === null) {
+        orders[o].email_score = await User.setEmailScore({ email: orders[o].email })
+        await Utils.sleep(300)
+      }
+    }
+
+    return orders
   }
 
   /**
@@ -416,7 +429,6 @@ class Charts {
 
     let file: string = ''
     if (params.country === 'FR') {
-      console.log(orders)
       file = Utils.arrayToCsv(
         [
           { name: 'date', index: 'date_fr' },

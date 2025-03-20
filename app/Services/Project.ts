@@ -561,6 +561,12 @@ class Project {
       params.genres = []
 
       for (const filter of filters) {
+        if (filter.type === 'style') {
+          const style = await DB('style').where('slug', filter.value).first()
+          if (style) {
+            params.styles = style.id.toString()
+          }
+        }
         filter.value = filter.value.toString().replace(/[^a-zA-Z0-9 ]/g, '')
 
         if (filter.type === 'type') {
@@ -620,7 +626,7 @@ class Project {
             if (style && !isNaN(style)) {
               this.orWhereExists(
                 DB.raw(`
-              SELECT id
+              SELECT project_style.project_id
               FROM project_style
               WHERE p.id = project_id
                 AND project_style.style_id = ${parseInt(style)}

@@ -22,6 +22,7 @@ import Pass from './Pass'
 import Stripe from 'App/Services/Stripe'
 import PromoCode from 'App/Services/PromoCode'
 import Dispatchs from './Dispatchs'
+import Google from './Google'
 
 const stripe = require('stripe')(config.stripe.client_secret)
 
@@ -1391,7 +1392,13 @@ class Cart {
     res.category = p.project.category
     res.save_shipping = p.project.save_shipping
 
-    if (p.project.grouped_sizes) {
+    if (p.project.grouped_sizes && params.chosen_sizes) {
+      const qtySize = p.project.grouped_sizes[Object.keys(params.chosen_sizes)[0]]?.sizes.find(
+        (s) => s.id.toString() === Object.values(params.chosen_sizes)[0]
+      )?.quantity
+      if (qtySize) {
+        p.project.copies_left = qtySize
+      }
       for (const s of Object.keys(p.project.grouped_sizes)) {
         if (!params.chosen_sizes || !params.chosen_sizes[s]) {
           res.error = 'no_size_selected'
@@ -1574,6 +1581,15 @@ class Cart {
       customerInvoiceId = cus.id
     }
 
+    try {
+      const verifyCaptcha = await Google.verifyCaptcha(params.captcha)
+      if (verifyCaptcha.score) {
+        params.captcha_score = verifyCaptcha.score
+      }
+    } catch (e) {
+      console.error(e)
+    }
+
     const currencyRate = await Utils.getCurrency(params.currency)
     let order
     try {
@@ -1597,6 +1613,16 @@ class Cart {
         origin: params.origin,
         is_gift: params.is_gift,
         user_agent: JSON.stringify(params.user_agent),
+        location: params.location
+          ? JSON.stringify({
+              country_id: params.location.country_code,
+              city: params.location.city,
+              latitude: params.location.latitude,
+              longitude: params.location.longitude,
+              is_vpn: params.location.security.is_vpn
+            })
+          : null,
+        captcha_score: params.captcha_score,
         created_at: Utils.date(),
         updated_at: Utils.date()
       })
