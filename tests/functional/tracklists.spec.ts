@@ -34,7 +34,7 @@ test.group('Tracklist Routes', (group) => {
           disc: 1,
           side: 'A',
           speed: 33,
-          production: 3205
+          production_id: productionId
           // silence is optional
         }
       ]
@@ -72,7 +72,7 @@ test.group('Tracklist Routes', (group) => {
           disc: 1,
           side: 'A',
           speed: 33,
-          production: 3205
+          production_id: productionId
         }
       ]
     }
@@ -105,7 +105,7 @@ test.group('Tracklist Routes', (group) => {
           disc: 1,
           side: 'A',
           speed: 33,
-          production: 3205
+          production_id: productionId
         }
       ]
     }
