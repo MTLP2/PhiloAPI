@@ -1,9 +1,17 @@
 import { validator, schema } from '@ioc:Adonis/Core/Validator'
+import db from 'App/db3'
 import Tracklist from 'App/Services/Tracklists'
 import Utils from 'App/Utils'
+
 class TracklistController {
   public async saveTracklist({ params, user }) {
-    await Utils.checkProjectOwner({ project_id: params.project_id, user: user })
+    const project_id = await db
+      .selectFrom('production')
+      .select('project_id')
+      .where('id', '=', params.tracks[0].production_id)
+      .executeTakeFirst()
+
+    await Utils.checkProjectOwner({ project_id: project_id?.project_id, user: user })
 
     const payload = await validator.validate({
       data: params,
@@ -29,7 +37,14 @@ class TracklistController {
   }
 
   public async getTracklist({ params, user }) {
-    await Utils.checkProjectOwner({ project_id: params.project_id, user: user })
+    //recupere le project_id de production en fonction de l'id de la production
+    const project_id = await db
+      .selectFrom('production')
+      .select('project_id')
+      .where('id', '=', params.id)
+      .executeTakeFirst()
+
+    await Utils.checkProjectOwner({ project_id: project_id?.project_id, user: user })
 
     const payload = await validator.validate({
       data: { production_id: params.id },
@@ -41,7 +56,13 @@ class TracklistController {
   }
 
   public async deleteTrack({ params, user }) {
-    await Utils.checkProjectOwner({ project_id: params.project_id, user: user })
+    const project_id = await db
+      .selectFrom('production')
+      .select('project_id')
+      .where('id', '=', params.production_id)
+      .executeTakeFirst()
+
+    await Utils.checkProjectOwner({ project_id: project_id?.project_id, user: user })
 
     const payload = await validator.validate({
       data: { id: params.id },
