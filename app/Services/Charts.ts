@@ -42,6 +42,8 @@ class Charts {
         'os.created_at',
         'os.date_export',
         'invoice.code as invoice',
+        'o.location',
+        'o.captcha_score',
         'user.email',
         'user.email_score'
       )
@@ -262,6 +264,18 @@ class Charts {
     text += '\n'
 
     for (const o of orders) {
+      if (o.location !== null) {
+        const location = JSON.parse(o.location)
+        if (location.is_vpn) {
+          continue
+        }
+      }
+      if (o.email_score !== null && o.email_score < 0.5) {
+        continue
+      }
+      if (o.captcha_score !== null && o.captcha_score < 0.5) {
+        continue
+      }
       totalQuantity += o.quantity
 
       text += moment(params.digital ? o.created_at : o.date_export).format('YYYYMMDD') + '|'
