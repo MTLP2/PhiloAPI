@@ -285,7 +285,7 @@ type Product = {
   updated_at: Timestamp
 }
 
-type ProductionTable = {
+type ProductionOption = {
   id: number
   project_id: number
   rowIndex: number
@@ -421,6 +421,7 @@ type ProductionAction = {
 }
 
 export type DB = {
+  production_option: ProductionOption
   production_track: ProductionTrack
   production_action: ProductionAction
   alert: Alert
