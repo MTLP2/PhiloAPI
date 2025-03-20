@@ -623,7 +623,8 @@ class User {
         project_follow_cancel: params.project_follow_cancel,
         project_follow_3_days_left: params.project_follow_3_days_left,
         my_project_7_days_left: params.my_project_7_days_left,
-        my_project_level_up: params.my_project_level_up
+        my_project_level_up: params.my_project_level_up,
+        my_project_production: params.my_project_production
       })
       .then(() => params)
   }
