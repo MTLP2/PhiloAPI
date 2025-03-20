@@ -20,8 +20,6 @@ class Tracklist {
       throw new Error('Missing required field: tracks')
     }
 
-    console.log('params', params)
-
     const requiredFields = [
       'artist',
       'title',
