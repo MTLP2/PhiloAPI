@@ -2,14 +2,15 @@ import { test } from '@japa/runner'
 import supertest from 'supertest'
 import Auth from 'App/Services/Auth'
 import DB from 'App/DB'
+import Env from '@ioc:Adonis/Core/Env'
 
 // Test user
-const userId = 82
+const userId = 38631
 // Production
 const productionId = 2139
 
 const token = Auth.getToken({ id: userId })
-const BASE_URL = 'http://127.0.0.1:3000'
+const BASE_URL = Env.get('API_URL')
 
 test.group('Production table information management', () => {
   //Create a table
@@ -41,8 +42,7 @@ test.group('Production table information management', () => {
     assert.equal(DBTable.col_index, 1)
     assert.isNotNull(DBTable.created_at)
     assert.isNotNull(DBTable.updated_at)
-
-    // supprimer l'entrée
+  }).teardown(async () => {
     await DB('production_option').where('production_id', productionId).delete()
   })
 
@@ -55,7 +55,6 @@ test.group('Production table information management', () => {
       row_index: 1,
       col_index: 1
     })
-    console.log(id)
 
     const payload = {
       id: productionId,
@@ -79,8 +78,7 @@ test.group('Production table information management', () => {
 
     const DBTable = await DB('production_option').where('production_id', productionId).first()
     assert.equal(DBTable.value, 'test3')
-
-    // supprimer l'entrée
+  }).teardown(async () => {
     await DB('production_option').where('production_id', productionId).delete()
   })
 
@@ -110,8 +108,7 @@ test.group('Production table information management', () => {
     const DBTable = await DB('production_option').where('production_id', productionId).first()
     assert.isNotNull(DBTable)
     assert.equal(DBTable.value, 'test4')
-
-    // supprimer l'entrée
+  }).teardown(async () => {
     await DB('production_option').where('production_id', productionId).delete()
   })
 
