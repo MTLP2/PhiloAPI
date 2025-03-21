@@ -2,7 +2,7 @@
 import { test } from '@japa/runner'
 import supertest from 'supertest'
 import Auth from 'App/Services/Auth'
-import DB from 'App/DB'
+import db from 'App/db3'
 import Env from '@ioc:Adonis/Core/Env'
 
 // Test user
@@ -46,24 +46,29 @@ test.group('Tracklist Routes', (group) => {
       .set('Authorization', `Bearer ${authToken}`)
       .send(payload)
 
-    const DBTable = await DB('production_track').where('production_id', productionId).first()
+    const dbTable = await db
+      .selectFrom('production_track')
+      .where('production_id', '=', productionId)
+      .selectAll()
+      .executeTakeFirst()
 
     assert.equal(response.status, 200)
-    assert.equal(DBTable.production_id, productionId)
-    assert.equal(DBTable.artist, 'Test Artist')
-    assert.equal(DBTable.title, 'Test Title')
-    assert.equal(DBTable.duration, 180)
-    assert.equal(DBTable.disc, 1)
-    assert.equal(DBTable.side, 'A')
-    assert.equal(DBTable.speed, 33)
-    assert.equal(DBTable.position, 1)
+    assert.isNotNull(dbTable, 'Aucune entrée trouvée dans la base de données')
+
+    if (dbTable) {
+      assert.equal(dbTable.production_id, productionId)
+      assert.equal(dbTable.artist, 'Test Artist')
+      assert.equal(dbTable.title, 'Test Title')
+      assert.equal(dbTable.duration, 180)
+      assert.equal(dbTable.disc, 1)
+      assert.equal(dbTable.side, 'A')
+      assert.equal(dbTable.speed, 33)
+      assert.equal(dbTable.position, 1)
+    }
     // We expect to receive an object { success: true }
     assert.deepEqual(response.body, { success: true })
-
-    // Get the created tracklist to get the id of a track
-    await DB('production_track').where('production_id', productionId).delete()
   }).teardown(async () => {
-    await DB('production_track').where('production_id', productionId).delete()
+    await db.deleteFrom('production_track').where('production_id', '=', productionId).execute()
   })
 
   // Add tests for invalid payloads
@@ -101,16 +106,21 @@ test.group('Tracklist Routes', (group) => {
   //Update track
   test('POST /tracklists => Update a track', async ({ assert }) => {
     // Create a track
-    const [createdTrackId] = await DB('production_track').insert({
-      artist: 'Test Artist',
-      title: 'Test Title',
-      duration: 180,
-      disc: 1,
-      side: 'A',
-      speed: 33,
-      position: 1,
-      production_id: productionId
-    })
+    const { insertId } = await db
+      .insertInto('production_track')
+      .values({
+        artist: 'Test Artist',
+        title: 'Test Title',
+        duration: 180,
+        disc: 1,
+        side: 'A',
+        speed: 33,
+        position: 1,
+        production_id: productionId
+      } as any)
+      .executeTakeFirst()
+
+    const createdTrackId = Number(insertId)
 
     const payload = {
       tracks: [
@@ -137,30 +147,42 @@ test.group('Tracklist Routes', (group) => {
     assert.deepEqual(response.body, { success: true })
 
     // Verify that the track has been updated
-    const DBTable = await DB('production_track').where('production_id', productionId).first()
-    assert.equal(DBTable.artist, 'Updated Artist')
-    assert.equal(DBTable.title, 'Updated Title')
-    assert.equal(DBTable.duration, 180)
-    assert.equal(DBTable.disc, 1)
-    assert.equal(DBTable.side, 'A')
-    assert.equal(DBTable.speed, 33)
-    assert.equal(DBTable.position, 1)
+    const dbTable = await db
+      .selectFrom('production_track')
+      .where('production_id', '=', productionId)
+      .selectAll()
+      .executeTakeFirst()
+
+    if (dbTable) {
+      assert.equal(dbTable.artist, 'Updated Artist')
+      assert.equal(dbTable.title, 'Updated Title')
+      assert.equal(dbTable.duration, 180)
+      assert.equal(dbTable.disc, 1)
+      assert.equal(dbTable.side, 'A')
+      assert.equal(dbTable.speed, 33)
+      assert.equal(dbTable.position, 1)
+    }
   }).teardown(async () => {
-    await DB('production_track').where('production_id', productionId).delete()
+    await db.deleteFrom('production_track').where('production_id', '=', productionId).execute()
   })
 
   test('GET /tracklists/:id => Get an existing tracklist', async ({ assert }) => {
     // Create a track
-    const [createdTrackId] = await DB('production_track').insert({
-      position: 1,
-      artist: 'Test Artist',
-      title: 'Test Title',
-      duration: 180,
-      disc: 1,
-      side: 'A',
-      speed: 33,
-      production_id: productionId
-    })
+    const { insertId } = await db
+      .insertInto('production_track')
+      .values({
+        position: 1,
+        artist: 'Test Artist',
+        title: 'Test Title',
+        duration: 180,
+        disc: 1,
+        side: 'A',
+        speed: 33,
+        production_id: productionId
+      } as any)
+      .executeTakeFirst()
+
+    const createdTrackId = Number(insertId)
 
     const response = await supertest(BASE_URL)
       .get(`/tracklists/${productionId}`)
@@ -171,21 +193,26 @@ test.group('Tracklist Routes', (group) => {
     assert.isArray(response.body)
     assert.equal(response.body[0].id, createdTrackId)
   }).teardown(async () => {
-    await DB('production_track').where('production_id', productionId).delete()
+    await db.deleteFrom('production_track').where('production_id', '=', productionId).execute()
   })
 
   test('DELETE /tracklists/:id => Delete the created tracklist', async ({ assert }) => {
     // Create a track
-    const [createdTrackId] = await DB('production_track').insert({
-      position: 1,
-      artist: 'Test Artist',
-      title: 'Test Title',
-      duration: 180,
-      disc: 1,
-      side: 'A',
-      speed: 33,
-      production_id: productionId
-    })
+    const { insertId } = await db
+      .insertInto('production_track')
+      .values({
+        position: 1,
+        artist: 'Test Artist',
+        title: 'Test Title',
+        duration: 180,
+        disc: 1,
+        side: 'A',
+        speed: 33,
+        production_id: productionId
+      } as any)
+      .executeTakeFirst()
+
+    const createdTrackId = Number(insertId)
 
     const response = await supertest(BASE_URL)
       .delete(`/tracklists/${createdTrackId}`)
@@ -198,7 +225,11 @@ test.group('Tracklist Routes', (group) => {
     assert.property(response.body, 'productionId')
 
     // Verify that the track has been deleted
-    const DBTable = await DB('production_track').where('production_id', productionId).first()
-    assert.isNull(DBTable)
+    const dbTable = await db
+      .selectFrom('production_track')
+      .where('production_id', '=', productionId)
+      .selectAll()
+      .executeTakeFirst()
+    assert.isUndefined(dbTable)
   })
 })
