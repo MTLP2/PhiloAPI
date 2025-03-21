@@ -6,7 +6,7 @@ import DB from 'App/DB'
 // Test user
 const userId = 82
 // Production
-const productionId = 3205
+const productionId = 2139
 
 const token = Auth.getToken({ id: userId })
 const BASE_URL = 'http://127.0.0.1:3000'
@@ -20,8 +20,8 @@ test.group('Production table information management', () => {
         {
           value: 'test',
           production_id: productionId,
-          rowIndex: 1,
-          colIndex: 1
+          row_index: 1,
+          col_index: 1
         }
       ]
     }
@@ -37,8 +37,8 @@ test.group('Production table information management', () => {
 
     assert.equal(DBTable.value, 'test')
     assert.equal(DBTable.production_id, productionId)
-    assert.equal(DBTable.rowIndex, 1)
-    assert.equal(DBTable.colIndex, 1)
+    assert.equal(DBTable.row_index, 1)
+    assert.equal(DBTable.col_index, 1)
     assert.isNotNull(DBTable.created_at)
     assert.isNotNull(DBTable.updated_at)
 
@@ -52,8 +52,8 @@ test.group('Production table information management', () => {
     const [id] = await DB('production_option').insert({
       value: 'test2',
       production_id: productionId,
-      rowIndex: 1,
-      colIndex: 1
+      row_index: 1,
+      col_index: 1
     })
     console.log(id)
 
@@ -64,8 +64,8 @@ test.group('Production table information management', () => {
           id: id,
           value: 'test3',
           production_id: productionId,
-          rowIndex: 1,
-          colIndex: 1
+          row_index: 1,
+          col_index: 1
         }
       ]
     }
@@ -90,8 +90,8 @@ test.group('Production table information management', () => {
     await DB('production_option').insert({
       value: 'test4',
       production_id: productionId,
-      rowIndex: 1,
-      colIndex: 1
+      row_index: 1,
+      col_index: 1
     })
 
     const payload = {
@@ -121,8 +121,8 @@ test.group('Production table information management', () => {
     const [id] = await DB('production_option').insert({
       value: 'test5',
       production_id: productionId,
-      rowIndex: 1,
-      colIndex: 1
+      row_index: 1,
+      col_index: 1
     })
 
     const payload = {
@@ -132,8 +132,8 @@ test.group('Production table information management', () => {
           id: id,
           value: '',
           production_id: productionId,
-          rowIndex: 1,
-          colIndex: 1
+          row_index: 1,
+          col_index: 1
         }
       ]
     }
