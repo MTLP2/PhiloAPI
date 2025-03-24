@@ -132,7 +132,6 @@ class Production {
       }
     }
 
-    console.log('selects', selects)
     params.query.select(...selects)
 
     if (!params.sort) {
@@ -141,7 +140,6 @@ class Production {
     }
 
     const res: any = await Utils.getRows(params)
-    console.log('res', res)
     res.stats = await Production.getStats()
     return res
   }
