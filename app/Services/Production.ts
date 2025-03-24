@@ -889,7 +889,8 @@ class Production {
         // barcode: params.barcode,
         barcode_location: params.barcode_location,
         barcode_creation: params.barcode_creation,
-        catnumber_creation: params.catnumber_creation
+        catnumber_creation: params.catnumber_creation,
+        consent: params.consent
       })
 
       const product = await DB('project_product')
