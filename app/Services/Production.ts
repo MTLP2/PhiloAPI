@@ -47,6 +47,7 @@ class Production {
         'project.country_id',
         'project.cat_number',
         'user.name as user',
+        'user.id as user_id',
         'vod.com_id',
         'com.name as com_name'
       ]
@@ -131,6 +132,7 @@ class Production {
       }
     }
 
+    console.log('selects', selects)
     params.query.select(...selects)
 
     if (!params.sort) {
@@ -139,6 +141,7 @@ class Production {
     }
 
     const res: any = await Utils.getRows(params)
+    console.log('res', res)
     res.stats = await Production.getStats()
     return res
   }
