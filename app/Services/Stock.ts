@@ -535,6 +535,7 @@ class Stock {
     preorder: boolean
     sizes?: { [key: string]: string } | string
     quantity: number
+    comment?: string
     transporter: string
   }) {
     const pp = await DB('project_product')
@@ -595,7 +596,7 @@ class Stock {
             old: { quantity: stock.quantity + params.quantity },
             new: { quantity: stock.quantity }
           }),
-          comment: 'order',
+          comment: params.comment || 'order',
           order_id: params.order_id
         })
       }
@@ -619,7 +620,7 @@ class Stock {
               old: { quantity: stock.quantity + params.quantity },
               new: { quantity: stock.quantity }
             }),
-            comment: 'order',
+            comment: params.comment || 'order',
             order_id: params.order_id
           })
         }
