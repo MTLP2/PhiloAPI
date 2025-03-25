@@ -831,7 +831,7 @@ class Cart {
           shop.shipping = shipping.tracking
           shop.original_shipping = shipping.original_tracking
         } else if (
-          p.shipping_type === 'no_tracking' &&
+          ((!shipping.standard && !shipping.tracking) || p.shipping_type === 'no_tracking') &&
           shipping.no_tracking !== null &&
           (shipping.no_tracking > 0 || shippingDiscount > 0)
         ) {
@@ -1300,7 +1300,7 @@ class Cart {
 
       ship.standard2 = ship.standard
 
-      if (!ship.standard) {
+      if (!ship.standard && !ship.tracking && !ship.no_tracking) {
         continue
       }
       if (
