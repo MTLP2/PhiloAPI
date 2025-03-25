@@ -226,6 +226,7 @@ class App {
     try {
       await App.checkNotifications()
       await Cart.checkIncompleteCart()
+      await Cart.releaseImcompleteOrders()
       await Invoices.setNumbers()
       await Project.deleteDownload()
       await Vod.checkCampaignStart()
