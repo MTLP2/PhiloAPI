@@ -2,81 +2,121 @@ import request from 'request'
 import Utils from 'App/Utils'
 
 class ChargeTest {
-  static test = async (params: { number: number; time: number }) => {
+  static createOrders = async (params: { number: number; sleep: number }) => {
     const start = new Date()
     let ok = 0
     console.info(`🚀 Test starting => ${params.number} times`)
 
+    const payload = {
+      shops: {
+        s_295102_323490: {
+          id: '295102_323490',
+          type: 'vod',
+          shipping_type: 'standard',
+          items: [{ project_id: 323490, quantity: 1, chosen_sizes: {} }]
+        }
+      },
+      boxes: [],
+      save: true,
+      currency: 'EUR',
+      customer: {
+        id: 939,
+        type: 'individual',
+        name: null,
+        firstname: 'Victor',
+        lastname: 'Périn',
+        address: '130 Rue de Montreuil',
+        address2: null,
+        country_id: 'KR',
+        state: null,
+        zip_code: '93100',
+        city: 'Vincennes',
+        phone: '0652771362',
+        email: null,
+        birthday: null,
+        ssn: null,
+        ssn_last_4: null,
+        tax_id: null,
+        registration_number: null,
+        eori_number: null,
+        tax_intra: null,
+        vat_rate: null,
+        email_paypal: null,
+        lat: null,
+        lng: null,
+        created_at: '2016-07-29 03:33:49',
+        updated_at: '2016-07-29 03:33:49'
+      },
+      is_gift: false,
+      id: null,
+      country_id: 'KR',
+      pickup: null,
+      promo_code: null,
+      new_price: false,
+      payment_type: 'stripe',
+      email: '',
+      lang: 'fr',
+      newsletter: false,
+      origin: 'DI',
+      location: {
+        ip_address: '86.246.77.205',
+        city: 'Villejuif',
+        city_geoname_id: 2968705,
+        region: 'Île-de-France',
+        region_iso_code: 'IDF',
+        region_geoname_id: 3012874,
+        postal_code: '94800',
+        country: 'France',
+        country_code: 'FR',
+        country_geoname_id: 3017382,
+        country_is_eu: true,
+        continent: 'Europe',
+        continent_code: 'EU',
+        continent_geoname_id: 6255148,
+        longitude: 2.3572,
+        latitude: 48.7918,
+        security: { is_vpn: false },
+        timezone: {
+          name: 'Europe/Paris',
+          abbreviation: 'CET',
+          gmt_offset: 1,
+          current_time: '10:06:11',
+          is_dst: false
+        },
+        flag: {
+          emoji: '🇫🇷',
+          unicode: 'U+1F1EB U+1F1F7',
+          png: 'https://static.abstractapi.com/country-flags/FR_flag.png',
+          svg: 'https://static.abstractapi.com/country-flags/FR_flag.svg'
+        },
+        currency: { currency_name: 'Euros', currency_code: 'EUR' },
+        connection: {
+          autonomous_system_number: 3215,
+          autonomous_system_organization: 'Orange',
+          connection_type: null,
+          isp_name: null,
+          organization_name: null
+        }
+      }
+    }
+
     const request = async (i) => {
       const id = Utils.randomString(10, '#aA')
       const res: any = await ChargeTest.fetch({
-        url: 'http://localhost:3000/cart/pay',
+        url: 'http://127.0.0.1:3000/cart/null/create',
         method: 'POST',
         token:
-          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ODIsInVzZXJfaWQiOjgyLCJpYXQiOjE2OTUwNDA5ODh9.393dJ8jF_QTb7tnIeYAwFBNFZ0rHO_okwybU9RnVUDo',
-        body: {
-          'shops': {
-            s_133368_294572: { id: '133368_294572', type: 'vod', shipping_type: 'standard' }
-          },
-          'shop_133368_294572.items': [{ project_id: 294572, quantity: 1, chosen_sizes: {} }],
-          'tips': 0,
-          'save': true,
-          'currency': 'USD',
-          'customer': {
-            id: 939,
-            type: 'individual',
-            name: null,
-            firstname: 'Victor',
-            lastname: 'Périn',
-            address: '130 Rue de Montreuil',
-            country_id: 'FR',
-            state: 'Aquitaine',
-            zip_code: '93100',
-            city: 'Vincennes',
-            phone: '0652771362',
-            email: null,
-            birthday: null,
-            ssn: null,
-            ssn_last_4: null,
-            tax_id: null,
-            registration_number: null,
-            eori_number: null,
-            tax_intra: null,
-            vat_rate: null,
-            email_paypal: null,
-            lat: null,
-            lng: null,
-            created_at: '2016-07-29 03:33:49',
-            updated_at: '2016-07-29 03:33:49'
-          },
-          'country_id': 'FR',
-          'pickup': null,
-          'promo_code': null,
-          'id': id,
-          'payment_type': 'stripe',
-          'card': {
-            type: 'customer',
-            card: 'card_1M3zvYI9IBXKG0Mz5xsBT5nk',
-            customer: 'cus_KJiRI5dzm4Ll1C',
-            new: false
-          },
-          'email': '',
-          'lang': 'en',
-          'newsletter': false,
-          'origin': 'DI',
-          'cart_id': id
-        }
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ODIsInVzZXJfaWQiOjgyLCJpYXQiOjE3NDI4OTg2NDV9.z2h0ZZFozOXljWdSIFT4wUWE8LJ3HJcH0F5uzTKbbL8',
+        body: payload
       })
+      console.log(res)
       if (res.code) ok++
     }
 
-    const perSeconds = Math.ceil(params.number / params.time)
-    for (let s = 1; s <= params.time; s++) {
+    for (let s = 1; s <= params.number; s++) {
       console.info('----------> ', s)
-      for (let q = 1; q <= perSeconds; q++) {
-        request(s * q)
-      }
-      await ChargeTest.sleep(1000)
+      request(s)
+      await ChargeTest.sleep(params.sleep)
     }
 
     const end = new Date()
