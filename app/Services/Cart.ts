@@ -1612,6 +1612,7 @@ class Cart {
         total: calculate.total,
         origin: params.origin,
         is_gift: params.is_gift,
+        qty_reserved: true,
         user_agent: JSON.stringify(params.user_agent),
         location: params.location
           ? JSON.stringify({
@@ -1747,6 +1748,22 @@ class Cart {
           })
 
           shop.items.push(i)
+
+          let sizes
+          try {
+            sizes = JSON.parse(item.size)
+          } catch (error) {
+            sizes = item.size
+          }
+
+          await Stock.changeQtyProject({
+            project_id: item.project_id,
+            order_id: order.id,
+            sizes: sizes,
+            preorder: shop.type === 'vod',
+            quantity: item.quantity,
+            transporter: shop.transporter
+          })
         }
 
         order.shops.push(shop)
@@ -1777,6 +1794,44 @@ class Cart {
     }
 
     return order
+  }
+
+  static releaseImcompleteOrders = async () => {
+    const orders = await DB('order')
+      .select(
+        'order.id',
+        'order_shop.id as order_shop_id',
+        'order_shop.type',
+        'order_shop.transporter'
+      )
+      .whereIn('order.status', ['creating', 'incomplete', 'failed'])
+      .where('qty_reserved', true)
+      .join('order_shop', 'order_shop.order_id', 'order.id')
+      .where((query) => {
+        query.where('order.status', 'failed')
+        query.orWhereRaw('order.created_at < DATE_SUB(NOW(), INTERVAL 10 MINUTE)')
+      })
+      .all()
+
+    for (const order of orders) {
+      const items = await DB('order_item').where('order_shop_id', order.order_shop_id).all()
+      for (const item of items) {
+        await Stock.changeQtyProject({
+          project_id: item.project_id,
+          order_id: order.id,
+          quantity: -item.quantity,
+          preorder: order.type === 'vod',
+          comment: 'order_release',
+          transporter: order.transporter
+        })
+      }
+
+      await DB('order').where('id', order.id).update({
+        qty_reserved: false
+      })
+    }
+
+    return { success: true }
   }
 
   static create = async (params: {
@@ -2341,26 +2396,6 @@ class Cart {
             i.stock = i.stock - item.quantity
             i.updated_at = Utils.date()
             await i.save()
-          }
-
-          let sizes
-          try {
-            sizes = JSON.parse(item.size)
-          } catch (error) {
-            sizes = item.size
-          }
-
-          if (shop.type === 'vod') {
-            await Stock.changeQtyProject({
-              project_id: project.id,
-              order_id: order.id,
-              sizes: sizes,
-              preorder: shop.type === 'vod',
-              quantity: item.quantity,
-              transporter: shop.transporter
-            })
-          } else {
-            Project.countSales(project.id).then(() => {})
           }
         }
       }
