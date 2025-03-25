@@ -3502,6 +3502,7 @@ class Admin {
       where invoice.date between '${params.start}' and '${params.end} 23:59'
       AND invoice.project_id = vod.project_id
       and vod.type = 'direct_pressing'
+      AND compatibility = 1
     `
     if (!admin.includes(params.user_id)) {
       query += `AND vod.com_id = '${params.user_id}' `
