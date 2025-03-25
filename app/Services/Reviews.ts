@@ -205,16 +205,16 @@ class Reviews {
 
     // Admin must choose a lang and put translation if is_visible is 1|public
     if (params.is_visible === 1 && ((!params.lang && !review.lang) || !params.title_trad))
-      throw new Error('You must choose a language and translate the review if review is public.')
+      return { error: 'You must choose a language and translate the review if review is public.' }
 
     // A project can only have one is_starred
     if (params.is_starred === 1) {
       if (params.is_visible !== 1) {
-        throw new Error('A starred project can only be approved')
+        return { error: 'A starred project can only be approved' }
       }
 
       if (!params.lang) {
-        throw new Error('A starred project must have a language')
+        return { error: 'A starred project must have a language' }
       }
 
       // Update all reviews linked to this project with same lang to 0
