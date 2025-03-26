@@ -886,12 +886,17 @@ class Production {
     await item.save()
 
     if (params.type === 'information' && params.barcode_creation !== undefined) {
+      if (params.surcharge_amount) {
+        await DB('production').where('project_id', prod.project_id).update({
+          surcharge_amount: params.surcharge_amount
+        })
+      }
+
       await DB('vod').where('project_id', prod.project_id).update({
         // barcode: params.barcode,
         barcode_location: params.barcode_location,
         barcode_creation: params.barcode_creation,
-        catnumber_creation: params.catnumber_creation,
-        consent: params.consent
+        catnumber_creation: params.catnumber_creation
       })
 
       const product = await DB('project_product')
