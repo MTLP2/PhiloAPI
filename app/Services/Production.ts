@@ -47,6 +47,7 @@ class Production {
         'project.country_id',
         'project.cat_number',
         'user.name as user',
+        'user.id as user_id',
         'vod.com_id',
         'com.name as com_name'
       ]
