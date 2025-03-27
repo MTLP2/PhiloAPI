@@ -193,6 +193,12 @@ class Production {
       },
       {
         category: 'preprod',
+        type: 'barcode',
+        action: 'file',
+        for: 'artist'
+      },
+      {
+        category: 'preprod',
         type: 'artwork',
         action: 'file',
         for: 'artist'
