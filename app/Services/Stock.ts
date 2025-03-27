@@ -705,6 +705,7 @@ class Stock {
     user_id: number
     file: string
     type: string
+    date: string
     distributor: string
     barcode: string
     quantity: string
@@ -737,6 +738,42 @@ class Stock {
       .where('is_preorder', false)
       .all()
 
+    /**
+    const histroyExisting = await DB('stock_historic')
+      .where('type', params.distributor)
+      .where('is_preorder', false)
+      .where('created_at', '>=', params.date)
+      .orderBy('created_at', 'asc')
+      .where('product_id', 60819)
+      .all()
+
+    console.log(histroyExisting)
+
+    const existingWithHistroy = {}
+    for (const h of histroyExisting) {
+      if (existingWithHistroy[h.product_id] !== undefined) {
+        continue
+      }
+      const data = JSON.parse(h.data)
+      existingWithHistroy[h.product_id] = data.old.quantity
+
+      if (data.old.quantity === 0) {
+        existing.splice(
+          existing.findIndex((p) => p.product_id === h.product_id),
+          1
+        )
+      }
+    }
+    for (const stock of existing) {
+      if (existingWithHistroy[stock.product_id] !== undefined) {
+        const idx = existing.findIndex((p) => p.product_id === stock.product_id)
+        if (idx > -1) {
+          existing[idx].checked = true
+        }
+      }
+    }
+    **/
+
     const products = await DB('product')
       .select('product.id', 'name', 'product.type', 'product.barcode', 'catnumber')
       .whereIn(
@@ -761,30 +798,30 @@ class Stock {
       }
     }
 
+    const tt = existing.find((s) => s.product_id === 60819)
+    console.log(tt)
+
     if (params.type === 'save') {
       const update = async () => {
         for (const stock of stocks) {
           if (stock.product) {
-            await Stock.save({
+            await Stock.updateStockAtDate({
               product_id: stock.product.id,
               type: params.distributor,
-              quantity: stock.quantity,
-              comment: 'upload',
-              user_id: params.user_id,
-              is_distrib: true
+              date: params.date,
+              quantity: stock.quantity
             })
           }
         }
 
         for (const stock of existing.filter((s) => !s.checked)) {
-          await Stock.save({
+          console.log('not_found', stock.product_id)
+          await Stock.updateStockAtDate({
             product_id: stock.product_id,
             type: params.distributor,
-            quantity: 0,
+            date: params.date,
             comment: 'upload_not_found',
-            user_id: params.user_id,
-            is_preorder: false,
-            is_distrib: true
+            quantity: 0
           })
         }
 
@@ -877,6 +914,7 @@ class Stock {
         DB.raw('distinct product.id'),
         'product.name',
         'product.barcode',
+        'product.type as product_type',
         'vod.type',
         'vod.unit_cost',
         'vod.is_licence',
@@ -917,7 +955,6 @@ class Stock {
       .whereNotNull('product_id')
       .where('type', '!=', 'preorder')
       .orderBy('created_at', 'desc')
-      .where('type', 'fnac')
       .whereIn(
         'product_id',
         refs.map((r) => r.id)
@@ -932,7 +969,6 @@ class Stock {
       if (hh[h.product_id][h.type] !== undefined) {
         continue
       }
-      console.log(h)
       const data = JSON.parse(h.data)
       hh[h.product_id][h.type] = data.new.quantity
     }
@@ -970,6 +1006,7 @@ class Stock {
       { header: 'Barcode', key: 'barcode', width: 16 },
       { header: 'Name', key: 'name', width: 30 },
       { header: 'Type', key: 'type', width: 15 },
+      { header: 'Category', key: 'product_type', width: 15 },
       { header: 'Licence', key: 'is_licence', width: 7 },
       { header: 'Date prod', key: 'date_prod', width: 12 },
       { header: 'Date export', key: 'date_export', width: 12 }
@@ -983,10 +1020,6 @@ class Stock {
     columns.push({ header: 'Unit cost', key: 'unit_cost', width: 7 })
     columns.push({ header: 'Price stock', key: 'price_stock', width: 7 })
 
-    console.info(
-      'quantity =>',
-      refs.reduce((prev: number, current: any) => prev + current.quantity, 0)
-    )
     return Utils.arrayToXlsx([
       {
         columns: columns,
@@ -1285,6 +1318,7 @@ shipehype
     date: string
     type: string
     quantity: number
+    comment?: string
   }) => {
     const historic = await DB('stock_historic')
       .where('product_id', params.product_id)
@@ -1308,7 +1342,6 @@ shipehype
       if (historic[h - 1]) {
         const data = JSON.parse(historic[h - 1].data)
         data.old.quantity = params.quantity
-        console.log(historic[h - 1].id)
         await DB('stock_historic')
           .where('id', historic[h - 1].id)
           .update({
@@ -1342,7 +1375,6 @@ shipehype
       const data = JSON.parse(hh.data)
       if (date === params.date) {
         data.new.quantity = params.quantity
-        console.log(hh.id)
         await DB('stock_historic')
           .where('id', hh.id)
           .update({
@@ -1355,7 +1387,7 @@ shipehype
           product_id: hh.product_id,
           type: hh.type,
           data: JSON.stringify(data),
-          comment: 'update_old',
+          comment: params.comment || 'update_old',
           is_preorder: false,
           created_at: `${params.date} 00:00:00`,
           updated_at: Utils.date()
