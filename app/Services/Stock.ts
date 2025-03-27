@@ -108,7 +108,7 @@ class Stock {
       .select('stock_historic.*', 'user.name')
       .leftJoin('user', 'user.id', 'stock_historic.user_id')
       .whereIn('product_id', ids)
-      .orderBy('id', 'desc')
+      .orderBy('created_at', 'desc')
       .where(
         'stock_historic.created_at',
         '>',
@@ -1185,6 +1185,180 @@ class Stock {
         is_preorder: false,
         quantity: 0
       })
+    }
+  }
+
+  static async updateOldStocks() {
+    const pp = {}
+    const bb = new Excel.Workbook()
+    await bb.xlsx.readFile('./resources/stock_bb.xlsx')
+    let worksheet = bb.getWorksheet('Feuil1')
+    worksheet.eachRow((row, rowNumber) => {
+      if (rowNumber < 2) {
+        return
+      }
+      let barcode = row.getCell('A').text
+      if (barcode.length === 12) {
+        barcode = '0' + barcode
+      }
+      pp[barcode] = {
+        bigblue: row.getCell('B').text
+      }
+    })
+
+    await bb.xlsx.readFile('./resources/stock_distrib.xlsx')
+    worksheet = bb.getWorksheet('Sheet1')
+    worksheet.eachRow((row, rowNumber) => {
+      if (rowNumber < 2) {
+        return
+      }
+
+      let barcode = row.getCell('B').text
+      if (barcode.length === 12) {
+        barcode = '0' + barcode
+      }
+      pp[barcode] = {
+        [row.getCell('A').text]: row.getCell('C').text
+      }
+    })
+
+    const products = await DB('product')
+      .select('id', 'barcode')
+      .whereIn('barcode', Object.keys(pp))
+      .all()
+
+    for (const product of products) {
+      pp[product.barcode].id = product.id
+    }
+
+    const historic = await DB('stock_historic')
+      .select('stock_historic.*')
+      .whereIn(
+        'product_id',
+        products.map((p) => p.id)
+      )
+      .where('is_preorder', false)
+      .where('created_at', '<', '2025-01-01')
+      .orderBy('created_at', 'desc')
+      .all()
+
+    for (const barcode of Object.keys(pp)) {
+      const product = pp[barcode]
+
+      for (const type of Object.keys(product)) {
+        if (type === 'id') {
+          continue
+        }
+
+        const h = historic.filter((h) => h.product_id === product.id && h.type === type)
+
+        if (h.length === 0) {
+          continue
+        }
+
+        const data = JSON.parse(h[0].data)
+        pp[barcode][`${type}_old`] = data.new.quantity
+
+        const diff = Math.abs(pp[barcode][`${type}_old`] - pp[barcode][type])
+        if (diff >= 1) {
+          /**
+          await Stock.updateStockAtDate({
+            product_id: pp[barcode].id,
+            date: '2024-12-15',
+            type: type,
+            quantity: pp[barcode][type]
+          })
+          **/
+          console.log(pp[barcode][`${type}_old`], pp[barcode][type])
+          console.log(pp[barcode].id, type, diff)
+          return
+        }
+      }
+    }
+  }
+
+  static updateStockAtDate = async (params: {
+    product_id: number
+    date: string
+    type: string
+    quantity: number
+  }) => {
+    const historic = await DB('stock_historic')
+      .where('product_id', params.product_id)
+      .where('type', params.type)
+      .where('is_preorder', false)
+      .orderBy('created_at', 'desc')
+      .all()
+
+    if (!historic) {
+      return
+    }
+
+    for (const h in historic) {
+      const hh = historic[h]
+      const date = hh.created_at.substring(0, 10)
+      if (date > params.date) {
+        continue
+      }
+
+      let isNew = false
+      if (historic[h - 1]) {
+        const data = JSON.parse(historic[h - 1].data)
+        data.old.quantity = params.quantity
+        console.log(historic[h - 1].id)
+        await DB('stock_historic')
+          .where('id', historic[h - 1].id)
+          .update({
+            data: JSON.stringify(data)
+          })
+      } else {
+        const stock = await DB('stock')
+          .where('product_id', hh.product_id)
+          .where('type', hh.type)
+          .where('is_preorder', false)
+          .first()
+
+        if (stock) {
+          await DB('stock').where('id', stock.id).update({
+            quantity: params.quantity,
+            updated_at: Utils.date()
+          })
+        } else {
+          isNew = true
+          await DB('stock').insert({
+            product_id: hh.product_id,
+            type: hh.type,
+            quantity: params.quantity,
+            is_preorder: false,
+            created_at: Utils.date(),
+            updated_at: Utils.date()
+          })
+        }
+      }
+
+      const data = JSON.parse(hh.data)
+      if (date === params.date) {
+        data.new.quantity = params.quantity
+        console.log(hh.id)
+        await DB('stock_historic')
+          .where('id', hh.id)
+          .update({
+            data: JSON.stringify(data)
+          })
+      } else {
+        data.old.quantity = data.new.quantity
+        data.new.quantity = params.quantity
+        await DB('stock_historic').insert({
+          product_id: hh.product_id,
+          type: hh.type,
+          data: JSON.stringify(data),
+          comment: 'update_old',
+          is_preorder: false,
+          created_at: `${params.date} 00:00:00`,
+          updated_at: Utils.date()
+        })
+      }
+      break
     }
   }
 }
