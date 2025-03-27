@@ -181,6 +181,8 @@ class Artwork {
         await Artwork.generateSleeve(uid, project.sleeve, project.nb_vinyl)
       }
 
+      // await Artwork.generatePreview(project)
+
       return { success: true, picture: uid }
     } catch (e) {
       return {
@@ -577,6 +579,123 @@ class Artwork {
 
     return true
   }
+
+  static async generatePreview(params: { path: string; type: string; nb?: number }) {
+    const path = `projects/${params.path}`
+
+    const composite: any[] = []
+    const bg = await Storage.get(
+      params.type === 'cd'
+        ? 'assets/images/vinyl/background_cd.png'
+        : 'assets/images/vinyl/background_cover2.png'
+    )
+
+    const img =
+      params.type === 'test_pressing'
+        ? await Storage.get('assets/images/vinyl/test_pressing/test_pressing.png')
+        : params.type === 'discobag'
+        ? await Storage.get('assets/images/vinyl/discobag_black.png')
+        : await Storage.get(`${path}/original.jpg`)
+
+    if (!img) {
+      return false
+    }
+    const cover = await sharp(img).resize({ width: 602, height: 602 }).toBuffer()
+
+    if (params.type !== 'cd') {
+      let vinylBuffer = await Storage.get(`${path}/only_vinyl.png`)
+      if (!vinylBuffer) {
+        vinylBuffer = await Artwork.generateVinyl(params.path, {})
+      }
+      const vinyl = await sharp(vinylBuffer).toBuffer()
+
+      composite.push({
+        input: vinyl,
+        left: 440,
+        top: 225
+      })
+
+      if (params.nb === 2) {
+        composite.push({
+          input: vinyl,
+          left: 480,
+          top: 225
+        })
+      }
+    }
+
+    composite.push({
+      input: cover,
+      left: 35,
+      top: 220
+    })
+
+    const buffer = await sharp(bg)
+      .extract({
+        top: 10,
+        left: 200,
+        width: 1050,
+        height: 680
+      })
+      .extend({
+        top: 185,
+        bottom: 185,
+        background: { r: 100, g: 100, b: 100, alpha: 0 } // Transparent
+      })
+      .composite(composite)
+      .toBuffer()
+
+    Storage.uploadImage(`${path}/preview`, buffer, { type: 'png' })
+
+    return buffer
+  }
+
+  /**
+  static async generatePreview(params: { picture: string; picture_project?: string }) {
+    let image: Buffer | null
+    if (params.picture_project) {
+      image = await Storage.get(`projects/${params.picture}/${params.picture_project}`)
+    } else {
+      image = await Storage.get(`projects/${params.picture}/vinyl.png`)
+    }
+
+    if (!image) {
+      return false
+    }
+
+    console.log(params)
+    const buffer = await sharp(image)
+      .extract({
+        top: 10,
+        left: 180,
+        width: 1100,
+        height: 680
+      })
+      // .resize(200, 200)
+      /**
+      .extend({
+        top: 165,
+        bottom: 145,
+        right: 100,
+        left: 0,
+        background: { r: 100, g: 100, b: 100, alpha: 0 } // Transparent
+      })
+      **/
+  /**
+      .resize({
+        width: 700,
+        height: 490,
+        fit: 'cover'
+      })
+      **/
+  /**
+      .toBuffer()
+
+    await Storage.uploadImage(`projects/${params.picture}/preview2`, buffer, { type: 'png' })
+
+    return true
+  }
+  **/
 
   static async generateSleeve(id, type, nb?) {
     const path = `projects/${id}`
