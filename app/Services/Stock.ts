@@ -911,11 +911,17 @@ class Stock {
     }
     refs = Object.values(products)
 
+    const date = (params.end || new Date().toISOString().split('T')[0]) + ' 23:59:59'
     const his = await DB('stock_historic')
-      .where('created_at', '>', params.end)
+      .where('created_at', '<=', date)
       .whereNotNull('product_id')
       .where('type', '!=', 'preorder')
       .orderBy('created_at', 'desc')
+      .where('type', 'fnac')
+      .whereIn(
+        'product_id',
+        refs.map((r) => r.id)
+      )
       .all()
 
     const hh = {}
@@ -923,43 +929,30 @@ class Stock {
       if (!hh[h.product_id]) {
         hh[h.product_id] = {}
       }
-      if (!hh[h.product_id][h.type]) {
-        hh[h.product_id][h.type] = []
+      if (hh[h.product_id][h.type] !== undefined) {
+        continue
       }
-      hh[h.product_id][h.type].push(h)
+      console.log(h)
+      const data = JSON.parse(h.data)
+      hh[h.product_id][h.type] = data.new.quantity
     }
 
     const logisitians = {
-      daudin: true,
       whiplash: true,
       whiplash_uk: true,
-      bigblue: true
+      bigblue: true,
+      cbip: true
     }
 
     for (const i in refs) {
       refs[i].quantity = 0
 
-      if (!refs[i].stock.find((s) => s.type === 'daudin')) {
-        refs[i].stock.push({
-          type: 'daudin',
-          product_id: refs[i].id,
-          is_preorder: false,
-          quantity: 0
-        })
-        logisitians.daudin = true
-      }
       for (const stock of refs[i].stock) {
         if (stock.type === 'preorder' || stock.is_preorder) {
           continue
         }
-        if (hh[stock.product_id] && hh[stock.product_id][stock.type]) {
-          for (const h of hh[stock.product_id][stock.type]) {
-            if (h.type === 'preorder' || h.is_preorder) {
-              continue
-            }
-            const d = JSON.parse(h.data)
-            stock.quantity = d.old.quantity
-          }
+        if (hh[stock.product_id] && hh[stock.product_id][stock.type] !== undefined) {
+          stock.quantity = hh[stock.product_id][stock.type]
         }
         if (stock.quantity > 0) {
           logisitians[stock.type] = true
@@ -1250,6 +1243,17 @@ class Stock {
           continue
         }
 
+        /**
+         * 
+         * 
+terminal
+mgm
+lite
+sna
+test artiste
+shipehype
+         */
+
         const h = historic.filter((h) => h.product_id === product.id && h.type === type)
 
         if (h.length === 0) {
@@ -1264,14 +1268,13 @@ class Stock {
           /**
           await Stock.updateStockAtDate({
             product_id: pp[barcode].id,
-            date: '2024-12-15',
+            date: '2024-12-31',
             type: type,
             quantity: pp[barcode][type]
           })
           **/
           console.log(pp[barcode][`${type}_old`], pp[barcode][type])
           console.log(pp[barcode].id, type, diff)
-          return
         }
       }
     }
