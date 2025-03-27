@@ -53,7 +53,7 @@ class S3 {
     })
   }
 
-  static async get(path: string, isPrivate: boolean = false) {
+  static async get(path: string, isPrivate: boolean = false): Promise<Buffer | null> {
     return new Promise((resolve, reject) => {
       s3.getObject(
         {
@@ -64,7 +64,7 @@ class S3 {
           if (err) {
             resolve(null)
           } else {
-            resolve(data.Body)
+            resolve(data.Body as Buffer)
           }
         }
       )
