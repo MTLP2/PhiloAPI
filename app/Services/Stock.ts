@@ -970,7 +970,7 @@ class Stock {
         continue
       }
       const data = JSON.parse(h.data)
-      hh[h.product_id][h.type] = data.new.quantity
+      hh[h.product_id][h.type] = +data.new.quantity
     }
 
     const logisitians = {
@@ -1276,17 +1276,6 @@ class Stock {
           continue
         }
 
-        /**
-         * 
-         * 
-terminal
-mgm
-lite
-sna
-test artiste
-shipehype
-         */
-
         const h = historic.filter((h) => h.product_id === product.id && h.type === type)
 
         if (h.length === 0) {
@@ -1381,8 +1370,8 @@ shipehype
             data: JSON.stringify(data)
           })
       } else {
-        data.old.quantity = data.new.quantity
-        data.new.quantity = params.quantity
+        data.old.quantity = parseInt(data.new.quantity)
+        data.new.quantity = parseInt(params.quantity.toString())
         await DB('stock_historic').insert({
           product_id: hh.product_id,
           type: hh.type,
