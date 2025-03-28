@@ -962,6 +962,8 @@ class Stock {
       )
       .all()
 
+    console.log(his)
+
     const hh = {}
     for (const h of his) {
       if (!hh[h.product_id]) {
@@ -972,6 +974,7 @@ class Stock {
       }
       const data = JSON.parse(h.data)
       hh[h.product_id][h.type] = +data.new.quantity
+      hh[h.product_id][`${h.type}_check`] = +data.new.quantity
     }
 
     const logisitians = {
@@ -991,7 +994,7 @@ class Stock {
         if (hh[stock.product_id] && hh[stock.product_id][stock.type] !== undefined) {
           stock.quantity = hh[stock.product_id][stock.type]
         }
-        if (stock.quantity > 0) {
+        if (stock.quantity > 0 && hh[stock.product_id]?.[`${stock.type}_check`] !== undefined) {
           logisitians[stock.type] = true
           refs[i][stock.type] = stock.quantity
           refs[i].quantity += stock.quantity
@@ -1218,6 +1221,8 @@ class Stock {
   static async updateOldStocks() {
     const pp = {}
     const bb = new Excel.Workbook()
+
+    /**
     await bb.xlsx.readFile('./resources/stock_bb.xlsx')
     let worksheet = bb.getWorksheet('Feuil1')
     worksheet.eachRow((row, rowNumber) => {
@@ -1232,9 +1237,10 @@ class Stock {
         bigblue: row.getCell('B').text
       }
     })
+    **/
 
     await bb.xlsx.readFile('./resources/stock_distrib.xlsx')
-    worksheet = bb.getWorksheet('Sheet1')
+    const worksheet = bb.getWorksheet('Sheet1')
     worksheet.eachRow((row, rowNumber) => {
       if (rowNumber < 2) {
         return
@@ -1244,9 +1250,10 @@ class Stock {
       if (barcode.length === 12) {
         barcode = '0' + barcode
       }
-      pp[barcode] = {
-        [row.getCell('A').text]: row.getCell('C').text
+      if (!pp[barcode]) {
+        pp[barcode] = {}
       }
+      pp[barcode][row.getCell('A').text] = row.getCell('C').text
     })
 
     const products = await DB('product')
@@ -1288,16 +1295,15 @@ class Stock {
 
         const diff = Math.abs(pp[barcode][`${type}_old`] - pp[barcode][type])
         if (diff >= 1) {
-          /**
+          console.log(diff, type, pp[barcode][type])
           await Stock.updateStockAtDate({
             product_id: pp[barcode].id,
             date: '2024-12-31',
             type: type,
             quantity: pp[barcode][type]
           })
-          **/
-          console.log(pp[barcode][`${type}_old`], pp[barcode][type])
-          console.log(pp[barcode].id, type, diff)
+          // console.log('=>', pp[barcode][`${type}_old`], pp[barcode][type])
+          // console.log('=>', pp[barcode].id, type, diff)
         }
       }
     }
