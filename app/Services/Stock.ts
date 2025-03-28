@@ -954,6 +954,7 @@ class Stock {
       .where('created_at', '<=', date)
       .whereNotNull('product_id')
       .where('type', '!=', 'preorder')
+      .where('is_preorder', false)
       .orderBy('created_at', 'desc')
       .whereIn(
         'product_id',
