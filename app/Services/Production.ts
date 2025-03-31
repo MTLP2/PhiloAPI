@@ -702,6 +702,8 @@ class Production {
   }
 
   static async saveAction(params) {
+    console.log(params)
+
     let item = await DB('production_action')
       .select('production_action.*', 'user.is_admin as user_is_admin')
       .join('user', 'user.id', params.user.id)
@@ -919,6 +921,8 @@ class Production {
           product_id: newProduct
         })
       } else {
+        console.log('update product')
+        console.log(params.barcode)
         await DB('product').where('id', product.id).update({
           barcode: params.barcode,
           catnumber: params.cat_number
