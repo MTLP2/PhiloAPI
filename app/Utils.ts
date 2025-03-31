@@ -1485,6 +1485,8 @@ class Utils {
         return 'ES'
       case 'shipehype':
         return 'CA'
+      case 'cbip':
+        return 'HK'
       case 'mgm':
         return 'AU'
       case 'site':
