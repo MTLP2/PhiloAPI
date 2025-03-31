@@ -756,9 +756,11 @@ class App {
         data.user.email = [
           'alexis@diggersfactory.com',
           'invocing@diggersfactory.com',
-          project.com_email,
-          project.prod_email
-        ].join(',')
+          project?.com_email || '',
+          project?.prod_email || ''
+        ]
+          .filter(Boolean)
+          .join(',')
 
         await Notifications.email(data)
       }
