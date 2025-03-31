@@ -92,7 +92,18 @@ class Cbip {
     currency?: string
     shipping_price?: number
     total?: number
-    items: { cbip_id: string; name: string; barcode: string; quantity: number; price?: number }[]
+    items: {
+      cbip_id: string
+      name: string
+      barcode: string
+      quantity: number
+      price?: number
+      weight?: number
+      weight_unit?: string
+      hs_code?: string
+      origin?: string
+      product_type?: string
+    }[]
   }) => {
     const address = Utils.wrapText(params.address, ' ', 35)
     let address2 = address[1] ? ` ${address[1]} ${params.address2}` : params.address2
@@ -142,6 +153,8 @@ class Cbip {
           title: item.name,
           quantity: item.quantity,
           price: item.price,
+          weight: item.weight,
+          weight_unit: item.weight_unit,
           metadata: {
             hs_code: item.hs_code,
             origin: item.origin,
