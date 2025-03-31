@@ -4286,7 +4286,7 @@ class Admin {
     return email
   }
 
-  static exportProjects = async () => {
+  static exportProjects = async (params: { pro?: boolean }) => {
     const workbook = new Excel.Workbook()
 
     const styles = await DB('style').all()
@@ -4320,6 +4320,11 @@ class Admin {
         .orderBy('artist_name', 'name')
         .where('step', 'in_progress')
         .where('vod.type', type)
+        .where((query) => {
+          if (params.pro) {
+            query.where('price_distribution', '!=', 'price')
+          }
+        })
         .all()
 
       for (const p in projects) {

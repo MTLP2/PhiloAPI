@@ -196,8 +196,12 @@ class Project {
         return 5
       } else if (size === 'XXL' || size === '2XL') {
         return 6
-      } else if (size === 'XXL' || size === '3XL') {
+      } else if (size === 'XXXL' || size === '3XL') {
         return 7
+      } else if (size === '4XL') {
+        return 8
+      } else if (size === '5XL') {
+        return 9
       }
       return 0
     }

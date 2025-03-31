@@ -306,7 +306,8 @@ class Dispatchs {
     }
 
     item.type = params.type
-    if (!item.date_export) {
+
+    if (!item.date_export || params.logistician === 'cbip') {
       item.status = params.status
       item.logistician = params.logistician
       item.shipping_method = params.shipping_method
