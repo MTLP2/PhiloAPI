@@ -25,21 +25,32 @@ class Invoices {
         'c.country_id',
         'order.payment_id as order_payment_id',
         'order.payment_type as order_payment_type',
-        'order.transaction_id as order_transaction_id'
-        // 'payment.payment_id as payment_id',
-        // 'payment.payment_type as payment_type'
+        'order.transaction_id as order_transaction_id',
+        'resp_prod.name as resp_prod_name',
+        'resp_prod.id as resp_prod_id',
+        'com.name as com_name',
+        'payment.payment_id as payment_id',
+        'payment.payment_type as payment_type'
       )
       .from('invoice')
       .leftJoin('customer as c', 'c.id', 'invoice.customer_id')
       .leftJoin('vod', 'vod.project_id', 'invoice.project_id')
       .leftJoin('order', 'order.id', 'invoice.order_id')
-    /**
       .leftJoin('payment', (query) => {
         query.on('payment.invoice_id', 'invoice.id')
         query.on('payment.status', '=', DB.raw('?', 'paid'))
         query.on(DB.raw('payment.payment_id is not null'))
       })
-      **/
+    query.where((query) => {
+      query.where('payment.id', '=', (query) => {
+        query.select('payment.id')
+        query.from('payment')
+        query.whereRaw('payment.invoice_id = invoice.id')
+        query.orderBy('payment.id', 'desc')
+        query.limit(1)
+      })
+      query.orWhereRaw('payment.id is null')
+    })
 
     if (!params.sort) {
       query.orderBy('invoice.id', 'desc')
@@ -49,9 +60,21 @@ class Invoices {
     if (filters && filters.find((f) => f.name === 'resp_prod.name' || f.name === 'com.name')) {
       params.resp = true
     }
-    if (params.resp) {
-      query.leftJoin('user as com', 'com.id', 'vod.com_id')
-    }
+
+    query.leftJoin('user as com', 'com.id', 'vod.com_id')
+    query.leftJoin('production', 'production.project_id', 'vod.project_id')
+    query.leftJoin('user as resp_prod', 'resp_prod.id', 'production.resp_id')
+    query.where((query) => {
+      query.where('production.id', '=', (query) => {
+        query.select('production.id')
+        query.from('production')
+        query.whereRaw('production.project_id = vod.project_id')
+        query.orderBy('production.id', 'desc')
+        query.limit(1)
+      })
+      query.orWhereRaw('production.id is null')
+    })
+
     if (params.type === 'order_form') {
       query.where('invoice.type', 'order_form')
     } else if (params.invoice_co) {
