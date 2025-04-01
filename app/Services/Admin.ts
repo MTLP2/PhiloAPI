@@ -1277,6 +1277,14 @@ class Admin {
           date: moment().format('YYYY-MM-DD')
         })
         vod.active_statement = moment().format('YYYY-MM-DD')
+
+        vod.historic.push({
+          type: 'active_statement',
+          user_id: params.user.id,
+          old: null,
+          new: moment().format('YYYY-MM-DD'),
+          date: Utils.date()
+        })
       }
 
       vod.send_statement = params.send_statement
