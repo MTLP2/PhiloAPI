@@ -130,7 +130,7 @@ class Cbip {
 
     const data = {
       currency: params.currency || 'USD',
-      incoterms: params.type === 'B2B' ? 'DDP' : 'DAP',
+      incoterms: params.incoterm || params.type === 'B2B' ? 'DDP' : 'DAP',
       reference: params.id.toString(),
       status: 'pending',
       source_identifier: params.id.toString(),
@@ -154,7 +154,7 @@ class Cbip {
           quantity: item.quantity,
           price: item.price,
           weight: item.weight,
-          weight_unit: item.weight_unit,
+          weight_unit: 'kg',
           metadata: {
             hs_code: item.hs_code,
             origin: item.origin,

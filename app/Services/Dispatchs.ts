@@ -357,9 +357,11 @@ class Dispatchs {
         .select(
           'product.id',
           'product.name',
+          'product.type',
           'product.barcode',
           'product.cbip_id',
           'product.hs_code',
+          'product.weight',
           'product.country_id',
           'product.type',
           'dispatch_item.quantity'
@@ -380,6 +382,10 @@ class Dispatchs {
             items[i].price = Utils.round((orderShop.total - orderShop.shipping) / quantity, 2)
           }
         }
+      } else {
+        for (const i in items) {
+          items[i].price = this.getPriceProduct(items[i].type)
+        }
       }
 
       await Cbip.syncDispatch({
@@ -392,6 +398,7 @@ class Dispatchs {
           quantity: i.quantity,
           hs_code: i.hs_code,
           origin: i.country_id,
+          weight: i.weight,
           type: i.type,
           price: i.price
         }))
@@ -2548,6 +2555,7 @@ class Dispatchs {
         'product.barcode',
         'product.hs_code',
         'product.country_id as origin',
+        'product.weight',
         'product.type',
         'product_id',
         'whiplash_id',
@@ -2568,6 +2576,10 @@ class Dispatchs {
         const quantity = itemsDispatch.reduce((acc, i) => acc + i.quantity, 0)
         for (const i in itemsDispatch) {
           itemsDispatch[i].price = Utils.round((dispatch.total - dispatch.shipping) / quantity, 2)
+        }
+      } else {
+        for (const i in itemsDispatch) {
+          itemsDispatch[i].price = this.getPriceProduct(itemsDispatch[i].type)
         }
       }
 
@@ -2645,6 +2657,8 @@ class Dispatchs {
       bigblue_id: string
       cbip_id: string
       quantity: number
+      price?: number
+      weight?: number
     }[]
   }) => {
     let res: {
@@ -3116,6 +3130,23 @@ class Dispatchs {
       BigBlue.setTrackingLinks(),
       Whiplash.setTrackingLinks()
     ])
+  }
+
+  static getPriceProduct = (type: string) => {
+    switch (type) {
+      case 'vinyl':
+        return 3.5
+      case 'cd':
+        return 2
+      case 'tape':
+        return 2
+      case 't-shirt':
+        return 1
+      case 'hoodie':
+        return 3
+      default:
+        return ''
+    }
   }
 }
 
