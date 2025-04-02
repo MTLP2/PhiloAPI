@@ -100,7 +100,8 @@ class Charts {
 
       if (orders[o].email_score === null) {
         orders[o].email_score = await User.setEmailScore({ email: orders[o].email })
-        await Utils.sleep(300)
+        console.log(orders[o].email, orders[o].email_score)
+        await Utils.sleep(200)
       }
     }
 
@@ -520,8 +521,8 @@ class Charts {
   }
 
   static async uploadCharts() {
-    const start = moment().subtract(7, 'days').format('YYYY-MM-DD')
-    const end = moment().subtract(1, 'days').format('YYYY-MM-DD 23:59:59')
+    const start = moment().subtract(8, 'days').format('YYYY-MM-DD')
+    const end = moment().subtract(2, 'days').format('YYYY-MM-DD 23:59:59')
 
     const us = await Charts.getLuminateCharts({
       country_id: 'US',
