@@ -3040,12 +3040,18 @@ class Stats {
       created: { ...dates },
       invoiced: { ...dates },
       turnover: { ...dates },
-      turnover_invoiced: { ...dates }
+      turnover_invoiced: { ...dates },
+      invoiced_paid: { ...dates }
     }
 
     for (const project of projects) {
       const date = moment(project.created_at).format(format)
       const quote = project.quote * currencies[project.currency]
+
+      if (stats.created[date] === undefined) {
+        continue
+      }
+
       if (project.historic) {
         const historic = JSON.parse(project.historic)
         for (const his of historic) {
@@ -3055,15 +3061,39 @@ class Stats {
               continue
             }
             stats.invoiced[d]++
+
             stats.turnover_invoiced[d] += quote
           }
         }
       }
-      if (stats.created[date] === undefined) {
-        continue
-      }
+
       stats.created[date]++
       stats.turnover[date] += quote
+    }
+
+    const invoices = await DB('invoice')
+      .select('sub_total', 'currency', 'type', 'created_at', 'project_id', 'status')
+      .where('invoice.category', 'direct_pressing')
+      .whereBetween('created_at', [
+        start.clone().startOf('day').format('YYYY-MM-DD HH:mm:ss'),
+        end.clone().endOf('day').format('YYYY-MM-DD HH:mm:ss')
+      ])
+
+      .all()
+
+    for (const invoice of invoices) {
+      const date = moment(invoice.created_at).format(format)
+      const quote = invoice.sub_total / currencies[invoice.currency]
+
+      if (invoice.status === 'canceled') {
+        continue
+      }
+
+      if (invoice.type === 'credit_note') {
+        stats.invoiced_paid[date] -= quote
+      } else {
+        stats.invoiced_paid[date] += quote
+      }
     }
 
     return stats

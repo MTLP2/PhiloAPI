@@ -15,11 +15,13 @@ class ProjectEdit {
         'p.*',
         'u.picture as profile_picture',
         'u.name as profile_name',
-        'u.about_me as profile_about'
+        'u.about_me as profile_about',
+        'pr.surcharge_amount as surcharge_amount'
       )
       .from('project as p')
       .leftJoin('vod as v', 'p.id', 'v.project_id')
       .leftJoin('user as u', 'v.user_id', 'u.id')
+      .leftJoin('production as pr', 'p.id', 'pr.project_id')
       .where('p.id', params.id)
       .belongsTo('customer')
       .first()
