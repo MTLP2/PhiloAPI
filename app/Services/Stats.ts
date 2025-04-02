@@ -3027,6 +3027,7 @@ class Stats {
 
     const currenciesDB = await Utils.getCurrenciesDb()
     const currencies = await Utils.getCurrencies('EUR', currenciesDB)
+    console.log(currencies)
 
     const dates = {}
 
@@ -3040,12 +3041,14 @@ class Stats {
       created: { ...dates },
       invoiced: { ...dates },
       turnover: { ...dates },
-      turnover_invoiced: { ...dates }
+      turnover_invoiced: { ...dates },
+      invoiced_paid: { ...dates }
     }
 
     for (const project of projects) {
       const date = moment(project.created_at).format(format)
       const quote = project.quote * currencies[project.currency]
+
       if (project.historic) {
         const historic = JSON.parse(project.historic)
         for (const his of historic) {
@@ -3055,6 +3058,7 @@ class Stats {
               continue
             }
             stats.invoiced[d]++
+
             stats.turnover_invoiced[d] += quote
           }
         }
@@ -3062,9 +3066,46 @@ class Stats {
       if (stats.created[date] === undefined) {
         continue
       }
+
       stats.created[date]++
       stats.turnover[date] += quote
     }
+
+    const invoices = await DB('invoice')
+      .select('sub_total', 'currency', 'type', 'created_at', 'project_id', 'status')
+      .where('invoice.category', 'direct_pressing')
+      .whereBetween('created_at', [
+        start.clone().startOf('day').format('YYYY-MM-DD HH:mm:ss'),
+        end.clone().endOf('day').format('YYYY-MM-DD HH:mm:ss')
+      ])
+
+      .all()
+
+    for (const invoice of invoices) {
+      const date = moment(invoice.created_at).format(format)
+      let quote = 0
+      if (invoice.currency === 'JPY' || invoice.currency === 'KRW') {
+        quote = invoice.sub_total / currencies[invoice.currency]
+      } else {
+        quote = invoice.sub_total * currencies[invoice.currency]
+      }
+      console.log(currencies[invoice.currency])
+
+      if (invoice.status === 'canceled') {
+        continue
+      }
+
+      if (invoice.type === 'credit_note') {
+        console.log('credit_note', quote, date, invoice.project_id)
+        stats.invoiced_paid[date] -= quote
+      } else {
+        console.log('invoice', quote, date, invoice.project_id, invoice.sub_total, invoice.currency)
+
+        stats.invoiced_paid[date] += quote
+      }
+    }
+
+    console.log('stats', stats)
 
     return stats
   }
