@@ -732,47 +732,11 @@ class Stock {
       }
     })
 
-    const existing = await DB('stock')
-      .where('type', params.distributor)
-      .where('quantity', '>', 0)
-      .where('is_preorder', false)
-      .all()
-
-    /**
-    const histroyExisting = await DB('stock_historic')
-      .where('type', params.distributor)
-      .where('is_preorder', false)
-      .where('created_at', '>=', params.date)
-      .orderBy('created_at', 'asc')
-      .where('product_id', 60819)
-      .all()
-
-    console.log(histroyExisting)
-
-    const existingWithHistroy = {}
-    for (const h of histroyExisting) {
-      if (existingWithHistroy[h.product_id] !== undefined) {
-        continue
-      }
-      const data = JSON.parse(h.data)
-      existingWithHistroy[h.product_id] = data.old.quantity
-
-      if (data.old.quantity === 0) {
-        existing.splice(
-          existing.findIndex((p) => p.product_id === h.product_id),
-          1
-        )
-      }
-    }
-    for (const stock of existing) {
-      if (existingWithHistroy[stock.product_id] !== undefined) {
-        const idx = existing.findIndex((p) => p.product_id === stock.product_id)
-        if (idx > -1) {
-          existing[idx].checked = true
-        }
-      }
-    }
-    **/
+    const existing = await Stock.exportStocksPrices({
+      end: params.date,
+      type: params.distributor,
+      data: true
+    })
 
     const products = await DB('product')
       .select('product.id', 'name', 'product.type', 'product.barcode', 'catnumber')
@@ -790,19 +754,25 @@ class Stock {
       stocks[i].product = products.find(
         (p) => +p.barcode === +stock.barcode || p.catnumber === stock.barcode
       )
-      if (stocks[i].product) {
-        const idx = existing.findIndex((p) => stocks[i].product.id === p.product_id)
-        if (idx > -1) {
-          existing[idx].checked = true
-        }
-      }
     }
-
-    const tt = existing.find((s) => s.product_id === 60819)
-    console.log(tt)
 
     if (params.type === 'save') {
       const update = async () => {
+        for (const s of existing) {
+          for (const stock of s.stock) {
+            if (stock.type === params.distributor && stock.quantity > 0) {
+              await Stock.updateStockAtDate({
+                product_id: stock.product_id,
+                date: params.date,
+                type: params.distributor,
+                user_id: params.user_id,
+                comment: 'upload',
+                quantity: 0
+              })
+            }
+          }
+        }
+
         for (const stock of stocks) {
           if (stock.product) {
             await Stock.updateStockAtDate({
@@ -814,18 +784,6 @@ class Stock {
               comment: 'upload'
             })
           }
-        }
-
-        for (const stock of existing.filter((s) => !s.checked)) {
-          console.log('not_found', stock.product_id)
-          await Stock.updateStockAtDate({
-            product_id: stock.product_id,
-            type: params.distributor,
-            date: params.date,
-            comment: 'upload_not_found',
-            user_id: params.user_id,
-            quantity: 0
-          })
         }
 
         const user = await DB('user').where('id', params.user_id).first()
@@ -911,7 +869,7 @@ class Stock {
     ])
   }
 
-  static async exportStocksPrices(params: { end: string }) {
+  static async exportStocksPrices(params: { end: string; type?: string; data?: boolean }) {
     let refs = await DB('product')
       .select(
         DB.raw('distinct product.id'),
@@ -941,7 +899,7 @@ class Stock {
       .join('project_product', 'project_product.product_id', 'product.id')
       .join('vod', 'vod.project_id', 'project_product.project_id')
       .whereNotNull('product.barcode')
-      .where('vod.barcode', 'not like', '%,%')
+      // .where('vod.barcode', 'not like', '%,%')
       .hasMany('stock')
       .orderBy('vod.unit_cost')
       .all()
@@ -959,13 +917,16 @@ class Stock {
       .where('type', '!=', 'preorder')
       .where('is_preorder', false)
       .orderBy('created_at', 'desc')
+      .where((query) => {
+        if (params.type) {
+          query.where('type', params.type)
+        }
+      })
       .whereIn(
         'product_id',
         refs.map((r) => r.id)
       )
       .all()
-
-    console.log(his)
 
     const hh = {}
     for (const h of his) {
@@ -991,6 +952,9 @@ class Stock {
       refs[i].quantity = 0
 
       for (const stock of refs[i].stock) {
+        if (params.type && stock.type !== params.type) {
+          continue
+        }
         if (stock.type === 'preorder' || stock.is_preorder) {
           continue
         }
@@ -1026,6 +990,10 @@ class Stock {
     columns.push({ header: 'Quantity', key: 'quantity', width: 7 })
     columns.push({ header: 'Unit cost', key: 'unit_cost', width: 7 })
     columns.push({ header: 'Price stock', key: 'price_stock', width: 7 })
+
+    if (params.data) {
+      return refs.filter((r) => r.quantity > 0)
+    }
 
     return Utils.arrayToXlsx([
       {
@@ -1225,6 +1193,51 @@ class Stock {
     const pp = {}
     const bb = new Excel.Workbook()
 
+    const stocks = await Stock.exportStocksPrices({
+      end: '2024-12-31',
+      data: true
+    })
+
+    const retailers = [
+      'rom',
+      'fnac',
+      'pias',
+      'lita',
+      'rom_de',
+      'altafonte',
+      'mgm',
+      'arcades',
+      'rom_rocket',
+      'shipehype',
+      'fab',
+      'amped',
+      'terminal_d',
+      'mr_vinyl',
+      'wordansound',
+      'rom_border',
+      'rom_heathen',
+      'rom_southbound',
+      'rom_de',
+      'rom_it',
+      'love_da',
+      'matrix'
+    ]
+
+    console.log('--')
+
+    for (const stock of stocks) {
+      for (const s of stock.stock) {
+        if (retailers.includes(s.type) && s.quantity > 0) {
+          await Stock.updateStockAtDate({
+            product_id: stock.id,
+            date: '2024-12-31',
+            type: s.type,
+            quantity: 0
+          })
+        }
+      }
+    }
+
     /**
     await bb.xlsx.readFile('./resources/stock_bb.xlsx')
     let worksheet = bb.getWorksheet('Feuil1')
@@ -1244,20 +1257,28 @@ class Stock {
 
     await bb.xlsx.readFile('./resources/stock_distrib.xlsx')
     const worksheet = bb.getWorksheet('Sheet1')
+    let i = 0
     worksheet.eachRow((row, rowNumber) => {
       if (rowNumber < 2) {
         return
       }
 
       let barcode = row.getCell('B').text
-      if (barcode.length === 12) {
-        barcode = '0' + barcode
-      }
       if (!pp[barcode]) {
         pp[barcode] = {}
       }
-      pp[barcode][row.getCell('A').text] = row.getCell('C').text
+
+      let type = row.getCell('A').text.toLowerCase()
+      if (type === 'rom_audioglobe') {
+        type = 'rom_it'
+      } else if (type === 'rom_rtg') {
+        type = 'rom_de'
+      }
+
+      i++
+      pp[barcode][type] = row.getCell('C').text
     })
+    console.log(i)
 
     const products = await DB('product')
       .select('id', 'barcode')
@@ -1268,17 +1289,6 @@ class Stock {
       pp[product.barcode].id = product.id
     }
 
-    const historic = await DB('stock_historic')
-      .select('stock_historic.*')
-      .whereIn(
-        'product_id',
-        products.map((p) => p.id)
-      )
-      .where('is_preorder', false)
-      .where('created_at', '<', '2025-01-01')
-      .orderBy('created_at', 'desc')
-      .all()
-
     for (const barcode of Object.keys(pp)) {
       const product = pp[barcode]
 
@@ -1288,32 +1298,20 @@ class Stock {
         }
 
         if (!pp[barcode].id) {
-          console.log('', barcode, pp[barcode])
+          console.log('not found', barcode, pp[barcode])
           continue
         }
 
-        const h = historic.filter((h) => h.product_id === product.id && h.type === type)
-
-        if (h.length > 0) {
-          const data = JSON.parse(h[0].data)
-          pp[barcode][`${type}_old`] = data.new.quantity
-        } else {
-          pp[barcode][`${type}_old`] = 0
-        }
-
-        const diff = Math.abs(pp[barcode][`${type}_old`] - pp[barcode][type])
-        if (diff >= 1) {
-          await Stock.updateStockAtDate({
-            product_id: pp[barcode].id,
-            date: '2024-12-31',
-            type: type,
-            quantity: pp[barcode][type]
-          })
-          // console.log('=>', pp[barcode][`${type}_old`], pp[barcode][type])
-          // console.log('=>', pp[barcode].id, type, diff)
-        }
+        await Stock.updateStockAtDate({
+          product_id: pp[barcode].id,
+          date: '2024-12-31',
+          type: type,
+          quantity: pp[barcode][type]
+        })
       }
     }
+
+    return { success: true }
   }
 
   static updateStockAtDate = async (params: {
@@ -1324,6 +1322,23 @@ class Stock {
     comment?: string
     user_id?: number
   }) => {
+    const stock = await DB('stock')
+      .where('product_id', params.product_id)
+      .where('type', params.type)
+      .where('is_preorder', false)
+      .first()
+
+    if (!stock) {
+      await DB('stock').insert({
+        product_id: params.product_id,
+        type: params.type,
+        quantity: params.quantity,
+        is_preorder: false,
+        created_at: params.date,
+        updated_at: Utils.date()
+      })
+    }
+
     const historic = await DB('stock_historic')
       .where('product_id', params.product_id)
       .where('type', params.type)
@@ -1331,8 +1346,31 @@ class Stock {
       .orderBy('created_at', 'desc')
       .all()
 
-    if (!historic) {
-      return
+    if (historic.length === 0) {
+      await DB('stock')
+        .where('product_id', params.product_id)
+        .where('type', params.type)
+        .where('is_preorder', false)
+        .update({
+          quantity: params.quantity,
+          updated_at: Utils.date()
+        })
+    }
+
+    if (!stock || historic.length === 0) {
+      await DB('stock_historic').insert({
+        product_id: params.product_id,
+        type: params.type,
+        data: JSON.stringify({
+          old: { quantity: 0 },
+          new: { quantity: params.quantity }
+        }),
+        comment: params.comment || 'update',
+        is_preorder: false,
+        created_at: params.date,
+        updated_at: Utils.date()
+      })
+      return { success: true }
     }
 
     for (const h in historic) {
@@ -1342,7 +1380,6 @@ class Stock {
         continue
       }
 
-      let isNew = false
       if (historic[h - 1]) {
         const data = JSON.parse(historic[h - 1].data)
         data.old.quantity = params.quantity
@@ -1352,28 +1389,14 @@ class Stock {
             data: JSON.stringify(data)
           })
       } else {
-        const stock = await DB('stock')
-          .where('product_id', hh.product_id)
-          .where('type', hh.type)
+        await DB('stock')
+          .where('product_id', params.product_id)
+          .where('type', params.type)
           .where('is_preorder', false)
-          .first()
-
-        if (stock) {
-          await DB('stock').where('id', stock.id).update({
+          .update({
             quantity: params.quantity,
             updated_at: Utils.date()
           })
-        } else {
-          isNew = true
-          await DB('stock').insert({
-            product_id: hh.product_id,
-            type: hh.type,
-            quantity: params.quantity,
-            is_preorder: false,
-            created_at: Utils.date(),
-            updated_at: Utils.date()
-          })
-        }
       }
 
       const data = JSON.parse(hh.data)
@@ -1398,8 +1421,30 @@ class Stock {
           user_id: params.user_id
         })
       }
-      break
+      return { success: true }
     }
+
+    const data = JSON.parse(historic.at(-1).data)
+    data.old.quantity = params.quantity
+    await DB('stock_historic')
+      .where('id', historic.at(-1).id)
+      .update({
+        data: JSON.stringify(data)
+      })
+
+    data.new.quantity = params.quantity
+    data.old.quantity = 0
+
+    await DB('stock_historic').insert({
+      product_id: params.product_id,
+      type: params.type,
+      data: JSON.stringify(data),
+      comment: params.comment || 'update',
+      is_preorder: false,
+      created_at: `${params.date} 00:00:00`,
+      updated_at: Utils.date(),
+      user_id: params.user_id
+    })
   }
 }
 
