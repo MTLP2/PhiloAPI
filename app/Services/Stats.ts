@@ -3048,6 +3048,10 @@ class Stats {
       const date = moment(project.created_at).format(format)
       const quote = project.quote * currencies[project.currency]
 
+      if (stats.created[date] === undefined) {
+        continue
+      }
+
       if (project.historic) {
         const historic = JSON.parse(project.historic)
         for (const his of historic) {
@@ -3061,9 +3065,6 @@ class Stats {
             stats.turnover_invoiced[d] += quote
           }
         }
-      }
-      if (stats.created[date] === undefined) {
-        continue
       }
 
       stats.created[date]++
@@ -3082,12 +3083,7 @@ class Stats {
 
     for (const invoice of invoices) {
       const date = moment(invoice.created_at).format(format)
-      let quote = 0
-      if (invoice.currency === 'JPY' || invoice.currency === 'KRW') {
-        quote = invoice.sub_total / currencies[invoice.currency]
-      } else {
-        quote = invoice.sub_total * currencies[invoice.currency]
-      }
+      const quote = invoice.sub_total / currencies[invoice.currency]
 
       if (invoice.status === 'canceled') {
         continue
