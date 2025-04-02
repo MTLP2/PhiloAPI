@@ -809,7 +809,9 @@ class Stock {
               product_id: stock.product.id,
               type: params.distributor,
               date: params.date,
-              quantity: stock.quantity
+              quantity: stock.quantity,
+              user_id: params.user_id,
+              comment: 'upload'
             })
           }
         }
@@ -821,6 +823,7 @@ class Stock {
             type: params.distributor,
             date: params.date,
             comment: 'upload_not_found',
+            user_id: params.user_id,
             quantity: 0
           })
         }
@@ -1284,18 +1287,22 @@ class Stock {
           continue
         }
 
-        const h = historic.filter((h) => h.product_id === product.id && h.type === type)
-
-        if (h.length === 0) {
+        if (!pp[barcode].id) {
+          console.log('', barcode, pp[barcode])
           continue
         }
 
-        const data = JSON.parse(h[0].data)
-        pp[barcode][`${type}_old`] = data.new.quantity
+        const h = historic.filter((h) => h.product_id === product.id && h.type === type)
+
+        if (h.length > 0) {
+          const data = JSON.parse(h[0].data)
+          pp[barcode][`${type}_old`] = data.new.quantity
+        } else {
+          pp[barcode][`${type}_old`] = 0
+        }
 
         const diff = Math.abs(pp[barcode][`${type}_old`] - pp[barcode][type])
         if (diff >= 1) {
-          console.log(diff, type, pp[barcode][type])
           await Stock.updateStockAtDate({
             product_id: pp[barcode].id,
             date: '2024-12-31',
@@ -1315,6 +1322,7 @@ class Stock {
     type: string
     quantity: number
     comment?: string
+    user_id?: number
   }) => {
     const historic = await DB('stock_historic')
       .where('product_id', params.product_id)
@@ -1383,10 +1391,11 @@ class Stock {
           product_id: hh.product_id,
           type: hh.type,
           data: JSON.stringify(data),
-          comment: params.comment || 'update_old',
+          comment: params.comment || 'update',
           is_preorder: false,
           created_at: `${params.date} 00:00:00`,
-          updated_at: Utils.date()
+          updated_at: Utils.date(),
+          user_id: params.user_id
         })
       }
       break
