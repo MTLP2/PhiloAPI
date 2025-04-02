@@ -3027,7 +3027,6 @@ class Stats {
 
     const currenciesDB = await Utils.getCurrenciesDb()
     const currencies = await Utils.getCurrencies('EUR', currenciesDB)
-    console.log(currencies)
 
     const dates = {}
 
@@ -3089,23 +3088,17 @@ class Stats {
       } else {
         quote = invoice.sub_total * currencies[invoice.currency]
       }
-      console.log(currencies[invoice.currency])
 
       if (invoice.status === 'canceled') {
         continue
       }
 
       if (invoice.type === 'credit_note') {
-        console.log('credit_note', quote, date, invoice.project_id)
         stats.invoiced_paid[date] -= quote
       } else {
-        console.log('invoice', quote, date, invoice.project_id, invoice.sub_total, invoice.currency)
-
         stats.invoiced_paid[date] += quote
       }
     }
-
-    console.log('stats', stats)
 
     return stats
   }
