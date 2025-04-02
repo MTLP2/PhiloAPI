@@ -20,6 +20,7 @@ import Customer from 'App/Services/Customer'
 import moment from 'moment'
 import Invoices from './Invoices'
 import Boxes from './Boxes'
+import User from './User'
 
 class Dispatchs {
   static all = async (params: {
@@ -2682,6 +2683,12 @@ class Dispatchs {
 
     dispatch.status = 'syncing'
     await dispatch.save()
+
+    if (['CA', 'US'].includes(params.country_id)) {
+      User.setEmailScore({ email: params.email }).then((score) => {
+        console.log(params.email, score)
+      })
+    }
 
     if (params.logistician === 'bigblue') {
       res = await BigBlue.syncDispatch(params)
