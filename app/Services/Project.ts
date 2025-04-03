@@ -849,6 +849,7 @@ class Project {
         'year',
         'v.description',
         'v.description_fr_long',
+        'v.description_top',
         'p.inverse_name',
         'p.color',
         'v.splatter1',
