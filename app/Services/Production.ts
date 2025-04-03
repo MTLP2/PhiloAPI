@@ -15,6 +15,8 @@ import Storage from 'App/Services/Storage'
 import View from '@ioc:Adonis/Core/View'
 import I18n from '@ioc:Adonis/Addons/I18n'
 import moment from 'moment'
+import Env from '@ioc:Adonis/Core/Env'
+
 import { db, model } from 'App/db3'
 
 class Production {
@@ -702,8 +704,6 @@ class Production {
   }
 
   static async saveAction(params) {
-    console.log(params)
-
     let item = await DB('production_action')
       .select('production_action.*', 'user.is_admin as user_is_admin')
       .join('user', 'user.id', params.user.id)
@@ -906,6 +906,19 @@ class Production {
         barcode_creation: params.barcode_creation,
         catnumber_creation: params.catnumber_creation
       })
+      if (params.barcode_creation == '1') {
+        await Notifications.sendEmail({
+          to: Env.get('DEBUG_EMAIL'),
+          subject: `Barcode creation for ${prod.project_name}`,
+          text: `Barcode creation for ${prod.project_name}`
+        })
+      }
+
+      await Notifications.sendEmail({
+        to: 'matheo@diggersfactory.com',
+        subject: `Barcode creation for ${prod.project_name}`,
+        html: `<p>Barcode creation for ${prod.project_name}</p>`
+      })
 
       const product = await DB('project_product')
         .select('product.id', 'project.name as project_name')
@@ -926,8 +939,6 @@ class Production {
           product_id: newProduct
         })
       } else {
-        console.log('update product')
-        console.log(params.barcode)
         await DB('product').where('id', product.id).update({
           barcode: params.barcode,
           catnumber: params.cat_number
