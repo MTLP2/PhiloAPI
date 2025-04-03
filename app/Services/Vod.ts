@@ -122,6 +122,7 @@ class Vod {
 
     vod.description = params.description
     vod.description_fr_long = params.description_fr_long
+    vod.description_top = params.description_top
     vod.text_bellow_button = params.text_bellow_button
     vod.download = params.download
     vod.send_tracks = params.send_tracks
