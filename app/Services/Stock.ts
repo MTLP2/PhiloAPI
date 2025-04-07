@@ -872,13 +872,14 @@ class Stock {
   static async exportStocksPrices(params: { end: string; type?: string; data?: boolean }) {
     let refs = await DB('product')
       .select(
-        DB.raw('distinct product.id'),
+        'product.id',
         'product.name',
         'product.barcode',
         'product.type as product_type',
         'vod.type',
         'vod.unit_cost',
         'vod.is_licence',
+        'vod.barcode as barcode_vod',
         DB('production')
           .select('date_prod')
           .whereRaw('project_id = vod.project_id')
@@ -899,9 +900,9 @@ class Stock {
       .join('project_product', 'project_product.product_id', 'product.id')
       .join('vod', 'vod.project_id', 'project_product.project_id')
       .whereNotNull('product.barcode')
-      // .where('vod.barcode', 'not like', '%,%')
       .hasMany('stock')
-      .orderBy('vod.unit_cost')
+      .orderByRaw('CHAR_LENGTH(vod.barcode) DESC')
+      .orderBy('vod.unit_cost', 'desc')
       .all()
 
     const products = {}
