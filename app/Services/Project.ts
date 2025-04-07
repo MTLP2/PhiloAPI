@@ -1017,6 +1017,7 @@ class Project {
       )
       .where('item.project_id', id)
       .where('is_active', 1)
+      .whereIn('vod.step', ['in_progress', 'successful'])
       .leftJoin('project', 'project.id', 'item.related_id')
       .leftJoin('vod', 'vod.project_id', 'item.related_id')
       .all()
