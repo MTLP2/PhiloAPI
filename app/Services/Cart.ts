@@ -2197,7 +2197,8 @@ class Cart {
         'tax',
         'payment_type',
         'user.email',
-        'user_id'
+        'user_id',
+        'user.country_id'
       )
       .from('order')
       .join('user', 'user.id', 'order.user_id')
