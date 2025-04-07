@@ -46,7 +46,7 @@ class Invoices {
         query.select('payment.id')
         query.from('payment')
         query.whereRaw('payment.invoice_id = invoice.id')
-        query.orderBy('payment.id', 'desc')
+        query.orderBy('payment_id', 'desc')
         query.limit(1)
       })
       query.orWhereRaw('payment.id is null')
@@ -87,10 +87,16 @@ class Invoices {
       query.where('compatibility', true)
     }
 
-    return Utils.getRows({
+    console.log(query.toString())
+
+    const res = await Utils.getRows({
       query,
       ...params
     })
+
+    console.log(res)
+
+    return res
   }
 
   static async find(id) {
