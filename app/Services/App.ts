@@ -182,7 +182,7 @@ class App {
         await Reviews.checkNotif()
         // await Elogik.checkBlockedOrders()
       } else if (hour === 12) {
-        // await Invoices.sendUnpaidInvoicesReminders()
+        await Invoices.sendUnpaidInvoicesReminders()
         await Invoices.checkIncorrectInvoices()
       } else if (hour === 16) {
         if (moment().format('E') === '4') {
