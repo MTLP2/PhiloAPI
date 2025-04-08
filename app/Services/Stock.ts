@@ -899,10 +899,12 @@ class Stock {
       )
       .join('project_product', 'project_product.product_id', 'product.id')
       .join('vod', 'vod.project_id', 'project_product.project_id')
+      .join('project', 'project.id', 'vod.project_id')
       .whereNotNull('product.barcode')
       .hasMany('stock')
       .orderByRaw('CHAR_LENGTH(vod.barcode) DESC')
       .orderBy('vod.unit_cost', 'desc')
+      .where('project.is_delete', false)
       .all()
 
     const products = {}
