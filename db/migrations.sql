@@ -6,3 +6,7 @@ ALTER TABLE `production` ADD `surcharge_amount` VARCHAR(255) NULL DEFAULT NULL A
 
 # 2025-04-02 Add description_top to vod
 ALTER TABLE `vod` ADD `description_top` TEXT NULL DEFAULT NULL AFTER `description_fr_long`;
+
+# 2025-04-08 Add password to vod and shop
+ALTER TABLE `vod` ADD `password` VARCHAR(255) NULL DEFAULT NULL AFTER `todo`;
+ALTER TABLE `shop` ADD `password` VARCHAR(255) NULL DEFAULT NULL AFTER `white_label`;
