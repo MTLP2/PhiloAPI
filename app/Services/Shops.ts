@@ -8,7 +8,7 @@ class Shops {
   static async all(params) {
     params.query = DB('shop').select(
       'shop.*',
-      DB.query('shop_project').count('*').whereRaw('shop_id = Shops.id').as('projects')
+      DB.query('shop_project').count('*').whereRaw('shop_id = shop.id').as('projects')
     )
 
     if (!params.sort) {
@@ -16,13 +16,14 @@ class Shops {
       params.order = 'desc'
     }
 
-    return Utils.getRows<ShopDb[]>(params)
+    return Utils.getRows(params)
   }
 
   static async find(params: {
     id?: number
     user_id?: number
     code?: string
+    password?: string
     all_project?: boolean
     projects?: boolean
     auth_id?: number
@@ -36,13 +37,13 @@ class Shops {
     )
 
     if (params.id) {
-      Shops.where('shop.id', params.id)
+      shop.where('shop.id', params.id)
     } else if (params.code) {
-      Shops.where('code', params.code)
+      shop.where('code', params.code)
     }
     if (params.user_id) {
-      Shops.join('user', 'user.shop_id', 'shop.id')
-      Shops.where('user.id', params.user_id)
+      shop.join('user', 'user.shop_id', 'shop.id')
+      shop.where('user.id', params.user_id)
     }
 
     shop
@@ -50,15 +51,23 @@ class Shops {
       .leftJoin('user as user_label', 'user_label.id', 'shop.label_id')
       .leftJoin('user as user_user', 'user_user.shop_id', 'shop.id')
 
-    shop = await Shops.first()
+    shop = await shop.first()
 
     if (!shop) {
       throw new ApiError(404)
     }
+    if (shop.password) {
+      if (shop.password && params.password !== shop.password) {
+        shop.password = true
+      } else {
+        delete shop.password
+      }
+    }
+
     if (shop.status !== 'online' && params.code) {
       if (params.auth_id) {
         const user = await DB('user').where('id', params.auth_id).first()
-        if (!user || (user.shop_id !== Shops.id && user.is_admin !== 1)) {
+        if (!user || (user.shop_id !== shop.id && user.is_admin !== 1)) {
           throw new ApiError(404)
         }
       } else {
@@ -66,8 +75,8 @@ class Shops {
       }
     }
     if (params.projects !== false) {
-      Shops.projects = await Project.findAll({
-        shop_id: Shops.id,
+      shop.projects = await Project.findAll({
+        shop_id: shop.id,
         all_project: params.all_project,
         limit: 99999
       })
@@ -88,6 +97,7 @@ class Shops {
     logo?: string
     line_items?: number
     banner?: string
+    password?: string
     bg_image?: string
     white_label?: boolean
     youtube?: string
@@ -98,7 +108,7 @@ class Shops {
     label_id?: number
     auth_id?: number
   }) {
-    let item: ShopModel = <any>DB('shop')
+    let item: any = DB('shop')
 
     const code = params.code ? params.code : Utils.slugify(params.name)
     const codeUsed = await DB('shop')
@@ -132,9 +142,10 @@ class Shops {
     item.white_label = params.white_label
     item.youtube = params.youtube
     item.group_shipment = params.group_shipment
-    item.updated_at = Utils.date()
     item.artist_id = params.artist_id
     item.label_id = params.label_id
+    item.password = params.password
+    item.updated_at = Utils.date()
 
     if (params.logo) {
       if (item.logo) {
@@ -204,7 +215,7 @@ class Shops {
   }
 
   static async removeImage(params: { shop_id: number; type: string }) {
-    const item: ShopModel = await DB('shop').find(params.shop_id)
+    const item = await DB('shop').find(params.shop_id)
 
     if (params.type === 'banner' && item.banner) {
       Storage.deleteImage(item.banner)
@@ -268,7 +279,7 @@ class Shops {
 
   static async checkCode(code: string) {
     const shop = await DB('shop').where('code', code).first()
-    return { shop: shop ? Shops.id : null }
+    return { shop: shop ? shop.id : null }
   }
 
   static async changeProjectPosition(params: {
