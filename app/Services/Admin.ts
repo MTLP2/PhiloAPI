@@ -1153,6 +1153,7 @@ class Admin {
     vod.is_shop = params.is_shop ? params.is_shop : 0
     vod.description_en = params.description_en
     vod.description_fr = params.description_fr
+    vod.password = params.password
 
     if (params.comment_costs !== undefined) {
       vod.comment_costs = params.comment_costs

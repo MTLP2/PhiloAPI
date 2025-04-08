@@ -863,6 +863,7 @@ class Project {
         'vinyl_weight',
         'v.weight',
         'v.barcode',
+        'v.password',
         'url_vinyl',
         'picture_disc',
         'p.bg',
@@ -1042,6 +1043,14 @@ class Project {
 
     if (!project) {
       return { error: 404 }
+    }
+
+    if (project.password) {
+      if (project.password && params.password !== project.password) {
+        project.password = true
+      } else {
+        delete project.password
+      }
     }
 
     project.products = products
