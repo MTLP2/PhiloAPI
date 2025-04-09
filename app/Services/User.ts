@@ -1247,7 +1247,7 @@ static extractProjectOrders = async (params) => {
       }
       user.genres = myStyles.map((s) => genres[styles[s.id || s]?.genre_id])
       user.genres = [...new Set(user.genres)]
-      user.styles = myStyles.map((s) => styles[s.id || s].name)
+      user.styles = myStyles.map((s) => styles[s.id || s]?.name)
       user.city = user.customer ? user.customer.city : null
       delete user.customer
 
