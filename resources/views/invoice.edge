@@ -374,6 +374,9 @@
     EORI UK = GB439120509000
   </p>
   @endif
+  @if(customer.country_id === 'US' && !compatibility)
+    <p align="right" class="medium">9903.01.31 IEEPA Exemption – Informational Materials</p>
+  @endif
 
   <table class="border" align="right">
     <tr class="header">
@@ -423,7 +426,6 @@
   @if(customer.country_id === 'GB')
     <p class="small">The exporter of the products covered by this document declares that, except where otherwise clearly indicated, these products are of CEE preferential origin.</p>
   @endif
-
 
    @if(lang === 'fr')
   <div>
