@@ -2398,6 +2398,8 @@ class Cart {
             i.updated_at = Utils.date()
             await i.save()
           }
+
+          Project.countSales(project.id).then(() => {})
         }
       }
     }
