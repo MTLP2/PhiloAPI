@@ -217,6 +217,7 @@ class Shops {
   static async removeImage(params: { shop_id: number; type: string }) {
     const item = await DB('shop').find(params.shop_id)
 
+    console.log(params.type)
     if (params.type === 'banner' && item.banner) {
       Storage.deleteImage(item.banner)
       item.banner = null
@@ -226,6 +227,12 @@ class Shops {
     } else if (params.type === 'bg_image' && item.bg_image) {
       Storage.deleteImage(item.bg_image)
       item.bg_image = null
+    } else if (params.type === 'video_top' && item.video_top) {
+      Storage.delete(item.video_top + '.mp4')
+      item.video_top = null
+    } else if (params.type === 'video_bottom' && item.video_bottom) {
+      Storage.delete(item.video_bottom + '.mp4')
+      item.video_bottom = null
     }
 
     item.updated_at = Utils.date()
