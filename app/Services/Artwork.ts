@@ -580,7 +580,30 @@ class Artwork {
     return true
   }
 
-  static async generatePreview(params: { path: string; type: string; nb?: number }) {
+  static async generatePreview(params: { path: string; picture: string }) {
+    const picture = await Storage.get(`projects/${params.path}/${params.picture}`)
+    if (!picture) {
+      return false
+    }
+
+    const buffer = await sharp(picture)
+      .resize({
+        width: 400,
+        height: 400,
+        fit: 'contain',
+        background: { r: 100, g: 100, b: 100, alpha: 0 }
+      })
+      .toBuffer()
+
+    const res = await Storage.uploadImage(`projects/${params.path}/preview`, buffer, {
+      type: 'png'
+    })
+    console.log(res)
+
+    return { success: true }
+  }
+
+  static async generatePreviewVinyl(params: { path: string; type: string; nb?: number }) {
     const path = `projects/${params.path}`
 
     const composite: any[] = []
@@ -618,7 +641,7 @@ class Artwork {
       if (params.nb === 2) {
         composite.push({
           input: vinyl,
-          left: 480,
+          left: 550,
           top: 225
         })
       }
