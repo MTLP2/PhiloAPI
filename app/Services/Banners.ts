@@ -31,7 +31,9 @@ class Banners {
   static async getHome(params: { lang: string }) {
     const items = await DB('banner')
       .where('is_visible', true)
-      .whereIn('lang', [params.lang, 'all'])
+      .where((query) => {
+        query.whereNull('lang').orWhere('lang', params.lang)
+      })
       .orderBy('sort', 'asc')
       .orderBy(DB.raw('RAND()'))
       .all()
@@ -73,7 +75,7 @@ class Banners {
     item.position = params.position
     item.color = params.color
     item.show_cover = params.show_cover
-    item.lang = params.lang
+    item.lang = params.lang || null
     item.is_visible = params.is_visible
     item.cropped = params.cropped
     item.link = params.link
@@ -102,6 +104,7 @@ class Banners {
         width: 1200,
         quality: 85
       })
+
       item.picture_mobile = file
     }
 
@@ -123,7 +126,7 @@ class Banners {
           height: Math.round((area.height / 100) * meta.height)
         }
 
-        const imgBuffer = await image.extract(cropInfo).jpeg().toBuffer()
+        const imgBuffer = await image.extract(cropInfo).resize(600).jpeg().toBuffer()
 
         const file = Utils.uuid()
         const fileName = `home/${file}`
