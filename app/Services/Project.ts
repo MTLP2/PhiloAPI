@@ -671,7 +671,7 @@ class Project {
       projects.orderBy(params.order, params.sort)
     } else if (params.sort) {
       if (params.sort === 'popularity') {
-        projects.orderBy('home', 'desc').orderBy('likes', 'desc')
+        projects.orderBy('count', 'desc')
       } else if (params.sort === 'progress') {
         projects.orderBy('progress', 'desc')
       } else if (params.sort === 'date_add') {
