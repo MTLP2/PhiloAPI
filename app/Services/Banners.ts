@@ -31,7 +31,7 @@ class Banners {
   static async getHome(params: { lang: string }) {
     const items = await DB('banner')
       .where('is_visible', true)
-      .where('lang', params.lang)
+      .whereIn('lang', [params.lang, 'all'])
       .orderBy('sort', 'asc')
       .orderBy(DB.raw('RAND()'))
       .all()
