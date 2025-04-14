@@ -397,9 +397,16 @@ class App {
     let statement = 0
 
     let e = 0
+    let i = 0
+
     await Promise.all(
       notifications.map(async (notif) => {
-        if (notif.type === 'statement') {
+        i++
+        if (
+          notif.type === 'statement' ||
+          notif.type === 'invoice_reminder_first' ||
+          notif.type === 'invoice_reminder_second'
+        ) {
           if (statement > 5) {
             return false
           }
@@ -452,10 +459,20 @@ class App {
     if (n.user_id) {
       data.user = await DB('user').find(n.user_id)
       if (!data.user.email) {
-        await DB('notification').where('id', n.id).update({
-          email: 0
-        })
-        return false
+        if (n.invoice_id) {
+          const invoice = await DB('invoice').where('id', n.invoice_id).first()
+          if (!invoice.email) {
+            await DB('notification').where('id', n.id).update({
+              email: 0
+            })
+            return false
+          }
+        } else {
+          await DB('notification').where('id', n.id).update({
+            email: 0
+          })
+          return false
+        }
       }
       data.lang = data.user.lang
     }
@@ -1498,7 +1515,6 @@ class App {
 
     const categories = await DB('category').where('is_visible', true).all()
     for (const category of categories) {
-      console.log(`/vinyl-shop/${category.id}/${category.code}`)
       sitemap.write({
         url: `/vinyl-shop/${category.id}/${category.code}`,
         lang: 'en',
