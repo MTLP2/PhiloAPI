@@ -56,7 +56,7 @@ class Shops {
     if (!shop) {
       throw new ApiError(404)
     }
-    if (shop.password) {
+    if (!params.all_project && shop.password) {
       if (shop.password && params.password !== shop.password) {
         shop.password = true
       } else {
