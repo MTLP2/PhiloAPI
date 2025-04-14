@@ -1399,8 +1399,10 @@ class Invoices {
     const first = await DB('invoice')
       .whereIn('status', ['invoiced', 'prepaid'])
       .whereNotNull('email')
+      .where('email', '!=', '')
       .whereRaw('invoice.date < DATE_SUB(NOW(), INTERVAL payment_days + 15 DAY)')
       .where('compatibility', 1)
+      .where('type', 'invoice')
       .where('invoice.date', '>=', '2022-01-01')
       .whereNotExists((query) =>
         query
@@ -1422,9 +1424,11 @@ class Invoices {
     const seconds = await DB('invoice')
       .whereIn('status', ['invoiced', 'prepaid'])
       .whereNotNull('email')
+      .where('email', '!=', '')
       .whereRaw('invoice.date < DATE_SUB(NOW(), INTERVAL payment_days + 15 DAY)')
       .where('compatibility', 1)
       .where('invoice.date', '>=', '2022-01-01')
+      .where('type', 'invoice')
       .whereExists((query) =>
         query
           .from('notification')
@@ -1496,6 +1500,7 @@ class Invoices {
 
     const reminders = await DB('notification')
       .where('type', 'like', 'invoice_reminder%')
+      .where('email', '=', 2)
       .whereIn(
         'invoice_id',
         invoices.map((i) => i.id)
