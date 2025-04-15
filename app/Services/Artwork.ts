@@ -155,22 +155,20 @@ class Artwork {
         if (project.picture_project) {
           await Storage.deleteImage(`projects/${project.picture}/${project.picture_project}`)
         }
-        const file = Utils.uuid()
-        Storage.uploadImage(
-          `projects/${project.picture}/${file}`,
+        project.picture_project = Utils.uuid()
+        await Storage.uploadImage(
+          `projects/${project.picture}/${project.picture_project}`,
           Buffer.from(
             params.picture_project.replace(/^data:image\/(png|jpg|jpeg);base64,/, ''),
             'base64'
           ),
           { type: 'png', width: 1000, quality: 100 }
         )
+
         await DB('vod').where('project_id', project.id).update({
-          picture_project: file
+          picture_project: project.picture_project
         })
       }
-
-      // await Artwork.generateVinyl(uid, project)
-      await Artwork.generateDisc(project)
 
       if (project.category === 'cd') {
         await Artwork.generateSleeve(uid, 'cd')
@@ -181,7 +179,18 @@ class Artwork {
         await Artwork.generateSleeve(uid, project.sleeve, project.nb_vinyl)
       }
 
-      // await Artwork.generatePreview(project)
+      if (project.picture_project) {
+        await Artwork.generatePreview({
+          path: uid,
+          picture: project.picture_project
+        })
+      } else {
+        await Artwork.generatePreviewVinyl({
+          path: uid,
+          type: project.type,
+          nb: project.nb_vinyl
+        })
+      }
 
       return { success: true, picture: uid }
     } catch (e) {
@@ -581,24 +590,32 @@ class Artwork {
   }
 
   static async generatePreview(params: { path: string; picture: string }) {
-    const picture = await Storage.get(`projects/${params.path}/${params.picture}`)
+    const picture = await Storage.get(`projects/${params.path}/${params.picture}.png`)
     if (!picture) {
       return false
     }
 
+    // Big 700
+    // Medium 400
+    // Small 40
+
     const buffer = await sharp(picture)
       .resize({
-        width: 400,
-        height: 400,
+        width: 700,
+        height: 700,
         fit: 'contain',
         background: { r: 100, g: 100, b: 100, alpha: 0 }
       })
       .toBuffer()
 
-    const res = await Storage.uploadImage(`projects/${params.path}/preview`, buffer, {
+    await Storage.uploadImage(`projects/${params.path}/preview`, buffer, {
       type: 'png'
     })
-    console.log(res)
+
+    Artwork.compressPreview({
+      path: `projects/${params.path}`,
+      buffer: buffer
+    }).then(() => {})
 
     return { success: true }
   }
@@ -630,21 +647,22 @@ class Artwork {
       if (!vinylBuffer) {
         vinylBuffer = await Artwork.generateVinyl(params.path, {})
       }
-      const vinyl = await sharp(vinylBuffer).toBuffer()
+      const vinyl = await sharp(vinylBuffer).resize({ width: 600, height: 600 }).toBuffer()
 
       composite.push({
         input: vinyl,
         left: 440,
         top: 225
       })
-
+      /**
       if (params.nb === 2) {
         composite.push({
           input: vinyl,
-          left: 550,
+          left: 460,
           top: 225
         })
       }
+      */
     }
 
     composite.push({
@@ -668,57 +686,33 @@ class Artwork {
       .composite(composite)
       .toBuffer()
 
-    Storage.uploadImage(`${path}/preview`, buffer, { type: 'png' })
+    const buffer2 = await sharp(buffer).resize({ width: 700, height: 700 }).toBuffer()
+
+    Storage.uploadImage(`${path}/preview`, buffer2, { type: 'png' })
+
+    Artwork.compressPreview({
+      path: `projects/${params.path}`,
+      buffer: buffer2
+    }).then(() => {})
 
     return buffer
   }
 
-  /**
-  static async generatePreview(params: { picture: string; picture_project?: string }) {
-    let image: Buffer | null
-    if (params.picture_project) {
-      image = await Storage.get(`projects/${params.picture}/${params.picture_project}`)
-    } else {
-      image = await Storage.get(`projects/${params.picture}/vinyl.png`)
-    }
-
-    if (!image) {
-      return false
-    }
-
-    console.log(params)
-    const buffer = await sharp(image)
-      .extract({
-        top: 10,
-        left: 180,
-        width: 1100,
-        height: 680
-      })
-      // .resize(200, 200)
-      /**
-      .extend({
-        top: 165,
-        bottom: 145,
-        right: 100,
-        left: 0,
-        background: { r: 100, g: 100, b: 100, alpha: 0 } // Transparent
-      })
-      **/
-  /**
-      .resize({
-        width: 700,
-        height: 490,
-        fit: 'cover'
-      })
-      **/
-  /**
+  static async compressPreview(params: { path: string; buffer: Buffer }) {
+    sharp(params.buffer)
+      .resize({ width: 400, height: 400 })
       .toBuffer()
+      .then(async (buffer) => {
+        await Storage.uploadImage(`${params.path}/preview_m`, buffer, { type: 'png' })
+      })
 
-    await Storage.uploadImage(`projects/${params.picture}/preview2`, buffer, { type: 'png' })
-
-    return true
+    sharp(params.buffer)
+      .resize({ width: 40, height: 40 })
+      .toBuffer()
+      .then(async (buffer) => {
+        await Storage.uploadImage(`${params.path}/preview_s`, buffer, { type: 'png' })
+      })
   }
-  **/
 
   static async generateSleeve(id, type, nb?) {
     const path = `projects/${id}`
@@ -869,7 +863,7 @@ class Artwork {
     } else if (params.type === 'png') {
       image.png({ quality: params.quality || 90 })
     } else if (params.type === 'webp') {
-      image.webp({ quality: params.quality || 90 })
+      image.webp({ quality: params.quality || 100 })
     }
     return image.toBuffer()
   }
