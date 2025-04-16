@@ -148,7 +148,7 @@ class Quote {
     params.label_color = params.label || 'color'
 
     // const ff = ['precision']
-    const ff = ['sna']
+    const ff = ['sna', 'vdp']
     /**
     if (params.factory === 'sna2') {
       ff.push('sna2')
@@ -316,7 +316,7 @@ class Quote {
       let quantity
       if (payload.quantity) {
         quantity = payload.quantity
-      } else if (line && line.type === 'F') {
+      } else if (line && (line.type === 'F' || payload.option === 'F')) {
         quantity = params.nb_vinyl
       } else {
         const samples = params.quantity >= 500 ? 10 : 5
@@ -435,7 +435,6 @@ class Quote {
     quote.fee = Utils.round(data.price * quantitySell * fee)
     quote.fee_all = Utils.round(data.price * quantitySell * feeBase)
     quote.fee_discount = quote.fee_all - quote.fee
-
     quote.profit = Utils.round(data.price * quantitySell - quote.total_tax - quote.fee)
     quote.profit_distribution = quote.profit
     quote.total_cost = Utils.round(quote.total_tax + quote.fee)
@@ -838,6 +837,7 @@ class Quote {
       onceByCopy: true,
       active: true
     })
+
     quote.prices.sleeve.pvc =
       quote.prices.sleeve.base +
       getCost({
@@ -878,6 +878,7 @@ class Quote {
         onceByCopy: true,
         active: params.sleeve === 'double_gatefold'
       })
+
     if (params.nb_vinyl === 1) {
       quote.prices.sleeve.double_gatefold += getCost({
         l: 289,
@@ -1720,7 +1721,6 @@ class Quote {
     quote.prices = Quote.getPrices()
 
     quote.prices.sleeve.triple_gatefold = false
-    quote.prices.type_vinyl.splatter = false
     quote.prices.type_vinyl.marble = false
     quote.prices.type_vinyl.cloudy = false
     quote.prices.type_vinyl.asidebside = false
@@ -1737,35 +1737,31 @@ class Quote {
     // quote.cutting = getCost({ l: 6, type: 'cutting', option: '', active: true })
     if (
       ['discobag', 'triple_gatefold'].includes(params.sleeve) ||
-      [
-        'splatter',
-        'marble',
-        'cloudy',
-        'asidebside',
-        'colorincolor',
-        'halfandhalf',
-        'picture_disc'
-      ].includes(params.type_vinyl)
+      ['marble', 'cloudy', 'asidebside', 'colorincolor', 'halfandhalf', 'picture_disc'].includes(
+        params.type_vinyl
+      )
     ) {
       quote.error = true
       return quote
     }
     if (params.nb_vinyl === 1) {
-      quote.prices.sleeve.color = getCost({
-        l: 5,
-        type: 'base',
-        option: 'color',
-        onceByCopy: true,
-        active: true
-      })
-      quote.prices.sleeve.double_gatefold = getCost({
-        l: 3,
-        type: 'base',
-        option: 'double_gatefold',
-        onceByCopy: true,
-        active: true
-      })
+      if (params.sleeve === 'color') {
+        quote.prices.sleeve.color = getCost({
+          l: 5,
+          type: 'base',
+          option: 'color',
+          onceByCopy: true,
+          active: params.sleeve === 'color'
+        })
+      }
       if (params.sleeve === 'double_gatefold') {
+        quote.prices.sleeve.double_gatefold = getCost({
+          l: 3,
+          type: 'base',
+          option: 'double_gatefold',
+          onceByCopy: true,
+          active: true
+        })
         quote.prices.sleeve.double_gatefold += getCost({
           l: 102,
           type: 'surcharge',
@@ -1775,21 +1771,26 @@ class Quote {
         })
       }
     } else if (params.nb_vinyl === 2) {
-      quote.prices.sleeve.color = getCost({
-        l: 4,
-        type: 'base',
-        option: 'color',
-        onceByCopy: true,
-        active: true
-      })
-      quote.prices.sleeve.double_gatefold = getCost({
-        l: 2,
-        type: 'base',
-        option: 'double_gatefold',
-        onceByCopy: true,
-        active: true
-      })
+      if (params.sleeve === 'color') {
+        quote.prices.sleeve.color = getCost({
+          l: 4,
+          type: 'base',
+          option: 'color',
+          onceByCopy: true,
+          active: true
+        })
+      }
+      if (params.sleeve === 'double_gatefold') {
+        quote.prices.sleeve.double_gatefold = getCost({
+          l: 2,
+          type: 'base',
+          option: 'double_gatefold',
+          onceByCopy: true,
+          active: true
+        })
+      }
     }
+
     quote.prices.sleeve.pvc =
       quote.prices.sleeve.color +
       getCost({
@@ -1799,6 +1800,7 @@ class Quote {
         onceByCopy: true,
         active: params.sleeve === 'pvc'
       })
+
     quote.sleeve =
       quote.prices.sleeve[params.sleeve] +
       getCost({
@@ -1825,12 +1827,13 @@ class Quote {
     quote.weight = this.getPrice(quote, params, 'weight')
 
     quote.prices.type_vinyl.surcharge = getCost({
-      l: 29,
+      l: 25,
       type: 'type_vinyl',
-      option: 'surcharge',
+      option: 'F',
       onceByCopy: true,
       active: true
     })
+
     quote.prices.type_vinyl.color =
       getCost({
         l: 17,
@@ -1839,7 +1842,7 @@ class Quote {
         onceByCopy: true,
         active: params.type_vinyl === 'color'
       }) + quote.prices.type_vinyl.surcharge
-    quote.type_vinyl = this.getPrice(quote, params, 'type_vinyl')
+
     quote.prices.type_vinyl.pantone =
       getCost({
         l: 18,
@@ -1848,6 +1851,7 @@ class Quote {
         onceByCopy: true,
         active: params.type_vinyl === 'pantone'
       }) + quote.prices.type_vinyl.surcharge
+
     quote.prices.type_vinyl.marble =
       getCost({
         l: 19,
@@ -1857,12 +1861,37 @@ class Quote {
         active: params.type_vinyl === 'marble'
       }) +
       quote.prices.type_vinyl.surcharge * 2
+
+    quote.prices.type_vinyl.splatter =
+      getCost({
+        l: 22,
+        type: 'type_vinyl',
+        option: 'splatter',
+        onceByCopy: true,
+        active: params.type_vinyl === 'splatter'
+      }) +
+      quote.prices.type_vinyl.surcharge * 2 +
+      getCost({
+        l: 17,
+        type: 'type_vinyl',
+        option: 'surcharge',
+        onceByCopy: true,
+        active: false
+      })
+    console.log(
+      'splatter',
+      quote.prices.type_vinyl.splatter,
+      quote.prices.type_vinyl.surcharge,
+      quote.prices.type_vinyl.color
+    )
+
+    quote.type_vinyl += quote.prices.type_vinyl[params.type_vinyl]
+
     // inner_sleeve
     quote.prices.inner_sleeve.black = getCost({
       l: 32,
       type: 'inner_sleeve',
       option: 'black',
-      onceByCopy: true,
       active: params.inner_sleeve === 'black'
     })
     quote.prices.inner_sleeve.white_antistatic = getCost({
