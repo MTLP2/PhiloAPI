@@ -163,6 +163,7 @@ export default {
       red: '#ef2f2f',
       transparent_red: '#ba222ceb',
       blood_red: '#ee403d',
+      teal: '#008080',
       oxblood: '#ac3145',
       brown: 'rgb(138, 56, 8)',
       dookie_brown: '#925146',
@@ -176,7 +177,7 @@ export default {
       baby_pink: '#f9c3ce',
       white: '#fbfbfb',
       ultra_clear: '#d9dad4',
-      transparent: 'rgb(255 255 255 / 0%)',
+      transparent: '#8080801c',
       grey: 'grey'
     }
   }
