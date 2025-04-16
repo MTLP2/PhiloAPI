@@ -813,7 +813,7 @@ class Project {
         'artist.description as artist_desc',
         'artist.picture as artist_picture',
         'artist.country_id as artist_country',
-        'label.name as label_name',
+        'label.name as label',
         'label.description as label_desc',
         'label.picture as label_picture',
         'label.country_id as label_country',
@@ -1053,6 +1053,7 @@ class Project {
       }
     }
 
+    project.label_name = project.label || project.label_name
     project.products = products
     project.items = items.map((item) => {
       let soldout = true
