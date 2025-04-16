@@ -89,6 +89,7 @@ class Charts {
       .where('c.country_id', params.country_id)
       .all()
 
+    const emails = {}
     for (const o in orders) {
       orders[o].title = orders[o].name.split(' - ')[1]
       if (!orders[o].title) {
@@ -99,9 +100,13 @@ class Charts {
       orders[o].licensor = orders[o].is_licence ? 'Diggers Factory' : orders[o].label
 
       if (orders[o].email_score === null) {
-        orders[o].email_score = await User.setEmailScore({ email: orders[o].email })
-        console.log(orders[o].email, orders[o].email_score)
-        await Utils.sleep(200)
+        if (emails[orders[o].email]) {
+          orders[o].email_score = emails[orders[o].email]
+        } else {
+          orders[o].email_score = await User.setEmailScore({ email: orders[o].email })
+          emails[orders[o].email] = orders[o].email_score
+          await Utils.sleep(300)
+        }
       }
     }
 
@@ -252,6 +257,7 @@ class Charts {
       date: params.date
     })
 
+    console.log(orders.length)
     let totalQuantity = 0
 
     // Record Number (92)
@@ -521,8 +527,8 @@ class Charts {
   }
 
   static async uploadCharts() {
-    const start = moment().subtract(8, 'days').format('YYYY-MM-DD')
-    const end = moment().subtract(2, 'days').format('YYYY-MM-DD 23:59:59')
+    const start = moment().subtract(7, 'days').format('YYYY-MM-DD')
+    const end = moment().subtract(1, 'days').format('YYYY-MM-DD 23:59:59')
 
     const us = await Charts.getLuminateCharts({
       country_id: 'US',
