@@ -532,6 +532,7 @@ Route.group(() => {
   Route.post('/products/:id', 'ProductsController.saveProduct')
   Route.delete('/products/:id', 'ProductsController.removeProduct')
   Route.post('/products/:id/stocks', 'ProductsController.saveStocks')
+  Route.get('/products/:id/stocks', 'ProductsController.getStock')
   Route.post('/products/:id/stocks/calcul', 'ProductsController.setStockProduct')
   Route.post('/products/:id/sub-product', 'ProductsController.saveSubProduct')
   Route.delete('/products/:id/sub-product', 'ProductsController.removeSubProduct')

@@ -120,53 +120,6 @@ class Products {
     }
 
     item.children = await DB('product').where('parent_id', params.id).all()
-    item.stocks = await DB('stock')
-      .select(
-        'stock.id',
-        'stock.type',
-        'is_preorder',
-        'is_distrib',
-        'alert',
-        'quantity',
-        'reserved',
-        DB.raw('quantity - reserved as available')
-      )
-      .where('product_id', params.id)
-      .all()
-
-    const sales = await Products.getProductsSales({ productIds: [params.id] })
-    for (const s in item.stocks) {
-      const stock = item.stocks[s]
-      const sale = sales[params.id] && sales[params.id][stock.type]
-      if (sale) {
-        item.stocks[s].sales = item.stocks[s].is_preorder ? sale.preorder || 0 : sale.sales || 0
-      }
-    }
-
-    const stock = await Stock.getHistoric({ product_id: params.id })
-
-    item.stocks_historic = stock.list
-    item.stocks_months = stock.months
-
-    /**
-    item.stocks.unshift({
-      type: 'distrib',
-      is_distrib: true,
-      quantity: item.stocks
-        .filter((s) => s.is_distrib)
-        .map((c) => c.quantity)
-        .reduce((a, c) => (a + c < 0 ? 0 : c), 0)
-    })
-    item.stocks.unshift({
-      type: 'site',
-      is_distrib: false,
-      quantity: item.stocks
-        .filter((s) => !s.is_distrib)
-        .map((c) => c.quantity)
-        .reduce((a, c) => (a + c < 0 ? 0 : c), 0)
-    })
-    **/
-
     return item
   }
 
@@ -983,6 +936,40 @@ class Products {
           res[product][logistician].stock - res[product][logistician].reserved
       }
     }
+
+    return res
+  }
+
+  static getStock = async (params: { id: number }) => {
+    const res: any = {}
+
+    res.stocks = await DB('stock')
+      .select(
+        'stock.id',
+        'stock.type',
+        'is_preorder',
+        'is_distrib',
+        'alert',
+        'quantity',
+        'reserved',
+        DB.raw('quantity - reserved as available')
+      )
+      .where('product_id', params.id)
+      .all()
+
+    const sales = await Products.getProductsSales({ productIds: [params.id] })
+    for (const s in res.stocks) {
+      const stock = res.stocks[s]
+      const sale = sales[params.id] && sales[params.id][stock.type]
+      if (sale) {
+        res.stocks[s].sales = stock.is_preorder ? sale.preorder || 0 : sale.sales || 0
+      }
+    }
+
+    const stock = await Stock.getHistoric({ product_id: params.id })
+
+    res.stocks_historic = stock.list
+    res.stocks_months = stock.months
 
     return res
   }
