@@ -1,9 +1,9 @@
-import { References } from '@/components/References'
 import Utils from 'App/Utils'
 import Excel from 'exceljs'
 import DB from 'App/DB'
 import Env from '@ioc:Adonis/Core/Env'
 import Dispatchs from './Dispatchs'
+import Stock from './Stock'
 
 class Cbip {
   static async api(
@@ -29,6 +29,7 @@ class Cbip {
       data: {
         sku: string
         uuid: string
+        quantity: number
       }[]
     } = await this.api(
       `warehouse-api/open/warehouses/${Env.get('CBIP_API_WAREHOUSE')}/inventory?limit=99999`,
@@ -40,12 +41,27 @@ class Cbip {
     return res.data
   }
 
-  static async setIds() {
+  static async syncStocks() {
     const items = await this.getInventory()
     for (const item of items) {
-      await DB('product').where('barcode', item.sku).update({
+      const product = await DB('product').where('barcode', item.sku).first()
+      if (!product) {
+        continue
+      }
+      await DB('product').where('id', product.id).update({
         cbip_id: item.uuid
       })
+      try {
+        await Stock.save({
+          product_id: product.id,
+          type: 'cbip',
+          comment: 'api',
+          is_preorder: false,
+          quantity: item.quantity || 0
+        })
+      } catch (e) {
+        console.log(e)
+      }
     }
     return items.length
   }

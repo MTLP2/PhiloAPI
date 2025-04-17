@@ -1,8 +1,8 @@
 import DB from 'App/DB'
 import Utils from 'App/Utils'
-import Elogik from 'App/Services/Elogik'
 import Whiplash from 'App/Services/Whiplash'
 import BigBlue from 'App/Services/BigBlue'
+import Cbip from 'App/Services/Cbip'
 import Notifications from 'App/Services/Notifications'
 import Excel from 'exceljs'
 import moment from 'moment'
@@ -208,7 +208,7 @@ class Stock {
   }
 
   static async syncAllApi() {
-    await Promise.all([Whiplash.syncStocks(), BigBlue.syncStocks()])
+    await Promise.all([Whiplash.syncStocks(), BigBlue.syncStocks(), Cbip.syncStocks()])
     await Stock.setStockParents()
     return { success: true }
   }
