@@ -168,7 +168,7 @@ class Mockup {
   }
 
   async getDisc(params: {
-    label: string
+    label: string | null
     type?: string
     color: string
     color2?: string

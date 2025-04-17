@@ -23,6 +23,7 @@ class Artwork {
           'vod.color_vinyl',
           'vod.splatter1',
           'vod.splatter2',
+          'vod.label',
           'vod.sleeve',
           'vod.url_vinyl'
         )
@@ -573,7 +574,9 @@ class Artwork {
       color2: config.colors.vinyl[project.splatter1],
       color3: config.colors.vinyl[project.splatter2],
       label:
-        project.type === 'test_pressing'
+        project.label === 'none'
+          ? null
+          : project.type === 'test_pressing'
           ? `${Env.get('STORAGE_URL')}/assets/images/vinyl/white_label.png`
           : `${Env.get('STORAGE_URL')}/projects/${project.picture}/label.jpg`,
       picture:
