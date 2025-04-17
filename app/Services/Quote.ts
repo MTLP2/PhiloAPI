@@ -148,7 +148,7 @@ class Quote {
     params.label_color = params.label || 'color'
 
     // const ff = ['precision']
-    const ff = ['sna', 'vdp']
+    const ff = ['vdp']
     /**
     if (params.factory === 'sna2') {
       ff.push('sna2')
@@ -1721,7 +1721,6 @@ class Quote {
     quote.prices = Quote.getPrices()
 
     quote.prices.sleeve.triple_gatefold = false
-    quote.prices.type_vinyl.marble = false
     quote.prices.type_vinyl.cloudy = false
     quote.prices.type_vinyl.asidebside = false
     quote.prices.type_vinyl.colorincolor = false
@@ -1731,13 +1730,12 @@ class Quote {
     quote.prices.label_color.white = false
 
     quote.prices.sleeve.discobag = false
-    quote.prices.print_finish.matt_varnish = false
     quote.prices.sticker.sticker = false
 
     // quote.cutting = getCost({ l: 6, type: 'cutting', option: '', active: true })
     if (
       ['discobag', 'triple_gatefold'].includes(params.sleeve) ||
-      ['marble', 'cloudy', 'asidebside', 'colorincolor', 'halfandhalf', 'picture_disc'].includes(
+      ['cloudy', 'asidebside', 'colorincolor', 'halfandhalf', 'picture_disc'].includes(
         params.type_vinyl
       )
     ) {
@@ -1862,6 +1860,8 @@ class Quote {
       }) +
       quote.prices.type_vinyl.surcharge * 2
 
+    console.log(params.type_vinyl)
+
     quote.prices.type_vinyl.splatter =
       getCost({
         l: 22,
@@ -1876,56 +1876,59 @@ class Quote {
         type: 'type_vinyl',
         option: 'surcharge',
         onceByCopy: true,
-        active: false
+        active: true
       })
-    console.log(
-      'splatter',
-      quote.prices.type_vinyl.splatter,
-      quote.prices.type_vinyl.surcharge,
-      quote.prices.type_vinyl.color
-    )
 
-    quote.type_vinyl += quote.prices.type_vinyl[params.type_vinyl]
+    quote.type_vinyl = quote.prices.type_vinyl[params.type_vinyl]
 
-    // inner_sleeve
     quote.prices.inner_sleeve.black = getCost({
-      l: 32,
+      l: {
+        '12"': 32,
+        '7"': 41
+      },
       type: 'inner_sleeve',
       option: 'black',
       active: params.inner_sleeve === 'black'
     })
-    quote.prices.inner_sleeve.white_antistatic = getCost({
-      l: 35,
-      type: 'inner_sleeve',
-      option: 'white_antistatic',
-      onceByCopy: true,
-      active: params.inner_sleeve === 'black'
-    })
-    quote.prices.inner_sleeve.black_antistatic = getCost({
-      l: 36,
-      type: 'inner_sleeve',
-      option: 'black_antistatic',
-      onceByCopy: true,
-      active: params.inner_sleeve === 'black_antistatic'
-    })
-    if (params.weight === '180') {
-      quote.prices.inner_sleeve.printed = getCost({
-        l: 60,
+
+    // inner_sleeve
+    if (params.format === '7"') {
+      quote.prices.inner_sleeve.white_antistatic = false
+      quote.prices.inner_sleeve.black_antistatic = false
+    } else {
+      quote.prices.inner_sleeve.white_antistatic = getCost({
+        l: {
+          '12"': 35,
+          '7"': false
+        },
         type: 'inner_sleeve',
-        option: 'printed',
+        option: 'white_antistatic',
         onceByCopy: true,
-        active: params.inner_sleeve === 'printed'
+        active: params.inner_sleeve === 'white_antistatic'
+      })
+      quote.prices.inner_sleeve.black_antistatic = getCost({
+        l: {
+          '12"': 36,
+          '7"': false
+        },
+        type: 'inner_sleeve',
+        option: 'black_antistatic',
+        onceByCopy: true,
+        active: params.inner_sleeve === 'black_antistatic'
       })
     }
-    if (params.weight === '140') {
-      quote.prices.inner_sleeve.printed = getCost({
-        l: 60,
-        type: 'inner_sleeve',
-        option: 'printed',
-        onceByCopy: true,
-        active: params.inner_sleeve === 'printed'
-      })
-    }
+
+    quote.prices.inner_sleeve.printed = getCost({
+      l: {
+        '12"': 59,
+        '7"': 61
+      },
+      type: 'inner_sleeve',
+      option: 'printed',
+      onceByCopy: true,
+      active: params.inner_sleeve === 'printed'
+    })
+
     quote.inner_sleeve = quote.prices.inner_sleeve[params.inner_sleeve]
     quote.shrink = quote.prices.inner_sleeve[params.inner_sleeve]
 
@@ -1939,8 +1942,17 @@ class Quote {
     })
     quote.shrink = quote.prices.shrink[params.shrink]
 
+    // print_finish
+    quote.prices.print_finish.gloss_varnish = getCost({
+      l: 106,
+      type: 'print_finish',
+      option: 'gloss_varnish',
+      onceByCopy: true,
+      active: params.print_finish === 'gloss_varnish'
+    })
+
     quote.prices.print_finish.matt_varnish = getCost({
-      l: 27,
+      l: 107,
       type: 'print_finish',
       option: 'matt_varnish',
       onceByCopy: true,
@@ -1959,6 +1971,8 @@ class Quote {
       quote.prices.print_finish.matt_varnish = false
       quote.prices.print_finish.returned_cardboard = false
     }
+
+    // insert
 
     quote.prices.insert.two_sides_printed = getCost({
       l: 120,
