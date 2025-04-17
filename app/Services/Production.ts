@@ -356,6 +356,9 @@ class Production {
     item.prod = {}
     item.postprod = {}
     for (const i of list) {
+      if (i.type === 'tracklisting' && item.project_category === 'cd') {
+        continue
+      }
       item[i.category][i.type] = {
         ...i,
         production_id: item.id,
