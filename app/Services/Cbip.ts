@@ -153,7 +153,7 @@ class Cbip {
           title: item.name,
           quantity: item.quantity,
           price: item.price,
-          weight: item.weight,
+          weight: Utils.round(item.weight / 1000, 2),
           weight_unit: 'kg',
           metadata: {
             hs_code: item.hs_code,
