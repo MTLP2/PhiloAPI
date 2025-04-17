@@ -1832,14 +1832,26 @@ class Quote {
       active: true
     })
 
-    quote.prices.type_vinyl.color =
-      getCost({
-        l: 17,
-        type: 'type_vinyl',
-        option: 'color',
-        onceByCopy: true,
-        active: params.type_vinyl === 'color'
-      }) + quote.prices.type_vinyl.surcharge
+    if (params.color_vinyl === params.color_vinyl?.startsWith('neon_')) {
+      console.log('royal_blue')
+      quote.prices.type_vinyl.color =
+        getCost({
+          l: 20,
+          type: 'type_vinyl',
+          option: 'color',
+          onceByCopy: true,
+          active: params.type_vinyl === 'color'
+        }) + quote.prices.type_vinyl.surcharge
+    } else {
+      quote.prices.type_vinyl.color =
+        getCost({
+          l: 17,
+          type: 'type_vinyl',
+          option: 'color',
+          onceByCopy: true,
+          active: params.type_vinyl === 'color'
+        }) + quote.prices.type_vinyl.surcharge
+    }
 
     quote.prices.type_vinyl.pantone =
       getCost({
