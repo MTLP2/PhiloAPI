@@ -19,8 +19,9 @@ import Alerts from 'App/Services/Alerts'
 import Project from 'App/Services/Project'
 
 class AppController {
-  index() {
-    return 'API Diggers Factory ' + process.pid
+  async index() {
+    const res = await User.setEmailScore({ email: 'test@test.com' })
+    return 'API Diggers Factory ' + process.pid + ' ' + res
   }
 
   cron() {

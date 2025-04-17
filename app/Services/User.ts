@@ -1562,11 +1562,13 @@ static extractProjectOrders = async (params) => {
       )}&email=${email}`
     )
     const data = await response.json()
+    console.log(data)
     return data
   }
 
   static setEmailScore = async (params: { email: string }) => {
     const email = await User.validEmail(params.email)
+    console.log(params.email, email)
     if (email.quality_score === null) {
       return null
     }
