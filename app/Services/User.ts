@@ -1568,7 +1568,7 @@ static extractProjectOrders = async (params) => {
 
   static setEmailScore = async (params: { email: string }) => {
     const email = await User.validEmail(params.email)
-    console.log(params.email, email)
+    console.log('email_check', params.email, email)
     if (email.quality_score === null) {
       return null
     }
