@@ -257,7 +257,6 @@ class Charts {
       date: params.date
     })
 
-    console.log(orders.length)
     let totalQuantity = 0
 
     // Record Number (92)

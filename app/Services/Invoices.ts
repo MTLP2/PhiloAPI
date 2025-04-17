@@ -87,14 +87,10 @@ class Invoices {
       query.where('compatibility', true)
     }
 
-    console.log(query.toString())
-
     const res = await Utils.getRows({
       query,
       ...params
     })
-
-    console.log(res)
 
     return res
   }

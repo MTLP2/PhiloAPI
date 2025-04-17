@@ -218,7 +218,6 @@ class Dispatchs {
 
     if (params.logistician === 'whiplash' || params.logistician === 'whiplash_uk') {
       const notFound = pp.filter((i) => !i.whiplash_id)
-      console.log(notFound)
       if (notFound.length > 0) {
         return {
           error: `Whiplash not found for ${notFound.map((i) => i.id).join(', ')}: ${notFound
@@ -2176,7 +2175,7 @@ class Dispatchs {
       let missingProduct = false
       for (const product of order.products) {
         if (!params.products.includes(product)) {
-          console.log('missing product', product)
+          console.info('missing product', product)
           missingProduct = true
         }
       }
@@ -2691,9 +2690,7 @@ class Dispatchs {
     await dispatch.save()
 
     if (['CA', 'US'].includes(params.country_id)) {
-      User.setEmailScore({ email: params.email }).then((score) => {
-        console.log(params.email, score)
-      })
+      User.setEmailScore({ email: params.email }).then(() => {})
     }
 
     if (params.logistician === 'bigblue') {

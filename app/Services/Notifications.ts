@@ -230,7 +230,7 @@ class Notifications {
     }
 
     if (false || params.to.split(',').length > 1) {
-      const res = await request({
+      await request({
         method: 'POST',
         url: ' https://api.mailjet.com/v3.1/send',
         json: true,
@@ -260,7 +260,6 @@ class Notifications {
           ]
         }
       })
-      console.log(res)
     } else {
       const data = {
         from: `${params.from_name} <${params.from_address}>`,

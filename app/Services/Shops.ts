@@ -217,7 +217,6 @@ class Shops {
   static async removeImage(params: { shop_id: number; type: string }) {
     const item = await DB('shop').find(params.shop_id)
 
-    console.log(params.type)
     if (params.type === 'banner' && item.banner) {
       Storage.deleteImage(item.banner)
       item.banner = null
