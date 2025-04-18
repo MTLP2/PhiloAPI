@@ -2730,7 +2730,8 @@ class Project {
         'customer.phone as customer_phone',
         DB.raw(`CONCAT(customer.firstname, ' ', customer.lastname) AS customer_name`),
         'resp_prod.name as resp_prod',
-        'com.name as com'
+        'com.name as com',
+        'project.created_at'
       )
       .leftJoin('vod', 'vod.project_id', 'project.id')
       .leftJoin('user', 'user.id', 'vod.user_id')
@@ -2759,6 +2760,7 @@ class Project {
         worksheetName: 'Direct Pressing',
         columns: [
           { header: 'ID', key: 'id', width: 15 },
+          { header: 'Date', key: 'created_at', width: 15 },
           { header: 'Origin', key: 'origin', width: 15 },
           { header: 'Pays', key: 'customer_country', width: 15 },
           { header: 'Email', key: 'email', width: 30 },
