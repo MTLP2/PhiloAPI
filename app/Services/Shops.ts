@@ -144,7 +144,7 @@ class Shops {
     item.group_shipment = params.group_shipment
     item.artist_id = params.artist_id
     item.label_id = params.label_id
-    item.password = params.password
+    item.password = params.password ? params.password : null
     item.updated_at = Utils.date()
 
     if (params.logo) {
