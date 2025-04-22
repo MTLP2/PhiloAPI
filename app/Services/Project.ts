@@ -2478,8 +2478,14 @@ class Project {
   }
 
   static exportOrders = async (params) => {
-    const orders = await Project.getOrdersForTable(params)
+    const orders: any = await Project.getOrdersForTable(params)
 
+    for (const o in orders.data) {
+      orders.data[o].total = Utils.round(orders.data[o].total * orders.data[o].currency_rate)
+      orders.data[o].tax = Utils.round(orders.data[o].tax * orders.data[o].currency_rate)
+      orders.data[o].fee = Utils.round(orders.data[o].fee * orders.data[o].currency_rate)
+      orders.data[o].net = Utils.round(orders.data[o].net * orders.data[o].currency_rate)
+    }
     return Utils.arrayToXlsx([
       {
         worksheetName: 'Orders',
@@ -2489,7 +2495,6 @@ class Project {
           { header: 'Country', key: 'country_id' },
           { header: 'Date', key: 'created_at' },
           { header: 'Qty', key: 'quantity', width: 10 },
-          { header: 'Currency', key: 'currency', width: 10 },
           { header: 'Total', key: 'total', width: 10 },
           { header: 'Tax', key: 'tax', width: 10 },
           { header: 'Fee', key: 'fee', width: 10 },
