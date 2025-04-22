@@ -2067,6 +2067,7 @@ class Admin {
           { header: 'Package Weight', key: 'weight' },
           { header: 'Date export', key: 'date_export' },
           { header: 'Tracking', key: 'tracking_number' },
+          { header: 'Tracking Link', key: 'tracking_link' },
           { header: 'Paid?', key: 'is_paid' },
           { header: 'Date', key: 'created_at' },
           { header: 'User Type', key: 'user_type' },
