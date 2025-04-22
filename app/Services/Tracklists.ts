@@ -5,7 +5,7 @@ export type SaveTrackParams = {
   id?: number
   production_id: number
   position: number
-  artist: string
+  artist?: string
   title: string
   duration: number
   disc: number
@@ -21,7 +21,6 @@ class Tracklist {
     }
 
     const requiredFields = [
-      'artist',
       'title',
       'duration',
       'position',
@@ -50,7 +49,7 @@ class Tracklist {
         item = await item.find(track.id)
       }
 
-      item.artist = track.artist
+      item.artist = track.artist || ''
       item.title = track.title
       item.duration = track.duration
       item.position = track.position

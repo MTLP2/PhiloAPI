@@ -396,7 +396,7 @@ type ProductionTrack = {
   id: number
   production_id: number
   position: number
-  artist: string
+  artist?: string
   title: string
   duration: number
   disc: number
