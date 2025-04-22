@@ -20,6 +20,7 @@ import Customer from 'App/Services/Customer'
 import moment from 'moment'
 import Invoices from './Invoices'
 import Boxes from './Boxes'
+import User from './User'
 
 class Dispatchs {
   static all = async (params: {
@@ -217,7 +218,6 @@ class Dispatchs {
 
     if (params.logistician === 'whiplash' || params.logistician === 'whiplash_uk') {
       const notFound = pp.filter((i) => !i.whiplash_id)
-      console.log(notFound)
       if (notFound.length > 0) {
         return {
           error: `Whiplash not found for ${notFound.map((i) => i.id).join(', ')}: ${notFound
@@ -2175,7 +2175,7 @@ class Dispatchs {
       let missingProduct = false
       for (const product of order.products) {
         if (!params.products.includes(product)) {
-          console.log('missing product', product)
+          console.info('missing product', product)
           missingProduct = true
         }
       }
@@ -2250,6 +2250,7 @@ class Dispatchs {
         'order_shop.currency',
         'order_shop.currency_rate',
         'order_shop.weight',
+        'order_shop.type',
         'customer.tax_id',
         'customer.country_id'
       ])
@@ -2293,6 +2294,7 @@ class Dispatchs {
       address_pickup: shop.address_pickup,
       user_id: shop.user_id,
       type: 'order',
+      preorder: shop.type === 'vod',
       shipping_method: shop.shipping_type,
       weight_invoiced: shop.weight,
       cost_invoiced: shop.shipping,
@@ -2310,6 +2312,7 @@ class Dispatchs {
     address_pickup: string
     user_id: number
     type: string
+    preorder: boolean
     shipping_method: string
     weight_invoiced?: number
     cost_invoiced?: number
@@ -2381,13 +2384,16 @@ class Dispatchs {
       dis.quantity = item.quantity
       await dis.save()
 
-      await Stock.save({
-        product_id: item.product_id,
-        type: params.logistician,
-        quantity: -item.quantity,
-        diff: true,
-        comment: params.type
-      })
+      if (params.preorder) {
+        await Stock.save({
+          product_id: item.product_id,
+          type: params.logistician,
+          quantity: -item.quantity,
+          order_id: params.order_id,
+          diff: true,
+          comment: params.type
+        })
+      }
     }
 
     return { success: true }
@@ -2682,6 +2688,10 @@ class Dispatchs {
 
     dispatch.status = 'syncing'
     await dispatch.save()
+
+    if (['CA', 'US'].includes(params.country_id)) {
+      User.setEmailScore({ email: params.email }).then(() => {})
+    }
 
     if (params.logistician === 'bigblue') {
       res = await BigBlue.syncDispatch(params)

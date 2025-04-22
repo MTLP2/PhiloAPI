@@ -109,7 +109,7 @@ class ChargeTest {
           'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ODIsInVzZXJfaWQiOjgyLCJpYXQiOjE3NDI4OTg2NDV9.z2h0ZZFozOXljWdSIFT4wUWE8LJ3HJcH0F5uzTKbbL8',
         body: payload
       })
-      console.log(res)
+      console.info(res)
       if (res.code) ok++
     }
 

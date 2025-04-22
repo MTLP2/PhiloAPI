@@ -671,7 +671,7 @@ class Project {
       projects.orderBy(params.order, params.sort)
     } else if (params.sort) {
       if (params.sort === 'popularity') {
-        projects.orderBy('home', 'desc').orderBy('likes', 'desc')
+        projects.orderBy('count', 'desc')
       } else if (params.sort === 'progress') {
         projects.orderBy('progress', 'desc')
       } else if (params.sort === 'date_add') {
@@ -813,7 +813,7 @@ class Project {
         'artist.description as artist_desc',
         'artist.picture as artist_picture',
         'artist.country_id as artist_country',
-        'label.name as label_name',
+        'label.name as label',
         'label.description as label_desc',
         'label.picture as label_picture',
         'label.country_id as label_country',
@@ -849,6 +849,7 @@ class Project {
         'year',
         'v.description',
         'v.description_fr_long',
+        'v.description_top',
         'p.inverse_name',
         'p.color',
         'v.splatter1',
@@ -862,6 +863,7 @@ class Project {
         'vinyl_weight',
         'v.weight',
         'v.barcode',
+        'v.password',
         'url_vinyl',
         'picture_disc',
         'p.bg',
@@ -1016,6 +1018,7 @@ class Project {
       )
       .where('item.project_id', id)
       .where('is_active', 1)
+      .whereIn('vod.step', ['in_progress', 'successful'])
       .leftJoin('project', 'project.id', 'item.related_id')
       .leftJoin('vod', 'vod.project_id', 'item.related_id')
       .all()
@@ -1042,6 +1045,15 @@ class Project {
       return { error: 404 }
     }
 
+    if (project.password) {
+      if (project.password && params.password !== project.password) {
+        project.password = true
+      } else {
+        delete project.password
+      }
+    }
+
+    project.label_name = project.label || project.label_name
     project.products = products
     project.items = items.map((item) => {
       let soldout = true
@@ -2718,7 +2730,8 @@ class Project {
         'customer.phone as customer_phone',
         DB.raw(`CONCAT(customer.firstname, ' ', customer.lastname) AS customer_name`),
         'resp_prod.name as resp_prod',
-        'com.name as com'
+        'com.name as com',
+        'project.created_at'
       )
       .leftJoin('vod', 'vod.project_id', 'project.id')
       .leftJoin('user', 'user.id', 'vod.user_id')
@@ -2747,6 +2760,7 @@ class Project {
         worksheetName: 'Direct Pressing',
         columns: [
           { header: 'ID', key: 'id', width: 15 },
+          { header: 'Date', key: 'created_at', width: 15 },
           { header: 'Origin', key: 'origin', width: 15 },
           { header: 'Pays', key: 'customer_country', width: 15 },
           { header: 'Email', key: 'email', width: 30 },

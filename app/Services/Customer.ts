@@ -215,8 +215,7 @@ class Customer {
         verify_strict: true
       }
     })
-
-    console.log(res)
+)
     return res
   }
     **/

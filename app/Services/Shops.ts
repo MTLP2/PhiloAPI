@@ -4,7 +4,7 @@ import Storage from 'App/Services/Storage'
 import DB from 'App/DB'
 import ApiError from 'App/ApiError'
 
-class Shop {
+class Shops {
   static async all(params) {
     params.query = DB('shop').select(
       'shop.*',
@@ -16,13 +16,14 @@ class Shop {
       params.order = 'desc'
     }
 
-    return Utils.getRows<ShopDb[]>(params)
+    return Utils.getRows(params)
   }
 
   static async find(params: {
     id?: number
     user_id?: number
     code?: string
+    password?: string
     all_project?: boolean
     projects?: boolean
     auth_id?: number
@@ -55,6 +56,14 @@ class Shop {
     if (!shop) {
       throw new ApiError(404)
     }
+    if (!params.all_project && shop.password) {
+      if (shop.password && params.password !== shop.password) {
+        shop.password = true
+      } else {
+        delete shop.password
+      }
+    }
+
     if (shop.status !== 'online' && params.code) {
       if (params.auth_id) {
         const user = await DB('user').where('id', params.auth_id).first()
@@ -88,6 +97,7 @@ class Shop {
     logo?: string
     line_items?: number
     banner?: string
+    password?: string
     bg_image?: string
     white_label?: boolean
     youtube?: string
@@ -98,7 +108,7 @@ class Shop {
     label_id?: number
     auth_id?: number
   }) {
-    let item: ShopModel = <any>DB('shop')
+    let item: any = DB('shop')
 
     const code = params.code ? params.code : Utils.slugify(params.name)
     const codeUsed = await DB('shop')
@@ -132,9 +142,10 @@ class Shop {
     item.white_label = params.white_label
     item.youtube = params.youtube
     item.group_shipment = params.group_shipment
-    item.updated_at = Utils.date()
     item.artist_id = params.artist_id
     item.label_id = params.label_id
+    item.password = params.password ? params.password : null
+    item.updated_at = Utils.date()
 
     if (params.logo) {
       if (item.logo) {
@@ -204,7 +215,7 @@ class Shop {
   }
 
   static async removeImage(params: { shop_id: number; type: string }) {
-    const item: ShopModel = await DB('shop').find(params.shop_id)
+    const item = await DB('shop').find(params.shop_id)
 
     if (params.type === 'banner' && item.banner) {
       Storage.deleteImage(item.banner)
@@ -215,6 +226,12 @@ class Shop {
     } else if (params.type === 'bg_image' && item.bg_image) {
       Storage.deleteImage(item.bg_image)
       item.bg_image = null
+    } else if (params.type === 'video_top' && item.video_top) {
+      Storage.delete(item.video_top + '.mp4')
+      item.video_top = null
+    } else if (params.type === 'video_bottom' && item.video_bottom) {
+      Storage.delete(item.video_bottom + '.mp4')
+      item.video_bottom = null
     }
 
     item.updated_at = Utils.date()
@@ -371,4 +388,4 @@ class Shop {
   }
 }
 
-export default Shop
+export default Shops

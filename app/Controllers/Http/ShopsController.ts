@@ -1,25 +1,26 @@
-import Shop from 'App/Services/Shop'
+import Shops from 'App/Services/Shops'
 import ApiError from 'App/ApiError'
 import Utils from 'App/Utils'
 import { validator, schema } from '@ioc:Adonis/Core/Validator'
 
-class ShopController {
+class ShopsController {
   async all({ params, user }) {
     if (!(await Utils.isTeam(user.id))) {
       throw new ApiError(403)
     }
-    return Shop.all(params)
+    return Shops.all(params)
   }
 
   async find({ params, user }) {
     params.code = params.id
     const payload = await validator.validate({
       schema: schema.create({
-        code: schema.string()
+        code: schema.string(),
+        password: schema.string.optional()
       }),
       data: params
     })
-    return Shop.find({ code: payload.code, auth_id: user.id })
+    return Shops.find({ code: payload.code, password: payload.password, auth_id: user.id })
   }
 
   async getShop({ params, user }) {
@@ -30,10 +31,10 @@ class ShopController {
       }),
       data: params
     })
-    if (payload.id && !(await Shop.canEdit(payload.id, user.id))) {
+    if (payload.id && !(await Shops.canEdit(payload.id, user.id))) {
       throw new ApiError(403)
     }
-    return Shop.find(payload)
+    return Shops.find(payload)
   }
 
   async updateShop({ params, user }) {
@@ -60,6 +61,7 @@ class ShopController {
         artist_id: schema.number.optional(),
         label_id: schema.number.optional(),
         group_shipment: schema.boolean.optional(),
+        password: schema.string.optional(),
         auth_id: schema.number()
       }),
       data: params
@@ -70,13 +72,13 @@ class ShopController {
     if (payload.group_shipment && !(await Utils.isTeam(user.id))) {
       throw new ApiError(401)
     }
-    if (payload.id && !(await Shop.canEdit(payload.id, user.id))) {
+    if (payload.id && !(await Shops.canEdit(payload.id, user.id))) {
       throw new ApiError(403)
     }
     if (payload.user_id && !(await Utils.isTeam(user.id))) {
       throw new ApiError(403)
     }
-    return Shop.update(payload)
+    return Shops.update(payload)
   }
 
   async removeShopImage({ request, user }) {
@@ -87,10 +89,10 @@ class ShopController {
       }),
       data: request.all()
     })
-    if (!(await Shop.canEdit(payload.shop_id, user.id))) {
+    if (!(await Shops.canEdit(payload.shop_id, user.id))) {
       throw new ApiError(403)
     }
-    return Shop.removeImage(payload)
+    return Shops.removeImage(payload)
   }
 
   async addProject({ request, user }) {
@@ -101,10 +103,10 @@ class ShopController {
       }),
       data: request.body()
     })
-    if (!(await Shop.canEdit(payload.shop_id, user.id))) {
+    if (!(await Shops.canEdit(payload.shop_id, user.id))) {
       throw new ApiError(403)
     }
-    return Shop.addProject(payload)
+    return Shops.addProject(payload)
   }
 
   async removeProject({ request, user }) {
@@ -116,10 +118,10 @@ class ShopController {
       data: request.all()
     })
 
-    if (!(await Shop.canEdit(payload.shop_id, user.id))) {
+    if (!(await Shops.canEdit(payload.shop_id, user.id))) {
       throw new ApiError(403)
     }
-    return Shop.removeProject(payload)
+    return Shops.removeProject(payload)
   }
 
   async checkCode({ request }) {
@@ -130,7 +132,7 @@ class ShopController {
       data: request.body()
     })
 
-    return Shop.checkCode(payload.code)
+    return Shops.checkCode(payload.code)
   }
 
   async changeProjectPosition({ request, user }) {
@@ -143,10 +145,10 @@ class ShopController {
       data: request.body()
     })
 
-    if (!(await Shop.canEdit(payload.shop_id, user.id))) {
+    if (!(await Shops.canEdit(payload.shop_id, user.id))) {
       throw new ApiError(403)
     }
-    return Shop.changeProjectPosition(payload)
+    return Shops.changeProjectPosition(payload)
   }
 
   async setFeatured({ request, user }) {
@@ -158,11 +160,11 @@ class ShopController {
       }),
       data: request.body()
     })
-    if (!(await Shop.canEdit(payload.shop_id, user.id))) {
+    if (!(await Shops.canEdit(payload.shop_id, user.id))) {
       throw new ApiError(403)
     }
-    return Shop.setFeatured(payload)
+    return Shops.setFeatured(payload)
   }
 }
 
-export default ShopController
+export default ShopsController

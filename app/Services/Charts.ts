@@ -89,6 +89,7 @@ class Charts {
       .where('c.country_id', params.country_id)
       .all()
 
+    const emails = {}
     for (const o in orders) {
       orders[o].title = orders[o].name.split(' - ')[1]
       if (!orders[o].title) {
@@ -99,8 +100,13 @@ class Charts {
       orders[o].licensor = orders[o].is_licence ? 'Diggers Factory' : orders[o].label
 
       if (orders[o].email_score === null) {
-        orders[o].email_score = await User.setEmailScore({ email: orders[o].email })
-        await Utils.sleep(300)
+        if (emails[orders[o].email]) {
+          orders[o].email_score = emails[orders[o].email]
+        } else {
+          orders[o].email_score = await User.setEmailScore({ email: orders[o].email })
+          emails[orders[o].email] = orders[o].email_score
+          await Utils.sleep(300)
+        }
       }
     }
 

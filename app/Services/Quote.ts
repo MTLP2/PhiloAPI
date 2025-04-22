@@ -2244,7 +2244,7 @@ class Quote {
     html += '</table>'
 
     await Notifications.sendEmail({
-      to: 'kendale@diggersfactory.com',
+      to: 'tom@diggersfactory.com',
       subject: `Quote - ${params.type} - ${params.email}`,
       html: html
     })

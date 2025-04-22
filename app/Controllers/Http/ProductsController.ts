@@ -169,6 +169,16 @@ class ProductsController {
     })
     return Products.getStocks(payload)
   }
+
+  async getStock({ params }) {
+    const payload = await validator.validate({
+      schema: schema.create({
+        id: schema.number()
+      }),
+      data: params
+    })
+    return Products.getStock(payload)
+  }
 }
 
 export default ProductsController

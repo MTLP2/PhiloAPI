@@ -60,9 +60,9 @@ class Vod {
         })
 
         await Notifications.sendEmail({
-          from_address: 'kendale@diggersfactory.com',
-          from_name: 'Kendale Rice',
-          to: (params.customer.email || user.email) + ',kendale@diggersfactory.com',
+          from_address: 'tom@diggersfactory.com',
+          from_name: 'Tom Haddad',
+          to: (params.customer.email || user.email) + ',tom@diggersfactory.com',
           subject: `Vinyl Quote for ${params.customer.email || user.email}`,
           html: html
         })
@@ -122,6 +122,7 @@ class Vod {
 
     vod.description = params.description
     vod.description_fr_long = params.description_fr_long
+    vod.description_top = params.description_top
     vod.text_bellow_button = params.text_bellow_button
     vod.download = params.download
     vod.send_tracks = params.send_tracks

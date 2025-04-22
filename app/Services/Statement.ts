@@ -2783,6 +2783,7 @@ class StatementService {
       .join('vod', 'project.id', 'vod.project_id')
       .where('stock.is_distrib', false)
       .where('stock.is_preorder', false)
+      .where('storage_costs', true)
       .whereNull('product.parent_id')
       .where('stock.type', '!=', 'diggers')
       .where('stock.type', '!=', 'preorder')

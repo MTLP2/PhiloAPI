@@ -229,7 +229,7 @@ class Notifications {
       }
     }
 
-    if (params.to.split(',').length > 1) {
+    if (false && params.to.split(',').length > 1) {
       await request({
         method: 'POST',
         url: ' https://api.mailjet.com/v3.1/send',
@@ -261,18 +261,20 @@ class Notifications {
         }
       })
     } else {
-      const data = {
-        from: `${params.from_name} <${params.from_address}>`,
-        to: params.to,
-        identifiers: { email: params.to },
-        subject: params.subject,
-        body: params.html || params.text
+      for (const to of params.to.split(',')) {
+        const data = {
+          from: `${params.from_name} <${params.from_address}>`,
+          to: to,
+          identifiers: { email: to },
+          subject: params.subject,
+          body: params.html || params.text
+        }
+        const request = new SendEmailRequest(data)
+        for (const attachment of params.attachments || []) {
+          request.attach(attachment.filename, attachment.content)
+        }
+        await api.sendEmail(request)
       }
-      const request = new SendEmailRequest(data)
-      for (const attachment of params.attachments || []) {
-        request.attach(attachment.filename, attachment.content)
-      }
-      await api.sendEmail(request)
     }
 
     return { success: true }

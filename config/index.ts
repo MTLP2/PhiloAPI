@@ -110,12 +110,10 @@ export default {
   },
 
   emails: {
-    commercial:
-      'benjamin@diggersfactory.com,manon@diggersfactory.com,iannis@diggersfactory.com,etienne@diggersfactory.com,camille.r@diggersfactory.com',
+    commercial: 'benjamin@diggersfactory.com,manon@diggersfactory.com,harald@diggersfactory.com',
     marketing: 'olivia@diggersfactory.com',
     distribution: 'cyril@diggersfactory.com,thibault@diggersfactory.com',
-    send_vinyl:
-      'manon@diggersfactory.com,lea@diggersfactory.com,etienne@diggersfactory.com,camille.r@diggersfactory.com',
+    send_vinyl: 'harald@diggersfactory.com',
     illustration: 'nina@diggersfactory.com',
     compatibility: 'alexis@diggersfactory.com,lyes@diggersfactory.com'
   },
@@ -165,6 +163,7 @@ export default {
       red: '#ef2f2f',
       transparent_red: '#ba222ceb',
       blood_red: '#ee403d',
+      teal: '#008080',
       oxblood: '#ac3145',
       brown: 'rgb(138, 56, 8)',
       dookie_brown: '#925146',
@@ -178,7 +177,7 @@ export default {
       baby_pink: '#f9c3ce',
       white: '#fbfbfb',
       ultra_clear: '#d9dad4',
-      transparent: 'rgb(255 255 255 / 0%)',
+      transparent: '#8080801c',
       grey: 'grey'
     }
   }

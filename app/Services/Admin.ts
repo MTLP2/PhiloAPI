@@ -1153,6 +1153,7 @@ class Admin {
     vod.is_shop = params.is_shop ? params.is_shop : 0
     vod.description_en = params.description_en
     vod.description_fr = params.description_fr
+    vod.password = params.password
 
     if (params.comment_costs !== undefined) {
       vod.comment_costs = params.comment_costs
@@ -1277,6 +1278,14 @@ class Admin {
           date: moment().format('YYYY-MM-DD')
         })
         vod.active_statement = moment().format('YYYY-MM-DD')
+
+        vod.historic.push({
+          type: 'active_statement',
+          user_id: params.user.id,
+          old: null,
+          new: moment().format('YYYY-MM-DD'),
+          date: Utils.date()
+        })
       }
 
       vod.send_statement = params.send_statement
@@ -1741,7 +1750,7 @@ class Admin {
               query.where(DB.raw(`CONCAT(c.firstname, ' ', c.lastname) LIKE '%${filter.value}%'`))
               query.orWhere(DB.raw(`CONCAT(c.lastname, ' ', c.firstname) LIKE '%${filter.value}%'`))
             })
-            filters.splice(i, 1)
+            delete filters[i]
             params.filters = JSON.stringify(filters)
           }
 
@@ -1750,7 +1759,7 @@ class Admin {
               DB.raw(`CONCAT(project.artist_name, ' ', project.name) LIKE '%${filter.value}%'`),
               null
             )
-            filters.splice(i, 1)
+            delete filters[i]
             params.filters = JSON.stringify(filters)
           }
         }
@@ -2058,6 +2067,7 @@ class Admin {
           { header: 'Package Weight', key: 'weight' },
           { header: 'Date export', key: 'date_export' },
           { header: 'Tracking', key: 'tracking_number' },
+          { header: 'Tracking Link', key: 'tracking_link' },
           { header: 'Paid?', key: 'is_paid' },
           { header: 'Date', key: 'created_at' },
           { header: 'User Type', key: 'user_type' },
@@ -4612,9 +4622,7 @@ class Admin {
           : `https://www.diggersfactory.com/vinyl/${pp.id}/${pp.slug}?currency=${currency}${
               params.ori ? `&ori=${params.ori}` : ''
             };`
-      csv += pp.picture_project
-        ? `${Env.get('STORAGE_URL')}/projects/${pp.picture || pp.id}/${pp.picture_project}.png;`
-        : `${Env.get('STORAGE_URL')}/projects/${pp.picture || pp.id}/vinyl.png;`
+      csv += `${Env.get('STORAGE_URL')}/projects/${pp.picture || pp.id}/preview.png;`
       csv += `"${pp.artist_name}";`
       csv += ';;;;;;'
       csv += pp.estimated_shipping + ';'

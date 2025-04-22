@@ -3903,7 +3903,7 @@ class Boxes {
 
     console.info(dispatchs.length)
     if (errors.length > 0) {
-      console.log('errors', errors)
+      console.info('errors', errors)
       // return errors
     }
 
