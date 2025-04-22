@@ -13,7 +13,7 @@ class TracklistController {
             id: schema.number.optional(),
             production_id: schema.number(),
             position: schema.number(),
-            artist: schema.string(),
+            artist: schema.string.optional(),
             title: schema.string(),
             duration: schema.number(),
             disc: schema.number(),
