@@ -909,17 +909,13 @@ class Production {
         barcode_creation: params.barcode_creation,
         catnumber_creation: params.catnumber_creation
       })
-      console.log(params.barcode_creation)
+
       if (params.barcode_creation == '1') {
         await Notifications.sendEmail({
           to: Env.get('DEBUG_EMAIL'),
           subject: `Barcode creation for ${prod.project_name}`,
-          text: `Barcode creation for ${prod.project_name}`
-        })
-        await Notifications.sendEmail({
-          to: 'matheo@diggersfactory.com',
-          subject: `Barcode creation for ${prod.project_name}`,
-          html: `<p>Barcode creation for ${prod.project_name}</p>`
+          html: `<p>Barcode creation for project <strong>${prod.project_name}</strong></p>
+          <p>You can access the project <a href="https://www.diggersfactory.com/sheraf/project/${prod.project_id}">here</a>.</p>`
         })
       }
 
