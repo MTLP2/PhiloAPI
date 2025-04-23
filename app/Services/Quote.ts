@@ -1720,7 +1720,6 @@ class Quote {
     const quote: any = {}
     quote.prices = Quote.getPrices()
 
-    quote.prices.sleeve.triple_gatefold = false
     quote.prices.type_vinyl.cloudy = false
     quote.prices.type_vinyl.asidebside = false
     quote.prices.type_vinyl.colorincolor = false
@@ -1729,12 +1728,10 @@ class Quote {
     // quote.prices.cutting.DMM = false
     quote.prices.label_color.white = false
 
-    quote.prices.sleeve.discobag = false
     quote.prices.sticker.sticker = false
 
     // quote.cutting = getCost({ l: 6, type: 'cutting', option: '', active: true })
     if (
-      ['discobag', 'triple_gatefold'].includes(params.sleeve) ||
       ['cloudy', 'asidebside', 'colorincolor', 'halfandhalf', 'picture_disc'].includes(
         params.type_vinyl
       )
@@ -1768,6 +1765,20 @@ class Quote {
           active: true
         })
       }
+      if (params.sleeve === 'triple_gatefold') {
+        quote.prices.sleeve.triple_gatefold = getCost({
+          l: 6,
+          type: 'base',
+          option: 'triple_gatefold'
+        })
+        quote.prices.sleeve.triple_gatefold += getCost({
+          l: 69,
+          type: 'surcharge',
+          option: 'triple_gatefold',
+          onceByCopy: true,
+          active: true
+        })
+      }
     } else if (params.nb_vinyl === 2) {
       if (params.sleeve === 'color') {
         quote.prices.sleeve.color = getCost({
@@ -1787,17 +1798,121 @@ class Quote {
           active: true
         })
       }
+      if (params.sleeve === 'triple_gatefold') {
+        quote.prices.sleeve.triple_gatefold =
+          getCost({
+            l: 6,
+            type: 'base',
+            option: 'triple_gatefold'
+          }) * 2
+        quote.prices.sleeve.triple_gatefold += getCost({
+          l: 69,
+          type: 'surcharge',
+          option: 'triple_gatefold',
+          onceByCopy: true,
+          active: true
+        })
+      }
+    } else if (params.nb_vinyl === 3) {
+      if (params.sleeve === 'triple_gatefold') {
+        quote.prices.sleeve.triple_gatefold =
+          getCost({
+            l: 6,
+            type: 'base',
+            option: 'triple_gatefold'
+          }) * 3
+        quote.prices.sleeve.triple_gatefold += getCost({
+          l: 69,
+          type: 'surcharge',
+          option: 'triple_gatefold',
+          onceByCopy: true,
+          active: true
+        })
+        quote.prices.sleeve.triple_gatefold +=
+          getCost({
+            l: 91,
+            type: 'surcharge',
+            option: 'triple_gatefold',
+            onceByCopy: true,
+            active: true
+          }) * 3
+        quote.prices.sleeve.triple_gatefold +=
+          getCost({
+            l: 92,
+            type: 'surcharge',
+            option: 'triple_gatefold',
+            onceByCopy: true,
+            active: true
+          }) * 3
+      }
     }
 
-    quote.prices.sleeve.pvc =
-      quote.prices.sleeve.color +
-      getCost({
-        l: 51,
-        type: 'sleeve',
+    if (params.sleeve === 'discobag') {
+      quote.prices.sleeve.discobag =
+        getCost({
+          l: 6,
+          type: 'base',
+          option: 'discobag'
+        }) * params.nb_vinyl
+      quote.prices.sleeve.discobag +=
+        getCost({
+          l: { '12"': 38, '7"': 42 },
+          type: 'surcharge',
+          option: 'discobag',
+          onceByCopy: true,
+          active: true
+        }) * params.nb_vinyl
+      quote.prices.sleeve.discobag +=
+        getCost({
+          l: 91,
+          type: 'surcharge',
+          option: 'discobag',
+          onceByCopy: true,
+          active: true
+        }) * params.nb_vinyl
+      quote.prices.sleeve.discobag +=
+        getCost({
+          l: 92,
+          type: 'surcharge',
+          option: 'discobag',
+          onceByCopy: true,
+          active: true
+        }) * params.nb_vinyl
+    }
+
+    if (params.sleeve === 'pvc') {
+      quote.prices.sleeve.pvc =
+        getCost({
+          l: 6,
+          type: 'sleeve',
+          option: 'pvc'
+        }) * params.nb_vinyl
+      quote.prices.sleeve.pvc += getCost({
+        l: 65,
+        type: 'surcharge',
         option: 'pvc',
         onceByCopy: true,
-        active: params.sleeve === 'pvc'
+        active: true
       })
+      quote.prices.sleeve.pvc +=
+        getCost({
+          l: 91,
+          type: 'surcharge',
+          option: 'pvc',
+          onceByCopy: true,
+          active: true
+        }) * params.nb_vinyl
+    }
+
+    // quote.prices.sleeve.pvc =
+    //   quote.prices.sleeve.color +
+    //   getCost({
+    //     l: 51,
+    //     type: 'sleeve',
+    //     option: 'pvc',
+    //     onceByCopy: true,
+    //     active: params.sleeve === 'pvc'
+    //   })
 
     quote.sleeve =
       quote.prices.sleeve[params.sleeve] +
@@ -1979,10 +2094,11 @@ class Quote {
       active: params.print_finish === 'returned_cardboard'
     })
     quote.print_finish = quote.prices.print_finish[params.print_finish]
-    if (params.sleeve === 'discobag') {
-      quote.prices.print_finish.matt_varnish = false
-      quote.prices.print_finish.returned_cardboard = false
-    }
+
+    // if (params.sleeve === 'discobag') {
+    //   quote.prices.print_finish.matt_varnish = false
+    //   quote.prices.print_finish.returned_cardboard = false
+    // }
 
     // insert
 
