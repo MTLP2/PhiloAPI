@@ -40,7 +40,7 @@ class AppController {
   }
 
   async getBanners({ params }) {
-    const banners: any = await Banners.getHome({ lang: params.lang === 'fr' ? 'fr' : 'en' })
+    const banners: any = await Banners.getHome({ lang: params.lang })
     if (params.banner !== '1') {
       banners.unshift({
         link: '/vinyl-shop',
