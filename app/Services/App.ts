@@ -297,6 +297,8 @@ class App {
             ${params.user_id ? `<li><b>UserId :</b> ${params.user_id}</li>` : ''}
             ${params.phone ? `<li><b>Phone :</b> ${params.phone}</li>` : ''}
             <li><b>Type :</b> ${params.type}</li>
+            ${params.country ? `<li><b>Country :</b> ${params.country}</li>` : ''}
+
             ${params.order_id ? `<li><b>Order :</b> ${params.order_id}</li>` : ''}
             <li><b>Message :</b> ${params.message}</li>
           </ul>
