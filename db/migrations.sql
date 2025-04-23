@@ -19,3 +19,4 @@ ALTER TABLE `banner` ADD `titles` TEXT NULL DEFAULT NULL AFTER `title`;
 ALTER TABLE `banner` ADD `sub_titles` TEXT NULL DEFAULT NULL AFTER `sub_title`;
 ALTER TABLE `banner` ADD `buttons` TEXT NULL DEFAULT NULL AFTER `button`;
 ALTER TABLE `banner` ADD `descriptions` TEXT NULL DEFAULT NULL AFTER `description`;
+ALTER TABLE `shop` ADD `banner_mobile` VARCHAR(255) NULL DEFAULT NULL AFTER `banner`;
