@@ -2,6 +2,7 @@ import DB from 'App/DB'
 import Utils from 'App/Utils'
 import Storage from 'App/Services/Storage'
 import sharp from 'sharp'
+import { Lang } from 'App/types'
 
 class Banners {
   static async all(params: {
@@ -17,14 +18,29 @@ class Banners {
       params.order = 'desc'
     }
 
-    return Utils.getRows({
+    const res = (await Utils.getRows({
       ...params,
       query: query
-    })
+    })) as any
+
+    for (const i in res.data) {
+      res.data[i].title = res.data[i].titles ? JSON.parse(res.data[i].titles) : {}
+      res.data[i].sub_title = res.data[i].sub_titles ? JSON.parse(res.data[i].sub_titles) : {}
+      res.data[i].button = res.data[i].buttons ? JSON.parse(res.data[i].buttons) : {}
+      res.data[i].description = res.data[i].descriptions ? JSON.parse(res.data[i].descriptions) : {}
+    }
+
+    return res
   }
 
   static async find(params: { id: number }) {
     const item = await DB('banner').find(params.id)
+
+    item.title = item.titles ? JSON.parse(item.titles) : {}
+    item.sub_title = item.sub_titles ? JSON.parse(item.sub_titles) : {}
+    item.button = item.buttons ? JSON.parse(item.buttons) : {}
+    item.description = item.descriptions ? JSON.parse(item.descriptions) : {}
+
     return item
   }
 
@@ -38,18 +54,38 @@ class Banners {
       .orderBy(DB.raw('RAND()'))
       .all()
 
+    for (const item of items) {
+      const title = item.titles ? JSON.parse(item.titles) : {}
+      const subTitle = item.sub_titles ? JSON.parse(item.sub_titles) : {}
+      const button = item.buttons ? JSON.parse(item.buttons) : {}
+      const description = item.descriptions ? JSON.parse(item.descriptions) : {}
+
+      item.title = title[params.lang] || title.en
+      item.sub_title = subTitle[params.lang] || subTitle.en
+      item.button = button[params.lang] || button.en
+      item.description = description[params.lang] || description.en
+    }
+
     return items
   }
 
   static async save(params: {
     id?: number
-    title: string
-    sub_title: string
-    description: string
+    title: {
+      [key in Lang]: string
+    }
+    sub_title: {
+      [key in Lang]: string
+    }
+    description: {
+      [key in Lang]: string
+    }
     picture: string | null
     picture_mobile: string | null
     cropped: string
-    button: string
+    button: {
+      [key in Lang]: string
+    }
     button_sub: string
     color: string
     sort: number
@@ -59,19 +95,32 @@ class Banners {
     is_visible: boolean
     link: string
   }) {
-    let item: Banner & Model = DB('banner') as any
+    let item = DB('banner') as any
 
     if (params.id) {
       item = await DB('banner').find(params.id)
     } else {
       item.created_at = Utils.date()
     }
-    item.title = params.title
-    item.sub_title = params.sub_title
-    item.description = params.description
+
+    const clean = (obj: Record<string, string>) => {
+      if (!obj) {
+        return {}
+      }
+      return Object.keys(obj).reduce((acc, curr) => {
+        if (obj[curr]) {
+          acc[curr] = obj[curr]
+        }
+        return acc
+      }, {} as Record<Lang, string>)
+    }
+
+    item.titles = JSON.stringify(clean(params.title))
+    item.sub_titles = JSON.stringify(clean(params.sub_title))
+    item.descriptions = JSON.stringify(clean(params.description))
+    item.buttons = JSON.stringify(clean(params.button))
+
     item.sort = params.sort
-    item.button = params.button
-    item.button_sub = params.button_sub
     item.position = params.position
     item.color = params.color
     item.show_cover = params.show_cover

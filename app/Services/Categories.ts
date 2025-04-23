@@ -4,14 +4,23 @@ import Project from 'App/Services/Project'
 import PromoCode from 'App/Services/PromoCode'
 import Storage from 'App/Services/Storage'
 import ApiError from 'App/ApiError'
+import { Lang } from 'App/types'
 
 class Categories {
   static async all(params) {
     params.query = DB('category')
-      .select('id', 'code', 'name_en', 'name_fr', 'sub_title_fr', 'sub_title_en', 'is_visible')
+      .select('id', 'code', 'name', 'sub_title', 'is_visible')
       .orderBy('position', 'asc')
     params.size = 0
-    return Utils.getRows(params)
+
+    const res = (await Utils.getRows(params)) as any
+
+    for (const i in res.data) {
+      res.data[i].name = res.data[i].name ? JSON.parse(res.data[i].name) : {}
+      res.data[i].sub_title = res.data[i].sub_title ? JSON.parse(res.data[i].sub_title) : {}
+      res.data[i].description = res.data[i].description ? JSON.parse(res.data[i].description) : {}
+    }
+    return res
   }
 
   static async find(params) {
@@ -23,10 +32,14 @@ class Categories {
       .orderBy('category_project.position')
       .all()
 
+    item.name = item.name ? JSON.parse(item.name) : {}
+    item.sub_title = item.sub_title ? JSON.parse(item.sub_title) : {}
+    item.description = item.description ? JSON.parse(item.description) : {}
+
     return item
   }
 
-  static async getHome() {
+  static async getHome(params: { lang: Lang }) {
     let items: any = DB('category_project')
       .select(
         'category.id as category_id',
@@ -66,7 +79,9 @@ class Categories {
         'v.is_shop',
         'v.color_vinyl',
         'category_project.*',
-        'category.*',
+        'category.name as category_name',
+        'category.sub_title as category_sub_title',
+        'category.description as category_description',
         'v.show_stock',
         'item.stock as item_stock',
         'item.price as item_price',
@@ -91,16 +106,17 @@ class Categories {
     let list: any = {}
     for (const item of items) {
       if (!list[item.category_id]) {
+        const nameCategory = JSON.parse(item.category_name)
+        const subTitleCategory = JSON.parse(item.category_sub_title)
+        const descriptionCategory = JSON.parse(item.category_description)
+
         list[item.category_id] = {
           id: item.category_id,
           position: item.position,
-          name_en: item.name_en,
-          name_fr: item.name_fr,
+          name: nameCategory[params.lang] || nameCategory.en,
+          sub_title: subTitleCategory[params.lang] || subTitleCategory.en,
+          description: descriptionCategory[params.lang] || descriptionCategory.en,
           code: item.code,
-          sub_title_en: item.sub_title_en,
-          sub_title_fr: item.sub_title_fr,
-          description_fr: item.description_fr,
-          description_en: item.description_en,
           is_banner: item.is_banner,
           banner: item.banner,
           items: []
@@ -209,13 +225,16 @@ class Categories {
 
   static async save(params: {
     id: number
-    name_en: string
-    name_fr: string
+    name: {
+      [key in Lang]: string
+    }
+    sub_title: {
+      [key in Lang]: string
+    }
+    description: {
+      [key in Lang]: string
+    }
     code: string
-    sub_title_en: string
-    sub_title_fr: string
-    description_en: string
-    description_fr: string
     position: number
     is_visible: number
     is_banner: number
@@ -232,13 +251,23 @@ class Categories {
     } else {
       item.created_at = Utils.date()
     }
-    item.name_en = params.name_en
-    item.name_fr = params.name_fr
+
+    const clean = (obj: Record<string, string>) => {
+      if (!obj) {
+        return {}
+      }
+      return Object.keys(obj).reduce((acc, curr) => {
+        if (obj[curr]) {
+          acc[curr] = obj[curr]
+        }
+        return acc
+      }, {} as Record<Lang, string>)
+    }
+
+    item.name = JSON.stringify(clean(params.name))
+    item.sub_title = JSON.stringify(clean(params.sub_title))
+    item.description = JSON.stringify(clean(params.description))
     item.code = params.code || null
-    item.sub_title_en = params.sub_title_en
-    item.sub_title_fr = params.sub_title_fr
-    item.description_en = params.description_en
-    item.description_fr = params.description_fr
     item.position = params.position
     item.is_visible = params.is_visible
     item.is_banner = params.is_banner

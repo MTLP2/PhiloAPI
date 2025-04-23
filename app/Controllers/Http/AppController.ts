@@ -87,7 +87,7 @@ class AppController {
       params.lang = 'en'
     }
     const banners: any = Banners.getHome({ lang: params.lang })
-    const categories = Categories.getHome()
+    const categories = Categories.getHome({ lang: params.lang })
 
     const articles = params.all ? Blog.all({ lang: params.lang, limit: 3 }) : null
 

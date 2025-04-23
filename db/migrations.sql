@@ -10,3 +10,12 @@ ALTER TABLE `vod` ADD `description_top` TEXT NULL DEFAULT NULL AFTER `descriptio
 # 2025-04-08 Add password to vod and shop
 ALTER TABLE `vod` ADD `password` VARCHAR(255) NULL DEFAULT NULL AFTER `todo`;
 ALTER TABLE `shop` ADD `password` VARCHAR(255) NULL DEFAULT NULL AFTER `white_label`;
+
+# 2025-04-23 Add name to category
+ALTER TABLE `category` ADD `name` TEXT NULL DEFAULT NULL AFTER `code`;
+ALTER TABLE `category` ADD `sub_title` TEXT NULL DEFAULT NULL AFTER `name_fr`;
+ALTER TABLE `category` ADD `description` TEXT NULL DEFAULT NULL AFTER `sub_title_fr`;
+ALTER TABLE `banner` ADD `titles` TEXT NULL DEFAULT NULL AFTER `title`;
+ALTER TABLE `banner` ADD `sub_titles` TEXT NULL DEFAULT NULL AFTER `sub_title`;
+ALTER TABLE `banner` ADD `buttons` TEXT NULL DEFAULT NULL AFTER `button`;
+ALTER TABLE `banner` ADD `descriptions` TEXT NULL DEFAULT NULL AFTER `description`;
