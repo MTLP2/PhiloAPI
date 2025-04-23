@@ -547,7 +547,8 @@ class Quote {
       },
       shrink: {
         0: null,
-        1: null
+        1: null,
+        2: null
       },
       design: {
         0: null,
@@ -1814,6 +1815,38 @@ class Quote {
         })
       }
     } else if (params.nb_vinyl === 3) {
+      if (params.sleeve === 'color') {
+        quote.prices.sleeve.color = getCost({
+          l: 4,
+          type: 'base',
+          option: 'color',
+          onceByCopy: true,
+          active: true
+        })
+        quote.prices.sleeve.color += getCost({
+          l: 6,
+          type: 'surcharge',
+          option: 'color',
+          onceByCopy: true,
+          active: true
+        })
+      }
+      if (params.sleeve === 'double_gatefold') {
+        quote.prices.sleeve.double_gatefold = getCost({
+          l: 2,
+          type: 'base',
+          option: 'double_gatefold',
+          onceByCopy: true,
+          active: true
+        })
+        quote.prices.sleeve.double_gatefold += getCost({
+          l: 6,
+          type: 'surcharge',
+          option: 'double_gatefold',
+          onceByCopy: true,
+          active: true
+        })
+      }
       if (params.sleeve === 'triple_gatefold') {
         quote.prices.sleeve.triple_gatefold =
           getCost({
@@ -1897,6 +1930,14 @@ class Quote {
       quote.prices.sleeve.pvc +=
         getCost({
           l: 91,
+          type: 'surcharge',
+          option: 'pvc',
+          onceByCopy: true,
+          active: true
+        }) * params.nb_vinyl
+      quote.prices.sleeve.pvc +=
+        getCost({
+          l: 92,
           type: 'surcharge',
           option: 'pvc',
           onceByCopy: true,
@@ -2066,6 +2107,13 @@ class Quote {
       option: '1',
       onceByCopy: true,
       active: params.shrink === 1
+    })
+    quote.prices.shrink['2'] = getCost({
+      l: 52,
+      type: 'shrink',
+      option: '2',
+      onceByCopy: true,
+      active: params.shrink === 2
     })
     quote.shrink = quote.prices.shrink[params.shrink]
 
