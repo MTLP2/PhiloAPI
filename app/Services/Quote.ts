@@ -148,7 +148,7 @@ class Quote {
     params.label_color = params.label || 'color'
 
     // const ff = ['precision']
-    const ff = ['vdp']
+    const ff = ['sna', 'vdp']
     /**
     if (params.factory === 'sna2') {
       ff.push('sna2')
@@ -1743,7 +1743,7 @@ class Quote {
     if (params.nb_vinyl === 1) {
       if (params.sleeve === 'color') {
         quote.prices.sleeve.color = getCost({
-          l: 5,
+          l: { '12"': 5, '7"': 10 },
           type: 'base',
           option: 'color',
           onceByCopy: true,
@@ -1752,7 +1752,7 @@ class Quote {
       }
       if (params.sleeve === 'double_gatefold') {
         quote.prices.sleeve.double_gatefold = getCost({
-          l: 3,
+          l: { '12"': 3, '7"': 9 },
           type: 'base',
           option: 'double_gatefold',
           onceByCopy: true,
@@ -1955,15 +1955,18 @@ class Quote {
     //     active: params.sleeve === 'pvc'
     //   })
 
-    quote.sleeve =
-      quote.prices.sleeve[params.sleeve] +
-      getCost({
-        l: 112,
-        type: 'sleeve',
-        option: '',
-        onceByCopy: true,
-        active: true
-      })
+    quote.sleeve = isNaN(quote.prices.sleeve[params.sleeve])
+      ? false
+      : quote.prices.sleeve[params.sleeve] +
+        getCost({
+          l: 112,
+          type: 'sleeve',
+          option: '',
+          onceByCopy: true,
+          active: true
+        })
+
+    console.log(quote.sleeve)
 
     quote.prices.weight['180'] = getCost({
       l: 29,
