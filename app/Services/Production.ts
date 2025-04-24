@@ -910,12 +910,18 @@ class Production {
         catnumber_creation: params.catnumber_creation
       })
 
+      const html = await View.render('production_notif', {
+        userName: prod.resp_email.split('@')[0],
+        projectName: prod.project_name,
+        missingItems: ['Création de Barcode'],
+        productionLink: `https://www.diggersfactory.com/sheraf/project/${prod.project_id}/prod?prod=${item.production_id}`
+      })
+
       if (params.barcode_creation == '1') {
         await Notifications.sendEmail({
-          to: Env.get('DEBUG_EMAIL'),
+          to: prod.resp_email,
           subject: `Barcode creation for ${prod.project_name}`,
-          html: `<p>Barcode creation for project <strong>${prod.project_name}</strong></p>
-          <p>You can access the project <a href="https://www.diggersfactory.com/sheraf/project/${prod.project_id}">here</a>.</p>`
+          html: html
         })
       }
 
