@@ -3,6 +3,8 @@ import { Generated, ColumnType } from 'kysely'
 export type Timestamp = Date | string
 type Boolean = 0 | 1 | true | false | '0' | '1'
 
+type Lang = 'en' | 'fr' | 'es' | 'kr' | 'zh'
+
 type Alert = {
   id: number
   text_en?: string
