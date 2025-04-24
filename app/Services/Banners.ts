@@ -55,15 +55,10 @@ class Banners {
       .all()
 
     for (const item of items) {
-      const title = item.titles ? JSON.parse(item.titles) : {}
-      const subTitle = item.sub_titles ? JSON.parse(item.sub_titles) : {}
-      const button = item.buttons ? JSON.parse(item.buttons) : {}
-      const description = item.descriptions ? JSON.parse(item.descriptions) : {}
-
-      item.title = title[params.lang] || title.en
-      item.sub_title = subTitle[params.lang] || subTitle.en
-      item.button = button[params.lang] || button.en
-      item.description = description[params.lang] || description.en
+      item.title = Utils.getTranslation(item.titles, params.lang)
+      item.sub_title = Utils.getTranslation(item.sub_titles, params.lang)
+      item.button = Utils.getTranslation(item.buttons, params.lang)
+      item.description = Utils.getTranslation(item.descriptions, params.lang)
     }
 
     return items

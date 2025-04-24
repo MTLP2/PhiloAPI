@@ -106,16 +106,12 @@ class Categories {
     let list: any = {}
     for (const item of items) {
       if (!list[item.category_id]) {
-        const nameCategory = JSON.parse(item.category_name)
-        const subTitleCategory = JSON.parse(item.category_sub_title)
-        const descriptionCategory = JSON.parse(item.category_description)
-
         list[item.category_id] = {
           id: item.category_id,
           position: item.position,
-          name: nameCategory[params.lang] || nameCategory.en,
-          sub_title: subTitleCategory[params.lang] || subTitleCategory.en,
-          description: descriptionCategory[params.lang] || descriptionCategory.en,
+          name: Utils.getTranslation(item.category_name, params.lang),
+          sub_title: Utils.getTranslation(item.category_sub_title, params.lang),
+          description: Utils.getTranslation(item.category_description, params.lang),
           code: item.code,
           is_banner: item.is_banner,
           banner: item.banner,
@@ -123,12 +119,6 @@ class Categories {
         }
       }
 
-      delete item.name_fr
-      delete item.name_en
-      delete item.description_fr
-      delete item.description_en
-      delete item.sub_title_fr
-      delete item.sub_title_en
       delete item.position
       delete item.is_banner
       delete item.banner
