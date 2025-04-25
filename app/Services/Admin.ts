@@ -5090,6 +5090,19 @@ class Admin {
     )
   }
 
+  static exportDispatchs = async (params) => {
+    const query = DB('dispatch').select('dispatch.*')
+
+    if (params.start && params.end) {
+      query.whereBetween('dispatch.created_at', [params.start, params.end])
+    }
+
+    const dispatchs = await query.all()
+    console.log(dispatchs)
+
+    return dispatchs
+  }
+
   static checkProjectRest = async (params) => {
     const refunds = await DB('refund')
       .select('refund.comment', 'refund.data', 'order_item.quantity')

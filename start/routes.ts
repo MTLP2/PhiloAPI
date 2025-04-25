@@ -621,6 +621,7 @@ Route.group(() => {
   Route.post('/payments', 'PaymentsController.save')
 
   Route.get('/dispatchs', 'DispatchsController.all')
+  Route.get('/dispatchs-export', 'AdminController.exportDispatchs')
   Route.get('/dispatchs/:id', 'DispatchsController.find')
   Route.post('/dispatchs', 'DispatchsController.save')
   Route.post('/dispatchs/:id/export', 'DispatchsController.export')

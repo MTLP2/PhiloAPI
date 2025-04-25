@@ -1183,6 +1183,10 @@ class AdminController {
     return ProjectService.getDispatchs(params)
   }
 
+  exportDispatchs({ params }) {
+    return Admin.exportDispatchs(params)
+  }
+
   removeImage({ params }) {
     return Admin.removeImageFromProject(params)
   }
