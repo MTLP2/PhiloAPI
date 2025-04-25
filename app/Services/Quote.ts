@@ -148,7 +148,7 @@ class Quote {
     params.label_color = params.label || 'color'
 
     // const ff = ['precision']
-    const ff = ['sna', 'vdp']
+    const ff = ['vdp']
     /**
     if (params.factory === 'sna2') {
       ff.push('sna2')
@@ -289,6 +289,7 @@ class Quote {
         return 0
       }
       let qty
+      console.log(data.quantity)
       if (data.quantity < 200) {
         qty = 100
       } else if (data.quantity < 300) {
@@ -310,6 +311,7 @@ class Quote {
       let line
       if (typeof payload.l === 'object') {
         line = q[payload.l[data.format]]
+        console.log(line)
       } else {
         line = q[payload.l]
       }
@@ -1743,7 +1745,7 @@ class Quote {
     if (params.nb_vinyl === 1) {
       if (params.sleeve === 'color') {
         quote.prices.sleeve.color = getCost({
-          l: { '12"': 5, '7"': 10 },
+          l: { '12"': 5, '10"': false, '7"': 10 },
           type: 'base',
           option: 'color',
           onceByCopy: true,
@@ -1779,6 +1781,20 @@ class Quote {
           onceByCopy: true,
           active: true
         })
+        quote.prices.sleeve.triple_gatefold += getCost({
+          l: 91,
+          type: 'surcharge',
+          option: 'triple_gatefold',
+          onceByCopy: true,
+          active: true
+        })
+        quote.prices.sleeve.triple_gatefold += getCost({
+          l: 92,
+          type: 'surcharge',
+          option: 'triple_gatefold',
+          onceByCopy: true,
+          active: true
+        })
       }
     } else if (params.nb_vinyl === 2) {
       if (params.sleeve === 'color') {
@@ -1800,12 +1816,11 @@ class Quote {
         })
       }
       if (params.sleeve === 'triple_gatefold') {
-        quote.prices.sleeve.triple_gatefold =
-          getCost({
-            l: 6,
-            type: 'base',
-            option: 'triple_gatefold'
-          }) * 2
+        quote.prices.sleeve.triple_gatefold = getCost({
+          l: 6,
+          type: 'base',
+          option: 'triple_gatefold'
+        })
         quote.prices.sleeve.triple_gatefold += getCost({
           l: 69,
           type: 'surcharge',
@@ -1813,6 +1828,22 @@ class Quote {
           onceByCopy: true,
           active: true
         })
+        quote.prices.sleeve.triple_gatefold +=
+          getCost({
+            l: 91,
+            type: 'surcharge',
+            option: 'triple_gatefold',
+            onceByCopy: true,
+            active: true
+          }) * 2
+        quote.prices.sleeve.triple_gatefold +=
+          getCost({
+            l: 92,
+            type: 'surcharge',
+            option: 'triple_gatefold',
+            onceByCopy: true,
+            active: true
+          }) * 2
       }
     } else if (params.nb_vinyl === 3) {
       if (params.sleeve === 'color') {
@@ -1848,12 +1879,11 @@ class Quote {
         })
       }
       if (params.sleeve === 'triple_gatefold') {
-        quote.prices.sleeve.triple_gatefold =
-          getCost({
-            l: 6,
-            type: 'base',
-            option: 'triple_gatefold'
-          }) * 3
+        quote.prices.sleeve.triple_gatefold = getCost({
+          l: 6,
+          type: 'base',
+          option: 'triple_gatefold'
+        })
         quote.prices.sleeve.triple_gatefold += getCost({
           l: 69,
           type: 'surcharge',
@@ -1966,7 +1996,7 @@ class Quote {
           active: true
         })
 
-    console.log(quote.sleeve)
+    console.log(quote.prices.sleeve)
 
     quote.prices.weight['180'] = getCost({
       l: 29,
@@ -1992,7 +2022,6 @@ class Quote {
     })
 
     if (params.color_vinyl === params.color_vinyl?.startsWith('neon_')) {
-      console.log('royal_blue')
       quote.prices.type_vinyl.color =
         getCost({
           l: 20,
@@ -2030,8 +2059,6 @@ class Quote {
         active: params.type_vinyl === 'marble'
       }) +
       quote.prices.type_vinyl.surcharge * 2
-
-    console.log(params.type_vinyl)
 
     quote.prices.type_vinyl.splatter =
       getCost({
@@ -2121,13 +2148,13 @@ class Quote {
     quote.shrink = quote.prices.shrink[params.shrink]
 
     // print_finish
-    quote.prices.print_finish.gloss_varnish = getCost({
-      l: 106,
-      type: 'print_finish',
-      option: 'gloss_varnish',
-      onceByCopy: true,
-      active: params.print_finish === 'gloss_varnish'
-    })
+    // quote.prices.print_finish.gloss_varnish = getCost({
+    //   l: 106,
+    //   type: 'print_finish',
+    //   option: 'gloss_varnish',
+    //   onceByCopy: true,
+    //   active: params.print_finish === 'gloss_varnish'
+    // })
 
     quote.prices.print_finish.matt_varnish = getCost({
       l: 107,
@@ -2225,7 +2252,7 @@ class Quote {
 
     quote.test_pressing = 0
     if (params.quantity < 200) {
-      quote.test_pressing += 70
+      quote.test_pressing += 70 * params.nb_vinyl
     }
 
     quote.transport = getCost({
@@ -2309,9 +2336,9 @@ class Quote {
             q300: +row.getCell('D').toString(),
             q500: +row.getCell('E').toString(),
             q1000: +row.getCell('F').toString(),
-            q2000: +row.getCell('F').toString(),
-            q3000: +row.getCell('G').toString(),
-            q5000: +row.getCell('H').toString()
+            q2000: +row.getCell('G').toString(),
+            q3000: +row.getCell('H').toString(),
+            q5000: +row.getCell('I').toString()
           })
         } else if (worksheet.name === 'precision') {
           costs[worksheet.name].push({
@@ -2322,9 +2349,9 @@ class Quote {
             q300: +row.getCell('D').toString(),
             q500: +row.getCell('E').toString(),
             q1000: +row.getCell('F').toString(),
-            q2000: +row.getCell('F').toString(),
-            q3000: +row.getCell('G').toString(),
-            q5000: +row.getCell('H').toString()
+            q2000: +row.getCell('G').toString(),
+            q3000: +row.getCell('H').toString(),
+            q5000: +row.getCell('I').toString()
           })
         } else if (worksheet.name === 'kuroneko') {
           const line = {
