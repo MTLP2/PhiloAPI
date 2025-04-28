@@ -5121,7 +5121,7 @@ class Admin {
 
     // 1) Récupération brute
     const dispatchs = await query.all()
-    console.log(dispatchs)
+
     // 2) On regroupe par order_id
     const groupedByOrder = dispatchs.reduce((acc, d) => {
       const key = d.order_id
