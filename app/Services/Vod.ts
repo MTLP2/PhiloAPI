@@ -62,7 +62,7 @@ class Vod {
         await Notifications.sendEmail({
           from_address: 'tom@diggersfactory.com',
           from_name: 'Tom Haddad',
-          to: (params.customer.email || user.email) + ',tom@diggersfactory.com',
+          to: 'tom@diggersfactory.com',
           subject: `Vinyl Quote for ${params.customer.email || user.email}`,
           html: html
         })
