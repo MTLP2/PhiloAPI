@@ -256,7 +256,7 @@ Route.group(() => {
   Route.get('/productions/options/:id', 'ProductionController.getOptions')
   Route.post('/productions/options/:id', 'ProductionController.saveOptions')
 
-  Route.get('/shops', 'ShopsController.getShops')
+  Route.get('/shops', 'ShopsController.all')
   Route.get('/shop', 'ShopsController.getShop')
   Route.post('/shop', 'ShopsController.updateShop')
   Route.post('/shop/code', 'ShopsController.checkCode')
