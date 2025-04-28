@@ -5487,6 +5487,7 @@ class Admin {
           'vod.picture_project',
           'vod.historic',
           'vod.transporters_block',
+          'vod.comment',
           DB.raw(`'${transporter}' as transporter`),
           DB('order_item as oi')
             .select(DB.raw('sum(quantity)'))

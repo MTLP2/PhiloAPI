@@ -1709,6 +1709,21 @@ class Utils {
     }
   ]
 
+  static getTranslation = (data: string | null, lang: string) => {
+    if (!data) {
+      return ''
+    }
+    try {
+      const translations = JSON.parse(data)
+      if (translations[lang]) {
+        return translations[lang]
+      }
+      return translations.en
+    } catch (e) {
+      return ''
+    }
+  }
+
   static price = (price, currency = 'EUR', lang = 'en') => {
     if (isNaN(price)) {
       return '-'

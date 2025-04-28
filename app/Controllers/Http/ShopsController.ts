@@ -52,6 +52,7 @@ class ShopsController {
         title_color: schema.string(),
         logo: schema.string.optional(),
         banner: schema.string.optional(),
+        banner_mobile: schema.string.optional(),
         bg_image: schema.string.optional(),
         video_top: schema.string.optional(),
         video_bottom: schema.string.optional(),

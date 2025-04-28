@@ -97,6 +97,7 @@ class Shops {
     logo?: string
     line_items?: number
     banner?: string
+    banner_mobile?: string
     password?: string
     bg_image?: string
     white_label?: boolean
@@ -167,6 +168,17 @@ class Shops {
       Storage.uploadImage(fileName, Buffer.from(params.banner, 'base64'), {
         type: 'jpg',
         width: 3000
+      })
+    }
+    if (params.banner_mobile) {
+      if (item.banner_mobile) {
+        Storage.deleteImage(item.banner_mobile)
+      }
+      const fileName = `shops/${Utils.uuid()}`
+      item.banner_mobile = fileName
+      Storage.uploadImage(fileName, Buffer.from(params.banner_mobile, 'base64'), {
+        type: 'jpg',
+        width: 1500
       })
     }
     if (params.bg_image) {
