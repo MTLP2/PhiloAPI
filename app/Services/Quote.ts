@@ -289,7 +289,6 @@ class Quote {
         return 0
       }
       let qty
-      console.log(data.quantity)
       if (data.quantity < 200) {
         qty = 100
       } else if (data.quantity < 300) {
@@ -311,7 +310,6 @@ class Quote {
       let line
       if (typeof payload.l === 'object') {
         line = q[payload.l[data.format]]
-        console.log(line)
       } else {
         line = q[payload.l]
       }
@@ -320,6 +318,7 @@ class Quote {
         quantity = payload.quantity
       } else if (line && (line.type === 'F' || payload.option === 'F')) {
         quantity = params.nb_vinyl
+        console.log(quantity)
       } else {
         const samples = params.quantity >= 500 ? 10 : 5
         quantity = payload.onceByCopy
@@ -1919,7 +1918,7 @@ class Quote {
         }) * params.nb_vinyl
       quote.prices.sleeve.discobag +=
         getCost({
-          l: { '12"': 38, '7"': 42 },
+          l: { '12"': 39, '7"': 42 },
           type: 'surcharge',
           option: 'discobag',
           onceByCopy: true,
@@ -1928,14 +1927,6 @@ class Quote {
       quote.prices.sleeve.discobag +=
         getCost({
           l: 91,
-          type: 'surcharge',
-          option: 'discobag',
-          onceByCopy: true,
-          active: true
-        }) * params.nb_vinyl
-      quote.prices.sleeve.discobag +=
-        getCost({
-          l: 92,
           type: 'surcharge',
           option: 'discobag',
           onceByCopy: true,
@@ -1951,7 +1942,7 @@ class Quote {
           option: 'pvc'
         }) * params.nb_vinyl
       quote.prices.sleeve.pvc += getCost({
-        l: 65,
+        l: 52,
         type: 'surcharge',
         option: 'pvc',
         onceByCopy: true,
@@ -1959,15 +1950,7 @@ class Quote {
       })
       quote.prices.sleeve.pvc +=
         getCost({
-          l: 91,
-          type: 'surcharge',
-          option: 'pvc',
-          onceByCopy: true,
-          active: true
-        }) * params.nb_vinyl
-      quote.prices.sleeve.pvc +=
-        getCost({
-          l: 92,
+          l: 94,
           type: 'surcharge',
           option: 'pvc',
           onceByCopy: true,
@@ -1996,8 +1979,6 @@ class Quote {
           active: true
         })
 
-    console.log(quote.prices.sleeve)
-
     quote.prices.weight['180'] = getCost({
       l: 29,
       type: 'weight',
@@ -2021,7 +2002,7 @@ class Quote {
       active: true
     })
 
-    if (params.color_vinyl === params.color_vinyl?.startsWith('neon_')) {
+    if (params.color_vinyl.startsWith('neon_')) {
       quote.prices.type_vinyl.color =
         getCost({
           l: 20,
@@ -2057,8 +2038,7 @@ class Quote {
         option: 'marble',
         onceByCopy: true,
         active: params.type_vinyl === 'marble'
-      }) +
-      quote.prices.type_vinyl.surcharge * 2
+      }) + quote.prices.type_vinyl.surcharge
 
     quote.prices.type_vinyl.splatter =
       getCost({
@@ -2067,15 +2047,7 @@ class Quote {
         option: 'splatter',
         onceByCopy: true,
         active: params.type_vinyl === 'splatter'
-      }) +
-      quote.prices.type_vinyl.surcharge * 2 +
-      getCost({
-        l: 17,
-        type: 'type_vinyl',
-        option: 'surcharge',
-        onceByCopy: true,
-        active: true
-      })
+      }) + quote.prices.type_vinyl.surcharge
 
     quote.type_vinyl = quote.prices.type_vinyl[params.type_vinyl]
 
