@@ -1139,6 +1139,7 @@ class Admin {
     vod.type = params.type
     vod.edition = params.edition
     vod.com_id = params.com_id || 0
+    vod.graphic_id = params.graphic_id || null
     vod.comment_invoice = params.comment_invoice
     vod.stage1 = params.stage1
     vod.stage2 = params.stage1
