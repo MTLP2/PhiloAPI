@@ -749,7 +749,6 @@ class Project {
       .leftJoin('wishlist as w', 'p.id', 'w.project_id')
       .where('name', '!=', '')
       .where('is_delete', 0)
-      .orderBy('artist_name', 'asc')
       .limit(20)
 
     if (search) {
@@ -761,14 +760,19 @@ class Project {
       })
     }
     if (type === 'shop') {
-      projects.whereIn('v.step', [
-        'in_progress',
-        'successful',
-        'coming_soon',
-        'private',
-        'promo',
-        'creating'
-      ])
+      projects
+        .whereIn('v.step', [
+          'in_progress',
+          'successful',
+          'coming_soon',
+          'private',
+          'promo',
+          'creating'
+        ])
+        .orderBy('p.picture', 'desc')
+        .orderBy('artist_name', 'asc')
+    } else {
+      projects.orderBy('artist_name', 'asc')
     }
     if (userId) {
       projects.where('v.user_id', userId)
