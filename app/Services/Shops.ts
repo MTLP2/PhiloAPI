@@ -109,121 +109,125 @@ class Shops {
     label_id?: number
     auth_id?: number
   }) {
-    let item: any = DB('shop')
+    try {
+      let item: any = DB('shop')
 
-    const code = params.code ? params.code : Utils.slugify(params.name)
-    const codeUsed = await DB('shop')
-      .where('code', code)
-      .where((query) => {
-        if (params.id) {
-          query.where('id', '!=', params.id)
+      const code = params.code ? params.code : Utils.slugify(params.name)
+      const codeUsed = await DB('shop')
+        .where('code', code)
+        .where((query) => {
+          if (params.id) {
+            query.where('id', '!=', params.id)
+          }
+        })
+        .first()
+
+      if (codeUsed) {
+        throw new ApiError(406, 'code_used')
+      }
+
+      if (params.id) {
+        item = await DB('shop').find(params.id)
+        if (!item) {
+          throw new ApiError(404)
         }
-      })
-      .first()
+      } else {
+        item.created_at = Utils.date()
+      }
+      item.name = params.name
+      item.code = params.code ? params.code : Utils.slugify(params.name)
+      item.status = params.status
+      item.bg_color = params.bg_color
+      item.font_color = params.font_color
+      item.title_color = params.title_color
+      item.line_items = params.line_items
+      item.white_label = params.white_label
+      item.youtube = params.youtube
+      item.group_shipment = params.group_shipment
+      item.artist_id = params.artist_id
+      item.label_id = params.label_id
+      item.password = params.password ? params.password : null
+      item.updated_at = Utils.date()
 
-    if (codeUsed) {
-      throw new ApiError(406, 'code_used')
-    }
+      if (params.logo) {
+        if (item.logo) {
+          await Storage.deleteImage(item.logo)
+        }
+        const fileName = `shops/${Utils.uuid()}`
+        item.logo = fileName
+        await Storage.uploadImage(fileName, Buffer.from(params.logo, 'base64'), {
+          type: 'png',
+          width: 300
+        })
+      }
+      if (params.banner) {
+        if (item.banner) {
+          await Storage.deleteImage(item.banner)
+        }
+        const fileName = `shops/${Utils.uuid()}`
+        item.banner = fileName
+        await Storage.uploadImage(fileName, Buffer.from(params.banner, 'base64'), {
+          type: 'jpg',
+          width: 3000
+        })
+      }
+      if (params.banner_mobile) {
+        if (item.banner_mobile) {
+          await Storage.deleteImage(item.banner_mobile)
+        }
+        const fileName = `shops/${Utils.uuid()}`
+        item.banner_mobile = fileName
+        await Storage.uploadImage(fileName, Buffer.from(params.banner_mobile, 'base64'), {
+          type: 'jpg',
+          width: 1500
+        })
+      }
+      if (params.bg_image) {
+        if (item.bg_image) {
+          await Storage.deleteImage(item.bg_image)
+        }
+        const fileName = `shops/${Utils.uuid()}`
+        item.bg_image = fileName
+        await Storage.uploadImage(fileName, Buffer.from(params.bg_image, 'base64'), {
+          type: 'png',
+          width: 300
+        })
+      }
+      if (params.video_top) {
+        if (item.video_top) {
+          await Storage.delete(item.video_top)
+        }
+        const fileName = `shops/${Utils.uuid()}`
+        item.video_top = fileName
+        await Storage.upload(fileName + '.mp4', Buffer.from(params.video_top, 'base64'))
+      }
+      if (params.video_bottom) {
+        if (item.video_bottom) {
+          await Storage.delete(item.video_bottom)
+        }
+        const fileName = `shops/${Utils.uuid()}`
+        item.video_bottom = fileName
+        await Storage.upload(fileName + '.mp4', Buffer.from(params.video_bottom, 'base64'))
+      }
 
-    if (params.id) {
-      item = await DB('shop').find(params.id)
-      if (!item) {
-        throw new ApiError(404)
+      await item.save()
+      if (!params.id && params.auth_id) {
+        await DB('user').where('id', params.auth_id).update({
+          shop_id: item.id
+        })
+      } else if (params.user_id) {
+        await DB('user').where('shop_id', item.id).update({
+          shop_id: null
+        })
+        await DB('user').where('id', params.user_id).update({
+          shop_id: item.id
+        })
       }
-    } else {
-      item.created_at = Utils.date()
-    }
-    item.name = params.name
-    item.code = params.code ? params.code : Utils.slugify(params.name)
-    item.status = params.status
-    item.bg_color = params.bg_color
-    item.font_color = params.font_color
-    item.title_color = params.title_color
-    item.line_items = params.line_items
-    item.white_label = params.white_label
-    item.youtube = params.youtube
-    item.group_shipment = params.group_shipment
-    item.artist_id = params.artist_id
-    item.label_id = params.label_id
-    item.password = params.password ? params.password : null
-    item.updated_at = Utils.date()
 
-    if (params.logo) {
-      if (item.logo) {
-        Storage.deleteImage(item.logo)
-      }
-      const fileName = `shops/${Utils.uuid()}`
-      item.logo = fileName
-      Storage.uploadImage(fileName, Buffer.from(params.logo, 'base64'), {
-        type: 'png',
-        width: 300
-      })
+      return { id: item.id, success: true }
+    } catch (error) {
+      return { error: error.message, success: false }
     }
-    if (params.banner) {
-      if (item.banner) {
-        Storage.deleteImage(item.banner)
-      }
-      const fileName = `shops/${Utils.uuid()}`
-      item.banner = fileName
-      Storage.uploadImage(fileName, Buffer.from(params.banner, 'base64'), {
-        type: 'jpg',
-        width: 3000
-      })
-    }
-    if (params.banner_mobile) {
-      if (item.banner_mobile) {
-        Storage.deleteImage(item.banner_mobile)
-      }
-      const fileName = `shops/${Utils.uuid()}`
-      item.banner_mobile = fileName
-      Storage.uploadImage(fileName, Buffer.from(params.banner_mobile, 'base64'), {
-        type: 'jpg',
-        width: 1500
-      })
-    }
-    if (params.bg_image) {
-      if (item.bg_image) {
-        Storage.deleteImage(item.bg_image)
-      }
-      const fileName = `shops/${Utils.uuid()}`
-      item.bg_image = fileName
-      Storage.uploadImage(fileName, Buffer.from(params.bg_image, 'base64'), {
-        type: 'png',
-        width: 300
-      })
-    }
-    if (params.video_top) {
-      if (item.video_top) {
-        Storage.delete(item.video_top)
-      }
-      const fileName = `shops/${Utils.uuid()}`
-      item.video_top = fileName
-      await Storage.upload(fileName + '.mp4', Buffer.from(params.video_top, 'base64'))
-    }
-    if (params.video_bottom) {
-      if (item.video_bottom) {
-        Storage.delete(item.video_bottom)
-      }
-      const fileName = `shops/${Utils.uuid()}`
-      item.video_bottom = fileName
-      Storage.upload(fileName + '.mp4', Buffer.from(params.video_bottom, 'base64'))
-    }
-
-    await item.save()
-    if (!params.id && params.auth_id) {
-      await DB('user').where('id', params.auth_id).update({
-        shop_id: item.id
-      })
-    } else if (params.user_id) {
-      await DB('user').where('shop_id', item.id).update({
-        shop_id: null
-      })
-      await DB('user').where('id', params.user_id).update({
-        shop_id: item.id
-      })
-    }
-
-    return { id: item.id, success: true }
   }
 
   static async removeImage(params: { shop_id: number; type: string }) {
