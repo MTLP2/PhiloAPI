@@ -1953,7 +1953,7 @@ class Quote {
         option: 'pvc'
       })
       quote.prices.sleeve.pvc += getCost({
-        l: 52,
+        l: { '12"': 52, '10"': false, '7"': 47 },
         type: 'surcharge',
         option: 'pvc',
         onceByCopy: true,
