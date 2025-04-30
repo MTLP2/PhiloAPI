@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    /* Global reset and styling */
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #f9f9f9;
+      font-family: Arial, sans-serif;
+      color: #333333;
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    /* Container for centered content */
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: #ffffff;
+    }
+
+    /* Banner */
+    .header-band {
+      background-color: #facc15;
+      padding: 30px 0;
+    }
+
+    .logo {
+      max-width: 160px;
+      height: auto;
+      display: block;
+      margin: 0 auto;
+    }
+
+    /* Main content */
+    .content {
+      padding: 30px 20px;
+    }
+
+    .emoji {
+      display: block;
+      margin: 0 auto 10px;
+      width: 100px;
+      height: 100px;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      margin: 0 0 10px;
+      font-weight: normal;
+    }
+
+    p {
+      margin: 10px 0;
+      font-size: 1rem;
+      color: #555555;
+    }
+
+    /* Table styling */
+    table {
+      width: 100%;
+      max-width: 520px;
+      margin: 20px auto;
+      border-collapse: collapse;
+      font-size: 0.95rem;
+    }
+
+    table th,
+    table td {
+      padding: 12px 15px;
+      border: 1px solid #e0e0e0;
+    }
+
+    table th {
+      background-color: #f4f4f4;
+      font-weight: bold;
+      text-align: left;
+    }
+
+    table tbody tr:nth-child(even) {
+      background-color: #fafafa;
+    }
+
+    table .value {
+      text-align: center;
+    }
+
+    /* Custom mini-tab bullets */
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 20px 0 30px;
+      display: inline-block;
+      text-align: left;
+    }
+
+    li {
+      position: relative;
+      margin: 10px 0;
+      padding-left: 20px;
+    }
+
+    li::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 12px;
+      height: 4px;
+      background-color: #0077CC;
+      border-radius: 2px;
+    }
+
+    /* Button styling: fixed height and centered text */
+    /* Button styling */
+    .button { display: inline-block; height: 40px; line-height: 40px; padding: 0 40px; font-size: 1.2rem; background-color: #facc15; color: #fff; text-decoration: none; border-radius: 4px; font-weight: bold; }
+    .button:hover { background-color: #facc15; }
+
+    /* Footer: avatar-style photo left of button */
+    /* Footer adjustments for email clients (avoid gap) */
+    .footer { width: 100%; background-color: #f4f4f4; border-top: 1px solid #e0e0e0; padding: 20px 0; }
+    .footer-inner { display: inline-block; text-align: center; }
+    .photo { vertical-align: middle; width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid #e0e0e0; }
+    .cta { vertical-align: middle; margin-left: 15px; display: inline-block; }
+    @media screen and (max-width: 480px) {
+      .photo { width: 60px; height: 60px; }
+      .button { height: 36px; line-height: 36px; }
+      .cta { margin-left: 0; margin-top: 10px; display: block; }
+    }
+
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header Banner -->
+    <div class="header-band">
+      <img src="https://assets.leparisien.fr/website/images/promo-codes/brand-logo/diggers-factory.png" alt="Diggers Factory Logo" class="logo">
+    </div>
+
+    <!-- Main Content -->
+    <div class="content">
+      <img src="https://diggers-public.s3.eu-west-3.amazonaws.com/assets/images/icons/hearthHero.png" alt="Share Icon" class="emoji">
+      <h1>{{ lang === 'fr' ? 'Merci de nous avoir contactés chez Diggers Factory !' : 'Thank you for reaching out to Diggers Factory!' }}</h1>
+      <p>{{ lang === 'fr' ? 'Nous vous remercions pour votre appel et la confiance que vous nous accordez.' : 'We truly appreciate your call and the opportunity to connect with you.' }}</p>
+      <p>{{ lang === 'fr' ? 'Notre équipe examine actuellement votre demande et reviendra vers vous sous 24 heures pour discuter des prochaines étapes.' : 'Our team is currently reviewing your request and will be in touch within 24 hours to discuss next steps.' }}</p>
+      <p>{{ lang === 'fr' ? 'Résumé de votre demande' : 'Summary of your request' }}</p>
+      <h2>{{ lang === 'fr' ? `Project: ${artist_name} ${name}` : `Project: ${artist_name} ${name}` }}</h2>
+      <table>
+        <tbody>
+          <tr>
+            <th>{{ lang === 'fr' ? 'Désignation' : 'Name' }}</th>
+            <th>{{ lang === 'fr' ? 'Total' : 'Total' }}</th>
+          </tr>
+          @each(line in options)
+            <tr>
+              <td>{{line.name}}</td>
+              <td class="value">{{line.value}}</td>
+            </tr>
+          @endeach
+        </tbody>
+      </table>
+      <p>{{ lang === 'fr' ? 'Si vous avez des questions supplémentaires, n’hésitez pas à répondre directement à cet e-mail.' : 'If you have any additional questions, feel free to reply directly to this email.' }}</p>
+    </div>
+
+    <!-- Footer with avatar-style Photo and Button -->
+    <div class="footer">
+      <div class="footer-inner">
+        <img src="{{ photoUrl }}" alt="Avatar" class="photo">
+        <div class="cta">
+          <a href="{{ calendlyLink }}" class="button" target="_blank">
+            {{ lang === 'fr' ? 'Réservez votre RDV avec Tom' : 'Book your appointment with Tom' }}
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
