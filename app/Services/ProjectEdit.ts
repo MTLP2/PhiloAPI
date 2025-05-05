@@ -17,9 +17,9 @@ class ProjectEdit {
         'u.name as profile_name',
         'u.about_me as profile_about',
         'pr.surcharge_amount as surcharge_amount',
-        'a.name as artist',
+        'a.name as artist_text',
         'a.picture as artist_picture',
-        'l.name as label',
+        'l.name as label_text',
         'l.picture as label_picture'
       )
       .from('project as p')
