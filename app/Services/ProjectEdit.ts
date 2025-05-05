@@ -127,13 +127,16 @@ class ProjectEdit {
     pp.nb_vinyl = params.nb_vinyl
     pp.artist_bio = params.artist_bio
     pp.updated_at = Utils.date()
+    if (params.hide) {
+      pp.hide = params.hide.join(',')
+    }
     pp = await pp.save()
 
     const vod = await DB('vod').where('project_id', pp.id).first()
 
-    if (params.no_label && pp.label !== 'none') {
+    if (params.no_label && vod.label !== 'none') {
       updateArtwork = true
-    } else if (!params.no_label && pp.label === 'none') {
+    } else if (!params.no_label && vod.label === 'none') {
       updateArtwork = true
     }
 
