@@ -2181,13 +2181,21 @@ class Quote {
 
     // insert
 
-    quote.prices.insert.two_sides_printed = getCost({
-      l: 120,
-      type: 'insert',
-      option: 'two_sides_printed',
-      onceByCopy: true,
-      active: params.insert === 'two_sides_printed'
-    })
+    quote.prices.insert.two_sides_printed =
+      getCost({
+        l: 119,
+        type: 'insert',
+        option: 'two_sides_printed',
+        onceByCopy: true,
+        active: params.insert === 'two_sides_printed'
+      }) +
+      getCost({
+        l: 95,
+        type: 'insert',
+        option: 'two_sides_printed',
+        onceByCopy: true,
+        active: params.insert === 'two_sides_printed'
+      })
     quote.prices.insert.one_side_printed = getCost({
       l: 119,
       type: 'insert',
@@ -2195,13 +2203,22 @@ class Quote {
       onceByCopy: true,
       active: params.insert === 'one_side_printed'
     })
-    quote.prices.insert.booklet_printed = getCost({
-      l: 122,
-      type: 'insert',
-      option: 'booklet_printed',
-      onceByCopy: true,
-      active: params.insert === 'booklet_printed'
-    })
+    quote.prices.insert.booklet_printed =
+      getCost({
+        l: 122,
+        type: 'insert',
+        option: 'booklet_printed',
+        onceByCopy: true,
+        active: params.insert === 'booklet_printed'
+      }) +
+      getCost({
+        l: 95,
+        type: 'insert',
+        option: 'booklet_printed',
+        onceByCopy: true,
+        active: params.insert === 'booklet_printed'
+      })
+
     quote.insert = quote.prices.insert[params.insert]
 
     // sticker
