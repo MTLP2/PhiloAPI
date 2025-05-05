@@ -17,10 +17,10 @@ class ProjectEdit {
         'u.name as profile_name',
         'u.about_me as profile_about',
         'pr.surcharge_amount as surcharge_amount',
-        'a.name as artist_text',
-        'a.picture as artist_picture',
-        'l.name as label_text',
-        'l.picture as label_picture'
+        'a.name as artist',
+        'a.picture as artist_ppicture',
+        'l.name as label',
+        'l.picture as label_ppicture'
       )
       .from('project as p')
       .leftJoin('vod as v', 'p.id', 'v.project_id')
