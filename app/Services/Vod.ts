@@ -161,6 +161,13 @@ class Vod {
     vod.price = params.price ? params.price.toString().trim().replace(',', '.') : 0
     vod.vinyl_weight = params.weight
     vod.label = params.label_color
+    if (params.no_label !== undefined) {
+      if (params.no_label && vod.label !== 'none') {
+        vod.label = 'none'
+      } else if (!params.no_label && vod.label === 'none') {
+        vod.label = 'color'
+      }
+    }
     vod.sleeve = params.sleeve
     vod.inner_sleeve = params.inner_sleeve
     vod.test_pressing = params.test_pressing

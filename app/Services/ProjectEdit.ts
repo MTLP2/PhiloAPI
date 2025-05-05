@@ -74,6 +74,8 @@ class ProjectEdit {
     let pp
     const error = null
 
+    let updateArtwork = false
+
     if (params.id === 0) {
       pp = DB('project')
       pp.name = params.name
@@ -129,6 +131,12 @@ class ProjectEdit {
 
     const vod = await DB('vod').where('project_id', pp.id).first()
 
+    if (params.no_label && pp.label !== 'none') {
+      updateArtwork = true
+    } else if (!params.no_label && pp.label === 'none') {
+      updateArtwork = true
+    }
+
     await Vod.save(params, pp)
 
     if (params.type === 'wishlist') {
@@ -156,6 +164,7 @@ class ProjectEdit {
     }
 
     if (
+      updateArtwork ||
       params.cover_picture ||
       params.label_picture ||
       params.label_bside_picture ||
@@ -196,6 +205,16 @@ class ProjectEdit {
       if (!res.success) {
         return res
       }
+    }
+
+    if (params.is_3d !== undefined && params.is_3d !== pp.is_3d) {
+      if (params.is_3d) {
+        await Artwork.saveTextures({
+          project_id: pp.id
+        })
+      }
+      pp.is_3d = params.is_3d
+      pp = await pp.save()
     }
 
     await DB('project_style').where('project_id', pp.id).delete()
