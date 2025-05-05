@@ -16,11 +16,17 @@ class ProjectEdit {
         'u.picture as profile_picture',
         'u.name as profile_name',
         'u.about_me as profile_about',
-        'pr.surcharge_amount as surcharge_amount'
+        'pr.surcharge_amount as surcharge_amount',
+        'a.name as artist',
+        'a.picture as artist_picture',
+        'l.name as label',
+        'l.picture as label_picture'
       )
       .from('project as p')
       .leftJoin('vod as v', 'p.id', 'v.project_id')
       .leftJoin('user as u', 'v.user_id', 'u.id')
+      .leftJoin('artist as a', 'p.artist_id', 'a.id')
+      .leftJoin('label as l', 'p.label_id', 'l.id')
       .leftJoin('production as pr', 'p.id', 'pr.project_id')
       .where('p.id', params.id)
       .belongsTo('customer')
@@ -100,6 +106,9 @@ class ProjectEdit {
     }
     pp.name = params.name
     pp.slug = Utils.slugify(`${params.artist_name} - ${pp.name}`).substring(0, 255)
+    pp.category = params.category
+    pp.artist_id = params.artist_id
+    pp.label_id = params.label_id
     pp.artist_name = params.artist_name
     pp.artist_website = params.artist_website
     pp.label_name = params.label_name
