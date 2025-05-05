@@ -75,6 +75,23 @@ class Vod {
     vod.quote = params.quote
     vod.factory = params.factory
     vod.currency = params.currency
+    if (params.end !== undefined) {
+      vod.end = params.end || null
+    }
+    if (params.start !== undefined) {
+      vod.start = params.start || null
+    }
+    if (params.date_shipping !== undefined) {
+      vod.date_shipping = params.date_shipping || null
+    }
+    vod.show_stock = params.show_stock
+    vod.show_prod = params.show_prod
+    vod.show_countdown = params.show_countdown
+    vod.password = params.password
+
+    if (await Utils.isTeam(params.user.id)) {
+      vod.step = params.step
+    }
     if (vod.user_id === null && params.user.user_id !== 0) {
       vod.user_id = params.user.user_id
     }
