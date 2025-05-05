@@ -760,7 +760,7 @@ class App {
           balance += statement[currency][project].data.balance.all
         }
       }
-      if (balance < 0) {
+      if (balance > 0) {
         n.email = 0
         await n.save()
         return false
@@ -772,7 +772,9 @@ class App {
           .where('vod.project_id', projectId)
           .first()
 
-        data.user.email = [
+        data.user.email = null
+        data.user.emails = null
+        data.to = [
           'alexis@diggersfactory.com',
           'invocing@diggersfactory.com',
           project?.com_email || '',
@@ -780,8 +782,6 @@ class App {
         ]
           .filter(Boolean)
           .join(',')
-
-        await Notifications.email(data)
       }
     }
     if (n.order_shop_id) {
