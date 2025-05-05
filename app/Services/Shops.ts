@@ -236,6 +236,9 @@ class Shops {
     if (params.type === 'banner' && item.banner) {
       Storage.deleteImage(item.banner)
       item.banner = null
+    } else if (params.type === 'banner_mobile' && item.banner_mobile) {
+      Storage.deleteImage(item.banner_mobile)
+      item.banner_mobile = null
     } else if (params.type === 'logo' && item.logo) {
       Storage.deleteImage(item.logo)
       item.logo = null
