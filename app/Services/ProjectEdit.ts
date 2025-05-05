@@ -66,6 +66,7 @@ class ProjectEdit {
     project.sticker = project.sticker || '0'
     project.insert = project.insert || 'none'
     project.tracks = await Songs.byProject({ project_id: project.id, disabled: true })
+    project.images = await DB('project_image').where('project_id', project.id).all()
 
     return project
   }
