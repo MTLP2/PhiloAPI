@@ -181,7 +181,7 @@ class Production {
   static listActions(): {
     category: 'preprod' | 'prod' | 'postprod'
     type: string
-    action: 'check' | 'file' | 'dispatch' | 'empty'
+    action: 'check' | 'file' | 'dispatch' | 'empty' | 'fileprod'
     for: 'artist' | 'team' | 'all'
   }[] {
     return [
@@ -206,7 +206,7 @@ class Production {
       {
         category: 'preprod',
         type: 'tracklisting',
-        action: 'empty',
+        action: 'fileprod',
         for: 'artist'
       },
       {
