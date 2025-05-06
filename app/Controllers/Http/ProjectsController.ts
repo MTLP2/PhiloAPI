@@ -308,6 +308,30 @@ class ProjectsController {
   removeImage({ params }) {
     return ProjectEdit.removeImage(params)
   }
+
+  getProducts({ params }) {
+    return ProjectEdit.getProducts(params)
+  }
+
+  saveProduct({ params }) {
+    return ProjectEdit.saveProduct(params)
+  }
+
+  removeProduct({ params }) {
+    return ProjectEdit.removeProduct(params)
+  }
+
+  getItem({ params }) {
+    return ProjectEdit.getItem(params)
+  }
+
+  saveItem({ params }) {
+    return ProjectEdit.saveItem(params)
+  }
+
+  removeItem({ params }) {
+    return ProjectEdit.removeItem(params)
+  }
 }
 
 export default ProjectsController

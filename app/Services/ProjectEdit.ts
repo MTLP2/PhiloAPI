@@ -138,10 +138,12 @@ class ProjectEdit {
 
     const vod = await DB('vod').where('project_id', pp.id).first()
 
-    if (params.no_label && vod.label !== 'none') {
-      updateArtwork = true
-    } else if (!params.no_label && vod.label === 'none') {
-      updateArtwork = true
+    if (vod) {
+      if (params.no_label && vod.label !== 'none') {
+        updateArtwork = true
+      } else if (!params.no_label && vod.label === 'none') {
+        updateArtwork = true
+      }
     }
 
     await Vod.save(params, pp)
@@ -405,6 +407,101 @@ class ProjectEdit {
     const res = await Artwork.updateArtwork({ id: projectId })
 
     return { success: true, type, picture: res.picture }
+  }
+
+  static getProducts = async (params: { project_id: number }) => {
+    return DB('project_product')
+      .select('product.*')
+      .join('product', 'product.id', 'project_product.product_id')
+      .where('project_id', params.project_id)
+      .all()
+  }
+
+  static saveProduct = async (params: { project_id: number; product_id: number }) => {
+    const exists = await DB('project_product')
+      .where('project_id', params.project_id)
+      .where('product_id', params.product_id)
+      .first()
+
+    if (exists) {
+      return { error: 'already_exists' }
+    } else {
+      await DB('project_product').insert({
+        project_id: params.project_id,
+        product_id: params.product_id
+      })
+    }
+
+    return { success: true }
+  }
+
+  static removeProduct = async (params: { product_id: number; project_id: number }) => {
+    await DB('project_product')
+      .where('product_id', params.product_id)
+      .where('project_id', params.project_id)
+      .delete()
+
+    return { success: true }
+  }
+
+  static saveItem = async (params) => {
+    const ids = params.related_id.toString().split(',')
+    for (const id of ids) {
+      let item = DB('item')
+
+      if (params.id) {
+        item = await DB('item').find(params.id)
+      } else {
+        const exists = await DB('item')
+          .where('project_id', params.project_id)
+          .where('related_id', id)
+          .first()
+
+        if (exists) {
+          return { error: 'already_exists' }
+        }
+
+        item.created_at = Utils.date()
+      }
+      item.project_id = params.project_id
+      item.related_id = id || null
+      item.name = params.name || null
+      item.name_fr = params.name_fr || null
+      item.description_fr = params.description_fr || null
+      item.description_en = params.description_en || null
+      item.price = params.price || null
+      item.stock = params.stock || null
+      item.barcode = params.barcode || null
+      item.catnumber = params.catnumber || null
+      item.transporter = params.transporter || null
+      item.is_active = params.is_active
+      item.is_statement = params.is_statement
+      item.coefficient = params.coefficient || 1
+      item.weight = params.weight || 1
+      item.group_shipment = params.group_shipment
+      item.is_recommended = params.is_recommended
+
+      if (params.picture) {
+        if (item.picture) {
+          Storage.deleteImage(item.picture)
+        }
+        const fileName = `items/${Utils.uuid()}`
+        item.picture = fileName
+        item.picture_trans = 1
+        Storage.uploadImage(fileName, Buffer.from(params.picture, 'base64'), {
+          type: 'png',
+          width: 800
+        })
+      }
+      item.updated_at = Utils.date()
+
+      await item.save()
+    }
+    return { success: true }
+  }
+
+  static removeItem = async (params) => {
+    return DB('item').where('id', params.id).delete()
   }
 }
 

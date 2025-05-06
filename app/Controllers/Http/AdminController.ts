@@ -262,14 +262,6 @@ class AdminController {
     return Admin.getProjectStats(params)
   }
 
-  saveProjectItem({ params }) {
-    return Admin.saveProjectItem(params)
-  }
-
-  removeProjectItem({ params }) {
-    return Admin.removeProjectItem(params)
-  }
-
   sendProjectNotif({ params }) {
     return Admin.sendProjectNotif(params.id, params.success)
   }
