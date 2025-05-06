@@ -164,7 +164,7 @@ class ProjectEdit {
     }
 
     if (params.video_file) {
-      Artwork.updateVideo({
+      await Artwork.updateVideo({
         project: pp,
         video: Buffer.from(params.video_file.replace(/^data:video\/(mp4);base64,/, ''), 'base64')
       })
@@ -271,6 +271,8 @@ class ProjectEdit {
   }
 
   static saveImage = async (params) => {
+    await Utils.checkProjectOwner({ project_id: params.project_id, user: params.user })
+
     const project = await DB('project').find(params.project_id)
 
     // Upload image
@@ -301,10 +303,14 @@ class ProjectEdit {
   }
 
   static updateImage = async (params: { id: number; project_id: number; position: string }) => {
-    const images = await DB('project_image').where('project_id', params.project_id).all()
+    await Utils.checkProjectOwner({ project_id: params.project_id, user: params.user })
+
+    const images = await DB('project_image')
+      .where('project_id', params.project_id)
+      .orderBy('position', 'asc')
+      .all()
 
     const pos = images.findIndex((p) => p.id === params.id)
-
     if (params.position === 'up' && pos !== 0) {
       const moved = images[pos - 1]
       images[pos - 1] = images[pos]
@@ -326,6 +332,8 @@ class ProjectEdit {
   }
 
   static deleteImage = async (params) => {
+    await Utils.checkProjectOwner({ project_id: params.project_id, user: params.user })
+
     const projectImage = await DB('project_image as pi')
       .select('pi.project_id', 'pi.image', 'p.picture')
       .join('project as p', 'p.id', 'pi.project_id')
@@ -335,6 +343,67 @@ class ProjectEdit {
     Storage.deleteImage(`projects/${projectImage.picture}/images/${projectImage.image}`)
     await DB('project_image').where('id', params.iid).delete()
     return { success: true }
+  }
+
+  static removeImage = async ({ id: projectId, type }) => {
+    const project = await DB('project')
+      .select('project.*', 'vod.picture_project')
+      .join('vod', 'vod.project_id', 'project.id')
+      .where('project.id', projectId)
+      .first()
+
+    if (!project) throw new ApiError(404, 'Project not found')
+
+    // Type -> fileName map
+    const typeToFileName = {
+      front_cover: { name: ['cover', 'mini', 'original', 'low'] },
+      back_cover: { name: 'back', withOriginal: true },
+      cover2: { name: 'cover2', withOriginal: true },
+      cover3: { name: 'cover3', withOriginal: true },
+      cover4: { name: 'cover4', withOriginal: true },
+      cover5: { name: 'cover5', withOriginal: true },
+      picture_project: { name: project.picture_project },
+      label: { name: 'label' },
+      label_bside: { name: 'label_bside' },
+      custom_disc: { name: 'disc' },
+      video_file: { name: project.video + '.mp4' }
+    }
+
+    const files = typeToFileName[type] ?? null
+    if (!files) {
+      return { success: false, error: 'Invalid type to remove picture' }
+    }
+
+    // Delete files
+    if (typeof files.name === 'string') files.name = [files.name]
+    for (const fileName of files.name) {
+      const path = `projects/${project.picture}/${fileName}`
+      await Storage.deleteImage(path, null, true)
+      if (files.withOriginal) await Storage.deleteImage(`${path}_original`, null, true)
+
+      // update DB for some types
+      switch (type) {
+        case 'custom_disc':
+          await DB('vod').where('project_id', projectId).update({ url_vinyl: null })
+          break
+        case 'label_bside':
+          await DB('vod').where('project_id', projectId).update({ is_label_bside: 0 })
+          break
+        case 'picture_project':
+          await DB('vod').where('project_id', projectId).update({ picture_project: null })
+          break
+        case 'video_file':
+          await DB('project').where('id', projectId).update({ video: null })
+          break
+        default:
+          break
+      }
+    }
+
+    // Update project artwork
+    const res = await Artwork.updateArtwork({ id: projectId })
+
+    return { success: true, type, picture: res.picture }
   }
 }
 

@@ -5124,67 +5124,6 @@ class Admin {
     }
   }
 
-  static removeImageFromProject = async ({ id: projectId, type }) => {
-    const project = await DB('project')
-      .select('project.*', 'vod.picture_project')
-      .join('vod', 'vod.project_id', 'project.id')
-      .where('project.id', projectId)
-      .first()
-
-    if (!project) throw new ApiError(404, 'Project not found')
-
-    // Type -> fileName map
-    const typeToFileName = {
-      front_cover: { name: ['cover', 'mini', 'original', 'low'] },
-      back_cover: { name: 'back', withOriginal: true },
-      cover2: { name: 'cover2', withOriginal: true },
-      cover3: { name: 'cover3', withOriginal: true },
-      cover4: { name: 'cover4', withOriginal: true },
-      cover5: { name: 'cover5', withOriginal: true },
-      picture_project: { name: project.picture_project },
-      label: { name: 'label' },
-      label_bside: { name: 'label_bside' },
-      custom_disc: { name: 'disc' },
-      video_file: { name: project.video + '.mp4' }
-    }
-
-    const files = typeToFileName[type] ?? null
-    if (!files) {
-      return { success: false, error: 'Invalid type to remove picture' }
-    }
-
-    // Delete files
-    if (typeof files.name === 'string') files.name = [files.name]
-    for (const fileName of files.name) {
-      const path = `projects/${project.picture}/${fileName}`
-      await Storage.deleteImage(path, null, true)
-      if (files.withOriginal) await Storage.deleteImage(`${path}_original`, null, true)
-
-      // update DB for some types
-      switch (type) {
-        case 'custom_disc':
-          await DB('vod').where('project_id', projectId).update({ url_vinyl: null })
-          break
-        case 'label_bside':
-          await DB('vod').where('project_id', projectId).update({ is_label_bside: 0 })
-          break
-        case 'picture_project':
-          await DB('vod').where('project_id', projectId).update({ picture_project: null })
-          break
-        case 'video_file':
-          await DB('project').where('id', projectId).update({ video: null })
-          break
-        default:
-          break
-      }
-    }
-
-    // Update project artwork
-    const res = await Artwork.updateArtwork({ id: projectId })
-
-    return { success: true, type, picture: res.picture }
-  }
-
   static deeplTranslate = async ({ text, source_lang: sourceLang, target_lang: targetLang }) => {
     try {
       return Deepl.translate({

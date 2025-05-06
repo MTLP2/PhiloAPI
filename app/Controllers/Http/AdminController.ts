@@ -1167,10 +1167,6 @@ class AdminController {
     return ProjectService.getDispatchs(params)
   }
 
-  removeImage({ params }) {
-    return Admin.removeImageFromProject(params)
-  }
-
   exportOrdersRefunds({ params }) {
     return Admin.exportOrdersRefunds(params)
   }

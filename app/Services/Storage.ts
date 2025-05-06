@@ -29,8 +29,8 @@ class StorageService {
   static async copyFolder(path1: string, path2: string, isPrivate: boolean = false) {
     const files: any = await Storage.list(path1)
     for (const file of files) {
-      const fileName = file.path.split('/').pop()
-      await this.copy(file.path, `${path2}/${fileName}`, isPrivate)
+      const filename = file.path.replace(path1, '')
+      await this.copy(file.path, `${path2}/${filename}`, isPrivate)
     }
     return true
   }

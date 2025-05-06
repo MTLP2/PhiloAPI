@@ -162,12 +162,13 @@ class Vod {
     vod.vinyl_weight = params.weight
     vod.label = params.label_color
     if (params.no_label !== undefined) {
-      if (params.no_label && vod.label !== 'none') {
+      if (params.no_label) {
         vod.label = 'none'
-      } else if (!params.no_label && vod.label === 'none') {
+      } else if (!params.no_label) {
         vod.label = 'color'
       }
     }
+
     vod.sleeve = params.sleeve
     vod.inner_sleeve = params.inner_sleeve
     vod.test_pressing = params.test_pressing

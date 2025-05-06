@@ -304,6 +304,10 @@ class ProjectsController {
   deleteImage({ params }) {
     return ProjectEdit.deleteImage(params)
   }
+
+  removeImage({ params }) {
+    return ProjectEdit.removeImage(params)
+  }
 }
 
 export default ProjectsController

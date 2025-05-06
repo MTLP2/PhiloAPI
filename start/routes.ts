@@ -158,6 +158,7 @@ Route.group(() => {
   Route.post('/projects/:id/images', 'ProjectsController.saveImage')
   Route.put('/projects/:id/images/:iid', 'ProjectsController.updateImage')
   Route.delete('/projects/:id/images/:iid', 'ProjectsController.deleteImage')
+  Route.delete('/projects/:id/remove-image', 'ProjectsController.removeImage')
 
   Route.get('/users', 'UsersController.all')
   Route.get('/users/:id', 'UsersController.find')
@@ -408,7 +409,7 @@ Route.group(() => {
   Route.delete('/projects/:id/reviews/:rid', 'AdminController.deleteReview')
   Route.get('/projects/:id/dispatchs', 'AdminController.getDispatchs')
   Route.get('/projects/facebook', 'AdminController.exportFacebookProjects')
-  Route.delete('/projects/:id/remove-image', 'AdminController.removeImage')
+  Route.delete('/projects/:id/remove-image', 'ProjectsController.removeImage')
   Route.post('/projects/:id/redo-check-address', 'AdminController.redoCheckAddress')
   Route.get('/projects/:pid/delay-nl', 'AdminController.getDelayNewsletters')
   Route.put('/projects/:pid/delay-nl', 'AdminController.putDelayNewsletter')
