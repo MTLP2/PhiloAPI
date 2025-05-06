@@ -215,6 +215,7 @@ class Cart {
             insert: item.quantity,
             is_large: project.is_large,
             currency: project.currency,
+            zip_code: params.customer.zip_code,
             is_shop: item.type === 'shop',
             stock: true,
             stocks: stocks,
@@ -733,6 +734,7 @@ class Cart {
           insert: shop.insert,
           is_large: shop.is_large,
           transporter: shop.transporter,
+          zip_code: p.customer.zip_code,
           currency: shop.currency,
           category: shop.category,
           country_id: p.country_id,
@@ -1247,13 +1249,27 @@ class Cart {
       }
     }
     if (transporters.cbip) {
-      const ships = await Cart.calculateShippingByTransporter({
-        ...params,
-        partner: 'cbip',
-        transporter: 'cbip'
-      })
-      if (ships) {
-        shippings.push(ships)
+      let exception = null
+
+      if (params.zip_code) {
+        exception = await DB('shipping_exception')
+          .where('country_id', params.country_id)
+          .where((query) => {
+            query.where('zip_code', 'like', params.zip_code).orWhere((query) => {
+              query.where('start', '<=', params.zip_code).where('end', '>=', params.zip_code)
+            })
+          })
+          .first()
+      }
+      if (!exception) {
+        const ships = await Cart.calculateShippingByTransporter({
+          ...params,
+          partner: 'cbip',
+          transporter: 'cbip'
+        })
+        if (ships) {
+          shippings.push(ships)
+        }
       }
     }
     if (transporters.digital) {
