@@ -159,6 +159,8 @@ Route.group(() => {
   Route.put('/projects/:id/images/:iid', 'ProjectsController.updateImage')
   Route.delete('/projects/:id/images/:iid', 'ProjectsController.deleteImage')
   Route.delete('/projects/:id/remove-image', 'ProjectsController.removeImage')
+  Route.post('/projects/:id/items', 'ProjectsController.saveProjectItem')
+  Route.delete('/projects/:id/items/:iid', 'ProjectsController.removeProjectItem')
 
   Route.get('/users', 'UsersController.all')
   Route.get('/users/:id', 'UsersController.find')

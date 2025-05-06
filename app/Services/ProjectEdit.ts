@@ -132,7 +132,7 @@ class ProjectEdit {
     pp.artist_bio = params.artist_bio
     pp.updated_at = Utils.date()
     if (params.hide) {
-      pp.hide = params.hide.join(',')
+      pp.hide = typeof params.hide === 'string' ? params.hide : params.hide.join(',')
     }
     pp = await pp.save()
 
@@ -393,6 +393,7 @@ class ProjectEdit {
           await DB('vod').where('project_id', projectId).update({ picture_project: null })
           break
         case 'video_file':
+          console.log('video_file')
           await DB('project').where('id', projectId).update({ video: null })
           break
         default:
