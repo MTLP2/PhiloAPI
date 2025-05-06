@@ -49,9 +49,21 @@ class Vod {
       })
 
       if (params.type === 'direct_pressing') {
-        const html = await View.render('emails.quote', {
+        const htmlprod = await View.render('emails.quote', {
           ...params,
           total: params.costs.at(-1).value,
+          discount: Utils.round(params.costs.at(-1).value / 1.05),
+          per_unit: Utils.round(params.costs.at(-1).value / 1.05 / params.quantity),
+          number: vod.project_id,
+          date: Utils.date({ time: false }),
+          client: params.customer.email || user.email
+        })
+
+        const html = await View.render('emails.quoteclient', {
+          ...params,
+          total: params.costs.at(-1).value,
+          photoUrl: 'https://ca.slack-edge.com/T0UHRUB19-U02473HJNGK-5411f640c624-192',
+          calendlyLink: 'https://calendly.com/tom-diggersfactory/30min?month=2025-04',
           discount: Utils.round(params.costs.at(-1).value / 1.05),
           per_unit: Utils.round(params.costs.at(-1).value / 1.05 / params.quantity),
           number: vod.project_id,
@@ -64,6 +76,14 @@ class Vod {
           from_name: 'Tom Haddad',
           to: 'tom@diggersfactory.com',
           subject: `Vinyl Quote for ${params.customer.email || user.email}`,
+          html: htmlprod
+        })
+
+        await Notifications.sendEmail({
+          from_address: 'tom@diggersfactory.com',
+          from_name: 'Tom Haddad',
+          to: params.customer.email || user.email,
+          subject: `Validation of your order for ${params.customer.email || user.email}`,
           html: html
         })
       }
