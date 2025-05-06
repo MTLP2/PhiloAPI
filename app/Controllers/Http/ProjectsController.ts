@@ -289,11 +289,13 @@ class ProjectsController {
     return Projects.getProjectSelection()
   }
 
-  saveImage({ params }) {
+  async saveImage({ params, user }) {
+    await Utils.checkProjectOwner({ project_id: params.id, user: user })
     return ProjectEdit.saveImage(params)
   }
 
-  updateImage({ params }) {
+  async updateImage({ params, user }) {
+    await Utils.checkProjectOwner({ project_id: params.id, user: user })
     return ProjectEdit.updateImage({
       id: +params.iid,
       position: params.position,
@@ -301,7 +303,8 @@ class ProjectsController {
     })
   }
 
-  deleteImage({ params }) {
+  async deleteImage({ params, user }) {
+    await Utils.checkProjectOwner({ project_id: params.id, user: user })
     return ProjectEdit.deleteImage(params)
   }
 
@@ -309,27 +312,35 @@ class ProjectsController {
     return ProjectEdit.removeImage(params)
   }
 
-  getProducts({ params }) {
-    return ProjectEdit.getProducts(params)
+  async getProducts({ params, user }) {
+    await Utils.checkProjectOwner({ project_id: params.id, user: user })
+    return ProjectEdit.getProducts({
+      project_id: params.id
+    })
   }
 
-  saveProduct({ params }) {
+  async saveProduct({ params, user }) {
+    await Utils.checkProjectOwner({ project_id: params.id, user: user })
     return ProjectEdit.saveProduct(params)
   }
 
-  removeProduct({ params }) {
+  async removeProduct({ params, user }) {
+    await Utils.checkProjectOwner({ project_id: params.id, user: user })
     return ProjectEdit.removeProduct(params)
   }
 
-  getItem({ params }) {
-    return ProjectEdit.getItem(params)
+  async getItems({ params, user }) {
+    await Utils.checkProjectOwner({ project_id: params.id, user: user })
+    return ProjectEdit.getItems(params)
   }
 
-  saveItem({ params }) {
+  async saveItem({ params, user }) {
+    await Utils.checkProjectOwner({ project_id: params.id, user: user })
     return ProjectEdit.saveItem(params)
   }
 
-  removeItem({ params }) {
+  async removeItem({ params, user }) {
+    await Utils.checkProjectOwner({ project_id: params.id, user: user })
     return ProjectEdit.removeItem(params)
   }
 }

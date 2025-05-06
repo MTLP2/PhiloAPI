@@ -305,8 +305,6 @@ class ProjectEdit {
   }
 
   static updateImage = async (params: { id: number; project_id: number; position: string }) => {
-    await Utils.checkProjectOwner({ project_id: params.project_id, user: params.user })
-
     const images = await DB('project_image')
       .where('project_id', params.project_id)
       .orderBy('position', 'asc')
@@ -334,8 +332,6 @@ class ProjectEdit {
   }
 
   static deleteImage = async (params) => {
-    await Utils.checkProjectOwner({ project_id: params.project_id, user: params.user })
-
     const projectImage = await DB('project_image as pi')
       .select('pi.project_id', 'pi.image', 'p.picture')
       .join('project as p', 'p.id', 'pi.project_id')
