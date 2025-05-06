@@ -5,6 +5,7 @@ import Artwork from './Artwork'
 import Songs from './Songs'
 import Vod from './Vod'
 import Artists from './Artists'
+import Storage from './Storage'
 
 class ProjectEdit {
   static find = async (params) => {
@@ -66,7 +67,10 @@ class ProjectEdit {
     project.sticker = project.sticker || '0'
     project.insert = project.insert || 'none'
     project.tracks = await Songs.byProject({ project_id: project.id, disabled: true })
-    project.images = await DB('project_image').where('project_id', project.id).all()
+    project.images = await DB('project_image')
+      .where('project_id', project.id)
+      .orderBy('position', 'asc')
+      .all()
 
     return project
   }
@@ -265,6 +269,78 @@ class ProjectEdit {
     await song.save()
 
     return song
+  }
+
+  static saveImage = async (params) => {
+    const project = await DB('project').find(params.project_id)
+
+    // Upload image
+    const file = Utils.uuid()
+    await Storage.uploadImage(
+      `projects/${project.picture}/images/${file}`,
+      Buffer.from(params.image, 'base64'),
+      { type: 'png', width: 1000, quality: 100 }
+    )
+
+    const newProjectImageId = await DB('project_image').insert({
+      project_id: params.project_id,
+      image: file,
+      created_at: Utils.date(),
+      name: params.name,
+      position: params.position
+    })
+
+    return {
+      success: true,
+      item: {
+        id: newProjectImageId[0],
+        image: file,
+        name: params.name,
+        position: params.position
+      }
+    }
+  }
+
+  static updateImage = async (params: { id: number; project_id: number; position: string }) => {
+    const images = await DB('project_image').where('project_id', params.project_id).all()
+
+    const pos = images.findIndex((p) => p.id === params.id)
+
+    console.log('pos', pos)
+    if (params.position === 'up' && pos !== 0) {
+      console.log('up')
+      const moved = images[pos - 1]
+      images[pos - 1] = images[pos]
+      images[pos] = moved
+    } else if (params.position === 'down' && pos !== images.length - 1) {
+      console.log('down')
+      const moved = images[pos + 1]
+      images[pos + 1] = images[pos]
+      images[pos] = moved
+    }
+
+    console.log(images)
+    for (const p in images) {
+      await DB('project_image')
+        .where('id', images[p].id)
+        .update({
+          position: +p + 1
+        })
+    }
+    return { success: true }
+  }
+
+  static deleteImage = async (params) => {
+    console.log(params)
+    const projectImage = await DB('project_image as pi')
+      .select('pi.project_id', 'pi.image', 'p.picture')
+      .join('project as p', 'p.id', 'pi.project_id')
+      .where('pi.id', params.iid)
+      .first()
+
+    Storage.deleteImage(`projects/${projectImage.picture}/images/${projectImage.image}`)
+    await DB('project_image').where('id', params.iid).delete()
+    return { success: true }
   }
 }
 

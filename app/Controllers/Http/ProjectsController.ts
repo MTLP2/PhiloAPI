@@ -1,4 +1,4 @@
-import Project from 'App/Services/Project'
+import Projects from 'App/Services/Project'
 import ProjectEdit from 'App/Services/ProjectEdit'
 import Artwork from 'App/Services/Artwork'
 import Vod from 'App/Services/Vod'
@@ -17,12 +17,12 @@ class ProjectsController {
   async getProjects({ params }) {
     return {
       categories: (await Categories.all({})).data,
-      data: await Project.findAll(params)
+      data: await Projects.findAll(params)
     }
   }
 
   getBarcode({ params }) {
-    return Project.getBarcode(params.code)
+    return Projects.getBarcode(params.code)
   }
 
   async getAll({ params, user }) {
@@ -30,19 +30,19 @@ class ProjectsController {
     if (!(await Utils.isTeam(user.id))) {
       userId = user.id
     }
-    return Project.getAll(params.search, params.type, userId)
+    return Projects.getAll(params.search, params.type, userId)
   }
 
   getHome({ params }) {
-    return Project.getHome(params)
+    return Projects.getHome(params)
   }
 
   getSoundcloud({ params }) {
-    return Project.getSoundcloud(params)
+    return Projects.getSoundcloud(params)
   }
 
   recommandationsForUser({ user }) {
-    return Project.recommandationsForUser(user.user_id)
+    return Projects.recommandationsForUser(user.user_id)
   }
 
   recommandations({ params, user }) {
@@ -51,26 +51,26 @@ class ProjectsController {
     params.shop = params.shop || 0
     params.user = user
 
-    return Project.recommendations(params)
+    return Projects.recommendations(params)
   }
 
   find({ params, user }) {
     if (isNaN(params.id)) {
       throw new ApiError(400)
     }
-    return Project.find(params.id, { ...params, ...user })
+    return Projects.find(params.id, { ...params, ...user })
   }
 
   getMore({ params, user }) {
-    return Project.getMore(params.id, user.id)
+    return Projects.getMore(params.id, user.id)
   }
 
   getGroupShipment({ params, user }) {
-    return Project.getGroupShipment(params.id, user.id)
+    return Projects.getGroupShipment(params.id, user.id)
   }
 
   getWishes({ params }) {
-    return Project.getWishes(params.id, params.lang)
+    return Projects.getWishes(params.id, params.lang)
   }
 
   getSongs({ params, user }) {
@@ -80,7 +80,7 @@ class ProjectsController {
   }
 
   like({ params, user }) {
-    return Project.like(params.id, user.id)
+    return Projects.like(params.id, user.id)
   }
 
   async findEdit({ params, user }) {
@@ -216,12 +216,12 @@ class ProjectsController {
 
   checkCode({ params, user }) {
     params.user = user
-    return Project.checkCode(params)
+    return Projects.checkCode(params)
   }
 
   async download({ params, user, response }) {
     params.user = user
-    return Project.download(params)
+    return Projects.download(params)
   }
 
   async getStats({ params, user }) {
@@ -229,7 +229,7 @@ class ProjectsController {
     if (params.id !== 'all') {
       await Utils.checkProjectOwner({ project_id: params.id, user: user })
     }
-    return Project.getStats(params)
+    return Projects.getStats(params)
   }
 
   async getDashboard({ params, user }) {
@@ -243,7 +243,7 @@ class ProjectsController {
     }
 
     params.cashable = params.all !== 'true'
-    return Project.getDashboard(params)
+    return Projects.getDashboard(params)
   }
 
   async getOrders({ params, user }) {
@@ -254,7 +254,7 @@ class ProjectsController {
     if (params.user_id && +params.user_id !== user.id && !(await Utils.isTeam(user.id))) {
       throw new ApiError(403)
     }
-    return Project.getOrdersForTable(params)
+    return Projects.getOrdersForTable(params)
   }
 
   async exportOrders({ params, user }) {
@@ -265,7 +265,7 @@ class ProjectsController {
     if (params.user_id && +params.user_id !== user.id && !(await Utils.isTeam(user.id))) {
       throw new ApiError(403)
     }
-    return Project.exportOrders(params)
+    return Projects.exportOrders(params)
   }
 
   async downloadStatement({ params, user }) {
@@ -286,7 +286,23 @@ class ProjectsController {
   }
 
   async getProjectSelection() {
-    return Project.getProjectSelection()
+    return Projects.getProjectSelection()
+  }
+
+  saveImage({ params }) {
+    return ProjectEdit.saveImage(params)
+  }
+
+  updateImage({ params }) {
+    return ProjectEdit.updateImage({
+      id: +params.iid,
+      position: params.position,
+      project_id: +params.id
+    })
+  }
+
+  deleteImage({ params }) {
+    return ProjectEdit.deleteImage(params)
   }
 }
 

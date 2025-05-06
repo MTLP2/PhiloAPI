@@ -7,12 +7,10 @@ import Notifications from 'App/Services/Notifications'
 import Order from 'App/Services/Order'
 import OrdersManual from 'App/Services/OrdersManual'
 import PromoCode from 'App/Services/PromoCode'
-import Goodie from 'App/Services/Goodie'
 import Sponsor from 'App/Services/Sponsor'
 import Customer from 'App/Services/Customer'
 import Quote from 'App/Services/Quote'
 import Stock from 'App/Services/Stock'
-import Whiplash from 'App/Services/Whiplash'
 import Songs from 'App/Services/Songs'
 import Utils from 'App/Utils'
 import PaymentArtist from 'App/Services/PaymentArtist'
@@ -22,8 +20,6 @@ import Storage from 'App/Services/Storage'
 import Categories from 'App/Services/Categories'
 import Banners from 'App/Services/Banners'
 import Daudin from 'App/Services/Daudin'
-import Elogik from 'App/Services/Elogik'
-import BigBlue from 'App/Services/BigBlue'
 import Artwork from 'App/Services/Artwork'
 import Stats from 'App/Services/Stats'
 import MailJet from 'App/Services/MailJet'
@@ -334,18 +330,6 @@ class AdminController {
 
   downloadHistoryStatement({ params }) {
     return Statement.downloadHistory(params)
-  }
-
-  saveProjectImage({ params }) {
-    return Admin.saveProjectImage(params)
-  }
-
-  updateProjectImage({ params }) {
-    return Admin.updateProjectImage(params)
-  }
-
-  deleteProjectImage({ params }) {
-    return Admin.deleteProjectImage(params)
   }
 
   generateProjectImages({ params }) {
