@@ -1167,6 +1167,10 @@ class AdminController {
     return ProjectService.getDispatchs(params)
   }
 
+  exportDispatchs({ params }) {
+    return Admin.exportDispatchs(params)
+  }
+
   exportOrdersRefunds({ params }) {
     return Admin.exportOrdersRefunds(params)
   }
