@@ -20,8 +20,7 @@ class ProjectEdit {
         'pr.surcharge_amount as surcharge_amount',
         'a.name as artist_nname',
         'a.picture as artist_ppicture',
-        'l.name as label_nname',
-        'l.picture as label_ppicture'
+        'l.name as label_nname'
       )
       .from('project as p')
       .leftJoin('vod as v', 'p.id', 'v.project_id')
@@ -306,20 +305,16 @@ class ProjectEdit {
 
     const pos = images.findIndex((p) => p.id === params.id)
 
-    console.log('pos', pos)
     if (params.position === 'up' && pos !== 0) {
-      console.log('up')
       const moved = images[pos - 1]
       images[pos - 1] = images[pos]
       images[pos] = moved
     } else if (params.position === 'down' && pos !== images.length - 1) {
-      console.log('down')
       const moved = images[pos + 1]
       images[pos + 1] = images[pos]
       images[pos] = moved
     }
 
-    console.log(images)
     for (const p in images) {
       await DB('project_image')
         .where('id', images[p].id)
@@ -331,7 +326,6 @@ class ProjectEdit {
   }
 
   static deleteImage = async (params) => {
-    console.log(params)
     const projectImage = await DB('project_image as pi')
       .select('pi.project_id', 'pi.image', 'p.picture')
       .join('project as p', 'p.id', 'pi.project_id')
