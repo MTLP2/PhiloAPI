@@ -5091,6 +5091,91 @@ class Admin {
     )
   }
 
+  static exportDispatchs = async (params) => {
+    const query = DB('dispatch')
+      .select(
+        'dispatch.*',
+        'customer.name as customer_name',
+        'customer.firstname',
+        'customer.lastname',
+        'customer.country_id',
+        'user.name as user_name',
+        'user.email as user_email',
+        'oi.id as order_item_id',
+        'order.id as order_id',
+        'order.currency as order_currency',
+        'vod.price as vod_price',
+        'vod.currency as vod_currency',
+        'project.name as project_name'
+      )
+      .leftJoin('customer', 'customer.id', 'dispatch.customer_id')
+      .leftJoin('user', 'user.id', 'dispatch.user_id')
+      .leftJoin('order', 'order.id', 'dispatch.order_id')
+      .leftJoin('order_item as oi', 'oi.order_id', 'order.id')
+      .leftJoin('vod', 'vod.id', 'oi.vod_id')
+      .leftJoin('project', 'project.id', 'vod.project_id')
+      .where('dispatch.status', '!=', 'deleted')
+
+    if (params.start && params.end) {
+      query.whereBetween('dispatch.created_at', [params.start, params.end])
+    }
+
+    // 1) Récupération brute
+    const dispatchs = await query.all()
+
+    // 2) On regroupe par order_id
+    const groupedByOrder = dispatchs.reduce((acc, d) => {
+      const key = d.order_id
+      if (!acc[key]) acc[key] = []
+      acc[key].push(d)
+      return acc
+    }, {})
+
+    // 3) On reconstruit les lignes Excel
+    const rowsForXlsx = Object.values(groupedByOrder).map((group) => {
+      const first = group[0]
+      // somme des vod_price
+      const totalVodPrice = group.reduce((sum, d) => sum + (d.vod_price || 0), 0)
+
+      return {
+        id: first.id,
+        status: first.status,
+        // si plus d’un item, on crée un nom de pack
+        name: group.length > 1 ? `Pack #${first.order_id}` : first.project_name,
+        user_email: first.user_email,
+        type: first.type,
+        quantity: group.length, // ou sommez-les si nécessaire
+        created_at: first.created_at,
+        date_sent: first.date_export,
+        logistician: first.logistician,
+        tracking: first.tracking_number,
+        // on remplace project_price par la somme
+        project_price: totalVodPrice + ' ' + first.vod_currency
+      }
+    })
+
+    // 4) Génération de l’Excel
+    return Utils.arrayToXlsx([
+      {
+        worksheetName: 'Dispatchs',
+        columns: [
+          { header: 'ID', key: 'id' },
+          { header: 'Status', key: 'status' },
+          { header: 'Project', key: 'name' },
+          { header: 'User', key: 'user_email' },
+          { header: 'Type', key: 'type' },
+          { header: 'Quantity', key: 'quantity' },
+          { header: 'Created at', key: 'created_at' },
+          { header: 'Sent at', key: 'date_sent' },
+          { header: 'Logistician', key: 'logistician' },
+          { header: 'Tracking', key: 'tracking' },
+          { header: 'Unit price', key: 'project_price' }
+        ],
+        data: rowsForXlsx
+      }
+    ])
+  }
+
   static checkProjectRest = async (params) => {
     const refunds = await DB('refund')
       .select('refund.comment', 'refund.data', 'order_item.quantity')
