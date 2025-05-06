@@ -30,7 +30,9 @@ class StorageService {
     const files: any = await Storage.list(path1)
     for (const file of files) {
       const filename = file.path.replace(path1, '')
-      await this.copy(file.path, `${path2}/${filename}`, isPrivate)
+
+      const pathCopy = `${path2}/${filename}`.replace('//', '/')
+      await this.copy(file.path, pathCopy, isPrivate)
     }
     return true
   }
