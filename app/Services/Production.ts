@@ -302,6 +302,12 @@ class Production {
       },
       {
         category: 'postprod',
+        type: 'feedback',
+        action: 'check',
+        for: 'artist'
+      },
+      {
+        category: 'postprod',
         type: 'completed',
         action: 'check',
         for: 'team'
