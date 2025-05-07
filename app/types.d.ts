@@ -210,6 +210,29 @@ type Invoice = {
   updated_at: Timestamp
 }
 
+type Item = {
+  id: number
+  project_id: number
+  related_id: number
+  name: string
+  name_fr: string
+  description_fr: string
+  description_en: string
+  price: number
+  stock: number
+  barcode: string
+  catnumber: string
+  transporter: string
+  coefficient: number
+  weight: number
+  group_shipment: boolean
+  is_active: boolean
+  is_statement: boolean
+  is_recommended: boolean
+  created_at: Timestamp
+  updated_at: Timestamp
+}
+
 type Feedback = {
   id: number
   user_id: number
@@ -492,6 +515,7 @@ export type DB = {
   dispatch_lock: DispatchLock
   feedback: Feedback
   invoice: Invoice
+  item: Item
   label: Label
   order: Order
   order_item: OrderItem

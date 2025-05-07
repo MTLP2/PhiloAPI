@@ -331,7 +331,9 @@ class ProjectsController {
 
   async getItems({ params, user }) {
     await Utils.checkProjectOwner({ project_id: params.id, user: user })
-    return ProjectEdit.getItems(params)
+    return ProjectEdit.getItems({
+      project_id: params.id
+    })
   }
 
   async saveItem({ params, user }) {

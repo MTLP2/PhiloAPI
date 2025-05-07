@@ -159,12 +159,14 @@ Route.group(() => {
   Route.put('/projects/:id/images/:iid', 'ProjectsController.updateImage')
   Route.delete('/projects/:id/images/:iid', 'ProjectsController.deleteImage')
   Route.delete('/projects/:id/remove-image', 'ProjectsController.removeImage')
-  Route.get('/projects/:id/items', 'ProjectsController.getProjectItems')
+  Route.get('/projects/:id/items', 'ProjectsController.getItems')
   Route.post('/projects/:id/items', 'ProjectsController.saveItem')
   Route.delete('/projects/:id/items/:iid', 'ProjectsController.removeItem')
   Route.get('/projects/:id/products', 'ProjectsController.getProducts')
   Route.post('/projects/:id/products', 'ProjectsController.saveProduct')
   Route.delete('/projects/:id/products/:pid', 'ProjectsController.removeProduct')
+
+  Route.get('/products', 'ProductsController.getProducts')
 
   Route.get('/users', 'UsersController.all')
   Route.get('/users/:id', 'UsersController.find')
