@@ -1758,13 +1758,6 @@ class Quote {
           onceByCopy: true,
           active: true
         })
-        quote.prices.sleeve.double_gatefold += getCost({
-          l: 102,
-          type: 'surcharge',
-          option: 'double_gatefold',
-          onceByCopy: true,
-          active: true
-        })
       }
       if (params.sleeve === 'triple_gatefold') {
         quote.prices.sleeve.triple_gatefold = getCost({
@@ -2020,7 +2013,7 @@ class Quote {
           l: 20,
           type: 'type_vinyl',
           option: 'color',
-          onceByCopy: true,
+          onceByCopy: false,
           active: params.type_vinyl === 'color'
         }) + quote.prices.type_vinyl.surcharge
     } else {
