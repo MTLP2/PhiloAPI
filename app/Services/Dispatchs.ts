@@ -2544,7 +2544,7 @@ class Dispatchs {
         return and(ands)
       })
       .where('dispatch.logistician_id', 'is', null)
-      .limit(5)
+      .limit(20)
       .orderBy('dispatch.date_inprogress', 'asc')
       .execute()
 

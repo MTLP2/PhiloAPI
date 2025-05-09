@@ -5,6 +5,8 @@ import Artwork from './Artwork'
 import Songs from './Songs'
 import Vod from './Vod'
 import Artists from './Artists'
+import Storage from './Storage'
+import { db, model } from 'App/db3'
 
 class ProjectEdit {
   static find = async (params) => {
@@ -16,11 +18,16 @@ class ProjectEdit {
         'u.picture as profile_picture',
         'u.name as profile_name',
         'u.about_me as profile_about',
-        'pr.surcharge_amount as surcharge_amount'
+        'pr.surcharge_amount as surcharge_amount',
+        'a.name as artist_nname',
+        'a.picture as artist_ppicture',
+        'l.name as label_nname'
       )
       .from('project as p')
       .leftJoin('vod as v', 'p.id', 'v.project_id')
       .leftJoin('user as u', 'v.user_id', 'u.id')
+      .leftJoin('artist as a', 'p.artist_id', 'a.id')
+      .leftJoin('label as l', 'p.label_id', 'l.id')
       .leftJoin('production as pr', 'p.id', 'pr.project_id')
       .where('p.id', params.id)
       .belongsTo('customer')
@@ -60,6 +67,10 @@ class ProjectEdit {
     project.sticker = project.sticker || '0'
     project.insert = project.insert || 'none'
     project.tracks = await Songs.byProject({ project_id: project.id, disabled: true })
+    project.images = await DB('project_image')
+      .where('project_id', project.id)
+      .orderBy('position', 'asc')
+      .all()
 
     return project
   }
@@ -67,6 +78,8 @@ class ProjectEdit {
   static saveProject = async (params) => {
     let pp
     const error = null
+
+    let updateArtwork = false
 
     if (params.id === 0) {
       pp = DB('project')
@@ -100,6 +113,9 @@ class ProjectEdit {
     }
     pp.name = params.name
     pp.slug = Utils.slugify(`${params.artist_name} - ${pp.name}`).substring(0, 255)
+    pp.category = params.category
+    pp.artist_id = params.artist_id
+    pp.label_id = params.label_id
     pp.artist_name = params.artist_name
     pp.artist_website = params.artist_website
     pp.label_name = params.label_name
@@ -116,9 +132,20 @@ class ProjectEdit {
     pp.nb_vinyl = params.nb_vinyl
     pp.artist_bio = params.artist_bio
     pp.updated_at = Utils.date()
+    if (params.hide) {
+      pp.hide = typeof params.hide === 'string' ? params.hide : params.hide.join(',')
+    }
     pp = await pp.save()
 
     const vod = await DB('vod').where('project_id', pp.id).first()
+
+    if (vod) {
+      if (params.no_label && vod.label !== 'none') {
+        updateArtwork = true
+      } else if (!params.no_label && vod.label === 'none') {
+        updateArtwork = true
+      }
+    }
 
     await Vod.save(params, pp)
 
@@ -140,13 +167,14 @@ class ProjectEdit {
     }
 
     if (params.video_file) {
-      Artwork.updateVideo({
+      await Artwork.updateVideo({
         project: pp,
         video: Buffer.from(params.video_file.replace(/^data:video\/(mp4);base64,/, ''), 'base64')
       })
     }
 
     if (
+      updateArtwork ||
       params.cover_picture ||
       params.label_picture ||
       params.label_bside_picture ||
@@ -187,6 +215,16 @@ class ProjectEdit {
       if (!res.success) {
         return res
       }
+    }
+
+    if (params.is_3d !== undefined && params.is_3d !== pp.is_3d) {
+      if (params.is_3d) {
+        await Artwork.saveTextures({
+          project_id: pp.id
+        })
+      }
+      pp.is_3d = params.is_3d
+      pp = await pp.save()
     }
 
     await DB('project_style').where('project_id', pp.id).delete()
@@ -233,6 +271,214 @@ class ProjectEdit {
     await song.save()
 
     return song
+  }
+
+  static saveImage = async (params) => {
+    const project = await DB('project').find(params.project_id)
+
+    // Upload image
+    const file = Utils.uuid()
+    await Storage.uploadImage(
+      `projects/${project.picture}/images/${file}`,
+      Buffer.from(params.image, 'base64'),
+      { type: 'png', width: 1000, quality: 100 }
+    )
+
+    const newProjectImageId = await DB('project_image').insert({
+      project_id: params.project_id,
+      image: file,
+      created_at: Utils.date(),
+      name: params.name,
+      position: params.position
+    })
+
+    return {
+      success: true,
+      item: {
+        id: newProjectImageId[0],
+        image: file,
+        name: params.name,
+        position: params.position
+      }
+    }
+  }
+
+  static updateImage = async (params: { id: number; project_id: number; position: string }) => {
+    const images = await DB('project_image')
+      .where('project_id', params.project_id)
+      .orderBy('position', 'asc')
+      .all()
+
+    const pos = images.findIndex((p) => p.id === params.id)
+    if (params.position === 'up' && pos !== 0) {
+      const moved = images[pos - 1]
+      images[pos - 1] = images[pos]
+      images[pos] = moved
+    } else if (params.position === 'down' && pos !== images.length - 1) {
+      const moved = images[pos + 1]
+      images[pos + 1] = images[pos]
+      images[pos] = moved
+    }
+
+    for (const p in images) {
+      await DB('project_image')
+        .where('id', images[p].id)
+        .update({
+          position: +p + 1
+        })
+    }
+    return { success: true }
+  }
+
+  static deleteImage = async (params) => {
+    const projectImage = await DB('project_image as pi')
+      .select('pi.project_id', 'pi.image', 'p.picture')
+      .join('project as p', 'p.id', 'pi.project_id')
+      .where('pi.id', params.iid)
+      .first()
+
+    Storage.deleteImage(`projects/${projectImage.picture}/images/${projectImage.image}`)
+    await DB('project_image').where('id', params.iid).delete()
+    return { success: true }
+  }
+
+  static removeImage = async ({ id: projectId, type }) => {
+    const project = await DB('project')
+      .select('project.*', 'vod.picture_project')
+      .join('vod', 'vod.project_id', 'project.id')
+      .where('project.id', projectId)
+      .first()
+
+    if (!project) throw new ApiError(404, 'Project not found')
+
+    // Type -> fileName map
+    const typeToFileName = {
+      front_cover: { name: ['cover', 'mini', 'original', 'low'] },
+      back_cover: { name: 'back', withOriginal: true },
+      cover2: { name: 'cover2', withOriginal: true },
+      cover3: { name: 'cover3', withOriginal: true },
+      cover4: { name: 'cover4', withOriginal: true },
+      cover5: { name: 'cover5', withOriginal: true },
+      picture_project: { name: project.picture_project },
+      label: { name: 'label' },
+      label_bside: { name: 'label_bside' },
+      custom_disc: { name: 'disc' },
+      video_file: { name: project.video + '.mp4' }
+    }
+
+    const files = typeToFileName[type] ?? null
+    if (!files) {
+      return { success: false, error: 'Invalid type to remove picture' }
+    }
+
+    // Delete files
+    if (typeof files.name === 'string') files.name = [files.name]
+    for (const fileName of files.name) {
+      const path = `projects/${project.picture}/${fileName}`
+      await Storage.deleteImage(path, null, true)
+      if (files.withOriginal) await Storage.deleteImage(`${path}_original`, null, true)
+
+      // update DB for some types
+      switch (type) {
+        case 'custom_disc':
+          await DB('vod').where('project_id', projectId).update({ url_vinyl: null })
+          break
+        case 'label_bside':
+          await DB('vod').where('project_id', projectId).update({ is_label_bside: 0 })
+          break
+        case 'picture_project':
+          await DB('vod').where('project_id', projectId).update({ picture_project: null })
+          break
+        case 'video_file':
+          console.log('video_file')
+          await DB('project').where('id', projectId).update({ video: null })
+          break
+        default:
+          break
+      }
+    }
+
+    // Update project artwork
+    const res = await Artwork.updateArtwork({ id: projectId })
+
+    return { success: true, type, picture: res.picture }
+  }
+
+  static getProducts = async (params: { project_id: number }) => {
+    return DB('project_product')
+      .select('product.*')
+      .join('product', 'product.id', 'project_product.product_id')
+      .where('project_id', params.project_id)
+      .all()
+  }
+
+  static saveProduct = async (params: { project_id: number; product_id: number }) => {
+    const exists = await DB('project_product')
+      .where('project_id', params.project_id)
+      .where('product_id', params.product_id)
+      .first()
+
+    if (exists) {
+      return { error: 'already_exists' }
+    } else {
+      await DB('project_product').insert({
+        project_id: params.project_id,
+        product_id: params.product_id
+      })
+    }
+
+    return { success: true }
+  }
+
+  static removeProduct = async (params: { product_id: number; project_id: number }) => {
+    await DB('project_product')
+      .where('product_id', params.product_id)
+      .where('project_id', params.project_id)
+      .delete()
+
+    return { success: true }
+  }
+
+  static getItems = async (params: { project_id: number }) => {
+    return DB('item')
+      .select('item.*', 'p.name', 'p.artist_name', 'p.picture')
+      .leftJoin('project as p', 'p.id', 'item.project_id')
+      .where('item.project_id', params.project_id)
+      .all()
+  }
+
+  static saveItem = async (params) => {
+    const ids = params.related_id.toString().split(',')
+    for (const id of ids) {
+      const exists = await db
+        .selectFrom('item')
+        .select('id')
+        .where('project_id', '=', params.project_id)
+        .where('related_id', '=', id)
+        .executeTakeFirst()
+
+      let item = model('item')
+
+      if (params.item_id) {
+        item = await model('item').find(params.item_id)
+      } else {
+        if (exists) {
+          return { message: 'already_exists' }
+        }
+        item.created_at = Utils.date()
+      }
+      item.project_id = params.project_id
+      item.related_id = id || null
+      item.group_shipment = params.group_shipment
+      item.is_recommended = params.is_recommended
+
+      await item.save()
+    }
+    return { success: true }
+  }
+
+  static removeItem = async (params) => {
+    return DB('item').where('id', params.id).delete()
   }
 }
 

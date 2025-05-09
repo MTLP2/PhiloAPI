@@ -214,7 +214,7 @@ class Production {
       {
         category: 'preprod',
         type: 'tracklisting',
-        action: 'empty',
+        action: 'file',
         for: 'artist'
       },
       {

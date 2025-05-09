@@ -3000,42 +3000,41 @@ class Stats {
     periodicity?: string
     start?: string
     end?: string
+    com_id: number // <-- nouveau param obligatoire
   }) => Promise<{
     created: { [key: string]: number }
     invoiced: { [key: string]: number }
     turnover: { [key: string]: number }
     turnover_invoiced: { [key: string]: number }
+    invoiced_paid: { [key: string]: number }
   }> = async (params) => {
+    // 1) Récupération des projets filtrés sur le com_id
     const projects = await DB('project')
-      .select('project.created_at', 'quote', 'currency', 'historic')
+      .select('project.id', 'project.created_at', 'quote', 'currency', 'historic', 'vod.com_id')
       .join('vod', 'vod.project_id', 'project.id')
       .where('type', 'direct_pressing')
+      .where('vod.com_id', params.com_id) // <-- filtrage ici
       .all()
 
+    // Préparation des bornes et du format
     const start = params.start ? moment(params.start) : moment().subtract(20, 'days')
     const end = moment(params.end || undefined)
-
-    let format
-    let periodicity
+    let format: string, periodicityUnit: moment.unitOfTime.DurationConstructor
     if (!params.periodicity || params.periodicity === 'day') {
-      periodicity = 'days'
+      periodicityUnit = 'days'
       format = 'YYYY-MM-DD'
     } else {
-      periodicity = 'months'
+      periodicityUnit = 'months'
       format = 'YYYY-MM'
     }
 
+    // Initialisation des dates et des statistiques
     const currenciesDB = await Utils.getCurrenciesDb()
     const currencies = await Utils.getCurrencies('EUR', currenciesDB)
-
-    const dates = {}
-
-    const now = start.clone()
-    while (now.isSameOrBefore(end)) {
-      dates[now.format(format)] = 0
-      now.add(1, periodicity)
+    const dates: Record<string, number> = {}
+    for (let m = start.clone(); m.isSameOrBefore(end); m.add(1, periodicityUnit)) {
+      dates[m.format(format)] = 0
     }
-
     const stats = {
       created: { ...dates },
       invoiced: { ...dates },
@@ -3044,55 +3043,48 @@ class Stats {
       invoiced_paid: { ...dates }
     }
 
+    // 2) Boucle sur les projets
     for (const project of projects) {
       const date = moment(project.created_at).format(format)
-      const quote = project.quote * currencies[project.currency]
+      if (!(date in stats.created)) continue
 
-      if (stats.created[date] === undefined) {
-        continue
-      }
+      const quoteInEur = project.quote * currencies[project.currency]
+      stats.created[date]++
+      stats.turnover[date] += quoteInEur
 
       if (project.historic) {
         const historic = JSON.parse(project.historic)
         for (const his of historic) {
-          const d = moment(his.date).format(format)
           if (his.new === 'invoiced') {
-            if (stats.invoiced[d] === undefined) {
-              continue
+            const d = moment(his.date).format(format)
+            if (d in stats.invoiced) {
+              stats.invoiced[d]++
+              stats.turnover_invoiced[d] += quoteInEur
             }
-            stats.invoiced[d]++
-
-            stats.turnover_invoiced[d] += quote
           }
         }
       }
-
-      stats.created[date]++
-      stats.turnover[date] += quote
     }
 
-    const invoices = await DB('invoice')
-      .select('sub_total', 'currency', 'type', 'created_at', 'project_id', 'status')
-      .where('invoice.category', 'direct_pressing')
-      .whereBetween('created_at', [
-        start.clone().startOf('day').format('YYYY-MM-DD HH:mm:ss'),
-        end.clone().endOf('day').format('YYYY-MM-DD HH:mm:ss')
-      ])
+    // 3) Récupération des factures des projets filtrés
+    // Extraire les IDs des projets valides
+    const projectIds = projects.map((p) => p.id)
+    if (projectIds.length > 0) {
+      const invoices = await DB('invoice')
+        .select('sub_total', 'currency', 'type', 'created_at', 'project_id', 'status')
+        .where('category', 'direct_pressing')
+        .whereIn('project_id', projectIds) // <-- on ne garde que les factures liées
+        .whereBetween('created_at', [
+          start.clone().startOf('day').format('YYYY-MM-DD HH:mm:ss'),
+          end.clone().endOf('day').format('YYYY-MM-DD HH:mm:ss')
+        ])
+        .all()
 
-      .all()
-
-    for (const invoice of invoices) {
-      const date = moment(invoice.created_at).format(format)
-      const quote = invoice.sub_total / currencies[invoice.currency]
-
-      if (invoice.status === 'canceled') {
-        continue
-      }
-
-      if (invoice.type === 'credit_note') {
-        stats.invoiced_paid[date] -= quote
-      } else {
-        stats.invoiced_paid[date] += quote
+      for (const invoice of invoices) {
+        if (invoice.status === 'canceled') continue
+        const date = moment(invoice.created_at).format(format)
+        const amountEur = invoice.sub_total * currencies[invoice.currency] ** -1
+        stats.invoiced_paid[date] += invoice.type === 'credit_note' ? -amountEur : amountEur
       }
     }
 

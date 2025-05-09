@@ -49,9 +49,21 @@ class Vod {
       })
 
       if (params.type === 'direct_pressing') {
-        const html = await View.render('emails.quote', {
+        const htmlprod = await View.render('emails.quote', {
           ...params,
           total: params.costs.at(-1).value,
+          discount: Utils.round(params.costs.at(-1).value / 1.05),
+          per_unit: Utils.round(params.costs.at(-1).value / 1.05 / params.quantity),
+          number: vod.project_id,
+          date: Utils.date({ time: false }),
+          client: params.customer.email || user.email
+        })
+
+        const html = await View.render('emails.quoteclient', {
+          ...params,
+          total: params.costs.at(-1).value,
+          photoUrl: 'https://ca.slack-edge.com/T0UHRUB19-U02473HJNGK-5411f640c624-192',
+          calendlyLink: 'https://calendly.com/tom-diggersfactory/30min?month=2025-04',
           discount: Utils.round(params.costs.at(-1).value / 1.05),
           per_unit: Utils.round(params.costs.at(-1).value / 1.05 / params.quantity),
           number: vod.project_id,
@@ -64,6 +76,14 @@ class Vod {
           from_name: 'Tom Haddad',
           to: 'tom@diggersfactory.com',
           subject: `Vinyl Quote for ${params.customer.email || user.email}`,
+          html: htmlprod
+        })
+
+        await Notifications.sendEmail({
+          from_address: 'tom@diggersfactory.com',
+          from_name: 'Tom Haddad',
+          to: params.customer.email || user.email,
+          subject: `Validation of your order for ${params.customer.email || user.email}`,
           html: html
         })
       }
@@ -75,6 +95,23 @@ class Vod {
     vod.quote = params.quote
     vod.factory = params.factory
     vod.currency = params.currency
+    if (params.end !== undefined) {
+      vod.end = params.end || null
+    }
+    if (params.start !== undefined) {
+      vod.start = params.start || null
+    }
+    if (params.date_shipping !== undefined) {
+      vod.date_shipping = params.date_shipping || null
+    }
+    vod.show_stock = params.show_stock
+    vod.show_prod = params.show_prod
+    vod.show_countdown = params.show_countdown
+    vod.password = params.password
+
+    if (await Utils.isTeam(params.user.id)) {
+      vod.step = params.step
+    }
     if (vod.user_id === null && params.user.user_id !== 0) {
       vod.user_id = params.user.user_id
     }
@@ -144,6 +181,14 @@ class Vod {
     vod.price = params.price ? params.price.toString().trim().replace(',', '.') : 0
     vod.vinyl_weight = params.weight
     vod.label = params.label_color
+    if (params.no_label !== undefined) {
+      if (params.no_label) {
+        vod.label = 'none'
+      } else if (!params.no_label) {
+        vod.label = 'color'
+      }
+    }
+
     vod.sleeve = params.sleeve
     vod.inner_sleeve = params.inner_sleeve
     vod.test_pressing = params.test_pressing

@@ -24,12 +24,13 @@ class Cbip {
     })
   }
 
-  static async getInventory(params?: {}) {
+  static async getInventory() {
     const res: {
       data: {
         sku: string
         uuid: string
         quantity: number
+        quantity_allocated: number
       }[]
     } = await this.api(
       `warehouse-api/open/warehouses/${Env.get('CBIP_API_WAREHOUSE')}/inventory?limit=99999`,
@@ -57,7 +58,7 @@ class Cbip {
           type: 'cbip',
           comment: 'api',
           is_preorder: false,
-          quantity: item.quantity || 0
+          quantity: (item.quantity || 0) - (item.quantity_allocated || 0)
         })
       } catch (e) {
         console.log(e)

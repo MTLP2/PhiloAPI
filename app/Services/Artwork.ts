@@ -197,6 +197,7 @@ class Artwork {
 
       return { success: true, picture: uid }
     } catch (e) {
+      console.error(e)
       return {
         error: 'image_error',
         success: false

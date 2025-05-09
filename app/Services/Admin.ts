@@ -885,149 +885,6 @@ class Admin {
     }
   }
 
-  static saveProjectItem = async (params) => {
-    const ids = params.related_id.toString().split(',')
-    for (const id of ids) {
-      let item = DB('item')
-
-      if (params.id) {
-        item = await DB('item').find(params.id)
-      } else {
-        const exists = await DB('item')
-          .where('project_id', params.project_id)
-          .where('related_id', id)
-          .first()
-
-        if (exists) {
-          return { error: 'already_exists' }
-        }
-
-        item.created_at = Utils.date()
-      }
-      item.project_id = params.project_id
-      item.related_id = id || null
-      item.name = params.name || null
-      item.name_fr = params.name_fr || null
-      item.description_fr = params.description_fr || null
-      item.description_en = params.description_en || null
-      item.price = params.price || null
-      item.stock = params.stock || null
-      item.barcode = params.barcode || null
-      item.catnumber = params.catnumber || null
-      item.transporter = params.transporter || null
-      item.is_active = params.is_active
-      item.is_statement = params.is_statement
-      item.coefficient = params.coefficient || 1
-      item.weight = params.weight || 1
-      item.group_shipment = params.group_shipment
-      item.is_recommended = params.is_recommended
-
-      if (params.picture) {
-        if (item.picture) {
-          Storage.deleteImage(item.picture)
-        }
-        const fileName = `items/${Utils.uuid()}`
-        item.picture = fileName
-        item.picture_trans = 1
-        Storage.uploadImage(fileName, Buffer.from(params.picture, 'base64'), {
-          type: 'png',
-          width: 800
-        })
-      }
-      item.updated_at = Utils.date()
-
-      await item.save()
-    }
-    return { success: true }
-  }
-
-  static removeProjectItem = async (params) => {
-    return DB('item').where('id', params.id).delete()
-  }
-
-  static saveProjectImage = async (params) => {
-    const project = await Admin.getProject(params.project_id)
-
-    // Upload image
-    const file = Utils.uuid()
-    await Storage.uploadImage(
-      `projects/${project.picture}/images/${file}`,
-      Buffer.from(params.image, 'base64'),
-      { type: 'png', width: 1000, quality: 100 }
-    )
-
-    const newProjectImageId = await DB('project_image').insert({
-      project_id: params.project_id,
-      image: file,
-      created_at: Utils.date(),
-      name: params.name,
-      position: params.position
-    })
-
-    return {
-      success: true,
-      item: {
-        id: newProjectImageId[0],
-        image: file,
-        name: params.name,
-        position: params.position
-      }
-    }
-  }
-
-  static updateProjectImage = async (params) => {
-    const project = await DB('project as p')
-      .select('p.picture', 'pi.image')
-      .join('project_image as pi', 'pi.project_id', 'p.id')
-      .where('pi.id', params.id)
-      .first()
-
-    const file = Utils.uuid()
-
-    // Only if image has changed
-    if (params.image) {
-      // Delete old image
-      await Storage.deleteImage(`projects/${project.picture}/images/${project.image}`)
-
-      // Upload new image
-      await Storage.uploadImage(
-        `projects/${project.picture}/images/${file}`,
-        Buffer.from(params.image, 'base64'),
-        { type: 'png', width: 1000, quality: 100 }
-      )
-    }
-
-    await DB('project_image').where('id', params.id).update({
-      image: file,
-      name: params.name,
-      position: params.position,
-      created_at: Utils.date()
-    })
-
-    return {
-      success: true,
-      item: {
-        id: +params.iid,
-        image: params.image ? file : project.image,
-        name: params.name,
-        position: params.position,
-        created_at: new Date().toISOString()
-      }
-    }
-  }
-
-  static deleteProjectImage = async (params) => {
-    const projectImage = await DB('project_image as pi')
-      .select('pi.project_id', 'pi.image', 'p.picture')
-      .join('project as p', 'p.id', 'pi.project_id')
-      .where('pi.id', params.iid)
-      .first()
-
-    Storage.deleteImage(`projects/${projectImage.picture}/images/${projectImage.image}`)
-    await DB('project_image').where('id', params.iid).delete()
-    return { success: true }
-  }
-
   static generateProjectImages = async (params: { id: number }) => {
     return Artwork.updateArtwork({
       id: params.id
@@ -1139,6 +996,7 @@ class Admin {
     vod.type = params.type
     vod.edition = params.edition
     vod.com_id = params.com_id || 0
+    vod.graphic_id = params.graphic_id || null
     vod.comment_invoice = params.comment_invoice
     vod.stage1 = params.stage1
     vod.stage2 = params.stage1
@@ -5090,6 +4948,91 @@ class Admin {
     )
   }
 
+  static exportDispatchs = async (params) => {
+    const query = DB('dispatch')
+      .select(
+        'dispatch.*',
+        'customer.name as customer_name',
+        'customer.firstname',
+        'customer.lastname',
+        'customer.country_id',
+        'user.name as user_name',
+        'user.email as user_email',
+        'oi.id as order_item_id',
+        'order.id as order_id',
+        'order.currency as order_currency',
+        'vod.price as vod_price',
+        'vod.currency as vod_currency',
+        'project.name as project_name'
+      )
+      .leftJoin('customer', 'customer.id', 'dispatch.customer_id')
+      .leftJoin('user', 'user.id', 'dispatch.user_id')
+      .leftJoin('order', 'order.id', 'dispatch.order_id')
+      .leftJoin('order_item as oi', 'oi.order_id', 'order.id')
+      .leftJoin('vod', 'vod.id', 'oi.vod_id')
+      .leftJoin('project', 'project.id', 'vod.project_id')
+      .where('dispatch.status', '!=', 'deleted')
+
+    if (params.start && params.end) {
+      query.whereBetween('dispatch.created_at', [params.start, params.end])
+    }
+
+    // 1) Récupération brute
+    const dispatchs = await query.all()
+
+    // 2) On regroupe par order_id
+    const groupedByOrder = dispatchs.reduce((acc, d) => {
+      const key = d.order_id
+      if (!acc[key]) acc[key] = []
+      acc[key].push(d)
+      return acc
+    }, {})
+
+    // 3) On reconstruit les lignes Excel
+    const rowsForXlsx = Object.values(groupedByOrder).map((group) => {
+      const first = group[0]
+      // somme des vod_price
+      const totalVodPrice = group.reduce((sum, d) => sum + (d.vod_price || 0), 0)
+
+      return {
+        id: first.id,
+        status: first.status,
+        // si plus d’un item, on crée un nom de pack
+        name: group.length > 1 ? `Pack #${first.order_id}` : first.project_name,
+        user_email: first.user_email,
+        type: first.type,
+        quantity: group.length, // ou sommez-les si nécessaire
+        created_at: first.created_at,
+        date_sent: first.date_export,
+        logistician: first.logistician,
+        tracking: first.tracking_number,
+        // on remplace project_price par la somme
+        project_price: totalVodPrice + ' ' + first.vod_currency
+      }
+    })
+
+    // 4) Génération de l’Excel
+    return Utils.arrayToXlsx([
+      {
+        worksheetName: 'Dispatchs',
+        columns: [
+          { header: 'ID', key: 'id' },
+          { header: 'Status', key: 'status' },
+          { header: 'Project', key: 'name' },
+          { header: 'User', key: 'user_email' },
+          { header: 'Type', key: 'type' },
+          { header: 'Quantity', key: 'quantity' },
+          { header: 'Created at', key: 'created_at' },
+          { header: 'Sent at', key: 'date_sent' },
+          { header: 'Logistician', key: 'logistician' },
+          { header: 'Tracking', key: 'tracking' },
+          { header: 'Unit price', key: 'project_price' }
+        ],
+        data: rowsForXlsx
+      }
+    ])
+  }
+
   static checkProjectRest = async (params) => {
     const refunds = await DB('refund')
       .select('refund.comment', 'refund.data', 'order_item.quantity')
@@ -5122,67 +5065,6 @@ class Admin {
       hasBeenRested: totalRestedQuantity >= refunds[0].quantity,
       restLeft: refunds[0].quantity - totalRestedQuantity
     }
-  }
-
-  static removeImageFromProject = async ({ id: projectId, type }) => {
-    const project = await DB('project')
-      .select('project.*', 'vod.picture_project')
-      .join('vod', 'vod.project_id', 'project.id')
-      .where('project.id', projectId)
-      .first()
-
-    if (!project) throw new ApiError(404, 'Project not found')
-
-    // Type -> fileName map
-    const typeToFileName = {
-      front_cover: { name: ['cover', 'mini', 'original', 'low'] },
-      back_cover: { name: 'back', withOriginal: true },
-      cover2: { name: 'cover2', withOriginal: true },
-      cover3: { name: 'cover3', withOriginal: true },
-      cover4: { name: 'cover4', withOriginal: true },
-      cover5: { name: 'cover5', withOriginal: true },
-      picture_project: { name: project.picture_project },
-      label: { name: 'label' },
-      label_bside: { name: 'label_bside' },
-      custom_disc: { name: 'disc' },
-      video_file: { name: project.video + '.mp4' }
-    }
-
-    const files = typeToFileName[type] ?? null
-    if (!files) {
-      return { success: false, error: 'Invalid type to remove picture' }
-    }
-
-    // Delete files
-    if (typeof files.name === 'string') files.name = [files.name]
-    for (const fileName of files.name) {
-      const path = `projects/${project.picture}/${fileName}`
-      await Storage.deleteImage(path, null, true)
-      if (files.withOriginal) await Storage.deleteImage(`${path}_original`, null, true)
-
-      // update DB for some types
-      switch (type) {
-        case 'custom_disc':
-          await DB('vod').where('project_id', projectId).update({ url_vinyl: null })
-          break
-        case 'label_bside':
-          await DB('vod').where('project_id', projectId).update({ is_label_bside: 0 })
-          break
-        case 'picture_project':
-          await DB('vod').where('project_id', projectId).update({ picture_project: null })
-          break
-        case 'video_file':
-          await DB('project').where('id', projectId).update({ video: null })
-          break
-        default:
-          break
-      }
-    }
-
-    // Update project artwork
-    const res = await Artwork.updateArtwork({ id: projectId })
-
-    return { success: true, type, picture: res.picture }
   }
 
   static deeplTranslate = async ({ text, source_lang: sourceLang, target_lang: targetLang }) => {
