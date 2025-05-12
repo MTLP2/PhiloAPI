@@ -148,7 +148,10 @@ class Quote {
     params.label_color = params.label || 'color'
 
     // const ff = ['precision']
-    const ff = ['vdp', 'sna']
+    let ff = ['vdp', 'sna']
+    if (params.type === 'direct_pressing') {
+      ff = ['vdp']
+    }
     /**
     if (params.factory === 'sna2') {
       ff.push('sna2')
@@ -2134,11 +2137,9 @@ class Quote {
 
     if (params.sleeve === 'pvc' || params.sleeve === 'discobag') {
       quote.prices.shrink['1'] = false
-      console.log(quote.prices.shrink['1'])
     }
 
     quote.shrink = quote.prices.shrink[params.shrink]
-    console.log(quote.shrink)
 
     // print_finish
     // quote.prices.print_finish.gloss_varnish = getCost({
