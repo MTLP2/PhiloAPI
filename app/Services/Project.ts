@@ -7,6 +7,7 @@ import Stock from 'App/Services/Stock'
 import Statement from 'App/Services/Statement'
 import Bids from 'App/Services/Bids'
 import Reviews from 'App/Services/Reviews'
+import Roles from 'App/Services/Roles'
 import Utils from 'App/Utils'
 import moment from 'moment'
 import JSZip from 'jszip'
@@ -1119,7 +1120,7 @@ class Project {
         'failed'
       ].includes(p.step)
     ) {
-      if (params.user_id !== p.user_id && !(await Utils.isTeam(params.user_id))) {
+      if (params.user_id !== p.user_id && !(await Roles.isTeam(params.user_id))) {
         return {
           id: p.id,
           name: p.name,
@@ -1308,7 +1309,7 @@ class Project {
   static saveNews = async (params) => {
     let news: any = null
 
-    Utils.checkProjectOwner(params)
+    Roles.checkProjectOwner(params)
 
     if (params.id === 0) {
       news = DB('news')
@@ -2414,6 +2415,7 @@ class Project {
     params.query = DB('order_shop')
       .select(
         'order_item.*',
+        'project.artist_name',
         'project.name as project_name',
         'project.picture',
         'country.ue',

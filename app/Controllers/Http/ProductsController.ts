@@ -12,6 +12,7 @@ class ProductsController {
           order: schema.string.optional(),
           size: schema.number.optional(),
           page: schema.number.optional(),
+          search: schema.string.optional(),
           is_preorder: schema.boolean.optional(),
           project_id: schema.number.optional()
         }),

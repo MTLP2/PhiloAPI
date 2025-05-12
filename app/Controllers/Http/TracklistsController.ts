@@ -1,7 +1,7 @@
 import { validator, schema } from '@ioc:Adonis/Core/Validator'
 import db from 'App/db3'
 import Tracklist from 'App/Services/Tracklists'
-import Utils from 'App/Utils'
+import Roles from 'App/Services/Roles'
 
 class TracklistController {
   public async saveTracklist({ params, user }) {
@@ -31,7 +31,7 @@ class TracklistController {
       .where('id', '=', params.tracks[0].production_id)
       .executeTakeFirst()
 
-    await Utils.checkProjectOwner({ project_id: project_id?.project_id, user: user })
+    await Roles.checkProjectOwner({ project_id: project_id?.project_id, user: user })
 
     return Tracklist.saveTrack(payload.tracks)
   }
@@ -50,7 +50,7 @@ class TracklistController {
       .where('id', '=', params.id)
       .executeTakeFirst()
 
-    await Utils.checkProjectOwner({ project_id: project_id?.project_id, user: user })
+    await Roles.checkProjectOwner({ project_id: project_id?.project_id, user: user })
 
     return await Tracklist.all({ production_id: payload.production_id })
   }
@@ -69,7 +69,7 @@ class TracklistController {
       .where('id', '=', params.production_id)
       .executeTakeFirst()
 
-    await Utils.checkProjectOwner({ project_id: project_id?.project_id, user: user })
+    await Roles.checkProjectOwner({ project_id: project_id?.project_id, user: user })
 
     return await Tracklist.deleteTrack({ id: payload.id })
   }

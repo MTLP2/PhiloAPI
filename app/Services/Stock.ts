@@ -936,7 +936,7 @@ class Stock {
       if (!hh[h.product_id]) {
         hh[h.product_id] = {}
       }
-      if (hh[h.product_id][h.type] !== undefined) {
+      if (hh[h.product_id][h.type] !== undefined && h.type !== 'daudin') {
         continue
       }
       const data = JSON.parse(h.data)
@@ -947,12 +947,19 @@ class Stock {
     const logisitians = {
       whiplash: true,
       whiplash_uk: true,
+      daudin: true,
       bigblue: true,
       cbip: true
     }
 
     for (const i in refs) {
       refs[i].quantity = 0
+
+      refs[i].stock.push({
+        product_id: refs[i].id,
+        type: 'daudin',
+        quantity: 0
+      })
 
       for (const stock of refs[i].stock) {
         if (params.type && stock.type !== params.type) {

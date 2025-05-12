@@ -23,3 +23,6 @@ ALTER TABLE `shop` ADD `banner_mobile` VARCHAR(255) NULL DEFAULT NULL AFTER `ban
 
 # 2025-04-28 Add graphic_id to vod
 ALTER TABLE `vod` ADD `graphic_id` INT(11) NULL DEFAULT NULL AFTER `com_id`;
+
+# 2025-05-12 Add feedback_comment to production
+ALTER TABLE `production` ADD `feedback_comment` TEXT NULL DEFAULT NULL AFTER `comment`;

@@ -1,6 +1,7 @@
 import Utils from 'App/Utils'
 import Project from 'App/Services/Project'
 import Storage from 'App/Services/Storage'
+import Roles from 'App/Services/Roles'
 import DB from 'App/DB'
 import ApiError from 'App/ApiError'
 
@@ -290,7 +291,7 @@ class Shops {
   }
 
   static async canEdit(shopId: number, userId: number) {
-    if (await Utils.isTeam(userId)) {
+    if (await Roles.isTeam(userId)) {
       return true
     } else {
       const user = await DB('user').where('id', userId).first()

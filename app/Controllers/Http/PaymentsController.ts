@@ -2,10 +2,11 @@ import Payments from 'App/Services/Payments'
 import Utils from 'App/Utils'
 import ApiError from 'App/ApiError'
 import { validator, schema } from '@ioc:Adonis/Core/Validator'
+import Roles from 'App/Services/Roles'
 
 class PaymentsController {
   async all({ params, auth }) {
-    if (!(await Utils.isTeam(auth.id))) {
+    if (!(await Roles.isTeam(auth.id))) {
       throw new ApiError(401)
     }
     const payload = await validator.validate({
@@ -25,7 +26,7 @@ class PaymentsController {
   }
 
   async find({ params, auth }) {
-    if (!(await Utils.isTeam(auth.id))) {
+    if (!(await Roles.isTeam(auth.id))) {
       throw new ApiError(401)
     }
 
@@ -42,7 +43,7 @@ class PaymentsController {
   }
 
   async save({ params, auth }) {
-    if (!(await Utils.isTeam(auth.id))) {
+    if (!(await Roles.isTeam(auth.id))) {
       throw new ApiError(401)
     }
     const payload = await validator.validate({
@@ -88,7 +89,7 @@ class PaymentsController {
   }
 
   async delete({ params, auth }) {
-    if (!(await Utils.isTeam(auth.id))) {
+    if (!(await Roles.isTeam(auth.id))) {
       throw new ApiError(401)
     }
     const payload = await validator.validate({
@@ -104,7 +105,7 @@ class PaymentsController {
   }
 
   async refund({ params, auth }) {
-    if (!(await Utils.isTeam(auth.id))) {
+    if (!(await Roles.isTeam(auth.id))) {
       throw new ApiError(401)
     }
     const payload = await validator.validate({
