@@ -148,7 +148,10 @@ class Quote {
     params.label_color = params.label || 'color'
 
     // const ff = ['precision']
-    const ff = ['vdp', 'sna']
+    let ff = ['vdp', 'sna']
+    if (params.type === 'direct_pressing') {
+      ff = ['vdp']
+    }
     /**
     if (params.factory === 'sna2') {
       ff.push('sna2')
