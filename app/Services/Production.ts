@@ -940,6 +940,12 @@ class Production {
       }
     }
 
+    if (params.type === 'feedback' && params.feedback !== undefined) {
+      await DB('production').where('id', params.id).update({
+        feedback_comment: params.feedback
+      })
+    }
+
     // If billing address, update custom data (id in user.customer_invoice_id)
     if (params.billing_address) {
       await User.updateDelivery(prod.vod_user, { ...params.billing_address, is_invoice: true })
