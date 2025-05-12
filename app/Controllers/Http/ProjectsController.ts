@@ -338,12 +338,21 @@ class ProjectsController {
 
   async saveItem({ params, user }) {
     await Utils.checkProjectOwner({ project_id: params.id, user: user })
-    return ProjectEdit.saveItem(params)
+    return ProjectEdit.saveItem({
+      project_id: params.id,
+      item_id: params.item_id,
+      related_id: params.related_id,
+      is_active: params.is_active,
+      is_recommended: params.is_recommended,
+      group_shipment: params.group_shipment
+    })
   }
 
   async removeItem({ params, user }) {
     await Utils.checkProjectOwner({ project_id: params.id, user: user })
-    return ProjectEdit.removeItem(params)
+    return ProjectEdit.removeItem({
+      id: params.iid
+    })
   }
 }
 

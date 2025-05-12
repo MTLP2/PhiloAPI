@@ -14,6 +14,7 @@ class Products {
     order?: string
     size?: number
     project_id?: number
+    search?: string
     is_preorder?: boolean
   }) {
     const query = DB('product')
@@ -32,6 +33,12 @@ class Products {
     if (params.project_id) {
       query.join('project_product', 'project_product.product_id', 'product.id')
       query.where('project_id', params.project_id)
+    }
+    if (params.search) {
+      query.where(function () {
+        this.where('product.name', 'like', `%${params.search}%`)
+        this.orWhere('product.barcode', 'like', `%${params.search}%`)
+      })
     }
     if (!params.sort) {
       params.sort = 'product.id'

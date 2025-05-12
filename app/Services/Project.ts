@@ -2414,6 +2414,7 @@ class Project {
     params.query = DB('order_shop')
       .select(
         'order_item.*',
+        'project.artist_name',
         'project.name as project_name',
         'project.picture',
         'country.ue',
