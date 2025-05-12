@@ -254,6 +254,19 @@ type Label = {
   updated_at: Timestamp
 }
 
+type MailRequest = {
+  id: number
+  type: string
+  name: string
+  email: string
+  phone: string
+  social: string
+  message: string
+  country_id: string
+  created_at: Timestamp
+  updated_at: Timestamp
+}
+
 type Order = {
   id: number
   created_at: Timestamp
@@ -556,4 +569,5 @@ export type DB = {
   production_action: ProductionAction
   user: User
   vod: Vod
+  mail_request: MailRequest
 }

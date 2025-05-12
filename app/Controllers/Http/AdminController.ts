@@ -1576,6 +1576,58 @@ class AdminController {
       return Admin.getProjectsToSync(params)
     }
   }
+
+  async getMailRequests({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          type: schema.string()
+        }),
+        data: params
+      })
+      return Admin.getMailRequests(payload)
+    } catch (err) {
+      return { error: err.message, validation: err.messages }
+    }
+  }
+
+  async sendMailRequest({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          type: schema.string(),
+          name: schema.string(),
+          email: schema.string(),
+          social: schema.string(),
+          phone: schema.string(),
+          country_id: schema.string(),
+          message: schema.string()
+        }),
+        data: params
+      })
+      return Admin.sendMailRequest(payload)
+    } catch (err) {
+      return { error: err.message, validation: err.messages }
+    }
+  }
+
+  async deleteMailRequest({ params }) {
+    try {
+      const payload = await validator.validate({
+        schema: schema.create({
+          id: schema.number()
+        }),
+        data: params
+      })
+      return Admin.deleteMailRequest(payload)
+    } catch (err) {
+      return { error: err.message, validation: err.messages }
+    }
+  }
+
+  async exportMailRequests({ params }) {
+    return Admin.exportMailRequests(params)
+  }
 }
 
 export default AdminController

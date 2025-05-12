@@ -26,3 +26,18 @@ ALTER TABLE `vod` ADD `graphic_id` INT(11) NULL DEFAULT NULL AFTER `com_id`;
 
 # 2025-05-12 Add feedback_comment to production
 ALTER TABLE `production` ADD `feedback_comment` TEXT NULL DEFAULT NULL AFTER `comment`;
+
+# 2025-05-12 Create mail_request table
+CREATE TABLE `mail_request` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `name` VARCHAR(255) NULL DEFAULT NULL,
+  `phone` VARCHAR(255) NULL DEFAULT NULL,
+  `social` VARCHAR(255) NULL DEFAULT NULL,
+  `email` VARCHAR(255) NULL DEFAULT NULL,
+  `type` VARCHAR(255) NULL DEFAULT NULL,
+  `country_id` VARCHAR(255) NULL DEFAULT NULL,
+  `message` TEXT NULL DEFAULT NULL,
+  `created_at` DATETIME NULL DEFAULT NULL,
+  `updated_at` DATETIME NULL DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
