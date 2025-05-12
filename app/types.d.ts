@@ -320,6 +320,18 @@ type ProductionOption = {
   updated_at: Timestamp
 }
 
+type Role = {
+  id: number
+  user_id: number
+  type: string
+  project_id?: number
+  artist_id?: number
+  label_id?: number
+  shop_id?: number
+  created_at: Timestamp
+  updated_at: Timestamp
+}
+
 type ShippingWeight = {
   'id': number
   'country_id': string
@@ -494,11 +506,22 @@ type Production = {
   updated_at?: Timestamp
 }
 
+type Project = {
+  id: number
+  name: string
+  created_at: Timestamp
+  updated_at: Timestamp
+}
+
+type Vod = {
+  id: number
+  project_id: number
+  user_id: number
+  created_at: Timestamp
+  updated_at: Timestamp
+}
+
 export type DB = {
-  production_option: ProductionOption
-  production: Production
-  production_track: ProductionTrack
-  production_action: ProductionAction
   alert: Alert
   artist: Artist
   badge: Badge
@@ -521,9 +544,16 @@ export type DB = {
   order_item: OrderItem
   order_manual: OrderManual
   order_shop: OrderShop
+  role: Role
   shipping_weight: ShippingWeight
   shop: Shop
   stock: Stock
   product: Product
+  project: Project
+  production_option: ProductionOption
+  production: Production
+  production_track: ProductionTrack
+  production_action: ProductionAction
   user: User
+  vod: Vod
 }
