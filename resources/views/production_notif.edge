@@ -78,8 +78,37 @@
     </table>
   </div>
   <div class="form">
-    <h1 style="font-size: 18px; font-weight: bold; margin-bottom: 20px;">Hey {{ userName }} !</h1>
+    <h1 style="font-size: 18px; font-weight: bold; margin-bottom: 20px;">
+      @if(lang === 'en')
+        Hey {{ userName }}!
+      @else
+        Bonjour {{ userName }} !
+      @endif
+    </h1>
 
+    @if(lang === 'en')
+    <p> <strong>{{ projectName }}</strong> is still in the pre-production stage at Diggers Factory.</p>
+
+    <p class="text">In order to start production, we still need a few elements. To send them to us, go to your "<strong>Production Tracking</strong>" area. You will then be able to import the necessary elements.</p>
+
+    <p>The missing elements are as follows:</p>
+    <ul>
+      @each(item in missingItems)
+        <li>{{ item }}</li>
+      @endeach
+    </ul>
+
+    <p style="text-align: center;">
+      <a href="{{ productionLink }}" class="btn">GO TO MY PRODUCTION TRACKING</a>
+    </p>
+
+    <p style="margin-top: 30px;">Best regards,</p>
+    <p style="color: #999;">The Diggers Factory team.</p>
+  </div>
+  <div class="footer">
+    A question? <a href="https://intercom.help/diggersfactory/en">Our FAQ is here to guide you.</a><br>
+    Diggers Factory, 10 boulevard Arago, 75013, Paris, France
+    @else
     <p> <strong>{{ projectName }}</strong> est toujours au stade de pré-production chez Diggers Factory.</p>
 
     <p class="text">Afin de lancer la production, nous avons encore besoin de quelques éléments. Pour nous les communiquer, rendez-vous dans votre espace « <strong>Suivi de Production</strong> ». Vous pourrez alors importer les éléments nécessaires.</p>
@@ -96,11 +125,12 @@
     </p>
 
     <p style="margin-top: 30px;">Amicalement,</p>
-    <p style="color: #999;">L’équipe Diggers Factory.</p>
+    <p style="color: #999;">L'équipe Diggers Factory.</p>
   </div>
   <div class="footer">
     Une question ? <a href="https://intercom.help/diggersfactory/fr">Notre FAQ est là pour vous guider.</a><br>
     Diggers Factory, 10 boulevard Arago, 75013, Paris, France
+    @endif
   </div>
 </body>
 </html>
