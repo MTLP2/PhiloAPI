@@ -15,6 +15,7 @@ import cio from 'App/Services/CIO'
 import config from 'Config/index'
 import Reviews from './Reviews'
 import Storage from 'App/Services/Storage'
+import Roles from 'App/Services/Roles'
 import View from '@ioc:Adonis/Core/View'
 import Env from '@ioc:Adonis/Core/Env'
 import Pass from './Pass'
@@ -1014,7 +1015,7 @@ class User {
   }
 
   static getProjectOrders = async (params) => {
-    await Utils.checkProjectOwner({ project_id: params.id, user: params.user })
+    await Roles.checkProjectOwner({ project_id: params.id, user: params.user })
 
     const orders = await DB('order_item as oi')
       .select(
@@ -1048,7 +1049,7 @@ class User {
 
   /**
 static extractProjectOrders = async (params) => {
-  await Utils.checkProjectOwner({ project_id: params.id, user: params.user })
+  await Roles.checkProjectOwner({ project_id: params.id, user: params.user })
 
   const orders = await DB('order as o')
     .select('o.id', 'o.price', 'o.shipping', 'sub_total', 'tips',

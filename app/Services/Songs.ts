@@ -2,6 +2,7 @@ import DB from 'App/DB'
 import Storage from 'App/Services/Storage'
 import Utils from 'App/Utils'
 import fs from 'fs'
+import Roles from 'App/Services/Roles'
 import JSZip from 'jszip'
 import moment from 'moment'
 const ffmpeg = require('fluent-ffmpeg')
@@ -193,7 +194,7 @@ class Songs {
   }
 
   static deleteTrack = async (params) => {
-    await Utils.checkProjectOwner({ project_id: params.project_id, user: params.user })
+    await Roles.checkProjectOwner({ project_id: params.project_id, user: params.user })
 
     await DB('song_play').where('song_id', params.id).delete()
     await DB('song').where('id', params.id).delete()

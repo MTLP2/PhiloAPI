@@ -10,6 +10,7 @@ import DB from 'App/DB'
 import Utils from 'App/Utils'
 import Stats from 'App/Services/Stats'
 import User from 'App/Services/User'
+import Roles from 'App/Services/Roles'
 
 import { schema, validator } from '@ioc:Adonis/Core/Validator'
 
@@ -27,7 +28,7 @@ class ProjectsController {
 
   async getAll({ params, user }) {
     let userId
-    if (!(await Utils.isTeam(user.id))) {
+    if (!(await Roles.isTeam(user.id))) {
       userId = user.id
     }
     return Projects.getAll(params.search, params.type, userId)
@@ -91,7 +92,7 @@ class ProjectsController {
         }),
         data: params
       })
-      await Utils.checkProjectOwner({ project_id: payload.id, user: user })
+      await Roles.checkProjectOwner({ project_id: payload.id, user: user })
       return ProjectEdit.find({ id: payload.id, user })
     } catch (err) {
       return { error: err.message, validation: err.messages }
@@ -103,13 +104,13 @@ class ProjectsController {
   }
 
   async editProjectUsers({ params, user }) {
-    await Utils.checkProjectOwner({ project_id: params.project_id, user: user })
+    await Roles.checkProjectOwner({ project_id: params.project_id, user: user })
     return User.editProjectUsers(params)
   }
 
   async deleteProjectUsers({ params, user }) {
     // params.user = user
-    await Utils.checkProjectOwner({ project_id: params.id, user: user })
+    await Roles.checkProjectOwner({ project_id: params.id, user: user })
     return User.deleteProjectUsers(params)
   }
 
@@ -120,7 +121,7 @@ class ProjectsController {
 
   async updateArtwork({ params, user }) {
     params.user = user
-    await Utils.checkProjectOwner({ project_id: params.id, user: user })
+    await Roles.checkProjectOwner({ project_id: params.id, user: user })
     return Artwork.updateArtwork(params)
   }
 
@@ -130,7 +131,7 @@ class ProjectsController {
     if (song) {
       params.project_id = song.project_id
     }
-    await Utils.checkProjectOwner({ project_id: params.project_id, user: user })
+    await Roles.checkProjectOwner({ project_id: params.project_id, user: user })
 
     const track = await ProjectEdit.saveTrack(params)
     if (params.uploading) {
@@ -156,7 +157,7 @@ class ProjectsController {
 
   async saveTrackNew({ params, user }) {
     params.user = user
-    await Utils.checkProjectOwner({ project_id: params.project_id, user: user })
+    await Roles.checkProjectOwner({ project_id: params.project_id, user: user })
 
     if (!params.id) {
       const track = await ProjectEdit.saveTrack(params)
@@ -200,7 +201,7 @@ class ProjectsController {
   async deleteTrack({ params, user }) {
     params.user = user
     const song = await Songs.find(params.id)
-    await Utils.checkProjectOwner({ project_id: song.project_id, user: user })
+    await Roles.checkProjectOwner({ project_id: song.project_id, user: user })
     return Songs.deleteTrack(params)
   }
 
@@ -227,7 +228,7 @@ class ProjectsController {
   async getStats({ params, user }) {
     params.user = user
     if (params.id !== 'all') {
-      await Utils.checkProjectOwner({ project_id: params.id, user: user })
+      await Roles.checkProjectOwner({ project_id: params.id, user: user })
     }
     return Projects.getStats(params)
   }
@@ -235,11 +236,11 @@ class ProjectsController {
   async getDashboard({ params, user }) {
     params.user = user
 
-    if (params.user_id && user.id !== +params.user_id && !(await Utils.isTeam(user.id))) {
+    if (params.user_id && user.id !== +params.user_id && !(await Roles.isTeam(user.id))) {
       throw new ApiError(403)
     }
     if (params.project_id && params.project_id !== 'all' && params.project_id !== '') {
-      await Utils.checkProjectOwner({ project_id: params.project_id, user: user })
+      await Roles.checkProjectOwner({ project_id: params.project_id, user: user })
     }
 
     params.cashable = params.all !== 'true'
@@ -249,9 +250,9 @@ class ProjectsController {
   async getOrders({ params, user }) {
     params.user = user
     if (params.id !== 'all') {
-      await Utils.checkProjectOwner({ project_id: params.id, user: user })
+      await Roles.checkProjectOwner({ project_id: params.id, user: user })
     }
-    if (params.user_id && +params.user_id !== user.id && !(await Utils.isTeam(user.id))) {
+    if (params.user_id && +params.user_id !== user.id && !(await Roles.isTeam(user.id))) {
       throw new ApiError(403)
     }
     return Projects.getOrdersForTable(params)
@@ -260,9 +261,9 @@ class ProjectsController {
   async exportOrders({ params, user }) {
     params.user = user
     if (params.id !== 'all') {
-      await Utils.checkProjectOwner({ project_id: params.id, user: user })
+      await Roles.checkProjectOwner({ project_id: params.id, user: user })
     }
-    if (params.user_id && +params.user_id !== user.id && !(await Utils.isTeam(user.id))) {
+    if (params.user_id && +params.user_id !== user.id && !(await Roles.isTeam(user.id))) {
       throw new ApiError(403)
     }
     return Projects.exportOrders(params)
@@ -271,7 +272,7 @@ class ProjectsController {
   async downloadStatement({ params, user }) {
     params.user = user
     if (params.id !== 'all') {
-      await Utils.checkProjectOwner({ project_id: params.id, user: user })
+      await Roles.checkProjectOwner({ project_id: params.id, user: user })
       return Statement.download(params)
     } else {
       params.id = params.user.id
@@ -290,12 +291,12 @@ class ProjectsController {
   }
 
   async saveImage({ params, user }) {
-    await Utils.checkProjectOwner({ project_id: params.id, user: user })
+    await Roles.checkProjectOwner({ project_id: params.id, user: user })
     return ProjectEdit.saveImage(params)
   }
 
   async updateImage({ params, user }) {
-    await Utils.checkProjectOwner({ project_id: params.id, user: user })
+    await Roles.checkProjectOwner({ project_id: params.id, user: user })
     return ProjectEdit.updateImage({
       id: +params.iid,
       position: params.position,
@@ -304,7 +305,7 @@ class ProjectsController {
   }
 
   async deleteImage({ params, user }) {
-    await Utils.checkProjectOwner({ project_id: params.id, user: user })
+    await Roles.checkProjectOwner({ project_id: params.id, user: user })
     return ProjectEdit.deleteImage(params)
   }
 
@@ -313,31 +314,31 @@ class ProjectsController {
   }
 
   async getProducts({ params, user }) {
-    await Utils.checkProjectOwner({ project_id: params.id, user: user })
+    await Roles.checkProjectOwner({ project_id: params.id, user: user })
     return ProjectEdit.getProducts({
       project_id: params.id
     })
   }
 
   async saveProduct({ params, user }) {
-    await Utils.checkProjectOwner({ project_id: params.id, user: user })
+    await Roles.checkProjectOwner({ project_id: params.id, user: user })
     return ProjectEdit.saveProduct(params)
   }
 
   async removeProduct({ params, user }) {
-    await Utils.checkProjectOwner({ project_id: params.id, user: user })
+    await Roles.checkProjectOwner({ project_id: params.id, user: user })
     return ProjectEdit.removeProduct(params)
   }
 
   async getItems({ params, user }) {
-    await Utils.checkProjectOwner({ project_id: params.id, user: user })
+    await Roles.checkProjectOwner({ project_id: params.id, user: user })
     return ProjectEdit.getItems({
       project_id: params.id
     })
   }
 
   async saveItem({ params, user }) {
-    await Utils.checkProjectOwner({ project_id: params.id, user: user })
+    await Roles.checkProjectOwner({ project_id: params.id, user: user })
     return ProjectEdit.saveItem({
       project_id: params.project_id || params.id,
       item_id: params.item_id || params.id,
@@ -349,7 +350,7 @@ class ProjectsController {
   }
 
   async removeItem({ params, user }) {
-    await Utils.checkProjectOwner({ project_id: params.id, user: user })
+    await Roles.checkProjectOwner({ project_id: params.id, user: user })
     return ProjectEdit.removeItem({
       id: params.iid
     })

@@ -6,6 +6,7 @@ import Whiplash from 'App/Services/Whiplash'
 import Boxes from 'App/Services/Boxes'
 import Reviews from 'App/Services/Reviews'
 import Pass from 'App/Services/Pass'
+import Roles from 'App/Services/Roles'
 import DB from 'App/DB'
 import Utils from 'App/Utils'
 import ApiError from 'App/ApiError'
@@ -107,11 +108,11 @@ class UserController {
   }
 
   async getProjects({ user, params }) {
-    if (params.user_id && user.id !== +params.user_id && !(await Utils.isTeam(user.id))) {
+    if (params.user_id && user.id !== +params.user_id && !(await Roles.isTeam(user.id))) {
       throw new ApiError(403)
     }
     if (params.project_id) {
-      await Utils.checkProjectOwner({ project_id: params.project_id, user: user })
+      await Roles.checkProjectOwner({ project_id: params.project_id, user: user })
       const p = await DB('vod').where('project_id', params.project_id).first()
 
       if (!p) return []

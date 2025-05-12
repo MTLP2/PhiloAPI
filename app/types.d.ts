@@ -415,6 +415,7 @@ type User = {
   name: string
   email: string | null
   customer_id?: number
+  shop_id?: number
   created_at: Timestamp
   updated_at: Timestamp
 }

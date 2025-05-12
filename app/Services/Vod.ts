@@ -5,8 +5,8 @@ import Utils from 'App/Utils'
 import config from 'Config/index'
 import User from './User'
 import View from '@ioc:Adonis/Core/View'
+import Roles from 'App/Services/Roles'
 import fs from 'fs'
-import moment from 'moment'
 
 class Vod {
   static save = async (params, pp) => {
@@ -89,7 +89,7 @@ class Vod {
       }
     }
 
-    if ((await Utils.isTeam(params.user.id)) && params.fee_prod) {
+    if ((await Roles.isTeam(params.user.id)) && params.fee_prod) {
       vod.fee_prod = params.fee_prod
     }
     vod.quote = params.quote
@@ -109,7 +109,7 @@ class Vod {
     vod.show_countdown = params.show_countdown
     vod.password = params.password
 
-    if (await Utils.isTeam(params.user.id)) {
+    if (await Roles.isTeam(params.user.id)) {
       vod.step = params.step
     }
     if (vod.user_id === null && params.user.user_id !== 0) {

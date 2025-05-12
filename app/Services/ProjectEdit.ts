@@ -7,6 +7,7 @@ import Vod from './Vod'
 import Artists from './Artists'
 import Storage from './Storage'
 import { db, model } from 'App/db3'
+import Roles from 'App/Services/Roles'
 
 class ProjectEdit {
   static find = async (params) => {
@@ -33,7 +34,7 @@ class ProjectEdit {
       .belongsTo('customer')
       .first()
 
-    if (!(await Utils.isTeam(params.user.id))) {
+    if (!(await Roles.isTeam(params.user.id))) {
       delete project.fee_prod
     }
     delete project.fee
@@ -47,7 +48,7 @@ class ProjectEdit {
     if (!project) {
       throw new ApiError(404)
     }
-    await Utils.checkProjectOwner({ project_id: params.id, user: params.user })
+    await Roles.checkProjectOwner({ project_id: params.id, user: params.user })
     project.styles = await DB()
       .select('*')
       .from('project_style')
@@ -94,7 +95,7 @@ class ProjectEdit {
         updated_at: Utils.date()
       })
     } else {
-      await Utils.checkProjectOwner({ project_id: params.id, user: params.user })
+      await Roles.checkProjectOwner({ project_id: params.id, user: params.user })
       pp = await DB('project').find(params.id)
 
       if (!pp) {
@@ -244,7 +245,7 @@ class ProjectEdit {
   }
 
   static saveTrack = async (params) => {
-    await Utils.checkProjectOwner({ project_id: params.project_id, user: params.user })
+    await Roles.checkProjectOwner({ project_id: params.project_id, user: params.user })
     let song: any = DB('song')
     if (params.id !== 0) {
       song = await DB('song').find(params.id)

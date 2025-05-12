@@ -1,12 +1,13 @@
 import Utils from 'App/Utils'
 import Production from 'App/Services/Production'
+import Roles from 'App/Services/Roles'
 import { validator, schema } from '@ioc:Adonis/Core/Validator'
 
 class ProductionController {
   async all({ params, user }) {
     params.user = user
 
-    params.user.is_team = await Utils.isTeam(user.id)
+    params.user.is_team = await Roles.isTeam(user.id)
     return Production.all(params)
   }
 
@@ -123,7 +124,7 @@ class ProductionController {
 
   async saveComment({ params, response, user }) {
     params.user = user
-    if (!(await Utils.isTeam(user.id))) {
+    if (!(await Roles.isTeam(user.id))) {
       return response.status(401).json({
         error: 'Unauthorized'
       })
@@ -133,18 +134,18 @@ class ProductionController {
 
   async getProjectProductions({ params, user }) {
     params.user = user
-    params.is_team = await await Utils.isTeam(user.id)
+    params.is_team = await await Roles.isTeam(user.id)
     return Production.getProjectProductions(params)
   }
 
   async extract({ params, user, response }) {
-    if (!(await Utils.isTeam(user.id))) {
+    if (!(await Roles.isTeam(user.id))) {
       return response.status(401).json({
         error: 'Unauthorized'
       })
     }
     params.user = user
-    params.user.is_team = await Utils.isTeam(user.id)
+    params.user.is_team = await Roles.isTeam(user.id)
     return Production.extract(params)
   }
 
@@ -199,7 +200,7 @@ class ProductionController {
   }
 
   async getOptions({ params, user }) {
-    await Utils.checkProjectOwner({ project_id: params.id, user: user })
+    await Roles.checkProjectOwner({ project_id: params.id, user: user })
 
     const payload = await validator.validate({
       schema: schema.create({
@@ -213,7 +214,7 @@ class ProductionController {
   }
 
   async saveOptions({ params, user }) {
-    await Utils.checkProjectOwner({ project_id: params.id, user: user })
+    await Roles.checkProjectOwner({ project_id: params.id, user: user })
 
     const payload = await validator.validate({
       schema: schema.create({

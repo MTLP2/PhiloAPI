@@ -2,12 +2,13 @@ import Bids from 'App/Services/Bids'
 import Utils from 'App/Utils'
 import { validator, schema } from '@ioc:Adonis/Core/Validator'
 import ApiError from 'App/ApiError'
+import Roles from 'App/Services/Roles'
 const parser = require('ua-parser-js')
 
 class BidController {
   async find({ params, user }) {
     if (params.for === 'sheraf') {
-      if (!(await Utils.isTeam(user.id, 'boss'))) {
+      if (!(await Roles.isTeam(user.id, 'boss'))) {
         throw new ApiError(401)
       }
     }
@@ -61,7 +62,7 @@ class BidController {
   }
 
   async valid({ params, user }) {
-    if (!(await Utils.isTeam(user.id, 'boss'))) {
+    if (!(await Roles.isTeam(user.id, 'boss'))) {
       throw new ApiError(401)
     }
     try {
@@ -94,7 +95,7 @@ class BidController {
   }
 
   async editAddress({ params, user }) {
-    if (!(await Utils.isTeam(user.id, 'boss'))) {
+    if (!(await Roles.isTeam(user.id, 'boss'))) {
       throw new ApiError(401)
     }
 

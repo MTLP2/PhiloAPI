@@ -18,16 +18,6 @@ class Utils {
     return uuidv4()
   }
 
-  static isTeam = async (id, role?) => {
-    const user = await DB('user').select('role').where('id', id).first()
-
-    if (user && (role ? [role] : ['boss', 'team']).includes(user.role)) {
-      return true
-    } else {
-      return false
-    }
-  }
-
   static checkParams = (rules, params) => {
     Object.keys(rules).forEach((input) => {
       const rule = rules[input].split('|')
@@ -1373,29 +1363,6 @@ class Utils {
     } else {
       return 0
     }
-  }
-
-  static checkProjectOwner = async (params) => {
-    if (await Utils.isTeam(params.user.id)) {
-      return true
-    }
-    let found
-    if (params.type === 'digital') {
-      found = await DB('digital')
-        .where('id', params.project_id)
-        .where('user_id', params.user.id)
-        .first()
-    } else {
-      found = await DB('project_user')
-        .where('project_id', params.project_id)
-        .where('user_id', params.user.id)
-        .first()
-    }
-    if (!found) {
-      throw new ApiError(403)
-    }
-
-    return true
   }
 
   static getTransporterLink = (params: {

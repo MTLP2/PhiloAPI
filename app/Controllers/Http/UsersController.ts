@@ -1,10 +1,10 @@
 import User from 'App/Services/User'
-import Utils from 'App/Utils'
+import Roles from 'App/Services/Roles'
 
 class UsersController {
   async all({ params, user, response }) {
     if (params.with_address) {
-      if (!(await Utils.isTeam(user.id))) {
+      if (!(await Roles.isTeam(user.id))) {
         return response.status(401).json({
           error: 'Unauthorized'
         })
