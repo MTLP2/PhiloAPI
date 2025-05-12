@@ -277,6 +277,10 @@ Route.group(() => {
   Route.post('/shop/project/position', 'ShopsController.changeProjectPosition')
   Route.post('/shop/project/featured', 'ShopsController.setFeatured')
   Route.delete('/shop/image', 'ShopsController.removeShopImage')
+
+  Route.get('/roles', 'RolesController.all')
+  Route.post('/roles', 'RolesController.addRole')
+  Route.delete('/roles', 'RolesController.removeRole')
 }).middleware('auth')
 
 Route.get('/productions/:id/order-form', 'ProductionController.orderForm')
