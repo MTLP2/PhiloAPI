@@ -2137,11 +2137,9 @@ class Quote {
 
     if (params.sleeve === 'pvc' || params.sleeve === 'discobag') {
       quote.prices.shrink['1'] = false
-      console.log(quote.prices.shrink['1'])
     }
 
     quote.shrink = quote.prices.shrink[params.shrink]
-    console.log(quote.shrink)
 
     // print_finish
     // quote.prices.print_finish.gloss_varnish = getCost({
