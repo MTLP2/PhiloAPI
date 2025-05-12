@@ -278,15 +278,11 @@ class Shops {
   }
 
   static async canEdit(shopId: number, userId: number) {
-    if (await Roles.isTeam(userId)) {
-      return true
-    } else {
-      const role = await DB('role').where('user_id', userId).where('shop_id', shopId).first()
-      if (role) {
-        return true
-      }
-    }
-    return false
+    return Roles.hasRole({
+      type: 'shop',
+      shop_id: shopId,
+      user_id: userId
+    })
   }
 
   static async checkCode(code: string) {

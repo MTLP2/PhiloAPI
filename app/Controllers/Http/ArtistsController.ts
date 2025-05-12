@@ -1,22 +1,28 @@
 import Artists from 'App/Services/Artists'
 import { validator, schema } from '@ioc:Adonis/Core/Validator'
+import Roles from 'App/Services/Roles'
 
 class ArtistsController {
-  async all({ params }) {
+  async all({ params, user }) {
     const payload = await validator.validate({
       schema: schema.create({
         filters: schema.string.optional(),
         sort: schema.string.optional(),
         order: schema.string.optional(),
         size: schema.number.optional(),
-        page: schema.number.optional()
+        page: schema.number.optional(),
+        user_id: schema.number()
       }),
       data: {
-        ...params
+        ...params,
+        user_id: user.id
       }
     })
 
-    return Artists.all(payload)
+    return Artists.all({
+      ...payload,
+      user_id: (await Roles.isTeam(user.id)) ? undefined : payload.user_id
+    })
   }
 
   async find({ params }) {
