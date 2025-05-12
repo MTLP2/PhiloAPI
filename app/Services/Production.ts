@@ -302,6 +302,12 @@ class Production {
       },
       {
         category: 'postprod',
+        type: 'feedback',
+        action: 'check',
+        for: 'artist'
+      },
+      {
+        category: 'postprod',
         type: 'completed',
         action: 'check',
         for: 'team'
@@ -932,6 +938,12 @@ class Production {
           cat_number: params.cat_number
         })
       }
+    }
+
+    if (params.type === 'feedback' && params.feedback !== undefined) {
+      await DB('production').where('id', params.id).update({
+        feedback_comment: params.feedback
+      })
     }
 
     // If billing address, update custom data (id in user.customer_invoice_id)
