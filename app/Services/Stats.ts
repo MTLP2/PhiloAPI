@@ -3000,7 +3000,7 @@ class Stats {
     periodicity?: string
     start?: string
     end?: string
-    com_id: number // <-- nouveau param obligatoire
+    com_id: number
   }) => Promise<{
     created: { [key: string]: number }
     invoiced: { [key: string]: number }
@@ -3008,15 +3008,15 @@ class Stats {
     turnover_invoiced: { [key: string]: number }
     invoiced_paid: { [key: string]: number }
   }> = async (params) => {
-    // 1) Récupération des projets filtrés sur le com_id
+    // 1) Get filtered projects on com_id
     const projects = await DB('project')
       .select('project.id', 'project.created_at', 'quote', 'currency', 'historic', 'vod.com_id')
       .join('vod', 'vod.project_id', 'project.id')
       .where('type', 'direct_pressing')
-      .where('vod.com_id', params.com_id) // <-- filtrage ici
+      .where('vod.com_id', params.com_id)
       .all()
 
-    // Préparation des bornes et du format
+    // Preparation of bounds and format
     const start = params.start ? moment(params.start) : moment().subtract(20, 'days')
     const end = moment(params.end || undefined)
     let format: string, periodicityUnit: moment.unitOfTime.DurationConstructor
@@ -3028,7 +3028,7 @@ class Stats {
       format = 'YYYY-MM'
     }
 
-    // Initialisation des dates et des statistiques
+    // Initialisation of dates and statistics
     const currenciesDB = await Utils.getCurrenciesDb()
     const currencies = await Utils.getCurrencies('EUR', currenciesDB)
     const dates: Record<string, number> = {}
@@ -3043,12 +3043,12 @@ class Stats {
       invoiced_paid: { ...dates }
     }
 
-    // 2) Boucle sur les projets
+    // 2) Loop through projects
     for (const project of projects) {
       const date = moment(project.created_at).format(format)
       if (!(date in stats.created)) continue
 
-      const quoteInEur = project.quote * currencies[project.currency]
+      const quoteInEur = project.quote / currencies[project.currency]
       stats.created[date]++
       stats.turnover[date] += quoteInEur
 
@@ -3066,14 +3066,14 @@ class Stats {
       }
     }
 
-    // 3) Récupération des factures des projets filtrés
-    // Extraire les IDs des projets valides
+    // 3) Get invoices of filtered projects
+    // Extract valid project IDs
     const projectIds = projects.map((p) => p.id)
     if (projectIds.length > 0) {
       const invoices = await DB('invoice')
         .select('sub_total', 'currency', 'type', 'created_at', 'project_id', 'status')
         .where('category', 'direct_pressing')
-        .whereIn('project_id', projectIds) // <-- on ne garde que les factures liées
+        .whereIn('project_id', projectIds)
         .whereBetween('created_at', [
           start.clone().startOf('day').format('YYYY-MM-DD HH:mm:ss'),
           end.clone().endOf('day').format('YYYY-MM-DD HH:mm:ss')
