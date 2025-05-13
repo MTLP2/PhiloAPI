@@ -109,11 +109,6 @@ class Stock {
       .leftJoin('user', 'user.id', 'stock_historic.user_id')
       .whereIn('product_id', ids)
       .orderBy('created_at', 'desc')
-      .where(
-        'stock_historic.created_at',
-        '>',
-        params.start || moment().subtract(6, 'months').format('YYYY-MM-DD')
-      )
       .all()
 
     if (historic.length === 0) {

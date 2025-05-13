@@ -4,6 +4,7 @@ import Labels from 'App/Services/Labels'
 import Project from 'App/Services/Project'
 import Utils from 'App/Utils'
 import sharp from 'sharp'
+import Roles from './Roles'
 
 class Artists {
   static all = (params: {
@@ -11,6 +12,7 @@ class Artists {
     sort?: string
     order?: string
     size?: number
+    user_id?: number
   }) => {
     const query = DB('artist').select(
       'artist.*',
@@ -26,6 +28,10 @@ class Artists {
         .as('sales')
         .query()
     )
+
+    if (params.user_id) {
+      query.join('role', 'role.artist_id', 'artist.id').where('role.user_id', params.user_id)
+    }
 
     if (!params.sort) {
       params.sort = 'id'
@@ -57,6 +63,7 @@ class Artists {
     description?: string
     country_id: string
     picture?: string | null | Buffer
+    auth_id: number
     project_id?: number
   }) {
     let item: Artist & Model = DB('artist') as any
@@ -106,6 +113,15 @@ class Artists {
         updated_at: Utils.date()
       })
     }
+
+    if (!params.id) {
+      await Roles.add({
+        type: 'artist',
+        artist_id: item.id,
+        user_id: params.auth_id
+      })
+    }
+
     return item
   }
 

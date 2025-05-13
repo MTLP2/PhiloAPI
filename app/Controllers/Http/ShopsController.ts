@@ -7,7 +7,7 @@ import { validator, schema } from '@ioc:Adonis/Core/Validator'
 class ShopsController {
   async all({ params, user }) {
     if (!(await Roles.isTeam(user.id))) {
-      throw new ApiError(403)
+      params.user_id = user.id
     }
     return Shops.all(params)
   }

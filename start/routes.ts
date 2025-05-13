@@ -172,8 +172,10 @@ Route.group(() => {
   Route.get('/users/:id', 'UsersController.find')
   Route.get('/artists', 'ArtistsController.all')
   Route.get('/artists/:id', 'ArtistsController.find')
+  Route.post('/artists/:id?', 'ArtistsController.save')
   Route.get('/labels', 'LabelsController.all')
   Route.get('/labels/:id', 'LabelsController.find')
+  Route.post('/labels/:id?', 'LabelsController.save')
 
   Route.get('/bids/:id', 'BidController.find')
   Route.post('/bids/:id/pay', 'BidController.pay')
@@ -277,6 +279,10 @@ Route.group(() => {
   Route.post('/shop/project/position', 'ShopsController.changeProjectPosition')
   Route.post('/shop/project/featured', 'ShopsController.setFeatured')
   Route.delete('/shop/image', 'ShopsController.removeShopImage')
+
+  Route.get('/roles', 'RolesController.all')
+  Route.post('/roles', 'RolesController.addRole')
+  Route.delete('/roles', 'RolesController.removeRole')
 }).middleware('auth')
 
 Route.get('/productions/:id/order-form', 'ProductionController.orderForm')
@@ -364,6 +370,10 @@ Route.group(() => {
   Route.post('/artists/:id?', 'ArtistsController.save')
   Route.delete('/artists/:id', 'ArtistsController.remove')
   Route.get('/shops', 'ShopsController.all')
+  Route.get('/contact-requests', 'AdminController.getContactRequests')
+  Route.post('/contact-requests', 'AdminController.sendContactRequest')
+  Route.delete('/contact-requests/:id', 'AdminController.deleteContactRequest')
+  Route.get('/contact-requests/export', 'AdminController.exportContactRequests')
   Route.get('/projects', 'AdminController.getProjects')
   Route.get('/projects/export', 'AdminController.exportProjects')
   Route.get('/projects/export-raw', 'AdminController.exportRawProjects')
@@ -675,9 +685,6 @@ Route.group(() => {
   Route.get('/test-pressing/export', 'AdminController.extractTestPressing')
   Route.get('/direct-pressing/export', 'AdminController.extractDirectPressing')
   Route.get('/logs', 'AdminController.getLogs')
-  Route.get('/projects/:id/users', 'ProjectsController.getProjectUsers')
-  Route.post('/projects/:project_id/users/:user_id', 'ProjectsController.editProjectUsers')
-  Route.delete('/projects/:project_id/users/:user_id', 'ProjectsController.deleteProjectUsers')
   Route.post('/ship-notices', 'AdminController.saveShipNotice')
 
   Route.group(() => {

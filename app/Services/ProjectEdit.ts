@@ -88,11 +88,10 @@ class ProjectEdit {
       pp.slug = Utils.slugify(`${params.artist_name} - ${pp.name}`).substring(0, 255)
       pp.created_at = Utils.date()
       pp = await pp.save()
-      await DB('project_user').insert({
+      await Roles.add({
+        type: 'project',
         project_id: pp.id,
-        user_id: params.user.user_id,
-        created_at: Utils.date(),
-        updated_at: Utils.date()
+        user_id: params.user.user_id
       })
     } else {
       await Roles.checkProjectOwner({ project_id: params.id, user: params.user })

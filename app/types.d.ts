@@ -244,12 +244,30 @@ type Feedback = {
   updated_at: Timestamp
 }
 
+type Genre = {
+  id: number
+  name: string
+}
+
 type Label = {
   id: number
   name: string
   description?: string
   country_id: string
   picture?: string
+  created_at: Timestamp
+  updated_at: Timestamp
+}
+
+type ContactRequest = {
+  id: number
+  type: string
+  name: string
+  email: string
+  phone: string
+  social: string
+  message: string
+  country_id: string
   created_at: Timestamp
   updated_at: Timestamp
 }
@@ -377,6 +395,13 @@ type ShippingWeight = {
   '50kg'?: number | null
   'created_at': Timestamp
   'updated_at': Timestamp
+}
+
+type Style = {
+  id: number
+  name: string
+  slug: string
+  genre_id: number
 }
 
 type Shop = {
@@ -538,6 +563,7 @@ export type DB = {
   dispatch_item: DispatchItem
   dispatch_lock: DispatchLock
   feedback: Feedback
+  genre: Genre
   invoice: Invoice
   item: Item
   label: Label
@@ -549,6 +575,7 @@ export type DB = {
   shipping_weight: ShippingWeight
   shop: Shop
   stock: Stock
+  style: Style
   product: Product
   project: Project
   production_option: ProductionOption
@@ -557,4 +584,5 @@ export type DB = {
   production_action: ProductionAction
   user: User
   vod: Vod
+  contact_request: ContactRequest
 }
