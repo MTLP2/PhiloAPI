@@ -30,7 +30,8 @@ class RolesController {
     const payload = await validator.validate({
       schema: schema.create({
         type: schema.string(),
-        email: schema.string(),
+        user_id: schema.number.optional(),
+        email: schema.string.optional(),
         shop_id: schema.number.optional(),
         label_id: schema.number.optional(),
         artist_id: schema.number.optional(),
@@ -73,6 +74,7 @@ class RolesController {
       user_id: user.id
     })
 
+    console.log(payload)
     return Roles.remove(payload)
   }
 }

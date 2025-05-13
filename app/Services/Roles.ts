@@ -58,7 +58,7 @@ class Roles {
   }
 
   static checkProjectOwner = async (params: {
-    type: string
+    type?: string
     project_id: number
     user: {
       id: number
@@ -165,12 +165,22 @@ class Roles {
     shop_id?: number
     label_id?: number
     artist_id?: number
-    email: string
+    email?: string
+    user_id?: number
   }) => {
     const user = await db
       .selectFrom('user')
       .select('id')
-      .where('email', '=', params.email)
+      .where(({ eb, and }) => {
+        const conds: ReturnType<typeof eb>[] = []
+        if (params.email) {
+          conds.push(eb('email', '=', params.email))
+        }
+        if (params.user_id) {
+          conds.push(eb('id', '=', params.user_id))
+        }
+        return and(conds)
+      })
       .executeTakeFirst()
 
     if (!user) {

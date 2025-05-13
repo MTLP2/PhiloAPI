@@ -94,6 +94,11 @@ class ProjectEdit {
         created_at: Utils.date(),
         updated_at: Utils.date()
       })
+      await Roles.add({
+        type: 'project',
+        project_id: pp.id,
+        user_id: params.user.user_id
+      })
     } else {
       await Roles.checkProjectOwner({ project_id: params.id, user: params.user })
       pp = await DB('project').find(params.id)
