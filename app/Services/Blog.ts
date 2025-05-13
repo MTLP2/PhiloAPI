@@ -2,6 +2,7 @@ import DB from 'App/DB'
 import Storage from 'App/Services/Storage'
 import ApiError from 'App/ApiError'
 import Utils from 'App/Utils'
+import Roles from 'App/Services/Roles'
 
 class Blog {
   static async all(params?: { lang?: string; except?: string; tag?: string; limit?: number }) {
@@ -34,7 +35,7 @@ class Blog {
     if (!article) {
       throw new ApiError(404)
     }
-    if (!article.online && !(await Utils.isTeam(user.id))) {
+    if (!article.online && !(await Roles.isTeam(user.id))) {
       throw new ApiError(404)
     }
     return article

@@ -9,6 +9,7 @@ class Labels {
     sort?: string
     order?: string
     size?: number
+    user_id?: number
   }) => {
     const query = DB('label').select(
       'label.*',
@@ -24,6 +25,9 @@ class Labels {
         .as('sales')
         .query()
     )
+    if (params.user_id) {
+      query.join('role', 'role.label_id', 'label.id').where('role.user_id', params.user_id)
+    }
     if (!params.sort) {
       params.sort = 'id'
       params.order = 'desc'

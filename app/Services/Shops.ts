@@ -1,22 +1,30 @@
 import Utils from 'App/Utils'
 import Project from 'App/Services/Project'
 import Storage from 'App/Services/Storage'
+import Roles from 'App/Services/Roles'
 import DB from 'App/DB'
 import ApiError from 'App/ApiError'
 
 class Shops {
   static async all(params) {
-    params.query = DB('shop').select(
+    const query = DB('shop').select(
       'shop.*',
       DB.query('shop_project').count('*').whereRaw('shop_id = shop.id').as('projects')
     )
+
+    if (params.user_id) {
+      query.join('role', 'role.shop_id', 'shop.id').where('role.user_id', params.user_id)
+    }
 
     if (!params.sort) {
       params.sort = 'id'
       params.order = 'desc'
     }
 
-    return Utils.getRows(params)
+    return Utils.getRows({
+      ...params,
+      query: query
+    })
   }
 
   static async find(params: {
@@ -28,28 +36,13 @@ class Shops {
     projects?: boolean
     auth_id?: number
   }) {
-    let shop: any = DB('shop').select(
-      'shop.*',
-      'user_artist.name as artist_name',
-      'user_label.name as label_name',
-      'user_user.id as user_id',
-      'user_user.name as user_name'
-    )
+    let shop: any = DB('shop').select('shop.*')
 
     if (params.id) {
       shop.where('shop.id', params.id)
     } else if (params.code) {
       shop.where('code', params.code)
     }
-    if (params.user_id) {
-      shop.join('user', 'user.shop_id', 'shop.id')
-      shop.where('user.id', params.user_id)
-    }
-
-    shop
-      .leftJoin('user as user_artist', 'user_artist.id', 'shop.artist_id')
-      .leftJoin('user as user_label', 'user_label.id', 'shop.label_id')
-      .leftJoin('user as user_user', 'user_user.shop_id', 'shop.id')
 
     shop = await shop.first()
 
@@ -211,16 +204,11 @@ class Shops {
       }
 
       await item.save()
-      if (!params.id && params.auth_id) {
-        await DB('user').where('id', params.auth_id).update({
-          shop_id: item.id
-        })
-      } else if (params.user_id) {
-        await DB('user').where('shop_id', item.id).update({
-          shop_id: null
-        })
-        await DB('user').where('id', params.user_id).update({
-          shop_id: item.id
+      if (!params.id) {
+        await DB('role').insert({
+          user_id: params.user_id || params.auth_id,
+          shop_id: item.id,
+          type: 'shop'
         })
       }
 
@@ -290,16 +278,11 @@ class Shops {
   }
 
   static async canEdit(shopId: number, userId: number) {
-    if (await Utils.isTeam(userId)) {
-      return true
-    } else {
-      const user = await DB('user').where('id', userId).first()
-
-      if (user.shop_id === +shopId) {
-        return true
-      }
-    }
-    return false
+    return Roles.hasRole({
+      type: 'shop',
+      shop_id: shopId,
+      user_id: userId
+    })
   }
 
   static async checkCode(code: string) {

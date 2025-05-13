@@ -515,8 +515,8 @@ class Products {
         'product.ekan_id'
       )
       .join('project_product', 'project_product.product_id', 'product.id')
-      .join('project_user', 'project_user.project_id', 'project_product.project_id')
-      .where('project_user.user_id', params.user_id)
+      .join('role', 'role.project_id', 'project_product.project_id')
+      .where('role.user_id', params.user_id)
       .all()
 
     const pp = {}

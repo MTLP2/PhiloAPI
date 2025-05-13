@@ -277,6 +277,10 @@ Route.group(() => {
   Route.post('/shop/project/position', 'ShopsController.changeProjectPosition')
   Route.post('/shop/project/featured', 'ShopsController.setFeatured')
   Route.delete('/shop/image', 'ShopsController.removeShopImage')
+
+  Route.get('/roles', 'RolesController.all')
+  Route.post('/roles', 'RolesController.addRole')
+  Route.delete('/roles', 'RolesController.removeRole')
 }).middleware('auth')
 
 Route.get('/productions/:id/order-form', 'ProductionController.orderForm')
@@ -679,9 +683,6 @@ Route.group(() => {
   Route.get('/test-pressing/export', 'AdminController.extractTestPressing')
   Route.get('/direct-pressing/export', 'AdminController.extractDirectPressing')
   Route.get('/logs', 'AdminController.getLogs')
-  Route.get('/projects/:id/users', 'ProjectsController.getProjectUsers')
-  Route.post('/projects/:project_id/users/:user_id', 'ProjectsController.editProjectUsers')
-  Route.delete('/projects/:project_id/users/:user_id', 'ProjectsController.deleteProjectUsers')
   Route.post('/ship-notices', 'AdminController.saveShipNotice')
 
   Route.group(() => {

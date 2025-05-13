@@ -7,6 +7,7 @@ import Stock from 'App/Services/Stock'
 import Statement from 'App/Services/Statement'
 import Bids from 'App/Services/Bids'
 import Reviews from 'App/Services/Reviews'
+import Roles from 'App/Services/Roles'
 import Utils from 'App/Utils'
 import moment from 'moment'
 import JSZip from 'jszip'
@@ -1119,7 +1120,7 @@ class Project {
         'failed'
       ].includes(p.step)
     ) {
-      if (params.user_id !== p.user_id && !(await Utils.isTeam(params.user_id))) {
+      if (params.user_id !== p.user_id && !(await Roles.isTeam(params.user_id))) {
         return {
           id: p.id,
           name: p.name,
@@ -1308,7 +1309,7 @@ class Project {
   static saveNews = async (params) => {
     let news: any = null
 
-    Utils.checkProjectOwner(params)
+    Roles.checkProjectOwner(params)
 
     if (params.id === 0) {
       news = DB('news')
@@ -1803,7 +1804,7 @@ class Project {
         query
           .where('user_id', params.user_id)
           .orWhereExists(
-            DB('project_user')
+            DB('role')
               .select(DB.raw('1'))
               .whereRaw('project_id = project.id')
               .where('user_id', params.user_id)
@@ -2389,7 +2390,7 @@ class Project {
         query
           .where('user_id', params.user_id)
           .orWhereExists(
-            DB('project_user')
+            DB('role')
               .select(DB.raw('1'))
               .whereRaw('project_id = project.id')
               .where('user_id', params.user_id)
@@ -2439,7 +2440,7 @@ class Project {
         query
           .where('vod.user_id', params.user_id)
           .orWhereExists(
-            DB('project_user')
+            DB('role')
               .select(DB.raw('1'))
               .whereRaw('project_id = project.id')
               .where('user_id', params.user_id)
@@ -2569,10 +2570,11 @@ class Project {
       })
     }
 
-    const users = await DB('project_user').where('project_id', id).all()
+    const users = await DB('role').where('project_id', id).all()
     for (const user of users) {
-      await DB('project_user').insert({
+      await DB('role').insert({
         project_id: project.id,
+        type: 'project',
         user_id: user.user_id
       })
     }

@@ -10,6 +10,7 @@ import File from 'App/Services/File'
 import Log from 'App/Services/Log'
 import Whiplash from 'App/Services/Whiplash'
 import BigBlue from 'App/Services/BigBlue'
+import Roles from 'App/Services/Roles'
 import Excel from 'exceljs'
 import Storage from 'App/Services/Storage'
 import View from '@ioc:Adonis/Core/View'
@@ -343,7 +344,7 @@ class Production {
       .where('production.id', params.id)
       .first()
 
-    await Utils.checkProjectOwner({ project_id: item.project_id, user: params.user })
+    await Roles.checkProjectOwner({ project_id: item.project_id, user: params.user })
 
     const actions = await DB('production_action as action')
       .select('action.*')
@@ -390,7 +391,7 @@ class Production {
       delete item.preprod.order_form
     }
 
-    if (await Utils.isTeam(params.user.id)) {
+    if (await Roles.isTeam(params.user.id)) {
       item.prod.pressing_proof.action = 'file'
     } else {
       item.prod.pressing_proof.action = 'check'
@@ -452,7 +453,7 @@ class Production {
   }
 
   static async create(params) {
-    if (!(await Utils.isTeam(params.user.id))) {
+    if (!(await Roles.isTeam(params.user.id))) {
       return false
     }
 
@@ -493,7 +494,7 @@ class Production {
   }
 
   static async save(params) {
-    if (!(await Utils.isTeam(params.user.id))) {
+    if (!(await Roles.isTeam(params.user.id))) {
       return false
     }
 
@@ -637,7 +638,7 @@ class Production {
   static async getAction(params) {
     const prod = await DB('production').where('id', params.id).first()
 
-    await Utils.checkProjectOwner({ project_id: prod.project_id, user: params.user })
+    await Roles.checkProjectOwner({ project_id: prod.project_id, user: params.user })
 
     const action = await DB('production_action as action')
       .select('action.*', 'user.name as check_name')
@@ -742,7 +743,7 @@ class Production {
       .where('production.id', item.production_id)
       .first()
 
-    await Utils.checkProjectOwner({ project_id: prod.project_id, user: params.user })
+    await Roles.checkProjectOwner({ project_id: prod.project_id, user: params.user })
 
     item.status = item.user_is_admin ? params.status : 'pending'
     if (params.type === 'test_pressing') {
@@ -971,12 +972,12 @@ class Production {
       .where('production_dispatch.is_delete', false)
 
     if (params.id === 'all') {
-      if (!(await Utils.isTeam(params.user.id))) {
+      if (!(await Roles.isTeam(params.user.id))) {
         throw new Error('401')
       }
     } else {
       const item = await DB('production').where('id', params.id).first()
-      await Utils.checkProjectOwner({ project_id: item.project_id, user: params.user })
+      await Roles.checkProjectOwner({ project_id: item.project_id, user: params.user })
 
       query.where('production_id', params.id)
     }
@@ -1010,7 +1011,7 @@ class Production {
       .where('production.id', params.id)
       .first()
 
-    await Utils.checkProjectOwner({ project_id: prod.project_id, user: params.user })
+    await Roles.checkProjectOwner({ project_id: prod.project_id, user: params.user })
 
     // Handle both PS/TP status change
     let action = await DB('production_action')
@@ -1119,7 +1120,7 @@ class Production {
   }
 
   static async saveDispatch(params) {
-    if (!(await Utils.isTeam(params.user.id))) {
+    if (!(await Roles.isTeam(params.user.id))) {
       return false
     }
 
@@ -1256,7 +1257,7 @@ class Production {
   }
 
   static async removeDispatch(params) {
-    if (!(await Utils.isTeam(params.user.id))) {
+    if (!(await Roles.isTeam(params.user.id))) {
       return false
     }
 
@@ -1271,7 +1272,7 @@ class Production {
   }
 
   static async saveLines(params) {
-    if (!(await Utils.isTeam(params.user.id))) {
+    if (!(await Roles.isTeam(params.user.id))) {
       return false
     }
 
@@ -1564,7 +1565,7 @@ class Production {
       .join('production', 'production.id', 'pfile.production_id')
       .first()
 
-    await Utils.checkProjectOwner({ project_id: item.project_id, user: params.user })
+    await Roles.checkProjectOwner({ project_id: item.project_id, user: params.user })
 
     if (item.files && params.file_comment_id) {
       const files = JSON.parse(item.files)
@@ -1583,7 +1584,7 @@ class Production {
       .join('production', 'production.id', 'pfile.production_id')
       .first()
 
-    await Utils.checkProjectOwner({ project_id: item.project_id, user: params.user })
+    await Roles.checkProjectOwner({ project_id: item.project_id, user: params.user })
 
     await DB('production_file').where('id', params.id).delete()
 
@@ -1595,7 +1596,7 @@ class Production {
   static async zipFiles(params) {
     const prod = await DB('production').where('id', params.id).first()
 
-    await Utils.checkProjectOwner({ project_id: prod.project_id, user: params.user })
+    await Roles.checkProjectOwner({ project_id: prod.project_id, user: params.user })
 
     const files = await DB('production_file as pfile')
       .select('file.name', 'file.uuid')
@@ -1630,7 +1631,7 @@ class Production {
 
     const prod = await DB('production').where('id', item.production_id).first()
 
-    await Utils.checkProjectOwner({ project_id: prod.project_id, user: params.user })
+    await Roles.checkProjectOwner({ project_id: prod.project_id, user: params.user })
 
     return File.url(item[params.type])
   }
@@ -2085,7 +2086,7 @@ class Production {
   }
 
   static async remove(params) {
-    if (!(await Utils.isTeam(params.user.id))) {
+    if (!(await Roles.isTeam(params.user.id))) {
       return false
     }
 

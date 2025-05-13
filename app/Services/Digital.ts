@@ -3,6 +3,7 @@ import DB from 'App/DB'
 import Utils from 'App/Utils'
 import Storage from 'App/Services/Storage'
 import File from 'App/Services/File'
+import Roles from 'App/Services/Roles'
 import { integer } from 'aws-sdk/clients/cloudfront'
 import Songs from './Songs'
 import User from './User'
@@ -118,7 +119,7 @@ class Digital {
   }
 
   static saveDigitalTrack = async (params) => {
-    await Utils.checkProjectOwner({
+    await Roles.checkProjectOwner({
       project_id: params.project_id,
       user: params.user,
       type: 'digital'
@@ -239,7 +240,7 @@ class Digital {
   }
 
   static deleteDigitalTrack = async (params) => {
-    await Utils.checkProjectOwner({ project_id: params.project_id, user: params.user })
+    await Roles.checkProjectOwner({ project_id: params.project_id, user: params.user })
 
     await DB('song_play').where('song_id', params.id).delete()
     await DB('song').where('id', params.id).delete()

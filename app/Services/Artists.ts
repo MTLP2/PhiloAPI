@@ -11,6 +11,7 @@ class Artists {
     sort?: string
     order?: string
     size?: number
+    user_id?: number
   }) => {
     const query = DB('artist').select(
       'artist.*',
@@ -26,6 +27,10 @@ class Artists {
         .as('sales')
         .query()
     )
+
+    if (params.user_id) {
+      query.join('role', 'role.artist_id', 'artist.id').where('role.user_id', params.user_id)
+    }
 
     if (!params.sort) {
       params.sort = 'id'

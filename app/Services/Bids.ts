@@ -8,6 +8,7 @@ import Invoices from 'App/Services/Invoices'
 import request from 'request'
 import ApiError from 'App/ApiError'
 import moment from 'moment'
+import Roles from 'App/Services/Roles'
 
 class Bids {
   static async find(id: number, params: { for?: string } = {}) {
@@ -348,7 +349,7 @@ class Bids {
   static async cancel(params: { id: number; user_id: number }) {
     const bid = await DB('bid').where('id', params.id).first()
 
-    if (params.user_id !== bid.user_id && !(await Utils.isTeam(params.user_id, 'boss'))) {
+    if (params.user_id !== bid.user_id && !(await Roles.isTeam(params.user_id, 'boss'))) {
       throw new ApiError(401)
     }
 

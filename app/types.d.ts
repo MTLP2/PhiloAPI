@@ -392,6 +392,13 @@ type ShippingWeight = {
   'updated_at': Timestamp
 }
 
+type Style = {
+  id: number
+  name: string
+  slug: string
+  genre_id: number
+}
+
 type Shop = {
   id: number
   code?: string | null
@@ -428,6 +435,7 @@ type User = {
   name: string
   email: string | null
   customer_id?: number
+  shop_id?: number
   created_at: Timestamp
   updated_at: Timestamp
 }
@@ -561,6 +569,7 @@ export type DB = {
   shipping_weight: ShippingWeight
   shop: Shop
   stock: Stock
+  style: Style
   product: Product
   project: Project
   production_option: ProductionOption

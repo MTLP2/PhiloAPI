@@ -1,12 +1,13 @@
 import Shops from 'App/Services/Shops'
 import ApiError from 'App/ApiError'
 import Utils from 'App/Utils'
+import Roles from 'App/Services/Roles'
 import { validator, schema } from '@ioc:Adonis/Core/Validator'
 
 class ShopsController {
   async all({ params, user }) {
-    if (!(await Utils.isTeam(user.id))) {
-      throw new ApiError(403)
+    if (!(await Roles.isTeam(user.id))) {
+      params.user_id = user.id
     }
     return Shops.all(params)
   }
@@ -67,16 +68,16 @@ class ShopsController {
       }),
       data: params
     })
-    if (payload.white_label && !(await Utils.isTeam(user.id))) {
+    if (payload.white_label && !(await Roles.isTeam(user.id))) {
       throw new ApiError(401)
     }
-    if (payload.group_shipment && !(await Utils.isTeam(user.id))) {
+    if (payload.group_shipment && !(await Roles.isTeam(user.id))) {
       throw new ApiError(401)
     }
     if (payload.id && !(await Shops.canEdit(payload.id, user.id))) {
       throw new ApiError(403)
     }
-    if (payload.user_id && !(await Utils.isTeam(user.id))) {
+    if (payload.user_id && !(await Roles.isTeam(user.id))) {
       throw new ApiError(403)
     }
     return Shops.update(payload)

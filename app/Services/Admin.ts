@@ -960,18 +960,6 @@ class Admin {
       project.save()
     }
 
-    if (params.user_id && vod.user_id !== params.user_id) {
-      await DB('project_user')
-        .where('user_id', vod.user_id)
-        .where('project_id', vod.project_id)
-        .delete()
-      await DB('project_user').insert({
-        user_id: params.user_id,
-        project_id: vod.project_id
-      })
-      vod.user_id = params.user_id
-    }
-
     if (project.inverse_name !== params.inverse_name) {
       project.inverse_name = params.inverse_name
       project.save()
@@ -1923,6 +1911,7 @@ class Admin {
           { header: 'Shipping Type', key: 'shipping_type' },
           { header: 'Shipping', key: 'shipping' },
           { header: 'Shipping Cost', key: 'shipping_cost' },
+          { header: 'Dispatch', key: 'dispatch_id' },
           { header: 'Package Weight', key: 'weight' },
           { header: 'Date export', key: 'date_export' },
           { header: 'Tracking', key: 'tracking_number' },

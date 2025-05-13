@@ -12,6 +12,7 @@ import BigBlue from 'App/Services/BigBlue'
 import Cart from 'App/Services/Cart'
 import Sna from 'App/Services/Sna'
 import ApiError from 'App/ApiError'
+import Roles from 'App/Services/Roles'
 import Stripe from 'App/Services/Stripe'
 const paypal = require('paypal-rest-sdk')
 const stripe = require('stripe')(config.stripe.client_secret)
@@ -253,7 +254,7 @@ class Order {
   }
 
   static extractOrders = async (params, res) => {
-    await Utils.checkProjectOwner({ project_id: params.project_id, user: params.user })
+    await Roles.checkProjectOwner({ project_id: params.project_id, user: params.user })
     const workbook = new Excel.Workbook()
     const worksheet = workbook.addWorksheet('Orders')
 
@@ -365,7 +366,7 @@ class Order {
   }
 
   static extractOrdersJuno = async (params) => {
-    await Utils.checkProjectOwner({ project_id: params.project_id, user: params.user })
+    await Roles.checkProjectOwner({ project_id: params.project_id, user: params.user })
 
     const project = await DB('project').where('id', params.project_id).first()
 
