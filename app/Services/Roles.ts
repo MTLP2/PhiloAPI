@@ -71,7 +71,36 @@ class Roles {
   }
 
   static convert = async () => {
+    /**
     await sql`truncate table role`.execute(db)
+
+    const users = await db
+      .selectFrom('user')
+      .select(['user.id', 'role'])
+      .where('is_admin', '=', 1)
+      .execute()
+
+    for (const user of users) {
+      const item = model('role')
+      item.user_id = user.id
+      item.type = user.role
+      await item.save()
+    }
+
+    const shops = await db
+      .selectFrom('user')
+      .select(['user.id', 'user.shop_id'])
+      .where('shop_id', 'is not', null)
+      .execute()
+
+    for (const shop of shops) {
+      const item = model('role')
+      item.user_id = shop.id
+      item.shop_id = shop.shop_id
+      item.type = 'shop'
+      await item.save()
+    }
+    **/
 
     const projects = await db
       .selectFrom('vod')
@@ -104,33 +133,6 @@ class Roles {
       } catch (e) {
         console.log(e)
       }
-    }
-
-    const shops = await db
-      .selectFrom('user')
-      .select(['user.id', 'user.shop_id'])
-      .where('shop_id', 'is not', null)
-      .execute()
-
-    for (const shop of shops) {
-      const item = model('role')
-      item.user_id = shop.id
-      item.shop_id = shop.shop_id
-      item.type = 'shop'
-      await item.save()
-    }
-
-    const users = await db
-      .selectFrom('user')
-      .select(['user.id', 'role'])
-      .where('is_admin', '=', 1)
-      .execute()
-
-    for (const user of users) {
-      const item = model('role')
-      item.user_id = user.id
-      item.type = user.role
-      await item.save()
     }
   }
 
