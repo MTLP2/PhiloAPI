@@ -1,5 +1,4 @@
 import { db, model, sql } from 'App/db3'
-import Utils from 'App/Utils'
 import ApiError from 'App/ApiError'
 
 class Roles {

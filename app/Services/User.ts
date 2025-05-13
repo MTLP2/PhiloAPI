@@ -125,10 +125,10 @@ class User {
 
   static getProjectUsers = async (id: number) => {
     const users = await DB()
-      .select('u.*', 'pu.project', 'pu.production', 'pu.statement', 'pu.id as pu_id')
+      .select('u.*', 'role.project', 'role.production', 'role.statement', 'role.id as pu_id')
       .from('user as u')
-      .join('project_user as pu', 'pu.user_id', 'u.id')
-      .where('pu.project_id', id)
+      .join('role', 'role.user_id', 'u.id')
+      .where('role.project_id', id)
       .all()
     return users
   }
@@ -170,59 +170,6 @@ class User {
 
     const res = await users.all()
     return res
-  }
-
-  static editProjectUsers = async (params: {
-    id: number
-    user_id: number
-    project_id: number
-    project: boolean
-    production: boolean
-    statement: boolean
-  }) => {
-    const project = await DB('project').where('id', params.project_id).first()
-    if (!project) {
-      throw new ApiError(404)
-    }
-    let item: any = await DB('project_user')
-      .where((query) => {
-        if (params.id) {
-          query.where('id', params.id)
-        }
-        query.orWhere((query) => {
-          query.where('project_id', params.project_id)
-          query.where('user_id', params.user_id)
-        })
-      })
-      .first()
-
-    if (!item) {
-      item = DB('project_user')
-    }
-
-    item.user_id = params.user_id
-    item.project_id = params.project_id
-    item.project = params.project
-    item.production = params.production
-    item.statement = params.statement
-
-    await item.save()
-
-    return true
-  }
-
-  static deleteProjectUsers = async (params: { project_id: number; user_id: number }) => {
-    const project = await DB('project').where('id', params.project_id).first()
-    if (!project) {
-      throw new ApiError(404)
-    }
-
-    await DB('project_user')
-      .where('project_id', params.project_id)
-      .where('user_id', params.user_id)
-      .delete()
-
-    return true
   }
 
   static getAllFeatured = async () => {
@@ -978,12 +925,12 @@ class User {
         'slug',
         'styles',
         'color',
-        'pu.user_id',
+        'role.user_id',
         'v.created_at',
         'v.updated_at',
         'v.picture_project',
         'v.send_statement',
-        'type',
+        'v.type',
         'step',
         'count',
         'stage1',
@@ -992,8 +939,8 @@ class User {
       )
       .from('project as p')
       .join('vod as v', 'v.project_id', 'p.id')
-      .join('project_user as pu', 'pu.project_id', 'p.id')
-      .where('pu.user_id', userId)
+      .join('role', 'role.project_id', 'p.id')
+      .where('role.user_id', userId)
       .where('is_delete', '!=', '1')
 
     if (params && params.search) {

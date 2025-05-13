@@ -679,9 +679,6 @@ Route.group(() => {
   Route.get('/test-pressing/export', 'AdminController.extractTestPressing')
   Route.get('/direct-pressing/export', 'AdminController.extractDirectPressing')
   Route.get('/logs', 'AdminController.getLogs')
-  Route.get('/projects/:id/users', 'ProjectsController.getProjectUsers')
-  Route.post('/projects/:project_id/users/:user_id', 'ProjectsController.editProjectUsers')
-  Route.delete('/projects/:project_id/users/:user_id', 'ProjectsController.deleteProjectUsers')
   Route.post('/ship-notices', 'AdminController.saveShipNotice')
 
   Route.group(() => {

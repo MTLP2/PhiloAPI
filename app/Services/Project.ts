@@ -1804,7 +1804,7 @@ class Project {
         query
           .where('user_id', params.user_id)
           .orWhereExists(
-            DB('project_user')
+            DB('role')
               .select(DB.raw('1'))
               .whereRaw('project_id = project.id')
               .where('user_id', params.user_id)
@@ -2390,7 +2390,7 @@ class Project {
         query
           .where('user_id', params.user_id)
           .orWhereExists(
-            DB('project_user')
+            DB('role')
               .select(DB.raw('1'))
               .whereRaw('project_id = project.id')
               .where('user_id', params.user_id)
@@ -2440,7 +2440,7 @@ class Project {
         query
           .where('vod.user_id', params.user_id)
           .orWhereExists(
-            DB('project_user')
+            DB('role')
               .select(DB.raw('1'))
               .whereRaw('project_id = project.id')
               .where('user_id', params.user_id)
@@ -2570,10 +2570,11 @@ class Project {
       })
     }
 
-    const users = await DB('project_user').where('project_id', id).all()
+    const users = await DB('role').where('project_id', id).all()
     for (const user of users) {
-      await DB('project_user').insert({
+      await DB('role').insert({
         project_id: project.id,
+        type: 'project',
         user_id: user.user_id
       })
     }
