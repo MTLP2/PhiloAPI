@@ -74,7 +74,6 @@ class RolesController {
       user_id: user.id
     })
 
-    console.log(payload)
     return Roles.remove(payload)
   }
 }
