@@ -22,6 +22,8 @@ class Roles {
     type: string
     project_id?: number
     shop_id?: number
+    label_id?: number
+    artist_id?: number
     user_id: number
   }) => {
     if (await Roles.isTeam(params.user_id)) {
@@ -32,6 +34,22 @@ class Roles {
       .select('id')
       .where('type', '=', params.type)
       .where('user_id', '=', params.user_id)
+      .where(({ eb, and }) => {
+        const conds: ReturnType<typeof eb>[] = []
+        if (params.label_id) {
+          conds.push(eb('label_id', '=', params.label_id))
+        }
+        if (params.artist_id) {
+          conds.push(eb('artist_id', '=', params.artist_id))
+        }
+        if (params.project_id) {
+          conds.push(eb('project_id', '=', params.project_id))
+        }
+        if (params.shop_id) {
+          conds.push(eb('shop_id', '=', params.shop_id))
+        }
+        return and(conds)
+      })
       .executeTakeFirst()
 
     if (!exists) {
@@ -145,6 +163,8 @@ class Roles {
     type: string
     project_id?: number
     shop_id?: number
+    label_id?: number
+    artist_id?: number
     email: string
   }) => {
     const user = await db
@@ -170,6 +190,12 @@ class Roles {
         if (params.shop_id) {
           conds.push(eb('shop_id', '=', params.shop_id))
         }
+        if (params.label_id) {
+          conds.push(eb('label_id', '=', params.label_id))
+        }
+        if (params.artist_id) {
+          conds.push(eb('artist_id', '=', params.artist_id))
+        }
         return and(conds)
       })
       .executeTakeFirst()
@@ -182,6 +208,8 @@ class Roles {
     item.type = params.type
     item.project_id = params.project_id
     item.shop_id = params.shop_id
+    item.label_id = params.label_id
+    item.artist_id = params.artist_id
     item.user_id = user.id
     await item.save()
 
@@ -192,6 +220,8 @@ class Roles {
     type: string
     project_id?: number
     shop_id?: number
+    label_id?: number
+    artist_id?: number
     user_id: number
   }) => {
     console.log(params)
@@ -205,6 +235,12 @@ class Roles {
         }
         if (params.project_id) {
           conds.push(eb('project_id', '=', params.project_id))
+        }
+        if (params.label_id) {
+          conds.push(eb('label_id', '=', params.label_id))
+        }
+        if (params.artist_id) {
+          conds.push(eb('artist_id', '=', params.artist_id))
         }
         return and(conds)
       })
