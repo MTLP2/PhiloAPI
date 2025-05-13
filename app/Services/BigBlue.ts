@@ -498,6 +498,7 @@ class BigBlue {
     weight?: number
     type: string
     address_pickup: string
+    currency: string
     items: { bigblue_id: string; quantity: number }[]
   }) => {
     for (const i in params.items) {
@@ -516,7 +517,7 @@ class BigBlue {
       order: {
         external_id: params.id.toString(),
         language: 'fr',
-        currency: 'EUR',
+        currency: params.currency || 'EUR',
         shipping_method: await BigBlue.getShippingType({
           type: params.type,
           shipping_method: params.shipping_method,
