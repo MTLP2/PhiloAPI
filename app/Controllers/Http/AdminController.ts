@@ -1577,7 +1577,7 @@ class AdminController {
     }
   }
 
-  async getMailRequests({ params }) {
+  async getContactRequests({ params }) {
     try {
       const payload = await validator.validate({
         schema: schema.create({
@@ -1585,13 +1585,13 @@ class AdminController {
         }),
         data: params
       })
-      return Admin.getMailRequests(payload)
+      return Admin.getContactRequests(payload)
     } catch (err) {
       return { error: err.message, validation: err.messages }
     }
   }
 
-  async sendMailRequest({ params }) {
+  async sendContactRequest({ params }) {
     try {
       const payload = await validator.validate({
         schema: schema.create({
@@ -1605,13 +1605,13 @@ class AdminController {
         }),
         data: params
       })
-      return Admin.sendMailRequest(payload)
+      return Admin.sendContactRequest(payload)
     } catch (err) {
       return { error: err.message, validation: err.messages }
     }
   }
 
-  async deleteMailRequest({ params }) {
+  async deleteContactRequest({ params }) {
     try {
       const payload = await validator.validate({
         schema: schema.create({
@@ -1619,14 +1619,14 @@ class AdminController {
         }),
         data: params
       })
-      return Admin.deleteMailRequest(payload)
+      return Admin.deleteContactRequest(payload)
     } catch (err) {
       return { error: err.message, validation: err.messages }
     }
   }
 
-  async exportMailRequests({ params }) {
-    return Admin.exportMailRequests(params)
+  async exportContactRequests({ params }) {
+    return Admin.exportContactRequests(params)
   }
 }
 

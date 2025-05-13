@@ -254,7 +254,7 @@ type Label = {
   updated_at: Timestamp
 }
 
-type MailRequest = {
+type ContactRequest = {
   id: number
   type: string
   name: string
@@ -578,5 +578,5 @@ export type DB = {
   production_action: ProductionAction
   user: User
   vod: Vod
-  mail_request: MailRequest
+  contact_request: ContactRequest
 }

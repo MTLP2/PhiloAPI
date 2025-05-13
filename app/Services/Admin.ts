@@ -5458,13 +5458,16 @@ class Admin {
     return list
   }
 
-  static getMailRequests = async (params: { type: string }) => {
-    const mail = DB('mail_request').where('type', params.type).orderBy('created_at', 'desc').all()
+  static getContactRequests = async (params: { type: string }) => {
+    const contact = DB('contact_request')
+      .where('type', params.type)
+      .orderBy('created_at', 'desc')
+      .all()
 
-    return mail
+    return contact
   }
 
-  static sendMailRequest = async (params: {
+  static sendContactRequest = async (params: {
     type: string
     name: string
     social: string
@@ -5473,7 +5476,7 @@ class Admin {
     message: string
     country_id: string
   }) => {
-    let item = model('mail_request')
+    let item = model('contact_request')
 
     item.type = params.type
     item.name = params.name
@@ -5490,14 +5493,13 @@ class Admin {
     return item
   }
 
-  static deleteMailRequest = async (params: { id: number }) => {
-    await DB('mail_request').where('id', params.id).delete()
+  static deleteContactRequest = async (params: { id: number }) => {
+    await DB('contact_request').where('id', params.id).delete()
     return true
   }
 
-  static exportMailRequests = async (params: { type: string }) => {
-
-    const mail = await DB('mail_request')
+  static exportContactRequests = async (params: { type: string }) => {
+    const contact = await DB('contact_request')
       .where('type', params.type)
       .orderBy('created_at', 'desc')
       .all()
@@ -5514,7 +5516,7 @@ class Admin {
           { header: 'Social', key: 'social' },
           { header: 'Message', key: 'message' }
         ],
-        data: mail
+        data: contact
       }
     ])
   }

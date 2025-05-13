@@ -44,8 +44,8 @@ ALTER TABLE `vod` ADD `graphic_id` INT(11) NULL DEFAULT NULL AFTER `com_id`;
 ALTER TABLE `production` ADD `feedback_comment` TEXT NULL DEFAULT NULL AFTER `comment`;
 
 
-# 2025-05-12 Create mail_request table
-CREATE TABLE `mail_request` (
+# 2025-05-12 Create contact_request table
+CREATE TABLE `contact_request` (
   `id` INT(11) NOT NULL AUTO_INCREMENT,
   `name` VARCHAR(255) NULL DEFAULT NULL,
   `phone` VARCHAR(255) NULL DEFAULT NULL,
