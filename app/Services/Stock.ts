@@ -914,7 +914,7 @@ class Stock {
       .whereNotNull('product_id')
       .where('type', '!=', 'preorder')
       .where('is_preorder', false)
-      .orderBy('created_at', 'desc')
+      .orderBy('created_at', 'asc')
       .where((query) => {
         if (params.type) {
           query.where('type', params.type)
