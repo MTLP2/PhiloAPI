@@ -172,8 +172,10 @@ Route.group(() => {
   Route.get('/users/:id', 'UsersController.find')
   Route.get('/artists', 'ArtistsController.all')
   Route.get('/artists/:id', 'ArtistsController.find')
+  Route.post('/artists/:id?', 'ArtistsController.save')
   Route.get('/labels', 'LabelsController.all')
   Route.get('/labels/:id', 'LabelsController.find')
+  Route.post('/labels/:id?', 'LabelsController.save')
 
   Route.get('/bids/:id', 'BidController.find')
   Route.post('/bids/:id/pay', 'BidController.pay')

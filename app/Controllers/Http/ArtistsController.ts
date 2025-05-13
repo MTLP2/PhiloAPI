@@ -37,7 +37,7 @@ class ArtistsController {
     return Artists.find(payload)
   }
 
-  public async save({ request }) {
+  public async save({ request, user }) {
     const payload = await validator.validate({
       schema: schema.create({
         id: schema.number.optional(),
@@ -52,16 +52,36 @@ class ArtistsController {
       }
     })
 
-    return Artists.save(payload)
+    if (payload.id) {
+      await Roles.hasRole({
+        type: 'artist',
+        artist_id: payload.id,
+        user_id: user.id
+      })
+    }
+
+    return Artists.save({
+      ...payload,
+      auth_id: user.id
+    })
   }
 
-  public async remove({ params }) {
+  public async remove({ params, user }) {
     const payload = await validator.validate({
       schema: schema.create({
         id: schema.number()
       }),
       data: params
     })
+
+    if (payload.id) {
+      await Roles.hasRole({
+        type: 'artist',
+        artist_id: payload.id,
+        user_id: user.id
+      })
+    }
+
     return Artists.remove(payload)
   }
 }

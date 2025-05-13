@@ -2,6 +2,7 @@ import DB from 'App/DB'
 import Storage from 'App/Services/Storage'
 import Project from 'App/Services/Project'
 import Utils from 'App/Utils'
+import Roles from './Roles'
 
 class Labels {
   static all = (params: {
@@ -59,6 +60,7 @@ class Labels {
     country_id: string
     picture?: string | null | Buffer
     project_id?: number
+    auth_id: number
   }) {
     let item: Label & Model = DB('label') as any
 
@@ -107,6 +109,15 @@ class Labels {
         updated_at: Utils.date()
       })
     }
+
+    if (!params.id) {
+      await Roles.add({
+        type: 'label',
+        label_id: item.id,
+        user_id: params.auth_id
+      })
+    }
+
     return item
   }
 

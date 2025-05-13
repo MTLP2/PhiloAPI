@@ -4,6 +4,7 @@ import Labels from 'App/Services/Labels'
 import Project from 'App/Services/Project'
 import Utils from 'App/Utils'
 import sharp from 'sharp'
+import Roles from './Roles'
 
 class Artists {
   static all = (params: {
@@ -62,6 +63,7 @@ class Artists {
     description?: string
     country_id: string
     picture?: string | null | Buffer
+    auth_id: number
     project_id?: number
   }) {
     let item: Artist & Model = DB('artist') as any
@@ -111,6 +113,15 @@ class Artists {
         updated_at: Utils.date()
       })
     }
+
+    if (!params.id) {
+      await Roles.add({
+        type: 'artist',
+        artist_id: item.id,
+        user_id: params.auth_id
+      })
+    }
+
     return item
   }
 
