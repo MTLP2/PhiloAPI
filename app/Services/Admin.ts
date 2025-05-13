@@ -2,6 +2,7 @@ import Excel from 'exceljs'
 import moment from 'moment'
 import fs from 'fs'
 
+import { db, model } from 'App/db3'
 import DB from 'App/DB'
 import Notifications from 'App/Services/Notifications'
 import Customer from 'App/Services/Customer'
@@ -5455,6 +5456,69 @@ class Admin {
       .all()
 
     return list
+  }
+
+  static getContactRequests = async (params: { type: string }) => {
+    const contact = DB('contact_request')
+      .where('type', params.type)
+      .orderBy('created_at', 'desc')
+      .all()
+
+    return contact
+  }
+
+  static sendContactRequest = async (params: {
+    type: string
+    name: string
+    social: string
+    email: string
+    phone: string
+    message: string
+    country_id: string
+  }) => {
+    let item = model('contact_request')
+
+    item.type = params.type
+    item.name = params.name
+    item.email = params.email
+    item.social = params.social
+    item.country_id = params.country_id
+    item.phone = params.phone
+    item.message = params.message
+    item.created_at = Utils.date()
+    item.updated_at = Utils.date()
+
+    await item.save()
+
+    return item
+  }
+
+  static deleteContactRequest = async (params: { id: number }) => {
+    await DB('contact_request').where('id', params.id).delete()
+    return true
+  }
+
+  static exportContactRequests = async (params: { type: string }) => {
+    const contact = await DB('contact_request')
+      .where('type', params.type)
+      .orderBy('created_at', 'desc')
+      .all()
+
+    return Utils.arrayToXlsx([
+      {
+        worksheetName: 'Mail requests',
+        columns: [
+          { header: 'ID', key: 'id' },
+          { header: 'Name', key: 'name' },
+          { header: 'Country', key: 'country_id' },
+          { header: 'Email', key: 'email' },
+          { header: 'Phone', key: 'phone' },
+          { header: 'Social', key: 'social' },
+          { header: 'Message', key: 'message' }
+        ],
+        data: contact
+      }
+    ])
   }
 }
 
