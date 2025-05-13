@@ -27,3 +27,17 @@ test('GET /styles', async ({ assert }) => {
   assert.equal(item.name, dbTable.name)
   assert.equal(item.slug, dbTable.slug)
 })
+
+test('GET /genres', async ({ assert }) => {
+  const response = await supertest(BASE_URL).get('/genres').set('Authorization', `Bearer ${token}`)
+
+  assert.equal(response.status, 200)
+
+  // Récupérer la même ligne que celle en base
+  const dbTable: any = await db.selectFrom('genre').selectAll().executeTakeFirst()
+
+  const item = response.body.find((s: any) => s.id === dbTable.id)
+  assert.exists(item)
+
+  assert.equal(item.name, dbTable.name)
+})

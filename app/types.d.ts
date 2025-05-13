@@ -244,6 +244,11 @@ type Feedback = {
   updated_at: Timestamp
 }
 
+type Genre = {
+  id: number
+  name: string
+}
+
 type Label = {
   id: number
   name: string
@@ -545,6 +550,7 @@ export type DB = {
   dispatch_item: DispatchItem
   dispatch_lock: DispatchLock
   feedback: Feedback
+  genre: Genre
   invoice: Invoice
   item: Item
   label: Label
