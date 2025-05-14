@@ -149,9 +149,6 @@ class Quote {
 
     // const ff = ['precision']
     let ff = ['vdp', 'sna']
-    if (params.type === 'direct_pressing') {
-      ff = ['vdp']
-    }
     /**
     if (params.factory === 'sna2') {
       ff.push('sna2')
@@ -181,15 +178,40 @@ class Quote {
       }
     }
 
-    let cheaperPrice = null
+    let cheaperPrice: number | null = null
     let cheaperFactory = ''
-    for (const f of Object.keys(factories)) {
-      if (disableFactories[f]) {
-        continue
+
+    if (params.type === 'direct_pressing') {
+      // 1) on force VDP si possible
+      if (!disableFactories['vdp'] && factories['vdp']) {
+        cheaperFactory = 'vdp'
+        cheaperPrice = factories['vdp'].total
       }
-      if (!cheaperPrice || cheaperPrice > factories[f].total) {
-        cheaperPrice = factories[f].total
-        cheaperFactory = f
+      // 2) sinon, on essaie SNA
+      else if (!disableFactories['sna'] && factories['sna']) {
+        cheaperFactory = 'sna'
+        cheaperPrice = factories['sna'].total
+      }
+      // 3) si aucune des deux n'est dispo, fallback au plus cheap général
+      else {
+        for (const f of Object.keys(factories)) {
+          if (disableFactories[f]) continue
+          const total = factories[f].total
+          if (cheaperPrice === null || total < cheaperPrice) {
+            cheaperPrice = total
+            cheaperFactory = f
+          }
+        }
+      }
+    } else {
+      // cas normal (pas de direct_pressing) : on prend le moins cher dispo
+      for (const f of Object.keys(factories)) {
+        if (disableFactories[f]) continue
+        const total = factories[f].total
+        if (cheaperPrice === null || total < cheaperPrice) {
+          cheaperPrice = total
+          cheaperFactory = f
+        }
       }
     }
 
