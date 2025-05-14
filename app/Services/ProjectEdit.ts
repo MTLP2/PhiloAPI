@@ -390,7 +390,6 @@ class ProjectEdit {
           await DB('vod').where('project_id', projectId).update({ picture_project: null })
           break
         case 'video_file':
-          console.log('video_file')
           await DB('project').where('id', projectId).update({ video: null })
           break
         default:
@@ -466,6 +465,7 @@ class ProjectEdit {
 
       let item = model('item')
 
+      console.log(params)
       if (params.item_id) {
         item = await model('item').find(params.item_id)
       } else {

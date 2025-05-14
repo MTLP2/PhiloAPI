@@ -167,7 +167,8 @@ Route.group(() => {
   Route.delete('/projects/:id/products/:pid', 'ProjectsController.removeProduct')
 
   Route.get('/products', 'ProductsController.getProducts')
-
+  Route.post('/products', 'ProductsController.saveProduct')
+  Route.get('/products/:id', 'ProductsController.getProduct')
   Route.get('/users', 'UsersController.all')
   Route.get('/users/:id', 'UsersController.find')
   Route.get('/artists', 'ArtistsController.all')

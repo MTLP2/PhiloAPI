@@ -9,7 +9,8 @@ class RolesController {
         project_id: schema.number.optional(),
         label_id: schema.number.optional(),
         artist_id: schema.number.optional(),
-        shop_id: schema.number.optional()
+        shop_id: schema.number.optional(),
+        product_id: schema.number.optional()
       }),
       data: params
     })
@@ -20,6 +21,7 @@ class RolesController {
       shop_id: payload.shop_id,
       label_id: payload.label_id,
       artist_id: payload.artist_id,
+      product_id: payload.product_id,
       user_id: user.id
     })
 
@@ -35,7 +37,8 @@ class RolesController {
         shop_id: schema.number.optional(),
         label_id: schema.number.optional(),
         artist_id: schema.number.optional(),
-        project_id: schema.number.optional()
+        project_id: schema.number.optional(),
+        product_id: schema.number.optional()
       }),
       data: params
     })
@@ -46,6 +49,7 @@ class RolesController {
       shop_id: payload.shop_id,
       label_id: payload.label_id,
       artist_id: payload.artist_id,
+      product_id: payload.product_id,
       user_id: user.id
     })
 
@@ -60,7 +64,8 @@ class RolesController {
         shop_id: schema.number.optional(),
         label_id: schema.number.optional(),
         artist_id: schema.number.optional(),
-        project_id: schema.number.optional()
+        project_id: schema.number.optional(),
+        product_id: schema.number.optional()
       }),
       data: params
     })
@@ -71,6 +76,7 @@ class RolesController {
       shop_id: payload.shop_id,
       label_id: payload.label_id,
       artist_id: payload.artist_id,
+      product_id: payload.product_id,
       user_id: user.id
     })
 
