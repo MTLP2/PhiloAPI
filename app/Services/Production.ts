@@ -913,6 +913,14 @@ class Production {
         barcode_x: params.barcode_x,
         barcode_y: params.barcode_y
       })
+
+      await DB('production_action')
+        .where('production_id', item.production_id)
+        .where('type', 'barcode')
+        .update({
+          status: 'pending'
+        })
+
       return { success: true }
     }
 
