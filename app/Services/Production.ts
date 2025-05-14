@@ -903,6 +903,19 @@ class Production {
     item.updated_at = Utils.date()
     await item.save()
 
+    if (
+      params.type === 'barcode' &&
+      params.barcode_x !== undefined &&
+      params.barcode_y !== undefined
+    ) {
+      console.log(params.barcode_x, params.barcode_y)
+      await DB('vod').where('project_id', prod.project_id).update({
+        barcode_x: params.barcode_x,
+        barcode_y: params.barcode_y
+      })
+      return { success: true }
+    }
+
     if (params.type === 'information' && params.barcode_creation !== undefined) {
       if (params.surcharge_amount) {
         await DB('production').where('project_id', prod.project_id).update({
