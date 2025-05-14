@@ -470,9 +470,10 @@ class ProjectEdit {
         item = await model('item').find(params.item_id)
       } else {
         if (exists) {
-          return { message: 'already_exists' }
+          item = await model('item').find(exists.id)
+        } else {
+          item.created_at = Utils.date()
         }
-        item.created_at = Utils.date()
       }
       item.project_id = params.project_id
       item.related_id = id || null
@@ -485,8 +486,8 @@ class ProjectEdit {
     return { success: true }
   }
 
-  static removeItem = async (params: { id: number }) => {
-    return DB('item').where('id', params.id).delete()
+  static removeItem = async (params: { id: number; project_id: number }) => {
+    return DB('item').where('id', params.id).where('project_id', params.project_id).delete()
   }
 }
 

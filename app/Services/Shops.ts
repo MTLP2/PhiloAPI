@@ -36,7 +36,16 @@ class Shops {
     projects?: boolean
     auth_id?: number
   }) {
-    let shop: any = DB('shop').select('shop.*')
+    let shop: any = DB('shop')
+      .select(
+        'shop.*',
+        'artist.name as artist_name',
+        'artist.picture as artist_picture',
+        'label.name as label_name',
+        'label.picture as label_picture'
+      )
+      .leftJoin('artist', 'artist.id', 'shop.artist_id')
+      .leftJoin('label', 'label.id', 'shop.label_id')
 
     if (params.id) {
       shop.where('shop.id', params.id)

@@ -58,6 +58,8 @@ class Roles {
     if (!exists) {
       throw new ApiError(403)
     }
+
+    return true
   }
 
   static checkProjectOwner = async (params: {

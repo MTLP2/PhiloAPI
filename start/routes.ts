@@ -442,7 +442,7 @@ Route.group(() => {
   Route.post('/statement/import-costs', 'AdminController.importDistribCosts')
   Route.post('/stocks', 'AdminController.uploadStocks')
   Route.post('/items', 'ProjectsController.saveItem')
-  Route.delete('/items/:id', 'ProjectsController.removeItem')
+  Route.delete('/items', 'ProjectsController.removeItem')
   Route.post('/projects/:id/refund', 'AdminController.refundProject')
   Route.get('/wishlists', 'AdminController.getWishlists')
   Route.post('/stripe/:id', 'AdminController.updateAccount')
