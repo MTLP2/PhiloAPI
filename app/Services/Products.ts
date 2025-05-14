@@ -6,6 +6,7 @@ import Elogik from 'App/Services/Elogik'
 import BigBlue from 'App/Services/BigBlue'
 import Storage from './Storage'
 import Cbip from './Cbip'
+import Roles from './Roles'
 
 class Products {
   static async all(params: {
@@ -14,6 +15,7 @@ class Products {
     order?: string
     size?: number
     project_id?: number
+    user_id?: number
     search?: string
     is_preorder?: boolean
   }) {
@@ -34,12 +36,17 @@ class Products {
       query.join('project_product', 'project_product.product_id', 'product.id')
       query.where('project_id', params.project_id)
     }
+    if (params.user_id) {
+      query.join('role', 'role.product_id', 'product.id')
+      query.where('role.user_id', params.user_id)
+    }
     if (params.search) {
       query.where(function () {
         this.where('product.name', 'like', `%${params.search}%`)
         this.orWhere('product.barcode', 'like', `%${params.search}%`)
       })
     }
+
     if (!params.sort) {
       params.sort = 'product.id'
       params.order = 'desc'
@@ -148,6 +155,7 @@ class Products {
     more?: string
     color?: string
     weight?: number
+    auth_id?: number
   }) {
     if (params.barcode) {
       const alreadyExists = await DB('product')
@@ -223,6 +231,13 @@ class Products {
       await BigBlue.createProduct(item)
     } else {
       await BigBlue.saveProduct(item)
+    }
+    if (!params.id) {
+      await Roles.add({
+        type: 'product',
+        product_id: item.id,
+        user_id: params.auth_id
+      })
     }
 
     return item

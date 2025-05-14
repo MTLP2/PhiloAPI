@@ -345,6 +345,7 @@ type Role = {
   project_id?: number
   artist_id?: number
   label_id?: number
+  product_id?: number
   shop_id?: number
   created_at: Timestamp
   updated_at: Timestamp

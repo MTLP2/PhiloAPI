@@ -43,7 +43,6 @@ ALTER TABLE `vod` ADD `graphic_id` INT(11) NULL DEFAULT NULL AFTER `com_id`;
 # 2025-05-12 Add feedback_comment to production
 ALTER TABLE `production` ADD `feedback_comment` TEXT NULL DEFAULT NULL AFTER `comment`;
 
-
 # 2025-05-12 Create contact_request table
 CREATE TABLE `contact_request` (
   `id` INT(11) NOT NULL AUTO_INCREMENT,
@@ -84,3 +83,8 @@ ADD KEY `project_id` (`project_id`),
 ADD KEY `artist_id` (`artist_id`),
 ADD KEY `shop_id` (`shop_id`),
 ADD KEY `label_id` (`label_id`);
+
+ALTER TABLE `role`
+ADD `product_id` INT NULL DEFAULT NULL AFTER `shop_id`;
+
+ALTER TABLE `role` ADD INDEX (`product_id`);

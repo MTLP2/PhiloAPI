@@ -78,10 +78,6 @@ class Admin {
       'vod.factory',
       'vod.price',
       'vod.created_at',
-      'user.id as user_id',
-      'user.name as user_name',
-      'user.email as user_email',
-      'user.sponsor as user_sponsor',
       'customer.phone as phone',
       'customer.email as customer_email',
       'customer.country_id as customer_country',
@@ -89,6 +85,11 @@ class Admin {
       'customer.firstname as customer_firstname',
       'customer.lastname as customer_lastname',
       DB().raw(`DATEDIFF(NOW(), vod.start) AS days_elapsed`),
+      DB().raw(
+        `(SELECT GROUP_CONCAT(email SEPARATOR ',') 
+        FROM user WHERE id IN (SELECT user_id FROM role WHERE project_id = project.id))
+        as emails`
+      ),
       'vod.comment'
     ]
     if (filters && filters.find((f) => f.name === 'resp_prod.name' || f.name === 'com.name')) {
@@ -100,7 +101,7 @@ class Admin {
     const projects = DB('project')
       .select(...selects)
       .leftJoin('vod', 'vod.project_id', 'project.id')
-      .leftJoin('user', 'user.id', 'vod.user_id')
+      // .leftJoin('user', 'user.id', 'vod.user_id')
       .leftJoin('customer', 'vod.customer_id', 'customer.id')
       .where('project.is_delete', '!=', '1')
       .whereNotNull('vod.user_id')
@@ -152,6 +153,19 @@ class Admin {
           projects.where(
             DB.raw(`CONCAT(project.artist_name, ' ', project.name) LIKE '%${filter.value}%'`),
             null
+          )
+          filters.splice(f, 1)
+          params.filters = JSON.stringify(filters)
+        }
+        if (filter.name === 'emails') {
+          projects.whereExists(
+            DB('role')
+              .select('role.id')
+              .join('user', 'user.id', 'role.user_id')
+              .whereRaw(`role.user_id = user.id`)
+              .whereRaw(`role.project_id = project.id`)
+              .whereRaw(`user.email LIKE '%${filter.value}%'`)
+              .query()
           )
           filters.splice(f, 1)
           params.filters = JSON.stringify(filters)
@@ -354,7 +368,12 @@ class Admin {
           AND user.is_pro = 1
           AND order_shop.is_paid = 1
       ) as count_distribution
-      `)
+      `),
+        DB().raw(
+          `(SELECT GROUP_CONCAT(email SEPARATOR ',') 
+        FROM user WHERE id IN (SELECT user_id FROM role WHERE project_id = project.id))
+        as emails`
+        )
       )
       .hasMany('production', 'productions', 'production.project_id')
       .leftJoin('vod', 'vod.project_id', 'project.id')

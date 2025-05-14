@@ -1,9 +1,10 @@
 import Products from 'App/Services/Products'
 import Stock from 'App/Services/Stock'
 import { validator, schema } from '@ioc:Adonis/Core/Validator'
+import Roles from 'App/Services/Roles'
 
 class ProductsController {
-  async getProducts({ params }) {
+  async getProducts({ params, user }) {
     try {
       const payload = await validator.validate({
         schema: schema.create({
@@ -18,7 +19,10 @@ class ProductsController {
         }),
         data: params
       })
-      return Products.all(payload)
+      return Products.all({
+        ...payload,
+        user_id: (await Roles.isTeam(user.id)) ? undefined : user.id
+      })
     } catch (err) {
       return { error: err.message, validation: err.messages }
     }
@@ -45,7 +49,7 @@ class ProductsController {
     return Products.find(payload)
   }
 
-  async saveProduct({ request }) {
+  async saveProduct({ request, user }) {
     try {
       const payload = await validator.validate({
         schema: schema.create({
@@ -69,7 +73,10 @@ class ProductsController {
         }),
         data: request.body()
       })
-      return Products.save(payload)
+      return Products.save({
+        ...payload,
+        auth_id: user.id
+      })
     } catch (err) {
       return { error: err.message, validation: err.messages }
     }

@@ -23,6 +23,7 @@ class Roles {
     shop_id?: number
     label_id?: number
     artist_id?: number
+    product_id?: number
     user_id: number
   }) => {
     if (await Roles.isTeam(params.user_id)) {
@@ -46,6 +47,9 @@ class Roles {
         }
         if (params.shop_id) {
           conds.push(eb('shop_id', '=', params.shop_id))
+        }
+        if (params.product_id) {
+          conds.push(eb('product_id', '=', params.product_id))
         }
         return and(conds)
       })
@@ -71,7 +75,36 @@ class Roles {
   }
 
   static convert = async () => {
+    /**
     await sql`truncate table role`.execute(db)
+
+    const users = await db
+      .selectFrom('user')
+      .select(['user.id', 'role'])
+      .where('is_admin', '=', 1)
+      .execute()
+
+    for (const user of users) {
+      const item = model('role')
+      item.user_id = user.id
+      item.type = user.role
+      await item.save()
+    }
+
+    const shops = await db
+      .selectFrom('user')
+      .select(['user.id', 'user.shop_id'])
+      .where('shop_id', 'is not', null)
+      .execute()
+
+    for (const shop of shops) {
+      const item = model('role')
+      item.user_id = shop.id
+      item.shop_id = shop.shop_id
+      item.type = 'shop'
+      await item.save()
+    }
+    **/
 
     const projects = await db
       .selectFrom('vod')
@@ -105,33 +138,6 @@ class Roles {
         console.log(e)
       }
     }
-
-    const shops = await db
-      .selectFrom('user')
-      .select(['user.id', 'user.shop_id'])
-      .where('shop_id', 'is not', null)
-      .execute()
-
-    for (const shop of shops) {
-      const item = model('role')
-      item.user_id = shop.id
-      item.shop_id = shop.shop_id
-      item.type = 'shop'
-      await item.save()
-    }
-
-    const users = await db
-      .selectFrom('user')
-      .select(['user.id', 'role'])
-      .where('is_admin', '=', 1)
-      .execute()
-
-    for (const user of users) {
-      const item = model('role')
-      item.user_id = user.id
-      item.type = user.role
-      await item.save()
-    }
   }
 
   static all = async (
@@ -139,6 +145,7 @@ class Roles {
       type?: string
       project_id?: number
       shop_id?: number
+      product_id?: number
     } = {}
   ) => {
     let query = db
@@ -155,6 +162,9 @@ class Roles {
     if (params.shop_id) {
       query = query.where('role.shop_id', '=', params.shop_id)
     }
+    if (params.product_id) {
+      query = query.where('role.product_id', '=', params.product_id)
+    }
     return query.execute()
   }
 
@@ -164,6 +174,7 @@ class Roles {
     shop_id?: number
     label_id?: number
     artist_id?: number
+    product_id?: number
     email?: string
     user_id?: number
   }) => {
@@ -205,6 +216,9 @@ class Roles {
         if (params.artist_id) {
           conds.push(eb('artist_id', '=', params.artist_id))
         }
+        if (params.product_id) {
+          conds.push(eb('product_id', '=', params.product_id))
+        }
         return and(conds)
       })
       .executeTakeFirst()
@@ -219,6 +233,7 @@ class Roles {
     item.shop_id = params.shop_id
     item.label_id = params.label_id
     item.artist_id = params.artist_id
+    item.product_id = params.product_id
     item.user_id = user.id
     await item.save()
 
@@ -233,7 +248,6 @@ class Roles {
     artist_id?: number
     user_id: number
   }) => {
-    console.log(params)
     await db
       .deleteFrom('role')
       .where('type', '=', params.type)
