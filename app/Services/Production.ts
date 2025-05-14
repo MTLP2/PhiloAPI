@@ -16,6 +16,8 @@ import Storage from 'App/Services/Storage'
 import View from '@ioc:Adonis/Core/View'
 import I18n from '@ioc:Adonis/Addons/I18n'
 import moment from 'moment'
+import Env from '@ioc:Adonis/Core/Env'
+
 import { db, model } from 'App/db3'
 
 class Production {
@@ -190,6 +192,12 @@ class Production {
         category: 'preprod',
         type: 'information',
         action: 'check',
+        for: 'artist'
+      },
+      {
+        category: 'preprod',
+        type: 'barcode',
+        action: 'file',
         for: 'artist'
       },
       {
@@ -908,6 +916,21 @@ class Production {
         barcode_creation: params.barcode_creation,
         catnumber_creation: params.catnumber_creation
       })
+
+      const html = await View.render('production_notif', {
+        userName: prod.resp_email.split('@')[0],
+        projectName: prod.project_name,
+        missingItems: ['Création de Barcode'],
+        productionLink: `https://www.diggersfactory.com/sheraf/project/${prod.project_id}/prod?prod=${item.production_id}`
+      })
+
+      if (params.barcode_creation == '1') {
+        await Notifications.sendEmail({
+          to: prod.resp_email,
+          subject: `Barcode creation for ${prod.project_name}`,
+          html: html
+        })
+      }
 
       const product = await DB('project_product')
         .select('product.id', 'project.name as project_name')
