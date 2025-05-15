@@ -908,7 +908,6 @@ class Production {
       params.barcode_x !== undefined &&
       params.barcode_y !== undefined
     ) {
-      console.log(params.barcode_x, params.barcode_y)
       await DB('vod').where('project_id', prod.project_id).update({
         barcode_x: params.barcode_x,
         barcode_y: params.barcode_y
