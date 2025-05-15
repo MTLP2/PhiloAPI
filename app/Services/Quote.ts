@@ -149,9 +149,6 @@ class Quote {
 
     // const ff = ['precision']
     let ff = ['vdp', 'sna']
-    if (params.type === 'direct_pressing') {
-      ff = ['vdp']
-    }
     /**
     if (params.factory === 'sna2') {
       ff.push('sna2')
@@ -181,15 +178,34 @@ class Quote {
       }
     }
 
-    let cheaperPrice = null
+    let cheaperPrice: number | null = null
     let cheaperFactory = ''
-    for (const f of Object.keys(factories)) {
-      if (disableFactories[f]) {
-        continue
+
+    if (params.type === 'direct_pressing') {
+      if (!disableFactories['vdp'] && factories['vdp']) {
+        cheaperFactory = 'vdp'
+        cheaperPrice = factories['vdp'].total
+      } else if (!disableFactories['sna'] && factories['sna']) {
+        cheaperFactory = 'sna'
+        cheaperPrice = factories['sna'].total
+      } else {
+        for (const f of Object.keys(factories)) {
+          if (disableFactories[f]) continue
+          const total = factories[f].total
+          if (cheaperPrice === null || total < cheaperPrice) {
+            cheaperPrice = total
+            cheaperFactory = f
+          }
+        }
       }
-      if (!cheaperPrice || cheaperPrice > factories[f].total) {
-        cheaperPrice = factories[f].total
-        cheaperFactory = f
+    } else {
+      for (const f of Object.keys(factories)) {
+        if (disableFactories[f]) continue
+        const total = factories[f].total
+        if (cheaperPrice === null || total < cheaperPrice) {
+          cheaperPrice = total
+          cheaperFactory = f
+        }
       }
     }
 
