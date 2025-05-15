@@ -86,9 +86,9 @@ class Admin {
       'customer.lastname as customer_lastname',
       DB().raw(`DATEDIFF(NOW(), vod.start) AS days_elapsed`),
       DB().raw(
-        `(SELECT GROUP_CONCAT(email SEPARATOR ',') 
-        FROM user WHERE id IN (SELECT user_id FROM role WHERE project_id = project.id))
-        as emails`
+        `(SELECT GROUP_CONCAT(CONCAT(id, '|', email) SEPARATOR ',')
+      FROM user WHERE id IN (SELECT user_id FROM role WHERE project_id = project.id))
+      as emails`
       ),
       'vod.comment'
     ]
@@ -370,7 +370,7 @@ class Admin {
       ) as count_distribution
       `),
         DB().raw(
-          `(SELECT GROUP_CONCAT(email SEPARATOR ',') 
+          `(SELECT GROUP_CONCAT(CONCAT(id, '|', email) SEPARATOR ',')
         FROM user WHERE id IN (SELECT user_id FROM role WHERE project_id = project.id))
         as emails`
         )
