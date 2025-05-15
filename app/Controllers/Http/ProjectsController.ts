@@ -247,6 +247,19 @@ class ProjectsController {
     return Projects.getDashboard(params)
   }
 
+  async getDashboard2({ params, user }) {
+    params.user = user
+
+    if (params.user_id && user.id !== +params.user_id && !(await Roles.isTeam(user.id))) {
+      throw new ApiError(403)
+    }
+    if (params.project_id) {
+      await Roles.checkProjectOwner({ project_id: params.project_id, user: user })
+    }
+
+    return Projects.getDashboard2(params)
+  }
+
   async getOrders({ params, user }) {
     params.user = user
     if (params.id !== 'all') {

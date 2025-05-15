@@ -2380,6 +2380,621 @@ class Project {
     return s
   }
 
+  static getDashboard2 = async (params: {
+    user_id?: number
+    project_id?: number
+    start?: string
+    end?: string
+    periodicity?: string
+    cashable?: boolean
+    auto?: boolean
+    only_data?: boolean
+  }) => {
+    if (!params.start) {
+      params.start = moment().subtract(1, 'year').format('YYYY-MM-DD')
+    }
+    if (!params.end) {
+      params.end = moment().format('YYYY-MM-DD')
+    }
+    let projects = DB('project')
+      .select(
+        'project.name',
+        'project.id',
+        'storage_costs',
+        'vod.barcode',
+        'vod.currency',
+        'vod.fee_date',
+        'vod.fee_distrib_date',
+        'vod.is_licence',
+        'payback_site',
+        'payback_distrib',
+        'payback_box'
+      )
+      .join('vod', 'vod.project_id', 'project.id')
+      .where('is_delete', '!=', '1')
+
+    if (params.user_id) {
+      projects.where((query) => {
+        query
+          .where('user_id', params.user_id)
+          .orWhereExists(
+            DB('role')
+              .select(DB.raw('1'))
+              .whereRaw('project_id = project.id')
+              .where('user_id', params.user_id)
+              .query()
+          )
+      })
+      if (params.cashable) {
+        projects.where('send_statement', true)
+      }
+    }
+
+    if (params.project_id) {
+      projects.where('project.id', params.project_id)
+    }
+
+    projects = Utils.arrayToObject(await projects.all(), 'id')
+
+    const ids = Object.keys(projects)
+
+    if (ids.length === 0) {
+      return {}
+    }
+
+    const ordersPromise = DB('order_item as oi')
+      .select(
+        'os.order_id',
+        'project_id',
+        'quantity',
+        'tips',
+        'os.tax_rate',
+        'price',
+        'fee_change',
+        'date_cancel',
+        'customer.country_id',
+        'currency_rate_project',
+        'discount_artist',
+        'oi.discount',
+        'os.created_at'
+      )
+      .join('order_shop as os', 'os.id', 'oi.order_shop_id')
+      .join('customer', 'customer.id', 'os.customer_id')
+      .whereIn('project_id', ids)
+      .where((query) => {
+        query.where('os.is_paid', true)
+        query.orWhereNotNull('os.date_cancel')
+      })
+      .where('is_external', false)
+      .orderBy('created_at', 'asc')
+      .all()
+
+    const statementsPromise = DB('statement')
+      .whereIn('project_id', ids)
+      .hasMany('statement_distributor', 'distributors')
+      .orderBy('date')
+      .all()
+
+    const costsPromise = DB('production_cost')
+      .select('type', 'in_statement', 'project_id', 'date')
+      .whereIn('project_id', ids)
+      .where('is_statement', true)
+      .orderBy('date')
+      .all()
+
+    const downloadPromise = DB('download')
+      .select('project_id', 'used')
+      .whereIn('project_id', ids)
+      .whereNotNull('used')
+      .orderBy('used')
+      .all()
+
+    const paymentsPromise = DB('payment_artist_project')
+      .select(
+        'payment_artist.receiver',
+        'payment_artist.currency',
+        'payment_artist_project.currency_rate',
+        'payment_artist_project.total',
+        'payment_artist_project.project_id',
+        'payment_artist.date'
+      )
+      .join('payment_artist', 'payment_artist.id', 'payment_artist_project.payment_id')
+      .whereIn('project_id', ids)
+      .where('is_delete', false)
+      .whereIn('is_paid', [1, -1])
+      .orderBy('date')
+      .all()
+
+    const boxesPromise = DB('dispatch')
+      .select('product.barcode', 'customer.country_id', 'dispatch.created_at')
+      .join('dispatch_item', 'dispatch_item.dispatch_id', 'dispatch.id')
+      .join('product', 'product.id', 'dispatch_item.product_id')
+      .join('box', 'dispatch.box_id', 'box.id')
+      .join('customer', 'customer.id', 'box.customer_id')
+      .where('dispatch.type', 'box')
+      .where((query) => {
+        for (const p of <any>Object.values(projects)) {
+          query.orWhere('product.barcode', 'like', `%${p.barcode}%`)
+        }
+      })
+      .all()
+
+    const stocksQuery = Stock.byProjects({
+      ids: ids
+    })
+    // const stocksSiteQuery = Stock.byProject({ project_id: +ids[0], is_distrib: false })
+    // const stocksDistribQuery = Stock.byProject({ project_id: +ids[0], is_distrib: true })
+
+    const [orders, statements, costs, payments, boxes, download, stocks] = await Promise.all([
+      ordersPromise,
+      statementsPromise,
+      costsPromise,
+      paymentsPromise,
+      boxesPromise,
+      downloadPromise,
+      stocksQuery
+    ])
+
+    let start
+    if (orders.length > 0) {
+      start = moment(orders[0].created_at)
+    }
+    if (statements.length > 0 && (!start || start > moment(statements[0].date))) {
+      start = moment(statements[0].date)
+    }
+    if (costs.length > 0 && (!start || start > moment(costs[0].date))) {
+      start = moment(costs[0].date)
+    }
+    if (payments.length > 0 && (!start || start > moment(payments[0].date))) {
+      start = moment(payments[0].date)
+    }
+
+    if (
+      params.auto &&
+      params.end &&
+      payments.at(-1) &&
+      moment(payments.at(-1).date).format('YYYY-MM-DD') > params.end
+    ) {
+      params.end = moment(payments.at(-1).date).format('YYYY-MM-DD')
+    }
+    if (!params.start) {
+      if (!start) {
+        return false
+      }
+      params.start = start.format('YYYY-MM-DD')
+    }
+    if (params.only_data && params.start && moment(params.start) < start) {
+      params.start = start.format('YYYY-MM-DD')
+    }
+    if (!params.end) {
+      params.end = moment().format('YYYY-MM-DD 23:59')
+    }
+
+    const diff = moment(params.end).diff(moment(params.start), 'days')
+    let format
+    let periodicity
+    if (params.periodicity === 'months' || diff > 50) {
+      periodicity = 'months'
+      format = 'YYYY-MM'
+    } else {
+      periodicity = 'days'
+      format = 'YYYY-MM-DD'
+    }
+    if (periodicity === 'months') {
+      params.start = moment(params.start).startOf('month').format('YYYY-MM-DD')
+    }
+
+    const dates = {}
+    const now =
+      periodicity === 'months' ? moment(params.start).startOf('month') : moment(params.start)
+    while (now.isSameOrBefore(moment(params.end))) {
+      dates[now.format(format)] = 0
+      now.add(1, periodicity)
+    }
+
+    const projectsValues: any = Object.values(projects)
+    const s: any = {
+      currency: projectsValues[0].currency,
+      periodicity: periodicity,
+      start: params.start,
+      end: params.end,
+      outstanding: {
+        all: 0,
+        total: 0,
+        dates: { ...dates }
+      },
+      balance: {
+        all: 0,
+        total: 0,
+        dates: { ...dates }
+      },
+      payments: {
+        list: [],
+        all: {
+          all: 0,
+          total: 0,
+          dates: { ...dates }
+        },
+        diggers: {
+          all: 0,
+          total: 0,
+          dates: { ...dates }
+        },
+        artist: {
+          all: 0,
+          total: 0,
+          dates: { ...dates }
+        }
+      },
+      costs: {
+        list: [],
+        all: {
+          all: 0,
+          total: 0,
+          dates: { ...dates }
+        },
+        production: {
+          all: 0,
+          total: 0,
+          dates: { ...dates }
+        },
+        sdrm: {
+          all: 0,
+          total: 0,
+          dates: { ...dates }
+        },
+        mastering: {
+          all: 0,
+          total: 0,
+          dates: { ...dates }
+        },
+        marketing: {
+          all: 0,
+          total: 0,
+          dates: { ...dates }
+        },
+        logistic: {
+          all: 0,
+          total: 0,
+          dates: { ...dates }
+        },
+        distribution: {
+          all: 0,
+          total: 0,
+          dates: { ...dates }
+        },
+        storage: {
+          all: 0,
+          total: 0,
+          dates: { ...dates }
+        },
+        other: {
+          all: 0,
+          total: 0,
+          dates: { ...dates }
+        }
+      },
+      income: {
+        all: {
+          all: 0,
+          total: 0,
+          dates: { ...dates },
+          countries: {}
+        },
+        site: {
+          all: 0,
+          total: 0,
+          dates: { ...dates },
+          countries: {}
+        },
+        tips: {
+          all: 0,
+          total: 0,
+          dates: { ...dates }
+        },
+        box: {
+          all: 0,
+          total: 0,
+          dates: { ...dates },
+          countries: {}
+        },
+        distrib: {
+          all: 0,
+          total: 0,
+          dates: { ...dates },
+          country: {},
+          countries: {}
+        },
+        digital: {
+          all: 0,
+          total: 0,
+          dates: { ...dates },
+          countries: {}
+        }
+      },
+      quantity: {
+        all: {
+          all: 0,
+          total: 0,
+          dates: { ...dates },
+          countries: {}
+        },
+        site: {
+          all: 0,
+          total: 0,
+          dates: { ...dates },
+          countries: {}
+        },
+        site_return: {
+          all: 0,
+          total: 0,
+          dates: { ...dates },
+          countries: {}
+        },
+        box: {
+          all: 0,
+          total: 0,
+          dates: { ...dates },
+          countries: {}
+        },
+        distrib: {
+          all: 0,
+          total: 0,
+          dates: { ...dates },
+          country: {},
+          countries: {}
+        }
+      },
+      download: {
+        all: {
+          all: 0,
+          total: 0,
+          dates: { ...dates }
+        },
+        site: {
+          all: 0,
+          total: 0,
+          dates: { ...dates },
+          countries: {}
+        }
+      },
+      stocks: {
+        all: { countries: {} },
+        site: { countries: {} },
+        distrib: { countries: {} }
+      }
+    }
+
+    const inDate = (date) =>
+      moment(periodicity === 'months' ? `${date}-01` : date).isBetween(
+        params.start,
+        params.end,
+        undefined,
+        '[]'
+      )
+
+    s.setDate = function (type, cat, date, value) {
+      if (value) {
+        if (inDate(date)) {
+          this[cat][type].dates[date] += value
+          this[cat].all.dates[date] += value
+          this[cat][type].total += value
+          this[cat].all.total += value
+        }
+        this[cat][type].all += value
+        this[cat].all.all += value
+      }
+    }
+
+    s.setCountry = function (type, cat, country, quantity, date) {
+      country = country ? country.toUpperCase() : null
+      if (!s[cat].all.countries[country]) {
+        s[cat].all.countries[country] = 0
+      }
+      s[cat].all.countries[country] += quantity
+
+      if (!s[cat][type].countries[country]) {
+        s[cat][type].countries[country] = 0
+      }
+      s[cat][type].countries[country] += quantity
+
+      if (date && type === 'distrib') {
+        if (!s[cat][type].country[country]) {
+          s[cat][type].country[country] = { ...dates }
+        }
+        s[cat][type].country[country][date] += quantity
+      }
+    }
+
+    s.addList = function (type, cat, date, value, project) {
+      if (value && inDate(date)) {
+        s[cat].list.push({
+          type: type,
+          project_id: project,
+          date: date,
+          amount: value
+        })
+      }
+    }
+
+    let oo: any[] = []
+    for (const order of orders) {
+      const date = moment(order.created_at).format(format)
+
+      const feeDate = JSON.parse(projects[order.project_id].fee_date)
+      const fee = 1 - Utils.getFee(feeDate, order.created_at) / 100
+
+      order.tax_rate = 1 + order.tax_rate
+      order.total = order.quantity * order.price - order.fee_change
+
+      if (order.discount_artist) {
+        order.total -= order.discount
+      }
+
+      let value
+      if (projects[order.project_id].payback_site) {
+        value =
+          order.quantity * projects[order.project_id].payback_site * order.currency_rate_project
+      } else {
+        value = (order.total / order.tax_rate) * order.currency_rate_project * fee
+      }
+      const tips = (order.tips / order.tax_rate) * order.currency_rate_project * fee
+
+      s.setDate('site', 'income', date, value + tips)
+      // s.setDate('tips', 'income', date, tips)
+      s.setDate('site', 'quantity', date, order.quantity)
+      if (order.date_cancel) {
+        s.setDate('site', 'income', moment(order.date_cancel).format(format), -(value + tips))
+        // s.setDate('all', 'quantity', moment(order.date_cancel).format(format), -order.quantity)
+        s.setDate(
+          'site_return',
+          'quantity',
+          moment(order.date_cancel).format(format),
+          -order.quantity
+        )
+      }
+
+      if (inDate(date) && !order.date_cancel) {
+        oo.push(order)
+        s.setCountry('site', 'income', order.country_id, value)
+        s.setCountry('site', 'quantity', order.country_id, order.quantity)
+      }
+    }
+
+    for (const stock of stocks) {
+      if (stock.is_distrib) {
+        s.setCountry('distrib', 'stocks', Utils.getCountryStock(stock.type), stock.quantity)
+        s.setCountry('distrib', 'stocks', 'ALL', stock.quantity)
+      } else {
+        s.setCountry('site', 'stocks', Utils.getCountryStock(stock.type), stock.quantity)
+        s.setCountry('site', 'stocks', 'ALL', stock.quantity)
+      }
+    }
+
+    for (const box of boxes) {
+      const date = moment(box.created_at).format(format)
+      const project: any = Object.values(projects).find((p: any) => {
+        if (!isNaN(p.barcode)) {
+          return box.barcode.split(',').includes(p.barcode)
+        } else {
+          return false
+        }
+      })
+
+      if (!project) {
+        continue
+      }
+
+      s.setDate('box', 'income', date, project.payback_box)
+      s.setDate('box', 'quantity', date, 1)
+
+      if (inDate(date)) {
+        s.setCountry('box', 'income', box.country_id, project.payback_box)
+        s.setCountry('box', 'quantity', box.country_id, 1)
+      }
+    }
+
+    for (const d of download) {
+      s.setDate('site', 'download', moment(d.used).format(format), 1)
+    }
+    for (const stat of statements) {
+      const date = moment(stat.date).format(format)
+      const custom = stat.custom
+        ? JSON.parse(stat.custom).reduce(function (prev, cur) {
+            return prev + +cur.total
+          }, 0)
+        : null
+      s.setDate('other', 'costs', date, custom)
+
+      const feeDistribDate = JSON.parse(projects[stat.project_id].fee_distrib_date)
+      const feeDistrib = 1 - Utils.getFee(feeDistribDate, stat.date) / 100
+
+      for (const dist of stat.distributors) {
+        let value
+        if (projects[stat.project_id].payback_distrib) {
+          value =
+            projects[stat.project_id].payback_distrib *
+            (dist.quantity - Math.abs(dist.returned || 0))
+        } else {
+          value = dist.total * feeDistrib
+        }
+        s.setDate('distrib', 'income', date, value)
+
+        if (dist.digital) {
+          s.setDate('digital', 'income', date, dist.digital * feeDistrib)
+        }
+        // Distributor storage cost
+        if (!projects[stat.project_id].is_licence) {
+          s.setDate('distribution', 'costs', date, dist.storage)
+          s.addList('distribution', 'costs', date, dist.storage, stat.project_id)
+        }
+
+        s.setDate('distrib', 'quantity', date, dist.quantity)
+        s.setDate('distrib', 'quantity', date, -Math.abs(dist.returned))
+
+        if (inDate(date)) {
+          s.setCountry('distrib', 'income', dist.country_id, value, date)
+          s.setCountry('distrib', 'quantity', dist.country_id, dist.quantity, date)
+          s.setCountry('distrib', 'quantity', dist.country_id, -Math.abs(dist.returned), date)
+        }
+      }
+    }
+
+    for (const cost of costs) {
+      const date = moment(cost.date).format(format)
+
+      if (cost.type === 'storage') {
+        if (projects[cost.project_id].storage_costs && !projects[cost.project_id].is_licence) {
+          s.setDate(cost.type, 'costs', date, cost.in_statement)
+          s.addList(cost.type, 'costs', date, cost.in_statement, cost.project_id)
+        }
+      } else {
+        s.setDate(cost.type, 'costs', date, cost.in_statement)
+        s.addList(cost.type, 'costs', date, cost.in_statement, cost.project_id)
+      }
+    }
+
+    for (const payment of payments) {
+      const date = moment(payment.date).format(format)
+
+      if (!payment.currency_rate) {
+        payment.currency_rate = 1
+      }
+      payment.total = payment.total * payment.currency_rate
+      if (payment.receiver === 'artist') {
+        s.addList('artist', 'payments', date, payment.total, payment.project_id)
+        s.setDate('artist', 'payments', date, payment.total)
+      } else if (payment.receiver === 'diggers') {
+        s.addList('diggers', 'payments', date, payment.total, payment.project_id)
+        s.setDate('diggers', 'payments', date, payment.total)
+      }
+    }
+    for (const date of Object.keys(dates)) {
+      s.payments.all.dates[date] = s.payments.diggers.dates[date] - s.payments.artist.dates[date]
+    }
+
+    s.balance.all = s.income.all.all - s.costs.all.all
+    s.balance.total = s.income.all.total - s.costs.all.total
+    s.outstanding.all = s.balance.all + s.payments.diggers.all - s.payments.artist.all
+    s.outstanding.total = s.balance.total + s.payments.diggers.total - s.payments.artist.total
+
+    let balance = 0
+    let outstanding = 0
+    for (const date of Object.keys(dates)) {
+      balance += s.income.all.dates[date] - s.costs.all.dates[date]
+      s.balance.dates[date] = balance
+
+      outstanding +=
+        s.income.all.dates[date] -
+        s.costs.all.dates[date] +
+        s.payments.diggers.dates[date] -
+        s.payments.artist.dates[date]
+      s.outstanding.dates[date] = outstanding
+    }
+
+    return s
+  }
+
   static getOrdersForTable = async (params) => {
     let pp: any = DB('project')
       .select('project.name', 'project.id', 'vod.currency', 'vod.fee_date')
