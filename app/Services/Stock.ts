@@ -931,9 +931,6 @@ class Stock {
       if (!hh[h.product_id]) {
         hh[h.product_id] = {}
       }
-      if (hh[h.product_id][h.type] !== undefined && h.type !== 'daudin') {
-        continue
-      }
       const data = JSON.parse(h.data)
       hh[h.product_id][h.type] = +data.new.quantity
       hh[h.product_id][`${h.type}_check`] = +data.new.quantity
