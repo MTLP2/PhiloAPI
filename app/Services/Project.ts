@@ -3001,17 +3001,8 @@ class Project {
       .join('vod', 'vod.project_id', 'project.id')
 
     if (params.id === 'all') {
-      pp.where((query) => {
-        query
-          .where('user_id', params.user_id)
-          .orWhereExists(
-            DB('role')
-              .select(DB.raw('1'))
-              .whereRaw('project_id = project.id')
-              .where('user_id', params.user_id)
-              .query()
-          )
-      })
+      pp.join('role', 'role.project_id', 'project.id')
+      pp.where('role.user_id', params.user_id)
     } else {
       pp.where('project.id', params.id)
     }
