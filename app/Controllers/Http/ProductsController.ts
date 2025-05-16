@@ -2,6 +2,7 @@ import Products from 'App/Services/Products'
 import Stock from 'App/Services/Stock'
 import { validator, schema } from '@ioc:Adonis/Core/Validator'
 import Roles from 'App/Services/Roles'
+import ApiError from 'App/ApiError'
 
 class ProductsController {
   async getProducts({ params, user }) {
@@ -19,9 +20,14 @@ class ProductsController {
         }),
         data: params
       })
+      if (params.all) {
+        if (!(await Roles.isTeam(user.id))) {
+          throw new ApiError(403)
+        }
+      }
       return Products.all({
         ...payload,
-        user_id: (await Roles.isTeam(user.id)) ? undefined : user.id
+        user_id: params.all ? undefined : user.id
       })
     } catch (err) {
       return { error: err.message, validation: err.messages }
