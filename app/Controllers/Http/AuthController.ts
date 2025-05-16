@@ -5,12 +5,22 @@ import ApiError from 'App/ApiError'
 import DB from 'App/DB'
 import Env from '@ioc:Adonis/Core/Env'
 import { validator, schema } from '@ioc:Adonis/Core/Validator'
+import Roles from 'App/Services/Roles'
 const { OAuth2Client } = require('google-auth-library')
 
 class AuthController {
-  async check({ user }) {
-    // const check = await Auth.checkPasswordToken(user)
+  async check({ user, params }) {
     User.lastVisit(user.id).then()
+
+    if (params.user_id) {
+      if (!(await Roles.isTeam(user.id))) {
+        throw new ApiError(401)
+      }
+      return {
+        ...(await User.me(params.user_id)),
+        token: Auth.getToken({ id: +params.user_id })
+      }
+    }
     return User.me(user.id)
   }
 
