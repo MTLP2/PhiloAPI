@@ -34,7 +34,7 @@ class Products {
 
     if (params.project_id) {
       query.join('project_product', 'project_product.product_id', 'product.id')
-      query.where('project_id', params.project_id)
+      query.where('project_product.project_id', params.project_id)
     }
     if (params.user_id) {
       query.join('role', 'role.product_id', 'product.id')
