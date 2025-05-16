@@ -1,6 +1,7 @@
 import Labels from 'App/Services/Labels'
 import { validator, schema } from '@ioc:Adonis/Core/Validator'
 import Roles from 'App/Services/Roles'
+import ApiError from 'App/ApiError'
 
 class LabelsController {
   async all({ params, user }) {
@@ -11,7 +12,7 @@ class LabelsController {
         order: schema.string.optional(),
         size: schema.number.optional(),
         page: schema.number.optional(),
-        user_id: schema.number()
+        all: schema.boolean.optional()
       }),
       data: {
         ...params,
@@ -19,9 +20,14 @@ class LabelsController {
       }
     })
 
+    if (params.all) {
+      if (!(await Roles.isTeam(user.id))) {
+        throw new ApiError(403)
+      }
+    }
     return Labels.all({
       ...payload,
-      user_id: (await Roles.isTeam(user.id)) ? undefined : payload.user_id
+      user_id: params.all ? undefined : user.id
     })
   }
 

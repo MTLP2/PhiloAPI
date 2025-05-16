@@ -1,6 +1,7 @@
 import Artists from 'App/Services/Artists'
 import { validator, schema } from '@ioc:Adonis/Core/Validator'
 import Roles from 'App/Services/Roles'
+import ApiError from 'App/ApiError'
 
 class ArtistsController {
   async all({ params, user }) {
@@ -10,18 +11,21 @@ class ArtistsController {
         sort: schema.string.optional(),
         order: schema.string.optional(),
         size: schema.number.optional(),
-        page: schema.number.optional(),
-        user_id: schema.number()
+        page: schema.number.optional()
       }),
       data: {
-        ...params,
-        user_id: user.id
+        ...params
       }
     })
 
+    if (params.all) {
+      if (!(await Roles.isTeam(user.id))) {
+        throw new ApiError(403)
+      }
+    }
     return Artists.all({
       ...payload,
-      user_id: (await Roles.isTeam(user.id)) ? undefined : payload.user_id
+      user_id: params.all ? undefined : user.id
     })
   }
 
