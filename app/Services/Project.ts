@@ -3042,17 +3042,9 @@ class Project {
       .where('is_external', false)
 
     if (params.id === 'all') {
-      params.query.where((query) => {
-        query
-          .where('vod.user_id', params.user_id)
-          .orWhereExists(
-            DB('role')
-              .select(DB.raw('1'))
-              .whereRaw('project_id = project.id')
-              .where('user_id', params.user_id)
-              .query()
-          )
-      })
+      params.query
+        .join('role', 'role.project_id', 'project.id')
+        .where('role.user_id', params.user_id)
     } else if (params.ids) {
       params.query.whereIn('order_item.project_id', params.ids)
     } else {
