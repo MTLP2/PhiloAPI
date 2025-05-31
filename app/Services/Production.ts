@@ -1792,17 +1792,15 @@ class Production {
     const prod = await DB('vod')
       .select(
         'production.id',
-        'pu.project_id',
+        'role.project_id',
         'production.notif',
-        'pu.user_id',
-        'production.resp_id',
-        'pu.production'
+        'role.user_id',
+        'production.resp_id'
       )
       .join('production', 'production.project_id', 'vod.project_id')
-      .join('project_user as pu', 'pu.project_id', 'vod.project_id')
+      .join('role', 'role.project_id', 'vod.project_id')
       .whereRaw('vod.project_id = production.project_id')
       .where('production.id', id)
-      .where('pu.production', 1)
       .first()
 
     if (!prod) {

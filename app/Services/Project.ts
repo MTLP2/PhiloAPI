@@ -2380,7 +2380,7 @@ class Project {
     return s
   }
 
-  static getDashboard2 = async (params: {
+  static getAnalytics = async (params: {
     user_id?: number
     project_id?: number
     start?: string
@@ -2400,6 +2400,8 @@ class Project {
       .select(
         'project.name',
         'project.id',
+        'project.picture',
+        'project.artist_name',
         'storage_costs',
         'vod.barcode',
         'vod.currency',
@@ -2456,10 +2458,14 @@ class Project {
         'currency_rate_project',
         'discount_artist',
         'oi.discount',
-        'os.created_at'
+        'os.created_at',
+        'os.user_id',
+        'user.name as user',
+        'user.country_id as user_country'
       )
       .join('order_shop as os', 'os.id', 'oi.order_shop_id')
       .join('customer', 'customer.id', 'os.customer_id')
+      .join('user', 'user.id', 'os.user_id')
       .whereIn('project_id', ids)
       .where((query) => {
         query.where('os.is_paid', true)
@@ -2469,94 +2475,22 @@ class Project {
       .orderBy('created_at', 'asc')
       .all()
 
-    const statementsPromise = DB('statement')
-      .whereIn('project_id', ids)
-      .hasMany('statement_distributor', 'distributors')
-      .orderBy('date')
-      .all()
-
-    const costsPromise = DB('production_cost')
-      .select('type', 'in_statement', 'project_id', 'date')
-      .whereIn('project_id', ids)
-      .where('is_statement', true)
-      .orderBy('date')
-      .all()
-
-    const downloadPromise = DB('download')
-      .select('project_id', 'used')
-      .whereIn('project_id', ids)
-      .whereNotNull('used')
-      .orderBy('used')
-      .all()
-
-    const paymentsPromise = DB('payment_artist_project')
-      .select(
-        'payment_artist.receiver',
-        'payment_artist.currency',
-        'payment_artist_project.currency_rate',
-        'payment_artist_project.total',
-        'payment_artist_project.project_id',
-        'payment_artist.date'
-      )
-      .join('payment_artist', 'payment_artist.id', 'payment_artist_project.payment_id')
-      .whereIn('project_id', ids)
-      .where('is_delete', false)
-      .whereIn('is_paid', [1, -1])
-      .orderBy('date')
-      .all()
-
-    const boxesPromise = DB('dispatch')
-      .select('product.barcode', 'customer.country_id', 'dispatch.created_at')
-      .join('dispatch_item', 'dispatch_item.dispatch_id', 'dispatch.id')
-      .join('product', 'product.id', 'dispatch_item.product_id')
-      .join('box', 'dispatch.box_id', 'box.id')
-      .join('customer', 'customer.id', 'box.customer_id')
-      .where('dispatch.type', 'box')
-      .where((query) => {
-        for (const p of <any>Object.values(projects)) {
-          query.orWhere('product.barcode', 'like', `%${p.barcode}%`)
-        }
-      })
-      .all()
-
-    const stocksQuery = Stock.byProjects({
-      ids: ids
+    const stocksQuery = Stock.byProjectsWithHistoric({
+      ids: ids,
+      start: params.start,
+      end: params.end,
+      periodicity: params.periodicity
     })
     // const stocksSiteQuery = Stock.byProject({ project_id: +ids[0], is_distrib: false })
     // const stocksDistribQuery = Stock.byProject({ project_id: +ids[0], is_distrib: true })
 
-    const [orders, statements, costs, payments, boxes, download, stocks] = await Promise.all([
-      ordersPromise,
-      statementsPromise,
-      costsPromise,
-      paymentsPromise,
-      boxesPromise,
-      downloadPromise,
-      stocksQuery
-    ])
+    const [orders, stocks] = await Promise.all([ordersPromise, stocksQuery])
 
     let start
     if (orders.length > 0) {
       start = moment(orders[0].created_at)
     }
-    if (statements.length > 0 && (!start || start > moment(statements[0].date))) {
-      start = moment(statements[0].date)
-    }
-    if (costs.length > 0 && (!start || start > moment(costs[0].date))) {
-      start = moment(costs[0].date)
-    }
-    if (payments.length > 0 && (!start || start > moment(payments[0].date))) {
-      start = moment(payments[0].date)
-    }
 
-    if (
-      params.auto &&
-      params.end &&
-      payments.at(-1) &&
-      moment(payments.at(-1).date).format('YYYY-MM-DD') > params.end
-    ) {
-      params.end = moment(payments.at(-1).date).format('YYYY-MM-DD')
-    }
     if (!params.start) {
       if (!start) {
         return false
@@ -2758,12 +2692,19 @@ class Project {
           countries: {}
         }
       },
+      top: {
+        projects: [],
+        users: [],
+        countries: []
+      },
       stocks: {
         all: { countries: {} },
         site: { countries: {} },
         distrib: { countries: {} }
       }
     }
+
+    s.stocks = stocks
 
     const inDate = (date) =>
       moment(periodicity === 'months' ? `${date}-01` : date).isBetween(
@@ -2817,6 +2758,11 @@ class Project {
       }
     }
 
+    const top = {
+      projects: {},
+      users: {},
+      countries: {}
+    }
     let oo: any[] = []
     for (const order of orders) {
       const date = moment(order.created_at).format(format)
@@ -2840,6 +2786,39 @@ class Project {
       }
       const tips = (order.tips / order.tax_rate) * order.currency_rate_project * fee
 
+      if (inDate(date)) {
+        if (!top.projects[order.project_id]) {
+          top.projects[order.project_id] = {
+            name: projects[order.project_id].name,
+            artist: projects[order.project_id].artist_name,
+            picture: projects[order.project_id].picture,
+            quantity: 0,
+            income: 0
+          }
+        }
+        top.projects[order.project_id].quantity += order.quantity
+        top.projects[order.project_id].income += value + tips
+        if (!top.users[order.user_id]) {
+          top.users[order.user_id] = {
+            name: order.user,
+            country: order.user_country,
+            quantity: 0,
+            income: 0
+          }
+        }
+        top.users[order.user_id].quantity += order.quantity
+        top.users[order.user_id].income += value + tips
+        if (!top.countries[order.country_id]) {
+          top.countries[order.country_id] = {
+            name: order.country_id,
+            quantity: 0,
+            income: 0
+          }
+        }
+        top.countries[order.country_id].quantity += order.quantity
+        top.countries[order.country_id].income += value + tips
+      }
+
       s.setDate('site', 'income', date, value + tips)
       // s.setDate('tips', 'income', date, tips)
       s.setDate('site', 'quantity', date, order.quantity)
@@ -2861,117 +2840,15 @@ class Project {
       }
     }
 
-    for (const stock of stocks) {
-      if (stock.is_distrib) {
-        s.setCountry('distrib', 'stocks', Utils.getCountryStock(stock.type), stock.quantity)
-        s.setCountry('distrib', 'stocks', 'ALL', stock.quantity)
-      } else {
-        s.setCountry('site', 'stocks', Utils.getCountryStock(stock.type), stock.quantity)
-        s.setCountry('site', 'stocks', 'ALL', stock.quantity)
-      }
-    }
-
-    for (const box of boxes) {
-      const date = moment(box.created_at).format(format)
-      const project: any = Object.values(projects).find((p: any) => {
-        if (!isNaN(p.barcode)) {
-          return box.barcode.split(',').includes(p.barcode)
-        } else {
-          return false
-        }
-      })
-
-      if (!project) {
-        continue
-      }
-
-      s.setDate('box', 'income', date, project.payback_box)
-      s.setDate('box', 'quantity', date, 1)
-
-      if (inDate(date)) {
-        s.setCountry('box', 'income', box.country_id, project.payback_box)
-        s.setCountry('box', 'quantity', box.country_id, 1)
-      }
-    }
-
-    for (const d of download) {
-      s.setDate('site', 'download', moment(d.used).format(format), 1)
-    }
-    for (const stat of statements) {
-      const date = moment(stat.date).format(format)
-      const custom = stat.custom
-        ? JSON.parse(stat.custom).reduce(function (prev, cur) {
-            return prev + +cur.total
-          }, 0)
-        : null
-      s.setDate('other', 'costs', date, custom)
-
-      const feeDistribDate = JSON.parse(projects[stat.project_id].fee_distrib_date)
-      const feeDistrib = 1 - Utils.getFee(feeDistribDate, stat.date) / 100
-
-      for (const dist of stat.distributors) {
-        let value
-        if (projects[stat.project_id].payback_distrib) {
-          value =
-            projects[stat.project_id].payback_distrib *
-            (dist.quantity - Math.abs(dist.returned || 0))
-        } else {
-          value = dist.total * feeDistrib
-        }
-        s.setDate('distrib', 'income', date, value)
-
-        if (dist.digital) {
-          s.setDate('digital', 'income', date, dist.digital * feeDistrib)
-        }
-        // Distributor storage cost
-        if (!projects[stat.project_id].is_licence) {
-          s.setDate('distribution', 'costs', date, dist.storage)
-          s.addList('distribution', 'costs', date, dist.storage, stat.project_id)
-        }
-
-        s.setDate('distrib', 'quantity', date, dist.quantity)
-        s.setDate('distrib', 'quantity', date, -Math.abs(dist.returned))
-
-        if (inDate(date)) {
-          s.setCountry('distrib', 'income', dist.country_id, value, date)
-          s.setCountry('distrib', 'quantity', dist.country_id, dist.quantity, date)
-          s.setCountry('distrib', 'quantity', dist.country_id, -Math.abs(dist.returned), date)
-        }
-      }
-    }
-
-    for (const cost of costs) {
-      const date = moment(cost.date).format(format)
-
-      if (cost.type === 'storage') {
-        if (projects[cost.project_id].storage_costs && !projects[cost.project_id].is_licence) {
-          s.setDate(cost.type, 'costs', date, cost.in_statement)
-          s.addList(cost.type, 'costs', date, cost.in_statement, cost.project_id)
-        }
-      } else {
-        s.setDate(cost.type, 'costs', date, cost.in_statement)
-        s.addList(cost.type, 'costs', date, cost.in_statement, cost.project_id)
-      }
-    }
-
-    for (const payment of payments) {
-      const date = moment(payment.date).format(format)
-
-      if (!payment.currency_rate) {
-        payment.currency_rate = 1
-      }
-      payment.total = payment.total * payment.currency_rate
-      if (payment.receiver === 'artist') {
-        s.addList('artist', 'payments', date, payment.total, payment.project_id)
-        s.setDate('artist', 'payments', date, payment.total)
-      } else if (payment.receiver === 'diggers') {
-        s.addList('diggers', 'payments', date, payment.total, payment.project_id)
-        s.setDate('diggers', 'payments', date, payment.total)
-      }
-    }
-    for (const date of Object.keys(dates)) {
-      s.payments.all.dates[date] = s.payments.diggers.dates[date] - s.payments.artist.dates[date]
-    }
+    s.top.projects = Object.values(top.projects)
+      .sort((a, b) => b.income - a.income)
+      .slice(0, 10)
+    s.top.users = Object.values(top.users)
+      .sort((a, b) => b.income - a.income)
+      .slice(0, 10)
+    s.top.countries = Object.values(top.countries)
+      .sort((a, b) => b.income - a.income)
+      .slice(0, 10)
 
     s.balance.all = s.income.all.all - s.costs.all.all
     s.balance.total = s.income.all.total - s.costs.all.total

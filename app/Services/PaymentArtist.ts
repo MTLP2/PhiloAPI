@@ -36,7 +36,7 @@ class PaymentArtist {
           .where('payment_artist_project.project_id', params.project_id)
       })
     }
-    const filters = JSON.parse(params.filters)
+    const filters = params.filters ? JSON.parse(params.filters) : []
     for (const i in filters) {
       if (filters[i].name === 'projects') {
         const value = filters[i].value

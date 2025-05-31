@@ -88,3 +88,4 @@ ALTER TABLE `role`
 ADD `product_id` INT NULL DEFAULT NULL AFTER `shop_id`;
 
 ALTER TABLE `role` ADD INDEX (`product_id`);
+

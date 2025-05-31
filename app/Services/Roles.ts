@@ -137,7 +137,7 @@ class Roles {
       try {
         await item.save()
       } catch (e) {
-        console.log(e)
+        console.error(e)
       }
     }
   }
@@ -148,6 +148,8 @@ class Roles {
       project_id?: number
       shop_id?: number
       product_id?: number
+      label_id?: number
+      artist_id?: number
     } = {}
   ) => {
     let query = db
@@ -167,6 +169,13 @@ class Roles {
     if (params.product_id) {
       query = query.where('role.product_id', '=', params.product_id)
     }
+    if (params.label_id) {
+      query = query.where('role.label_id', '=', params.label_id)
+    }
+    if (params.artist_id) {
+      query = query.where('role.artist_id', '=', params.artist_id)
+    }
+
     return query.execute()
   }
 

@@ -61,7 +61,7 @@ class Cbip {
           quantity: (item.quantity || 0) - (item.quantity_allocated || 0)
         })
       } catch (e) {
-        console.log(e)
+        console.error(e)
       }
     }
     return items.length

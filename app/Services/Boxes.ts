@@ -429,6 +429,7 @@ class Boxes {
         shipping = await Cart.calculateShipping({
           transporter: 'bigblue',
           pickup: params.shipping_type === 'pickup',
+          box: true,
           quantity: 1,
           insert: 3,
           weight: 500,
@@ -448,6 +449,7 @@ class Boxes {
         shipping = await Cart.calculateShipping({
           transporter: 'bigblue',
           pickup: params.shipping_type === 'pickup',
+          box: true,
           weight: 900,
           quantity: 2,
           insert: 4,

@@ -465,7 +465,6 @@ class ProjectEdit {
 
       let item = model('item')
 
-      console.log(params)
       if (params.item_id) {
         item = await model('item').find(params.item_id)
       } else {

@@ -84,7 +84,7 @@ class Cart {
     const countryId = params.customer.country_id
 
     Object.keys(params).map((i) => {
-      if (i.indexOf('shop_') !== -1) {
+      if (i.indexOf('shop_') !== -1 && i !== 'shop_id') {
         const ii = i.split('.')[0].split('_')
         const idx = `s_${ii[1]}_${ii.slice(2).join('_')}`
         if (!params.shops[idx]) {
@@ -1026,6 +1026,7 @@ class Cart {
     mode?: string
     state?: string
     pickup?: boolean
+    box?: boolean
   }) => {
     const packageWeights = await DB('shipping_weight')
       .where('partner', 'like', params.partner)
@@ -1085,7 +1086,12 @@ class Cart {
       }
 
       if (transporter.oil) {
-        transporter[weight] = transporter[weight] + (transporter.oil / 100) * transporter[weight]
+        if (params.box && transporter.transporter !== 'MDR') {
+          // 7% surcharge for oil tax on box shipping for collisimo
+          transporter[weight] = transporter[weight] + (7 / 100) * transporter[weight]
+        } else {
+          transporter[weight] = transporter[weight] + (transporter.oil / 100) * transporter[weight]
+        }
       }
       if (transporter.security) {
         transporter[weight] = transporter[weight] + transporter.security
@@ -1252,11 +1258,12 @@ class Cart {
       let exception = null
 
       if (params.zip_code) {
+        const zipCode = params.zip_code.replace(/-/g, '')
         exception = await DB('shipping_exception')
           .where('country_id', params.country_id)
           .where((query) => {
-            query.where('zip_code', 'like', params.zip_code).orWhere((query) => {
-              query.where('start', '<=', params.zip_code).where('end', '>=', params.zip_code)
+            query.where('zip_code', 'like', zipCode).orWhere((query) => {
+              query.where('start', '<=', zipCode).where('end', '>=', zipCode)
             })
           })
           .first()
@@ -1612,6 +1619,7 @@ class Cart {
       order = await DB('order').save({
         user_id: params.user_id,
         cart_id: params.cart_id,
+        shop_id: params.shop_id,
         paying: params.payment_type === 'stripe' ? true : null,
         payment_type: params.payment_type,
         currency: calculate.currency,
@@ -2594,11 +2602,12 @@ class Cart {
         'is_shop',
         'p.picture',
         'slug',
-        'vod.user_id',
+        'role.user_id',
         'vod.barcode',
         'vod.type'
       )
       .join('vod', 'vod.project_id', 'p.id')
+      .join('role', 'role.project_id', 'p.id')
       .whereIn(
         'p.id',
         [...items, ...relatedProjects, ...accessories].map((p) => p.id)
@@ -2633,7 +2642,7 @@ class Cart {
     for (const order of orders) {
       i++
       if (i % 100 === 0) {
-        console.log(i)
+        console.info(i)
       }
       const paymentIntent = await stripe.paymentIntents.retrieve(order.payment_id)
 

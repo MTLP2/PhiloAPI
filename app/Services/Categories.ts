@@ -9,7 +9,7 @@ import { Lang } from 'App/types'
 class Categories {
   static async all(params) {
     params.query = DB('category')
-      .select('id', 'code', 'name', 'sub_title', 'is_visible')
+      .select('id', 'code', 'position', 'name', 'sub_title', 'is_visible')
       .orderBy('position', 'asc')
     params.size = 0
 
@@ -82,6 +82,7 @@ class Categories {
         'category.name as category_name',
         'category.sub_title as category_sub_title',
         'category.description as category_description',
+        'category.position as category_position',
         'v.show_stock',
         'item.stock as item_stock',
         'item.price as item_price',
@@ -93,7 +94,7 @@ class Categories {
       .join('vod as v', 'p.id', 'v.project_id')
       .leftJoin('item', 'item.id', 'v.related_item_id')
       .where('category.is_visible', true)
-      .orderBy('category.position', 'category_project.position', 'RAND()')
+      .orderBy('category.position')
       .orderBy('category_project.position')
       .orderBy(DB.raw('RAND()'))
 
@@ -108,7 +109,7 @@ class Categories {
       if (!list[item.category_id]) {
         list[item.category_id] = {
           id: item.category_id,
-          position: item.position,
+          position: item.category_position,
           name: Utils.getTranslation(item.category_name, params.lang),
           sub_title: Utils.getTranslation(item.category_sub_title, params.lang),
           description: Utils.getTranslation(item.category_description, params.lang),

@@ -88,6 +88,92 @@ class Stock {
     return Object.values(stock)
   }
 
+  static async byProjectsWithHistoric(params: {
+    ids: string[]
+    start: string
+    end: string
+    periodicity: string
+  }) {
+    const stocks = await DB('stock')
+      .select(
+        'stock.id',
+        'stock.product_id',
+        'stock.reserved',
+        'stock.type',
+        'stock.quantity',
+        'stock.is_distrib'
+      )
+      .where('stock.is_preorder', false)
+      .where('is_distrib', false)
+      .whereIn(
+        'stock.product_id',
+        DB('project_product').select('product_id').whereIn('project_id', params.ids).query()
+      )
+      .all()
+
+    const dates = {}
+    const lastDate =
+      params.periodicity === 'months' ? moment().format('YYYY-MM') : moment().format('YYYY-MM-DD')
+
+    for (const s of stocks) {
+      if (!dates[lastDate]) {
+        dates[lastDate] = {}
+      }
+      if (!dates[lastDate][s.product_id]) {
+        dates[lastDate][s.product_id] = {}
+      }
+      dates[lastDate][s.product_id][s.type] = s.quantity
+    }
+
+    const lastV = dates[lastDate] ? JSON.parse(JSON.stringify(dates[lastDate])) : {}
+    let lastValue = dates[lastDate]
+
+    const historic = await DB('stock_historic')
+      .select('stock_historic.*')
+      .join('stock', 'stock.product_id', 'stock_historic.product_id')
+      .join('project_product', 'project_product.product_id', 'stock_historic.product_id')
+      .whereIn('project_product.project_id', params.ids)
+      .where('stock.is_distrib', false)
+      .where('stock_historic.created_at', '>=', params.start)
+      .orderBy('stock_historic.created_at', 'desc')
+      .all()
+
+    for (const h of historic) {
+      const date =
+        params.periodicity === 'months'
+          ? moment(h.created_at).format('YYYY-MM')
+          : moment(h.created_at).format('YYYY-MM-DD')
+
+      const data = JSON.parse(h.data)
+      if (data.new.quantity !== undefined) {
+        if (!dates[date]) {
+          dates[date] = lastValue ? JSON.parse(JSON.stringify(lastValue)) : {}
+        }
+        if (!dates[date][h.product_id]) {
+          dates[date][h.product_id] = {}
+        }
+        dates[date][h.product_id][h.type] = data.new.quantity
+
+        lastValue = dates[date]
+      }
+    }
+
+    dates[lastDate] = lastV
+
+    const res = {}
+    for (const date of Object.keys(dates)) {
+      const total = Object.values(dates[date]).reduce(
+        (acc: number, curr: { [key: string]: number }) => {
+          return acc + Object.values(curr).reduce((acc: number, curr: number) => acc + curr, 0)
+        },
+        0
+      )
+
+      res[date] = total
+    }
+    return res
+  }
+
   static getHistoric = async (params: {
     product_id?: number
     project_id?: number
@@ -310,7 +396,7 @@ class Stock {
     for (const p of listProjects) {
       i++
       if (i % 100 === 0) {
-        console.log(i)
+        console.info(i)
       }
       if (!projects[p.project_id]) {
         projects[p.project_id] = {}
@@ -1055,7 +1141,8 @@ class Stock {
       .join('order_item as oi', 'oi.project_id', 'vod.project_id')
       .join('order_shop as os', 'os.id', 'oi.order_shop_id')
       .join('product', 'pp.product_id', 'product.id')
-      .where('vod.user_id', params.user_id)
+      .join('role', 'role.project_id', 'vod.project_id')
+      .where('role.user_id', params.user_id)
       .where('is_paid', true)
       .where((query) => {
         query.whereRaw('product.size like oi.size')
@@ -1078,7 +1165,8 @@ class Stock {
       .where('stock.type', '!=', 'preorder')
       .where('stock.type', '!=', 'null')
       .where('stock.is_preorder', false)
-      .where('vod.user_id', params.user_id)
+      .join('role', 'role.project_id', 'vod.project_id')
+      .where('role.user_id', params.user_id)
       .all()
 
     const trans = {}
@@ -1225,8 +1313,6 @@ class Stock {
       'matrix'
     ]
 
-    console.log('--')
-
     for (const stock of stocks) {
       for (const s of stock.stock) {
         if (retailers.includes(s.type) && s.quantity > 0) {
@@ -1280,7 +1366,6 @@ class Stock {
       i++
       pp[barcode][type] = row.getCell('C').text
     })
-    console.log(i)
 
     const products = await DB('product')
       .select('id', 'barcode')
@@ -1300,7 +1385,7 @@ class Stock {
         }
 
         if (!pp[barcode].id) {
-          console.log('not found', barcode, pp[barcode])
+          console.info('not found', barcode, pp[barcode])
           continue
         }
 

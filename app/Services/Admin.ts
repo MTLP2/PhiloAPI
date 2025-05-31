@@ -77,6 +77,8 @@ class Admin {
       'vod.quote',
       'vod.factory',
       'vod.price',
+      'vod.price_distribution',
+      'vod.currency',
       'vod.created_at',
       'customer.phone as phone',
       'customer.email as customer_email',
@@ -174,119 +176,6 @@ class Admin {
     }
 
     const res = await Utils.getRows<any>({ ...params, query: projects, pagination: false })
-    return res
-  }
-
-  static getProjects2 = async (params: {
-    type?: string
-    in_progress?: boolean
-    sort?: any
-    start?: string
-    end?: string
-    query?: any
-    filters?: string
-    size?: number
-  }) => {
-    const projects = DB('project')
-      .select(
-        'vod.*',
-        'project.*',
-        'user.id as user_id',
-        'user.name as user_name',
-        'user.email as user_email',
-        'user.sponsor as user_sponsor',
-        'customer.phone as phone',
-        'customer.email as customer_email',
-        'customer.country_id as customer_country',
-        'customer.phone as customer_phone',
-        'customer.firstname as customer_firstname',
-        'customer.lastname as customer_lastname',
-        'resp_prod.name as resp_prod',
-        'com.name as com',
-        'vod.id as vod_id',
-        'vod.phone_time',
-        'vod.count',
-        'vod.resp_prod_id',
-        'vod.count_other',
-        'vod.quantity_distribution',
-        'vod.is_notif',
-        DB().raw(`
-        (SELECT SUM(quantity)
-        FROM order_item, \`order\`, user
-        WHERE order_item.order_id = \`order\`.id
-          AND \`order\`.user_id = user.id
-          AND user.is_pro
-          AND order_item.project_id = project.id) AS count_distribution
-      `),
-        DB().raw(`DATEDIFF(NOW(), vod.start) AS days_elapsed`),
-        DB().raw(`
-        (SELECT SUM(quantity)
-        FROM order_item, order_shop
-        WHERE order_shop.id = order_item.order_shop_id
-          AND order_shop.is_paid = 1
-          AND order_item.project_id = project.id) AS count
-      `),
-        'vod.comment'
-      )
-      .leftJoin('vod', 'vod.project_id', 'project.id')
-      .leftJoin('user', 'user.id', 'vod.user_id')
-      .leftJoin('customer', 'vod.customer_id', 'customer.id')
-      .leftJoin('user as resp_prod', 'resp_prod.id', 'vod.resp_prod_id')
-      .leftJoin('user as com', 'com.id', 'vod.com_id')
-      .where('project.is_delete', '!=', '1')
-      .whereNotNull('vod.user_id')
-
-    if (params.type !== 'references') {
-      projects.whereNotNull('vod.id')
-    }
-    if (params.in_progress) {
-      projects.whereIn('vod.step', ['in_progress', 'failed', 'successful'])
-    }
-
-    if (!params.sort) {
-      projects.orderBy('project.id', 'desc')
-    }
-
-    if (params.start) {
-      projects.where('vod.created_at', '>=', params.start)
-    }
-    if (params.end) {
-      projects.where('vod.created_at', '<=', `${params.end} 23:59`)
-    }
-
-    const filters = params.filters ? JSON.parse(params.filters) : null
-    if (filters) {
-      for (const f in filters) {
-        const filter = filters[f]
-        filter.value = decodeURIComponent(filter.value).replace(/'/g, "''")
-        if (filter.name === 'customer.email') {
-          projects.where((query) => {
-            query.where('customer.email', 'LIKE', `%${filter.value}%`)
-            query.orWhere('user.email', 'LIKE', `%${filter.value}%`)
-          })
-          filters.splice(f, 1)
-          params.filters = JSON.stringify(filters)
-        }
-        if (filter.name === 'customer_name') {
-          projects.where(
-            DB.raw(`CONCAT(customer.firstname, ' ', customer.lastname) LIKE '%${filter.value}%'`),
-            null
-          )
-          filters.splice(f, 1)
-          params.filters = JSON.stringify(filters)
-        }
-        if (filter.name === 'project') {
-          projects.where(
-            DB.raw(`CONCAT(project.artist_name, ' ', project.name) LIKE '%${filter.value}%'`),
-            null
-          )
-          filters.splice(f, 1)
-          params.filters = JSON.stringify(filters)
-        }
-      }
-    }
-
-    const res = await Utils.getRows<any>({ ...params, query: projects })
     return res
   }
 
@@ -806,7 +695,7 @@ class Admin {
           } else {
             stats.benefit_distrib += distrib.total - distrib.total * feeDistrib
           }
-          if (distrib.digital) {
+          if (distrib.digital && !isNaN(distrib.tunrover_digital)) {
             stats.tunrover_digital += distrib.tunrover_digital
             stats.benefit_distrib += distrib.tunrover_digital * feeDistrib
           }
@@ -844,6 +733,7 @@ class Admin {
     stats.marge_artist = Utils.round((stats.benefit_artist / stats.turnover) * 100)
     stats.marge_diggers = Utils.round((stats.benefit_total / stats.turnover) * 100)
     stats.marge_costs = stats.costs ? Utils.round((stats.benefit_total / stats.costs) * 100) : 0
+
     return stats
   }
 
@@ -2647,7 +2537,8 @@ class Admin {
         'p.cat_number'
       )
       .join('vod', 'vod.project_id', 'p.id')
-      .where('vod.user_id', params.id)
+      .join('role', 'role.project_id', 'p.id')
+      .where('role.user_id', params.id)
       .all()
 
     const stocks = await DB('stock')

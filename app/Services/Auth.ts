@@ -11,23 +11,96 @@ import Utils from 'App/Utils'
 import ApiError from 'App/ApiError'
 import cio from 'App/Services/CIO'
 import Pass from './Pass'
+import db, { sql, model } from 'App/db3'
 
 class Auth {
-  static getToken = (params: { id: number }) => {
+  static getToken = async (params: {
+    user_id: number
+    ip?: string
+    country_id?: string
+    expires_at?: Date
+  }) => {
+    const session = await this.createSession({
+      user_id: params.user_id,
+      ip: params.ip,
+      country_id: params.country_id,
+      expires_at: params.expires_at
+    })
+
     return jwt.sign(
       {
-        id: params.id,
-        user_id: params.id
+        user_id: params.user_id,
+        session_id: session.id,
+        secret: session.secret
       },
       Env.get('APP_KEY')
     )
   }
 
-  static login = async (email: string, password: string) => {
+  static createSession = async (params: {
+    user_id: number
+    ip?: string
+    country_id?: string
+    expires_at?: Date
+  }) => {
+    const exists = await db
+      .selectFrom('session')
+      .select(['id', 'secret'])
+      .where('user_id', '=', params.user_id)
+      .where('expires_at', '>', sql<Date>`NOW()`)
+      .where(({ eb, and }) => {
+        const conds: any[] = []
+        if (params.ip) {
+          conds.push(eb('ip', '=', params.ip))
+        } else {
+          conds.push(eb('ip', 'is', null))
+        }
+        if (params.country_id) {
+          conds.push(eb('country_id', '=', params.country_id))
+        } else {
+          conds.push(eb('country_id', 'is', null))
+        }
+        return and(conds)
+      })
+      .executeTakeFirst()
+
+    if (exists) {
+      return exists
+    }
+
+    const item = model('session')
+
+    item.user_id = params.user_id
+    item.secret = Utils.randomString(10)
+    item.expires_at = params.expires_at || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+    item.ip = params.ip
+    item.country_id = params.country_id
+
+    await item.save()
+
+    return item
+  }
+
+  static logout = async (params: { user_id: number; session_id: number }) => {
+    await db
+      .deleteFrom('session')
+      .where('user_id', '=', params.user_id)
+      .where('id', '=', params.session_id)
+      .execute()
+
+    return { success: true }
+  }
+
+  static login = async (params: {
+    email: string
+    password: string
+    ip: string
+    country_id: string
+  }) => {
     const res = await DB()
       .select('id', 'password')
       .from('user as u')
-      .where('u.email', email)
+      .where('u.email', params.email)
       .where('is_delete', 0)
       .first()
 
@@ -36,11 +109,19 @@ class Auth {
     }
     const passwordHashed = res.password && res.password.replace('$2y$', '$2a$')
 
-    if (process.env.NODE_ENV === 'development' && password === '123') {
-      const token = Auth.getToken(res)
+    if (process.env.NODE_ENV === 'development' && params.password === '123') {
+      const token = await Auth.getToken({
+        user_id: res.id,
+        ip: params.ip,
+        country_id: params.country_id
+      })
       return { user_id: res.id, token }
-    } else if (bcrypt.compareSync(password, passwordHashed)) {
-      const token = Auth.getToken(res)
+    } else if (bcrypt.compareSync(params.password, passwordHashed)) {
+      const token = await Auth.getToken({
+        user_id: res.id,
+        ip: params.ip,
+        country_id: params.country_id
+      })
       return { user_id: res.id, token }
     } else {
       return false
@@ -70,7 +151,11 @@ class Auth {
       }
       const response = {}
       response.user_id = user.id
-      response.token = Auth.getToken(user)
+      response.token = await Auth.getToken({
+        user_id: user.id,
+        ip: facebook.ip,
+        country_id: facebook.country_id
+      })
       response.new = false
       return response
     } else {
@@ -79,7 +164,11 @@ class Auth {
       response.user_id = userId
       const urlImage = `https://graph.facebook.com/${facebook.facebook_id}/picture?type=large`
       UserService.updatePictureFromUrl(userId, urlImage)
-      response.token = Auth.getToken({ id: userId })
+      response.token = await Auth.getToken({
+        user_id: userId,
+        ip: facebook.ip,
+        country_id: facebook.country_id
+      })
       response.new = true
       return response
     }
@@ -97,7 +186,11 @@ class Auth {
 
       const response = {}
       response.user_id = user.id
-      response.token = Auth.getToken(user)
+      response.token = await Auth.getToken({
+        user_id: user.id,
+        ip: profile.ip,
+        country_id: profile.country_id
+      })
       return response
     } else {
       const userId = await Auth.createProfile(profile)
@@ -106,7 +199,11 @@ class Auth {
       if (profile.avatar_url) {
         UserService.updatePictureFromUrl(userId, profile.avatar_url, 'soundcloud')
       }
-      response.token = Auth.getToken({ id: userId })
+      response.token = await Auth.getToken({
+        user_id: userId,
+        ip: profile.ip,
+        country_id: profile.country_id
+      })
       return response
     }
   }

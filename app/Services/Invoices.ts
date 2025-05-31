@@ -46,6 +46,7 @@ class Invoices {
         query.select('payment.id')
         query.from('payment')
         query.whereRaw('payment.invoice_id = invoice.id')
+        query.whereRaw('payment.status = ?', 'paid')
         query.orderBy('payment_id', 'desc')
         query.limit(1)
       })

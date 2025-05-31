@@ -70,21 +70,18 @@ class User {
       .where('is_delete', 0)
       .first()
 
+    const roles = DB()
+      .select('type')
+      .from('role as r')
+      .where('r.user_id', id)
+      .whereIn('type', ['boss', 'team'])
+      .all()
+
     const notifications = DB()
       .select('n.*')
       .from('notifications as n')
       .where('n.user_id', id)
       .first()
-
-    const alerts = DB()
-      .select('n.*', 'p.slug')
-      .from('notification as n')
-      .leftJoin('project as p', 'n.project_id', 'p.id')
-      .where('n.user_id', id)
-      .where('n.alert', 1)
-      .limit(10)
-      .orderBy('n.id', 'desc')
-      .all()
 
     const wishlist = DB()
       .select('w.*')
@@ -95,16 +92,23 @@ class User {
 
     const follows = DB().select('f.*').from('follower as f').where('f.user_id', id).all()
     const followers = DB().select('f.*').from('follower as f').where('f.follower', id).all()
-
-    return Promise.all([user, notifications, alerts, wishlist, follows, followers]).then((data) => {
+    return Promise.all([user, notifications, wishlist, follows, followers, roles]).then((data) => {
       const u = data[0]
       if (!u) return { error: 'not_found' }
       u.password = u.password !== null
       u.notifications = data[1]
-      u.alerts = data[2]
-      u.wishlist = data[3]
-      u.follows = data[4]
-      u.followers = data[5]
+      u.wishlist = data[2]
+      u.follows = data[3]
+      u.followers = data[4]
+
+      for (const role of data[5]) {
+        if (role.type === 'boss') {
+          u.role = 'boss'
+        } else if (role.type === 'team') {
+          u.role = 'team'
+        }
+      }
+
       u.styles = u.styles ? JSON.parse(u.styles) : []
       u.soundcloud_sub = u.soundcloud_sub ? JSON.parse(u.soundcloud_sub) : []
 
@@ -300,7 +304,8 @@ class User {
     user.projects = await DB('project as p')
       .select('p.*')
       .join('vod', 'vod.project_id', 'p.id')
-      .where('vod.user_id', user.id)
+      .join('role', 'role.project_id', 'p.id')
+      .where('role.user_id', user.id)
       .where('is_visible', true)
       .whereIn('vod.step', ['in_progress', 'successful'])
       .all()
@@ -1527,6 +1532,19 @@ static extractProjectOrders = async (params) => {
       })
     }
     return email.quality_score
+  }
+
+  static getStatements = async (userId: number) => {
+    const statements = await DB('statement_history')
+      .where('user_id', userId)
+      .orderBy('date', 'desc')
+      .all()
+    return statements
+  }
+
+  static getPayments = async (userId: number) => {
+    const payments = await DB('payment').where('user_id', userId).orderBy('id', 'desc').all()
+    return payments
   }
 }
 

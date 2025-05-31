@@ -1513,7 +1513,8 @@ class StatementService {
       .select(DB.raw('distinct(project.id)'), 'artist_name', 'name')
       .table('project')
       .join('vod', 'vod.project_id', 'project.id')
-      .where('vod.user_id', params.id)
+      .join('role', 'role.project_id', 'project.id')
+      .where('role.user_id', params.id)
       .where('is_delete', '!=', true)
       .where((query) => {
         if (params.send_statement !== false) {
@@ -1599,8 +1600,8 @@ class StatementService {
       )
       .table('project')
       .join('vod', 'vod.project_id', 'project.id')
-      .join('project_user as pu', 'pu.project_id', 'project.id')
-      .where('pu.user_id', params.id)
+      .join('role', 'role.project_id', 'project.id')
+      .where('role.user_id', params.id)
       .where('is_delete', '!=', true)
       .where((query) => {
         if (params.send_statement !== false) {
@@ -1608,6 +1609,7 @@ class StatementService {
         }
       })
 
+    console.log(projects.toString())
     if (params.auto) {
       projects.where('send_statement', true)
     }
@@ -1865,7 +1867,8 @@ class StatementService {
       .select('project.id', 'project.picture', 'artist_name', 'name', 'currency')
       .table('project')
       .join('vod', 'vod.project_id', 'project.id')
-      .where('vod.user_id', paylaod.user_id)
+      .join('role', 'role.project_id', 'project.id')
+      .where('role.user_id', paylaod.user_id)
       .where('vod.send_statement', true)
       .where('is_delete', '!=', '1')
       .all()
@@ -1919,7 +1922,8 @@ class StatementService {
         'step'
       )
       .join('vod', 'vod.project_id', 'project.id')
-      .join('user', 'user.id', 'vod.user_id')
+      .join('role', 'role.project_id', 'project.id')
+      .join('user', 'user.id', 'role.user_id')
       .leftJoin('user as com', 'com.id', 'vod.com_id')
       .orderBy('artist_name', 'name')
 
@@ -1939,7 +1943,8 @@ class StatementService {
     const invoicesPromise = DB('invoice')
       .select('invoice.*')
       .join('vod', 'vod.project_id', 'invoice.project_id')
-      .join('user', 'user.id', 'vod.user_id')
+      .join('role', 'role.project_id', 'invoice.project_id')
+      .join('user', 'user.id', 'role.user_id')
       .where((query) => {
         query.where('vod.balance_followup', true)
         query.orWhere('user.balance_followup', true)
@@ -1966,7 +1971,8 @@ class StatementService {
         'production_cost.currency'
       )
       .join('vod', 'vod.project_id', 'production_cost.project_id')
-      .join('user', 'user.id', 'vod.user_id')
+      .join('role', 'role.project_id', 'production_cost.project_id')
+      .join('user', 'user.id', 'role.user_id')
       .where((query) => {
         if (params.start) {
           query.where('production_cost.date', '>=', params.end)
@@ -2702,7 +2708,7 @@ class StatementService {
       .select('project.id', 'project.name', 'project.artist_name', 'pu.user_id', 'vod.barcode')
       .from('vod')
       .join('project', 'project.id', 'vod.project_id')
-      .join('project_user as pu', 'pu.project_id', 'project.id')
+      .join('role', 'role.project_id', 'project.id')
       .where('send_statement', 1)
       .where((query) => {
         query.where(

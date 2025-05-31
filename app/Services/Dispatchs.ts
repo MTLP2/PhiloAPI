@@ -2804,17 +2804,24 @@ class Dispatchs {
     await dispatch.save()
 
     if (dispatch.order_shop_id) {
-      const orderShop = await DB('order_shop')
-        .where('id', dispatch.order_shop_id)
+      const orderShop = await db
+        .selectFrom('order_shop')
+        .selectAll()
+        .where('id', '=', dispatch.order_shop_id)
         .where('step', '!=', 'delivered')
-        .first()
+        .executeTakeFirst()
 
       if (orderShop) {
-        orderShop.step = params.status
-        orderShop.tracking_number = params.tracking_number
-        orderShop.tracking_link = params.tracking_link
-        orderShop.updated_at = Utils.date()
-        await orderShop.save()
+        await db
+          .updateTable('order_shop')
+          .where('id', '=', dispatch.order_shop_id)
+          .set({
+            step: params.status,
+            tracking_number: params.tracking_number,
+            tracking_link: params.tracking_link,
+            updated_at: Utils.date()
+          })
+          .execute()
 
         await Notifications.add({
           type: 'my_order_sent',
